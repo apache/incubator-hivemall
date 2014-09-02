@@ -20,43 +20,34 @@
  */
 package hivemall.io;
 
-public class WeightValue implements IWeightValue {
+public class WeightValueWithClock implements IWeightValue {
 
     protected float value;
-    protected boolean touched;
+    protected short clock;
+    protected byte deltaUpdates;
 
-    public WeightValue() {}
-
-    public WeightValue(float weight) {
-        this(weight, true);
+    public WeightValueWithClock(IWeightValue src) {
+        this.value = src.get();
+        this.clock = 0;
+        this.deltaUpdates = 0;
     }
 
-    public WeightValue(float weight, boolean touched) {
-        this.value = weight;
-        this.touched = touched;
-    }
-
-    @Override
     public final float get() {
         return value;
     }
 
-    @Override
     public final void set(float weight) {
         this.value = weight;
     }
 
-    @Override
     public boolean hasCovariance() {
         return false;
     }
 
-    @Override
     public float getCovariance() {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public void setCovariance(float cov) {
         throw new UnsupportedOperationException();
     }
@@ -64,69 +55,59 @@ public class WeightValue implements IWeightValue {
     /** 
      * @return whether touched in training or not
      */
-    @Override
     public final boolean isTouched() {
-        return touched;
+        return clock > 0;
     }
 
     @Override
-    public final void setTouched(boolean touched) {
-        this.touched = touched;
+    public void setTouched(boolean touched) {
+        throw new UnsupportedOperationException("WeightValueWithClock#setTouched should not be called");
     }
 
-    @Override
     public final short getClock() {
-        throw new UnsupportedOperationException();
+        return clock;
     }
 
-    @Override
     public final void setClock(short clock) {
-        throw new UnsupportedOperationException();
+        this.clock = clock;
     }
 
-    @Override
     public final byte getDeltaUpdates() {
-        throw new UnsupportedOperationException();
+        return deltaUpdates;
     }
 
-    @Override
     public final void setDeltaUpdates(byte deltaUpdates) {
-        throw new UnsupportedOperationException();
+        this.deltaUpdates = deltaUpdates;
     }
 
     @Override
     public void copyTo(IWeightValue another) {
         another.set(value);
-        another.setTouched(touched);
+        another.setClock(clock);
+        another.setDeltaUpdates(deltaUpdates);
     }
 
     @Override
     public void copyFrom(IWeightValue another) {
         this.value = another.get();
-        this.touched = another.isTouched();
+        this.clock = another.getClock();
+        this.deltaUpdates = another.getDeltaUpdates();
     }
 
     @Override
     public String toString() {
-        return "WeightValue [value=" + value + "]";
+        return "WeightValueWithClock [value=" + value + ", clock=" + clock + ", deltaUpdates="
+                + deltaUpdates + "]";
     }
 
-    public static final class WeightValueWithCovar extends WeightValue {
+    public static final class WeightValueWithCovarClock extends WeightValueWithClock {
         public static final float DEFAULT_COVAR = 1.f;
 
         private float covariance;
 
-        public WeightValueWithCovar() {
-            super();
-        }
-
-        public WeightValueWithCovar(float weight, float covariance) {
-            this(weight, covariance, true);
-        }
-
-        public WeightValueWithCovar(float weight, float covariance, boolean touched) {
-            super(weight, touched);
-            this.covariance = covariance;
+        public WeightValueWithCovarClock(IWeightValue src) {
+            super(src);
+            this.covariance = src.getCovariance();
         }
 
         @Override
@@ -158,8 +139,10 @@ public class WeightValue implements IWeightValue {
 
         @Override
         public String toString() {
-            return "WeightValueWithCovar [value=" + value + ", covariance=" + covariance + "]";
+            return "WeightValueWithCovar [value=" + value + ", clock=" + clock + ", deltaUpdates="
+                    + deltaUpdates + ", covariance=" + covariance + "]";
         }
+
     }
 
 }
