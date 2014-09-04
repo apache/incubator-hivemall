@@ -18,25 +18,19 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package hivemall.common;
+package hivemall.io;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import hivemall.io.FeatureValue;
+public interface ModelUpdateHandler {
 
-import org.apache.hadoop.io.Text;
-import org.junit.Test;
-
-public class FeatureValueTest {
-
-    @Test
-    public void testParse() {
-        String expectedFeature = "ad_url|891572";
-        FeatureValue fv = FeatureValue.parse(expectedFeature);
-        assertNotNull(fv);
-        Text actualFeature = fv.getFeature();
-        assertEquals(actualFeature.toString(), expectedFeature);
-        assertEquals(1.f, fv.getValue(), 0.f);
-    }
+    /**
+     * @param feature
+     * @param weight
+     * @param covar 1.0 by the default
+     * @param clock 0 by the default
+     * @param deltaUpdates 
+     * @return reset the deltaUpdates?
+     */
+    boolean onUpdate(Object feature, float weight, float covar, short clock, int deltaUpdates)
+            throws Exception;
 
 }
