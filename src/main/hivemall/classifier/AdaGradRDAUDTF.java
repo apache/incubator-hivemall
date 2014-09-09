@@ -18,18 +18,17 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package hivemall.regression;
+package hivemall.classifier;
 
 import hivemall.common.LossFunctions;
 import hivemall.io.FeatureValue;
 import hivemall.io.IWeightValue;
-import hivemall.io.WeightValue.WeightValueParamsF1;
+import hivemall.io.WeightValue.WeightValueParamsF2;
 import hivemall.utils.lang.Primitives;
 
-import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -38,33 +37,30 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
-/**
- * ADAGRAD algorithm with element-wise adaptive learning rates. 
- */
-public final class AdaGradUDTF extends OnlineRegressionUDTF {
+public final class AdaGradRDAUDTF extends BinaryOnlineClassifierUDTF {
 
     private float eta;
-    private float eps;
+    private float lambda;
     private float scaling;
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int numArgs = argOIs.length;
         if(numArgs != 2 && numArgs != 3) {
-            throw new UDFArgumentException("AdagradUDTF takes 2 or 3 arguments: List<Text|Int|BitInt> features, float target [, constant string options]");
+            throw new UDFArgumentException("AdaGradRDAUDTF takes 2 or 3 arguments: List<Text|Int|BitInt> features, int label [, constant string options]");
         }
 
         StructObjectInspector oi = super.initialize(argOIs);
-        model.configurParams(true, false, false);
+        model.configurParams(true, false, true);
         return oi;
     }
 
     @Override
     protected Options getOptions() {
         Options opts = super.getOptions();
-        opts.addOption("eta", "eta0", true, "The initial learning rate [default 1.0]");
-        opts.addOption("eps", true, "A constant used in the denominator of AdaGrad [default 1.0]");
-        opts.addOption("scale", true, "Internal scaling/descaling factor for cumulative weights [100]");
+        opts.addOption("eta", "eta0", true, "The learning rate \\eta [default 0.1]");
+        opts.addOption("lambda", true, "lambda constant of RDA [default: 1E-6f]");
+        opts.addOption("scale", true, "Internal scaling/descaling factor for cumulative weights [default: 100]");
         return opts;
     }
 
@@ -72,36 +68,34 @@ public final class AdaGradUDTF extends OnlineRegressionUDTF {
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = super.processOptions(argOIs);
         if(cl == null) {
-            this.eta = 1.f;
-            this.eps = 1.f;
+            this.eta = 0.1f;
+            this.lambda = 1E-6f;
             this.scaling = 100f;
         } else {
-            this.eta = Primitives.parseFloat(cl.getOptionValue("eta"), 1.f);
-            this.eps = Primitives.parseFloat(cl.getOptionValue("eps"), 1.f);
+            this.eta = Primitives.parseFloat(cl.getOptionValue("eta"), 0.1f);
+            this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), 1E-6f);
             this.scaling = Primitives.parseFloat(cl.getOptionValue("scale"), 100f);
         }
         return cl;
     }
 
     @Override
-    protected final void checkTargetValue(final float target) throws UDFArgumentException {
-        if(target < 0.f || target > 1.f) {
-            throw new UDFArgumentException("target must be in range 0 to 1: " + target);
+    protected void train(final List<?> features, final int label) {
+        final float y = label > 0 ? 1.f : -1.f;
+
+        float p = predict(features);
+        float loss = LossFunctions.hingeLoss(p, y); // 1.0 - y * p        
+        if(loss <= 0.f) { // max(0, 1 - y * p)
+            return;
         }
+        // subgradient => -y * W dot xi
+        update(features, y, count);
     }
 
-    @Override
-    protected void update(Collection<?> features, float target, float predicted) {
-        float gradient = LossFunctions.logisticLoss(target, predicted);
-        update(features, gradient);
-    }
+    protected void update(final List<?> features, final float y, final int t) {
+        final ObjectInspector featureInspector = featureListOI.getListElementObjectInspector();
 
-    @Override
-    protected void update(Collection<?> features, float gradient) {
-        final ObjectInspector featureInspector = this.featureInputOI;
-        final float g_g = gradient * (gradient / scaling);
-
-        for(Object f : features) {// w[i] += y * x[i]
+        for(Object f : features) {// w[f] += y * x[f]
             if(f == null) {
                 continue;
             }
@@ -116,32 +110,39 @@ public final class AdaGradUDTF extends OnlineRegressionUDTF {
                 xi = 1.f;
             }
 
-            IWeightValue old_w = model.get(x);
-            IWeightValue new_w = getNewWeight(old_w, xi, gradient, g_g);
+            updateWeight(x, xi, y, t);
+        }
+    }
+
+    protected void updateWeight(@Nonnull final Object x, final float xi, final float y, final float t) {
+        final float gradient = -y * xi;
+        final float scaled_gradient = gradient * scaling;
+
+        float scaled_sum_sqgrad = 0.f;
+        float scaled_sum_grad = 0.f;
+        IWeightValue old = model.get(x);
+        if(old != null) {
+            scaled_sum_sqgrad = old.getSumOfSquaredGradients();
+            scaled_sum_grad = old.getSumOfGradients();
+        }
+        scaled_sum_grad += scaled_gradient;
+        scaled_sum_sqgrad += (scaled_gradient * scaled_gradient);
+
+        float sum_grad = scaled_sum_grad * scaling;
+        double sum_sqgrad = scaled_sum_sqgrad * scaling;
+
+        // sign(u_{t,i})
+        float sign = (sum_grad > 0.f) ? 1.f : -1.f;
+        // |u_{t,i}|/t - \lambda
+        float meansOfGradients = sign * sum_grad / t - lambda;
+        if(meansOfGradients < 0.f) {
+            // x_{t,i} = 0
+            model.delete(x);
+        } else {
+            // x_{t,i} = -sign(u_{t,i}) * \frac{\eta t}{\sqrt{G_{t,ii}}}(|u_{t,i}|/t - \lambda)
+            float weight = -1.f * sign * eta * t * meansOfGradients / (float) Math.sqrt(sum_sqgrad);
+            IWeightValue new_w = new WeightValueParamsF2(weight, scaled_sum_sqgrad, scaled_sum_grad);
             model.set(x, new_w);
         }
     }
-
-    @Nonnull
-    protected IWeightValue getNewWeight(@Nullable final IWeightValue old, final float xi, final float gradient, final float g_g) {
-        float old_w = 0.f;
-        float scaled_sum_sqgrad = 0.f;
-
-        if(old != null) {
-            old_w = old.get();
-            scaled_sum_sqgrad = old.getSumOfSquaredGradients();
-        }
-        scaled_sum_sqgrad += g_g;
-
-        float coeff = eta(scaled_sum_sqgrad) * gradient;
-        float new_w = old_w + (coeff * xi);
-        return new WeightValueParamsF1(new_w, scaled_sum_sqgrad);
-    }
-
-    protected float eta(final double scaledSumOfSquaredGradients) {
-        double sumOfSquaredGradients = scaledSumOfSquaredGradients * scaling;
-        //return eta / (float) Math.sqrt(sumOfSquaredGradients);
-        return eta / (float) Math.sqrt(eps + sumOfSquaredGradients); // always less than eta0
-    }
-
 }
