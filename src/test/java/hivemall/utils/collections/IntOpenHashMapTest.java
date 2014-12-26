@@ -20,74 +20,56 @@
  */
 package hivemall.utils.collections;
 
-import hivemall.utils.lang.mutable.MutableInt;
-
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OpenHashMapTest {
+public class IntOpenHashMapTest {
+
+    @Test
+    public void testSize() {
+        IntOpenHashMap<Float> map = new IntOpenHashMap<Float>(16384);
+        map.put(1, Float.valueOf(3.f));
+        Assert.assertEquals(Float.valueOf(3.f), map.get(1));
+        map.put(1, Float.valueOf(5.f));
+        Assert.assertEquals(Float.valueOf(5.f), map.get(1));
+        Assert.assertEquals(1, map.size());
+    }
 
     @Test
     public void testPutAndGet() {
-        Map<Object, Object> map = new OpenHashMap<Object, Object>(16384);
+        IntOpenHashMap<Integer> map = new IntOpenHashMap<Integer>(16384);
         final int numEntries = 1000000;
         for(int i = 0; i < numEntries; i++) {
-            map.put(Integer.toString(i), i);
+            Assert.assertNull(map.put(i, i));
         }
         Assert.assertEquals(numEntries, map.size());
         for(int i = 0; i < numEntries; i++) {
-            Object v = map.get(Integer.toString(i));
-            Assert.assertEquals(i, v);
+            Integer v = map.get(i);
+            Assert.assertEquals(i, v.intValue());
         }
-        map.put(Integer.toString(1), Integer.MAX_VALUE);
-        Assert.assertEquals(Integer.MAX_VALUE, map.get(Integer.toString(1)));
-        Assert.assertEquals(numEntries, map.size());
     }
 
     @Test
     public void testIterator() {
-        OpenHashMap<String, Integer> map = new OpenHashMap<String, Integer>(1000);
-        IMapIterator<String, Integer> itor = map.entries();
+        IntOpenHashMap<Integer> map = new IntOpenHashMap<Integer>(1000);
+        IntOpenHashMap.IMapIterator<Integer> itor = map.entries();
         Assert.assertFalse(itor.hasNext());
 
         final int numEntries = 1000000;
         for(int i = 0; i < numEntries; i++) {
-            map.put(Integer.toString(i), i);
+            Assert.assertNull(map.put(i, i));
         }
+        Assert.assertEquals(numEntries, map.size());
 
         itor = map.entries();
         Assert.assertTrue(itor.hasNext());
         while(itor.hasNext()) {
             Assert.assertFalse(itor.next() == -1);
-            String k = itor.getKey();
+            int k = itor.getKey();
             Integer v = itor.getValue();
-            Assert.assertEquals(Integer.valueOf(k), v);
+            Assert.assertEquals(k, v.intValue());
         }
         Assert.assertEquals(-1, itor.next());
     }
 
-    @Test
-    public void testIteratorGetProbe() {
-        OpenHashMap<String, MutableInt> map = new OpenHashMap<String, MutableInt>(100);
-        IMapIterator<String, MutableInt> itor = map.entries();
-        Assert.assertFalse(itor.hasNext());
-
-        final int numEntries = 1000000;
-        for(int i = 0; i < numEntries; i++) {
-            map.put(Integer.toString(i), new MutableInt(i));
-        }
-
-        final MutableInt probe = new MutableInt();
-        itor = map.entries();
-        Assert.assertTrue(itor.hasNext());
-        while(itor.hasNext()) {
-            Assert.assertFalse(itor.next() == -1);
-            String k = itor.getKey();
-            itor.getValue(probe);
-            Assert.assertEquals(Integer.valueOf(k).intValue(), probe.intValue());
-        }
-        Assert.assertEquals(-1, itor.next());
-    }
 }
