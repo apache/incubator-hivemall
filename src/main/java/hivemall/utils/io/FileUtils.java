@@ -1,7 +1,7 @@
 /*
  * Hivemall: Hive scalable Machine Learning Library
  *
- * Copyright (C) 2013-2014
+ * Copyright (C) 2013-2015
  *   National Institute of Advanced Industrial Science and Technology (AIST)
  *   Registration Number: H25PRO-1520
  *
@@ -18,28 +18,38 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package org.apache.hadoop.hive.ql.exec;
+package hivemall.utils.io;
+
+import hivemall.utils.lang.NumberUtils;
+
+import java.io.File;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
-import org.apache.hadoop.mapred.JobConf;
+public final class FileUtils {
 
-/**
- * An accessor to allow access to {@link MapredContext}
- * 
- * @link https://issues.apache.org/jira/browse/HIVE-4737
- */
-public final class MapredContextAccessor {
+    private FileUtils() {}
 
-    @Nullable
-    public static MapredContext get() {
-        return MapredContext.get();
+    public static long getFileSize(@Nonnull File file) {
+        if(!file.exists()) {
+            return -1L;
+        }
+        long size = 0;
+        if(file.isDirectory()) {
+            File[] files = file.listFiles();
+            if(files != null && files.length > 0) {
+                for(File f : files) {
+                    size += getFileSize(f);
+                }
+            }
+        } else {
+            size += file.length();
+        }
+        return size;
     }
 
-    @Nonnull
-    public static MapredContext create(boolean isMap, @Nullable JobConf jobConf) {
-        return MapredContext.init(isMap, jobConf);
+    public static String prettyFileSize(@Nonnull File file) {
+        return NumberUtils.prettySize(getFileSize(file));
     }
 
 }
