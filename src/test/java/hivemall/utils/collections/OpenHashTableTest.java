@@ -1,7 +1,7 @@
 /*
  * Hivemall: Hive scalable Machine Learning Library
  *
- * Copyright (C) 2013
+ * Copyright (C) 2013-2015
  *   National Institute of Advanced Industrial Science and Technology (AIST)
  *   Registration Number: H25PRO-1520
  *
@@ -21,17 +21,15 @@
 package hivemall.utils.collections;
 
 import hivemall.utils.lang.mutable.MutableInt;
+import junit.framework.Assert;
 
-import java.util.Map;
-
-import org.junit.Assert;
 import org.junit.Test;
 
-public class OpenHashMapTest {
+public class OpenHashTableTest {
 
     @Test
     public void testPutAndGet() {
-        Map<Object, Object> map = new OpenHashMap<Object, Object>(16384);
+        OpenHashTable<Object, Object> map = new OpenHashTable<Object, Object>(16384);
         final int numEntries = 5000000;
         for(int i = 0; i < numEntries; i++) {
             map.put(Integer.toString(i), i);
@@ -48,7 +46,7 @@ public class OpenHashMapTest {
 
     @Test
     public void testIterator() {
-        OpenHashMap<String, Integer> map = new OpenHashMap<String, Integer>(1000);
+        OpenHashTable<String, Integer> map = new OpenHashTable<String, Integer>(1000);
         IMapIterator<String, Integer> itor = map.entries();
         Assert.assertFalse(itor.hasNext());
 
@@ -70,7 +68,7 @@ public class OpenHashMapTest {
 
     @Test
     public void testIteratorGetProbe() {
-        OpenHashMap<String, MutableInt> map = new OpenHashMap<String, MutableInt>(100);
+        OpenHashTable<String, MutableInt> map = new OpenHashTable<String, MutableInt>(100);
         IMapIterator<String, MutableInt> itor = map.entries();
         Assert.assertFalse(itor.hasNext());
 
@@ -90,4 +88,5 @@ public class OpenHashMapTest {
         }
         Assert.assertEquals(-1, itor.next());
     }
+
 }
