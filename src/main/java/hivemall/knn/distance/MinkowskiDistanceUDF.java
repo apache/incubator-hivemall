@@ -36,20 +36,21 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 
-@Description(name = "euclid_distance", value = "_FUNC_(ftvec1, ftvec2) - Returns the square root of the sum of the squared differences"
-        + ": sqrt(sum((x - y)^2))")
+@Description(name = "minkowski_distance", value = "_FUNC_(list x, list y, double p) - Returns sum(|x - y|^p)^(1/p)")
 @UDFType(deterministic = true, stateful = false)
-public final class EuclidDistanceUDF extends GenericUDF {
+public final class MinkowskiDistanceUDF extends GenericUDF {
 
     private ListObjectInspector arg0ListOI, arg1ListOI;
+    private double order_p;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if(argOIs.length != 2) {
-            throw new UDFArgumentException("euclid_distance takes 2 arguments");
+        if(argOIs.length != 3) {
+            throw new UDFArgumentException("minkowski_distance takes 3 arguments");
         }
         this.arg0ListOI = HiveUtils.asListOI(argOIs[0]);
         this.arg1ListOI = HiveUtils.asListOI(argOIs[1]);
+        this.order_p = HiveUtils.getAsConstDouble(argOIs[2]);
 
         return PrimitiveObjectInspectorFactory.writableFloatObjectInspector;
     }
@@ -58,11 +59,11 @@ public final class EuclidDistanceUDF extends GenericUDF {
     public FloatWritable evaluate(DeferredObject[] arguments) throws HiveException {
         List<String> ftvec1 = HiveUtils.asStringList(arguments[0], arg0ListOI);
         List<String> ftvec2 = HiveUtils.asStringList(arguments[1], arg1ListOI);
-        float d = (float) euclidDistance(ftvec1, ftvec2);
+        float d = (float) minkowskiDistance(ftvec1, ftvec2, order_p);
         return new FloatWritable(d);
     }
 
-    public static double euclidDistance(final List<String> ftvec1, final List<String> ftvec2) {
+    public static double minkowskiDistance(final List<String> ftvec1, final List<String> ftvec2, final double orderP) {
         final FeatureValue probe = new FeatureValue();
         final Map<String, Float> map = new HashMap<String, Float>(ftvec1.size() * 2 + 1);
         for(String ft : ftvec1) {
@@ -84,23 +85,22 @@ public final class EuclidDistanceUDF extends GenericUDF {
             float v2f = probe.getValue();
             Float v1 = map.remove(f2);
             if(v1 == null) {
-                d += (v2f * v2f);
+                d += Math.abs(v2f);
             } else {
                 float v1f = v1.floatValue();
-                float diff = v1f - v2f;
-                d += (diff * diff);
+                d += Math.pow(Math.abs(v1f - v2f), orderP);
             }
         }
         for(Map.Entry<String, Float> e : map.entrySet()) {
             float v1f = e.getValue();
-            d += (v1f * v1f);
+            d += Math.pow(Math.abs(v1f), orderP);
         }
-        return Math.sqrt(d);
+        return Math.pow(d, 1.d / orderP);
     }
 
     @Override
     public String getDisplayString(String[] children) {
-        return "euclid_distance(" + Arrays.toString(children) + ")";
+        return "minkowski_distance(" + Arrays.toString(children) + ")";
     }
 
 }
