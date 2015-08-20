@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package hivemall.smile.classification;
+package hivemall.smile.tools;
 
 import hivemall.smile.vm.StackMachine;
 import hivemall.smile.vm.VMRuntimeException;

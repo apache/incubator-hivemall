@@ -1,4 +1,21 @@
-/*******************************************************************************
+/*
+ * Hivemall: Hive scalable Machine Learning Library
+ *
+ * Copyright (C) 2015 Makoto YUI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*
  * Copyright (c) 2010 Haifeng Li
  *   
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +29,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *******************************************************************************/
+ */
 package hivemall.smile.regression;
 
+import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -23,16 +41,14 @@ import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import smile.data.Attribute;
 import smile.data.NominalAttribute;
-import smile.data.NumericAttribute;
 import smile.math.Math;
 import smile.regression.GradientTreeBoost;
 import smile.regression.RandomForest;
 import smile.regression.Regression;
-import smile.regression.RegressionTrainer;
-import smile.sort.QuickSort;
 import smile.util.MulticoreExecutor;
 
 /**
@@ -85,7 +101,7 @@ public class RegressionTree implements Regression<double[]> {
     /**
      * The attributes of independent variable.
      */
-    static private Attribute[] attributes;
+    private Attribute[] attributes;
     /**
      * Variable importance. Every time a split of a node is made on variable the
      * impurity criterion for the two descendent nodes is less than the parent
@@ -112,109 +128,10 @@ public class RegressionTree implements Regression<double[]> {
      */
     private int M;
     /**
-     * The number of binary features.
-     */
-    private int numFeatures;
-    /**
      * The index of training values in ascending order. Note that only numeric
      * attributes will be sorted.
      */
     private transient int[][] order;
-
-    /**
-     * Trainer for regression tree.
-     */
-    public static class Trainer extends RegressionTrainer<double[]> {
-        /**
-         * The maximum number of leaf nodes in the tree.
-         */
-        private int J = 100;
-        /**
-         * The number of sparse binary features.
-         */
-        private int numFeatures = -1;
-
-        /**
-         * Constructor.
-         * 
-         * @param J
-         *            the maximum number of leaf nodes in the tree.
-         */
-        public Trainer(int J) {
-            if(J < 2) {
-                throw new IllegalArgumentException("Invalid number of leaf nodes: " + J);
-            }
-
-            this.J = J;
-        }
-
-        /**
-         * Constructor.
-         * 
-         * @param attributes
-         *            the attributes of independent variable.
-         * @param J
-         *            the maximum number of leaf nodes in the tree.
-         */
-        public Trainer(Attribute[] attributes, int J) {
-            super(attributes);
-
-            if(J < 2) {
-                throw new IllegalArgumentException("Invalid number of leaf nodes: " + J);
-            }
-
-            this.J = J;
-        }
-
-        /**
-         * Constructor.
-         * 
-         * @param numFeatures
-         *            the number of features.
-         * @param J
-         *            the maximum number of leaf nodes in the tree.
-         */
-        public Trainer(int numFeatures, int J) {
-            if(numFeatures <= 0) {
-                throw new IllegalArgumentException("Invalid number of sparse binary features: "
-                        + numFeatures);
-            }
-
-            if(J < 2) {
-                throw new IllegalArgumentException("Invalid number of leaf nodes: " + J);
-            }
-
-            this.numFeatures = numFeatures;
-            this.J = J;
-        }
-
-        /**
-         * Sets the maximum number of leaf nodes in the tree.
-         * 
-         * @param J
-         *            the maximum number of leaf nodes in the tree.
-         */
-        public void setMaximumLeafNodes(int J) {
-            if(J < 2) {
-                throw new IllegalArgumentException("Invalid number of leaf nodes: " + J);
-            }
-
-            this.J = J;
-        }
-
-        @Override
-        public RegressionTree train(double[][] x, double[] y) {
-            return new RegressionTree(attributes, x, y, J);
-        }
-
-        public RegressionTree train(int[][] x, double[] y) {
-            if(numFeatures <= 0) {
-                return new RegressionTree(Math.max(x) + 1, x, y, J);
-            } else {
-                return new RegressionTree(numFeatures, x, y, J);
-            }
-        }
-    }
 
     /**
      * An interface to calculate node output. Note that samples[i] is the number
@@ -767,338 +684,20 @@ public class RegressionTree implements Regression<double[]> {
         }
     }
 
-    /**
-     * Regression tree training node for sparse binary features.
-     */
-    class SparseBinaryTrainNode implements Comparable<SparseBinaryTrainNode> {
-
-        /**
-         * The associated regression tree node.
-         */
-        Node node;
-        /**
-         * Child node that passes the test.
-         */
-        SparseBinaryTrainNode trueChild;
-        /**
-         * Child node that fails the test.
-         */
-        SparseBinaryTrainNode falseChild;
-        /**
-         * Training dataset.
-         */
-        int[][] x;
-        /**
-         * Training data response value.
-         */
-        double[] y;
-        /**
-         * The samples for training this node. Note that samples[i] is the
-         * number of sampling of dataset[i]. 0 means that the datum is not
-         * included and values of greater than 1 are possible because of
-         * sampling with replacement.
-         */
-        int[] samples;
-
-        /**
-         * Constructor.
-         */
-        public SparseBinaryTrainNode(Node node, int[][] x, double[] y, int[] samples) {
-            this.node = node;
-            this.x = x;
-            this.y = y;
-            this.samples = samples;
-        }
-
-        @Override
-        public int compareTo(SparseBinaryTrainNode a) {
-            return (int) Math.signum(a.node.splitScore - node.splitScore);
-        }
-
-        /**
-         * Finds the best attribute to split on at the current node. Returns
-         * true if a split exists to reduce squared error, false otherwise.
-         */
-        public boolean findBestSplit() {
-            if(node.trueChild != null || node.falseChild != null) {
-                throw new IllegalStateException("Split non-leaf node.");
-            }
-
-            int p = numFeatures;
-            double[] trueSum = new double[p];
-            int[] trueCount = new int[p];
-            int[] featureIndex = new int[p];
-
-            int n = Math.sum(samples);
-            double sumX = 0.0;
-            for(int i = 0; i < x.length; i++) {
-                if(samples[i] == 0) {
-                    continue;
-                }
-
-                double target = samples[i] * y[i];
-                sumX += y[i];
-
-                // For each true feature of this datum increment the
-                // sufficient statistics for the "true" branch to evaluate
-                // splitting on this feature.
-                for(int j = 0; j < x[i].length; ++j) {
-                    int index = x[i][j];
-                    trueSum[index] += target;
-                    trueCount[index] += samples[i];
-                    featureIndex[index] = j;
-                }
-            }
-
-            // Loop through features and compute the reduction
-            // of squared error, which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
-
-            // Initialize the information in the leaf
-            node.splitScore = 0.0;
-            node.splitFeature = -1;
-            node.splitValue = -1;
-
-            for(int i = 0; i < p; ++i) {
-                double tc = (double) trueCount[i];
-                double fc = n - tc;
-
-                // If either side would have fewer than 2 data, skip this feature.
-                if((tc < 2) || (fc < 2)) {
-                    continue;
-                }
-
-                // compute penalized means
-                double trueMean = trueSum[i] / tc;
-                double falseMean = (sumX - trueSum[i]) / fc;
-
-                double gain = (tc * trueMean * trueMean + fc * falseMean * falseMean) - n
-                        * node.output * node.output;
-                if(gain > node.splitScore) {
-                    // new best split
-                    node.splitFeature = featureIndex[i];
-                    node.splitValue = i;
-                    node.splitScore = gain;
-                    node.trueChildOutput = trueMean;
-                    node.falseChildOutput = falseMean;
-                }
-            }
-
-            return (node.splitFeature != -1);
-        }
-
-        /**
-         * Split the node into two children nodes.
-         */
-        public void split(PriorityQueue<SparseBinaryTrainNode> nextSplits) {
-            if(node.splitFeature < 0) {
-                throw new IllegalStateException("Split a node with invalid feature.");
-            }
-
-            if(node.trueChild != null || node.falseChild != null) {
-                throw new IllegalStateException("Split non-leaf node.");
-            }
-
-            int n = x.length;
-            int tc = 0;
-            int fc = 0;
-            int[] trueSamples = new int[n];
-            int[] falseSamples = new int[n];
-
-            for(int i = 0; i < n; i++) {
-                if(samples[i] > 0) {
-                    if(x[i][node.splitFeature] == (int) node.splitValue) {
-                        trueSamples[i] = samples[i];
-                        tc += samples[i];
-                    } else {
-                        falseSamples[i] = samples[i];
-                        fc += samples[i];
-                    }
-                }
-            }
-
-            node.trueChild = new Node(node.trueChildOutput);
-            node.falseChild = new Node(node.falseChildOutput);
-
-            trueChild = new SparseBinaryTrainNode(node.trueChild, x, y, trueSamples);
-            if(tc > S && trueChild.findBestSplit()) {
-                if(nextSplits != null) {
-                    nextSplits.add(trueChild);
-                } else {
-                    trueChild.split(null);
-                }
-            }
-
-            falseChild = new SparseBinaryTrainNode(node.falseChild, x, y, falseSamples);
-            if(fc > S && falseChild.findBestSplit()) {
-                if(nextSplits != null) {
-                    nextSplits.add(falseChild);
-                } else {
-                    falseChild.split(null);
-                }
-            }
-
-            importance[node.splitFeature] += node.splitScore;
-
-        }
-
-        /**
-         * Calculate the node output for leaves.
-         * 
-         * @param output
-         *            the output calculate functor.
-         */
-        public void calculateOutput(NodeOutput output) {
-            if(node.trueChild == null && node.falseChild == null) {
-                node.output = output.calculate(samples);
-            } else {
-                if(trueChild != null) {
-                    trueChild.calculateOutput(output);
-                }
-                if(falseChild != null) {
-                    falseChild.calculateOutput(output);
-                }
-            }
-        }
+    public RegressionTree(@Nullable Attribute[] attributes, @Nonnull double[][] x, @Nonnull double[] y, int J) {
+        this(attributes, x, y, x[0].length, 5, J, null, null);
     }
 
     /**
-     * Constructor. Learns a regression tree with (most) given number of leaves.
-     * All attributes are assumed to be numeric.
-     *
-     * @param x
-     *            the training instances.
-     * @param y
-     *            the response variable.
-     * @param J
-     *            the maximum number of leaf nodes in the tree.
+     * @see RegressionTree#RegressionTree(Attribute[], double[][], double[], int, int, int, int[][], int[], NodeOutput)
      */
-    public RegressionTree(double[][] x, double[] y, int J) {
-        this(null, x, y, J);
-    }
-
-    /**
-     * Constructor. Learns a regression tree with (most) given number of leaves.
-     * 
-     * @param attributes
-     *            the attribute properties.
-     * @param x
-     *            the training instances.
-     * @param y
-     *            the response variable.
-     * @param J
-     *            the maximum number of leaf nodes in the tree.
-     */
-    public RegressionTree(Attribute[] attributes, double[][] x, double[] y, int J) {
-        this(attributes, x, y, J, null, null, null);
+    public RegressionTree(@Nullable Attribute[] attributes, @Nonnull double[][] x, @Nonnull double[] y, int M, int S, int J, @Nullable int[][] order, @Nullable int[] samples) {
+        this(attributes, x, y, M, S, J, order, samples, null);
     }
 
     /**
      * Constructor. Learns a regression tree for gradient tree boosting.
      * 
-     * @param attributes
-     *            the attribute properties.
-     * @param x
-     *            the training instances.
-     * @param y
-     *            the response variable.
-     * @param order
-     *            the index of training values in ascending order. Note that
-     *            only numeric attributes need be sorted.
-     * @param J
-     *            the maximum number of leaf nodes in the tree.
-     * @param samples
-     *            the sample set of instances for stochastic learning.
-     *            samples[i] should be 0 or 1 to indicate if the instance is
-     *            used for training.
-     */
-    public RegressionTree(Attribute[] attributes, double[][] x, double[] y, int J, int[][] order, int[] samples, NodeOutput output) {
-        if(x.length != y.length) {
-            throw new IllegalArgumentException(String.format("The sizes of X and Y don't match: %d != %d", x.length, y.length));
-        }
-
-        if(J < 2) {
-            throw new IllegalArgumentException("Invalid maximum leaves: " + J);
-        }
-
-        if(attributes == null) {
-            int p = x[0].length;
-            attributes = new Attribute[p];
-            for(int i = 0; i < p; i++) {
-                attributes[i] = new NumericAttribute("V" + (i + 1));
-            }
-        }
-
-        this.attributes = attributes;
-        this.J = J;
-        this.M = attributes.length;
-        importance = new double[attributes.length];
-
-        if(order != null) {
-            this.order = order;
-        } else {
-            int n = x.length;
-            int p = x[0].length;
-
-            double[] a = new double[n];
-            this.order = new int[p][];
-
-            for(int j = 0; j < p; j++) {
-                if(attributes[j] instanceof NumericAttribute) {
-                    for(int i = 0; i < n; i++) {
-                        a[i] = x[i][j];
-                    }
-                    this.order[j] = QuickSort.sort(a);
-                }
-            }
-        }
-
-        // Priority queue for best-first tree growing.
-        PriorityQueue<TrainNode> nextSplits = new PriorityQueue<TrainNode>();
-
-        int n = 0;
-        double sum = 0.0;
-        if(samples == null) {
-            n = y.length;
-            samples = new int[n];
-            for(int i = 0; i < n; i++) {
-                samples[i] = 1;
-                sum += y[i];
-            }
-        } else {
-            for(int i = 0; i < y.length; i++) {
-                n += samples[i];
-                sum += samples[i] * y[i];
-            }
-        }
-
-        root = new Node(sum / n);
-
-        TrainNode trainRoot = new TrainNode(root, x, y, samples);
-        // Now add splits to the tree until max tree size is reached
-        if(trainRoot.findBestSplit()) {
-            nextSplits.add(trainRoot);
-        }
-
-        // Pop best leaf from priority queue, split it, and push
-        // children nodes into the queue if possible.
-        for(int leaves = 1; leaves < this.J; leaves++) {
-            // parent is the leaf to split
-            TrainNode node = nextSplits.poll();
-            if(node == null) {
-                break;
-            }
-
-            node.split(nextSplits); // Split the parent node into two children nodes
-        }
-
-        if(output != null) {
-            trainRoot.calculateOutput(output);
-        }
-    }
-
-    /**
-     * Constructor. Learns a regression tree for random forest.
-     *
      * @param attributes
      *            the attribute properties.
      * @param x
@@ -1115,106 +714,37 @@ public class RegressionTree implements Regression<double[]> {
      * @param S
      *            number of instances in a node below which the tree will not
      *            split, setting S = 5 generally gives good results.
-     * @param samples
-     *            the sample set of instances for stochastic learning.
-     *            samples[i] is the number of sampling for instance i.
-     */
-    RegressionTree(Attribute[] attributes, double[][] x, double[] y, int M, int S, int[][] order, int[] samples) {
-        if(x.length != y.length) {
-            throw new IllegalArgumentException(String.format("The sizes of X and Y don't match: %d != %d", x.length, y.length));
-        }
-
-        if(M <= 0 || M > x[0].length) {
-            throw new IllegalArgumentException("Invalid number of variables to split on at a node of the tree: "
-                    + M);
-        }
-
-        if(S <= 0) {
-            throw new IllegalArgumentException("Invalid mimum number of instances in leaf nodes: "
-                    + S);
-        }
-
-        if(samples == null) {
-            throw new IllegalArgumentException("Sampling array is null.");
-        }
-
-        if(attributes == null) {
-            int p = x[0].length;
-            attributes = new Attribute[p];
-            for(int i = 0; i < p; i++) {
-                attributes[i] = new NumericAttribute("V" + (i + 1));
-            }
-        }
-
-        this.attributes = attributes;
-        this.J = Integer.MAX_VALUE;
-        this.M = M;
-        this.S = S;
-        this.order = order;
-        importance = new double[attributes.length];
-
-        int n = 0;
-        double sum = 0.0;
-        for(int i = 0; i < y.length; i++) {
-            n += samples[i];
-            sum += samples[i] * y[i];
-        }
-
-        root = new Node(sum / n);
-
-        TrainNode trainRoot = new TrainNode(root, x, y, samples);
-        if(trainRoot.findBestSplit()) {
-            trainRoot.split(null);
-        }
-    }
-
-    /**
-     * Constructor. Learns a regression tree on sparse binary samples.
-     * 
-     * @param numFeatures
-     *            the number of sparse binary features.
-     * @param x
-     *            the training instances of sparse binary features.
-     * @param y
-     *            the response variable.
-     * @param J
-     *            the maximum number of leaf nodes in the tree.
-     */
-    public RegressionTree(int numFeatures, int[][] x, double[] y, int J) {
-        this(numFeatures, x, y, J, null, null);
-    }
-
-    /**
-     * Constructor. Learns a regression tree on sparse binary samples.
-     * 
-     * @param numFeatures
-     *            the number of sparse binary features.
-     * @param x
-     *            the training instances.
-     * @param y
-     *            the response variable.
      * @param J
      *            the maximum number of leaf nodes in the tree.
      * @param samples
      *            the sample set of instances for stochastic learning.
      *            samples[i] should be 0 or 1 to indicate if the instance is
      *            used for training.
+     * @param output
+     *            An interface to calculate node output.
      */
-    public RegressionTree(int numFeatures, int[][] x, double[] y, int J, int[] samples, NodeOutput output) {
+    public RegressionTree(@Nullable Attribute[] attributes, @Nonnull double[][] x, @Nonnull double[] y, int M, int S, int J, @Nullable int[][] order, @Nullable int[] samples, @Nullable NodeOutput output) {
         if(x.length != y.length) {
             throw new IllegalArgumentException(String.format("The sizes of X and Y don't match: %d != %d", x.length, y.length));
         }
-
+        if(M <= 0 || M > x[0].length) {
+            throw new IllegalArgumentException("Invalid number of variables to split on at a node of the tree: "
+                    + M);
+        }
+        if(S <= 0) {
+            throw new IllegalArgumentException("Invalid mimum number of instances in leaf nodes: "
+                    + S);
+        }
         if(J < 2) {
             throw new IllegalArgumentException("Invalid maximum leaves: " + J);
         }
 
+        this.attributes = SmileExtUtils.attributeTypes(attributes, x);
+        this.M = M;
+        this.S = S;
         this.J = J;
-        this.numFeatures = numFeatures;
-        importance = new double[numFeatures];
-
-        // Priority queue for best-first tree growing.
-        PriorityQueue<SparseBinaryTrainNode> nextSplits = new PriorityQueue<SparseBinaryTrainNode>();
+        this.order = (order == null) ? SmileExtUtils.sort(attributes, x) : order;
+        this.importance = new double[attributes.length];
 
         int n = 0;
         double sum = 0.0;
@@ -1232,24 +762,30 @@ public class RegressionTree implements Regression<double[]> {
             }
         }
 
-        root = new Node(sum / n);
+        this.root = new Node(sum / n);
 
-        SparseBinaryTrainNode trainRoot = new SparseBinaryTrainNode(root, x, y, samples);
-        // Now add splits to the tree until max tree size is reached
-        if(trainRoot.findBestSplit()) {
-            nextSplits.add(trainRoot);
-        }
-
-        // Pop best leaf from priority queue, split it, and push
-        // children nodes into the queue if possible.
-        for(int leaves = 1; leaves < this.J; leaves++) {
-            // parent is the leaf to split
-            SparseBinaryTrainNode node = nextSplits.poll();
-            if(node == null) {
-                break;
+        TrainNode trainRoot = new TrainNode(root, x, y, samples);
+        if(J == Integer.MAX_VALUE) {
+            if(trainRoot.findBestSplit()) {
+                trainRoot.split(null);
             }
-
-            node.split(nextSplits); // Split the parent node into two children nodes
+        } else {
+            // Priority queue for best-first tree growing.
+            PriorityQueue<TrainNode> nextSplits = new PriorityQueue<TrainNode>();
+            // Now add splits to the tree until max tree size is reached
+            if(trainRoot.findBestSplit()) {
+                nextSplits.add(trainRoot);
+            }
+            // Pop best leaf from priority queue, split it, and push
+            // children nodes into the queue if possible.
+            for(int leaves = 1; leaves < this.J; leaves++) {
+                // parent is the leaf to split
+                TrainNode node = nextSplits.poll();
+                if(node == null) {
+                    break;
+                }
+                node.split(nextSplits); // Split the parent node into two children nodes
+            }
         }
 
         if(output != null) {
@@ -1274,29 +810,17 @@ public class RegressionTree implements Regression<double[]> {
         return root.predict(x);
     }
 
-    /**
-     * Predicts the dependent variable of an instance with sparse binary
-     * features.
-     * 
-     * @param x
-     *            the instance.
-     * @return the predicted value of dependent variable.
-     */
-    public double predict(int[] x) {
-        return root.predict(x);
-    }
-
     public String predictCodegen() {
         StringBuilder buf = new StringBuilder(1024);
         root.codegen(buf, 0);
         return buf.toString();
     }
 
-    public String predictOpCodegen() {
+    public String predictOpCodegen(@Nonnull String sep) {
         List<String> opslist = new ArrayList<String>();
         root.opcodegen(opslist, 0);
         opslist.add("call end");
-        String scripts = StringUtils.concat(opslist, "\n");
+        String scripts = StringUtils.concat(opslist, sep);
         return scripts;
     }
 
