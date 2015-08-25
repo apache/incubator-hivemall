@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package hivemall.ftvec;
+package hivemall.ftvec.trans;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.StringUtils;
@@ -40,9 +40,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.Text;
 
-@Description(name = "categorical_features", value = "_FUNC_(array<string> featureNames, ...) - Returns a feature vector array<string>")
+@Description(name = "vectorize_features", value = "_FUNC_(array<string> featureNames, ...) - Returns a feature vector array<string>")
 @UDFType(deterministic = true, stateful = false)
-public final class CategoricalFeaturesUDF extends GenericUDF {
+public final class VectorizeFeaturesUDF extends GenericUDF {
 
     private String[] featureNames;
     private PrimitiveObjectInspector[] inputOIs;
@@ -99,14 +99,10 @@ public final class CategoricalFeaturesUDF extends GenericUDF {
                     continue;
                 }
             }
-            final float v = PrimitiveObjectInspectorUtils.getFloat(argument, oi);
-            if(v == 1.f) {
+            float v = PrimitiveObjectInspectorUtils.getFloat(argument, oi);
+            if(v != 0.f) {
                 String featureName = featureNames[i];
-                Text f = new Text(featureName + "#T");
-                result.add(f);
-            } else if(v == 0.f || v == -1.f) {
-                String featureName = featureNames[i];
-                Text f = new Text(featureName + "#F");
+                Text f = new Text(featureName + ':' + v);
                 result.add(f);
             }
         }
@@ -115,7 +111,7 @@ public final class CategoricalFeaturesUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "categorical_features(" + Arrays.toString(children) + ")";
+        return "vectorize_features(" + Arrays.toString(children) + ")";
     }
 
 }

@@ -16,8 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package hivemall.ftvec;
+package hivemall.ftvec.trans;
 
+import hivemall.ftvec.trans.VectorizeFeaturesUDF;
 import hivemall.utils.hadoop.WritableUtils;
 
 import java.io.IOException;
