@@ -24,13 +24,13 @@ public class Test_OnlineLDA_Formatted{
 //	static int limit = 10;
 
 	// LDA Parameters
-	static int K = 4;
+	static int K = 6;
 	static double alpha = 1./(K);
 	static double eta = 1./ (K);
 	static double tau0 = 80;	// 1024
 	static double kappa = 0.8;	// 0.7
 	static int IterNum = 1;
-	static int PPLNUM = 20;
+	static int PPLNUM = 10;
 //	static int totalD= (int)11000;
 	static int totalD= 11000 * PPLNUM;
 
@@ -45,6 +45,7 @@ public class Test_OnlineLDA_Formatted{
 	
 	public static void main(String[] args){
 		long start = System.nanoTime();
+//		targetURI = "/Users/ishikawanaoki/dataset/news20_tdIdf.txt";
 		targetURI = "/Users/ishikawanaoki/dataset/reuters_tfidf.txt";
 		
 		model = new OnlineLDAModel(K, alpha, eta, totalD, tau0, kappa, batchSize_, stopWord);

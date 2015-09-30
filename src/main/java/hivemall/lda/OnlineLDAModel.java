@@ -39,7 +39,7 @@ public class OnlineLDAModel {
 	private double SHAPE = 100d;
 	private double SCALE = 1d / SHAPE;
 	
-	private double DELTA = 1E-10;
+	private double DELTA = 1E-5;
 	
 	private double tau0_ = 1020;
 	private double kappa_= 0.7;
@@ -242,6 +242,7 @@ public class OnlineLDAModel {
 		float[][] eLogTheta = new float[D_][K_];
 		for(int d=0; d<D_; d++){
 			// calc D sum
+			float tmpSum = 0;
 			float dSum = 0;
 			for(int k=0; k<K_; k++){
 				dSum += gamma_[d][k];
@@ -250,6 +251,7 @@ public class OnlineLDAModel {
 
 			for(int k=0; k<K_; k++){
 				eLogTheta[d][k] = (float)(Gamma.digamma(gamma_[d][k]) - gamma_dSum);
+				tmpSum += eLogTheta[d][k];
 			}
 		}
 		
@@ -281,8 +283,14 @@ public class OnlineLDAModel {
 		
 		for(int d=0; d<D_; d++){
 			for(String label:miniBatchMap.get(d).keySet()){
+			float normalizer = 0;
 				for(int k=0; k<K_; k++){
 					phi_.get(d).get(label)[k] = (float) Math.exp(eLogTheta[d][k] + elogBeta.get(label)[k]) + 1E-20f;
+					normalizer += phi_.get(d).get(label)[k];
+				}
+				// normalize 
+				for(int k=0; k<K_; k++){
+					phi_.get(d).get(label)[k] /= normalizer;
 				}
 			}
 		}
@@ -397,7 +405,6 @@ public class OnlineLDAModel {
 			for(String label:lambda_.keySet()){
 				lambdaSum += lambda_.get(label)[k];
 			}
-
 			
 			System.out.print("Topic:" + k);
 
@@ -434,7 +441,7 @@ public class OnlineLDAModel {
 		float ret = 0;
 		float bound = calcBoundPerMiniBatch();
 		
-		ret = (float) Math.exp((-1) * (bound / accTotalWords));
+		ret = (float) Math.exp((-1) * ((float)bound / (float)accTotalWords));
 		
 		return ret;
 	}
@@ -469,12 +476,8 @@ public class OnlineLDAModel {
 		
 		float tmpSum3_2_1 = 0;
 		float tmpSum3_2_2 = 0;
-		float tmpSum3_2_2_1 = 0;
-		float tmpSum3_2_2_2 = 0;
-		
-		float tmpSum3_2_first = 0;
-
 		float tmpSum3_2_3 = 0;
+		
 		
 		float tmpSum4_1 = 0;
 		float tmpSum4_2 = 0;
@@ -541,21 +544,15 @@ public class OnlineLDAModel {
 				tmpSum3_1 = 0;
 				tmpSum3_2 = 0;
 				
-				tmpSum3_1 = lambdaSum[k];
+				tmpSum3_1 = (-1f) * (float)Gamma.logGamma(lambdaSum[k]);
 				for(String label:lambda_.keySet()){
 					tmpSum3_2_1 = (eta_ - lambda_.get(label)[k]);
-					
-					tmpSum3_2_2_1 = (float)Gamma.digamma(lambda_.get(label)[k]);
-					tmpSum3_2_2_2 = (float)Gamma.digamma(lambdaSum[k]);
-					tmpSum3_2_2 =  tmpSum3_2_2_1 - tmpSum3_2_2_2;
-					
+					tmpSum3_2_2 = (float)(Gamma.digamma(lambda_.get(label)[k]) - Gamma.digamma(lambdaSum[k]));
 					tmpSum3_2_3 = (float)(Gamma.logGamma(lambda_.get(label)[k]));
-					
-					tmpSum3_2_first = (tmpSum3_2_1 * tmpSum3_2_2);
-					tmpSum3_2 += (tmpSum3_2_first + tmpSum3_2_3);
+					tmpSum3_2 += (tmpSum3_2_1 * tmpSum3_2_2 * tmpSum3_2_3);
 				}
 				
-				tmpSum3 += (-1) * (Gamma.logGamma(Math.abs(tmpSum3_1 + tmpSum3_2)));
+				tmpSum3 += (tmpSum3_1 - tmpSum3_2);
 			}
 			ret += (tmpSum3 / D_);		//3-1
 			// ** THIRD LINE
@@ -590,13 +587,11 @@ public class OnlineLDAModel {
 		getMiniBatchParams(miniBatch);
 		accTotalD += D_;
 		
-		//
 		makeMiniBatchMap(miniBatch);
 
-		// check
 		updateSizeOfParameterPerMiniBatch();
 		
-
+		// E STEP
 		float[][] lastGamma = new float[D_][K_];
 		do{
 			lastGamma = copyMatrix(gamma_);
@@ -604,7 +599,7 @@ public class OnlineLDAModel {
 			do_e_step_gamma();
 		}while(!checkGammaDiff(lastGamma, gamma_));
 		
-		// DO M Step
+		// M Step
 		do_m_step();
 		
 		if(printGamma){
@@ -627,11 +622,11 @@ public class OnlineLDAModel {
 		}
 	}
 
-	private boolean checkGammaDiff(float[][] lastGamma, float[][] gamma_2) {
+	private boolean checkGammaDiff(float[][] lastGamma, float[][] nextGamma) {
 		double diff = 0;
 		for(int d=0; d<D_; d++){
 			for(int k=0; k<K_; k++){
-				diff += (float)Math.abs(lastGamma[d][k] - gamma_2[d][k]);
+				diff += (float)Math.abs(lastGamma[d][k] - nextGamma[d][k]);
 			}
 		}
 		if(diff < DELTA * D_ * K_){
