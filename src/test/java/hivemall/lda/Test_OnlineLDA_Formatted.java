@@ -46,7 +46,7 @@ public class Test_OnlineLDA_Formatted{
 	public static void main(String[] args){
 		long start = System.nanoTime();
 //		targetURI = "/Users/ishikawanaoki/dataset/news20_tdIdf.txt";
-		targetURI = "/Users/n.ishikawa/dataset/reuters_tfidf.txt";
+		targetURI = "/Users/ishikawanaoki/dataset/reuters_tfidf.txt";
 		
 		model = new OnlineLDAModel(K, alpha, eta, totalD, tau0, kappa, batchSize_, stopWord);
 
