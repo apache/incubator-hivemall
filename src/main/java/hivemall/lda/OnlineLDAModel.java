@@ -296,105 +296,6 @@ public class OnlineLDAModel {
 		}
 	}
 
-//	private void do_e_step(int d) {
-//		float[] lastGamma = copyArray(gamma_[d]);
-//		float[] nextGamma = copyArray(gamma_[d]);
-//
-//		do{
-//			lastGamma = copyArray(nextGamma);
-//			float sumGammad = getSumFArray(gamma_[d]);
-//			float sumLambdaK;
-//			for(int k=0; k<K_; k++){
-//				sumGammad = getSumFArray(gamma_[d]);
-//				sumLambdaK= getSumLambdaK(d, k);
-//
-//				// update gamma
-//				HashMap<String, float[]> phid = phi_.get(d);
-//				HashMap<String, Float> miniBatchd = miniBatchMap.get(d);
-//
-//				float tmpGamma_dk = alpha_;
-//				for(String label: phid.keySet()){
-//					tmpGamma_dk += phid.get(label)[k] * miniBatchd.get(label);
-//				}
-//
-//				gamma_[d][k] = tmpGamma_dk;
-//				nextGamma[k] = tmpGamma_dk;
-//
-//				// update phi
-//				float tmpPhiSum = 0;
-//
-//				for(String label:phid.keySet()){
-//
-//					float tmpEqtheta = -1;
-//					try{
-//						tmpEqtheta = (float)(Gamma.digamma(gamma_[d][k]) - Gamma.digamma(sumGammad));
-//					}catch(Exception e){
-//						System.out.println("Error lambda:" + gamma_[d][k]);
-//						System.out.println("Error lambdaSum:" + sumGammad);
-//						e.printStackTrace();
-//					}
-//
-//					float tmpEqBeta = -1;
-//					try{
-//						tmpEqBeta  = (float)(Gamma.digamma(lambda_.get(label)[k]) - Gamma.digamma(sumLambdaK));
-//					}catch(Exception e){
-//						System.out.println("Error lambda:" + lambda_.get(label)[k]);
-//						System.out.println("Error lambdaSum:" + sumLambdaK);
-//						e.printStackTrace();
-//					}
-//					float tmpPhi_d_label_k = (float)Math.exp(tmpEqtheta + tmpEqBeta);
-//					phi_.get(d).get(label)[k] = tmpPhi_d_label_k;
-//
-//					tmpPhiSum += tmpPhi_d_label_k;
-//				}
-//				
-//			
-//				for(String label:phi_.get(d).keySet()){
-//					phi_.get(d).get(label)[k] /= (tmpPhiSum);
-//					phi_.get(d).get(label)[k] *= (D_);
-//				}
-//			}
-//		}while(!diffGamma(lastGamma, nextGamma));
-//	}
-
-
-//	private float getSumLambdaK(Integer d, int k) {
-//		float ret =0;
-//		for(String label:lambda_.keySet()){
-//			ret += lambda_.get(label)[k];
-//		}
-//		return ret;
-//	}
-
-
-//	private float getSumFArray(float[] fs) {
-//		float ret = 0;
-//		for(int k=0; k<K_; k++){
-//			ret += fs[k];
-//		}
-//		return ret;
-//	}
-
-//	private boolean diffGamma(float[] lastGamma, float[] nextGamma) {
-//		float diff = 0;
-//		for(int k=0; k<K_; k++){
-//			diff += Math.abs(lastGamma[k] - nextGamma[k]);
-//		}
-//		
-//		if(diff < K_ * DELTA){
-//			return true;
-//		}else{
-//			return false;
-//		}
-//	}
-
-//	private float[] copyArray(float[] ds) {
-//		float[] ret = new float[K_];
-//		for(int k=0; k<K_; k++){
-//			ret[k] = ds[k];
-//		}
-//		return ret;
-//	}
 	
 	public void showTopicWords() {
 		System.out.println("SHOW TOPIC WORDS:");
@@ -428,7 +329,7 @@ public class OnlineLDAModel {
 			compareList.add(new LabelValueTuple(label, tmpValue));
 		}
 
-		Collections.sort(compareList, new LabelValueTupleComperator());
+		Collections.sort(compareList, new LabelValueTupleComparator());
 		
 		for(int w=0,W=compareList.size(); w<W; w++){
 			String label = compareList.get(w).getLabel();
