@@ -16,50 +16,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package hivemall.io;
+package hivemall.fm;
 
-public final class MatrixIndex {
+import java.nio.ByteBuffer;
 
-    private int i, j;
+import javax.annotation.Nonnull;
 
-    public MatrixIndex(int i, int j) {
-        this.i = i;
-        this.j = j;
+public final class IntFeature extends Feature {
+    private int index;
+
+    public IntFeature(int index, double value) {
+        super(value);
+        this.index = index;
     }
 
-    public int getRowIndex() {
-        return i;
-    }
-
-    public void setRowIndex(int i) {
-        this.i = i;
-    }
-
-    public int getColIndex() {
-        return j;
-    }
-
-    public void setColIndex(int j) {
-        this.j = j;
+    public IntFeature(@Nonnull ByteBuffer src) {
+        super();
+        readFrom(src);
     }
 
     @Override
-    public int hashCode() {
-        return 31 * (31 + i) + j;
+    public int getIndex() {
+        return index;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if(obj != null && obj instanceof MatrixIndex) {
-            MatrixIndex other = (MatrixIndex) obj;
-            return (other.i == this.i) && (other.j == this.j);
-        }
-        return false;
+    public void setIndex(int i) {
+        this.index = i;
+    }
+
+    @Override
+    public int bytes() {
+        return (Integer.SIZE + Double.SIZE) / 8;
+    }
+
+    @Override
+    public void writeTo(@Nonnull final ByteBuffer dst) {
+        dst.putInt(index);
+        dst.putDouble(value);
+    }
+
+    @Override
+    public void readFrom(@Nonnull final ByteBuffer src) {
+        this.index = src.getInt();
+        this.value = src.getDouble();
     }
 
     @Override
     public String toString() {
-        return "MatrixIndex [i=" + i + ", j=" + j + "]";
+        return index + ":" + value;
     }
 
 }

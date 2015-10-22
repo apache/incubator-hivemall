@@ -38,9 +38,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.Text;
 
-@Description(name = "categorical_features", value = "_FUNC_(array<string> featureNames, ...) - Returns a feature vector array<string>")
+@Description(name = "quantitative_features", value = "_FUNC_(array<string> featureNames, ...) - Returns a feature vector array<string>")
 @UDFType(deterministic = true, stateful = false)
-public final class CategoricalFeaturesUDF extends GenericUDF {
+public final class QuantitativeFeaturesUDF extends GenericUDF {
 
     private String[] featureNames;
     private PrimitiveObjectInspector[] inputOIs;
@@ -69,7 +69,7 @@ public final class CategoricalFeaturesUDF extends GenericUDF {
         this.inputOIs = new PrimitiveObjectInspector[numFeatures];
         for(int i = 0; i < numFeatures; i++) {
             ObjectInspector oi = argOIs[i + 1];
-            inputOIs[i] = HiveUtils.asPrimitiveObjectInspector(oi);
+            inputOIs[i] = HiveUtils.asDoubleCompatibleOI(oi);
         }
         this.result = new ArrayList<Text>(numFeatures);
 
@@ -88,18 +88,19 @@ public final class CategoricalFeaturesUDF extends GenericUDF {
             }
 
             PrimitiveObjectInspector oi = inputOIs[i];
-            String s = PrimitiveObjectInspectorUtils.getString(argument, oi);
-            // categorical feature representation                    
-            String featureName = featureNames[i];
-            Text f = new Text(featureName + '#' + s);
-            result.add(f);
+            final double v = PrimitiveObjectInspectorUtils.getDouble(argument, oi);
+            if(v != 0.d) {
+                String featureName = featureNames[i];
+                Text f = new Text(featureName + ':' + v);
+                result.add(f);
+            }
         }
         return result;
     }
 
     @Override
     public String getDisplayString(String[] children) {
-        return "categorical_features(" + Arrays.toString(children) + ")";
+        return "quantitative_features(" + Arrays.toString(children) + ")";
     }
 
 }
