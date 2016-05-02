@@ -2,12 +2,15 @@
 -- Hivemall: Hive scalable Machine Learning Library
 -----------------------------------------------------------------------------
 
-drop temporary function if exists  hivemall_version;
+drop temporary function if exists hivemall_version;
 create temporary function hivemall_version as 'hivemall.HivemallVersionUDF';
 
 ---------------------------
 -- binary classification --
 ---------------------------
+
+drop temporary function if exists train_classifier;
+create temporary function train_classifier as 'hivemall.regression.GeneralClassifierUDTF';
 
 drop temporary function if exists train_perceptron;
 create temporary function train_perceptron as 'hivemall.classifier.PerceptronUDTF';
@@ -329,6 +332,9 @@ create temporary function tf as 'hivemall.ftvec.text.TermFrequencyUDAF';
 --------------------------
 -- Regression functions --
 --------------------------
+
+drop temporary function if exists train_regression;
+create temporary function train_regression as 'hivemall.regression.GeneralRegressionUDTF';
 
 drop temporary function if exists logress;
 create temporary function logress as 'hivemall.regression.LogressUDTF';
@@ -698,5 +704,3 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
-
-
