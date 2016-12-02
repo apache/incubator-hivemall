@@ -18,8 +18,8 @@
  */
 package hivemall.fm;
 
-import hivemall.common.EtaEstimator;
 import hivemall.fm.FactorizationMachineModel.VInitScheme;
+import hivemall.optimizer.EtaEstimator;
 import hivemall.utils.lang.Primitives;
 
 import javax.annotation.Nonnull;

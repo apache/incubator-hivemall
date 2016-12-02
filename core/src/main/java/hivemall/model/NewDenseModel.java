@@ -1,61 +1,51 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Hivemall: Hive scalable Machine Learning Library
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Copyright (C) 2015 Makoto YUI
+ * Copyright (C) 2013-2015 National Institute of Advanced Industrial Science and Technology (AIST)
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package hivemall.model;
 
-import hivemall.model.WeightValue.WeightValueParamsF1;
-import hivemall.model.WeightValue.WeightValueParamsF2;
+import java.util.Arrays;
+import javax.annotation.Nonnull;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import hivemall.model.WeightValue.WeightValueWithCovar;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Copyable;
 import hivemall.utils.math.MathUtils;
 
-import java.util.Arrays;
-
-import javax.annotation.Nonnull;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-public final class DenseModel extends AbstractPredictionModel {
-    private static final Log logger = LogFactory.getLog(DenseModel.class);
+public final class NewDenseModel extends AbstractPredictionModel {
+    private static final Log logger = LogFactory.getLog(NewDenseModel.class);
 
     private int size;
     private float[] weights;
     private float[] covars;
 
-    // optional values for adagrad
-    private float[] sum_of_squared_gradients;
-    // optional value for adadelta
-    private float[] sum_of_squared_delta_x;
-    // optional value for adagrad+rda
-    private float[] sum_of_gradients;
-
     // optional value for MIX
     private short[] clocks;
     private byte[] deltaUpdates;
 
-    public DenseModel(int ndims) {
+    public NewDenseModel(int ndims) {
         this(ndims, false);
     }
 
-    public DenseModel(int ndims, boolean withCovar) {
+    public NewDenseModel(int ndims, boolean withCovar) {
         super();
         int size = ndims + 1;
         this.size = size;
@@ -67,9 +57,6 @@ public final class DenseModel extends AbstractPredictionModel {
         } else {
             this.covars = null;
         }
-        this.sum_of_squared_gradients = null;
-        this.sum_of_squared_delta_x = null;
-        this.sum_of_gradients = null;
         this.clocks = null;
         this.deltaUpdates = null;
     }
@@ -86,17 +73,7 @@ public final class DenseModel extends AbstractPredictionModel {
 
     @Override
     public void configureParams(boolean sum_of_squared_gradients, boolean sum_of_squared_delta_x,
-            boolean sum_of_gradients) {
-        if (sum_of_squared_gradients) {
-            this.sum_of_squared_gradients = new float[size];
-        }
-        if (sum_of_squared_delta_x) {
-            this.sum_of_squared_delta_x = new float[size];
-        }
-        if (sum_of_gradients) {
-            this.sum_of_gradients = new float[size];
-        }
-    }
+            boolean sum_of_gradients) {}
 
     @Override
     public void configureClock() {
@@ -129,16 +106,7 @@ public final class DenseModel extends AbstractPredictionModel {
                 this.covars = Arrays.copyOf(covars, newSize);
                 Arrays.fill(covars, oldSize, newSize, 1.f);
             }
-            if (sum_of_squared_gradients != null) {
-                this.sum_of_squared_gradients = Arrays.copyOf(sum_of_squared_gradients, newSize);
-            }
-            if (sum_of_squared_delta_x != null) {
-                this.sum_of_squared_delta_x = Arrays.copyOf(sum_of_squared_delta_x, newSize);
-            }
-            if (sum_of_gradients != null) {
-                this.sum_of_gradients = Arrays.copyOf(sum_of_gradients, newSize);
-            }
-            if (clocks != null) {
+            if(clocks != null) {
                 this.clocks = Arrays.copyOf(clocks, newSize);
                 this.deltaUpdates = Arrays.copyOf(deltaUpdates, newSize);
             }
@@ -152,17 +120,7 @@ public final class DenseModel extends AbstractPredictionModel {
         if (i >= size) {
             return null;
         }
-        if (sum_of_squared_gradients != null) {
-            if (sum_of_squared_delta_x != null) {
-                return (T) new WeightValueParamsF2(weights[i], sum_of_squared_gradients[i],
-                    sum_of_squared_delta_x[i]);
-            } else if (sum_of_gradients != null) {
-                return (T) new WeightValueParamsF2(weights[i], sum_of_squared_gradients[i],
-                    sum_of_gradients[i]);
-            } else {
-                return (T) new WeightValueParamsF1(weights[i], sum_of_squared_gradients[i]);
-            }
-        } else if (covars != null) {
+        if(covars != null) {
             return (T) new WeightValueWithCovar(weights[i], covars[i]);
         } else {
             return (T) new WeightValue(weights[i]);
@@ -180,15 +138,6 @@ public final class DenseModel extends AbstractPredictionModel {
         if (hasCovar) {
             covar = value.getCovariance();
             covars[i] = covar;
-        }
-        if (sum_of_squared_gradients != null) {
-            sum_of_squared_gradients[i] = value.getSumOfSquaredGradients();
-        }
-        if (sum_of_squared_delta_x != null) {
-            sum_of_squared_delta_x[i] = value.getSumOfSquaredDeltaX();
-        }
-        if (sum_of_gradients != null) {
-            sum_of_gradients[i] = value.getSumOfGradients();
         }
         short clock = 0;
         int delta = 0;
@@ -213,15 +162,6 @@ public final class DenseModel extends AbstractPredictionModel {
         if (covars != null) {
             covars[i] = 1.f;
         }
-        if (sum_of_squared_gradients != null) {
-            sum_of_squared_gradients[i] = 0.f;
-        }
-        if (sum_of_squared_delta_x != null) {
-            sum_of_squared_delta_x[i] = 0.f;
-        }
-        if (sum_of_gradients != null) {
-            sum_of_gradients[i] = 0.f;
-        }
         // avoid clock/delta
     }
 
@@ -235,8 +175,10 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public void setWeight(@Nonnull Object feature, float value) {
-        throw new UnsupportedOperationException();
+    public void setWeight(Object feature, float value) {
+        int i = HiveUtils.parseInt(feature);
+        ensureCapacity(i);
+        weights[i] = value;
     }
 
     @Override
