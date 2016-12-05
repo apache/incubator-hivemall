@@ -17,3 +17,5 @@ derby.log
 spark/bin/zinc-*
 *.dylib
 *.so
+.classpath
+.project
