@@ -167,9 +167,6 @@ CREATE FUNCTION argmin_kld as 'hivemall.ensemble.ArgminKLDistanceUDAF' USING JAR
 DROP FUNCTION IF EXISTS mhash;
 CREATE FUNCTION mhash as 'hivemall.ftvec.hashing.MurmurHash3UDF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION IF EXISTS sha1;
-CREATE FUNCTION sha1 as 'hivemall.ftvec.hashing.Sha1UDF' USING JAR '${hivemall_jar}';
-
 DROP FUNCTION IF EXISTS array_hash_values;
 CREATE FUNCTION array_hash_values as 'hivemall.ftvec.hashing.ArrayHashValuesUDF' USING JAR '${hivemall_jar}';
 
