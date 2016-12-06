@@ -17,24 +17,23 @@
   under the License.
 -->
 
-Feature selection is the process which selects a subset consisting of influential features from miscellaneous ones.
-It is an important technique to **enhance results**, **shorten training time** and **make features human-understandable**.
+[Feature Selection](https://en.wikipedia.org/wiki/Feature_selection) is the process of selecting a subset of relevant features for use in model construction. 
 
-## Selecting methods supported by Hivemall
+It is a useful technique to 1) improve prediction results by omitting redundant features, 2) to shorten training time, and 3) to know important features for prediction.
+
+<!-- toc -->
+
+# Supported Feature Selection algorithms
+
 * Chi-square (Chi2)
-    * For non-negative data only
+    * In statistics, the $$\chi^2$$ test is applied to test the independence of two even events. Chi-square statistics between every feature variable and the target variable can be applied to Feature Selection. Refer [this article](http://nlp.stanford.edu/IR-book/html/htmledition/feature-selectionchi2-feature-selection-1.html) for Mathematical details.
 * Signal Noise Ratio (SNR)
-* ~~Minimum Redundancy Maximum Relevance (mRMR)~~
-    * Contributions are welcome!
+    * The Signal Noise Ratio (SNR) is a univariate feature ranking metric, which can be used as a feature selection criterion for binary classification problems. SNR is defined as $$|\mu_{1} - \mu_{2}| / (\sigma_{1} + \sigma_{2})$$, where $$\mu_{k}$$ is the mean value of the variable in classes $$k$$, and $$\sigma_{k}$$ is the standard deviations of the variable in classes $$k$$. Clearly, features with larger SNR are useful for classification.
 
-## Usage
-1. Create importance list for feature selection
-    * chi2/SNR
-2. Filter features
-    * Select top-k features based on importance list
+# Usage
 
+##  Feature Selection based on Chi-square test
 
-## Example - Chi2
 ``` sql
 CREATE TABLE input (
   X array<double>, -- features
@@ -43,7 +42,6 @@ CREATE TABLE input (
 
 WITH stats AS (
   SELECT
-    -- [UDAF] transpose_and_dot(Y::array<number>, X::array<number>)::array<array<double>>
     transpose_and_dot(Y, X) AS observed, -- array<array<double>>, shape = (n_classes, n_features)
     array_sum(X) AS feature_count, -- n_features col vector, shape = (1, array<double>)
     array_avg(Y) AS class_prob -- n_class col vector, shape = (1, array<double>)
@@ -58,20 +56,19 @@ test AS (
 ),
 chi2 AS (
   SELECT
-    -- [UDAF] chi2(observed::array<array<double>>, expected::array<array<double>>)::struct<array<double>, array<double>>
     chi2(observed, expected) AS chi2s -- struct<array<double>, array<double>>, each shape = (1, n_features)
   FROM
-    test JOIN stats;
+    test
+    JOIN stats
 )
 SELECT
-  -- [UDF] select_k_best(X::array<number>, importance_list::array<int> k::int)::array<double>
   select_k_best(X, chi2s.chi2, $[k}) -- top-k feature selection based on chi2 score
 FROM
   input JOIN chi2;
 ```
 
+## Feature Selection based on Signal Noise Ratio (SNR)
 
-## Example - SNR
 ``` sql
 CREATE TABLE input (
   X array<double>, -- features
@@ -79,73 +76,68 @@ CREATE TABLE input (
 );
 
 WITH snr AS (
-  -- [UDAF] snr(features::array<number>, labels::array<int>)::array<double>
   SELECT snr(X, Y) AS snr FROM input -- aggregated SNR as array<double>, shape = (1, #features)
 )
 SELECT select_k_best(X, snr, ${k}) FROM input JOIN snr;
 ```
 
+# Function signatures
 
-## UDF details
-### Common
-#### [UDAF] `transpose_and_dot(X::array<number>, Y::array<number>)::array<array<double>>`
+### [UDAF] `transpose_and_dot(X::array<number>, Y::array<number>)::array<array<double>>`
+
 ##### Input
 
-| array<number> X | array<number> Y |
+| `array<number>` X | `array<number>` Y |
 | :-: | :-: |
 | a row of matrix | a row of matrix |
+
 ##### Output
 
-| array<array<double>> dotted |
+| `array<array<double>>` dot product |
 | :-: |
-| `dot(X.T, Y)`, shape = (X.#cols, Y.#cols) |
-#### [UDF] `select_k_best(X::array<number>, importance_list::array<int> k::int)::array<double>`
+| `dot(X.T, Y)` of shape = (X.#cols, Y.#cols) |
+
+### [UDF] `select_k_best(X::array<number>, importance_list::array<number>, k::int)::array<double>`
+
 ##### Input
 
-| array<number> X | array<int> importance list | int k |
+| `array<number>` X | `array<number>` importance_list | `int` k |
 | :-: | :-: | :-: |
-| array | the larger, the more important | top-? |
+| feature vector | importance of each feature | the number of features to be selected |
+
 ##### Output
 
-| array<array<double>> k-best elements |
+| `array<array<double>>` k-best features |
 | :-: |
-| top-k elements from X based on indices of importance list |
+| top-k elements from feature vector `X` based on importance list |
 
-#### Note
-- Current implementation expects **_ALL each `importance_list` and `k` are equal**_. It maybe confuse us.
-  - Future WA: add option showing use of common `importance_list` and `k`
+### [UDF] `chi2(observed::array<array<number>>, expected::array<array<number>>)::struct<array<double>, array<double>>`
 
-
-### Chi2
-#### [UDF] `chi2(observed::array<array<number>>, expected::array<array<number>>)::struct<array<double>, array<double>>`
 ##### Input
 
-both `observed` and `expected`, shape = (#classes, #features)
-
-| array<number> observed | array<number> expected |
+| `array<number>` observed | `array<number>` expected |
 | :-: | :-: |
-| observed features | expected features, `dot(class_prob.T, feature_count)` |
+| observed features | expected features `dot(class_prob.T, feature_count)` |
+
+Both of `observed` and `expected` have a shape `(#classes, #features)`
 
 ##### Output
 
-| struct<array<double>, array<double>> importance lists |
+| `struct<array<double>, array<double>>` importance_list |
 | :-: |
-| chi2-values and p-values each feature, each shape = (1, #features) |
+| chi2-value and p-value for each feature |
 
+### [UDAF] `snr(X::array<number>, Y::array<int>)::array<double>`
 
-### SNR
-#### [UDAF] `snr(X::array<number>, Y::array<int>)::array<double>`
 ##### Input
 
-| array<number> X | array<int> Y |
+| `array<number>` X | `array<int>` Y |
 | :-: | :-: |
-| a row of matrix, overall shape = (#samples, #features) | a row of one-hot matrix, overall shape = (#samples, #classes) |
+| feature vector | one hot label |
 
 ##### Output
 
-| array<double> importance list |
+| `array<double>` importance_list |
 | :-: |
-| snr values of each feature, shape = (1, #features) |
+| Signal Noise Ratio for each feature |
 
-#### Note
-* Essentially, there is no need to one-hot vectorizing, but fitting its interface to chi2's one
