@@ -75,3 +75,6 @@ CREATE FUNCTION rescale_fv as 'hivemall.ftvec.scaling.RescaleUDF' USING JAR '${h
 
 DROP FUNCTION IF EXISTS addBias;
 CREATE FUNCTION addBias as 'hivemall.ftvec.AddBiasUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS sha1;
+CREATE FUNCTION sha1 as 'hivemall.ftvec.hashing.Sha1UDF' USING JAR '${hivemall_jar}';

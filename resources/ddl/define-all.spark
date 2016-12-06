@@ -151,8 +151,8 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION argmin_kld AS 'hivemall.ensemble.Argmi
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS mhash")
 sqlContext.sql("CREATE TEMPORARY FUNCTION mhash AS 'hivemall.ftvec.hashing.MurmurHash3UDF'")
 
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sha1")
-sqlContext.sql("CREATE TEMPORARY FUNCTION sha1 AS 'hivemall.ftvec.hashing.Sha1UDF'")
+// sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sha1")
+// sqlContext.sql("CREATE TEMPORARY FUNCTION sha1 AS 'hivemall.ftvec.hashing.Sha1UDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_hash_values")
 sqlContext.sql("CREATE TEMPORARY FUNCTION array_hash_values AS 'hivemall.ftvec.hashing.ArrayHashValuesUDF'")
