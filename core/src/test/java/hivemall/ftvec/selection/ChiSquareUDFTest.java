@@ -34,8 +34,7 @@ import org.junit.Test;
 public class ChiSquareUDFTest {
 
     @Test
-    public void test() throws Exception {
-        // this test is based on iris data set
+    public void testIris() throws Exception {
         final ChiSquareUDF chi2 = new ChiSquareUDF();
         final List<List<DoubleWritable>> observed = new ArrayList<List<DoubleWritable>>();
         final List<List<DoubleWritable>> expected = new ArrayList<List<DoubleWritable>>();
@@ -62,20 +61,22 @@ public class ChiSquareUDFTest {
         chi2.initialize(new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)),
                 ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector))});
-        final Object[] result = (Object[]) chi2.evaluate(dObjs);
+        final List<DoubleWritable>[] result = chi2.evaluate(dObjs);
         final double[] result0 = new double[matrix0[0].length];
         final double[] result1 = new double[matrix0[0].length];
         for (int i = 0; i < result0.length; i++) {
-            result0[i] = Double.valueOf(((List) result[0]).get(i).toString());
-            result1[i] = Double.valueOf(((List) result[1]).get(i).toString());
+            result0[i] = result[0].get(i).get();
+            result1[i] = result[1].get(i).get();
         }
 
-        // compare with results by scikit-learn
+        // compare results to one of scikit-learn
         final double[] answer0 = new double[] {10.81782088, 3.59449902, 116.16984746, 67.24482759};
         final double[] answer1 = new double[] {4.47651499e-03, 1.65754167e-01, 5.94344354e-26,
                 2.50017968e-15};
 
         Assert.assertArrayEquals(answer0, result0, 1e-5);
         Assert.assertArrayEquals(answer1, result1, 1e-5);
+        chi2.close();
     }
+
 }

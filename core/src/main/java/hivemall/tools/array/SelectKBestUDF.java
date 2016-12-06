@@ -85,7 +85,7 @@ public class SelectKBestUDF extends GenericUDF {
     }
 
     @Override
-    public Object evaluate(GenericUDF.DeferredObject[] dObj) throws HiveException {
+    public List<DoubleWritable> evaluate(DeferredObject[] dObj) throws HiveException {
         final double[] features = HiveUtils.asDoubleArray(dObj[0].get(), featuresOI, featureOI);
         final double[] importanceList = HiveUtils.asDoubleArray(dObj[1].get(), importanceListOI,
             importanceOI);

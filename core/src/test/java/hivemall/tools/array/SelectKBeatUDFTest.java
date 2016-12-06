@@ -23,6 +23,7 @@ import hivemall.utils.hadoop.WritableUtils;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
@@ -50,17 +51,18 @@ public class SelectKBeatUDFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.writableIntObjectInspector});
-        final List resultObj = (List) selectKBest.evaluate(dObjs);
+        final List<DoubleWritable> resultObj = selectKBest.evaluate(dObjs);
 
         Assert.assertEquals(resultObj.size(), k);
 
         final double[] result = new double[k];
         for (int i = 0; i < k; i++) {
-            result[i] = Double.valueOf(resultObj.get(i).toString());
+            result[i] = resultObj.get(i).get();
         }
 
         final double[] answer = new double[] {250.29999999999998, 73.2};
 
         Assert.assertArrayEquals(answer, result, 0.d);
+        selectKBest.close();
     }
 }

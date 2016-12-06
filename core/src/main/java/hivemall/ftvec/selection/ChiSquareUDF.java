@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -92,7 +93,7 @@ public final class ChiSquareUDF extends GenericUDF {
     }
 
     @Override
-    public Object[] evaluate(DeferredObject[] dObj) throws HiveException {
+    public List<DoubleWritable>[] evaluate(DeferredObject[] dObj) throws HiveException {
         List<?> observedObj = observedOI.getList(dObj[0].get()); // shape = (#classes, #features)
         List<?> expectedObj = expectedOI.getList(dObj[1].get()); // shape = (#classes, #features)
 
@@ -134,7 +135,8 @@ public final class ChiSquareUDF extends GenericUDF {
 
         final Map.Entry<double[], double[]> chi2 = StatsUtils.chiSquare(observed, expected);
 
-        final Object[] result = new Object[2];
+        @SuppressWarnings("unchecked")
+        final List<DoubleWritable>[] result = new List[2];
         result[0] = WritableUtils.toWritableList(chi2.getKey());
         result[1] = WritableUtils.toWritableList(chi2.getValue());
         return result;
