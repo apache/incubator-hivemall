@@ -39,6 +39,8 @@ CREATE TABLE input (
   X array<double>, -- features
   Y array<int> -- binarized label
 );
+ 
+set hivevar:k=2;
 
 WITH stats AS (
   SELECT
@@ -56,15 +58,16 @@ test AS (
 ),
 chi2 AS (
   SELECT
-    chi2(observed, expected) AS chi2s -- struct<array<double>, array<double>>, each shape = (1, n_features)
+    chi2(r.observed, l.expected) AS v -- struct<array<double>, array<double>>, each shape = (1, n_features)
   FROM
-    test
-    JOIN stats
+    test l
+    CROSS JOIN stats r
 )
 SELECT
-  select_k_best(X, chi2s.chi2, $[k}) -- top-k feature selection based on chi2 score
+  select_k_best(l.X, r.v.chi2, ${k}) -- top-k feature selection based on chi2 score
 FROM
-  input JOIN chi2;
+  input l
+  CROSS JOIN chi2 r;
 ```
 
 ## Feature Selection based on Signal Noise Ratio (SNR)
@@ -74,6 +77,8 @@ CREATE TABLE input (
   X array<double>, -- features
   Y array<int> -- binarized label
 );
+
+set hivevar:k=2;
 
 WITH snr AS (
   SELECT snr(X, Y) AS snr FROM input -- aggregated SNR as array<double>, shape = (1, #features)
