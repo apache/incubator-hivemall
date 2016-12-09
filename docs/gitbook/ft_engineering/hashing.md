@@ -24,7 +24,7 @@ Find the differences in the following examples.
 
 ## `feature_hashing` function
 
-`feature_hashing` applies MurmuerHash3 hashing to features. 
+`feature_hashing` applies [MurmurHash3](https://github.com/aappleby/smhasher) hashing to features. 
 
 ```sql
 select feature_hashing('aaa');
@@ -95,7 +95,7 @@ select mhash('aaa',${num_features});
 >4063537
 ```
 
-_Note: `mhash` returns a `+1'd` murmerhash3 value starting from 1. Never returns 0 (It's a system reserved number)._
+_Note: `mhash` returns a `+1'd` murmurhash3 value starting from 1. Never returns 0 (It's a system reserved number)._
 ```sql
 set hivevar:num_features=1;
 
