@@ -24,7 +24,7 @@ Find the differences in the following examples.
 
 ## `feature_hashing` function
 
-`feature_hashing` applies MurmurHash3 hashing to features. 
+`feature_hashing` applies [MurmurHash3](https://github.com/aappleby/smhasher) hashing to features. 
 
 ```sql
 select feature_hashing('aaa');
