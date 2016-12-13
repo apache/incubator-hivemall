@@ -367,12 +367,14 @@ final class HivemallOpsSuite extends HivemallQueryTest {
 
   test("tools.array - select_k_best") {
     import hiveContext.implicits._
+    import org.apache.spark.sql.functions._
 
     val data = Seq(Seq(0, 1, 3), Seq(2, 4, 1), Seq(5, 4, 9))
-    val df = data.map(d => (d, Seq(3, 1, 2), 2)).toDF("features", "importance_list", "k")
+    val df = data.map(d => (d, Seq(3, 1, 2))).toDF("features", "importance_list")
+    val k = 2
 
     // if use checkAnswer here, fail for some reason, maybe type? but it's okay on spark-2.0
-    assert(df.select(select_k_best(df("features"), df("importance_list"), df("k"))).collect ===
+    assert(df.select(select_k_best(df("features"), df("importance_list"), lit(k))).collect ===
       data.map(s => Row(Seq(s(0).toDouble, s(2).toDouble))))
   }
 
