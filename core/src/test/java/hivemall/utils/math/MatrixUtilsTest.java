@@ -209,7 +209,8 @@ public class MatrixUtilsTest {
 
     @Test
     public void testPower1() {
-        RealMatrix A = new Array2DRowRealMatrix(new double[][] {new double[] {1, 2, 3}, new double[] {4, 5, 6}});
+        RealMatrix A = new Array2DRowRealMatrix(new double[][] {new double[] {1, 2, 3},
+                new double[] {4, 5, 6}});
 
         double[] x = new double[3];
         x[0] = Math.random();
@@ -231,9 +232,8 @@ public class MatrixUtilsTest {
     @Test
     public void testLanczosTridiagonalization() {
         // Symmetric matrix
-        RealMatrix C = new Array2DRowRealMatrix(new double[][] {
-                                new double[] {1, 2, 3, 4}, new double[] {2, 1, 4, 3},
-                                new double[] {3, 4, 1, 2}, new double[] {4, 3, 2, 1}});
+        RealMatrix C = new Array2DRowRealMatrix(new double[][] {new double[] {1, 2, 3, 4},
+                new double[] {2, 1, 4, 3}, new double[] {3, 4, 1, 2}, new double[] {4, 3, 2, 1}});
 
         // naive initial vector
         double[] a = new double[] {1, 1, 1, 1};
@@ -241,9 +241,9 @@ public class MatrixUtilsTest {
         RealMatrix actual = new Array2DRowRealMatrix(new double[4][4]);
         MatrixUtils.lanczosTridiagonalization(C, a, actual);
 
-        RealMatrix expected = new Array2DRowRealMatrix(new double[][] {
-                                new double[] {40, 60, 0, 0}, new double[] {60, 10, 120, 0},
-                                new double[] {0, 120, 10, 120}, new double[] {0, 0, 120, 10}});
+        RealMatrix expected = new Array2DRowRealMatrix(new double[][] {new double[] {40, 60, 0, 0},
+                new double[] {60, 10, 120, 0}, new double[] {0, 120, 10, 120},
+                new double[] {0, 0, 120, 10}});
 
         Assert.assertEquals(expected, actual);
     }
@@ -251,9 +251,9 @@ public class MatrixUtilsTest {
     @Test
     public void testTridiagonalEigen() {
         // Tridiagonal Matrix
-        RealMatrix T = new Array2DRowRealMatrix(new double[][] {
-                new double[] {40, 60, 0, 0}, new double[] {60, 10, 120, 0},
-                new double[] {0, 120, 10, 120}, new double[] {0, 0, 120, 10}});
+        RealMatrix T = new Array2DRowRealMatrix(new double[][] {new double[] {40, 60, 0, 0},
+                new double[] {60, 10, 120, 0}, new double[] {0, 120, 10, 120},
+                new double[] {0, 0, 120, 10}});
 
         double[] eigvals = new double[4];
         RealMatrix eigvecs = new Array2DRowRealMatrix(new double[4][4]);

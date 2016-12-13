@@ -17,8 +17,8 @@
  */
 package hivemall.anomaly;
 
-import hivemall.anomaly.SingularSpectrumTransformUDF.ScoreFunction;
 import hivemall.anomaly.SingularSpectrumTransformUDF.Parameters;
+import hivemall.anomaly.SingularSpectrumTransformUDF.ScoreFunction;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -50,9 +50,9 @@ public class SingularSpectrumTransformTest {
     public void testIKASST() throws IOException, HiveException {
         int numChangepoints = detectSST(ScoreFunction.ika, 0.65d);
         Assert.assertTrue("#changepoints SHOULD be greater than 0: " + numChangepoints,
-                numChangepoints > 0);
+            numChangepoints > 0);
         Assert.assertTrue("#changepoints SHOULD be less than 5: " + numChangepoints,
-                numChangepoints < 5);
+            numChangepoints < 5);
     }
 
     @Test
@@ -68,13 +68,13 @@ public class SingularSpectrumTransformTest {
     public void testIKATwitterData() throws IOException, HiveException {
         int numChangepoints = detectTwitterData(ScoreFunction.ika, 0.0175d);
         Assert.assertTrue("#changepoints SHOULD be greater than 0: " + numChangepoints,
-                numChangepoints > 0);
+            numChangepoints > 0);
         Assert.assertTrue("#changepoints SHOULD be less than 5: " + numChangepoints,
-                numChangepoints < 5);
+            numChangepoints < 5);
     }
 
     private static int detectSST(@Nonnull final ScoreFunction scoreFunc,
-             @Nonnull final double threshold) throws IOException, HiveException {
+            @Nonnull final double threshold) throws IOException, HiveException {
         Parameters params = new Parameters();
         params.set(scoreFunc);
         PrimitiveObjectInspector oi = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
@@ -98,7 +98,7 @@ public class SingularSpectrumTransformTest {
     }
 
     private static int detectTwitterData(@Nonnull final ScoreFunction scoreFunc,
-             @Nonnull final double threshold) throws IOException, HiveException {
+            @Nonnull final double threshold) throws IOException, HiveException {
         Parameters params = new Parameters();
         params.set(scoreFunc);
         PrimitiveObjectInspector oi = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;

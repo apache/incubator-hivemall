@@ -18,28 +18,29 @@
 package hivemall.anomaly;
 
 import hivemall.UDFWithOptions;
-import hivemall.utils.collections.DoubleRingBuffer;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Change-point detection based on Singular Spectrum Transformation (SST).
@@ -47,16 +48,17 @@ import java.util.Arrays;
  * References:
  * <ul>
  * <li>T. Ide and K. Inoue,
- * "Knowledge Discovery from Heterogeneous Dynamic Systems using Change-Point Correlations", SDM'05.</li>
+ * "Knowledge Discovery from Heterogeneous Dynamic Systems using Change-Point Correlations", SDM'05.
+ * </li>
  * <li>T. Ide and K. Tsuda, "Change-point detection using Krylov subspace learning", SDM'07.</li>
  * </ul>
  */
-
 @Description(
         name = "sst",
         value = "_FUNC_(double|array<double> x [, const string options])"
                 + " - Returns change-point scores and decisions using Singular Spectrum Transformation (SST)."
                 + " It will return a tuple <double changepoint_score [, boolean is_changepoint]>")
+@UDFType(deterministic = false, stateful = true)
 public final class SingularSpectrumTransformUDF extends UDFWithOptions {
 
     private transient Parameters _params;
@@ -66,7 +68,7 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
     private transient Object[] _result;
     private transient DoubleWritable _changepointScore;
     @Nullable
-    private transient BooleanWritable _isChangepoint = null;
+    private transient BooleanWritable _isChangepoint;
 
     public SingularSpectrumTransformUDF() {}
 
@@ -78,7 +80,8 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("w", "window", true, "Number of samples which affects change-point score [default: 30]");
+        opts.addOption("w", "window", true,
+            "Number of samples which affects change-point score [default: 30]");
         opts.addOption("n", "n_past", true,
             "Number of past windows for change-point scoring [default: equal to `w` = 30]");
         opts.addOption("m", "n_current", true,
@@ -87,11 +90,16 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
             "Offset of the current windows from the updating sample [default: `-w` = -30]");
         opts.addOption("r", "n_component", true,
             "Number of singular vectors (i.e. principal components) [default: 3]");
-        opts.addOption("k", "n_dim", true,
+        opts.addOption(
+            "k",
+            "n_dim",
+            true,
             "Number of dimensions for the Krylov subspaces [default: 5 (`2*r` if `r` is even, `2*r-1` otherwise)]");
-        opts.addOption("score", "scorefunc", true,
-            "Score function [default: svd, ika]");
-        opts.addOption("th", "threshold", true,
+        opts.addOption("score", "scorefunc", true, "Score function [default: svd, ika]");
+        opts.addOption(
+            "th",
+            "threshold",
+            true,
             "Score threshold (inclusive) for determining change-point existence [default: -1, do not output decision]");
         return opts;
     }
@@ -105,22 +113,32 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
         this._params.m = Primitives.parseInt(cl.getOptionValue("m"), _params.w);
         this._params.g = Primitives.parseInt(cl.getOptionValue("g"), -1 * _params.w);
         this._params.r = Primitives.parseInt(cl.getOptionValue("r"), _params.r);
-        this._params.k = Primitives.parseInt(
-            cl.getOptionValue("k"), (_params.r % 2 == 0) ? (2 * _params.r) : (2 * _params.r - 1));
+        this._params.k = Primitives.parseInt(cl.getOptionValue("k"),
+            (_params.r % 2 == 0) ? (2 * _params.r) : (2 * _params.r - 1));
 
-        this._params.scoreFunc = ScoreFunction.resolve(cl.getOptionValue("scorefunc", ScoreFunction.svd.name()));
-        if ((_params.w != _params.n || _params.w != _params.m) && _params.scoreFunc == ScoreFunction.ika) {
+        this._params.scoreFunc = ScoreFunction.resolve(cl.getOptionValue("scorefunc",
+            ScoreFunction.svd.name()));
+        if ((_params.w != _params.n || _params.w != _params.m)
+                && _params.scoreFunc == ScoreFunction.ika) {
             throw new UDFArgumentException("IKA-based efficient SST requires w = n = m");
         }
 
-        this._params.changepointThreshold = Primitives.parseDouble(
-            cl.getOptionValue("th"), _params.changepointThreshold);
+        this._params.changepointThreshold = Primitives.parseDouble(cl.getOptionValue("th"),
+            _params.changepointThreshold);
 
-        Preconditions.checkArgument(_params.w >= 2, "w must be greather than 1: " + _params.w);
-        Preconditions.checkArgument(_params.r >= 1, "r must be greater than 0: " + _params.r);
-        Preconditions.checkArgument(_params.k >= 1, "k must be greater than 0: " + _params.k);
-        Preconditions.checkArgument(_params.changepointThreshold > 0.d && _params.changepointThreshold < 1.d,
-            "changepointThreshold must be in range (0, 1): " + _params.changepointThreshold);
+        Preconditions.checkArgument(_params.w >= 2, "w must be greather than 1: " + _params.w,
+            UDFArgumentException.class);
+        Preconditions.checkArgument(_params.r >= 1, "r must be greater than 0: " + _params.r,
+            UDFArgumentException.class);
+        Preconditions.checkArgument(_params.k >= 1, "k must be greater than 0: " + _params.k,
+            UDFArgumentException.class);
+        Preconditions.checkArgument(_params.k >= _params.r,
+            "k must be equals to or greather than r: k=" + _params.k + ", r" + _params.r,
+            UDFArgumentException.class);
+        Preconditions.checkArgument(_params.changepointThreshold > 0.d
+                && _params.changepointThreshold < 1.d,
+            "changepointThreshold must be in range (0, 1): " + _params.changepointThreshold,
+            UDFArgumentException.class);
 
         return cl;
     }
@@ -204,6 +222,7 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
         int g = -30;
         int r = 3;
         int k = 5;
+        @Nonnull
         ScoreFunction scoreFunc = ScoreFunction.svd;
         double changepointThreshold = -1.d;
 
@@ -221,13 +240,13 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
     public enum ScoreFunction {
         svd, ika;
 
-        static ScoreFunction resolve(@Nullable final String name) {
+        static ScoreFunction resolve(@Nullable final String name) throws UDFArgumentException {
             if (svd.name().equalsIgnoreCase(name)) {
                 return svd;
             } else if (ika.name().equalsIgnoreCase(name)) {
                 return ika;
             } else {
-                throw new IllegalArgumentException("Unsupported ScoreFunction: " + name);
+                throw new UDFArgumentException("Unsupported ScoreFunction: " + name);
             }
         }
     }

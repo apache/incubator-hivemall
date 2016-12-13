@@ -17,11 +17,20 @@
  */
 package hivemall.anomaly;
 
-import hivemall.anomaly.SingularSpectrumTransformUDF.SingularSpectrumTransformInterface;
-import hivemall.anomaly.SingularSpectrumTransformUDF.ScoreFunction;
 import hivemall.anomaly.SingularSpectrumTransformUDF.Parameters;
+import hivemall.anomaly.SingularSpectrumTransformUDF.ScoreFunction;
+import hivemall.anomaly.SingularSpectrumTransformUDF.SingularSpectrumTransformInterface;
 import hivemall.utils.collections.DoubleRingBuffer;
+import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.MatrixUtils;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.TreeMap;
+
+import javax.annotation.Nonnull;
+
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
@@ -29,17 +38,10 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
-import java.util.Arrays;
-import java.util.TreeMap;
-import java.util.Collections;
-
-import javax.annotation.Nonnull;
-
 final class SingularSpectrumTransform implements SingularSpectrumTransformInterface {
 
     @Nonnull
     private final PrimitiveObjectInspector oi;
-
     @Nonnull
     private final ScoreFunction scoreFunc;
 
@@ -70,7 +72,6 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
 
     SingularSpectrumTransform(@Nonnull Parameters params, @Nonnull PrimitiveObjectInspector oi) {
         this.oi = oi;
-
         this.scoreFunc = params.scoreFunc;
 
         this.window = params.w;
@@ -81,6 +82,7 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
         this.currentOffset = params.g;
         this.r = params.r;
         this.k = params.k;
+        Preconditions.checkArgument(params.k >= params.r);
 
         // (w + n) past samples for the n-past-windows
         // (w + m) current samples for the m-current-windows, starting from offset g
@@ -111,19 +113,20 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
 
         // need to wait until the buffer is filled
         if (!xRing.isFull()) {
-            outScores[0]  = 0.d;
+            outScores[0] = 0.d;
         } else {
             // create past trajectory matrix and find its left singular vectors
-            RealMatrix H = new Array2DRowRealMatrix(new double[window][nPastWindow]);
+            RealMatrix H = new Array2DRowRealMatrix(window, nPastWindow);
             for (int i = 0; i < nPastWindow; i++) {
                 H.setColumn(i, Arrays.copyOfRange(xSeries, i, i + window));
             }
 
             // create current trajectory matrix and find its left singular vectors
-            RealMatrix G = new Array2DRowRealMatrix(new double[window][nCurrentWindow]);
+            RealMatrix G = new Array2DRowRealMatrix(window, nCurrentWindow);
             int currentHead = pastSize + currentOffset;
             for (int i = 0; i < nCurrentWindow; i++) {
-                G.setColumn(i, Arrays.copyOfRange(xSeries, currentHead + i, currentHead + i + window));
+                G.setColumn(i,
+                    Arrays.copyOfRange(xSeries, currentHead + i, currentHead + i + window));
             }
 
             switch (scoreFunc) {
@@ -150,7 +153,8 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
         RealMatrix Q = svdG.getU();
 
         // find the largest singular value for the r principal components
-        RealMatrix UTQ = UT.getSubMatrix(0, r - 1, 0, window - 1).multiply(Q.getSubMatrix(0, window - 1, 0, r - 1));
+        RealMatrix UTQ = UT.getSubMatrix(0, r - 1, 0, window - 1).multiply(
+            Q.getSubMatrix(0, window - 1, 0, r - 1));
         SingularValueDecomposition svdUTQ = new SingularValueDecomposition(UTQ);
         double[] s = svdUTQ.getSingularValues();
 
@@ -160,19 +164,19 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
     /**
      * Implicit Krylov Approximation (IKA) based naive scoring.
      *
-     * Number of iterations for the Power method and QR method is fixed to 1 for efficiency.
-     * This may cause failure (i.e. meaningless scores) depending on datasets and initial values.
+     * Number of iterations for the Power method and QR method is fixed to 1 for efficiency. This
+     * may cause failure (i.e. meaningless scores) depending on datasets and initial values.
      *
      */
     private double computeScoreIKA(@Nonnull final RealMatrix H, @Nonnull final RealMatrix G) {
         // assuming n = m = window, and keep track the left singular vector as `q`
-        double firstSingularValue = MatrixUtils.power1(G, q, 1, q, new double[window]);
+        MatrixUtils.power1(G, q, 1, q, new double[window]);
 
-        RealMatrix T = new Array2DRowRealMatrix(new double[k][k]);
+        RealMatrix T = new Array2DRowRealMatrix(k, k);
         MatrixUtils.lanczosTridiagonalization(H.multiply(H.transpose()), q, T);
 
         double[] eigvals = new double[k];
-        RealMatrix eigvecs = new Array2DRowRealMatrix(new double[k][k]);
+        RealMatrix eigvecs = new Array2DRowRealMatrix(k, k);
         MatrixUtils.tridiagonalEigen(T, 1, eigvals, eigvecs);
 
         // tridiagonalEigen() returns unordered eigenvalues,
@@ -181,11 +185,14 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
         for (int i = 0; i < k; i++) {
             map.put(eigvals[i], i);
         }
-        Object[] sortedIndices = map.values().toArray();
+        Iterator<Integer> indicies = map.values().iterator();
 
         double s = 0.d;
         for (int i = 0; i < r; i++) {
-            double v = eigvecs.getEntry(0, (int)sortedIndices[i]);
+            if(!indicies.hasNext()) {
+                throw new IllegalStateException("Should not happen");
+            }
+            double v = eigvecs.getEntry(0, indicies.next().intValue());
             s += v * v;
         }
         return 1.d - Math.sqrt(s);

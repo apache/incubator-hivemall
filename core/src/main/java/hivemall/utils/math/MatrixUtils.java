@@ -21,21 +21,21 @@ package hivemall.utils.math;
 import hivemall.utils.collections.DoubleArrayList;
 import hivemall.utils.lang.Preconditions;
 
+import java.util.Arrays;
+
 import javax.annotation.Nonnull;
 
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.DecompositionSolver;
 import org.apache.commons.math3.linear.DefaultRealMatrixPreservingVisitor;
 import org.apache.commons.math3.linear.LUDecomposition;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealMatrixPreservingVisitor;
+import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.SingularMatrixException;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
-
-import java.util.Arrays;
 
 public final class MatrixUtils {
 
@@ -461,11 +461,21 @@ public final class MatrixUtils {
         return inv;
     }
 
-
-    @Nonnull
     public static double det(@Nonnull final RealMatrix m) {
         LUDecomposition LU = new LUDecomposition(m);
         return LU.getDeterminant();
+    }
+
+    /**
+     * Return a 2-D array with ones on the diagonal and zeros elsewhere.
+     */
+    @Nonnull
+    public static double[][] eye(int n) {
+        final double[][] eye = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            eye[i][i] = 1;
+        }
+        return eye;
     }
 
     /**
@@ -511,13 +521,12 @@ public final class MatrixUtils {
      * @param v 1st right singular vector
      * @return 1st singular value
      */
-    @Nonnull
-    public static double power1(@Nonnull final RealMatrix A, @Nonnull final double[] x0, final int nIter,
-            @Nonnull final double[] u, @Nonnull final double[] v) {
+    public static double power1(@Nonnull final RealMatrix A, @Nonnull final double[] x0,
+            final int nIter, @Nonnull final double[] u, @Nonnull final double[] v) {
         Preconditions.checkArgument(A.getColumnDimension() == x0.length,
-                "Column size of A and length of x should be same");
+            "Column size of A and length of x should be same");
         Preconditions.checkArgument(A.getRowDimension() == u.length,
-                "Row size of A and length of u should be same");
+            "Row size of A and length of u should be same");
         Preconditions.checkArgument(x0.length == v.length, "Length of x and u should be same");
         Preconditions.checkArgument(nIter >= 1, "Invalid number of iterations: " + nIter);
 
@@ -525,7 +534,7 @@ public final class MatrixUtils {
 
         RealVector x = new ArrayRealVector(x0);
         for (int i = 0; i < nIter; i++) {
-           x = AtA.operate(x);
+            x = AtA.operate(x);
         }
 
         double xNorm = x.getNorm();
@@ -552,22 +561,21 @@ public final class MatrixUtils {
      * @param a initial vector
      * @param T result is stored here
      */
-    @Nonnull
-    public static void lanczosTridiagonalization(@Nonnull final RealMatrix C, @Nonnull final double[] a,
-            @Nonnull final RealMatrix T) {
+    public static void lanczosTridiagonalization(@Nonnull final RealMatrix C,
+            @Nonnull final double[] a, @Nonnull final RealMatrix T) {
         Preconditions.checkArgument(Arrays.deepEquals(C.getData(), C.transpose().getData()),
-                "Target matrix C must be a symmetric matrix");
+            "Target matrix C must be a symmetric matrix");
         Preconditions.checkArgument(C.getColumnDimension() == a.length,
-                "Column size of A and length of a should be same");
+            "Column size of A and length of a should be same");
         Preconditions.checkArgument(T.getRowDimension() == T.getColumnDimension(),
-                "T must be a square matrix");
+            "T must be a square matrix");
 
         int s = T.getRowDimension();
 
         // initialize T with zeros
         T.setSubMatrix(new double[s][s], 0, 0);
 
-        RealVector a0 = new ArrayRealVector(new double[a.length]);
+        RealVector a0 = new ArrayRealVector(a.length);
         RealVector r = new ArrayRealVector(a);
 
         double beta0 = 1.d;
@@ -605,85 +613,78 @@ public final class MatrixUtils {
      * @param R output matrix for R which is the same shape as T
      * @param Qt output matrix for Q.T which is the same shape an T
      */
-    @Nonnull
-    public static void tridiagonalQR(@Nonnull final RealMatrix T,
-            @Nonnull final RealMatrix R, @Nonnull final RealMatrix Qt) {
+    public static void tridiagonalQR(@Nonnull final RealMatrix T, @Nonnull final RealMatrix R,
+            @Nonnull final RealMatrix Qt) {
         int n = T.getRowDimension();
         Preconditions.checkArgument(n == R.getRowDimension() && n == R.getColumnDimension(),
-                "T and R must be the same shape");
+            "T and R must be the same shape");
         Preconditions.checkArgument(n == Qt.getRowDimension() && n == Qt.getColumnDimension(),
-                "T and Qt must be the same shape");
+            "T and Qt must be the same shape");
 
         // initial R = T
         R.setSubMatrix(T.getData(), 0, 0);
 
         // initial Qt = identity
-        Qt.setSubMatrix(new double[n][n], 0, 0);
-        for (int i = 0; i < n; i++) {
-            Qt.setEntry(i, i, 1);
-        }
+        Qt.setSubMatrix(eye(n), 0, 0);
 
         for (int i = 0; i < n - 1; i++) {
             // Householder projection for a vector x
             // https://en.wikipedia.org/wiki/Householder_transformation
             RealVector x = T.getSubMatrix(i, i + 1, i, i).getColumnVector(0);
-
-            double x0 = x.getEntry(0);
-            double sign = 0.d;
-            if (x0 < 0.d) {
-                sign = -1.d;
-            } else if (x0 > 0.d) {
-                sign = 1.d;
-            }
-
-            x.setEntry(0, x0 + sign * x.getNorm());
-            x = x.unitVector();
+            x = unitL2norm(x);
 
             RealMatrix subR = R.getSubMatrix(i, i + 1, 0, n - 1);
-            R.setSubMatrix(subR.subtract(x.outerProduct(subR.preMultiply(x)).scalarMultiply(2)).getData(), i, 0);
+            R.setSubMatrix(subR.subtract(x.outerProduct(subR.preMultiply(x)).scalarMultiply(2))
+                               .getData(), i, 0);
 
             RealMatrix subQt = Qt.getSubMatrix(i, i + 1, 0, n - 1);
-            Qt.setSubMatrix(subQt.subtract(x.outerProduct(subQt.preMultiply(x)).scalarMultiply(2)).getData(), i, 0);
+            Qt.setSubMatrix(subQt.subtract(x.outerProduct(subQt.preMultiply(x)).scalarMultiply(2))
+                                 .getData(), i, 0);
         }
+    }
+
+    @Nonnull
+    static RealVector unitL2norm(@Nonnull final RealVector x) {
+        double x0 = x.getEntry(0);
+        double sign = MathUtils.sign(x0);
+        x.setEntry(0, x0 + sign * x.getNorm());
+        return x.unitVector();
     }
 
     /**
      * Find eigenvalues and eigenvectors of given tridiagonal matrix T.
      *
      * http://web.csulb.edu/~tgao/math423/s94.pdf
-     * http://stats.stackexchange.com/questions/20643/finding-matrix-eigenvectors-using-qr-decomposition
+     * http://stats.stackexchange.com/questions/20643/finding
+     * -matrix-eigenvectors-using-qr-decomposition
      *
      * @param T target tridiagonal matrix
      * @param nIter number of iterations for the QR method
      * @param eigvals eigenvalues are stored here
      * @param eigvecs eigenvectors are stored here
      */
-    @Nonnull
     public static void tridiagonalEigen(@Nonnull final RealMatrix T, @Nonnull final int nIter,
             @Nonnull final double[] eigvals, @Nonnull final RealMatrix eigvecs) {
         Preconditions.checkArgument(Arrays.deepEquals(T.getData(), T.transpose().getData()),
-                "Target matrix T must be a symmetric (tridiagonal) matrix");
+            "Target matrix T must be a symmetric (tridiagonal) matrix");
         Preconditions.checkArgument(eigvecs.getRowDimension() == eigvecs.getColumnDimension(),
-                "eigvecs must be a square matrix");
+            "eigvecs must be a square matrix");
         Preconditions.checkArgument(T.getRowDimension() == eigvecs.getRowDimension(),
-                "T and eigvecs must be the same shape");
+            "T and eigvecs must be the same shape");
         Preconditions.checkArgument(eigvals.length == eigvecs.getRowDimension(),
-                "Number of eigenvalues and eigenvectors must be same");
+            "Number of eigenvalues and eigenvectors must be same");
 
         int nEig = eigvals.length;
 
         // initialize eigvecs as an identity matrix
-        eigvecs.setSubMatrix(new double[nEig][nEig], 0, 0);
-        for (int i = 0; i < nEig; i++) {
-            eigvecs.setEntry(i, i, 1);
-        }
+        eigvecs.setSubMatrix(eye(nEig), 0, 0);
 
         RealMatrix T_ = T.copy();
 
         for (int i = 0; i < nIter; i++) {
             // QR decomposition for the tridiagonal matrix T
-            RealMatrix R = new Array2DRowRealMatrix(new double[nEig][nEig]);
-            RealMatrix Qt = new Array2DRowRealMatrix(new double[nEig][nEig]);
+            RealMatrix R = new Array2DRowRealMatrix(nEig, nEig);
+            RealMatrix Qt = new Array2DRowRealMatrix(nEig, nEig);
             tridiagonalQR(T_, R, Qt);
 
             RealMatrix Q = Qt.transpose();
