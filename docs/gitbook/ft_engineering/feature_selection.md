@@ -21,6 +21,8 @@
 
 It is a useful technique to 1) improve prediction results by omitting redundant features, 2) to shorten training time, and 3) to know important features for prediction.
 
+*Note: The feature is supported Hivemall from v0.5-rc.1 or later.*
+
 <!-- toc -->
 
 # Supported Feature Selection algorithms
