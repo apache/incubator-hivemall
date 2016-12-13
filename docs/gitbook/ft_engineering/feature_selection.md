@@ -64,7 +64,7 @@ chi2 AS (
     CROSS JOIN stats r
 )
 SELECT
-  select_k_best(l.X, r.v.chi2, ${k}) -- top-k feature selection based on chi2 score
+  select_k_best(l.X, r.v.chi2, ${k}) as features -- top-k feature selection based on chi2 score
 FROM
   input l
   CROSS JOIN chi2 r;
@@ -81,9 +81,14 @@ CREATE TABLE input (
 set hivevar:k=2;
 
 WITH snr AS (
-  SELECT snr(X, Y) AS snr FROM input -- aggregated SNR as array<double>, shape = (1, #features)
+  SELECT snr(X, Y) AS snr -- aggregated SNR as array<double>, shape = (1, #features)
+  FROM input
 )
-SELECT select_k_best(X, snr, ${k}) FROM input JOIN snr;
+SELECT 
+  select_k_best(X, snr, ${k}) as features
+FROM
+  input
+  CROSS JOIN snr;
 ```
 
 # Function signatures

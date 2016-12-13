@@ -202,9 +202,9 @@ CREATE FUNCTION zscore as 'hivemall.ftvec.scaling.ZScoreUDF' USING JAR '${hivema
 DROP FUNCTION IF EXISTS l2_normalize;
 CREATE FUNCTION l2_normalize as 'hivemall.ftvec.scaling.L2NormalizationUDF' USING JAR '${hivemall_jar}';
 
--------------------------
--- selection functions --
--------------------------
+---------------------------------
+-- Feature Selection functions --
+---------------------------------
 
 DROP FUNCTION IF EXISTS chi2;
 CREATE FUNCTION chi2 as 'hivemall.ftvec.selection.ChiSquareUDF' USING JAR '${hivemall_jar}';

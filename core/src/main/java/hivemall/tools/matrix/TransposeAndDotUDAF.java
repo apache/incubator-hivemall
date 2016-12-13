@@ -21,12 +21,14 @@ package hivemall.tools.matrix;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Preconditions;
+import hivemall.utils.lang.SizeOf;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -93,11 +95,12 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
 
             @Override
             public int estimate() {
-                return aggMatrix != null ? aggMatrix.length * aggMatrix[0].length * 8 : 0;
+                return aggMatrix != null ? aggMatrix.length * aggMatrix[0].length * SizeOf.DOUBLE
+                        : 0;
             }
 
             public void init(int n, int m) {
-                aggMatrix = new double[n][m];
+                this.aggMatrix = new double[n][m];
             }
 
             public void reset() {
@@ -114,14 +117,14 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
             super.init(mode, OIs);
 
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
-                matrix0RowOI = HiveUtils.asListOI(OIs[0]);
-                matrix0ElOI = HiveUtils.asDoubleCompatibleOI(matrix0RowOI.getListElementObjectInspector());
-                matrix1RowOI = HiveUtils.asListOI(OIs[1]);
-                matrix1ElOI = HiveUtils.asDoubleCompatibleOI(matrix1RowOI.getListElementObjectInspector());
+                this.matrix0RowOI = HiveUtils.asListOI(OIs[0]);
+                this.matrix0ElOI = HiveUtils.asDoubleCompatibleOI(matrix0RowOI.getListElementObjectInspector());
+                this.matrix1RowOI = HiveUtils.asListOI(OIs[1]);
+                this.matrix1ElOI = HiveUtils.asDoubleCompatibleOI(matrix1RowOI.getListElementObjectInspector());
             } else {
-                aggMatrixOI = HiveUtils.asListOI(OIs[0]);
-                aggMatrixRowOI = HiveUtils.asListOI(aggMatrixOI.getListElementObjectInspector());
-                aggMatrixElOI = HiveUtils.asDoubleOI(aggMatrixRowOI.getListElementObjectInspector());
+                this.aggMatrixOI = HiveUtils.asListOI(OIs[0]);
+                this.aggMatrixRowOI = HiveUtils.asListOI(aggMatrixOI.getListElementObjectInspector());
+                this.aggMatrixElOI = HiveUtils.asDoubleOI(aggMatrixRowOI.getListElementObjectInspector());
             }
 
             return ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
@@ -129,28 +132,29 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
 
         @Override
         public AbstractAggregationBuffer getNewAggregationBuffer() throws HiveException {
-            final TransposeAndDotAggregationBuffer myAgg = new TransposeAndDotAggregationBuffer();
+            TransposeAndDotAggregationBuffer myAgg = new TransposeAndDotAggregationBuffer();
             reset(myAgg);
             return myAgg;
         }
 
         @Override
-        public void reset(AggregationBuffer agg) throws HiveException {
-            final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
+        public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
+                throws HiveException {
+            TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
             myAgg.reset();
         }
 
         @Override
-        public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
+        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
+                Object[] parameters) throws HiveException {
             final Object matrix0RowObj = parameters[0];
             final Object matrix1RowObj = parameters[1];
 
-            Preconditions.checkNotNull(matrix0RowObj);
-            Preconditions.checkNotNull(matrix1RowObj);
+            Preconditions.checkNotNull(matrix0RowObj, UDFArgumentException.class);
+            Preconditions.checkNotNull(matrix1RowObj, UDFArgumentException.class);
 
             final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
 
-            // init
             if (matrix0Row == null) {
                 matrix0Row = new double[matrix0RowOI.getListLength(matrix0RowObj)];
             }
@@ -173,14 +177,15 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public void merge(AggregationBuffer agg, Object other) throws HiveException {
+        public void merge(@SuppressWarnings("deprecation") AggregationBuffer agg, Object other)
+                throws HiveException {
             if (other == null) {
                 return;
             }
 
             final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
 
-            final List matrix = aggMatrixOI.getList(other);
+            final List<?> matrix = aggMatrixOI.getList(other);
             final int n = matrix.size();
             final double[] row = new double[aggMatrixRowOI.getListLength(matrix.get(0))];
             for (int i = 0; i < n; i++) {
@@ -197,12 +202,14 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public Object terminatePartial(AggregationBuffer agg) throws HiveException {
+        public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
+                throws HiveException {
             return terminate(agg);
         }
 
         @Override
-        public Object terminate(AggregationBuffer agg) throws HiveException {
+        public Object terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
+                throws HiveException {
             final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
 
             final List<List<DoubleWritable>> result = new ArrayList<List<DoubleWritable>>();

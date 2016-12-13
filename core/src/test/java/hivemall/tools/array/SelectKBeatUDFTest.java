@@ -26,8 +26,8 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.IntWritable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,12 +45,13 @@ public class SelectKBeatUDFTest {
         final GenericUDF.DeferredObject[] dObjs = new GenericUDF.DeferredObject[] {
                 new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(data)),
                 new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(importanceList)),
-                new GenericUDF.DeferredJavaObject(new IntWritable(k))};
+                new GenericUDF.DeferredJavaObject(k)};
 
         selectKBest.initialize(new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                PrimitiveObjectInspectorFactory.writableIntObjectInspector});
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector, k)});
         final List<DoubleWritable> resultObj = selectKBest.evaluate(dObjs);
 
         Assert.assertEquals(resultObj.size(), k);

@@ -198,9 +198,9 @@ create temporary function zscore as 'hivemall.ftvec.scaling.ZScoreUDF';
 drop temporary function l2_normalize;
 create temporary function l2_normalize as 'hivemall.ftvec.scaling.L2NormalizationUDF';
 
--------------------------
--- selection functions --
--------------------------
+---------------------------------
+-- Feature Selection functions --
+---------------------------------
 
 drop temporary function chi2;
 create temporary function chi2 as 'hivemall.ftvec.selection.ChiSquareUDF';

@@ -18,6 +18,7 @@
  */
 package hivemall.utils.lang;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class Preconditions {
@@ -27,6 +28,21 @@ public final class Preconditions {
     public static <T> T checkNotNull(T reference) {
         if (reference == null) {
             throw new NullPointerException();
+        }
+        return reference;
+    }
+
+    public static <T, E extends Throwable> T checkNotNull(@Nullable T reference,
+            @Nonnull Class<E> clazz) throws E {
+        if (reference == null) {
+            final E throwable;
+            try {
+                throwable = clazz.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalStateException(
+                    "Failed to instantiate a class: " + clazz.getName(), e);
+            }
+            throw throwable;
         }
         return reference;
     }
@@ -41,6 +57,20 @@ public final class Preconditions {
     public static void checkArgument(boolean expression) {
         if (!expression) {
             throw new IllegalArgumentException();
+        }
+    }
+
+    public static <E extends Throwable> void checkArgument(boolean expression,
+            @Nonnull Class<E> clazz) throws E {
+        if (!expression) {
+            final E throwable;
+            try {
+                throwable = clazz.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalStateException(
+                    "Failed to instantiate a class: " + clazz.getName(), e);
+            }
+            throw throwable;
         }
     }
 

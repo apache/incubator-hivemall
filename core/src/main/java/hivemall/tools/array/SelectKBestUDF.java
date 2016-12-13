@@ -21,8 +21,10 @@ package hivemall.tools.array;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Preconditions;
 
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -33,6 +35,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -40,24 +43,26 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "select_k_best",
-        value = "_FUNC_(array<number> array, const array<number> importance_list, const int k)"
+        value = "_FUNC_(array<number> array, const array<number> importance, const int k)"
                 + " - Returns selected top-k elements as array<double>")
-public class SelectKBestUDF extends GenericUDF {
+@UDFType(deterministic = true, stateful = false)
+public final class SelectKBestUDF extends GenericUDF {
+
     private ListObjectInspector featuresOI;
     private PrimitiveObjectInspector featureOI;
     private ListObjectInspector importanceListOI;
-    private PrimitiveObjectInspector importanceOI;
-    private PrimitiveObjectInspector kOI;
+    private PrimitiveObjectInspector importanceElemOI;
 
-    private int[] topKIndices;
+    private int _k;
+    private List<DoubleWritable> _result;
+    private int[] _topKIndices;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] OIs) throws UDFArgumentException {
         if (OIs.length != 3) {
-            throw new UDFArgumentLengthException("Specify three arguments.");
+            throw new UDFArgumentLengthException("Specify three arguments: " + OIs.length);
         }
 
         if (!HiveUtils.isNumberListOI(OIs[0])) {
@@ -75,11 +80,18 @@ public class SelectKBestUDF extends GenericUDF {
                     + OIs[2].getTypeName() + " was passed as `k`");
         }
 
-        featuresOI = HiveUtils.asListOI(OIs[0]);
-        featureOI = HiveUtils.asDoubleCompatibleOI(featuresOI.getListElementObjectInspector());
-        importanceListOI = HiveUtils.asListOI(OIs[1]);
-        importanceOI = HiveUtils.asDoubleCompatibleOI(importanceListOI.getListElementObjectInspector());
-        kOI = HiveUtils.asIntegerOI(OIs[2]);
+        this.featuresOI = HiveUtils.asListOI(OIs[0]);
+        this.featureOI = HiveUtils.asDoubleCompatibleOI(featuresOI.getListElementObjectInspector());
+        this.importanceListOI = HiveUtils.asListOI(OIs[1]);
+        this.importanceElemOI = HiveUtils.asDoubleCompatibleOI(importanceListOI.getListElementObjectInspector());
+
+        this._k = HiveUtils.getConstInt(OIs[2]);
+        Preconditions.checkArgument(_k >= 1, UDFArgumentException.class);
+        final DoubleWritable[] array = new DoubleWritable[_k];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = new DoubleWritable();
+        }
+        this._result = Arrays.asList(array);
 
         return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
     }
@@ -88,14 +100,15 @@ public class SelectKBestUDF extends GenericUDF {
     public List<DoubleWritable> evaluate(DeferredObject[] dObj) throws HiveException {
         final double[] features = HiveUtils.asDoubleArray(dObj[0].get(), featuresOI, featureOI);
         final double[] importanceList = HiveUtils.asDoubleArray(dObj[1].get(), importanceListOI,
-            importanceOI);
-        final int k = PrimitiveObjectInspectorUtils.getInt(dObj[2].get(), kOI);
+            importanceElemOI);
 
-        Preconditions.checkNotNull(features);
-        Preconditions.checkNotNull(importanceList);
-        Preconditions.checkArgument(features.length == importanceList.length);
-        Preconditions.checkArgument(features.length >= k);
+        Preconditions.checkNotNull(features, UDFArgumentException.class);
+        Preconditions.checkNotNull(importanceList, UDFArgumentException.class);
+        Preconditions.checkArgument(features.length == importanceList.length,
+            UDFArgumentException.class);
+        Preconditions.checkArgument(features.length >= _k, UDFArgumentException.class);
 
+        int[] topKIndices = _topKIndices;
         if (topKIndices == null) {
             final List<Map.Entry<Integer, Double>> list = new ArrayList<Map.Entry<Integer, Double>>();
             for (int i = 0; i < importanceList.length; i++) {
@@ -108,17 +121,28 @@ public class SelectKBestUDF extends GenericUDF {
                 }
             });
 
-            topKIndices = new int[k];
-            for (int i = 0; i < k; i++) {
+            topKIndices = new int[_k];
+            for (int i = 0; i < topKIndices.length; i++) {
                 topKIndices[i] = list.get(i).getKey();
             }
+            this._topKIndices = topKIndices;
         }
 
-        final List<DoubleWritable> result = new ArrayList<DoubleWritable>();
-        for (int idx : topKIndices) {
-            result.add(new DoubleWritable(features[idx]));
+        final List<DoubleWritable> result = _result;
+        for (int i = 0; i < topKIndices.length; i++) {
+            int idx = topKIndices[i];
+            DoubleWritable d = result.get(i);
+            double f = features[idx];
+            d.set(f);
         }
         return result;
+    }
+
+    @Override
+    public void close() throws IOException {
+        // help GC
+        this._result = null;
+        this._topKIndices = null;
     }
 
     @Override

@@ -25,7 +25,9 @@ import java.util.List;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
@@ -138,6 +140,20 @@ public final class WritableUtils {
         final List<DoubleWritable> list = new ArrayList<DoubleWritable>(src.length);
         for (int i = 0; i < src.length; i++) {
             list.add(new DoubleWritable(src[i]));
+        }
+        return list;
+    }
+
+    @Nonnull
+    public static List<DoubleWritable> toWritableList(@Nonnull final double[] src,
+            @Nullable List<DoubleWritable> list) throws UDFArgumentException {
+        if (list == null) {
+            return toWritableList(src);
+        }
+
+        Preconditions.checkArgument(src.length == list.size(), UDFArgumentException.class);
+        for (int i = 0; i < src.length; i++) {
+            list.set(i, new DoubleWritable(src[i]));
         }
         return list;
     }

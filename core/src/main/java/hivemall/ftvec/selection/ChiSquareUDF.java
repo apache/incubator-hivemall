@@ -23,6 +23,7 @@ import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.StatsUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -60,11 +61,14 @@ public final class ChiSquareUDF extends GenericUDF {
     private double[] expectedRow = null; // to reuse
     private double[][] observed = null; // shape = (#features, #classes)
     private double[][] expected = null; // shape = (#features, #classes)
+    
+    private List<DoubleWritable>[] result;
 
+    @SuppressWarnings("unchecked")
     @Override
     public ObjectInspector initialize(ObjectInspector[] OIs) throws UDFArgumentException {
         if (OIs.length != 2) {
-            throw new UDFArgumentLengthException("Specify two arguments.");
+            throw new UDFArgumentLengthException("Specify two arguments: " + OIs.length);
         }
         if (!HiveUtils.isNumberListListOI(OIs[0])) {
             throw new UDFArgumentTypeException(0,
@@ -82,12 +86,13 @@ public final class ChiSquareUDF extends GenericUDF {
         this.observedElOI = HiveUtils.asDoubleCompatibleOI(observedRowOI.getListElementObjectInspector());
         this.expectedOI = HiveUtils.asListOI(OIs[0]);
         this.expectedRowOI = HiveUtils.asListOI(expectedOI.getListElementObjectInspector());
-        this.expectedElOI = HiveUtils.asDoubleCompatibleOI(expectedRowOI.getListElementObjectInspector());
-
+        this.expectedElOI = HiveUtils.asDoubleCompatibleOI(expectedRowOI.getListElementObjectInspector());        
+        this.result = new List[2];
+        
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
-
+        
         return ObjectInspectorFactory.getStandardStructObjectInspector(
             Arrays.asList("chi2", "pvalue"), fieldOIs);
     }
@@ -102,15 +107,15 @@ public final class ChiSquareUDF extends GenericUDF {
         }
 
         final int nClasses = observedObj.size();
-        Preconditions.checkArgument(nClasses == expectedObj.size()); // same #rows
+        Preconditions.checkArgument(nClasses == expectedObj.size(), UDFArgumentException.class);
 
         // explode and transpose matrix
         for (int i = 0; i < nClasses; i++) {
             Object observedObjRow = observedObj.get(i);
             Object expectedObjRow = expectedObj.get(i);
 
-            Preconditions.checkNotNull(observedObjRow);
-            Preconditions.checkNotNull(expectedObjRow);
+            Preconditions.checkNotNull(observedObjRow, UDFArgumentException.class);
+            Preconditions.checkNotNull(expectedObjRow, UDFArgumentException.class);
 
             if (observedRow == null) {
                 observedRow = HiveUtils.asDoubleArray(observedObjRow, observedRowOI, observedElOI,
@@ -133,13 +138,21 @@ public final class ChiSquareUDF extends GenericUDF {
             }
         }
 
-        final Map.Entry<double[], double[]> chi2 = StatsUtils.chiSquare(observed, expected);
-
-        @SuppressWarnings("unchecked")
-        final List<DoubleWritable>[] result = new List[2];
-        result[0] = WritableUtils.toWritableList(chi2.getKey());
-        result[1] = WritableUtils.toWritableList(chi2.getValue());
+        Map.Entry<double[], double[]> chi2 = StatsUtils.chiSquare(observed, expected);
+        
+        result[0] = WritableUtils.toWritableList(chi2.getKey(), result[0]);
+        result[1] = WritableUtils.toWritableList(chi2.getValue(), result[1]);
         return result;
+    }
+
+    @Override
+    public void close() throws IOException {
+        // help GC
+        this.observedRow = null;
+        this.expectedRow = null;
+        this.observed = null;
+        this.expected = null;
+        this.result = null;
     }
 
     @Override

@@ -32,14 +32,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.IntWritable;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class SignalNoiseRatioUDAFTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void snrBinaryClass() throws Exception {
@@ -255,11 +250,10 @@ public class SignalNoiseRatioUDAFTest {
         Assert.assertArrayEquals(answer, result, 1e-5);
     }
 
-    @Test
+    @Test(expected = UDFArgumentException.class)
     public void shouldFail0() throws Exception {
-        expectedException.expect(UDFArgumentException.class);
-
         final SignalNoiseRatioUDAF snr = new SignalNoiseRatioUDAF();
+
         final ObjectInspector[] OIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableIntObjectInspector)};
@@ -286,11 +280,10 @@ public class SignalNoiseRatioUDAFTest {
         }
     }
 
-    @Test
+    @Test(expected = UDFArgumentException.class)
     public void shouldFail1() throws Exception {
-        expectedException.expect(IllegalArgumentException.class);
-
         final SignalNoiseRatioUDAF snr = new SignalNoiseRatioUDAF();
+
         final ObjectInspector[] OIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableIntObjectInspector)};
@@ -318,11 +311,10 @@ public class SignalNoiseRatioUDAFTest {
         }
     }
 
-    @Test
+    @Test(expected = UDFArgumentException.class)
     public void shouldFail2() throws Exception {
-        expectedException.expect(IllegalArgumentException.class);
-
         final SignalNoiseRatioUDAF snr = new SignalNoiseRatioUDAF();
+
         final ObjectInspector[] OIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableIntObjectInspector)};
