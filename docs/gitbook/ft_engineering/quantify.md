@@ -19,7 +19,7 @@
         
 `quantified_features` is useful for transforming values of non-number columns to indexed numbers.
 
-*Note: The feature is supported Hivemall v0.4 or later.*
+*Note: The feature is supported from Hivemall v0.4 or later.*
 
 ```sql
 desc train;
