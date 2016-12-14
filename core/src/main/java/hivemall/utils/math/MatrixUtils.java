@@ -44,12 +44,11 @@ public final class MatrixUtils {
     /**
      * Solve Yule-walker equation by Levinson-Durbin Recursion.
      * 
+     * <pre>
      * R_j = ∑_{i=1}^{k} A_i R_{j-i} where j = 1..k, R_{-i} = R'_i
+     * </pre>
      * 
-     * cf.
-     * http://www.emptyloop.com/technotes/a%20tutorial%20on%20linear%20prediction%20and%20levinson
-     * -durbin.pdf
-     * 
+     * @see http://www.emptyloop.com/technotes/a%20tutorial%20on%20linear%20prediction%20and%20levinson-durbin.pdf
      * @param R autocovariance where |R| >= order
      * @param A coefficient to be solved where |A| >= order + 1
      * @return E variance of prediction error
@@ -139,8 +138,7 @@ public final class MatrixUtils {
     /**
      * Fit an AR(order) model using the Burg's method.
      *
-     * cf. https://searchcode.com/codesearch/view/9503568/
-     *
+     * @see https://searchcode.com/codesearch/view/9503568/
      * @param X data vector to estimate where |X| >= order
      * @param A coefficient to be solved where |A| >= order + 1
      * @return E variance of white noise
@@ -511,9 +509,8 @@ public final class MatrixUtils {
 
     /**
      * Find the first singular vector/value of a matrix A based on the Power method.
-     *
-     * http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
-     *
+     * 
+     * @see http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
      * @param A target matrix
      * @param x0 initial vector
      * @param nIter number of iterations for the Power method
@@ -555,8 +552,7 @@ public final class MatrixUtils {
     /**
      * Lanczos tridiagonalization for a symmetric matrix C to make s * s tridiagonal matrix T.
      *
-     * http://www.cas.mcmaster.ca/~qiao/publications/spie05.pdf
-     *
+     * @see http://www.cas.mcmaster.ca/~qiao/publications/spie05.pdf
      * @param C target symmetric matrix
      * @param a initial vector
      * @param T result is stored here
@@ -606,9 +602,8 @@ public final class MatrixUtils {
     /**
      * QR decomposition for a tridiagonal matrix T.
      *
-     * https://gist.github.com/lightcatcher/8118181
-     * http://www.ericmart.in/blog/optimizing_julia_tridiag_qr
-     *
+     * @see https://gist.github.com/lightcatcher/8118181
+     * @see http://www.ericmart.in/blog/optimizing_julia_tridiag_qr
      * @param T target tridiagonal matrix
      * @param R output matrix for R which is the same shape as T
      * @param Qt output matrix for Q.T which is the same shape an T
@@ -654,10 +649,8 @@ public final class MatrixUtils {
     /**
      * Find eigenvalues and eigenvectors of given tridiagonal matrix T.
      *
-     * http://web.csulb.edu/~tgao/math423/s94.pdf
-     * http://stats.stackexchange.com/questions/20643/finding
-     * -matrix-eigenvectors-using-qr-decomposition
-     *
+     * @see http://web.csulb.edu/~tgao/math423/s94.pdf
+     * @see http://stats.stackexchange.com/questions/20643/finding-matrix-eigenvectors-using-qr-decomposition
      * @param T target tridiagonal matrix
      * @param nIter number of iterations for the QR method
      * @param eigvals eigenvalues are stored here
