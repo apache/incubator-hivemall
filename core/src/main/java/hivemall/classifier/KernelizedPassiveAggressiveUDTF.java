@@ -1,20 +1,20 @@
 /*
- * Hivemall: Hive scalable Machine Learning Library
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Copyright (C) 2015 Makoto YUI
- * Copyright (C) 2013-2015 National Institute of Advanced Industrial Science and Technology (AIST)
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package hivemall.classifier;
 
@@ -57,8 +57,8 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
                 "KernelizedPassiveAggressiveUDTF takes 2 or 3 arguments: List<Text|Int|BitInt> features, int label [, constant string options]");
         }
         processOptions(argOIs);
-        supportVectors = new ArrayList<FeatureValue[]>();
-        alpha = new FloatArrayList();
+        this.supportVectors = new ArrayList<FeatureValue[]>();
+        this.alpha = new FloatArrayList();
         return super.initialize(argOIs);
     }
 
@@ -82,11 +82,11 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
         float pkc = 1.f;
         int degree = 2;
         float c = 1.f;
-        pa1 = false;
-        pa2 = false;
+        this.pa1 = false;
+        this.pa2 = false;
         if (cl != null) {
-            pa1 = cl.hasOption("pa1");
-            pa2 = cl.hasOption("pa2");
+            this.pa1 = cl.hasOption("pa1");
+            this.pa2 = cl.hasOption("pa2");
             if (pa1 && pa2) {
                 throw new UDFArgumentException("PA-1 and PA-2 cannot be simultaneously set.");
             }
@@ -99,15 +99,14 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
             if (d_str != null) {
                 degree = Integer.parseInt(d_str);
                 if (!(degree >= 1)) {
-                    throw new UDFArgumentException(
-                        "Polynomial Kernel Degree d must be d >= 1: " + degree);
+                    throw new UDFArgumentException("Polynomial Kernel Degree d must be d >= 1: "
+                            + degree);
                 }
             }
             if (c_str != null) {
                 c = Float.parseFloat(c_str);
                 if (!(c > 0.f)) {
-                    throw new UDFArgumentException(
-                        "Aggressiveness parameter C must be C > 0: " + c);
+                    throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: " + c);
                 }
             }
         }
@@ -129,8 +128,7 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
     }
 
     protected void train(@Nullable List<FeatureValue[]> supportVectors, //Null when kernel expansion enabled
-            @Nonnull FloatArrayList alpha, @Nonnull final FeatureValue[] features,
-            final int label) {
+            @Nonnull FloatArrayList alpha, @Nonnull final FeatureValue[] features, final int label) {
         final float y = label > 0 ? 1.f : -1.f;
 
         PredictionResult margin = calcScoreWithKernelAndNorm(supportVectors, alpha, features);
@@ -236,7 +234,7 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
         @Override
         public StructObjectInspector initialize(ObjectInspector[] argOIs)
                 throws UDFArgumentException {
-            supportVectorsIndicesPKI = new HashMap<Object, BitSet>();
+            this.supportVectorsIndicesPKI = new HashMap<Object, BitSet>();
             return super.initialize(argOIs);
         }
 
@@ -253,8 +251,7 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
             int size = svSharedIndices.cardinality();
             List<FeatureValue[]> supportVectorsPKI = new ArrayList<FeatureValue[]>(size);
             FloatArrayList alpha = new FloatArrayList(size);
-            for (int i = svSharedIndices.nextSetBit(0); i >= 0; i =
-                    svSharedIndices.nextSetBit(i + 1)) {
+            for (int i = svSharedIndices.nextSetBit(0); i >= 0; i = svSharedIndices.nextSetBit(i + 1)) {
                 FeatureValue[] sv = super.supportVectors.get(i);
                 supportVectorsPKI.add(sv);
                 alpha.add(super.alpha.get(i));
@@ -285,10 +282,10 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
         @Override
         public StructObjectInspector initialize(ObjectInspector[] argOIs)
                 throws UDFArgumentException {
-            w0 = 0.f;
-            w1 = new HashMap<Object, Double>();
-            w2 = new HashMap<Object, Double>();
-            w3 = new HashMap<Object, Double>();
+            this.w0 = 0.f;
+            this.w1 = new HashMap<Object, Double>();
+            this.w2 = new HashMap<Object, Double>();
+            this.w3 = new HashMap<Object, Double>();
             return super.initialize(argOIs);
         }
 
@@ -343,8 +340,8 @@ public class KernelizedPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF 
         protected void updateKernel(float label, float loss, PredictionResult margin,
                 @Nonnull FeatureValue[] features) {
             if (loss > 0.f) { // y * p < 1
-                float eta = super.pa1 ? eta1(loss, margin)
-                        : super.pa2 ? eta2(loss, margin) : eta(loss, margin);
+                float eta = super.pa1 ? eta1(loss, margin) : super.pa2 ? eta2(loss, margin) : eta(
+                    loss, margin);
                 float diff = eta * label;
                 expandKernel(features, diff);
                 super.alpha.add(diff);//unnecessary (only for testing purposes)
