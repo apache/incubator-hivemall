@@ -36,6 +36,7 @@ import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -49,6 +50,7 @@ import org.apache.hadoop.io.BooleanWritable;
         value = "_FUNC_(double|array<double> x [, const string options])"
                 + " - Returns outlier/change-point scores and decisions using ChangeFinder."
                 + " It will return a tuple <double outlier_score, double changepoint_score [, boolean is_anomaly [, boolean is_changepoint]]")
+@UDFType(deterministic = false, stateful = true)
 public final class ChangeFinderUDF extends UDFWithOptions {
 
     private transient Parameters _params;

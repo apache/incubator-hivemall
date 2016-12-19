@@ -20,6 +20,7 @@ package hivemall.utils.lang;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class PreconditionsTest {
@@ -29,9 +30,35 @@ public class PreconditionsTest {
         Preconditions.checkNotNull(null, UDFArgumentException.class);
     }
 
+    @Test
+    public void testCheckNotNullTClassOfE2() {
+        final String msg = "safdfvzfd";
+        try {
+            Preconditions.checkNotNull(null, msg, UDFArgumentException.class);
+        } catch (UDFArgumentException e) {
+            if (e.getMessage().equals(msg)) {
+                return;
+            }
+        }
+        Assert.fail("should not reach");
+    }
+
     @Test(expected = HiveException.class)
-    public void testCheckArgumentBooleanClassOfE() throws UDFArgumentException, HiveException {
+    public void testCheckArgumentBooleanClassOfE() throws HiveException {
         Preconditions.checkArgument(false, HiveException.class);
+    }
+
+    @Test
+    public void testCheckArgumentBooleanClassOfE2() {
+        final String msg = "safdfvzfd";
+        try {
+            Preconditions.checkArgument(false, msg, HiveException.class);
+        } catch (HiveException e) {
+            if (e.getMessage().equals(msg)) {
+                return;
+            }
+        }
+        Assert.fail("should not reach");
     }
 
 }

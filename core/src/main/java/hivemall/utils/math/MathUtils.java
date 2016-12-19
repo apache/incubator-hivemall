@@ -292,4 +292,13 @@ public final class MathUtils {
         return true;
     }
 
+    public static double sign(final double x) {
+        if (x < 0.d) {
+            return -1.d;
+        } else if (x > 0.d) {
+            return 1.d;
+        }
+        return 0; // 0 or NaN
+    }
+
 }

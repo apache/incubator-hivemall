@@ -18,6 +18,9 @@
  */
 package hivemall.utils.lang;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -47,6 +50,26 @@ public final class Preconditions {
         return reference;
     }
 
+    public static <T, E extends Throwable> T checkNotNull(@Nullable T reference,
+            @Nonnull String errorMessage, @Nonnull Class<E> clazz) throws E {
+        if (reference == null) {
+            final E throwable;
+            try {
+                Constructor<E> constructor = clazz.getConstructor(String.class);
+                throwable = constructor.newInstance(errorMessage);
+            } catch (NoSuchMethodException | SecurityException e1) {
+                throw new IllegalStateException("Failed to get a Constructor(String): "
+                        + clazz.getName(), e1);
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                    | InvocationTargetException e2) {
+                throw new IllegalStateException(
+                    "Failed to instantiate a class: " + clazz.getName(), e2);
+            }
+            throw throwable;
+        }
+        return reference;
+    }
+
     public static <T> T checkNotNull(T reference, @Nullable Object errorMessage) {
         if (reference == null) {
             throw new NullPointerException(String.valueOf(errorMessage));
@@ -69,6 +92,25 @@ public final class Preconditions {
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new IllegalStateException(
                     "Failed to instantiate a class: " + clazz.getName(), e);
+            }
+            throw throwable;
+        }
+    }
+
+    public static <E extends Throwable> void checkArgument(boolean expression,
+            @Nonnull String errorMessage, @Nonnull Class<E> clazz) throws E {
+        if (!expression) {
+            final E throwable;
+            try {
+                Constructor<E> constructor = clazz.getConstructor(String.class);
+                throwable = constructor.newInstance(errorMessage);
+            } catch (NoSuchMethodException | SecurityException e1) {
+                throw new IllegalStateException("Failed to get a Constructor(String): "
+                        + clazz.getName(), e1);
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                    | InvocationTargetException e2) {
+                throw new IllegalStateException(
+                    "Failed to instantiate a class: " + clazz.getName(), e2);
             }
             throw throwable;
         }
