@@ -91,22 +91,18 @@
 			<organizationUrl>https://www.treasuredata.com/</organizationUrl>
 			<roles>
 				<role>PPMC Member</role>
-				<role>Committer</role>
-				<role>Initial Developer</role>
 			</roles>
 			<timezone>+9</timezone>
 		</developer>
 		<developer>
 			<id>maropu</id>
 			<name>Takashi Yamamuro</name>
-			<email>linguin.m.s[at]gmail.com</email>
+			<email>yamamuro[at]apache.org</email>
 			<url>https://github.com/maropu/</url>
 			<organization>Nippon Telegraph and Telephone Corporation (NTT)</organization>
 			<organizationUrl>http://www.ntt.co.jp/</organizationUrl>
 			<roles>
 				<role>PPMC Member</role>
-				<role>Committer</role>
-				<role>Apache Spark Contributor</role>
 			</roles>
 			<timezone>+9</timezone>
 		</developer>
@@ -119,9 +115,7 @@
 			<organizationUrl>http://hortonworks.com/</organizationUrl>
 			<roles>
 				<role>PPMC Member</role>
-				<role>Committer</role>
-				<role>ASF Member</role>
-				<role>Apache Pig PMC Chair</role>
+				<role>Mentor</role>
 			</roles>
 			<timezone>-8</timezone>
 		</developer>
@@ -134,7 +128,6 @@
 			<organizationUrl>https://www.treasuredata.com/</organizationUrl>
 			<roles>
 				<role>PPMC Member</role>
-				<role>Committer</role>
 			</roles>
 			<timezone>+9</timezone>
 		</developer>
@@ -147,12 +140,10 @@
 			<organizationUrl>http://www.ntt.co.jp/</organizationUrl>
 			<roles>
 				<role>PPMC Member</role>
-				<role>Committer</role>
-				<role>Apache Hadoop Committer</role>
 			</roles>
 			<timezone>+9</timezone>
 		</developer>
-        <!-- Project mentors -->
+		<!-- Project mentors -->
 		<developer>
 			<id>rvs</id>
 			<name>Roman Shaposhnik</name>
@@ -161,11 +152,7 @@
 			<organization>Pivotal Inc.</organization>
 			<organizationUrl>https://pivotal.io/</organizationUrl>
 			<roles>
-				<role>PPMC Member</role>
 				<role>Champion</role>
-				<role>ASF Member</role>
-				<role>Incubator PMC Member</role>
-				<role>Apache Bigtop PMC Member</role>
 			</roles>
 		</developer>
 		<developer>
@@ -176,10 +163,7 @@
 			<organization>Databricks Inc.</organization>
 			<organizationUrl>https://databricks.com/</organizationUrl>
 			<roles>
-				<role>PPMC Member</role>
 				<role>Mentor</role>
-				<role>ASF Member</role>
-				<role>Apache Spark PMC Member</role>
 			</roles>
 		</developer>
 		<developer>
@@ -190,10 +174,7 @@
 			<organization>Microsoft Corporation</organization>
 			<organizationUrl>https://www.microsoft.com/</organizationUrl>
 			<roles>
-				<role>PPMC Member</role>
 				<role>Mentor</role>
-				<role>ASF Member</role>
-				<role>Apache REEF Chair</role>
 			</roles>
 		</developer>
 		<developer>
@@ -204,10 +185,7 @@
 			<organization>Databricks Inc.</organization>
 			<organizationUrl>https://databricks.com/</organizationUrl>
 			<roles>
-				<role>PPMC Member</role>
 				<role>Mentor</role>
-				<role>ASF Member</role>
-				<role>Apache Spark PMC Member</role>
 			</roles>
 		</developer>
 	</developers>
