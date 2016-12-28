@@ -255,6 +255,11 @@ public final class SpaceEfficientDenseModel extends AbstractPredictionModel {
     }
 
     @Override
+    public void setWeight(@Nonnull Object feature, float value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public float getCovariance(Object feature) {
         int i = HiveUtils.parseInt(feature);
         if (i >= size) {

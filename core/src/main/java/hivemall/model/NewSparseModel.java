@@ -1,20 +1,20 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Hivemall: Hive scalable Machine Learning Library
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * Copyright (C) 2015 Makoto YUI
+ * Copyright (C) 2013-2015 National Institute of Advanced Industrial Science and Technology (AIST)
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package hivemall.model;
 
@@ -29,14 +29,18 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public final class SparseModel extends AbstractPredictionModel {
-    private static final Log logger = LogFactory.getLog(SparseModel.class);
+public final class NewSparseModel extends AbstractPredictionModel {
+    private static final Log logger = LogFactory.getLog(NewSparseModel.class);
 
     private final OpenHashMap<Object, IWeightValue> weights;
     private final boolean hasCovar;
     private boolean clockEnabled;
 
-    public SparseModel(int size, boolean hasCovar) {
+    public NewSparseModel(int size) {
+        this(size, false);
+    }
+
+    public NewSparseModel(int size, boolean hasCovar) {
         super();
         this.weights = new OpenHashMap<Object, IWeightValue>(size);
         this.hasCovar = hasCovar;
@@ -131,8 +135,15 @@ public final class SparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public void setWeight(@Nonnull Object feature, float value) {
-        throw new UnsupportedOperationException();
+    public void setWeight(Object feature, float value) {
+        if(weights.containsKey(feature)) {
+            IWeightValue weight = weights.get(feature);
+            weight.set(value);
+        } else {
+            IWeightValue weight = new WeightValue(value);
+            weight.set(value);
+            weights.put(feature, weight);
+        }
     }
 
     @Override
