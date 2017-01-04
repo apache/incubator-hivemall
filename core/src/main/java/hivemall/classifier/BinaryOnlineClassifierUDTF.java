@@ -247,7 +247,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     }
 
     @Override
-    public final void close() throws HiveException {
+    public void close() throws HiveException {
         super.close();
         if (model != null) {
             int numForwarded = 0;

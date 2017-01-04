@@ -18,11 +18,13 @@
  */
 package hivemall.mf;
 
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 
@@ -63,7 +65,7 @@ public class BPRMatrixFactorizationUDTFTest {
         final IntWritable negItem = new IntWritable();
         final Object[] args = new Object[] {user, posItem, negItem};
 
-        BufferedReader train = IOUtils.bufferedReader(getClass().getResourceAsStream("ml1k.train"));
+        BufferedReader train = readFile("ml1k.train.gz");
         String line;
         while ((line = train.readLine()) != null) {
             parseLine(line, user, posItem, negItem);
@@ -98,7 +100,7 @@ public class BPRMatrixFactorizationUDTFTest {
         final IntWritable negItem = new IntWritable();
         final Object[] args = new Object[] {user, posItem, negItem};
 
-        BufferedReader train = IOUtils.bufferedReader(getClass().getResourceAsStream("ml1k.train"));
+        BufferedReader train = readFile("ml1k.train.gz");
         String line;
         while ((line = train.readLine()) != null) {
             parseLine(line, user, posItem, negItem);
@@ -109,6 +111,14 @@ public class BPRMatrixFactorizationUDTFTest {
         Assert.assertTrue("finishedIter: " + finishedIter, finishedIter < iterations);
     }
 
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        InputStream is = BPRMatrixFactorizationUDTFTest.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
+    }
 
     private static void parseLine(@Nonnull String line, @Nonnull IntWritable user,
             @Nonnull IntWritable posItem, @Nonnull IntWritable negItem) {

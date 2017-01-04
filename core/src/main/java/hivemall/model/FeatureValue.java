@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 
 import org.apache.hadoop.io.Text;
 
-public final class FeatureValue implements Comparable<FeatureValue> {
+public final class FeatureValue {
 
     private/* final */Object feature;
     private/* final */double value;
@@ -144,23 +144,6 @@ public final class FeatureValue implements Comparable<FeatureValue> {
             probe.feature = s;
             probe.value = 1.d;
         }
-    }
-
-    @Override
-    public int compareTo(FeatureValue o) {
-        if (feature instanceof Integer) {
-            return ((Integer) feature).compareTo((Integer) o.getFeature());
-        }
-        if (feature instanceof Text) {
-            try {
-                Integer f = Integer.valueOf(feature.toString());
-                Integer fo = Integer.valueOf(o.getFeature().toString());
-                return f.compareTo(fo);
-            } catch (NumberFormatException e) {
-                return ((Text) feature).compareTo((Text) o.getFeature());
-            }
-        }
-        throw new ClassCastException();
     }
 
 }

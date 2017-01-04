@@ -20,8 +20,12 @@ package hivemall.fm;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.zip.GZIPInputStream;
+
+import javax.annotation.Nonnull;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -87,8 +91,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
         double loss = 0.d;
         double cumul = 0.d;
         for (int trainingIteration = 1; trainingIteration <= ITERATIONS; ++trainingIteration) {
-            BufferedReader data = new BufferedReader(new InputStreamReader(
-                FieldAwareFactorizationMachineUDTFTest.class.getResourceAsStream("bigdata.tr.txt")));
+            BufferedReader data = readFile("bigdata.tr.txt.gz");
             loss = udtf._cvState.getCumulativeLoss();
             int lines = 0;
             for (int lineNumber = 0; lineNumber < MAX_LINES; ++lineNumber, ++lines) {
@@ -129,6 +132,15 @@ public class FieldAwareFactorizationMachineUDTFTest {
         }
         println("model size=" + udtf._model.getSize());
         Assert.assertTrue("Last loss was greater than expected: " + loss, loss < lossThreshold);
+    }
+
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        InputStream is = FieldAwareFactorizationMachineUDTFTest.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
     }
 
     private static String[] toStringArray(ArrayList<StringFeature> x) {
