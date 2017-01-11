@@ -46,7 +46,7 @@ public class ChangeFinder1DTest {
         ChangeFinder1D cf = new ChangeFinder1D(params, oi);
         double[] outScores = new double[2];
 
-        BufferedReader reader = readFile("cf1d.csv");
+        BufferedReader reader = readFile("cf1d.csv.gz");
         println("x outlier change");
         String line;
         int numOutliers = 0, numChangepoints = 0;

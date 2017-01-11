@@ -25,6 +25,10 @@ public abstract class HashFunction {
         return hash(s);
     }
 
+    public static int hash(final int first, final int second) {
+        return first * 157 + second;
+    }
+
     public abstract int hash(String data);
 
 }

@@ -18,6 +18,9 @@
  */
 package hivemall.model;
 
+import hivemall.utils.hashing.MurmurHash3;
+import hivemall.utils.lang.Preconditions;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -44,6 +47,12 @@ public final class FeatureValue {
     public <T> T getFeature() {
         return (T) feature;
     }
+    
+    public int getFeatureAsInt() {
+        Preconditions.checkNotNull(feature);
+        Preconditions.checkArgument(feature instanceof Integer);
+        return ((Integer) feature).intValue();
+    }
 
     public double getValue() {
         return value;
@@ -63,30 +72,42 @@ public final class FeatureValue {
 
     @Nullable
     public static FeatureValue parse(final Object o) throws IllegalArgumentException {
+        return parse(o, false);
+    }
+
+    @Nullable
+    public static FeatureValue parse(final Object o, final boolean mhash)
+            throws IllegalArgumentException {
         if (o == null) {
             return null;
         }
         String s = o.toString();
-        return parse(s);
+        return parse(s, mhash);
     }
 
     @Nullable
     public static FeatureValue parse(@Nonnull final String s) throws IllegalArgumentException {
+        return parse(s, false);
+    }
+
+    @Nullable
+    public static FeatureValue parse(@Nonnull final String s, final boolean mhash)
+            throws IllegalArgumentException {
         assert (s != null);
         final int pos = s.indexOf(':');
         if (pos == 0) {
             throw new IllegalArgumentException("Invalid feature value representation: " + s);
         }
 
-        final Text feature;
+        final Object feature;
         final double weight;
         if (pos > 0) {
             String s1 = s.substring(0, pos);
             String s2 = s.substring(pos + 1);
-            feature = new Text(s1);
+            feature = mhash ? Integer.valueOf(MurmurHash3.murmurhash3(s1)) : new Text(s1);
             weight = Double.parseDouble(s2);
         } else {
-            feature = new Text(s);
+            feature = mhash ? Integer.valueOf(MurmurHash3.murmurhash3(s)) : new Text(s);
             weight = 1.d;
         }
         return new FeatureValue(feature, weight);

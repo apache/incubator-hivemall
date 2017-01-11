@@ -51,8 +51,8 @@ import org.apache.hadoop.io.FloatWritable;
 public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(BinaryOnlineClassifierUDTF.class);
 
-    private ListObjectInspector featureListOI;
-    private PrimitiveObjectInspector labelOI;
+    protected ListObjectInspector featureListOI;
+    protected PrimitiveObjectInspector labelOI;
     private boolean parseFeature;
 
     protected PredictionModel model;
@@ -122,7 +122,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     }
 
     @Nullable
-    protected final FeatureValue[] parseFeatures(@Nonnull final List<?> features) {
+    protected FeatureValue[] parseFeatures(@Nonnull final List<?> features) {
         final int size = features.size();
         if (size == 0) {
             return null;
@@ -151,6 +151,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         assert (label == -1 || label == 0 || label == 1) : label;
     }
 
+    //@VisibleForTesting
     void train(List<?> features, int label) {
         FeatureValue[] featureVector = parseFeatures(features);
         train(featureVector, label);

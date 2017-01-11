@@ -18,6 +18,8 @@
  */
 package hivemall.utils.lang;
 
+import java.lang.reflect.Constructor;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -67,6 +69,27 @@ public final class Preconditions {
             try {
                 throwable = clazz.newInstance();
             } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalStateException(
+                    "Failed to instantiate a class: " + clazz.getName(), e);
+            }
+            throw throwable;
+        }
+    }
+
+    public static <E extends Throwable> void checkArgument(boolean expression,
+            @Nonnull Class<E> clazz, @Nullable Object errorMessage) throws E {
+        if (!expression) {
+            Constructor<E> constructor;
+            try {
+                constructor = clazz.getConstructor(String.class);
+            } catch (NoSuchMethodException | SecurityException e) {
+                throw new IllegalStateException(
+                    "Failed to get a constructor of " + clazz.getName(), e);
+            }
+            final E throwable;
+            try {
+                throwable = constructor.newInstance(errorMessage);
+            } catch (ReflectiveOperationException | IllegalArgumentException e) {
                 throw new IllegalStateException(
                     "Failed to instantiate a class: " + clazz.getName(), e);
             }
