@@ -18,6 +18,8 @@
  */
 package hivemall.ensemble.bagging;
 
+import javax.annotation.Nullable;
+
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDAF;
 import org.apache.hadoop.hive.ql.exec.UDAFEvaluator;
@@ -53,11 +55,15 @@ public final class VotedAvgUDAF extends UDAF {
             this.partial = null;
         }
 
-        public boolean iterate(double w) {
+        public boolean iterate(@Nullable DoubleWritable o) {
+            if (o == null) {
+                return true;
+            }
             if (partial == null) {
                 this.partial = new PartialResult();
                 partial.init();
             }
+            double w = o.get();
             if (w > 0) {
                 partial.positiveSum += w;
                 partial.positiveCnt++;
