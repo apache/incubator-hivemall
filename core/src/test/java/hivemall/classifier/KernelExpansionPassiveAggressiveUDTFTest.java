@@ -18,9 +18,6 @@
  */
 package hivemall.classifier;
 
-import static org.junit.Assert.assertEquals;
-import hivemall.model.PredictionResult;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,11 +29,10 @@ import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 
-import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,101 +40,7 @@ import org.junit.Test;
 public class KernelExpansionPassiveAggressiveUDTFTest {
 
     @Test
-    public void testKPAEta() throws UDFArgumentException {
-        KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
-
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
-        udtf.initialize(new ObjectInspector[] {intListOI, intOI});
-        float loss = 0.1f;
-
-        PredictionResult margin1 = new PredictionResult(0.5f).squaredNorm(0.05f);
-        float expectedLearningRate1 = 2.0f;
-        assertEquals(expectedLearningRate1, udtf.eta(loss, margin1), 1e-5f);
-
-        PredictionResult margin2 = new PredictionResult(0.5f).squaredNorm(0.01f);
-        float expectedLearningRate2 = 10.0f;
-        assertEquals(expectedLearningRate2, udtf.eta(loss, margin2), 1e-5f);
-    }
-
-    @Test
-    public void testKPA1Eta() throws UDFArgumentException {
-        KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
-
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
-        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-pa1 -c 3.0");
-        udtf.initialize(new ObjectInspector[] {intListOI, intOI, param});
-        float loss = 0.1f;
-
-        PredictionResult margin1 = new PredictionResult(0.5f).squaredNorm(0.05f);
-        float expectedLearningRate1 = 2.0f;
-        assertEquals(expectedLearningRate1, udtf.eta(loss, margin1), 1e-5f);
-
-        PredictionResult margin2 = new PredictionResult(0.5f).squaredNorm(0.01f);
-        float expectedLearningRate2 = 3.0f;
-        assertEquals(expectedLearningRate2, udtf.eta1(loss, margin2), 1e-5f);
-    }
-
-    @Test
-    public void testKPA1EtaDefaultParameter() throws UDFArgumentException {
-        KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
-
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
-        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-pa1");
-        udtf.initialize(new ObjectInspector[] {intListOI, intOI, param});
-        float loss = 0.1f;
-
-        PredictionResult margin = new PredictionResult(0.5f).squaredNorm(0.05f);
-        float expectedLearningRate = 1.0f;
-        assertEquals(expectedLearningRate, udtf.eta1(loss, margin), 1e-5f);
-    }
-
-    @Test
-    public void testKPA2EtaWithoutParameter() throws UDFArgumentException {
-        KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
-
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
-        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-pa2");
-        udtf.initialize(new ObjectInspector[] {intListOI, intOI, param});
-        float loss = 0.1f;
-
-        PredictionResult margin1 = new PredictionResult(0.5f).squaredNorm(0.05f);
-        float expectedLearningRate1 = 0.1818181f;
-        assertEquals(expectedLearningRate1, udtf.eta2(loss, margin1), 1e-5f);
-
-        PredictionResult margin2 = new PredictionResult(0.5f).squaredNorm(0.01f);
-        float expectedLearningRate2 = 0.1960784f;
-        assertEquals(expectedLearningRate2, udtf.eta2(loss, margin2), 1e-5f);
-    }
-
-    @Test
-    public void testKPA2EtaWithParameter() throws UDFArgumentException {
-        KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
-
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
-        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-pa2 -c 3.0");
-        udtf.initialize(new ObjectInspector[] {intListOI, intOI, param});
-        float loss = 0.1f;
-
-        PredictionResult margin1 = new PredictionResult(0.5f).squaredNorm(0.05f);
-        float expectedLearningRate1 = 0.4615384f;
-        assertEquals(expectedLearningRate1, udtf.eta2(loss, margin1), 1e-5f);
-
-        PredictionResult margin2 = new PredictionResult(0.5f).squaredNorm(0.01f);
-        float expectedLearningRate2 = 0.5660377f;
-        assertEquals(expectedLearningRate2, udtf.eta2(loss, margin2), 1e-5f);
-    }
-
-    @Test
-    public void testNews20() throws UDFArgumentException, IOException, ParseException {
+    public void testNews20() throws IOException, ParseException, HiveException {
         KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -155,7 +57,7 @@ public class KernelExpansionPassiveAggressiveUDTFTest {
                 words.add(tokens.nextToken());
             }
             Assert.assertFalse(words.isEmpty());
-            udtf.train(words, label);
+            udtf.process(new Object[] {words, label});
 
             words.clear();
             line = news20.readLine();

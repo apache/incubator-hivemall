@@ -182,25 +182,40 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
             this.f1 = new IntWritable();
             this.f2 = new DoubleWritable();
             this.f3 = new DoubleWritable();
-            this.forward = new Writable[] {f0, f1, f2, f3};
+            this.forward = new Writable[] {f0, null, null, null};
         }
 
         @Override
         void process(@Nonnull List<FeatureValue> features) throws HiveException {
+            f0.set(0);
+            forward[0] = f0;
+            forward[1] = null;
+            forward[2] = null;
+            forward[3] = null;
+            forward(forward); // forward h(f0)
+
+            forward[1] = null;
+            forward[2] = f2;
+            forward[3] = null;
             for (int i = 0, len = features.size(); i < len; i++) {
                 FeatureValue xi = features.get(i);
                 int h = xi.getFeatureAsInt();
                 double xh = xi.getValue();
                 f0.set(h);
                 f2.set(xh);
+                forward(forward); // forward h(f0), xh(f2)
+
+                forward[0] = null;
+                forward[1] = f1;
+                forward[3] = f3;
                 for (int j = i + 1; j < len; j++) {
                     FeatureValue xj = features.get(j);
                     int k = xj.getFeatureAsInt();
-                    int hk = HashFunction.hash(h, k);
+                    int hk = HashFunction.hash(h, k, true);
                     double xk = xj.getValue();
                     f1.set(hk);
                     f3.set(xk);
-                    forward(forward);
+                    forward(forward);// forward hk(f1), xh(f2), xk(f3)
                 }
             }
         }

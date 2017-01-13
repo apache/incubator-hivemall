@@ -25,6 +25,7 @@ import hivemall.model.PredictionResult;
 import hivemall.utils.collections.Int2FloatOpenHashTable;
 import hivemall.utils.collections.Int2FloatOpenHashTable.IMapIterator;
 import hivemall.utils.hashing.HashFunction;
+import hivemall.utils.lang.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,9 +60,8 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
     // ------------------------------------
     // Hyper parameters
     private float _pkc;
-    //PA1, PA2
-    private boolean _pa1, _pa2;
-    private float _c;
+    // Algorithm
+    private Algorithm _algo;
 
     // ------------------------------------
     // Model parameters
@@ -87,8 +87,8 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
         Options opts = new Options();
         opts.addOption("pkc", true,
             "Constant c inside polynomial kernel K = (dot(xi,xj) + c)^2 [default 1.0]");
-        opts.addOption("pa1", false, "Whether to use PA-1 for calculating loss");
-        opts.addOption("pa2", false, "Whether to use PA-2 for calculating loss");
+        opts.addOption("algo", "algorithm", true,
+            "Algorithm for calculating loss [pa, pa1 (default), pa2]");
         opts.addOption("c", "aggressiveness", true,
             "Aggressiveness parameter C for PA-1 and PA-2 [default 1.0]");
         return opts;
@@ -96,18 +96,12 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
 
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-        this._pa1 = false;
-        this._pa2 = false;
         float pkc = 1.f;
         float c = 1.f;
+        String algo = "pa1";
 
         final CommandLine cl = super.processOptions(argOIs);
         if (cl != null) {
-            this._pa1 = cl.hasOption("pa1");
-            this._pa2 = cl.hasOption("pa2");
-            if (_pa1 && _pa2) {
-                throw new UDFArgumentException("PA-1 and PA-2 cannot be simultaneously set.");
-            }
             String pkc_str = cl.getOptionValue("pkc");
             if (pkc_str != null) {
                 pkc = Float.parseFloat(pkc_str);
@@ -115,15 +109,69 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
             String c_str = cl.getOptionValue("c");
             if (c_str != null) {
                 c = Float.parseFloat(c_str);
-                if (!(c > 0.f)) {
+                if (c <= 0.f) {
                     throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: " + c);
                 }
             }
+            algo = cl.getOptionValue("algo", algo);
+        }
+
+        if ("pa1".equalsIgnoreCase(algo)) {
+            this._algo = new PA1(c);
+        } else if ("pa2".equalsIgnoreCase(algo)) {
+            this._algo = new PA2(c);
+        } else if ("pa".equalsIgnoreCase(algo)) {
+            this._algo = new PA();
+        } else {
+            throw new UDFArgumentException("Unsupported algorithm: " + algo);
         }
         this._pkc = pkc;
-        this._c = c;
 
         return cl;
+    }
+
+    interface Algorithm {
+        float eta(final float loss, @Nonnull final PredictionResult margin);
+    }
+
+    static class PA implements Algorithm {
+
+        PA() {}
+
+        @Override
+        public float eta(float loss, PredictionResult margin) {
+            return loss / margin.getSquaredNorm();
+        }
+    }
+
+    static class PA1 implements Algorithm {
+        private final float c;
+
+        PA1(float c) {
+            this.c = c;
+        }
+
+        @Override
+        public float eta(float loss, PredictionResult margin) {
+            float squared_norm = margin.getSquaredNorm();
+            float eta = loss / squared_norm;
+            return Math.min(c, eta);
+        }
+    }
+
+    static class PA2 implements Algorithm {
+        private final float c;
+
+        PA2(float c) {
+            this.c = c;
+        }
+
+        @Override
+        public float eta(float loss, PredictionResult margin) {
+            float squared_norm = margin.getSquaredNorm();
+            float eta = loss / (squared_norm + (0.5f / c));
+            return eta;
+        }
     }
 
     @Override
@@ -209,7 +257,7 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
             norm += xx;
             for (int j = i + 1; j < features.length; ++j) {
                 int k = features[j].getFeatureAsInt();
-                int hk = HashFunction.hash(h, k);
+                int hk = HashFunction.hash(h, k, true);
                 float w3 = _w3.get(hk);
                 double xj = features[j].getValue();
                 score += xi * xj * w3;
@@ -220,80 +268,63 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
 
     protected void updateKernel(final float label, final float loss,
             @Nonnull final PredictionResult margin, @Nonnull final FeatureValue[] features) {
-        float eta = _pa1 ? eta1(loss, margin) : _pa2 ? eta2(loss, margin) : eta(loss, margin);
-        float diff = eta * label;
-        expandKernel(features, diff);
-    }
-
-    /**
-     * @return learning rate for PA
-     */
-    protected float eta(final float loss, @Nonnull final PredictionResult margin) {
-        return loss / margin.getSquaredNorm();
-    }
-
-    /**
-     * @return learning rate for PA1
-     */
-    protected float eta1(final float loss, @Nonnull final PredictionResult margin) {
-        float squared_norm = margin.getSquaredNorm();
-        float eta = loss / squared_norm;
-        return Math.min(_c, eta);
-    }
-
-    /**
-     * @return learning rate for PA2
-     */
-    protected float eta2(final float loss, @Nonnull final PredictionResult margin) {
-        float squared_norm = margin.getSquaredNorm();
-        float eta = loss / (squared_norm + (0.5f / _c));
-        return eta;
+        float eta = _algo.eta(loss, margin);
+        float coeff = eta * label;
+        expandKernel(features, coeff);
     }
 
     private void expandKernel(@Nonnull final FeatureValue[] supportVector, final float alpha) {
+        final float pkc = _pkc;
         // W0 += α c^2
-        this._w0 += alpha * _pkc * _pkc;
+        this._w0 += alpha * pkc * pkc;
 
         for (int i = 0; i < supportVector.length; ++i) {
             final FeatureValue si = supportVector[i];
             final int h = si.getFeatureAsInt();
             float Zih = si.getValueAsFloat();
 
+            float alphaZih = alpha * Zih;
+            final float alphaZih2 = alphaZih * 2.f;
+
             // W1[h] += 2 c α Zi[h]
-            _w1.put(h, _w1.get(h) + 2.f * _pkc * alpha * Zih);
+            _w1.put(h, _w1.get(h) + pkc * alphaZih2);
             // W2[h] += α Zi[h]^2
-            _w2.put(h, _w2.get(h) + alpha * Zih * Zih);
+            _w2.put(h, _w2.get(h) + alphaZih * Zih);
 
             for (int j = i + 1; j < supportVector.length; ++j) {
                 FeatureValue sj = supportVector[j];
                 int k = sj.getFeatureAsInt();
-                int hk = HashFunction.hash(h, k);
+                int hk = HashFunction.hash(h, k, true);
                 float Zjk = sj.getValueAsFloat();
 
                 // W3 += 2 α Zi[h] Zi[k]
-                _w3.put(hk, _w3.get(hk) + 2.f * alpha * Zih * Zjk);
+                _w3.put(hk, _w3.get(hk) + alphaZih2 * Zjk);
             }
         }
     }
 
     @Override
     public void close() throws HiveException {
-        final IntWritable f = new IntWritable();
+        final IntWritable f = new IntWritable(0);
         final FloatWritable w0 = new FloatWritable(_w0);
         final FloatWritable w1 = new FloatWritable();
         final FloatWritable w2 = new FloatWritable();
         final FloatWritable w3 = new FloatWritable();
-        final Object[] row = new Object[] {f, w0, w1, w2, null};
+        final Object[] row = new Object[] {f, w0, null, null, null};
+        forward(row); // 0(f), w0
+        row[1] = null;
 
+        row[2] = w1;
+        row[3] = w2;
         final Int2FloatOpenHashTable w2map = _w2;
         final IMapIterator w1itor = _w1.entries();
         while (w1itor.next() != -1) {
             int h = w1itor.getKey();
+            Preconditions.checkArgument(h > 0, HiveException.class);
             f.set(h);
             w1.set(w1itor.getValue());
             w2.set(w2map.get(h));
-            forward(row);
-            row[1] = null; // w0 is forwarded once
+            forward(row); // h(f), w1, w2
         }
         this._w1 = null;
         this._w2 = null;
@@ -304,10 +335,10 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
         final IMapIterator w3itor = _w3.entries();
         while (w3itor.next() != -1) {
             int hk = w3itor.getKey();
+            Preconditions.checkArgument(hk > 0, HiveException.class);
             f.set(hk);
             w3.set(w3itor.getValue());
-            forward(row);
-            row[1] = null; // w0 is forwarded once
+            forward(row); // hk(f), w3
         }
         this._w3 = null;
     }

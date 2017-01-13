@@ -21,6 +21,7 @@ package hivemall.classifier;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Preconditions;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -121,19 +122,35 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
         @Override
         public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
                 Object[] parameters) throws HiveException {
-            Preconditions.checkArgument(parameters.length == 6);
+            Preconditions.checkArgument(parameters.length == 6, HiveException.class);
 
-            double xh = HiveUtils.getDouble(parameters[0], xhOI);
-            double xk = HiveUtils.getDouble(parameters[1], xkOI);
-            double w0 = HiveUtils.getDouble(parameters[2], w0OI);
-            double w1 = HiveUtils.getDouble(parameters[3], w1OI);
-            double w2 = HiveUtils.getDouble(parameters[4], w2OI);
-            double w3 = HiveUtils.getDouble(parameters[4], w3OI);
+            final AggrBuffer aggr = (AggrBuffer) agg;
 
-            AggrBuffer aggr = (AggrBuffer) agg;
-            aggr.iterate(xh, xk, w0, w1, w2, w3);
+            if (parameters[0] != null) {
+                double xh = HiveUtils.getDouble(parameters[0], xhOI);
+                if (parameters[1] != null) {//xh, xk, w3hk
+                    if (parameters[5] == null) {
+                        return;
+                    }
+                    double xk = HiveUtils.getDouble(parameters[1], xkOI);
+                    double w3hk = HiveUtils.getDouble(parameters[5], w3OI);
+                    aggr.addW3(xh, xk, w3hk);
+                } else {//xh, w1h, w2h
+                    if (parameters[3] == null) {
+                        return;
+                    }
+                    Preconditions.checkNotNull(parameters[4], HiveException.class);
+                    double w1h = HiveUtils.getDouble(parameters[3], w1OI);
+                    double w2h = HiveUtils.getDouble(parameters[4], w2OI);
+                    aggr.addW1W2(xh, w1h, w2h);
+                }
+            } else if (parameters[2] != null) {//w0
+                double w0 = HiveUtils.getDouble(parameters[2], w0OI);
+                aggr.addW0(w0);
+            } else {
+                throw new HiveException("Unexpected condition");
+            }
         }
-
 
         @Override
         public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
@@ -173,7 +190,7 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
 
         AggrBuffer() {
             super();
-            this.score = 0.d;
+            reset();
         }
 
         @Override
@@ -189,15 +206,16 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
             return score;
         }
 
-        void iterate(final double xh, final double xk, final double w0, final double w1h,
-                final double w2h, final double w3hk) {
-            double g = score;
+        void addW0(@Nonnull double w0) {
+            this.score += w0;
+        }
 
-            g += w0;
-            g += w1h * xh + w2h * xh * xh;
-            g += w3hk * xh * xk;
+        void addW1W2(final double xh, final double w1h, final double w2h) {
+            this.score += w1h * xh + w2h * xh * xh;
+        }
 
-            this.score = g;
+        void addW3(final double xh, final double xk, final double w3hk) {
+            this.score += w3hk * xh * xk;
         }
 
         void merge(final double other) {
@@ -205,6 +223,5 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
         }
 
     }
-
 
 }
