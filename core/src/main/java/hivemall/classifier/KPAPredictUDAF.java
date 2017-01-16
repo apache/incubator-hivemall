@@ -126,29 +126,30 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
 
             final AggrBuffer aggr = (AggrBuffer) agg;
 
-            if (parameters[0] != null) {
+            if (parameters[0] /* xh */!= null) {
                 double xh = HiveUtils.getDouble(parameters[0], xhOI);
-                if (parameters[1] != null) {//xh, xk, w3hk
-                    if (parameters[5] == null) {
+                if (parameters[1] /* xk */!= null) {
+                    if (parameters[5] /* w3hk */== null) {
                         return;
                     }
+                    // xh, xk, w3hk
                     double xk = HiveUtils.getDouble(parameters[1], xkOI);
                     double w3hk = HiveUtils.getDouble(parameters[5], w3OI);
                     aggr.addW3(xh, xk, w3hk);
-                } else {//xh, w1h, w2h
-                    if (parameters[3] == null) {
+                } else {
+                    if (parameters[3] /* w1h */== null) {
                         return;
                     }
+                    // xh, w1h, w2h
                     Preconditions.checkNotNull(parameters[4], HiveException.class);
                     double w1h = HiveUtils.getDouble(parameters[3], w1OI);
                     double w2h = HiveUtils.getDouble(parameters[4], w2OI);
                     aggr.addW1W2(xh, w1h, w2h);
                 }
-            } else if (parameters[2] != null) {//w0
+            } else if (parameters[2] /* w0 */!= null) {
+                // w0
                 double w0 = HiveUtils.getDouble(parameters[2], w0OI);
                 aggr.addW0(w0);
-            } else {
-                throw new HiveException("Unexpected condition");
             }
         }
 
@@ -211,11 +212,11 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
         }
 
         void addW1W2(final double xh, final double w1h, final double w2h) {
-            this.score += w1h * xh + w2h * xh * xh;
+            this.score += (w1h * xh + w2h * xh * xh);
         }
 
         void addW3(final double xh, final double xk, final double w3hk) {
-            this.score += w3hk * xh * xk;
+            this.score += (w3hk * xh * xk);
         }
 
         void merge(final double other) {

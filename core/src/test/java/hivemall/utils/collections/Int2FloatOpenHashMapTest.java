@@ -80,4 +80,17 @@ public class Int2FloatOpenHashMapTest {
         Assert.assertEquals(-1, itor.next());
     }
 
+    @Test
+    public void testIterator2() {
+        Int2FloatOpenHashTable map = new Int2FloatOpenHashTable(100);
+        map.put(33, 3.16f);
+
+        Int2FloatOpenHashTable.IMapIterator itor = map.entries();
+        Assert.assertTrue(itor.hasNext());
+        Assert.assertNotEquals(-1, itor.next());
+        Assert.assertEquals(33, itor.getKey());
+        Assert.assertEquals(3.16f, itor.getValue(), 0.d);
+        Assert.assertEquals(-1, itor.next());
+    }
+
 }

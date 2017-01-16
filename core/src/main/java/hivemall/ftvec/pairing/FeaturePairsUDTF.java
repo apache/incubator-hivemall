@@ -187,22 +187,23 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
 
         @Override
         void process(@Nonnull List<FeatureValue> features) throws HiveException {
-            f0.set(0);
             forward[0] = f0;
+            f0.set(0);
             forward[1] = null;
             forward[2] = null;
             forward[3] = null;
             forward(forward); // forward h(f0)
 
-            forward[1] = null;
             forward[2] = f2;
-            forward[3] = null;
             for (int i = 0, len = features.size(); i < len; i++) {
                 FeatureValue xi = features.get(i);
                 int h = xi.getFeatureAsInt();
                 double xh = xi.getValue();
+                forward[0] = f0;
                 f0.set(h);
+                forward[1] = null;
                 f2.set(xh);
+                forward[3] = null;
                 forward(forward); // forward h(f0), xh(f2)
 
                 forward[0] = null;

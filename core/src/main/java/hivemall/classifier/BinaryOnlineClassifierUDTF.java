@@ -122,7 +122,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     }
 
     @Nullable
-    protected FeatureValue[] parseFeatures(@Nonnull final List<?> features) {
+    FeatureValue[] parseFeatures(@Nonnull final List<?> features) {
         final int size = features.size();
         if (size == 0) {
             return null;
@@ -167,7 +167,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         }
     }
 
-    protected float predict(@Nonnull final FeatureValue[] features) {
+    float predict(@Nonnull final FeatureValue[] features) {
         float score = 0.f;
         for (FeatureValue f : features) {// a += w[i] * x[i]
             if (f == null) {
