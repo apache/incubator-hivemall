@@ -18,6 +18,8 @@
  */
 package hivemall.classifier;
 
+import hivemall.annotations.Experimental;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.common.LossFunctions;
 import hivemall.model.FeatureValue;
 import hivemall.model.PredictionModel;
@@ -51,10 +53,13 @@ import org.apache.hadoop.io.IntWritable;
  * <pre>
  * Hideki Isozaki and Hideto Kazawa: Efficient Support Vector Classifiers for Named Entity Recognition, Proc.COLING, 2002
  * </pre>
+ * 
+ * @since v0.5-rc.1
  */
 @Description(name = "train_kpa",
         value = "_FUNC_(array<string|int|bigint> features, int label [, const string options])"
                 + " - returns a relation <h int, hk int, float w0, float w1, float w2, float w3>")
+@Experimental
 public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF {
 
     // ------------------------------------
@@ -77,7 +82,7 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
 
     public KernelExpansionPassiveAggressiveUDTF() {}
 
-    //@VisibleForTesting
+    @VisibleForTesting
     float getLoss() {//only used for testing purposes at the moment
         return _loss;
     }

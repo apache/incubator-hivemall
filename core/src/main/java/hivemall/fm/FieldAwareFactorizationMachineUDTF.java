@@ -50,6 +50,7 @@ import org.apache.hadoop.io.Text;
  * Field-aware Factorization Machines.
  * 
  * @link https://www.csie.ntu.edu.tw/~cjlin/libffm/
+ * @since v0.5-rc.1
  */
 @Description(
         name = "train_ffm",

@@ -18,6 +18,7 @@
  */
 package hivemall.fm;
 
+import hivemall.annotations.Experimental;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.NumberUtils;
 
@@ -40,10 +41,14 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.Text;
 
+/**
+ * @since v0.5-rc.1
+ */
 @Description(name = "ffm_predict",
         value = "_FUNC_(string modelId, string model, array<string> features)"
                 + " returns a prediction result in double from a Field-aware Factorization Machine")
 @UDFType(deterministic = true, stateful = false)
+@Experimental
 public final class FFMPredictUDF extends GenericUDF {
 
     private StringObjectInspector _modelIdOI;
