@@ -43,6 +43,12 @@ CREATE FUNCTION train_scw2 as 'hivemall.classifier.SoftConfideceWeightedUDTF$SCW
 DROP FUNCTION IF EXISTS train_adagrad_rda;
 CREATE FUNCTION train_adagrad_rda as 'hivemall.classifier.AdaGradRDAUDTF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS train_kpa;
+CREATE FUNCTION train_kpa as 'hivemall.classifier.KernelExpansionPassiveAggressiveUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS kpa_predict;
+CREATE FUNCTION kpa_predict as 'hivemall.classifier.KPAPredictUDAF' USING JAR '${hivemall_jar}';
+
 --------------------------------
 --  Multiclass classification --
 -------------------------------- 
@@ -185,6 +191,9 @@ CREATE FUNCTION polynomial_features as 'hivemall.ftvec.pairing.PolynomialFeature
 
 DROP FUNCTION IF EXISTS powered_features;
 CREATE FUNCTION powered_features as 'hivemall.ftvec.pairing.PoweredFeaturesUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS feature_pairs;
+CREATE FUNCTION feature_pairs as 'hivemall.ftvec.pairing.FeaturePairsUDTF' USING JAR '${hivemall_jar}';
 
 -----------------------
 -- scaling functions --

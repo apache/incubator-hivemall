@@ -161,11 +161,13 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         return cl;
     }
 
+    @Nullable
     protected PredictionModel createModel() {
         return createModel(null);
     }
 
-    protected PredictionModel createModel(String label) {
+    @Nonnull
+    protected PredictionModel createModel(@Nullable String label) {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {

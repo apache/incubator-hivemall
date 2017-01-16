@@ -39,6 +39,12 @@ create temporary function train_scw2 as 'hivemall.classifier.SoftConfideceWeight
 drop temporary function train_adagrad_rda;
 create temporary function train_adagrad_rda as 'hivemall.classifier.AdaGradRDAUDTF';
 
+drop temporary function train_kpa;
+create temporary function train_kpa as 'hivemall.classifier.KernelExpansionPassiveAggressiveUDTF';
+
+drop temporary function kpa_predict;
+create temporary function kpa_predict as 'hivemall.classifier.KPAPredictUDAF';
+
 --------------------------------
 --  Multiclass classification --
 -------------------------------- 
@@ -181,6 +187,9 @@ create temporary function polynomial_features as 'hivemall.ftvec.pairing.Polynom
 
 drop temporary function powered_features;
 create temporary function powered_features as 'hivemall.ftvec.pairing.PoweredFeaturesUDF';
+
+drop temporary function feature_pairs;
+create temporary function feature_pairs as 'hivemall.ftvec.pairing.FeaturePairsUDTF';
 
 -----------------------
 -- scaling functions --

@@ -18,11 +18,25 @@
  */
 package hivemall.utils.hashing;
 
+import hivemall.utils.math.MathUtils;
+
 public abstract class HashFunction {
 
     public int hash(Object data) {
         String s = data.toString();
         return hash(s);
+    }
+
+    public static int hash(final int first, final int second, final boolean positive) {
+        final int h = first * 157 + second;
+        if (positive) {
+            int r = MathUtils.moduloPowerOfTwo(h, MurmurHash3.DEFAULT_NUM_FEATURES);
+            if (r < 0) {
+                r += MurmurHash3.DEFAULT_NUM_FEATURES;
+            }
+            return r;
+        }
+        return h;
     }
 
     public abstract int hash(String data);

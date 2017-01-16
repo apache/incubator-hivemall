@@ -60,7 +60,7 @@ public class ChangeFinder2DTest {
         double[] outScores = new double[2];
         List<Double> x = new ArrayList<Double>(1);
 
-        BufferedReader reader = readFile("cf1d.csv");
+        BufferedReader reader = readFile("cf1d.csv.gz");
         println("x outlier change");
         String line;
         int i = 1, numOutliers = 0, numChangepoints = 0;

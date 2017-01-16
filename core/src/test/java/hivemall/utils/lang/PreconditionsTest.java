@@ -52,7 +52,7 @@ public class PreconditionsTest {
     public void testCheckArgumentBooleanClassOfE2() {
         final String msg = "safdfvzfd";
         try {
-            Preconditions.checkArgument(false, msg, HiveException.class);
+            Preconditions.checkArgument(false, HiveException.class, msg);
         } catch (HiveException e) {
             if (e.getMessage().equals(msg)) {
                 return;

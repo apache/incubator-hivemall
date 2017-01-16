@@ -98,19 +98,21 @@ public final class Preconditions {
     }
 
     public static <E extends Throwable> void checkArgument(boolean expression,
-            @Nonnull String errorMessage, @Nonnull Class<E> clazz) throws E {
+            @Nonnull Class<E> clazz, @Nullable Object errorMessage) throws E {
         if (!expression) {
+            Constructor<E> constructor;
+            try {
+                constructor = clazz.getConstructor(String.class);
+            } catch (NoSuchMethodException | SecurityException e) {
+                throw new IllegalStateException(
+                    "Failed to get a constructor of " + clazz.getName(), e);
+            }
             final E throwable;
             try {
-                Constructor<E> constructor = clazz.getConstructor(String.class);
                 throwable = constructor.newInstance(errorMessage);
-            } catch (NoSuchMethodException | SecurityException e1) {
-                throw new IllegalStateException("Failed to get a Constructor(String): "
-                        + clazz.getName(), e1);
-            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-                    | InvocationTargetException e2) {
+            } catch (ReflectiveOperationException | IllegalArgumentException e) {
                 throw new IllegalStateException(
-                    "Failed to instantiate a class: " + clazz.getName(), e2);
+                    "Failed to instantiate a class: " + clazz.getName(), e);
             }
             throw throwable;
         }

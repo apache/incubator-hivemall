@@ -308,6 +308,18 @@ public final class HiveUtils {
         }
     }
 
+    public static boolean isStringTypeInfo(@Nonnull TypeInfo typeInfo) {
+        if (typeInfo.getCategory() != ObjectInspector.Category.PRIMITIVE) {
+            return false;
+        }
+        switch (((PrimitiveTypeInfo) typeInfo).getPrimitiveCategory()) {
+            case STRING:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static boolean isConstString(@Nonnull final ObjectInspector oi) {
         return ObjectInspectorUtils.isConstantObjectInspector(oi) && isStringOI(oi);
     }
@@ -319,6 +331,20 @@ public final class HiveUtils {
             throw new UDFArgumentException("Expected list type: " + typeInfo);
         }
         return (ListTypeInfo) typeInfo;
+    }
+
+    public static float getFloat(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
+        if (o == null) {
+            return 0.f;
+        }
+        return PrimitiveObjectInspectorUtils.getFloat(o, oi);
+    }
+
+    public static double getDouble(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
+        if (o == null) {
+            return 0.d;
+        }
+        return PrimitiveObjectInspectorUtils.getDouble(o, oi);
     }
 
     @SuppressWarnings("unchecked")
@@ -776,6 +802,7 @@ public final class HiveUtils {
         return oi;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asDoubleCompatibleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
@@ -792,6 +819,30 @@ public final class HiveUtils {
             case DOUBLE:
             case STRING:
             case TIMESTAMP:
+                break;
+            default:
+                throw new UDFArgumentTypeException(0,
+                    "Only numeric or string type arguments are accepted but " + argOI.getTypeName()
+                            + " is passed.");
+        }
+        return oi;
+    }
+
+    @Nonnull
+    public static PrimitiveObjectInspector asNumberOI(@Nonnull final ObjectInspector argOI)
+            throws UDFArgumentTypeException {
+        if (argOI.getCategory() != Category.PRIMITIVE) {
+            throw new UDFArgumentTypeException(0, "Only primitive type arguments are accepted but "
+                    + argOI.getTypeName() + " is passed.");
+        }
+        final PrimitiveObjectInspector oi = (PrimitiveObjectInspector) argOI;
+        switch (oi.getPrimitiveCategory()) {
+            case BYTE:
+            case SHORT:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
                 break;
             default:
                 throw new UDFArgumentTypeException(0,

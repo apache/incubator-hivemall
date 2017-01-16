@@ -20,10 +20,14 @@ package hivemall.fm;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.zip.GZIPInputStream;
+
+import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -56,8 +60,7 @@ public class FactorizationMachineUDTFTest {
         double loss = 0.d;
         double cumul = 0.d;
         for (int trainingIteration = 1; trainingIteration <= ITERATIONS; ++trainingIteration) {
-            BufferedReader data = new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream("5107786.txt")));
+            BufferedReader data = readFile("5107786.txt.gz");
             loss = udtf._cvState.getCumulativeLoss();
             int trExamples = 0;
             String line = data.readLine();
@@ -78,8 +81,17 @@ public class FactorizationMachineUDTFTest {
             println(trainingIteration + " " + loss + " " + cumul / (trainingIteration * trExamples));
             data.close();
         }
-        Assert.assertTrue("Loss was greater than 0.1: " + loss, loss <= 0.1);
 
+        Assert.assertTrue("Loss was greater than 0.1: " + loss, loss <= 0.1);
+    }
+
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        InputStream is = FactorizationMachineUDTFTest.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
     }
 
     private static void println(String line) {

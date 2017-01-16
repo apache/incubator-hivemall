@@ -73,6 +73,9 @@ public class Int2FloatOpenHashTable implements Externalizable {
         this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR, true);
     }
 
+    /**
+     * Only for {@link Externalizable}
+     */
     public Int2FloatOpenHashTable() {// required for serialization
         this._loadFactor = DEFAULT_LOAD_FACTOR;
         this._growFactor = DEFAULT_GROW_FACTOR;

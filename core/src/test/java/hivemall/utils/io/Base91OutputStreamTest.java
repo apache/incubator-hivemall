@@ -50,7 +50,7 @@ public class Base91OutputStreamTest {
 
     @Test
     public void testLargeEncodeOutDecodeIn() throws IOException {
-        InputStream in = ArrayModelTest.class.getResourceAsStream("bigdata.tr.txt");
+        InputStream in = ArrayModelTest.class.getResourceAsStream("bigdata.tr.txt.gz");
         byte[] expected = IOUtils.toByteArray(in);
 
         FastByteArrayOutputStream bos = new FastByteArrayOutputStream();

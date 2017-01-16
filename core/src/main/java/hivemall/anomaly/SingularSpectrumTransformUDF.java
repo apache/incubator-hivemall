@@ -125,19 +125,17 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
         this._params.changepointThreshold = Primitives.parseDouble(cl.getOptionValue("th"),
             _params.changepointThreshold);
 
-        Preconditions.checkArgument(_params.w >= 2, "w must be greather than 1: " + _params.w,
-            UDFArgumentException.class);
-        Preconditions.checkArgument(_params.r >= 1, "r must be greater than 0: " + _params.r,
-            UDFArgumentException.class);
-        Preconditions.checkArgument(_params.k >= 1, "k must be greater than 0: " + _params.k,
-            UDFArgumentException.class);
-        Preconditions.checkArgument(_params.k >= _params.r,
-            "k must be equals to or greather than r: k=" + _params.k + ", r" + _params.r,
-            UDFArgumentException.class);
+        Preconditions.checkArgument(_params.w >= 2, UDFArgumentException.class,
+            "w must be greather than 1: " + _params.w);
+        Preconditions.checkArgument(_params.r >= 1, UDFArgumentException.class,
+            "r must be greater than 0: " + _params.r);
+        Preconditions.checkArgument(_params.k >= 1, UDFArgumentException.class,
+            "k must be greater than 0: " + _params.k);
+        Preconditions.checkArgument(_params.k >= _params.r, UDFArgumentException.class,
+            "k must be equals to or greather than r: k=" + _params.k + ", r" + _params.r);
         Preconditions.checkArgument(_params.changepointThreshold > 0.d
-                && _params.changepointThreshold < 1.d,
-            "changepointThreshold must be in range (0, 1): " + _params.changepointThreshold,
-            UDFArgumentException.class);
+                && _params.changepointThreshold < 1.d, UDFArgumentException.class,
+            "changepointThreshold must be in range (0, 1): " + _params.changepointThreshold);
 
         return cl;
     }

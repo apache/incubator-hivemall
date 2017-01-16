@@ -51,8 +51,8 @@ import org.apache.hadoop.io.FloatWritable;
 public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(BinaryOnlineClassifierUDTF.class);
 
-    private ListObjectInspector featureListOI;
-    private PrimitiveObjectInspector labelOI;
+    protected ListObjectInspector featureListOI;
+    protected PrimitiveObjectInspector labelOI;
     private boolean parseFeature;
 
     protected PredictionModel model;
@@ -122,7 +122,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     }
 
     @Nullable
-    protected final FeatureValue[] parseFeatures(@Nonnull final List<?> features) {
+    FeatureValue[] parseFeatures(@Nonnull final List<?> features) {
         final int size = features.size();
         if (size == 0) {
             return null;
@@ -151,6 +151,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         assert (label == -1 || label == 0 || label == 1) : label;
     }
 
+    //@VisibleForTesting
     void train(List<?> features, int label) {
         FeatureValue[] featureVector = parseFeatures(features);
         train(featureVector, label);
@@ -166,7 +167,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         }
     }
 
-    protected float predict(@Nonnull final FeatureValue[] features) {
+    float predict(@Nonnull final FeatureValue[] features) {
         float score = 0.f;
         for (FeatureValue f : features) {// a += w[i] * x[i]
             if (f == null) {
@@ -247,7 +248,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     }
 
     @Override
-    public final void close() throws HiveException {
+    public void close() throws HiveException {
         super.close();
         if (model != null) {
             int numForwarded = 0;

@@ -89,8 +89,7 @@ public final class MathUtils {
     }
 
     /**
-     * <a href="https://en.wikipedia.org/wiki/Logit">Logit</a> is the inverse of
-     * {@link #sigmoid(double)} function.
+     * <a href="https://en.wikipedia.org/wiki/Logit">Logit</a> is the inverse of {@link #sigmoid(double)} function.
      */
     public static double logit(final double p) {
         return Math.log(p / (1.d - p));
@@ -101,14 +100,11 @@ public final class MathUtils {
     }
 
     /**
-     * Returns the inverse erf. This code is based on erfInv() in
-     * org.apache.commons.math3.special.Erf.
+     * Returns the inverse erf. This code is based on erfInv() in org.apache.commons.math3.special.Erf.
      * <p>
-     * This implementation is described in the paper: <a
-     * href="http://people.maths.ox.ac.uk/gilesm/files/gems_erfinv.pdf">Approximating the erfinv
-     * function</a> by Mike Giles, Oxford-Man Institute of Quantitative Finance, which was published
-     * in GPU Computing Gems, volume 2, 2010. The source code is available <a
-     * href="http://gpucomputing.net/?q=node/1828">here</a>.
+     * This implementation is described in the paper: <a href="http://people.maths.ox.ac.uk/gilesm/files/gems_erfinv.pdf">Approximating the erfinv
+     * function</a> by Mike Giles, Oxford-Man Institute of Quantitative Finance, which was published in GPU Computing Gems, volume 2, 2010. The source
+     * code is available <a href="http://gpucomputing.net/?q=node/1828">here</a>.
      * </p>
      * 
      * @param x the value
@@ -227,8 +223,8 @@ public final class MathUtils {
         return v < 0 ? -1 : 1;
     }
 
-    public static float sign(final float v) {
-        return v < 0.f ? -1.f : 1.f;
+    public static int sign(final float v) {
+        return v < 0.f ? -1 : 1;
     }
 
     public static double log(final double n, final int base) {
