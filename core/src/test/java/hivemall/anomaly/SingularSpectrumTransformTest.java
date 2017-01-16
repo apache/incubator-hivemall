@@ -82,7 +82,7 @@ public class SingularSpectrumTransformTest {
         SingularSpectrumTransform sst = new SingularSpectrumTransform(params, oi);
         double[] outScores = new double[1];
 
-        BufferedReader reader = readFile("cf1d.csv");
+        BufferedReader reader = readFile("cf1d.csv.gz");
         println("x change");
         String line;
         int numChangepoints = 0;

@@ -67,7 +67,7 @@ public class KernelExpansionPassiveAggressiveUDTFTest {
             line = news20.readLine();
         }
 
-        Assert.assertTrue(Math.abs(udtf.getLoss()) < 0.1f);
+        Assert.assertTrue(Math.abs(udtf.getLoss()) < 0.25f);
 
         news20.close();
     }
