@@ -18,8 +18,30 @@
 # under the License.
 #
 
-set -e
-set -o pipefail
+# xgboost requires g++-4.6 or higher (https://github.com/dmlc/xgboost/blob/master/doc/build.md),
+# so we need to first check if the requirement is satisfied.
+COMPILER_REQUIRED_VERSION="4.6"
+COMPILER_VERSION=`g++ --version 2> /dev/null`
+
+# Check if GNU g++ installed
+if [ $? = 127 ]; then
+  echo "First, you need to install g++"
+  exit 1
+elif [[ "$COMPILER_VERSION" = *LLVM* ]]; then
+  echo "You must use GNU g++, but the detected compiler was clang++"
+  exit 1
+fi
+
+COMPILER_VERSION_NUMBER=`echo $COMPILER_VERSION | grep ^g++ | \
+  awk 'match($0, /[0-9]+\.[0-9]+\.[0-9]+/) {print substr($0, RSTART, RLENGTH)}'`
+
+# See simple version normalization: http://stackoverflow.com/questions/16989598/bash-comparing-version-numbers
+function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
+if [ $(version $COMPILER_VERSION_NUMBER) -lt $(version $COMPILER_REQUIRED_VERSION) ]; then
+  echo "You must compile xgboost with GNU g++-$COMPILER_REQUIRED_VERSION or higher," \
+    "but the detected compiler was g++-$COMPILER_VERSION_NUMBER"
+  exit 1
+fi
 
 # Target commit hash value
 XGBOOST_HASHVAL='7ab15a0b31c870c7779691639f521df3ccd4a56e'
