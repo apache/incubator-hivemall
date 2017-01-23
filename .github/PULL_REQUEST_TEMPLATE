@@ -1,0 +1,19 @@
+## What changes were proposed in this pull request?
+
+(Please fill in changes proposed in this fix)
+
+## What type of PR is it?
+
+[Bug Fix | Improvement | Feature | Documentation | Hot Fix | Refactoring]
+
+### What is the Jira issue?
+
+(Put link here, and add [HIVEMALL-*Jira number*] in PR title, eg. [HIVEMALL-533])
+
+Open an issue on Jira https://issues.apache.org/jira/browse/HIVEMALL
+
+## How was this patch tested?
+
+(Please explain how this patch was tested. E.g. unit tests, integration tests, manual tests)
+
+Please review http://hivemall.incubator.apache.org/contributing.html before opening a pull request.
