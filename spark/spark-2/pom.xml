@@ -28,7 +28,7 @@
 	</parent>
 
 	<artifactId>hivemall-spark</artifactId>
-	<name>Hivemall on Spark 2.0</name>
+	<name>Hivemall on Spark 2</name>
 	<packaging>jar</packaging>
 
 	<properties>

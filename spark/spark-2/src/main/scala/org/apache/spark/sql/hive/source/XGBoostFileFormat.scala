@@ -91,15 +91,20 @@ final class XGBoostFileFormat extends FileFormat with DataSourceRegister {
       options: Map[String, String],
       dataSchema: StructType): OutputWriterFactory = {
     new OutputWriterFactory {
+
+      override def getFileExtension(context: TaskAttemptContext): String = {
+        ".xgbmodel"
+      }
+
       override def newInstance(
           path: String,
-          bucketId: Option[Int],
           dataSchema: StructType,
           context: TaskAttemptContext): OutputWriter = {
-        if (bucketId.isDefined) {
-          sys.error("XGBoostFileFormat doesn't support bucketing")
-        }
         new XGBoostOutputWriter(path, dataSchema, context)
+      }
+
+      override def newWriter(path: String): OutputWriter = {
+        throw new UnsupportedOperationException("")
       }
     }
   }
