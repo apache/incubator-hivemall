@@ -109,7 +109,7 @@ class MiscBenchmark extends SparkFunSuite {
 
   private def addBenchmarkCase(name: String, df: DataFrame)(implicit benchmark: Benchmark): Unit = {
     benchmark.addCase(name, numIters) { _ =>
-      df.queryExecution.executedPlan(0).execute().foreach(x => Unit)
+      df.queryExecution.executedPlan.execute().foreach(x => Unit)
     }
   }
 
