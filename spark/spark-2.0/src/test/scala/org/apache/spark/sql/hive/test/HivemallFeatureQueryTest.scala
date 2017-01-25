@@ -16,13 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.spark.test
+package org.apache.spark.sql.hive.test
 
 import scala.collection.mutable.Seq
+import scala.reflect.runtime.universe.TypeTag
 
 import hivemall.tools.RegressionDatagen
 
-import org.apache.spark.sql.hive.test.TestHiveSingleton
+import org.apache.spark.sql.Column
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
+import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.QueryTest
 
 /**
@@ -32,10 +35,18 @@ abstract class HivemallFeatureQueryTest extends QueryTest with TestHiveSingleton
 
   import hiveContext.implicits._
 
-  protected val DummyInputData =
-    Seq(
-      (0, 0), (1, 1), (2, 2), (3, 3)
-    ).toDF("c0", "c1")
+  /**
+   * TODO: spark-2.0 does not support literals for some types (e.g., Seq[_] and Array[_]).
+   * So, it provides that functionality here.
+   * This helper function will be removed in future releases.
+   */
+  protected def lit2[T : TypeTag](v: T): Column = {
+    val ScalaReflection.Schema(dataType, _) = ScalaReflection.schemaFor[T]
+    val convert = CatalystTypeConverters.createToCatalystConverter(dataType)
+    Column(Literal(convert(v), dataType))
+  }
+
+  protected val DummyInputData = Seq((0, 0)).toDF("c0", "c1")
 
   protected val IntList2Data =
     Seq(

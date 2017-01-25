@@ -18,15 +18,15 @@
  */
 package org.apache.spark.streaming
 
-import reflect.ClassTag
+import scala.reflect.ClassTag
 
 import org.apache.spark.ml.feature.HivemallLabeledPoint
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.hive.HivemallOps._
+import org.apache.spark.sql.hive.test.HivemallFeatureQueryTest
 import org.apache.spark.streaming.HivemallStreamingOps._
 import org.apache.spark.streaming.dstream.InputDStream
 import org.apache.spark.streaming.scheduler.StreamInputInfo
-import org.apache.spark.test.HivemallFeatureQueryTest
 
 /**
  * This is an input stream just for tests.

@@ -50,13 +50,15 @@ object TestUtils extends Logging {
 }
 
 // TODO: Any same function in o.a.spark.*?
-class TestDoubleWrapper(d: Double) {
-  // Check an equality between Double values
+class TestFPWrapper(d: Double) {
+
+  // Check an equality between Double/Float values
   def ~==(d: Double): Boolean = Math.abs(this.d - d) < 0.001
 }
 
-object TestDoubleWrapper {
-  @inline implicit def toTestDoubleWrapper(d: Double): TestDoubleWrapper = {
-    new TestDoubleWrapper(d)
+object TestFPWrapper {
+
+  @inline implicit def toTestFPWrapper(d: Double): TestFPWrapper = {
+    new TestFPWrapper(d)
   }
 }
