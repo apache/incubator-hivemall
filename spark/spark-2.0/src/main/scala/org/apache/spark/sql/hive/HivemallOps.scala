@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.internal.Logging
 import org.apache.spark.ml.feature.HivemallFeature
-import org.apache.spark.ml.linalg.{DenseVector => SDV, SparseVector => SSV, VectorUDT}
+import org.apache.spark.ml.linalg.{DenseVector, SparseVector, VectorUDT}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
@@ -764,12 +764,12 @@ final class HivemallOps(df: DataFrame) extends Logging {
       StructField("feature", StringType) :: StructField("weight", DoubleType) :: Nil)
     val explodeFunc: Row => TraversableOnce[InternalRow] = (row: Row) => {
       row.get(0) match {
-        case dv: SDV =>
+        case dv: DenseVector =>
           dv.values.zipWithIndex.map {
             case (value, index) =>
               InternalRow(UTF8String.fromString(s"$index"), value)
           }
-        case sv: SSV =>
+        case sv: SparseVector =>
           sv.values.zip(sv.indices).map {
             case (value, index) =>
               InternalRow(UTF8String.fromString(s"$index"), value)

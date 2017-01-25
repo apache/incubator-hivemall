@@ -18,8 +18,7 @@
  */
 package org.apache.spark.sql.hive
 
-import org.apache.spark.ml.linalg.{DenseVector => SDV, SparseVector => SSV, Vector => SV}
-import org.apache.spark.mllib.linalg.{BLAS, Vector, Vectors}
+import org.apache.spark.ml.linalg.{BLAS, DenseVector, SparseVector, Vector, Vectors}
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.expressions.UserDefinedFunction
@@ -46,17 +45,12 @@ object HivemallUtils {
   @inline implicit def toStringArrayLiteral(i: Seq[String]): Column =
     Column(Literal.create(i, ArrayType(StringType)))
 
-  /**
-   * Transforms `org.apache.spark.ml.linalg.Vector` into Hivemall features.
-   */
-  def to_hivemall_features: UserDefinedFunction = udf(_to_hivemall_features)
-
-  private[hive] def _to_hivemall_features = (v: SV) => v match {
-    case dv: SDV =>
+  def to_hivemall_features_func(): Vector => Array[String] = {
+    case dv: DenseVector =>
       dv.values.zipWithIndex.map {
         case (value, index) => s"$index:$value"
       }
-    case sv: SSV =>
+    case sv: SparseVector =>
       sv.values.zip(sv.indices).map {
         case (value, index) => s"$index:$value"
       }
@@ -64,21 +58,15 @@ object HivemallUtils {
       throw new IllegalArgumentException(s"Do not support vector type ${v.getClass}")
   }
 
-  /**
-   * Returns a new vector with `1.0` (bias) appended to the input vector.
-   * @group ftvec
-   */
-  def append_bias: UserDefinedFunction = udf(_append_bias)
-
-  private[hive] def _append_bias = (v: SV) => v match {
-    case dv: SDV =>
+  def append_bias_func(): Vector => Vector = {
+    case dv: DenseVector =>
       val inputValues = dv.values
       val inputLength = inputValues.length
       val outputValues = Array.ofDim[Double](inputLength + 1)
       System.arraycopy(inputValues, 0, outputValues, 0, inputLength)
       outputValues(inputLength) = 1.0
       Vectors.dense(outputValues)
-    case sv: SSV =>
+    case sv: SparseVector =>
       val inputValues = sv.values
       val inputIndices = sv.indices
       val inputValuesLength = inputValues.length
@@ -93,6 +81,17 @@ object HivemallUtils {
     case v =>
       throw new IllegalArgumentException(s"Do not support vector type ${v.getClass}")
   }
+
+  /**
+   * Transforms `org.apache.spark.ml.linalg.Vector` into Hivemall features.
+   */
+  def to_hivemall_features: UserDefinedFunction = udf(to_hivemall_features_func)
+
+  /**
+   * Returns a new vector with `1.0` (bias) appended to the input vector.
+   * @group ftvec
+   */
+  def append_bias: UserDefinedFunction = udf(append_bias_func)
 
   /**
    * Make up a function object from a Hivemall model.

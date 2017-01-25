@@ -118,7 +118,7 @@ final class HiveUdfWithVectorSuite extends VectorQueryTest {
 
   test("to_hivemall_features") {
     mllibTrainDf.createOrReplaceTempView("mllibTrainDf")
-    hiveContext.udf.register("to_hivemall_features", _to_hivemall_features)
+    hiveContext.udf.register("to_hivemall_features", to_hivemall_features_func)
     checkAnswer(
       sql(
         s"""
@@ -134,16 +134,10 @@ final class HiveUdfWithVectorSuite extends VectorQueryTest {
     )
   }
 
-  ignore("append_bias") {
+  test("append_bias") {
     mllibTrainDf.createOrReplaceTempView("mllibTrainDf")
-    hiveContext.udf.register("append_bias", _append_bias)
-    hiveContext.udf.register("to_hivemall_features", _to_hivemall_features)
-    /**
-     * TODO: This test throws an exception:
-     * Failed to analyze query: org.apache.spark.sql.AnalysisException: cannot resolve
-     *   'UDF(UDF(features))' due to data type mismatch: argument 1 requires vector type,
-     *    however, 'UDF(features)' is of vector type.; line 2 pos 8
-     */
+    hiveContext.udf.register("append_bias", append_bias_func)
+    hiveContext.udf.register("to_hivemall_features", to_hivemall_features_func)
     checkAnswer(
       sql(
         s"""
@@ -151,10 +145,10 @@ final class HiveUdfWithVectorSuite extends VectorQueryTest {
            |   FROM mllibTrainDF
          """.stripMargin),
        Seq(
-        Row(Seq("0:1.0", "0:1.0", "2:2.0", "4:3.0")),
-        Row(Seq("0:1.0", "0:1.0", "3:1.5", "4:2.1", "6:1.2")),
-        Row(Seq("0:1.0", "0:1.1", "3:1.0", "4:2.3", "6:1.0")),
-        Row(Seq("0:1.0", "1:4.0", "3:5.0", "5:6.0"))
+        Row(Seq("0:1.0", "2:2.0", "4:3.0", "7:1.0")),
+        Row(Seq("0:1.0", "3:1.5", "4:2.1", "6:1.2", "7:1.0")),
+        Row(Seq("0:1.1", "3:1.0", "4:2.3", "6:1.0", "7:1.0")),
+        Row(Seq("1:4.0", "3:5.0", "5:6.0", "7:1.0"))
       )
     )
   }
