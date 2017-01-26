@@ -305,40 +305,26 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 
     // Compute top-1 rows for each group
     checkAnswer(
-      testDf.each_top_k(1, "key", "score", "key", "value"),
-      Row(1, "a", "3") ::
-      Row(1, "b", "4") ::
-      Row(1, "c", "6") ::
-      Nil
-    )
-    checkAnswer(
-      testDf.each_top_k(lit(1), $"key", $"score", $"key", $"value"),
-      Row(1, "a", "3") ::
-      Row(1, "b", "4") ::
-      Row(1, "c", "6") ::
+      testDf.each_top_k(lit(1), $"key", $"score"),
+      Row(1, "a", "3", 0.8, Array(2, 5)) ::
+      Row(1, "b", "4", 0.3, Array(2)) ::
+      Row(1, "c", "6", 0.3, Array(1, 3)) ::
       Nil
     )
 
     // Compute reverse top-1 rows for each group
     checkAnswer(
-      testDf.each_top_k(-1, "key", "score", "key", "value"),
-      Row(1, "a", "1") ::
-      Row(1, "b", "5") ::
-      Row(1, "c", "6") ::
-      Nil
-    )
-    checkAnswer(
-      testDf.each_top_k(lit(-1), $"key", $"score", $"key", $"value"),
-      Row(1, "a", "1") ::
-      Row(1, "b", "5") ::
-      Row(1, "c", "6") ::
+      testDf.each_top_k(lit(-1), $"key", $"score"),
+      Row(1, "a", "1", 0.5, Array(0, 1, 2)) ::
+      Row(1, "b", "5", 0.1, Array(3)) ::
+      Row(1, "c", "6", 0.3, Array(1, 3)) ::
       Nil
     )
 
     // Check if some exceptions thrown in case of some conditions
     assert(intercept[AnalysisException] { testDf.each_top_k(lit(0.1), $"key", $"score") }
       .getMessage contains "`k` must be integer, however")
-    assert(intercept[AnalysisException] { testDf.each_top_k(1, "key", "data") }
+    assert(intercept[AnalysisException] { testDf.each_top_k(lit(1), $"key", $"data") }
       .getMessage contains "must have a comparable type")
   }
 
