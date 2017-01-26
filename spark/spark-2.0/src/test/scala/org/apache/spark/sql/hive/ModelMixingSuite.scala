@@ -33,10 +33,9 @@ import org.scalatest.BeforeAndAfter
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.ml.feature.HivemallLabeledPoint
 import org.apache.spark.sql.{Column, DataFrame, Row}
-import org.apache.spark.sql.functions.when
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.hive.HivemallGroupedDataset._
 import org.apache.spark.sql.hive.HivemallOps._
-import org.apache.spark.sql.hive.HivemallUtils._
 import org.apache.spark.sql.hive.test.TestHive
 import org.apache.spark.sql.hive.test.TestHive.implicits._
 import org.apache.spark.test.TestUtils
@@ -156,9 +155,16 @@ final class ModelMixingSuite extends SparkFunSuite with BeforeAndAfter {
       // Build a model
       val model = {
         val groupId = s"${TestHive.sparkContext.applicationId}-${UUID.randomUUID}"
-        val res = TestUtils.invokeFunc(new HivemallOps(trainA9aData.part_amplify(1)), func,
-          Seq[Column](add_bias($"features"), $"label",
-            s"-mix localhost:${assignedPort} -mix_session ${groupId} -mix_threshold 2 -mix_cancel"))
+        val res = TestUtils.invokeFunc(
+          new HivemallOps(trainA9aData.part_amplify(lit(1))),
+          func,
+          Seq[Column](
+            add_bias($"features"),
+            $"label",
+            lit(s"-mix localhost:${assignedPort} -mix_session ${groupId} -mix_threshold 2 " +
+              "-mix_cancel")
+          )
+        )
         if (!res.columns.contains("conv")) {
           res.groupBy("feature").agg("weight" -> "avg")
         } else {
@@ -217,9 +223,16 @@ final class ModelMixingSuite extends SparkFunSuite with BeforeAndAfter {
       // Build a model
       val model = {
         val groupId = s"${TestHive.sparkContext.applicationId}-${UUID.randomUUID}"
-        val res = TestUtils.invokeFunc(new HivemallOps(trainKdd2010aData.part_amplify(1)), func,
-          Seq[Column](add_bias($"features"), $"label",
-            s"-mix localhost:${assignedPort} -mix_session ${groupId} -mix_threshold 2 -mix_cancel"))
+        val res = TestUtils.invokeFunc(
+          new HivemallOps(trainKdd2010aData.part_amplify(lit(1))),
+          func,
+          Seq[Column](
+            add_bias($"features"),
+            $"label",
+            lit(s"-mix localhost:${assignedPort} -mix_session ${groupId} -mix_threshold 2 " +
+              "-mix_cancel")
+          )
+        )
         if (!res.columns.contains("conv")) {
           res.groupBy("feature").agg("weight" -> "avg")
         } else {

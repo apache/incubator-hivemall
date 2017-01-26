@@ -50,7 +50,7 @@ public final class Distance2SimilarityUDF extends GenericUDF {
 
     @Override
     public FloatWritable evaluate(DeferredObject[] arguments) throws HiveException {
-        float d = PrimitiveObjectInspectorUtils.getFloat(arguments[0], distanceOI);
+        float d = PrimitiveObjectInspectorUtils.getFloat(arguments[0].get(), distanceOI);
         float sim = 1.f / (1.f + d);
         return new FloatWritable(sim);
     }

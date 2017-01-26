@@ -20,7 +20,7 @@ package org.apache.spark.sql.hive
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.hive.HivemallUtils._
-import org.apache.spark.test.HivemallFeatureQueryTest
+import org.apache.spark.sql.hive.test.HivemallFeatureQueryTest
 import org.apache.spark.test.VectorQueryTest
 
 final class HiveUdfWithFeatureSuite extends HivemallFeatureQueryTest {

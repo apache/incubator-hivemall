@@ -25,9 +25,8 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{EachTopK, Expression, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.hive.{HiveGenericUDF, HiveGenericUDTF}
-import org.apache.spark.sql.hive.HivemallUtils._
 import org.apache.spark.sql.hive.HiveShim.HiveFunctionWrapper
 import org.apache.spark.sql.types._
 import org.apache.spark.test.TestUtils
@@ -49,7 +48,7 @@ class TestFuncWrapper(df: DataFrame) {
 
   def each_top_k_improved(k: Int, group: String, score: String, args: String*)
     : DataFrame = withTypedPlan {
-    val clusterDf = df.repartition(group).sortWithinPartitions(group)
+    val clusterDf = df.repartition(df(group)).sortWithinPartitions(group)
     val childrenAttributes = clusterDf.logicalPlan.output
     val generator = Generate(
       EachTopK(
@@ -139,7 +138,7 @@ class MiscBenchmark extends SparkFunSuite {
 
     def sigmoidExprs(expr: Column): Column = {
       val one: () => Literal = () => Literal.create(1.0, DoubleType)
-      Column(one()) / (Column(one()) + functions.exp(-expr))
+      Column(one()) / (Column(one()) + exp(-expr))
     }
     addBenchmarkCase(
       "exprs",
@@ -153,7 +152,7 @@ class MiscBenchmark extends SparkFunSuite {
       }(RowEncoder(schema))
     )
 
-    val sigmoidUdf = functions.udf((d: Double) => 1.0 / (1.0 + Math.exp(-d)))
+    val sigmoidUdf = udf { (d: Double) => 1.0 / (1.0 + Math.exp(-d)) }
     addBenchmarkCase(
       "spark-udf",
       testDf.select(sigmoidUdf($"value"))
@@ -201,7 +200,7 @@ class MiscBenchmark extends SparkFunSuite {
     addBenchmarkCase(
       "rank",
       testDf.withColumn(
-        "rank", functions.rank().over(Window.partitionBy($"key").orderBy($"score".desc))
+        "rank", rank().over(Window.partitionBy($"key").orderBy($"score".desc))
       ).where($"rank" <= topK)
     )
 
@@ -212,7 +211,7 @@ class MiscBenchmark extends SparkFunSuite {
       // org.apache.spark.sql.catalyst.analysis.UnresolvedException: Invalid call to name
       //   on unresolved object, tree: unresolvedalias('value, None)
       // at org.apache.spark.sql.catalyst.analysis.UnresolvedAlias.name(unresolved.scala:339)
-      testDf.each_top_k(topK, $"key", $"score", testDf("value"))
+      testDf.each_top_k(lit(topK), $"key", $"score", testDf("value"))
     )
 
     addBenchmarkCase(

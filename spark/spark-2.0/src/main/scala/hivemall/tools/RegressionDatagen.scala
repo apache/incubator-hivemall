@@ -19,8 +19,8 @@
 package hivemall.tools
 
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.hive.HivemallOps._
-import org.apache.spark.sql.hive.HivemallUtils._
 import org.apache.spark.sql.types._
 
 object RegressionDatagen {
@@ -57,10 +57,10 @@ object RegressionDatagen {
       )
     import sc.implicits._
     df.lr_datagen(
-      s"-n_examples $n_examples -n_features $n_features -n_dims $n_dims -prob_one $prob_one"
-        + (if (dense) " -dense" else "")
-        + (if (sort) " -sort" else "")
-        + (if (cl) " -cl" else ""))
-      .select($"label".cast(DoubleType).as("label"), $"features")
+        lit(s"-n_examples $n_examples -n_features $n_features -n_dims $n_dims -prob_one $prob_one"
+          + (if (dense) " -dense" else "")
+          + (if (sort) " -sort" else "")
+          + (if (cl) " -cl" else ""))
+      ).select($"label".cast(DoubleType).as("label"), $"features")
   }
 }

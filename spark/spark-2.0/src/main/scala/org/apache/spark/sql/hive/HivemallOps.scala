@@ -20,8 +20,6 @@ package org.apache.spark.sql.hive
 
 import java.util.UUID
 
-import scala.collection.JavaConverters._
-
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.internal.Logging
 import org.apache.spark.ml.feature.HivemallFeature
@@ -57,8 +55,6 @@ import org.apache.spark.unsafe.types.UTF8String
  * @groupname misc
  */
 final class HivemallOps(df: DataFrame) extends Logging {
-  import HivemallOps._
-  import HivemallUtils._
 
   /**
    * @see hivemall.regression.AdaDeltaUDTF
@@ -687,10 +683,14 @@ final class HivemallOps(df: DataFrame) extends Logging {
    * Amplifies and shuffle data inside partitions.
    * @group ftvec.amplify
    */
-  def part_amplify(xtimes: Int): DataFrame = {
+  def part_amplify(xtimes: Column): DataFrame = {
+    val xtimesInt = xtimes.expr match {
+      case Literal(v: Any, IntegerType) => v.asInstanceOf[Int]
+      case e => throw new AnalysisException("`xtimes` must be integer, however " + e)
+    }
     val rdd = df.rdd.mapPartitions({ iter =>
       val elems = iter.flatMap{ row =>
-        Seq.fill[Row](xtimes)(row)
+        Seq.fill[Row](xtimesInt)(row)
       }
       // Need to check how this shuffling affects results
       scala.util.Random.shuffle(elems)
@@ -792,7 +792,7 @@ final class HivemallOps(df: DataFrame) extends Logging {
    */
   def each_top_k(k: Int, group: String, score: String, args: String*)
     : DataFrame = withTypedPlan {
-    val clusterDf = df.repartition(group).sortWithinPartitions(group)
+    val clusterDf = df.repartition(df(group)).sortWithinPartitions(group)
     val childrenAttributes = clusterDf.logicalPlan.output
     val generator = Generate(
       EachTopK(
@@ -881,7 +881,7 @@ final class HivemallOps(df: DataFrame) extends Logging {
 
   @inline private[this] def toHivemallFeatureDf(exprs: Column*): Seq[Column] = {
     df.select(exprs: _*).queryExecution.analyzed.schema.zip(exprs).map {
-      case (StructField(_, _: VectorUDT, _, _), c) => to_hivemall_features(c)
+      case (StructField(_, _: VectorUDT, _, _), c) => HivemallUtils.to_hivemall_features(c)
       case (_, c) => c
     }
   }
