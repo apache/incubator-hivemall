@@ -30,6 +30,13 @@ import org.apache.spark.test.TestFPWrapper._
 
 final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 
+  test("anomaly") {
+    import hiveContext.implicits._
+    val df = spark.range(1000).selectExpr("id AS time", "rand() AS x")
+    // TODO: Test results more exactly
+    assert(df.sort($"time".asc).select(sst($"x", lit("-th 0.005"))).count === 1000)
+  }
+
   test("knn.similarity") {
     val df1 = DummyInputData.select(cosine_sim(lit2(Seq(1, 2, 3, 4)), lit2(Seq(3, 4, 5, 6))))
     assert(df1.collect.apply(0).getFloat(0) ~== 0.500f)
