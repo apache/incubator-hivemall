@@ -31,7 +31,6 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{EachTopK, Expression, Literal, NamedExpression, UserDefinedGenerator}
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.hive.HiveShim.HiveFunctionWrapper
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -54,607 +53,563 @@ import org.apache.spark.unsafe.types.UTF8String
  * @groupname misc
  */
 final class HivemallOps(df: DataFrame) extends Logging {
+  import internal.HivemallOpsImpl._
 
   private[this] val _sparkSession = df.sparkSession
   private[this] val _analyzer = _sparkSession.sessionState.analyzer
 
   /**
-   * @see hivemall.regression.AdaDeltaUDTF
+   * @see [[hivemall.regression.AdaDeltaUDTF]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_adadelta(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_adadelta",
-        new HiveFunctionWrapper("hivemall.regression.AdaDeltaUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.AdaDeltaUDTF",
+      "train_adadelta",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.regression.AdaGradUDTF
+   * @see [[hivemall.regression.AdaGradUDTF]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_adagrad(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_adagrad",
-        new HiveFunctionWrapper("hivemall.regression.AdaGradUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.AdaGradUDTF",
+      "train_adagrad",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.regression.AROWRegressionUDTF
+   * @see [[hivemall.regression.AROWRegressionUDTF]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_arow_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_arow_regr",
-        new HiveFunctionWrapper("hivemall.regression.AROWRegressionUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.AROWRegressionUDTF",
+      "train_arow_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.regression.AROWRegressionUDTF$AROWe
+   * @see [[hivemall.regression.AROWRegressionUDTF.AROWe]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_arowe_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_arowe_regr",
-        new HiveFunctionWrapper("hivemall.regression.AROWRegressionUDTF$AROWe"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.AROWRegressionUDTF$AROWe",
+      "train_arowe_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.regression.AROWRegressionUDTF$AROWe2
+   * @see [[hivemall.regression.AROWRegressionUDTF.AROWe2]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_arowe2_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_arowe2_regr",
-        new HiveFunctionWrapper("hivemall.regression.AROWRegressionUDTF$AROWe2"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.AROWRegressionUDTF$AROWe2",
+      "train_arowe2_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.regression.LogressUDTF
+   * @see [[hivemall.regression.LogressUDTF]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_logregr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_logregr",
-        new HiveFunctionWrapper("hivemall.regression.LogressUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.LogressUDTF",
+      "train_logregr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.regression.PassiveAggressiveRegressionUDTF
+   * @see [[hivemall.regression.PassiveAggressiveRegressionUDTF]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_pa1_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_pa1_regr",
-        new HiveFunctionWrapper("hivemall.regression.PassiveAggressiveRegressionUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.PassiveAggressiveRegressionUDTF",
+      "train_pa1_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.regression.PassiveAggressiveRegressionUDTF.PA1a
+   * @see [[hivemall.regression.PassiveAggressiveRegressionUDTF.PA1a]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_pa1a_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_pa1a_regr",
-        new HiveFunctionWrapper("hivemall.regression.PassiveAggressiveRegressionUDTF$PA1a"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.PassiveAggressiveRegressionUDTF$PA1a",
+      "train_pa1a_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.regression.PassiveAggressiveRegressionUDTF.PA2
+   * @see [[hivemall.regression.PassiveAggressiveRegressionUDTF.PA2]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_pa2_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_pa2_regr",
-        new HiveFunctionWrapper("hivemall.regression.PassiveAggressiveRegressionUDTF$PA2"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.PassiveAggressiveRegressionUDTF$PA2",
+      "train_pa2_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.regression.PassiveAggressiveRegressionUDTF.PA2a
+   * @see [[hivemall.regression.PassiveAggressiveRegressionUDTF.PA2a]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_pa2a_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_pa2a_regr",
-        new HiveFunctionWrapper("hivemall.regression.PassiveAggressiveRegressionUDTF$PA2a"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.PassiveAggressiveRegressionUDTF$PA2a",
+      "train_pa2a_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.smile.regression.RandomForestRegressionUDTF
+   * @see [[hivemall.smile.regression.RandomForestRegressionUDTF]]
    * @group regression
    */
   @scala.annotation.varargs
   def train_randomforest_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_randomforest_regr",
-        new HiveFunctionWrapper("hivemall.smile.regression.RandomForestRegressionUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
+    planHiveGenericUDTF(
+      df,
+      "hivemall.smile.regression.RandomForestRegressionUDTF",
+      "train_randomforest_regr",
+      setMixServs(toHivemallFeatures(exprs)),
       Seq("model_id", "model_type", "pred_model", "var_importance", "oob_errors", "oob_tests")
-        .map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    )
   }
 
   /**
-   * @see hivemall.classifier.PerceptronUDTF
+   * @see [[hivemall.classifier.PerceptronUDTF]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_perceptron(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_perceptron",
-        new HiveFunctionWrapper("hivemall.classifier.PerceptronUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.PerceptronUDTF",
+      "train_perceptron",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.PassiveAggressiveUDTF
+   * @see [[hivemall.classifier.PassiveAggressiveUDTF]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_pa(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_pa",
-        new HiveFunctionWrapper("hivemall.classifier.PassiveAggressiveUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.PassiveAggressiveUDTF",
+      "train_pa",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.PassiveAggressiveUDTF$PA1
+   * @see [[hivemall.classifier.PassiveAggressiveUDTF.PA1]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_pa1(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_pa1",
-        new HiveFunctionWrapper("hivemall.classifier.PassiveAggressiveUDTF$PA1"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.PassiveAggressiveUDTF$PA1",
+      "train_pa1",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.PassiveAggressiveUDTF$PA2
+   * @see [[hivemall.classifier.PassiveAggressiveUDTF.PA2]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_pa2(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_pa2",
-        new HiveFunctionWrapper("hivemall.classifier.PassiveAggressiveUDTF$PA2"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.PassiveAggressiveUDTF$PA2",
+      "train_pa2",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.ConfidenceWeightedUDTF
+   * @see [[hivemall.classifier.ConfidenceWeightedUDTF]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_cw(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_cw",
-        new HiveFunctionWrapper("hivemall.classifier.ConfidenceWeightedUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.ConfidenceWeightedUDTF",
+      "train_cw",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.AROWClassifierUDTF
+   * @see [[hivemall.classifier.AROWClassifierUDTF]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_arow(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_arow",
-        new HiveFunctionWrapper("hivemall.classifier.AROWClassifierUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.AROWClassifierUDTF",
+      "train_arow",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.AROWClassifierUDTF$AROWh
+   * @see [[hivemall.classifier.AROWClassifierUDTF.AROWh]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_arowh(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_arowh",
-        new HiveFunctionWrapper("hivemall.classifier.AROWClassifierUDTF$AROWh"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.AROWClassifierUDTF$AROWh",
+      "train_arowh",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.SoftConfideceWeightedUDTF$SCW1
+   * @see [[hivemall.classifier.SoftConfideceWeightedUDTF.SCW1]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_scw(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_scw",
-        new HiveFunctionWrapper("hivemall.classifier.SoftConfideceWeightedUDTF$SCW1"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.SoftConfideceWeightedUDTF$SCW1",
+      "train_scw",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.SoftConfideceWeightedUDTF$SCW1
+   * @see [[hivemall.classifier.SoftConfideceWeightedUDTF.SCW1]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_scw2(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_scw2",
-        new HiveFunctionWrapper("hivemall.classifier.SoftConfideceWeightedUDTF$SCW2"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.SoftConfideceWeightedUDTF$SCW2",
+      "train_scw2",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.AdaGradRDAUDTF
+   * @see [[hivemall.classifier.AdaGradRDAUDTF]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_adagrad_rda(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-       "train_adagrad_rda",
-        new HiveFunctionWrapper("hivemall.classifier.AdaGradRDAUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.AdaGradRDAUDTF",
+      "train_adagrad_rda",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.smile.classification.RandomForestClassifierUDTF
+   * @see [[hivemall.smile.classification.RandomForestClassifierUDTF]]
    * @group classifier
    */
   @scala.annotation.varargs
   def train_randomforest_classifier(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-       "train_randomforest_classifier",
-        new HiveFunctionWrapper("hivemall.smile.classification.RandomForestClassifierUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
+    planHiveGenericUDTF(
+      df,
+      "hivemall.smile.classification.RandomForestClassifierUDTF",
+      "train_randomforest_classifier",
+      setMixServs(toHivemallFeatures(exprs)),
       Seq("model_id", "model_type", "pred_model", "var_importance", "oob_errors", "oob_tests")
-        .map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.MulticlassPerceptronUDTF
+   * @see [[hivemall.classifier.multiclass.MulticlassPerceptronUDTF]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_perceptron(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_perceptron",
-        new HiveFunctionWrapper("hivemall.classifier.multiclass.MulticlassPerceptronUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassPerceptronUDTF",
+      "train_multiclass_perceptron",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.PassiveAggressiveUDTF
+   * @see [[hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_pa(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_pa",
-        new HiveFunctionWrapper("hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF",
+      "train_multiclass_pa",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.PassiveAggressiveUDTF$PA1
+   * @see [[hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF.PA1]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_pa1(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_pa1",
-        new HiveFunctionWrapper(
-          "hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF$PA1"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF$PA1",
+      "train_multiclass_pa1",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.PassiveAggressiveUDTF$PA2
+   * @see [[hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF.PA2]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_pa2(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_pa2",
-        new HiveFunctionWrapper(
-          "hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF$PA2"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF$PA2",
+      "train_multiclass_pa2",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.MulticlassConfidenceWeightedUDTF
+   * @see [[hivemall.classifier.multiclass.MulticlassConfidenceWeightedUDTF]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_cw(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_cw",
-        new HiveFunctionWrapper("hivemall.classifier.multiclass.MulticlassConfidenceWeightedUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassConfidenceWeightedUDTF",
+      "train_multiclass_cw",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.MulticlassAROWClassifierUDTF
+   * @see [[hivemall.classifier.multiclass.MulticlassAROWClassifierUDTF]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_arow(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_arow",
-        new HiveFunctionWrapper("hivemall.classifier.multiclass.MulticlassAROWClassifierUDTF"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassAROWClassifierUDTF",
+      "train_multiclass_arow",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.MulticlassSoftConfidenceWeightedUDTF$SCW1
+   * @see [[hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF.SCW1]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_scw(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_scw",
-        new HiveFunctionWrapper(
-          "hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF$SCW1"),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF$SCW1",
+      "train_multiclass_scw",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight", "conv")
+    )
   }
 
   /**
-   * @see hivemall.classifier.classifier.MulticlassSoftConfidenceWeightedUDTF$SCW2
+   * @see [[hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF.SCW2]]
    * @group classifier.multiclass
    */
   @scala.annotation.varargs
   def train_multiclass_scw2(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_multiclass_scw2",
-        new HiveFunctionWrapper(
-          "hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF$SCW2"
-        ),
-        setMixServs(toHivemallFeatureDf(exprs: _*)).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("label", "feature", "weight", "conv").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF$SCW2",
+      "train_multiclass_scw2",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "feature", "weight", "conv")
+    )
   }
 
   /**
    * :: Experimental ::
-   * @see hivemall.xgboost.regression.XGBoostRegressionUDTF
+   * @see [[hivemall.xgboost.regression.XGBoostRegressionUDTF]]
    * @group xgboost
    */
   @Experimental
   @scala.annotation.varargs
   def train_xgboost_regr(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_xgboost_regr",
-        new HiveFunctionWrapper("hivemall.xgboost.regression.XGBoostRegressionUDTFWrapper"),
-        toHivemallFeatureDf(exprs : _*).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("model_id", "pred_model").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.xgboost.regression.XGBoostRegressionUDTFWrapper",
+      "train_xgboost_regr",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("model_id", "pred_model")
+    )
   }
 
   /**
    * :: Experimental ::
-   * @see hivemall.xgboost.classification.XGBoostBinaryClassifierUDTF
+   * @see [[hivemall.xgboost.classification.XGBoostBinaryClassifierUDTF]]
    * @group xgboost
    */
   @Experimental
   @scala.annotation.varargs
   def train_xgboost_classifier(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_xgboost_classifier",
-        new HiveFunctionWrapper(
-          "hivemall.xgboost.classification.XGBoostBinaryClassifierUDTFWrapper"),
-        toHivemallFeatureDf(exprs : _*).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("model_id", "pred_model").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.xgboost.classification.XGBoostBinaryClassifierUDTFWrapper",
+      "train_xgboost_classifier",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("model_id", "pred_model")
+    )
   }
 
   /**
    * :: Experimental ::
-   * @see hivemall.xgboost.classification.XGBoostMulticlassClassifierUDTF
+   * @see [[hivemall.xgboost.classification.XGBoostMulticlassClassifierUDTF]]
    * @group xgboost
    */
   @Experimental
   @scala.annotation.varargs
   def train_xgboost_multiclass_classifier(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "train_xgboost_multiclass_classifier",
-        new HiveFunctionWrapper(
-          "hivemall.xgboost.classification.XGBoostMulticlassClassifierUDTFWrapper"
-        ),
-        toHivemallFeatureDf(exprs: _*).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("model_id", "pred_model").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.xgboost.classification.XGBoostMulticlassClassifierUDTFWrapper",
+      "train_xgboost_multiclass_classifier",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("model_id", "pred_model")
+    )
   }
 
   /**
    * :: Experimental ::
-   * @see hivemall.xgboost.tools.XGBoostPredictUDTF
+   * @see [[hivemall.xgboost.tools.XGBoostPredictUDTF]]
    * @group xgboost
    */
   @Experimental
   @scala.annotation.varargs
   def xgboost_predict(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "xgboost_predict",
-        new HiveFunctionWrapper("hivemall.xgboost.tools.XGBoostPredictUDTF"),
-        toHivemallFeatureDf(exprs: _*).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("rowid", "predicted").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.xgboost.tools.XGBoostPredictUDTF",
+      "xgboost_predict",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("rowid", "predicted")
+    )
   }
 
   /**
    * :: Experimental ::
-   * @see hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF
+   * @see [[hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF]]
    * @group xgboost
    */
   @Experimental
   @scala.annotation.varargs
   def xgboost_multiclass_predict(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "xgboost_multiclass_predict",
-        new HiveFunctionWrapper("hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF"),
-        toHivemallFeatureDf(exprs: _*).map(_.expr)
-      ),
-      join = false, outer = false, None,
-      Seq("rowid", "label", "probability").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF",
+      "xgboost_multiclass_predict",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("rowid", "label", "probability")
+    )
   }
 
   /**
-   * @see hivemall.knn.lsh.MinHashUDTF
+   * @see [[hivemall.knn.lsh.MinHashUDTF]]
    * @group knn.lsh
    */
   @scala.annotation.varargs
   def minhash(exprs: Column*): DataFrame = withTypedPlan {
-     Generate(HiveGenericUDTF(
-        "minhash",
-        new HiveFunctionWrapper("hivemall.knn.lsh.MinHashUDTF"),
-        exprs.map(_.expr)),
-      join = false, outer = false, None,
-      Seq("clusterid", "item").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.knn.lsh.MinHashUDTF",
+      "minhash",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("clusterid", "item")
+    )
   }
 
   /**
-   * @see hivemall.ftvec.amplify.AmplifierUDTF
+   * @see [[hivemall.ftvec.amplify.AmplifierUDTF]]
    * @group ftvec.amplify
    */
   @scala.annotation.varargs
@@ -663,17 +618,17 @@ final class HivemallOps(df: DataFrame) extends Logging {
       case Column(expr: NamedExpression) => UnresolvedAttribute(expr.name)
       case Column(expr: Expression) => UnresolvedAttribute(expr.simpleString)
     }
-    Generate(HiveGenericUDTF(
-        "amplify",
-        new HiveFunctionWrapper("hivemall.ftvec.amplify.AmplifierUDTF"),
-        exprs.map(_.expr)),
-      join = false, outer = false, None,
-      outputAttr,
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.ftvec.amplify.AmplifierUDTF",
+      "amplify",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("clusterid", "item")
+    )
   }
 
   /**
-   * @see hivemall.ftvec.amplify.RandomAmplifierUDTF
+   * @see [[hivemall.ftvec.amplify.RandomAmplifierUDTF]]
    * @group ftvec.amplify
    */
   @scala.annotation.varargs
@@ -702,48 +657,48 @@ final class HivemallOps(df: DataFrame) extends Logging {
 
   /**
    * Quantifies input columns.
-   * @see hivemall.ftvec.conv.QuantifyColumnsUDTF
+   * @see [[hivemall.ftvec.conv.QuantifyColumnsUDTF]]
    * @group ftvec.conv
    */
   @scala.annotation.varargs
   def quantify(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "quantify",
-        new HiveFunctionWrapper("hivemall.ftvec.conv.QuantifyColumnsUDTF"),
-        exprs.map(_.expr)),
-      join = false, outer = false, None,
-      (0 until exprs.size - 1).map(i => s"c$i").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.ftvec.conv.QuantifyColumnsUDTF",
+      "quantify",
+      setMixServs(toHivemallFeatures(exprs)),
+      (0 until exprs.size - 1).map(i => s"c$i")
+    )
   }
 
   /**
-   * @see hivemall.ftvec.trans.BinarizeLabelUDTF
+   * @see [[hivemall.ftvec.trans.BinarizeLabelUDTF]]
    * @group ftvec.trans
    */
   @scala.annotation.varargs
   def binarize_label(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "binarize_label",
-        new HiveFunctionWrapper("hivemall.ftvec.trans.BinarizeLabelUDTF"),
-        exprs.map(_.expr)),
-      join = false, outer = false, None,
-      (0 until exprs.size - 1).map(i => s"c$i").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.ftvec.trans.BinarizeLabelUDTF",
+      "binarize_label",
+      setMixServs(toHivemallFeatures(exprs)),
+      (0 until exprs.size - 1).map(i => s"c$i")
+    )
   }
 
   /**
-   * @see hivemall.ftvec.trans.QuantifiedFeaturesUDTF
+   * @see [[hivemall.ftvec.trans.QuantifiedFeaturesUDTF]]
    * @group ftvec.trans
    */
   @scala.annotation.varargs
   def quantified_features(exprs: Column*): DataFrame = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "quantified_features",
-        new HiveFunctionWrapper("hivemall.ftvec.trans.QuantifiedFeaturesUDTF"),
-        exprs.map(_.expr)),
-      join = false, outer = false, None,
-      Seq("features").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.ftvec.trans.QuantifiedFeaturesUDTF",
+      "quantified_features",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("features")
+    )
   }
 
   /**
@@ -758,7 +713,7 @@ final class HivemallOps(df: DataFrame) extends Logging {
   }
 
   /**
-   * Splits `org.apache.spark.ml.linalg.Vector` into pieces.
+   * Splits [[Vector]] into pieces.
    * @group ftvec
    */
   def explode_vector(expr: Column): DataFrame = {
@@ -811,34 +766,25 @@ final class HivemallOps(df: DataFrame) extends Logging {
   }
 
   /**
-   * Returns a new [[DataFrame]] with columns renamed.
-   * This is a wrapper for DataFrame#toDF.
-   * @group misc
-   */
-  @scala.annotation.varargs
-  def as(colNames: String*): DataFrame = df.toDF(colNames: _*)
-
-  /**
-   * Returns all the columns as Seq[Column] in this [[DataFrame]].
-   * @group misc
-   */
-  def cols: Seq[Column] = {
-    df.schema.fields.map(col => df.col(col.name)).toSeq
-  }
-
-  /**
-   * @see hivemall.dataset.LogisticRegressionDataGeneratorUDTF
+   * @see [[hivemall.dataset.LogisticRegressionDataGeneratorUDTF]]
    * @group misc
    */
   @scala.annotation.varargs
   def lr_datagen(exprs: Column*): Dataset[Row] = withTypedPlan {
-    Generate(HiveGenericUDTF(
-        "lr_datagen",
-        new HiveFunctionWrapper("hivemall.dataset.LogisticRegressionDataGeneratorUDTFWrapper"),
-        exprs.map(_.expr)),
-      join = false, outer = false, None,
-      Seq("label", "features").map(UnresolvedAttribute(_)),
-      df.logicalPlan)
+    planHiveGenericUDTF(
+      df,
+      "hivemall.dataset.LogisticRegressionDataGeneratorUDTFWrapper",
+      "lr_datagen",
+      setMixServs(toHivemallFeatures(exprs)),
+      Seq("label", "features")
+    )
+  }
+
+  /**
+   * Returns all the columns as Seq[Column] in this [[DataFrame]].
+   */
+  private[sql] def cols: Seq[Column] = {
+    df.schema.fields.map(col => df.col(col.name)).toSeq
   }
 
   /**
@@ -868,7 +814,10 @@ final class HivemallOps(df: DataFrame) extends Logging {
     }
   }
 
-  @inline private[this] def toHivemallFeatureDf(exprs: Column*): Seq[Column] = {
+  /**
+   * If the input is a [[Vector]], transform it into Hivemall features.
+   */
+  @inline private[this] def toHivemallFeatures(exprs: Seq[Column]): Seq[Column] = {
     df.select(exprs: _*).queryExecution.analyzed.schema.zip(exprs).map {
       case (StructField(_, _: VectorUDT, _, _), c) => HivemallUtils.to_hivemall_features(c)
       case (_, c) => c
@@ -886,6 +835,7 @@ final class HivemallOps(df: DataFrame) extends Logging {
 }
 
 object HivemallOps {
+  import internal.HivemallOpsImpl._
 
   /**
    * Implicitly inject the [[HivemallOps]] into [[DataFrame]].
@@ -894,417 +844,490 @@ object HivemallOps {
     new HivemallOps(df)
 
   /**
-   * @see hivemall.HivemallVersionUDF
+   * @see [[hivemall.HivemallVersionUDF]]
    * @group misc
    */
   def hivemall_version(): Column = withExpr {
-    HiveSimpleUDF("hivemall_version", new HiveFunctionWrapper("hivemall.HivemallVersionUDF"), Nil)
+    planHiveUDF(
+      "hivemall.HivemallVersionUDF",
+      "hivemall_version",
+      Nil
+    )
   }
 
   /**
-   * @see hivemall.knn.similarity.CosineSimilarityUDF
+   * @see [[hivemall.knn.similarity.CosineSimilarityUDF]]
    * @group knn.similarity
    */
   @scala.annotation.varargs
   def cosine_sim(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("cosine_sim",
-      new HiveFunctionWrapper("hivemall.knn.similarity.CosineSimilarityUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.similarity.CosineSimilarityUDF",
+      "cosine_sim",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.similarity.JaccardIndexUDF
+   * @see [[hivemall.knn.similarity.JaccardIndexUDF]]
    * @group knn.similarity
    */
   @scala.annotation.varargs
   def jaccard(exprs: Column*): Column = withExpr {
-    HiveSimpleUDF("jaccard",
-      new HiveFunctionWrapper("hivemall.knn.similarity.JaccardIndexUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.knn.similarity.JaccardIndexUDF",
+      "jaccard",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.similarity.AngularSimilarityUDF
+   * @see [[hivemall.knn.similarity.AngularSimilarityUDF]]
    * @group knn.similarity
    */
   @scala.annotation.varargs
   def angular_similarity(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("angular_similarity",
-      new HiveFunctionWrapper("hivemall.knn.similarity.AngularSimilarityUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.similarity.AngularSimilarityUDF",
+      "angular_similarity",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.similarity.EuclidSimilarity
+   * @see [[hivemall.knn.similarity.EuclidSimilarity]]
    * @group knn.similarity
    */
   @scala.annotation.varargs
   def euclid_similarity(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("euclid_similarity",
-      new HiveFunctionWrapper("hivemall.knn.similarity.EuclidSimilarity"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.similarity.EuclidSimilarity",
+      "euclid_similarity",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.similarity.Distance2SimilarityUDF
+   * @see [[hivemall.knn.similarity.Distance2SimilarityUDF]]
    * @group knn.similarity
    */
   @scala.annotation.varargs
   def distance2similarity(exprs: Column*): Column = withExpr {
     // TODO: Need a wrapper class because of using unsupported types
-    HiveGenericUDF("distance2similarity",
-      new HiveFunctionWrapper("hivemall.knn.similarity.Distance2SimilarityUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.similarity.Distance2SimilarityUDF",
+      "distance2similarity",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.HammingDistanceUDF
+   * @see [[hivemall.knn.distance.HammingDistanceUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def hamming_distance(exprs: Column*): Column = withExpr {
-    HiveSimpleUDF("hamming_distance",
-      new HiveFunctionWrapper("hivemall.knn.distance.HammingDistanceUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.knn.distance.HammingDistanceUDF",
+      "hamming_distance",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.PopcountUDF
+   * @see [[hivemall.knn.distance.PopcountUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def popcnt(exprs: Column*): Column = withExpr {
-    HiveSimpleUDF("popcnt",
-      new HiveFunctionWrapper("hivemall.knn.distance.PopcountUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.knn.distance.PopcountUDF",
+      "popcnt",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.KLDivergenceUDF
+   * @see [[hivemall.knn.distance.KLDivergenceUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def kld(exprs: Column*): Column = withExpr {
-    HiveSimpleUDF("kld",
-      new HiveFunctionWrapper("hivemall.knn.distance.KLDivergenceUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.knn.distance.KLDivergenceUDF",
+      "kld",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.EuclidDistanceUDF
+   * @see [[hivemall.knn.distance.EuclidDistanceUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def euclid_distance(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("euclid_distance",
-      new HiveFunctionWrapper("hivemall.knn.distance.EuclidDistanceUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.distance.EuclidDistanceUDF",
+      "euclid_distance",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.CosineDistanceUDF
+   * @see [[hivemall.knn.distance.CosineDistanceUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def cosine_distance(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("cosine_distance",
-      new HiveFunctionWrapper("hivemall.knn.distance.CosineDistanceUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.distance.CosineDistanceUDF",
+      "cosine_distance",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.AngularDistanceUDF
+   * @see [[hivemall.knn.distance.AngularDistanceUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def angular_distance(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("angular_distance",
-      new HiveFunctionWrapper("hivemall.knn.distance.AngularDistanceUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.distance.AngularDistanceUDF",
+      "angular_distance",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.ManhattanDistanceUDF
+   * @see [[hivemall.knn.distance.ManhattanDistanceUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def manhattan_distance(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("manhattan_distance",
-      new HiveFunctionWrapper("hivemall.knn.distance.ManhattanDistanceUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.distance.ManhattanDistanceUDF",
+      "manhattan_distance",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.distance.MinkowskiDistanceUDF
+   * @see [[hivemall.knn.distance.MinkowskiDistanceUDF]]
    * @group knn.distance
    */
   @scala.annotation.varargs
   def minkowski_distance (exprs: Column*): Column = withExpr {
-    HiveGenericUDF("minkowski_distance",
-      new HiveFunctionWrapper("hivemall.knn.distance.MinkowskiDistanceUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.distance.MinkowskiDistanceUDF",
+      "minkowski_distance",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.lsh.bBitMinHashUDF
+   * @see [[hivemall.knn.lsh.bBitMinHashUDF]]
    * @group knn.lsh
    */
   @scala.annotation.varargs
   def bbit_minhash(exprs: Column*): Column = withExpr {
-    HiveSimpleUDF("bbit_minhash",
-      new HiveFunctionWrapper("hivemall.knn.lsh.bBitMinHashUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.knn.lsh.bBitMinHashUDF",
+      "bbit_minhash",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.knn.lsh.MinHashesUDF
+   * @see [[hivemall.knn.lsh.MinHashesUDFWrapper]]
    * @group knn.lsh
    */
   @scala.annotation.varargs
   def minhashes(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("minhashes",
-      new HiveFunctionWrapper("hivemall.knn.lsh.MinHashesUDFWrapper"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.knn.lsh.MinHashesUDFWrapper",
+      "minhashes",
+      exprs
+    )
   }
 
   /**
    * Returns new features with `1.0` (bias) appended to the input features.
+   * @see [[hivemall.ftvec.AddBiasUDFWrapper]]
    * @group ftvec
    */
   def add_bias(expr: Column): Column = withExpr {
-    HiveGenericUDF("add_bias",
-      new HiveFunctionWrapper("hivemall.ftvec.AddBiasUDFWrapper"),
-      expr.expr :: Nil)
+    planHiveGenericUDF(
+      "hivemall.ftvec.AddBiasUDFWrapper",
+      "add_bias",
+      expr :: Nil
+    )
   }
 
   /**
-   * @see hivemall.ftvec.ExtractFeatureUdf
+   * @see [[hivemall.ftvec.ExtractFeatureUDFWrapper]]
    * @group ftvec
    *
    * TODO: This throws java.lang.ClassCastException because
    * HiveInspectors.toInspector has a bug in spark.
    * Need to fix it later.
    */
-  def extract_feature(expr: Column): Column = {
-    val hiveUdf = HiveGenericUDF(
+  def extract_feature(expr: Column): Column = withExpr {
+    planHiveGenericUDF(
+      "hivemall.ftvec.ExtractFeatureUDFWrapper",
       "extract_feature",
-      new HiveFunctionWrapper("hivemall.ftvec.ExtractFeatureUDFWrapper"),
-      expr.expr :: Nil)
-    Column(hiveUdf).as("feature")
-  }
+      expr :: Nil
+    )
+  }.as("feature")
 
   /**
-   * @see hivemall.ftvec.ExtractWeightUdf
+   * @see [[hivemall.ftvec.ExtractWeightUDFWrapper]]
    * @group ftvec
    *
    * TODO: This throws java.lang.ClassCastException because
    * HiveInspectors.toInspector has a bug in spark.
    * Need to fix it later.
    */
-  def extract_weight(expr: Column): Column = {
-    val hiveUdf = HiveGenericUDF(
+  def extract_weight(expr: Column): Column = withExpr {
+    planHiveGenericUDF(
+      "hivemall.ftvec.ExtractWeightUDFWrapper",
       "extract_weight",
-      new HiveFunctionWrapper("hivemall.ftvec.ExtractWeightUDFWrapper"),
-      expr.expr :: Nil)
-    Column(hiveUdf).as("value")
-  }
+      expr :: Nil
+    )
+  }.as("value")
 
   /**
-   * @see hivemall.ftvec.AddFeatureIndexUDFWrapper
+   * @see [[hivemall.ftvec.AddFeatureIndexUDFWrapper]]
    * @group ftvec
    */
   def add_feature_index(expr: Column): Column = withExpr {
-    HiveGenericUDF("add_feature_index",
-      new HiveFunctionWrapper("hivemall.ftvec.AddFeatureIndexUDFWrapper"),
-      expr.expr :: Nil)
+    planHiveGenericUDF(
+      "hivemall.ftvec.AddFeatureIndexUDFWrapper",
+      "add_feature_index",
+      expr :: Nil
+    )
   }
 
   /**
-   * @see hivemall.ftvec.SortByFeatureUDF
+   * @see [[hivemall.ftvec.SortByFeatureUDFWrapper]]
    * @group ftvec
    */
   def sort_by_feature(expr: Column): Column = withExpr {
-    HiveGenericUDF("sort_by_feature",
-      new HiveFunctionWrapper("hivemall.ftvec.SortByFeatureUDFWrapper"),
-      expr.expr :: Nil)
+    planHiveGenericUDF(
+      "hivemall.ftvec.SortByFeatureUDFWrapper",
+      "sort_by_feature",
+      expr :: Nil
+    )
   }
 
   /**
-   * @see hivemall.ftvec.hashing.MurmurHash3UDF
+   * @see [[hivemall.ftvec.hashing.MurmurHash3UDF]]
    * @group ftvec.hashing
    */
   def mhash(expr: Column): Column = withExpr {
-    HiveSimpleUDF("mhash",
-      new HiveFunctionWrapper("hivemall.ftvec.hashing.MurmurHash3UDF"),
-      expr.expr :: Nil)
+    planHiveUDF(
+      "hivemall.ftvec.hashing.MurmurHash3UDF",
+      "mhash",
+      expr :: Nil
+    )
   }
 
   /**
-   * @see hivemall.ftvec.hashing.Sha1UDF
+   * @see [[hivemall.ftvec.hashing.Sha1UDF]]
    * @group ftvec.hashing
    */
   def sha1(expr: Column): Column = withExpr {
-    HiveSimpleUDF("sha1",
-      new HiveFunctionWrapper("hivemall.ftvec.hashing.Sha1UDF"),
-      expr.expr :: Nil)
+    planHiveUDF(
+      "hivemall.ftvec.hashing.Sha1UDF",
+      "sha1",
+      expr :: Nil
+    )
   }
 
   /**
-   * @see hivemall.ftvec.hashing.ArrayHashValuesUDF
+   * @see [[hivemall.ftvec.hashing.ArrayHashValuesUDF]]
    * @group ftvec.hashing
    */
   @scala.annotation.varargs
   def array_hash_values(exprs: Column*): Column = withExpr {
     // TODO: Need a wrapper class because of using unsupported types
-    HiveSimpleUDF("array_hash_values",
-      new HiveFunctionWrapper("hivemall.ftvec.hashing.ArrayHashValuesUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.ftvec.hashing.ArrayHashValuesUDF",
+      "array_hash_values",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.hashing.ArrayPrefixedHashValuesUDF
+   * @see [[hivemall.ftvec.hashing.ArrayPrefixedHashValuesUDF]]
    * @group ftvec.hashing
    */
   @scala.annotation.varargs
   def prefixed_hash_values(exprs: Column*): Column = withExpr {
     // TODO: Need a wrapper class because of using unsupported types
-    HiveSimpleUDF("prefixed_hash_values",
-      new HiveFunctionWrapper("hivemall.ftvec.hashing.ArrayPrefixedHashValuesUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.ftvec.hashing.ArrayPrefixedHashValuesUDF",
+      "prefixed_hash_values",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.scaling.RescaleUDF
+   * @see [[hivemall.ftvec.scaling.RescaleUDF]]
    * @group ftvec.scaling
    */
   def rescale(value: Column, max: Column, min: Column): Column = withExpr {
-    HiveSimpleUDF("rescale",
-      new HiveFunctionWrapper("hivemall.ftvec.scaling.RescaleUDF"),
-      (value.cast(FloatType) :: max :: min :: Nil).map(_.expr))
+    planHiveUDF(
+      "hivemall.ftvec.scaling.RescaleUDF",
+      "rescale",
+      value.cast(FloatType) :: max :: min :: Nil
+    )
   }
 
   /**
-   * @see hivemall.ftvec.scaling.ZScoreUDF
+   * @see [[hivemall.ftvec.scaling.ZScoreUDF]]
    * @group ftvec.scaling
    */
   @scala.annotation.varargs
   def zscore(exprs: Column*): Column = withExpr {
-    HiveSimpleUDF("zscore",
-      new HiveFunctionWrapper("hivemall.ftvec.scaling.ZScoreUDF"),
-      exprs.map(_.expr))
+    planHiveUDF(
+      "hivemall.ftvec.scaling.ZScoreUDF",
+      "zscore",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.scaling.L2NormalizationUDF
+   * @see [[hivemall.ftvec.scaling.L2NormalizationUDFWrapper]]
    * @group ftvec.scaling
    */
   def normalize(expr: Column): Column = withExpr {
-    HiveGenericUDF("normalize",
-      new HiveFunctionWrapper("hivemall.ftvec.scaling.L2NormalizationUDFWrapper"),
-      expr.expr :: Nil)
+    planHiveGenericUDF(
+      "hivemall.ftvec.scaling.L2NormalizationUDFWrapper",
+      "normalize",
+      expr :: Nil
+    )
   }
 
   /**
-   * @see hivemall.ftvec.selection.ChiSquareUDF
+   * @see [[hivemall.ftvec.selection.ChiSquareUDF]]
    * @group ftvec.selection
    */
   def chi2(observed: Column, expected: Column): Column = withExpr {
-    HiveGenericUDF("chi2",
-      new HiveFunctionWrapper("hivemall.ftvec.selection.ChiSquareUDF"),
-      Seq(observed.expr, expected.expr))
+    planHiveGenericUDF(
+      "hivemall.ftvec.selection.ChiSquareUDF",
+      "chi2",
+      Seq(observed, expected)
+    )
   }
 
   /**
-   * @see hivemall.ftvec.conv.ToDenseFeaturesUDF
+   * @see [[hivemall.ftvec.conv.ToDenseFeaturesUDF]]
    * @group ftvec.conv
    */
   @scala.annotation.varargs
   def to_dense_features(exprs: Column*): Column = withExpr {
     // TODO: Need a wrapper class because of using unsupported types
-    HiveGenericUDF("to_dense_features",
-      new HiveFunctionWrapper("hivemall.ftvec.conv.ToDenseFeaturesUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.ftvec.conv.ToDenseFeaturesUDF",
+      "to_dense_features",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.conv.ToSparseFeaturesUDF
+   * @see [[hivemall.ftvec.conv.ToSparseFeaturesUDF]]
    * @group ftvec.conv
    */
   @scala.annotation.varargs
   def to_sparse_features(exprs: Column*): Column = withExpr {
     // TODO: Need a wrapper class because of using unsupported types
-    HiveGenericUDF("to_sparse_features",
-      new HiveFunctionWrapper("hivemall.ftvec.conv.ToSparseFeaturesUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.ftvec.conv.ToSparseFeaturesUDF",
+      "to_sparse_features",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.trans.VectorizeFeaturesUDF
+   * @see [[hivemall.ftvec.trans.VectorizeFeaturesUDF]]
    * @group ftvec.trans
    */
   @scala.annotation.varargs
   def vectorize_features(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("vectorize_features",
-      new HiveFunctionWrapper("hivemall.ftvec.trans.VectorizeFeaturesUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.ftvec.trans.VectorizeFeaturesUDF",
+      "vectorize_features",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.trans.CategoricalFeaturesUDF
+   * @see [[hivemall.ftvec.trans.CategoricalFeaturesUDF]]
    * @group ftvec.trans
    */
   @scala.annotation.varargs
   def categorical_features(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("categorical_features",
-      new HiveFunctionWrapper("hivemall.ftvec.trans.CategoricalFeaturesUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.ftvec.trans.CategoricalFeaturesUDF",
+      "categorical_features",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.trans.IndexedFeatures
+   * @see [[hivemall.ftvec.trans.IndexedFeatures]]
    * @group ftvec.trans
    */
   @scala.annotation.varargs
   def indexed_features(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("indexed_features",
-      new HiveFunctionWrapper("hivemall.ftvec.trans.IndexedFeatures"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.ftvec.trans.IndexedFeatures",
+      "indexed_features",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.ftvec.trans.QuantitativeFeaturesUDF
+   * @see [[hivemall.ftvec.trans.QuantitativeFeaturesUDF]]
    * @group ftvec.trans
    */
   @scala.annotation.varargs
   def quantitative_features(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("quantitative_features",
-      new HiveFunctionWrapper("hivemall.ftvec.trans.QuantitativeFeaturesUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.ftvec.trans.QuantitativeFeaturesUDF",
+      "quantitative_features",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.smile.tools.TreePredictUDF
+   * @see [[hivemall.smile.tools.TreePredictUDF]]
    * @group misc
    */
   @scala.annotation.varargs
   def tree_predict(exprs: Column*): Column = withExpr {
-    HiveGenericUDF("tree_predict",
-      new HiveFunctionWrapper("hivemall.smile.tools.TreePredictUDF"),
-      exprs.map(_.expr))
+    planHiveGenericUDF(
+      "hivemall.smile.tools.TreePredictUDF",
+      "tree_predict",
+      exprs
+    )
   }
 
   /**
-   * @see hivemall.tools.array.SelectKBestUDF
+   * @see [[hivemall.tools.array.SelectKBestUDF]]
    * @group tools.array
    */
   def select_k_best(X: Column, importanceList: Column, k: Column): Column = withExpr {
-    HiveGenericUDF("select_k_best",
-      new HiveFunctionWrapper("hivemall.tools.array.SelectKBestUDF"),
-      Seq(X.expr, importanceList.expr, k.expr))
+    planHiveGenericUDF(
+      "hivemall.tools.array.SelectKBestUDF",
+      "select_k_best",
+      Seq(X, importanceList, k)
+    )
   }
 
   /**
-   * @see hivemall.tools.math.SigmoidUDF
+   * @see [[hivemall.tools.math.SigmoidGenericUDF]]
    * @group misc
    */
   def sigmoid(expr: Column): Column = {
@@ -1313,11 +1336,15 @@ object HivemallOps {
   }
 
   /**
-   * @see hivemall.tools.mapred.RowIdUDF
+   * @see [[hivemall.tools.mapred.RowIdUDFWrapper]]
    * @group misc
    */
   def rowid(): Column = withExpr {
-    HiveGenericUDF("rowid", new HiveFunctionWrapper("hivemall.tools.mapred.RowIdUDFWrapper"), Nil)
+    planHiveGenericUDF(
+      "hivemall.tools.mapred.RowIdUDFWrapper",
+      "rowid",
+       Nil
+    )
   }.as("rowid")
 
   /**

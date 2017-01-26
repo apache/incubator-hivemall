@@ -170,7 +170,7 @@ final class ModelMixingSuite extends SparkFunSuite with BeforeAndAfter {
         } else {
           res.groupBy("feature").argmin_kld("weight", "conv")
         }
-      }.as("feature", "weight")
+      }.toDF("feature", "weight")
 
       // Data preparation
       val testDf = testA9aData
@@ -186,14 +186,14 @@ final class ModelMixingSuite extends SparkFunSuite with BeforeAndAfter {
         .join(model, testDf_exploded("feature") === model("feature"), "LEFT_OUTER")
         .select($"rowid", ($"weight" * $"value").as("value"))
         .groupBy("rowid").sum("value")
-        .as("rowid", "predicted")
+        .toDF("rowid", "predicted")
 
       // Evaluation
       val eval = predict
         .join(testDf, predict("rowid") === testDf("rowid"))
         .groupBy()
         .agg(Map("target" -> "avg", "predicted" -> "avg"))
-        .as("target", "predicted")
+        .toDF("target", "predicted")
 
       val (target, predicted) = eval.map {
         case Row(target: Double, predicted: Double) => (target, predicted)
@@ -238,7 +238,7 @@ final class ModelMixingSuite extends SparkFunSuite with BeforeAndAfter {
         } else {
           res.groupBy("feature").argmin_kld("weight", "conv")
         }
-      }.as("feature", "weight")
+      }.toDF("feature", "weight")
 
       // Data preparation
       val testDf = testKdd2010aData
@@ -255,7 +255,7 @@ final class ModelMixingSuite extends SparkFunSuite with BeforeAndAfter {
         .select($"rowid", ($"weight" * $"value").as("value"))
         .groupBy("rowid").sum("value")
         .select($"rowid", when(sigmoid($"sum(value)") > 0.50, 1.0).otherwise(0.0))
-        .as("rowid", "predicted")
+        .toDF("rowid", "predicted")
 
       // Evaluation
       val eval = predict
