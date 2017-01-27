@@ -588,6 +588,16 @@ CREATE FUNCTION train_ffm as 'hivemall.fm.FieldAwareFactorizationMachineUDTF' US
 DROP FUNCTION IF EXISTS ffm_predict;
 CREATE FUNCTION ffm_predict as 'hivemall.fm.FFMPredictUDF' USING JAR '${hivemall_jar}';
 
+---------------------------
+-- Anomaly Detection ------
+---------------------------
+
+DROP FUNCTION IF EXISTS changefinder;
+CREATE FUNCTION changefinder as 'hivemall.anomaly.ChangeFinderUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS sst;
+CREATE FUNCTION sst as 'hivemall.anomaly.SingularSpectrumTransformUDF' USING JAR '${hivemall_jar}';
+
 ----------------------------
 -- Smile related features --
 ----------------------------

@@ -479,6 +479,16 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_fm")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_fm AS 'hivemall.fm.FactorizationMachineUDTF'")
 
 /**
+ * Anomaly Detection
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS changefinder")
+sqlContext.sql("CREATE TEMPORARY FUNCTION changefinder AS 'hivemall.anomaly.ChangeFinderUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sst")
+sqlContext.sql("CREATE TEMPORARY FUNCTION sst AS 'hivemall.anomaly.SingularSpectrumTransformUDF'")
+
+/**
  * Smile related features
  */
 

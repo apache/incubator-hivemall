@@ -584,6 +584,16 @@ create temporary function train_ffm as 'hivemall.fm.FieldAwareFactorizationMachi
 drop temporary function ffm_predict;
 create temporary function ffm_predict as 'hivemall.fm.FFMPredictUDF';
 
+---------------------------
+-- Anomaly Detection ------
+---------------------------
+
+drop temporary function changefinder;
+create temporary function changefinder as 'hivemall.anomaly.ChangeFinderUDF';
+
+drop temporary function sst;
+create temporary function sst as 'hivemall.anomaly.SingularSpectrumTransformUDF';
+
 ----------------------------
 -- Smile related features --
 ----------------------------
