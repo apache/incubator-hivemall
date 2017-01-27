@@ -41,6 +41,7 @@ import org.apache.spark.unsafe.types.UTF8String
  * @groupname classifier
  * @groupname classifier.multiclass
  * @groupname xgboost
+ * @groupname anomaly
  * @groupname knn.similarity
  * @groupname knn.distance
  * @groupname knn.lsh
@@ -852,6 +853,19 @@ object HivemallOps {
       "hivemall.HivemallVersionUDF",
       "hivemall_version",
       Nil
+    )
+  }
+
+  /**
+   * @see [[hivemall.anomaly.SingularSpectrumTransformUDF]]
+   * @group anomaly
+   */
+  @scala.annotation.varargs
+  def sst(exprs: Column*): Column = withExpr {
+    planHiveGenericUDF(
+      "hivemall.anomaly.SingularSpectrumTransformUDF",
+      "sst",
+      exprs
     )
   }
 
