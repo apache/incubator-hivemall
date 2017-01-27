@@ -75,7 +75,7 @@ final class XGBoostSuite extends VectorQueryTest {
       val predict = model.join(mllibTestDf)
         .xgboost_predict($"rowid", $"features", $"model_id", $"pred_model")
         .groupBy("rowid").avg()
-        .as("rowid", "predicted")
+        .toDF("rowid", "predicted")
 
       val result = predict.join(mllibTestDf, predict("rowid") === mllibTestDf("rowid"), "INNER")
         .select(predict("rowid"), $"predicted", $"label")
@@ -100,7 +100,7 @@ final class XGBoostSuite extends VectorQueryTest {
       val predict = model.join(mllibTestDf)
         .xgboost_predict($"rowid", $"features", $"model_id", $"pred_model")
         .groupBy("rowid").avg()
-        .as("rowid", "predicted")
+        .toDF("rowid", "predicted")
 
       val result = predict.join(mllibTestDf, predict("rowid") === mllibTestDf("rowid"), "INNER")
         .select(

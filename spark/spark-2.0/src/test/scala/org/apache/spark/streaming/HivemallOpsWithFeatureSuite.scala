@@ -143,7 +143,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
           testDf.join(testModel, testDf("feature") === testModel("feature"), "LEFT_OUTER")
             .select($"rowid", ($"weight" * $"value").as("value"))
             .groupBy("rowid").sum("value")
-            .as("rowid", "value")
+            .toDF("rowid", "value")
             .select($"rowid", sigmoid($"value"))
         }
 

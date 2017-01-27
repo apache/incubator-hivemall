@@ -357,7 +357,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
           testData("features"), lit(true)).as("predicted")
       )
       .groupBy($"rowid")
-      .rf_ensemble("predicted").as("rowid", "predicted")
+      .rf_ensemble("predicted").toDF("rowid", "predicted")
       .select($"predicted.label")
 
     checkAnswer(predicted, Seq(Row(0), Row(1)))
@@ -447,7 +447,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     val testDf = Seq(
       (Array(0.3, 0.1, 0.2), 1),
       (Array(0.3, 0.1, 0.2), 0),
-      (Array(0.3, 0.1, 0.2), 0)).toDF.as("features", "label")
+      (Array(0.3, 0.1, 0.2), 0)).toDF("features", "label")
     Seq(
       "train_randomforest_regr",
       "train_randomforest_classifier"
@@ -469,7 +469,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       } else {
         res.groupBy("feature").argmin_kld("weight", "conv")
       }
-    }.as("feature", "weight")
+    }.toDF("feature", "weight")
 
     // Data preparation
     val testDf = LargeRegrTrainData
@@ -485,14 +485,14 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       .join(model, testDf_exploded("feature") === model("feature"), "LEFT_OUTER")
       .select($"rowid", ($"weight" * $"value").as("value"))
       .groupBy("rowid").sum("value")
-      .as("rowid", "predicted")
+      .toDF("rowid", "predicted")
 
     // Evaluation
     val eval = predict
       .join(testDf, predict("rowid") === testDf("rowid"))
       .groupBy()
       .agg(Map("target" -> "avg", "predicted" -> "avg"))
-      .as("target", "predicted")
+      .toDF("target", "predicted")
 
     val diff = eval.map {
       case Row(target: Double, predicted: Double) =>
@@ -514,7 +514,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       } else {
         res.groupBy("feature").argmin_kld("weight", "conv")
       }
-    }.as("feature", "weight")
+    }.toDF("feature", "weight")
 
     // Data preparation
     val testDf = LargeClassifierTestData
@@ -537,7 +537,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
        * Perhaps you need to use aliases.
        */
       .select($"rowid", when(sigmoid($"sum(value)") > 0.50, 1.0).otherwise(0.0))
-      .as("rowid", "predicted")
+      .toDF("rowid", "predicted")
 
     // Evaluation
     val eval = predict
@@ -586,31 +586,32 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   test("user-defined aggregators for ensembles") {
     import hiveContext.implicits._
 
-    val df1 = Seq((1, 0.1f), (1, 0.2f), (2, 0.1f)).toDF.as("c0", "c1")
+    val df1 = Seq((1, 0.1f), (1, 0.2f), (2, 0.1f)).toDF("c0", "c1")
     val row1 = df1.groupBy($"c0").voted_avg("c1").collect
     assert(row1(0).getDouble(1) ~== 0.15)
     assert(row1(1).getDouble(1) ~== 0.10)
 
-    val df3 = Seq((1, 0.2f), (1, 0.8f), (2, 0.3f)).toDF.as("c0", "c1")
+    val df3 = Seq((1, 0.2f), (1, 0.8f), (2, 0.3f)).toDF("c0", "c1")
     val row3 = df3.groupBy($"c0").weight_voted_avg("c1").collect
     assert(row3(0).getDouble(1) ~== 0.50)
     assert(row3(1).getDouble(1) ~== 0.30)
 
-    val df5 = Seq((1, 0.2f, 0.1f), (1, 0.4f, 0.2f), (2, 0.8f, 0.9f)).toDF.as("c0", "c1", "c2")
+    val df5 = Seq((1, 0.2f, 0.1f), (1, 0.4f, 0.2f), (2, 0.8f, 0.9f)).toDF("c0", "c1", "c2")
     val row5 = df5.groupBy($"c0").argmin_kld("c1", "c2").collect
     assert(row5(0).getFloat(1) ~== 0.266666666)
     assert(row5(1).getFloat(1) ~== 0.80)
 
-    val df6 = Seq((1, "id-0", 0.2f), (1, "id-1", 0.4f), (1, "id-2", 0.1f)).toDF.as("c0", "c1", "c2")
+    val df6 = Seq((1, "id-0", 0.2f), (1, "id-1", 0.4f), (1, "id-2", 0.1f)).toDF("c0", "c1", "c2")
     val row6 = df6.groupBy($"c0").max_label("c2", "c1").collect
     assert(row6(0).getString(1) == "id-1")
 
-    val df7 = Seq((1, "id-0", 0.5f), (1, "id-1", 0.1f), (1, "id-2", 0.2f)).toDF.as("c0", "c1", "c2")
-    val row7 = df7.groupBy($"c0").maxrow("c2", "c1").as("c0", "c1").select($"c1.col1").collect
+    val df7 = Seq((1, "id-0", 0.5f), (1, "id-1", 0.1f), (1, "id-2", 0.2f)).toDF("c0", "c1", "c2")
+    val row7 = df7.groupBy($"c0").maxrow("c2", "c1").toDF("c0", "c1").select($"c1.col1").collect
     assert(row7(0).getString(0) == "id-0")
 
-    val df8 = Seq((1, 1), (1, 2), (2, 1), (1, 5)).toDF.as("c0", "c1")
-    val row8 = df8.groupBy($"c0").rf_ensemble("c1").as("c0", "c1").select("c1.probability").collect
+    val df8 = Seq((1, 1), (1, 2), (2, 1), (1, 5)).toDF("c0", "c1")
+    val row8 = df8.groupBy($"c0").rf_ensemble("c1").toDF("c0", "c1")
+      .select("c1.probability").collect
     assert(row8(0).getDouble(0) ~== 0.3333333333)
     assert(row8(1).getDouble(0) ~== 1.0)
   }
@@ -618,20 +619,20 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   test("user-defined aggregators for evaluation") {
     import hiveContext.implicits._
 
-    val df1 = Seq((1, 1.0f, 0.5f), (1, 0.3f, 0.5f), (1, 0.1f, 0.2f)).toDF.as("c0", "c1", "c2")
+    val df1 = Seq((1, 1.0f, 0.5f), (1, 0.3f, 0.5f), (1, 0.1f, 0.2f)).toDF("c0", "c1", "c2")
     val row1 = df1.groupBy($"c0").mae("c1", "c2").collect
     assert(row1(0).getDouble(1) ~== 0.26666666)
 
-    val df2 = Seq((1, 0.3f, 0.8f), (1, 1.2f, 2.0f), (1, 0.2f, 0.3f)).toDF.as("c0", "c1", "c2")
+    val df2 = Seq((1, 0.3f, 0.8f), (1, 1.2f, 2.0f), (1, 0.2f, 0.3f)).toDF("c0", "c1", "c2")
     val row2 = df2.groupBy($"c0").mse("c1", "c2").collect
     assert(row2(0).getDouble(1) ~== 0.29999999)
 
-    val df3 = Seq((1, 0.3f, 0.8f), (1, 1.2f, 2.0f), (1, 0.2f, 0.3f)).toDF.as("c0", "c1", "c2")
+    val df3 = Seq((1, 0.3f, 0.8f), (1, 1.2f, 2.0f), (1, 0.2f, 0.3f)).toDF("c0", "c1", "c2")
     val row3 = df3.groupBy($"c0").rmse("c1", "c2").collect
     assert(row3(0).getDouble(1) ~== 0.54772253)
 
     val df4 = Seq((1, Array(1, 2), Array(2, 3)), (1, Array(3, 8), Array(5, 4))).toDF
-      .as("c0", "c1", "c2")
+      .toDF("c0", "c1", "c2")
     val row4 = df4.groupBy($"c0").f1score("c1", "c2").collect
     assert(row4(0).getDouble(1) ~== 0.25)
   }
