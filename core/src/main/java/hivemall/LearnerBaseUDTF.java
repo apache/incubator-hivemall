@@ -22,12 +22,12 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
 import hivemall.mix.MixMessage.MixEventName;
 import hivemall.mix.client.MixClient;
 import hivemall.model.DenseModel;
+import hivemall.model.NewDenseModel;
+import hivemall.model.NewSpaceEfficientDenseModel;
+import hivemall.model.NewSparseModel;
 import hivemall.model.PredictionModel;
 import hivemall.model.SpaceEfficientDenseModel;
 import hivemall.model.SparseModel;
-import hivemall.model.NewDenseModel;
-import hivemall.model.NewSparseModel;
-import hivemall.model.NewSpaceEfficientDenseModel;
 import hivemall.model.SynchronizedModelWrapper;
 import hivemall.model.WeightValue;
 import hivemall.model.WeightValue.WeightValueWithCovar;
@@ -38,6 +38,7 @@ import hivemall.utils.datetime.StopWatch;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
+import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 
 import java.io.BufferedReader;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -68,6 +70,7 @@ import org.apache.hadoop.io.Text;
 public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(LearnerBaseUDTF.class);
 
+    protected final boolean enableNewModel;
     protected String preloadedModelFile;
     protected boolean dense_model;
     protected int model_dims;
@@ -80,9 +83,12 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     protected boolean mixCancel;
     protected boolean ssl;
 
+    @Nullable
     protected MixClient mixClient;
 
-    public LearnerBaseUDTF() {}
+    public LearnerBaseUDTF(boolean enableNewModel) {
+        this.enableNewModel = enableNewModel;
+    }
 
     protected boolean useCovariance() {
         return false;
@@ -170,11 +176,15 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
 
     @Nullable
     protected PredictionModel createModel() {
-        return createModel(null);
+        if (enableNewModel) {
+            return createNewModel(null);
+        } else {
+            return createOldModel(null);
+        }
     }
 
     @Nonnull
-    protected PredictionModel createModel(@Nullable String label) {
+    private final PredictionModel createOldModel(@Nullable String label) {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {
@@ -204,7 +214,8 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         return model;
     }
 
-    protected PredictionModel createNewModel(String label) {
+    @Nonnull
+    private final PredictionModel createNewModel(@Nullable String label) {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {
@@ -234,22 +245,14 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         return model;
     }
 
-    // If a model implements a optimizer, it must override this
-    protected Map<String, String> getOptimzierOptions() {
-        return null;
-    }
-
-    protected Optimizer createOptimizer() {
-        assert(!useCovariance());
-        final Map<String, String> options = getOptimzierOptions();
-        if(options != null) {
-            if (dense_model) {
-                return DenseOptimizerFactory.create(model_dims, options);
-            } else {
-                return SparseOptimizerFactory.create(model_dims, options);
-            }
+    @Nonnull
+    protected final Optimizer createOptimizer(@CheckForNull Map<String, String> options) {
+        Preconditions.checkNotNull(options);
+        if (dense_model) {
+            return DenseOptimizerFactory.create(model_dims, options);
+        } else {
+            return SparseOptimizerFactory.create(model_dims, options);
         }
-        return null;
     }
 
     protected MixClient configureMixClient(String connectURIs, String label, PredictionModel model) {
