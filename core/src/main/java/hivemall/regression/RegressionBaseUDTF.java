@@ -25,7 +25,6 @@ import hivemall.model.PredictionModel;
 import hivemall.model.PredictionResult;
 import hivemall.model.WeightValue;
 import hivemall.model.WeightValue.WeightValueWithCovar;
-import hivemall.optimizer.Optimizer;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.FloatAccumulator;
@@ -53,8 +52,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.FloatWritable;
 
 /**
- * The base class for regression algorithms. RegressionBaseUDTF provides general implementation for
- * online training and batch training.
+ * The base class for regression algorithms. RegressionBaseUDTF provides general implementation for online training and batch training.
  */
 public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(RegressionBaseUDTF.class);
@@ -65,21 +63,18 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
     private boolean parseFeature;
 
     protected PredictionModel model;
-    protected Optimizer optimizerImpl;
     protected int count;
 
     // The accumulated delta of each weight values.
     protected transient Map<Object, FloatAccumulator> accumulated;
     protected int sampled;
 
-    private boolean enableNewModel;
-
     public RegressionBaseUDTF() {
-        this.enableNewModel = false;
+        this(false);
     }
 
     public RegressionBaseUDTF(boolean enableNewModel) {
-        this.enableNewModel = enableNewModel;
+        super(enableNewModel);
     }
 
     @Override
@@ -95,11 +90,10 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
 
         PrimitiveObjectInspector featureOutputOI = dense_model ? PrimitiveObjectInspectorFactory.javaIntObjectInspector
                 : featureInputOI;
-        this.model = enableNewModel? createNewModel(null) : createModel();
+        this.model = createModel();
         if (preloadedModelFile != null) {
             loadPredictionModel(model, preloadedModelFile, featureOutputOI);
         }
-        this.optimizerImpl = createOptimizer();
 
         this.count = 0;
         this.sampled = 0;
@@ -260,7 +254,9 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
         }
     }
 
-    // Compute a gradient by using a loss function in derived classes
+    /**
+     * Compute a gradient by using a loss function in derived classes
+     */
     protected float computeGradient(float target, float predicted) {
         throw new UnsupportedOperationException();
     }
