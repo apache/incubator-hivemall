@@ -18,16 +18,16 @@
  */
 package org.apache.spark.sql.hive
 
-import org.apache.spark.sql.test.VectorQueryTest
 import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.hive.HivemallGroupedDataset._
 import org.apache.spark.sql.hive.HivemallOps._
 import org.apache.spark.sql.hive.HivemallUtils._
 import org.apache.spark.sql.hive.test.HivemallFeatureQueryTest
+import org.apache.spark.sql.test.VectorQueryTest
 import org.apache.spark.sql.types._
-import org.apache.spark.test.TestUtils
 import org.apache.spark.test.TestFPWrapper._
+import org.apache.spark.test.TestUtils
 
 final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 

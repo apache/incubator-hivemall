@@ -22,8 +22,8 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 
 import com.google.common.io.Files
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.QueryTest
+
+import org.apache.spark.sql.{DataFrame, QueryTest}
 import org.apache.spark.sql.hive.HivemallOps._
 import org.apache.spark.sql.hive.test.TestHiveSingleton
 import org.apache.spark.util.Utils
