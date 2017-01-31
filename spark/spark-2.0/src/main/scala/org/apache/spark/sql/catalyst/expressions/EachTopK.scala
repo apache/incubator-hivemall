@@ -20,107 +20,90 @@ package org.apache.spark.sql.catalyst.expressions
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
-import org.apache.spark.sql.catalyst.expressions.codegen._
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
 import org.apache.spark.sql.catalyst.util.TypeUtils
-import org.apache.spark.sql.catalyst.utils.InternalRowPriorityQueue
 import org.apache.spark.sql.types._
-
-trait TopKHelper {
-
-  def k: Int
-  def scoreType: DataType
-
-  @transient val ScoreTypes = TypeCollection(
-    ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType, DecimalType
-  )
-
-  protected case class ScoreWriter(writer: UnsafeRowWriter, ordinal: Int) {
-
-    def write(v: Any): Unit = scoreType match {
-      case ByteType => writer.write(ordinal, v.asInstanceOf[Byte])
-      case ShortType => writer.write(ordinal, v.asInstanceOf[Short])
-      case IntegerType => writer.write(ordinal, v.asInstanceOf[Int])
-      case LongType => writer.write(ordinal, v.asInstanceOf[Long])
-      case FloatType => writer.write(ordinal, v.asInstanceOf[Float])
-      case DoubleType => writer.write(ordinal, v.asInstanceOf[Double])
-      case d: DecimalType => writer.write(ordinal, v.asInstanceOf[Decimal], d.precision, d.scale)
-    }
-  }
-
-  protected lazy val scoreOrdering = {
-    val ordering = TypeUtils.getInterpretedOrdering(scoreType)
-    if (k > 0) ordering else ordering.reverse
-  }
-
-  protected lazy val reverseScoreOrdering = scoreOrdering.reverse
-
-  protected lazy val queue: InternalRowPriorityQueue = {
-    new InternalRowPriorityQueue(Math.abs(k), (x: Any, y: Any) => scoreOrdering.compare(x, y))
-  }
-}
+import org.apache.spark.util.BoundedPriorityQueue
 
 case class EachTopK(
     k: Int,
-    scoreExpr: Expression,
-    groupExprs: Seq[Expression],
-    elementSchema: StructType,
-    children: Seq[Attribute])
-  extends Generator with TopKHelper with CodegenFallback {
+    groupingExpression: Expression,
+    scoreExpression: Expression,
+    children: Seq[Attribute]) extends Generator with CodegenFallback {
+  type QueueType = (AnyRef, InternalRow)
 
-  override val scoreType: DataType = scoreExpr.dataType
+  require(k != 0, "`k` must not have 0")
 
-  private lazy val groupingProjection: UnsafeProjection = UnsafeProjection.create(groupExprs)
-  private lazy val scoreProjection: UnsafeProjection = UnsafeProjection.create(scoreExpr :: Nil)
+  private[this] lazy val scoreType = scoreExpression.dataType
+  private[this] lazy val scoreOrdering = {
+    val ordering = TypeUtils.getInterpretedOrdering(scoreType)
+      .asInstanceOf[Ordering[AnyRef]]
+    if (k > 0) {
+      ordering
+    } else {
+      ordering.reverse
+    }
+  }
+  private[this] lazy val reverseScoreOrdering = scoreOrdering.reverse
+
+  private[this] val queue: BoundedPriorityQueue[QueueType] = {
+    new BoundedPriorityQueue(Math.abs(k))(new Ordering[QueueType] {
+      override def compare(x: QueueType, y: QueueType): Int =
+        scoreOrdering.compare(x._1, y._1)
+    })
+  }
+
+  lazy private[this] val groupingProjection: UnsafeProjection =
+    UnsafeProjection.create(groupingExpression :: Nil, children)
+
+  lazy private[this] val scoreProjection: UnsafeProjection =
+    UnsafeProjection.create(scoreExpression :: Nil, children)
 
   // The grouping key of the current partition
-  private var currentGroupingKeys: UnsafeRow = _
+  private[this] var currentGroupingKey: UnsafeRow = _
 
   override def checkInputDataTypes(): TypeCheckResult = {
-    if (!ScoreTypes.acceptsType(scoreExpr.dataType)) {
-      TypeCheckResult.TypeCheckFailure(s"$scoreExpr must have a comparable type")
+    if (!TypeCollection.Ordered.acceptsType(scoreExpression.dataType)) {
+      TypeCheckResult.TypeCheckFailure(
+        s"$scoreExpression must have a comparable type")
     } else {
       TypeCheckResult.TypeCheckSuccess
     }
   }
 
-  private def topKRowsForGroup(): Seq[InternalRow] = {
-    val topKRow = new UnsafeRow(1)
-    val bufferHolder = new BufferHolder(topKRow)
-    val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 1)
-    queue.iterator.toSeq.sortBy(_._1)(reverseScoreOrdering)
-      .zipWithIndex.map { case ((_, row), index) =>
-        // Writes to an UnsafeRow directly
-        bufferHolder.reset()
-        unsafeRowWriter.write(0, 1 + index)
-        topKRow.setTotalSize(bufferHolder.totalSize())
-        new JoinedRow(topKRow, row)
-      }
-  }
+  override def elementSchema: StructType =
+    StructType(
+      Seq(StructField("rank", IntegerType)) ++
+        children.map(d => StructField(d.prettyName, d.dataType))
+    )
 
   override def eval(input: InternalRow): TraversableOnce[InternalRow] = {
-    val groupingKeys = groupingProjection(input)
-    val ret = if (currentGroupingKeys != groupingKeys) {
-      val topKRows = topKRowsForGroup()
-      currentGroupingKeys = groupingKeys.copy()
+    val groupingKey = groupingProjection(input)
+    val ret = if (currentGroupingKey != groupingKey) {
+      val part = queue.iterator.toSeq.sortBy(_._1)(reverseScoreOrdering)
+          .zipWithIndex.map { case ((_, row), index) =>
+        new JoinedRow(InternalRow(1 + index), row)
+      }
+      currentGroupingKey = groupingKey.copy()
       queue.clear()
-      topKRows
+      part
     } else {
       Iterator.empty
     }
-    queue += Tuple2(scoreProjection(input).get(0, scoreType), input)
+    queue += Tuple2(scoreProjection(input).get(0, scoreType), input.copy())
     ret
   }
 
   override def terminate(): TraversableOnce[InternalRow] = {
     if (queue.size > 0) {
-      val topKRows = topKRowsForGroup()
+      val part = queue.iterator.toSeq.sortBy(_._1)(reverseScoreOrdering)
+          .zipWithIndex.map { case ((_, row), index) =>
+        new JoinedRow(InternalRow(1 + index), row)
+      }
       queue.clear()
-      topKRows
+      part
     } else {
       Iterator.empty
     }
   }
-
-  // TODO: Need to support codegen
-  // protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode
 }

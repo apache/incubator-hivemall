@@ -28,10 +28,8 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.{Generate, JoinTopK, LogicalPlan}
-import org.apache.spark.sql.execution.UserProvidedPlanner
+import org.apache.spark.sql.catalyst.expressions.{EachTopK, Expression, Literal, NamedExpression, UserDefinedGenerator}
+import org.apache.spark.sql.catalyst.plans.logical.{Generate, LogicalPlan, Project}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
@@ -58,9 +56,8 @@ import org.apache.spark.unsafe.types.UTF8String
 final class HivemallOps(df: DataFrame) extends Logging {
   import internal.HivemallOpsImpl._
 
-  private[this] lazy val _sparkSession = df.sparkSession
-  private[this] lazy val _analyzer = _sparkSession.sessionState.analyzer
-  private[this] lazy val _strategy = new UserProvidedPlanner(_sparkSession.sqlContext.conf)
+  private[this] val _sparkSession = df.sparkSession
+  private[this] val _analyzer = _sparkSession.sessionState.analyzer
 
   /**
    * @see [[hivemall.regression.AdaDeltaUDTF]]
@@ -618,6 +615,10 @@ final class HivemallOps(df: DataFrame) extends Logging {
    */
   @scala.annotation.varargs
   def amplify(exprs: Column*): DataFrame = withTypedPlan {
+    val outputAttr = exprs.drop(1).map {
+      case Column(expr: NamedExpression) => UnresolvedAttribute(expr.name)
+      case Column(expr: Expression) => UnresolvedAttribute(expr.simpleString)
+    }
     planHiveGenericUDTF(
       df,
       "hivemall.ftvec.amplify.AmplifierUDTF",
@@ -746,63 +747,23 @@ final class HivemallOps(df: DataFrame) extends Logging {
    * Returns `top-k` records for each `group`.
    * @group misc
    */
-  def each_top_k(k: Column, score: Column, group: Column*): DataFrame = withTypedPlan {
+  def each_top_k(k: Column, group: Column, score: Column): DataFrame = withTypedPlan {
     val kInt = k.expr match {
       case Literal(v: Any, IntegerType) => v.asInstanceOf[Int]
       case e => throw new AnalysisException("`k` must be integer, however " + e)
     }
-    if (kInt == 0) {
-      throw new AnalysisException("`k` must not have 0")
+    val clusterDf = df.repartition(group).sortWithinPartitions(group)
+    val child = clusterDf.logicalPlan
+    val logicalPlan = Project(group.named +: score.named +: child.output, child)
+    _analyzer.execute(logicalPlan) match {
+      case Project(group :: score :: origCols, c) =>
+        Generate(
+          EachTopK(kInt, group, score, c.output),
+          join = false, outer = false, None,
+          (Seq("rank") ++ origCols.map(_.name)).map(UnresolvedAttribute(_)),
+          clusterDf.logicalPlan
+        )
     }
-    val clusterDf = df.repartition(group: _*).sortWithinPartitions(group: _*)
-      .select(score, Column("*"))
-    val analyzedPlan = clusterDf.queryExecution.analyzed
-    val inputAttrs = analyzedPlan.output
-    val scoreExpr = BindReferences.bindReference(analyzedPlan.expressions.head, inputAttrs)
-    val groupNames = group.map { _.expr match {
-      case ne: NamedExpression => ne.name
-      case ua: UnresolvedAttribute => ua.name
-    }}
-    val groupExprs = analyzedPlan.expressions.filter {
-      case ne: NamedExpression => groupNames.contains(ne.name)
-    }.map { e =>
-      BindReferences.bindReference(e, inputAttrs)
-    }
-    val rankField = StructField("rank", IntegerType)
-    Generate(
-      generator = EachTopK(
-        k = kInt,
-        scoreExpr = scoreExpr,
-        groupExprs = groupExprs,
-        elementSchema = StructType(
-          rankField +: inputAttrs.map(d => StructField(d.name, d.dataType))
-        ),
-        children = inputAttrs
-      ),
-      join = false,
-      outer = false,
-      qualifier = None,
-      generatorOutput = Seq(rankField.name).map(UnresolvedAttribute(_)) ++ inputAttrs,
-      child = analyzedPlan
-    )
-  }
-
-  /**
-   * :: Experimental ::
-   * Joins input two tables with the given keys and the top-k highest `score` values.
-   * @group misc
-   */
-  @Experimental
-  def top_k_join(k: Column, right: DataFrame, joinExprs: Column, score: Column)
-    : DataFrame = withTypedPlanInCustomStrategy {
-    val kInt = k.expr match {
-      case Literal(v: Any, IntegerType) => v.asInstanceOf[Int]
-      case e => throw new AnalysisException("`k` must be integer, however " + e)
-    }
-    if (kInt == 0) {
-      throw new AnalysisException("`k` must not have 0")
-    }
-    JoinTopK(kInt, df.logicalPlan, right.logicalPlan, Inner, Option(joinExprs.expr))(score.named)
   }
 
   /**
@@ -868,18 +829,9 @@ final class HivemallOps(df: DataFrame) extends Logging {
    * A convenient function to wrap a logical plan and produce a DataFrame.
    */
   @inline private[this] def withTypedPlan(logicalPlan: => LogicalPlan): DataFrame = {
-    val queryExecution = _sparkSession.sessionState.executePlan(logicalPlan)
+    val queryExecution = df.sparkSession.sessionState.executePlan(logicalPlan)
     val outputSchema = queryExecution.sparkPlan.schema
     new Dataset[Row](df.sparkSession, queryExecution, RowEncoder(outputSchema))
-  }
-
-  @inline private[this] def withTypedPlanInCustomStrategy(logicalPlan: => LogicalPlan)
-    : DataFrame = {
-    // Inject custom strategies
-    if (!_sparkSession.experimental.extraStrategies.contains(_strategy)) {
-      _sparkSession.experimental.extraStrategies = Seq(_strategy)
-    }
-    withTypedPlan(logicalPlan)
   }
 }
 
