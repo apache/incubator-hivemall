@@ -793,7 +793,7 @@ final class HivemallOps(df: DataFrame) extends Logging {
    * @group misc
    */
   @Experimental
-  def join_top_k(k: Column, right: DataFrame, joinExprs: Column, score: Column)
+  def top_k_join(k: Column, right: DataFrame, joinExprs: Column, score: Column)
     : DataFrame = withTypedPlanInCustomStrategy {
     val kInt = k.expr match {
       case Literal(v: Any, IntegerType) => v.asInstanceOf[Int]

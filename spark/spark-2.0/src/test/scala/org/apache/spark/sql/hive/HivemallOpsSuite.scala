@@ -376,7 +376,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       pow(inputDf("x") - masterDf("x"), lit(2.0)) +
       pow(inputDf("y") - masterDf("y"), lit(2.0))
     ).as("score")
-    val top1Df = inputDf.join_top_k(
+    val top1Df = inputDf.top_k_join(
       lit(1), masterDf, inputDf("group") === masterDf("group"), distance)
     assert(top1Df.schema.toSet === Set(
       StructField("rank", IntegerType, nullable = true),

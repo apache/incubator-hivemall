@@ -194,7 +194,7 @@ class MiscBenchmark extends SparkFunSuite {
      * -------------------------------------------------------------------------------
      * join + rank                65959 / 71324          0.0      503223.9       1.0X
      * join + each_top_k          66093 / 78864          0.0      504247.3       1.0X
-     * join_top_k                   5013 / 5431          0.0       38249.3      13.2X
+     * top_k_join                   5013 / 5431          0.0       38249.3      13.2X
      */
     import sparkSession.sqlContext.implicits._
     val topK = 3
@@ -232,8 +232,8 @@ class MiscBenchmark extends SparkFunSuite {
         .each_top_k(lit(topK), distance, inputDf("group"))
     )
     addBenchmarkCase(
-      "join_top_k",
-      inputDf.join_top_k(lit(topK), masterDf, inputDf("group") === masterDf("group"), distance)
+      "top_k_join",
+      inputDf.top_k_join(lit(topK), masterDf, inputDf("group") === masterDf("group"), distance)
     )
     benchmark.run()
   }
