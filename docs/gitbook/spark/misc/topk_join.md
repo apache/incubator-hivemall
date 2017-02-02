@@ -21,13 +21,10 @@
 
 `top_k_join` is much IO-efficient as compared to regular joining + ranking operations because `top_k_join` drops unsatisfied records and writes only top-k records to disks during joins.
 
-<!-- toc -->
-
-# Notice
-
-* `top_k_join` is supported in the DataFrame of Spark v2.1.0 or later.
-* A type of `score` must be ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType, or DecimalType.
-* If `k` is less than 0, the order is reverse and `top_k_join` joins the tail-K records of `rightDf`.
+> #### Caution
+> * `top_k_join` is supported in the DataFrame of Spark v2.1.0 or later.
+> * A type of `score` must be ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType, or DecimalType.
+> * If `k` is less than 0, the order is reverse and `top_k_join` joins the tail-K records of `rightDf`.
 
 # Usage
 
@@ -61,7 +58,7 @@ For example, we have two tables below;
 In the two tables, the example computes the nearest `position` for `userId` in each `group`.
 The standard way using DataFrame window functions would be as follows:
 
-```
+```scala
 val computeDistanceFunc =
   sqrt(pow(inputDf("x") - masterDf("x"), lit(2.0)) + pow(inputDf("y") - masterDf("y"), lit(2.0)))
 
@@ -76,7 +73,7 @@ leftDf.join(
 
 You can use `top_k_join` as follows:
 
-```
+```scala
 leftDf.top_k_join(
     k = lit(-1),
     right = rightDf,

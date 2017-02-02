@@ -145,6 +145,11 @@
 
 * [Outlier Detection using Local Outlier Factor (LOF)](anomaly/lof.md)
 
+## Part X - Hivemall on Spark
+
+* [Generic features](spark/misc/misc.md)
+    * [Top-k Join processing](spark/misc/topk_join.md)
+
 ## Part X - External References
 
 * [Hivemall on Apache Spark](https://github.com/maropu/hivemall-spark)
