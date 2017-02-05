@@ -143,6 +143,30 @@
 			</roles>
 			<timezone>+9</timezone>
 		</developer>
+		<developer>
+			<id>takuti</id>
+			<name>Takuya Kitazawa</name>
+			<email>takuti[at]apache.org</email>
+			<url>https://github.com/takuti</url>
+			<organization>The University of Tokyo</organization>
+			<organizationUrl>http://www.u-tokyo.ac.jp/</organizationUrl>
+			<roles>
+				<role>Committer</role>
+			</roles>
+			<timezone>+9</timezone>
+		</developer>
+		<developer>
+			<id>ri</id>
+			<name>Ryu-ichi Ito</name>
+			<email>ri[at]apache.org</email>
+			<url>https://github.com/amaya382</url>
+			<organization>Osaka University</organization>
+			<organizationUrl>http://www.osaka-u.ac.jp/</organizationUrl>
+			<roles>
+				<role>Committer</role>
+			</roles>
+			<timezone>+9</timezone>
+		</developer>
 		<!-- Project mentors -->
 		<developer>
 			<id>rvs</id>
