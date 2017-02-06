@@ -229,20 +229,19 @@ class MiscBenchmark extends BenchmarkBase {
     benchmark.run()
   }
 
-  // TestUtils.benchmark("codegen top-k join") {
-  test("codegen top-k join") {
+  TestUtils.benchmark("codegen top-k join") {
     /**
      * Java HotSpot(TM) 64-Bit Server VM 1.8.0_31-b13 on Mac OS X 10.10.2
      * Intel(R) Core(TM) i7-4578U CPU @ 3.00GHz
      *
      * top_k_join:                 Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
      * -----------------------------------------------------------------------------------
-     * top_k_join wholestage off           4 /    4       1049.2           1.0       1.0X
-     * top_k_join wholestage on            2 /    2       2359.3           0.4       2.2X
+     * top_k_join wholestage off           3 /    5       2751.9           0.4       1.0X
+     * top_k_join wholestage on            1 /    1       6494.4           0.2       2.4X
      */
     val topK = 3
-    val N = 1L << 20
-    val M = 1L << 16
+    val N = 1L << 23
+    val M = 1L << 22
     val numGroup = 3
     val inputDf = sparkSession.range(N).selectExpr(
       s"CAST(rand() * $numGroup AS INT) AS group", "id AS userId", "rand() AS x", "rand() AS y"
