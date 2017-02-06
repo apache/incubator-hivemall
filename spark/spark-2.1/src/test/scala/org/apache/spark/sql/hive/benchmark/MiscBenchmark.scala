@@ -18,12 +18,12 @@
  */
 package org.apache.spark.sql.hive.benchmark
 
-import org.apache.spark.SparkFunSuite
-import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, Dataset, Row}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{Expression, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.benchmark.BenchmarkBase
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.hive.HivemallOps._
@@ -79,23 +79,14 @@ object TestFuncWrapper {
   @inline private def withExpr(expr: Expression): Column = Column(expr)
 }
 
-class MiscBenchmark extends SparkFunSuite {
-
-  lazy val sparkSession = SparkSession.builder
-    .master("local[1]")
-    .appName("microbenchmark")
-    .config("spark.sql.shuffle.partitions", 1)
-    .config("spark.sql.codegen.wholeStage", true)
-    .getOrCreate()
+class MiscBenchmark extends BenchmarkBase {
 
   val numIters = 10
 
   private def addBenchmarkCase(name: String, df: DataFrame)(implicit benchmark: Benchmark): Unit = {
-    // TODO: This query below failed in `each_top_k`
-    // benchmark.addCase(name, numIters) {
-    //   _ => df.queryExecution.executedPlan.execute().foreach(x => {})
-    // }
-    benchmark.addCase(name, numIters) { _ => df.count }
+    benchmark.addCase(name, numIters) {
+      _ => df.queryExecution.executedPlan.execute().foreach(x => {})
+    }
   }
 
   TestUtils.benchmark("closure/exprs/spark-udf/hive-udf") {
@@ -180,7 +171,7 @@ class MiscBenchmark extends SparkFunSuite {
     )
     addBenchmarkCase(
       "each_top_k (exprs)",
-      testDf.each_top_k(lit(topK), $"x".as("score"), $"key")
+      testDf.each_top_k(lit(topK), $"x".as("score"), $"key".as("group"))
     )
     benchmark.run()
   }
@@ -229,12 +220,49 @@ class MiscBenchmark extends SparkFunSuite {
     addBenchmarkCase(
       "join + each_top_k",
       inputDf.join(masterDf, inputDf("group") === masterDf("group"))
-        .each_top_k(lit(topK), distance, inputDf("group"))
+        .each_top_k(lit(topK), distance, inputDf("group").as("group"))
     )
     addBenchmarkCase(
       "top_k_join",
       inputDf.top_k_join(lit(topK), masterDf, inputDf("group") === masterDf("group"), distance)
     )
     benchmark.run()
+  }
+
+  // TestUtils.benchmark("codegen top-k join") {
+  test("codegen top-k join") {
+    /**
+     * Java HotSpot(TM) 64-Bit Server VM 1.8.0_31-b13 on Mac OS X 10.10.2
+     * Intel(R) Core(TM) i7-4578U CPU @ 3.00GHz
+     *
+     * top_k_join:                 Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
+     * -----------------------------------------------------------------------------------
+     * top_k_join wholestage off           4 /    4       1049.2           1.0       1.0X
+     * top_k_join wholestage on            2 /    2       2359.3           0.4       2.2X
+     */
+    val topK = 3
+    val N = 1L << 20
+    val M = 1L << 16
+    val numGroup = 3
+    val inputDf = sparkSession.range(N).selectExpr(
+      s"CAST(rand() * $numGroup AS INT) AS group", "id AS userId", "rand() AS x", "rand() AS y"
+    ).cache
+    val masterDf = sparkSession.range(M).selectExpr(
+      s"id % $numGroup AS group", "id AS posId", "rand() AS x", "rand() AS y"
+    ).cache
+
+    // First, cache data
+    inputDf.count
+    masterDf.count
+
+    // Define a score column
+    val distance = sqrt(
+      pow(inputDf("x") - masterDf("x"), lit(2.0)) +
+      pow(inputDf("y") - masterDf("y"), lit(2.0))
+    )
+    runBenchmark("top_k_join", N) {
+      inputDf.top_k_join(lit(topK), masterDf, inputDf("group") === masterDf("group"),
+        distance.as("score"))
+    }
   }
 }

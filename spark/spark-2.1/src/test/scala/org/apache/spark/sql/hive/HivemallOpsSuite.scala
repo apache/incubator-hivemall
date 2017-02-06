@@ -24,6 +24,7 @@ import org.apache.spark.sql.hive.HivemallGroupedDataset._
 import org.apache.spark.sql.hive.HivemallOps._
 import org.apache.spark.sql.hive.HivemallUtils._
 import org.apache.spark.sql.hive.test.HivemallFeatureQueryTest
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.VectorQueryTest
 import org.apache.spark.sql.types._
 import org.apache.spark.test.TestFPWrapper._
@@ -349,56 +350,60 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   }
 
   test("misc - join_top_k") {
-    import hiveContext.implicits._
-    val inputDf = Seq(
-      ("user1", 1, 0.3, 0.5),
-      ("user2", 2, 0.1, 0.1),
-      ("user3", 3, 0.8, 0.0),
-      ("user4", 1, 0.9, 0.9),
-      ("user5", 3, 0.7, 0.2),
-      ("user6", 1, 0.5, 0.4),
-      ("user7", 2, 0.6, 0.8)
-    ).toDF("userId", "group", "x", "y")
+    Seq("true", "false").map { flag =>
+      withSQLConf(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key -> flag) {
+        import hiveContext.implicits._
+        val inputDf = Seq(
+          ("user1", 1, 0.3, 0.5),
+          ("user2", 2, 0.1, 0.1),
+          ("user3", 3, 0.8, 0.0),
+          ("user4", 1, 0.9, 0.9),
+          ("user5", 3, 0.7, 0.2),
+          ("user6", 1, 0.5, 0.4),
+          ("user7", 2, 0.6, 0.8)
+        ).toDF("userId", "group", "x", "y")
 
-    val masterDf = Seq(
-      (1, "pos1-1", 0.5, 0.1),
-      (1, "pos1-2", 0.0, 0.0),
-      (1, "pos1-3", 0.3, 0.3),
-      (2, "pos2-3", 0.1, 0.3),
-      (2, "pos2-3", 0.8, 0.8),
-      (3, "pos3-1", 0.1, 0.7),
-      (3, "pos3-1", 0.7, 0.1),
-      (3, "pos3-1", 0.9, 0.0),
-      (3, "pos3-1", 0.1, 0.3)
-    ).toDF("group", "position", "x", "y")
+        val masterDf = Seq(
+          (1, "pos1-1", 0.5, 0.1),
+          (1, "pos1-2", 0.0, 0.0),
+          (1, "pos1-3", 0.3, 0.3),
+          (2, "pos2-3", 0.1, 0.3),
+          (2, "pos2-3", 0.8, 0.8),
+          (3, "pos3-1", 0.1, 0.7),
+          (3, "pos3-1", 0.7, 0.1),
+          (3, "pos3-1", 0.9, 0.0),
+          (3, "pos3-1", 0.1, 0.3)
+        ).toDF("group", "position", "x", "y")
 
-    // Compute top-1 rows for each group
-    val distance = sqrt(
-      pow(inputDf("x") - masterDf("x"), lit(2.0)) +
-      pow(inputDf("y") - masterDf("y"), lit(2.0))
-    ).as("score")
-    val top1Df = inputDf.top_k_join(
-      lit(1), masterDf, inputDf("group") === masterDf("group"), distance)
-    assert(top1Df.schema.toSet === Set(
-      StructField("rank", IntegerType, nullable = true),
-      StructField("score", DoubleType, nullable = true),
-      StructField("group", IntegerType, nullable = false),
-      StructField("userId", StringType, nullable = true),
-      StructField("position", StringType, nullable = true),
-      StructField("x", DoubleType, nullable = false),
-      StructField("y", DoubleType, nullable = false)
-    ))
-    checkAnswer(
-      top1Df.select($"rank", inputDf("group"), $"userId", $"position"),
-      Row(1, 1, "user1", "pos1-2") ::
-      Row(1, 2, "user2", "pos2-3") ::
-      Row(1, 3, "user3", "pos3-1") ::
-      Row(1, 1, "user4", "pos1-2") ::
-      Row(1, 3, "user5", "pos3-1") ::
-      Row(1, 1, "user6", "pos1-2") ::
-      Row(1, 2, "user7", "pos2-3") ::
-      Nil
-    )
+        // Compute top-1 rows for each group
+        val distance = sqrt(
+          pow(inputDf("x") - masterDf("x"), lit(2.0)) +
+            pow(inputDf("y") - masterDf("y"), lit(2.0))
+        ).as("score")
+        val top1Df = inputDf.top_k_join(
+          lit(1), masterDf, inputDf("group") === masterDf("group"), distance)
+        assert(top1Df.schema.toSet === Set(
+          StructField("rank", IntegerType, nullable = true),
+          StructField("score", DoubleType, nullable = true),
+          StructField("group", IntegerType, nullable = false),
+          StructField("userId", StringType, nullable = true),
+          StructField("position", StringType, nullable = true),
+          StructField("x", DoubleType, nullable = false),
+          StructField("y", DoubleType, nullable = false)
+        ))
+        checkAnswer(
+          top1Df.select($"rank", inputDf("group"), $"userId", $"position"),
+          Row(1, 1, "user1", "pos1-2") ::
+          Row(1, 2, "user2", "pos2-3") ::
+          Row(1, 3, "user3", "pos3-1") ::
+          Row(1, 1, "user4", "pos1-2") ::
+          Row(1, 3, "user5", "pos3-1") ::
+          Row(1, 1, "user6", "pos1-2") ::
+          Row(1, 2, "user7", "pos2-3") ::
+          Nil
+        )
+      }
+    }
   }
 
   /**

@@ -61,6 +61,7 @@ o hivemall/spark/spark-1.6/extra-src/hive/src/main/scala/org/apache/spark/sql/hi
   hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/hive/test/TestHiveSingleton.scala
   hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/test/SQLTestUtils.scala
   hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala
+  hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/execution/benchmark/BenchmarkBase.scala
 
     Copyright (C) 2014-2017 The Apache Software Foundation.
 
