@@ -6,7 +6,7 @@
 -- NLP features --
 ------------------
 
-drop temporary function tokenize_ja;
+drop temporary function if exists tokenize_ja;
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
 
 ------------------------------
