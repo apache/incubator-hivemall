@@ -1,83 +1,83 @@
-drop temporary function perceptron;
+drop temporary function if exists perceptron;
 create temporary function perceptron as 'hivemall.classifier.PerceptronUDTF';
 
-drop temporary function adagrad_rda;
+drop temporary function if exists adagrad_rda;
 create temporary function adagrad_rda as 'hivemall.classifier.AdaGradRDAUDTF';
 
-drop temporary function cosine_sim;
+drop temporary function if exists cosine_sim;
 create temporary function cosine_sim as 'hivemall.knn.similarity.CosineSimilarityUDF';
 
-drop temporary function jaccard;
+drop temporary function if exists jaccard;
 create temporary function jaccard as 'hivemall.knn.similarity.JaccardIndexUDF';
 
-drop temporary function wvoted_avg;
+drop temporary function if exists wvoted_avg;
 create temporary function wvoted_avg as 'hivemall.ensemble.bagging.WeightVotedAvgUDAF';
 
-drop temporary function sortByFeature;
+drop temporary function if exists sortByFeature;
 create temporary function sortByFeature as 'hivemall.ftvec.SortByFeatureUDF';
 
-drop temporary function train_logregr;
+drop temporary function if exists train_logregr;
 create temporary function train_logregr as 'hivemall.regression.LogressUDTF';
 
-drop temporary function pa1_regress;
+drop temporary function if exists pa1_regress;
 create temporary function pa1_regress as 'hivemall.regression.PassiveAggressiveRegressionUDTF';
 
-drop temporary function pa1a_regress;
+drop temporary function if exists pa1a_regress;
 create temporary function pa1a_regress as 'hivemall.regression.PassiveAggressiveRegressionUDTF$PA1a';
 
-drop temporary function pa2_regress;
+drop temporary function if exists pa2_regress;
 create temporary function pa2_regress as 'hivemall.regression.PassiveAggressiveRegressionUDTF$PA2';
 
-drop temporary function pa2a_regress;
+drop temporary function if exists pa2a_regress;
 create temporary function pa2a_regress as 'hivemall.regression.PassiveAggressiveRegressionUDTF$PA2a';
 
-drop temporary function arow_regress;
+drop temporary function if exists arow_regress;
 create temporary function arow_regress as 'hivemall.regression.AROWRegressionUDTF';
 
-drop temporary function arowe_regress;
+drop temporary function if exists arowe_regress;
 create temporary function arowe_regress as 'hivemall.regression.AROWRegressionUDTF$AROWe';
 
-drop temporary function arowe2_regress;
+drop temporary function if exists arowe2_regress;
 create temporary function arowe2_regress as 'hivemall.regression.AROWRegressionUDTF$AROWe2';
 
-drop temporary function adagrad_regr;
+drop temporary function if exists adagrad_regr;
 create temporary function adagrad_regr as 'hivemall.regression.AdaGradUDTF';
 
-drop temporary function adagrad;
+drop temporary function if exists adagrad;
 create temporary function adagrad as 'hivemall.regression.AdaGradUDTF';
 
-drop temporary function train_adadelta;
+drop temporary function if exists train_adadelta;
 create temporary function train_adadelta as 'hivemall.regression.AdaDeltaUDTF';
 
-drop temporary function adadelta;
+drop temporary function if exists adadelta;
 create temporary function adadelta as 'hivemall.regression.AdaDeltaUDTF';
 
-drop temporary function collect_all;
+drop temporary function if exists collect_all;
 create temporary function collect_all as 'hivemall.tools.array.CollectAllUDAF';
 
-drop temporary function vm_tree_predict;
+drop temporary function if exists vm_tree_predict;
 create temporary function vm_tree_predict as 'hivemall.smile.tools.TreePredictByStackMachineUDF';
 
-drop temporary function js_tree_predict;
+drop temporary function if exists js_tree_predict;
 create temporary function js_tree_predict as 'hivemall.smile.tools.TreePredictByJavascriptUDF';
 
-drop temporary function train_gbt_classifier;
+drop temporary function if exists train_gbt_classifier;
 create temporary function train_gbt_classifier as 'hivemall.smile.classification.GradientTreeBoostingClassifierUDTF';
 
-drop temporary function train_arowh;
+drop temporary function if exists train_arowh;
 create temporary function train_arowh as 'hivemall.classifier.AROWClassifierUDTF$AROWh';
 
-drop temporary function normalize;
+drop temporary function if exists normalize;
 create temporary function normalize as 'hivemall.ftvec.scaling.L2NormalizationUDF';
 
-drop temporary function train_adagrad;
+drop temporary function if exists train_adagrad;
 create temporary function train_adagrad as 'hivemall.regression.AdaGradUDTF';
 
-drop temporary function rescale_fv;
+drop temporary function if exists rescale_fv;
 create temporary function rescale_fv as 'hivemall.ftvec.scaling.RescaleUDF';
 
-drop temporary function addBias;
+drop temporary function if exists addBias;
 create temporary function addBias as 'hivemall.ftvec.AddBiasUDF';
 
-drop temporary function sha1;
+drop temporary function if exists sha1;
 create temporary function sha1 as 'hivemall.ftvec.hashing.Sha1UDF';

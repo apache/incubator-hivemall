@@ -6,24 +6,24 @@
 -- NLP features --
 ------------------
 
-drop temporary function tokenize_ja;
+drop temporary function if exists tokenize_ja;
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
 
 ------------------------------
 -- XGBoost related features --
 ------------------------------
 
-drop temporary function train_xgboost_regr;
+drop temporary function if exists train_xgboost_regr;
 create temporary function train_xgboost_regr as 'hivemall.xgboost.regression.XGBoostRegressionUDTF';
 
-drop temporary function train_xgboost_classifier;
+drop temporary function if exists train_xgboost_classifier;
 create temporary function train_xgboost_classifier as 'hivemall.xgboost.classification.XGBoostBinaryClassifierUDTF';
 
-drop temporary function train_multiclass_xgboost_classifier;
+drop temporary function if exists train_multiclass_xgboost_classifier;
 create temporary function train_multiclass_xgboost_classifier as 'hivemall.xgboost.classification.XGBoostMulticlassClassifierUDTF';
 
-drop temporary function xgboost_predict;
+drop temporary function if exists xgboost_predict;
 create temporary function xgboost_predict as 'hivemall.xgboost.tools.XGBoostPredictUDTF';
 
-drop temporary function xgboost_multiclass_predict;
+drop temporary function if exists xgboost_multiclass_predict;
 create temporary function xgboost_multiclass_predict as 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF';
