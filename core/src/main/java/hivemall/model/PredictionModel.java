@@ -26,9 +26,10 @@ import javax.annotation.Nullable;
 
 public interface PredictionModel extends MixedModel {
 
+    @Nullable
     ModelUpdateHandler getUpdateHandler();
 
-    void configureMix(ModelUpdateHandler handler, boolean cancelMixRequest);
+    void configureMix(@Nonnull ModelUpdateHandler handler, boolean cancelMixRequest);
 
     long getNumMixed();
 

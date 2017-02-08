@@ -18,56 +18,67 @@
  */
 package hivemall.optimizer;
 
+import hivemall.model.IWeightValue;
+import hivemall.model.WeightValue;
+
 import java.util.Map;
+
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
-
-import hivemall.model.WeightValue;
-import hivemall.model.IWeightValue;
 
 public interface Optimizer {
 
     /**
-     * Update the weights of models thru this interface.
+     * Update the weights of models
      */
-    float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient);
+    float update(@Nonnull Object feature, float weight, float gradient);
 
-    // Count up #step to tune learning rate
+    /**
+     * Count up #step to tune learning rate
+     */
     void proceedStep();
 
+    @NotThreadSafe
     static abstract class OptimizerBase implements Optimizer {
 
-        protected final EtaEstimator etaImpl;
-        protected final Regularization regImpl;
-
-        protected int numStep = 1;
+        @Nonnull
+        protected final EtaEstimator _eta;
+        @Nonnull
+        protected final Regularization _reg;
+        @Nonnegative
+        protected int _numStep = 1;
 
         public OptimizerBase(final Map<String, String> options) {
-            this.etaImpl = EtaEstimator.get(options);
-            this.regImpl = Regularization.get(options);
+            this._eta = EtaEstimator.get(options);
+            this._reg = Regularization.get(options);
         }
 
         @Override
         public void proceedStep() {
-            numStep++;
+            _numStep++;
         }
 
-        // Directly update a given `weight` in terms of performance
-        protected void computeUpdateValue(
-                @Nonnull final IWeightValue weight, float gradient) {
-            float delta = computeUpdateValueImpl(weight, regImpl.regularize(weight.get(), gradient));
-            weight.set(weight.get() - etaImpl.eta(numStep) * delta);
+        /**
+         * Update the given weight by the given gradient.
+         */
+        protected float update(@Nonnull final IWeightValue weight, float gradient) {
+            float g = _reg.regularize(weight.get(), gradient);
+            float delta = computeDelta(weight, g);
+            float newWeight = weight.get() - _eta.eta(_numStep) * delta;
+            weight.set(newWeight);
+            return newWeight;
         }
 
-        // Compute a delta to update
-        protected float computeUpdateValueImpl(
-                @Nonnull final IWeightValue weight, float gradient) {
+        /**
+         * Compute a delta to update
+         */
+        protected float computeDelta(@Nonnull final IWeightValue weight, float gradient) {
             return gradient;
         }
 
     }
 
-    @NotThreadSafe
     static final class SGD extends OptimizerBase {
 
         private final IWeightValue weightValueReused;
@@ -78,10 +89,38 @@ public interface Optimizer {
         }
 
         @Override
-        public float computeUpdatedValue(
-                @Nonnull Object feature, float weight, float gradient) {
-            computeUpdateValue(weightValueReused, gradient);
+        public float update(@Nonnull Object feature, float weight, float gradient) {
+            update(weightValueReused, gradient);
             return weightValueReused.get();
+        }
+
+    }
+
+    static abstract class AdaGrad extends OptimizerBase {
+
+        private final float eps;
+        private final float scale;
+
+        public AdaGrad(Map<String, String> options) {
+            super(options);
+            float eps = 1.0f;
+            float scale = 100.0f;
+            if (options.containsKey("eps")) {
+                eps = Float.parseFloat(options.get("eps"));
+            }
+            if (options.containsKey("scale")) {
+                scale = Float.parseFloat(options.get("scale"));
+            }
+            this.eps = eps;
+            this.scale = scale;
+        }
+
+        @Override
+        protected float computeDelta(@Nonnull final IWeightValue weight, float gradient) {
+            float new_scaled_sum_sqgrad = weight.getSumOfSquaredGradients() + gradient
+                    * (gradient / scale);
+            weight.setSumOfSquaredGradients(new_scaled_sum_sqgrad);
+            return gradient / ((float) Math.sqrt(new_scaled_sum_sqgrad * scale) + eps);
         }
 
     }
@@ -97,13 +136,13 @@ public interface Optimizer {
             float decay = 0.95f;
             float eps = 1e-6f;
             float scale = 100.0f;
-            if(options.containsKey("decay")) {
+            if (options.containsKey("decay")) {
                 decay = Float.parseFloat(options.get("decay"));
             }
-            if(options.containsKey("eps")) {
+            if (options.containsKey("eps")) {
                 eps = Float.parseFloat(options.get("eps"));
             }
-            if(options.containsKey("scale")) {
+            if (options.containsKey("scale")) {
                 scale = Float.parseFloat(options.get("scale"));
             }
             this.decay = decay;
@@ -112,12 +151,16 @@ public interface Optimizer {
         }
 
         @Override
-        protected float computeUpdateValueImpl(@Nonnull final IWeightValue weight, float gradient)  {
+        protected float computeDelta(@Nonnull final IWeightValue weight, float gradient) {
             float old_scaled_sum_sqgrad = weight.getSumOfSquaredGradients();
             float old_sum_squared_delta_x = weight.getSumOfSquaredDeltaX();
-            float new_scaled_sum_sqgrad = (decay * old_scaled_sum_sqgrad) + ((1.f - decay) * gradient * (gradient / scale));
-            float delta = (float) Math.sqrt((old_sum_squared_delta_x + eps) / (new_scaled_sum_sqgrad * scale + eps)) * gradient;
-            float new_sum_squared_delta_x = (decay * old_sum_squared_delta_x) + ((1.f - decay) * delta * delta);
+            float new_scaled_sum_sqgrad = (decay * old_scaled_sum_sqgrad)
+                    + ((1.f - decay) * gradient * (gradient / scale));
+            float delta = (float) Math.sqrt((old_sum_squared_delta_x + eps)
+                    / (new_scaled_sum_sqgrad * scale + eps))
+                    * gradient;
+            float new_sum_squared_delta_x = (decay * old_sum_squared_delta_x)
+                    + ((1.f - decay) * delta * delta);
             weight.setSumOfSquaredGradients(new_scaled_sum_sqgrad);
             weight.setSumOfSquaredDeltaX(new_sum_squared_delta_x);
             return delta;
@@ -125,40 +168,11 @@ public interface Optimizer {
 
     }
 
-    static abstract class AdaGrad extends OptimizerBase {
-
-        private final float eps;
-        private final float scale;
-
-        public AdaGrad(Map<String, String> options) {
-            super(options);
-            float eps = 1.0f;
-            float scale = 100.0f;
-            if(options.containsKey("eps")) {
-                eps = Float.parseFloat(options.get("eps"));
-            }
-            if(options.containsKey("scale")) {
-                scale = Float.parseFloat(options.get("scale"));
-            }
-            this.eps = eps;
-            this.scale = scale;
-        }
-
-        @Override
-        protected float computeUpdateValueImpl(@Nonnull final IWeightValue weight, float gradient) {
-            float new_scaled_sum_sqgrad = weight.getSumOfSquaredGradients() + gradient * (gradient / scale);
-            float delta = gradient / ((float) Math.sqrt(new_scaled_sum_sqgrad * scale) + eps);
-            weight.setSumOfSquaredGradients(new_scaled_sum_sqgrad);
-            return delta;
-        }
-
-    }
-
     /**
-     * Adam, an algorithm for first-order gradient-based optimization of stochastic objective
-     * functions, based on adaptive estimates of lower-order moments.
+     * Adam, an algorithm for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order
+     * moments.
      *
-     *  - D. P. Kingma and J. L. Ba: "ADAM: A Method for Stochastic Optimization." arXiv preprint arXiv:1412.6980v8, 2014.
+     * - D. P. Kingma and J. L. Ba: "ADAM: A Method for Stochastic Optimization." arXiv preprint arXiv:1412.6980v8, 2014.
      */
     static abstract class Adam extends OptimizerBase {
 
@@ -171,13 +185,13 @@ public interface Optimizer {
             float beta = 0.9f;
             float gamma = 0.999f;
             float eps_hat = 1e-8f;
-            if(options.containsKey("beta")) {
+            if (options.containsKey("beta")) {
                 beta = Float.parseFloat(options.get("beta"));
             }
-            if(options.containsKey("gamma")) {
+            if (options.containsKey("gamma")) {
                 gamma = Float.parseFloat(options.get("gamma"));
             }
-            if(options.containsKey("eps_hat")) {
+            if (options.containsKey("eps_hat")) {
                 eps_hat = Float.parseFloat(options.get("eps_hat"));
             }
             this.beta = beta;
@@ -186,11 +200,11 @@ public interface Optimizer {
         }
 
         @Override
-        protected float computeUpdateValueImpl(@Nonnull final IWeightValue weight, float gradient) {
+        protected float computeDelta(@Nonnull final IWeightValue weight, float gradient) {
             float val_m = beta * weight.getM() + (1.f - beta) * gradient;
             float val_v = gamma * weight.getV() + (float) ((1.f - gamma) * Math.pow(gradient, 2.0));
-            float val_m_hat = val_m / (float) (1.f - Math.pow(beta, numStep));
-            float val_v_hat = val_v / (float) (1.f - Math.pow(gamma, numStep));
+            float val_m_hat = val_m / (float) (1.f - Math.pow(beta, _numStep));
+            float val_v_hat = val_v / (float) (1.f - Math.pow(gamma, _numStep));
             float delta = val_m_hat / (float) (Math.sqrt(val_v_hat) + eps_hat);
             weight.setM(val_m);
             weight.setV(val_v);
@@ -199,22 +213,21 @@ public interface Optimizer {
 
     }
 
-    static abstract class RDA extends OptimizerBase {
+    static abstract class AdagradRDA extends OptimizerBase {
 
         private final OptimizerBase optimizerImpl;
 
         private final float lambda;
 
-        public RDA(final OptimizerBase optimizerImpl, Map<String, String> options) {
+        public AdagradRDA(final OptimizerBase optimizerImpl, Map<String, String> options) {
             super(options);
             // We assume `optimizerImpl` has the `AdaGrad` implementation only
-            if(!(optimizerImpl instanceof AdaGrad)) {
-                throw new IllegalArgumentException(
-                        optimizerImpl.getClass().getSimpleName()
+            if (!(optimizerImpl instanceof AdaGrad)) {
+                throw new IllegalArgumentException(optimizerImpl.getClass().getSimpleName()
                         + " currently does not support RDA regularization");
             }
             float lambda = 1e-6f;
-            if(options.containsKey("lambda")) {
+            if (options.containsKey("lambda")) {
                 lambda = Float.parseFloat(options.get("lambda"));
             }
             this.optimizerImpl = optimizerImpl;
@@ -222,22 +235,25 @@ public interface Optimizer {
         }
 
         @Override
-        protected void computeUpdateValue(@Nonnull final IWeightValue weight, float gradient) {
+        protected float update(@Nonnull final IWeightValue weight, float gradient) {
             float new_sum_grad = weight.getSumOfGradients() + gradient;
             // sign(u_{t,i})
-            float sign = (new_sum_grad > 0.f)? 1.f : -1.f;
+            float sign = (new_sum_grad > 0.f) ? 1.f : -1.f;
             // |u_{t,i}|/t - \lambda
-            float meansOfGradients = (sign * new_sum_grad / numStep) - lambda;
-            if(meansOfGradients < 0.f) {
+            float meansOfGradients = (sign * new_sum_grad / _numStep) - lambda;
+            if (meansOfGradients < 0.f) {
                 // x_{t,i} = 0
                 weight.set(0.f);
                 weight.setSumOfSquaredGradients(0.f);
                 weight.setSumOfGradients(0.f);
+                return 0.f;
             } else {
                 // x_{t,i} = -sign(u_{t,i}) * \frac{\eta t}{\sqrt{G_{t,ii}}}(|u_{t,i}|/t - \lambda)
-                float new_weight = -1.f * sign * etaImpl.eta(numStep) * numStep * optimizerImpl.computeUpdateValueImpl(weight, meansOfGradients);
-                weight.set(new_weight);
+                float newWeight = -1.f * sign * _eta.eta(_numStep) * _numStep
+                        * optimizerImpl.computeDelta(weight, meansOfGradients);
+                weight.set(newWeight);
                 weight.setSumOfGradients(new_sum_grad);
+                return newWeight;
             }
         }
 

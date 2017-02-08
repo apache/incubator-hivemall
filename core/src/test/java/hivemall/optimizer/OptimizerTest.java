@@ -93,8 +93,8 @@ public final class OptimizerTest {
         // We need special handling for `Optimizer#RDA`
         options.put("optimizer", "AdaGrad");
         options.put("regularization", "RDA");
-        Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.RDA);
-        Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.RDA);
+        Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdagradRDA);
+        Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdagradRDA);
 
         // `SGD`, `AdaDelta`, and `Adam` currently does not support `RDA`
         for(final String optimizerType : new String[] {"SGD", "AdaDelta", "Adam"}) {
@@ -120,11 +120,11 @@ public final class OptimizerTest {
         try {
             for(int i = 0; i < numUpdates; i++) {
                 int index = rnd.nextInt(initSize);
-                weights[index] = optimizer.computeUpdatedValue(index, weights[index], 0.1f);
+                weights[index] = optimizer.update(index, weights[index], 0.1f);
             }
             for(int i = 0; i < numUpdates; i++) {
                 int index = rnd.nextInt(initSize * 2);
-                weights[index] = optimizer.computeUpdatedValue(index, weights[index], 0.1f);
+                weights[index] = optimizer.update(index, weights[index], 0.1f);
             }
         } catch(Exception e) {
             Assert.fail("failed to update weights: " + e.getMessage());

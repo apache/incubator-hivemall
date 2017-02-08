@@ -22,6 +22,7 @@ import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
 
 import java.util.Map;
+
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -96,8 +97,7 @@ public abstract class EtaEstimator {
     }
 
     /**
-     * bold driver: Gemulla et al., Large-scale matrix factorization with distributed stochastic
-     * gradient descent, KDD 2011.
+     * bold driver: Gemulla et al., Large-scale matrix factorization with distributed stochastic gradient descent, KDD 2011.
      */
     public static final class AdjustingEtaEstimator extends EtaEstimator {
 
@@ -161,30 +161,35 @@ public abstract class EtaEstimator {
     @Nonnull
     public static EtaEstimator get(@Nonnull final Map<String, String> options)
             throws IllegalArgumentException {
-        final String etaName = options.get("eta");
-        if(etaName == null) {
-            return new FixedEtaEstimator(1.f);
+        final String etaScheme = options.get("eta");
+        if (etaScheme == null) {
+            return new InvscalingEtaEstimator(0.1f, 0.1d);
         }
+
         float eta0 = 0.1f;
-        if(options.containsKey("eta0")) {
+        if (options.containsKey("eta0")) {
             eta0 = Float.parseFloat(options.get("eta0"));
         }
-        if(etaName.toLowerCase().equals("fixed")) {
+
+        if ("fixed".equalsIgnoreCase(etaScheme)) {
             return new FixedEtaEstimator(eta0);
-        } else if(etaName.toLowerCase().equals("simple")) {
-            long t = 10000;
-            if(options.containsKey("t")) {
-                t = Long.parseLong(options.get("t"));
+        } else if ("simple".equalsIgnoreCase(etaScheme)) {
+            final long t;
+            if (options.containsKey("total_steps")) {
+                t = Long.parseLong(options.get("total_steps"));
+            } else {
+                throw new IllegalArgumentException(
+                    "-total_steps MUST be provided when `-eta simple` is specified");
             }
             return new SimpleEtaEstimator(eta0, t);
-        } else if(etaName.toLowerCase().equals("inverse")) {
+        } else if ("inv".equalsIgnoreCase(etaScheme) || "inverse".equalsIgnoreCase(etaScheme)) {
             double power_t = 0.1;
-            if(options.containsKey("power_t")) {
+            if (options.containsKey("power_t")) {
                 power_t = Double.parseDouble(options.get("power_t"));
             }
             return new InvscalingEtaEstimator(eta0, power_t);
         } else {
-            throw new IllegalArgumentException("Unsupported ETA name: " + etaName);
+            throw new IllegalArgumentException("Unsupported ETA name: " + etaScheme);
         }
     }
 

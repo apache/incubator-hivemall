@@ -18,19 +18,20 @@
  */
 package hivemall.optimizer;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.NotThreadSafe;
+import hivemall.model.IWeightValue;
+import hivemall.model.WeightValue;
+import hivemall.optimizer.Optimizer.OptimizerBase;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.math.MathUtils;
+
 import java.util.Arrays;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.NotThreadSafe;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import hivemall.optimizer.Optimizer.OptimizerBase;
-import hivemall.model.IWeightValue;
-import hivemall.model.WeightValue;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.math.MathUtils;
 
 public final class DenseOptimizerFactory {
     private static final Log logger = LogFactory.getLog(DenseOptimizerFactory.class);
@@ -38,27 +39,27 @@ public final class DenseOptimizerFactory {
     @Nonnull
     public static Optimizer create(int ndims, @Nonnull Map<String, String> options) {
         final String optimizerName = options.get("optimizer");
-        if(optimizerName != null) {
+        if (optimizerName != null) {
             OptimizerBase optimizerImpl;
-            if(optimizerName.toLowerCase().equals("sgd")) {
+            if (optimizerName.toLowerCase().equals("sgd")) {
                 optimizerImpl = new Optimizer.SGD(options);
-            } else if(optimizerName.toLowerCase().equals("adadelta")) {
+            } else if (optimizerName.toLowerCase().equals("adadelta")) {
                 optimizerImpl = new AdaDelta(ndims, options);
-            } else if(optimizerName.toLowerCase().equals("adagrad")) {
+            } else if (optimizerName.toLowerCase().equals("adagrad")) {
                 optimizerImpl = new AdaGrad(ndims, options);
-            } else if(optimizerName.toLowerCase().equals("adam")) {
+            } else if (optimizerName.toLowerCase().equals("adam")) {
                 optimizerImpl = new Adam(ndims, options);
             } else {
                 throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
             }
 
-            logger.info("set " + optimizerImpl.getClass().getSimpleName()
-                    + " as an optimizer: " + options);
+            logger.info("set " + optimizerImpl.getClass().getSimpleName() + " as an optimizer: "
+                    + options);
 
             // If a regularization type is "RDA", wrap the optimizer with `Optimizer#RDA`.
-            if(options.get("regularization") != null
+            if (options.get("regularization") != null
                     && options.get("regularization").toLowerCase().equals("rda")) {
-                optimizerImpl = new RDA(ndims, optimizerImpl, options);
+                optimizerImpl = new AdagradRDA(ndims, optimizerImpl, options);
             }
 
             return optimizerImpl;
@@ -69,9 +70,12 @@ public final class DenseOptimizerFactory {
     @NotThreadSafe
     static final class AdaDelta extends Optimizer.AdaDelta {
 
+        @Nonnull
         private final IWeightValue weightValueReused;
 
+        @Nonnull
         private float[] sum_of_squared_gradients;
+        @Nonnull
         private float[] sum_of_squared_delta_x;
 
         public AdaDelta(int ndims, Map<String, String> options) {
@@ -82,20 +86,20 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
             weightValueReused.setSumOfSquaredGradients(sum_of_squared_gradients[i]);
             weightValueReused.setSumOfSquaredDeltaX(sum_of_squared_delta_x[i]);
-            computeUpdateValue(weightValueReused, gradient);
+            update(weightValueReused, gradient);
             sum_of_squared_gradients[i] = weightValueReused.getSumOfSquaredGradients();
             sum_of_squared_delta_x[i] = weightValueReused.getSumOfSquaredDeltaX();
             return weightValueReused.get();
         }
 
         private void ensureCapacity(final int index) {
-            if(index >= sum_of_squared_gradients.length) {
+            if (index >= sum_of_squared_gradients.length) {
                 int bits = MathUtils.bitsRequired(index);
                 int newSize = (1 << bits) + 1;
                 this.sum_of_squared_gradients = Arrays.copyOf(sum_of_squared_gradients, newSize);
@@ -119,18 +123,18 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
             weightValueReused.setSumOfSquaredGradients(sum_of_squared_gradients[i]);
-            computeUpdateValue(weightValueReused, gradient);
+            update(weightValueReused, gradient);
             sum_of_squared_gradients[i] = weightValueReused.getSumOfSquaredGradients();
             return weightValueReused.get();
         }
 
         private void ensureCapacity(final int index) {
-            if(index >= sum_of_squared_gradients.length) {
+            if (index >= sum_of_squared_gradients.length) {
                 int bits = MathUtils.bitsRequired(index);
                 int newSize = (1 << bits) + 1;
                 this.sum_of_squared_gradients = Arrays.copyOf(sum_of_squared_gradients, newSize);
@@ -142,9 +146,12 @@ public final class DenseOptimizerFactory {
     @NotThreadSafe
     static final class Adam extends Optimizer.Adam {
 
+        @Nonnull
         private final IWeightValue weightValueReused;
 
+        @Nonnull
         private float[] val_m;
+        @Nonnull
         private float[] val_v;
 
         public Adam(int ndims, Map<String, String> options) {
@@ -155,20 +162,20 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
             weightValueReused.setM(val_m[i]);
             weightValueReused.setV(val_v[i]);
-            computeUpdateValue(weightValueReused, gradient);
+            update(weightValueReused, gradient);
             val_m[i] = weightValueReused.getM();
             val_v[i] = weightValueReused.getV();
             return weightValueReused.get();
         }
 
         private void ensureCapacity(final int index) {
-            if(index >= val_m.length) {
+            if (index >= val_m.length) {
                 int bits = MathUtils.bitsRequired(index);
                 int newSize = (1 << bits) + 1;
                 this.val_m = Arrays.copyOf(val_m, newSize);
@@ -179,31 +186,33 @@ public final class DenseOptimizerFactory {
     }
 
     @NotThreadSafe
-    static final class RDA extends Optimizer.RDA {
+    static final class AdagradRDA extends Optimizer.AdagradRDA {
 
+        @Nonnull
         private final IWeightValue weightValueReused;
 
+        @Nonnull
         private float[] sum_of_gradients;
 
-        public RDA(int ndims, final OptimizerBase optimizerImpl, Map<String, String> options) {
+        public AdagradRDA(int ndims, final OptimizerBase optimizerImpl, Map<String, String> options) {
             super(optimizerImpl, options);
             this.weightValueReused = new WeightValue.WeightValueParamsF3(0.f, 0.f, 0.f, 0.f);
             this.sum_of_gradients = new float[ndims];
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
             weightValueReused.setSumOfGradients(sum_of_gradients[i]);
-            computeUpdateValue(weightValueReused, gradient);
+            update(weightValueReused, gradient);
             sum_of_gradients[i] = weightValueReused.getSumOfGradients();
             return weightValueReused.get();
         }
 
         private void ensureCapacity(final int index) {
-            if(index >= sum_of_gradients.length) {
+            if (index >= sum_of_gradients.length) {
                 int bits = MathUtils.bitsRequired(index);
                 int newSize = (1 << bits) + 1;
                 this.sum_of_gradients = Arrays.copyOf(sum_of_gradients, newSize);
