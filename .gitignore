@@ -11,6 +11,8 @@ logs
 .DS_Store
 *~
 bin/scala*
+bin/spark-*-bin-*
+bin/apache-maven-*
 scalastyle-output.xml
 scalastyle.txt
 derby.log
@@ -19,3 +21,4 @@ spark/bin/zinc-*
 *.so
 .classpath
 .project
+metastore_db
