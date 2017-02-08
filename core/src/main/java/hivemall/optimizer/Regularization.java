@@ -22,11 +22,13 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 
 public abstract class Regularization {
+    /** the default regularization term 0.0001 */
+    public static final float DEFAULT_LAMBDA = 0.0001f;
 
     protected final float lambda;
 
-    public Regularization(final Map<String, String> options) {
-        float lambda = 1e-6f;
+    public Regularization(@Nonnull Map<String, String> options) {
+        float lambda = DEFAULT_LAMBDA;
         if(options.containsKey("lambda")) {
             lambda = Float.parseFloat(options.get("lambda"));
         }
@@ -81,6 +83,7 @@ public abstract class Regularization {
         if (regName == null) {
             return new PassThrough(options);
         }
+        
         if(regName.toLowerCase().equals("no")) {
             return new PassThrough(options);
         } else if(regName.toLowerCase().equals("l1")) {

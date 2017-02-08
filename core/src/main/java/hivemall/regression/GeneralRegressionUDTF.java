@@ -18,88 +18,77 @@
  */
 package hivemall.regression;
 
-import java.util.HashMap;
+import hivemall.annotations.Since;
+import hivemall.model.FeatureValue;
+import hivemall.optimizer.LossFunctions;
+import hivemall.optimizer.Optimizer;
+import hivemall.optimizer.OptimizerOptions;
+
 import java.util.Map;
+
 import javax.annotation.Nonnull;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
-import hivemall.optimizer.LossFunctions;
-import hivemall.model.FeatureValue;
-
 /**
  * A general regression class with replaceable optimization functions.
  */
-public class GeneralRegressionUDTF extends RegressionBaseUDTF {
+@Description(name = "train_regression",
+        value = "_FUNC_(list<string|int|bigint> features, double label [, const string options])"
+                + " - Returns a relation consists of <string|int|bigint feature, float weight>",
+        extended = "Build a prediction model by a generic regressor")
+@Since(version = "0.5-rc.1")
+public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
 
-    protected final Map<String, String> optimizerOptions;
+    @Nonnull
+    private final Map<String, String> optimizerOptions;
+    private Optimizer optimizer;
 
     public GeneralRegressionUDTF() {
         super(true); // This enables new model interfaces
-        this.optimizerOptions = new HashMap<String, String>();
-        // Set default values
-        optimizerOptions.put("optimizer", "adadelta");
-        optimizerOptions.put("eta", "fixed");
-        optimizerOptions.put("eta0", "1.0");
-        optimizerOptions.put("t", "10000");
-        optimizerOptions.put("power_t", "0.1");
-        optimizerOptions.put("eps", "1e-6");
-        optimizerOptions.put("rho", "0.95");
-        optimizerOptions.put("scale", "100.0");
-        optimizerOptions.put("lambda", "1.0");
+        this.optimizerOptions = OptimizerOptions.create();
     }
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if(argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(
-                    this.getClass().getSimpleName()
-                  + " takes 2 or 3 arguments: List<Text|Int|BitInt> features, float target "
-                  + "[, constant string options]");
+        if (argOIs.length != 2 && argOIs.length != 3) {
+            throw new UDFArgumentException(this.getClass().getSimpleName()
+                    + " takes 2 or 3 arguments: List<Text|Int|BitInt> features, float target "
+                    + "[, constant string options]");
         }
-        return super.initialize(argOIs);
+
+        StructObjectInspector outputOI = super.initialize(argOIs);
+
+        if (is_mini_batch) {
+            throw new UDFArgumentException("_FUNC_ does not currently support `-mini_batch` option");
+        }
+
+        this.optimizer = createOptimizer(optimizerOptions);
+        return outputOI;
     }
 
     @Override
     protected Options getOptions() {
         Options opts = super.getOptions();
-        opts.addOption("optimizer", "opt", true, "Optimizer to update weights [default: adadelta]");
-        opts.addOption("eta", true, " ETA estimator to compute delta [default: fixed]");
-        opts.addOption("eta0", true, "Initial learning rate [default 1.0]");
-        opts.addOption("t", "total_steps", true, "Total of n_samples * epochs time steps [default: 10000]");
-        opts.addOption("power_t", true, "Exponent for inverse scaling learning rate [default 0.1]");
-        opts.addOption("eps", true, "Denominator value of AdaDelta/AdaGrad [default 1e-6]");
-        opts.addOption("rho", "decay", true, "Decay rate [default 0.95]");
-        opts.addOption("scale", true, "Scaling factor for cumulative weights [100.0]");
-        opts.addOption("regularization", "reg", true, "Regularization type [default not-defined]");
-        opts.addOption("lambda", true, "Regularization term on weights [default 1.0]");
+        OptimizerOptions.setup(opts);
         return opts;
     }
 
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-        final CommandLine cl = super.processOptions(argOIs);
-        if(cl != null) {
-            for(final Option opt: cl.getOptions()) {
-                optimizerOptions.put(opt.getOpt(), opt.getValue());
-            }
-        }
+        CommandLine cl = super.processOptions(argOIs);
+        OptimizerOptions.propcessOptions(cl, optimizerOptions);
         return cl;
     }
 
     @Override
-    protected Map<String, String> getOptimzierOptions() {
-        return optimizerOptions;
-    }
-
-    @Override
     protected final void checkTargetValue(final float target) throws UDFArgumentException {
-        if(target < 0.f || target > 1.f) {
+        if (target < 0.f || target > 1.f) {
             throw new UDFArgumentException("target must be in range 0 to 1: " + target);
         }
     }
@@ -107,20 +96,15 @@ public class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
-        if(is_mini_batch) {
-            throw new UnsupportedOperationException(
-                    this.getClass().getSimpleName() + " supports no `is_mini_batch` mode");
-        } else {
-            float loss = LossFunctions.logisticLoss(target, predicted);
-            for(FeatureValue f : features) {
-                Object feature = f.getFeature();
-                float xi = f.getValueAsFloat();
-                float weight = model.getWeight(feature);
-                float new_weight = optimizerImpl.computeUpdatedValue(feature, weight, -loss * xi);
-                model.setWeight(feature, new_weight);
-            }
-            optimizerImpl.proceedStep();
+        float loss = LossFunctions.logisticLoss(target, predicted);
+        for (FeatureValue f : features) {
+            Object feature = f.getFeature();
+            float xi = f.getValueAsFloat();
+            float weight = model.getWeight(feature);
+            float new_weight = optimizer.update(feature, weight, -loss * xi);
+            model.setWeight(feature, new_weight);
         }
+        optimizer.proceedStep();
     }
 
 }

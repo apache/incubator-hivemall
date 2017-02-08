@@ -20,6 +20,7 @@ package hivemall.model;
 
 import hivemall.model.WeightValueWithClock.WeightValueParamsF1Clock;
 import hivemall.model.WeightValueWithClock.WeightValueParamsF2Clock;
+import hivemall.model.WeightValueWithClock.WeightValueParamsF3Clock;
 import hivemall.model.WeightValueWithClock.WeightValueWithCovarClock;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.collections.OpenHashMap;
@@ -73,12 +74,12 @@ public final class NewSparseModel extends AbstractPredictionModel {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends IWeightValue> T get(final Object feature) {
+    public <T extends IWeightValue> T get(@Nonnull final Object feature) {
         return (T) weights.get(feature);
     }
 
     @Override
-    public <T extends IWeightValue> void set(final Object feature, final T value) {
+    public <T extends IWeightValue> void set(@Nonnull final Object feature, @Nonnull final T value) {
         assert (feature != null);
         assert (value != null);
 
@@ -99,11 +100,12 @@ public final class NewSparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public void delete(@Nonnull Object feature) {
+    public void delete(@Nonnull final Object feature) {
         weights.remove(feature);
     }
 
-    private IWeightValue wrapIfRequired(final IWeightValue value) {
+    @Nonnull
+    private IWeightValue wrapIfRequired(@Nonnull final IWeightValue value) {
         final IWeightValue wrapper;
         if (clockEnabled) {
             switch (value.getType()) {
@@ -119,6 +121,9 @@ public final class NewSparseModel extends AbstractPredictionModel {
                 case ParamsF2:
                     wrapper = new WeightValueParamsF2Clock(value);
                     break;
+                case ParamsF3:
+                    wrapper = new WeightValueParamsF3Clock(value);
+                    break;
                 default:
                     throw new IllegalStateException("Unexpected value type: " + value.getType());
             }
@@ -129,14 +134,14 @@ public final class NewSparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public float getWeight(final Object feature) {
+    public float getWeight(@Nonnull final Object feature) {
         IWeightValue v = weights.get(feature);
         return v == null ? 0.f : v.get();
     }
 
     @Override
-    public void setWeight(Object feature, float value) {
-        if(weights.containsKey(feature)) {
+    public void setWeight(@Nonnull final Object feature, final float value) {
+        if (weights.containsKey(feature)) {
             IWeightValue weight = weights.get(feature);
             weight.set(value);
         } else {
@@ -147,13 +152,13 @@ public final class NewSparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public float getCovariance(final Object feature) {
+    public float getCovariance(@Nonnull final Object feature) {
         IWeightValue v = weights.get(feature);
         return v == null ? 1.f : v.getCovariance();
     }
 
     @Override
-    protected void _set(final Object feature, final float weight, final short clock) {
+    protected void _set(@Nonnull final Object feature, final float weight, final short clock) {
         final IWeightValue w = weights.get(feature);
         if (w == null) {
             logger.warn("Previous weight not found: " + feature);
@@ -165,7 +170,7 @@ public final class NewSparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    protected void _set(final Object feature, final float weight, final float covar,
+    protected void _set(@Nonnull final Object feature, final float weight, final float covar,
             final short clock) {
         final IWeightValue w = weights.get(feature);
         if (w == null) {
@@ -184,7 +189,7 @@ public final class NewSparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public boolean contains(final Object feature) {
+    public boolean contains(@Nonnull final Object feature) {
         return weights.containsKey(feature);
     }
 

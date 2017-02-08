@@ -18,45 +18,48 @@
  */
 package hivemall.optimizer;
 
+import hivemall.model.IWeightValue;
+import hivemall.model.WeightValue;
+import hivemall.optimizer.Optimizer.OptimizerBase;
+import hivemall.utils.collections.OpenHashMap;
+
+import java.util.Map;
+
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import hivemall.optimizer.Optimizer.OptimizerBase;
-import hivemall.model.IWeightValue;
-import hivemall.model.WeightValue;
-import hivemall.utils.collections.OpenHashMap;
-
 public final class SparseOptimizerFactory {
-    private static final Log logger = LogFactory.getLog(SparseOptimizerFactory.class);
+    private static final Log LOG = LogFactory.getLog(SparseOptimizerFactory.class);
 
     @Nonnull
     public static Optimizer create(int ndims, @Nonnull Map<String, String> options) {
         final String optimizerName = options.get("optimizer");
-        if(optimizerName != null) {
+        if (optimizerName != null) {
             OptimizerBase optimizerImpl;
-            if(optimizerName.toLowerCase().equals("sgd")) {
+            if (optimizerName.toLowerCase().equals("sgd")) {
                 optimizerImpl = new Optimizer.SGD(options);
-            } else if(optimizerName.toLowerCase().equals("adadelta")) {
+            } else if (optimizerName.toLowerCase().equals("adadelta")) {
                 optimizerImpl = new AdaDelta(ndims, options);
-            } else if(optimizerName.toLowerCase().equals("adagrad")) {
+            } else if (optimizerName.toLowerCase().equals("adagrad")) {
                 optimizerImpl = new AdaGrad(ndims, options);
-            } else if(optimizerName.toLowerCase().equals("adam")) {
+            } else if (optimizerName.toLowerCase().equals("adam")) {
                 optimizerImpl = new Adam(ndims, options);
             } else {
                 throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
             }
 
-            logger.info("set " + optimizerImpl.getClass().getSimpleName()
-                    + " as an optimizer: " + options);
-
             // If a regularization type is "RDA", wrap the optimizer with `Optimizer#RDA`.
-            if(options.get("regularization") != null
+            if (options.get("regularization") != null
                     && options.get("regularization").toLowerCase().equals("rda")) {
-                optimizerImpl = new RDA(ndims, optimizerImpl, options);
+                optimizerImpl = new AdagradRDA(ndims, optimizerImpl, options);
+            }
+
+            if (LOG.isInfoEnabled()) {
+                LOG.info("set " + optimizerImpl.getClass().getSimpleName() + " as an optimizer: "
+                        + options);
             }
 
             return optimizerImpl;
@@ -67,6 +70,7 @@ public final class SparseOptimizerFactory {
     @NotThreadSafe
     static final class AdaDelta extends Optimizer.AdaDelta {
 
+        @Nonnull
         private final OpenHashMap<Object, IWeightValue> auxWeights;
 
         public AdaDelta(int size, Map<String, String> options) {
@@ -75,16 +79,16 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             IWeightValue auxWeight;
-            if(auxWeights.containsKey(feature)) {
+            if (auxWeights.containsKey(feature)) {
                 auxWeight = auxWeights.get(feature);
                 auxWeight.set(weight);
             } else {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
             }
-            computeUpdateValue(auxWeight, gradient);
+            update(auxWeight, gradient);
             return auxWeight.get();
         }
 
@@ -93,6 +97,7 @@ public final class SparseOptimizerFactory {
     @NotThreadSafe
     static final class AdaGrad extends Optimizer.AdaGrad {
 
+        @Nonnull
         private final OpenHashMap<Object, IWeightValue> auxWeights;
 
         public AdaGrad(int size, Map<String, String> options) {
@@ -101,16 +106,16 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             IWeightValue auxWeight;
-            if(auxWeights.containsKey(feature)) {
+            if (auxWeights.containsKey(feature)) {
                 auxWeight = auxWeights.get(feature);
                 auxWeight.set(weight);
             } else {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
             }
-            computeUpdateValue(auxWeight, gradient);
+            update(auxWeight, gradient);
             return auxWeight.get();
         }
 
@@ -119,6 +124,7 @@ public final class SparseOptimizerFactory {
     @NotThreadSafe
     static final class Adam extends Optimizer.Adam {
 
+        @Nonnull
         private final OpenHashMap<Object, IWeightValue> auxWeights;
 
         public Adam(int size, Map<String, String> options) {
@@ -127,42 +133,43 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             IWeightValue auxWeight;
-            if(auxWeights.containsKey(feature)) {
+            if (auxWeights.containsKey(feature)) {
                 auxWeight = auxWeights.get(feature);
                 auxWeight.set(weight);
             } else {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
             }
-            computeUpdateValue(auxWeight, gradient);
+            update(auxWeight, gradient);
             return auxWeight.get();
         }
 
     }
 
     @NotThreadSafe
-    static final class RDA extends Optimizer.RDA {
+    static final class AdagradRDA extends Optimizer.AdagradRDA {
 
+        @Nonnull
         private final OpenHashMap<Object, IWeightValue> auxWeights;
 
-        public RDA(int size, OptimizerBase optimizerImpl, Map<String, String> options) {
+        public AdagradRDA(int size, OptimizerBase optimizerImpl, Map<String, String> options) {
             super(optimizerImpl, options);
             this.auxWeights = new OpenHashMap<Object, IWeightValue>(size);
         }
 
         @Override
-        public float computeUpdatedValue(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull Object feature, float weight, float gradient) {
             IWeightValue auxWeight;
-            if(auxWeights.containsKey(feature)) {
+            if (auxWeights.containsKey(feature)) {
                 auxWeight = auxWeights.get(feature);
                 auxWeight.set(weight);
             } else {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
             }
-            computeUpdateValue(auxWeight, gradient);
+            update(auxWeight, gradient);
             return auxWeight.get();
         }
 
