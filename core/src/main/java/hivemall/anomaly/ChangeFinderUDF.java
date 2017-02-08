@@ -149,7 +149,6 @@ public final class ChangeFinderUDF extends UDFWithOptions {
         if (HiveUtils.isListOI(argOI0)) {
             ListObjectInspector listOI = HiveUtils.asListOI(argOI0);
             this._changeFinder = new ChangeFinder2D(_params, listOI);
-            throw new UnsupportedOperationException("2D x is not supported yet");
         } else if (HiveUtils.isNumberOI(argOI0)) {
             PrimitiveObjectInspector xOI = HiveUtils.asDoubleCompatibleOI(argOI0);
             this._changeFinder = new ChangeFinder1D(_params, xOI);
