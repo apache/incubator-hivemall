@@ -17,7 +17,7 @@
   under the License.
 -->
         
-This article introduce how to find outliers using [Local Outlier Detection (LOF)](http://en.wikipedia.org/wiki/Local_outlier_factor) on Hivemall.
+This article introduces how to find outliers using [Local Outlier Detection (LOF)](http://en.wikipedia.org/wiki/Local_outlier_factor) on Hivemall.
 
 <!-- toc -->
 

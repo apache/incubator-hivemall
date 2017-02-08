@@ -144,6 +144,8 @@
 ## Part IX - Anomaly Detection
 
 * [Outlier Detection using Local Outlier Factor (LOF)](anomaly/lof.md)
+* [Change-Point Detection using Singular Spectrum Transformation (SST)](anomaly/sst.md)
+* [ChangeFinder: Detecting Outlier and Change-Point Simultaneously](anomaly/changefinder.md)
 
 ## Part X - Hivemall on Spark
 
