@@ -33,7 +33,8 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   test("anomaly") {
     import hiveContext.implicits._
     val df = spark.range(1000).selectExpr("id AS time", "rand() AS x")
-    // TODO: Test results more exactly
+    // TODO: Test results more strictly
+    assert(df.sort($"time".asc).select(changefinder($"x")).count === 1000)
     assert(df.sort($"time".asc).select(sst($"x", lit("-th 0.005"))).count === 1000)
   }
 
