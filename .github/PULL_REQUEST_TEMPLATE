@@ -6,10 +6,14 @@
 
 [Bug Fix | Improvement | Feature | Documentation | Hot Fix | Refactoring]
 
-### What is the Jira issue?
+## What is the Jira issue?
 
 (Put link here and add [HIVEMALL-*Jira number*] in PR title, e.g., [HIVEMALL-533])
 
 ## How was this patch tested?
 
 (Please explain how this patch was tested. e.g., unit tests, integration tests, manual tests)
+
+## How to use this feature?
+
+(Please remove this section if not needed)
