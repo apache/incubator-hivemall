@@ -20,13 +20,23 @@
 <!-- toc -->
 
 # Rowid generator provided in Hivemall
-You can use [rowid() function](https://github.com/myui/hivemall/blob/master/src/main/java/hivemall/tools/mapred/RowIdUDF.java) to generate an unique rowid in Hivemall v0.2 or later.
+You can use [rowid() function](https://github.com/apache/incubator-hivemall/blob/master/core/src/main/java/hivemall/tools/mapred/RowIdUDF.java) to generate an unique rowid in Hivemall v0.2 or later.
 ```sql
 select
-  rowid() as rowid, -- returns ${task_id}-${sequence_number}
+  rowid() as rowid, -- returns ${task_id}-${sequence_number} as string
   *
 from 
-  xxx
+  xxx;
+```
+
+Also, [rownum()](https://github.com/apache/incubator-hivemall/blob/master/core/src/main/java/hivemall/tools/mapred/RowNumberUDF.java) is supported since Hivemall v0.5-rc.1 or later.
+
+```sql
+select
+  rownum() as rowid, -- returns sprintf(`%d%04d`,sequence,taskId) as long
+  *
+from
+  xxx;
 ```
 
 # Other Rowid generation schemes using SQL
