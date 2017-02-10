@@ -473,6 +473,9 @@ create temporary function jobid as 'hivemall.tools.mapred.JobIdUDF';
 drop temporary function if exists rowid;
 create temporary function rowid as 'hivemall.tools.mapred.RowIdUDF';
 
+drop temporary function if exists rownum;
+create temporary function rownum as 'hivemall.tools.mapred.RowNumberUDF';
+
 drop temporary function if exists distcache_gets;
 create temporary function distcache_gets as 'hivemall.tools.mapred.DistributedCacheLookupUDF';
 
