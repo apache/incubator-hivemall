@@ -477,6 +477,9 @@ CREATE FUNCTION jobid as 'hivemall.tools.mapred.JobIdUDF' USING JAR '${hivemall_
 DROP FUNCTION IF EXISTS rowid;
 CREATE FUNCTION rowid as 'hivemall.tools.mapred.RowIdUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS rownum;
+CREATE FUNCTION rownum as 'hivemall.tools.mapred.RowNumberUDF' USING JAR '${hivemall_jar}';
+
 DROP FUNCTION IF EXISTS distcache_gets;
 CREATE FUNCTION distcache_gets as 'hivemall.tools.mapred.DistributedCacheLookupUDF' USING JAR '${hivemall_jar}';
 
