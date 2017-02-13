@@ -330,6 +330,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tf AS 'hivemall.ftvec.text.TermFrequen
  * Regression functions
  */
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS logress")
+sqlContext.sql("CREATE TEMPORARY FUNCTION logress AS 'hivemall.regression.LogressUDTF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_logistic_regr")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_logistic_regr AS 'hivemall.regression.LogressUDTF'")
 
@@ -585,6 +588,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION sst AS 'hivemall.anomaly.SingularSpect
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_randomforest_classifier")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_randomforest_classifier AS 'hivemall.smile.classification.RandomForestClassifierUDTF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_randomforest_regressor")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_randomforest_regressor AS 'hivemall.smile.regression.RandomForestRegressionUDTF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_randomforest_regr")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_randomforest_regr AS 'hivemall.smile.regression.RandomForestRegressionUDTF'")
 
@@ -599,4 +605,3 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION guess_attribute_types AS 'hivemall.smi
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_gradient_tree_boosting_classifier")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_gradient_tree_boosting_classifier AS 'hivemall.smile.classification.GradientTreeBoostingClassifierUDTF'")
-
