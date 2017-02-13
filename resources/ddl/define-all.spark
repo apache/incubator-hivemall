@@ -107,7 +107,7 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION popcnt AS 'hivemall.knn.distance.Popco
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS kld")
 sqlContext.sql("CREATE TEMPORARY FUNCTION kld AS 'hivemall.knn.distance.KLDivergenceUDF'")
 
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS homming_distance")
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS hamming_distance")
 sqlContext.sql("CREATE TEMPORARY FUNCTION hamming_distance AS 'hivemall.knn.distance.HammingDistanceUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS euclid_distance")
