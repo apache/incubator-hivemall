@@ -83,5 +83,9 @@ public class RescaleUDFTest {
         udf.evaluate("1:1", 1d, null);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testCannotParseNumber() throws Exception {
+        udf.evaluate("1:string", 0.1d, 0.1d);
+    }
 
 }

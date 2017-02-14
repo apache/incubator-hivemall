@@ -62,9 +62,17 @@ public final class RescaleUDF extends UDF {
             throws HiveException, IllegalArgumentException {
         String[] fv = s.split(":");
         if (fv.length != 2) {
-            throw new IllegalArgumentException("Invalid feature value representation: " + s);
+            throw new IllegalArgumentException(String.format("Invalid feature value " +
+                    "representation: %s", s));
         }
-        float v = Float.parseFloat(fv[1]);
+        float v;
+        try {
+            v = Float.parseFloat(fv[1]);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(String.format("Invalid feature value " +
+                    "representation: %s, %s can't parse to float.", s, fv[1]));
+        }
+
         FloatWritable scaled_v = evaluate(v, min, max);
         String ret = fv[0] + ':' + scaled_v.get();
         return val(ret);
