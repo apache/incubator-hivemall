@@ -22,6 +22,7 @@ import static hivemall.utils.hadoop.WritableUtils.val;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.Text;
@@ -36,49 +37,61 @@ import org.apache.hadoop.io.Text;
 @UDFType(deterministic = true, stateful = false)
 public final class RescaleUDF extends UDF {
 
-    public FloatWritable evaluate(final float value, final float min, final float max) {
+    public FloatWritable evaluate(final Float value, final Float min, final Float max)
+            throws HiveException {
+        if(value == null) {
+            return null;
+        }
+
+        if(min == null) throw new HiveException("min should not be null");
+        if(max == null) throw new HiveException("max should not be null");
+
         return val(min_max_normalization(value, min, max));
     }
 
-    public FloatWritable evaluate(final double value, final double min, final double max) {
-        return val(min_max_normalization(value, min, max));
+    public FloatWritable evaluate(final Double value, final Double min, final Double max)
+            throws HiveException {
+        return evaluate(value.floatValue(), double2Float(min), double2Float(max));
     }
 
-    public Text evaluate(final String s, final double min, final double max) {
+    public Text evaluate(final String s, final Double min, final Double max) throws HiveException {
+        return evaluate(s, double2Float(min), double2Float(max));
+    }
+
+    public Text evaluate(final String s, final Float min, final Float max)
+            throws HiveException, IllegalArgumentException {
         String[] fv = s.split(":");
         if (fv.length != 2) {
-            throw new IllegalArgumentException("Invalid feature value representation: " + s);
+            throw new IllegalArgumentException(String.format("Invalid feature value " +
+                    "representation: %s", s));
         }
-        double v = Float.parseFloat(fv[1]);
-        float scaled_v = min_max_normalization(v, min, max);
-        String ret = fv[0] + ':' + Float.toString(scaled_v);
+        float v;
+        try {
+            v = Float.parseFloat(fv[1]);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(String.format("Invalid feature value " +
+                    "representation: %s, %s can't parse to float.", s, fv[1]));
+        }
+
+        FloatWritable scaled_v = evaluate(v, min, max);
+        String ret = fv[0] + ':' + scaled_v.get();
         return val(ret);
     }
 
-    public Text evaluate(final String s, final float min, final float max) {
-        String[] fv = s.split(":");
-        if (fv.length != 2) {
-            throw new IllegalArgumentException("Invalid feature value representation: " + s);
-        }
-        float v = Float.parseFloat(fv[1]);
-        float scaled_v = min_max_normalization(v, min, max);
-        String ret = fv[0] + ':' + Float.toString(scaled_v);
-        return val(ret);
-    }
-
-    private static float min_max_normalization(final float value, final float min, final float max) {
+    private static float min_max_normalization(final float value,
+                                               final float min, final float max) {
         if (min == max) {
             return 0.5f;
         }
         return (value - min) / (max - min);
     }
 
-    private static float min_max_normalization(final double value, final double min,
-            final double max) {
-        if (min == max) {
-            return 0.5f;
+    private Float double2Float(final Double value) {
+        if (null == value) {
+            return null;
+        } else {
+            return value.floatValue();
         }
-        return (float) ((value - min) / (max - min));
     }
 
 }
