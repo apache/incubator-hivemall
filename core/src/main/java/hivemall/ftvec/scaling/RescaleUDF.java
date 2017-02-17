@@ -107,10 +107,10 @@ public final class RescaleUDF extends UDF {
             return 0.5f;
         }
         if (value < min) {
-            return min;
+            return 0.f;
         }
         if (value > max) {
-            return max;
+            return 1.f;
         }
         return (value - min) / (max - min);
     }
