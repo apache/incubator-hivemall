@@ -178,36 +178,31 @@ public final class EachTopKUDTF extends GenericUDTF {
 
     private void drainQueue() throws HiveException {
         final int queueSize = _queue.size();
-        if (queueSize > 0) {
-            final TupleWithKey[] tuples = new TupleWithKey[queueSize];
-            for (int i = 0; i < queueSize; i++) {
-                TupleWithKey tuple = _queue.poll();
-                if (tuple == null) {
-                    throw new IllegalStateException("Found null element in the queue");
-                }
-                tuples[i] = tuple;
-            }
-            final IntWritable rankProbe = new IntWritable(-1);
-            final DoubleWritable keyProbe = new DoubleWritable(Double.NaN);
-            int rank = 0;
-            double lastKey = Double.NaN;
-            for (int i = queueSize - 1; i >= 0; i--) {
-                TupleWithKey tuple = tuples[i];
-                tuples[i] = null; // help GC
-                double key = tuple.getKey();
-                if (key != lastKey) {
-                    ++rank;
-                    rankProbe.set(rank);
-                    keyProbe.set(key);
-                    lastKey = key;
-                }
-                Object[] row = tuple.getRow();
-                row[0] = rankProbe;
-                row[1] = keyProbe;
-                forward(row);
-            }
-            _queue.clear();
+        if (queueSize == 0) {
+            return;
         }
+        final IntWritable rankProbe = new IntWritable(-1);
+        final DoubleWritable keyProbe = new DoubleWritable(Double.NaN);
+        int rank = 0;
+        double lastKey = Double.NaN;
+        while (true) {
+            TupleWithKey tuple = _queue.poll();
+            if (tuple == null) {
+                break;
+            }
+            double key = tuple.getKey();
+            if (key != lastKey) {
+                ++rank;
+                rankProbe.set(rank);
+                keyProbe.set(key);
+                lastKey = key;
+            }
+            Object[] row = tuple.getRow();
+            row[0] = rankProbe;
+            row[1] = keyProbe;
+            forward(row);
+        }
+        _queue.clear();
     }
 
     @Override
