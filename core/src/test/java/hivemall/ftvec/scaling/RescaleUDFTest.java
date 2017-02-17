@@ -87,8 +87,17 @@ public class RescaleUDFTest {
         udf.evaluate("1:string", 0.1d, 0.1d);
     }
 
+    @Test
     public void testMinMaxEquals() throws Exception {
-        udf.evaluate(0.1d, 0.1d, 0.1d);
+        assertEquals(WritableUtils.val(0.5f), udf.evaluate(0.1d, 0.1d, 0.1d));
+    }
+
+    @Test
+    public void testMinMaxCornercase() throws Exception {
+        assertEquals(WritableUtils.val(1.0f), udf.evaluate(1.1f, 0.0f, 1.0f));
+        assertEquals(WritableUtils.val(0.0f), udf.evaluate(-0.1f, 0.0f, 1.0f));
+        assertEquals(WritableUtils.val(1.0f), udf.evaluate(4.1f, 0.0f, 3.0f));
+        assertEquals(WritableUtils.val(0.0f), udf.evaluate(-2.1f, -1.0f, 1.0f));
     }
 
     @Test(expected = HiveException.class)
