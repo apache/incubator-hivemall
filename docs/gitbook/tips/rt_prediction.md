@@ -199,14 +199,14 @@ Define sigmoid function used for a prediction of logistic regression as follows:
 
 ```sql
 DROP FUNCTION IF EXISTS sigmoid;
-DELIMITER $$
+DELIMITER //
 CREATE FUNCTION sigmoid(x DOUBLE)
   RETURNS DOUBLE
   LANGUAGE SQL
 BEGIN
   RETURN 1.0 / (1.0 + EXP(-x));
 END;
-$$
+//
 DELIMITER ;
 ```
 
