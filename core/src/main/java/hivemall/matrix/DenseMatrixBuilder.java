@@ -18,9 +18,12 @@
  */
 package hivemall.matrix;
 
+import hivemall.utils.collections.SparseDoubleArray;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public final class DenseMatrixBuilder extends MatrixBuilder {
@@ -29,10 +32,31 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     private final List<double[]> rows;
     private int maxNumColumns;
 
+    @Nonnull
+    private final SparseDoubleArray rowProbe;
+
     public DenseMatrixBuilder(int initSize) {
         super();
         this.rows = new ArrayList<double[]>(initSize);
-        this.maxNumColumns = -1;
+        this.maxNumColumns = 0;
+        this.rowProbe = new SparseDoubleArray(32);
+    }
+
+    @Override
+    public MatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+        if (value == 0.d) {
+            return this;
+        }
+        rowProbe.put(col, value);
+        return this;
+    }
+
+    @Override
+    public MatrixBuilder nextRow() {
+        double[] row = rowProbe.toArray();
+        rowProbe.clear();
+        nextRow(row);
+        return this;
     }
 
     @Override

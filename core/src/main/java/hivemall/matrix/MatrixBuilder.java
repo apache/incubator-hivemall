@@ -18,21 +18,67 @@
  */
 package hivemall.matrix;
 
+import hivemall.model.FeatureValue;
+
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public abstract class MatrixBuilder {
 
-    public abstract void nextRow(@Nonnull double[] row);
-
     @Nonnull
-    public MatrixBuilder nextRow() {
-        throw new UnsupportedOperationException();
+    private final FeatureValue probe;
+
+    public MatrixBuilder() {
+        this.probe = new FeatureValue();
+    }
+
+    public void nextRow(@Nonnull final double[] row) {
+        for (int col = 0; col < row.length; col++) {
+            nextColumn(col, row[col]);
+        }
+        nextRow();
+    }
+
+    public void nextRow(@Nonnull final String[] row) {
+        for (String col : row) {
+            if (col == null) {
+                continue;
+            }
+            nextColumn(col);
+        }
+        nextRow();
     }
 
     @Nonnull
-    public MatrixBuilder nextColumn(@Nonnegative int col, double value) {
-        throw new UnsupportedOperationException();
+    public abstract MatrixBuilder nextRow();
+
+    @Nonnull
+    public abstract MatrixBuilder nextColumn(@Nonnegative int col, double value);
+
+    /**
+     * @throws IllegalArgumentException
+     * @throws NumberFormatException
+     */
+    @Nonnull
+    public MatrixBuilder nextColumn(@Nonnull final String col) {
+        final int pos = col.indexOf(':');
+        if (pos == 0) {
+            throw new IllegalArgumentException("Invalid feature value representation: " + col);
+        }
+
+        final String feature;
+        final double value;
+        if (pos > 0) {
+            feature = col.substring(0, pos);
+            String s2 = col.substring(pos + 1);
+            value = Double.parseDouble(s2);
+        } else {
+            feature = col;
+            value = 1.d;
+        }
+
+        int colIndex = Integer.parseInt(feature);
+        return nextColumn(colIndex, value);
     }
 
     @Nonnull

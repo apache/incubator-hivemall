@@ -47,15 +47,7 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
         rowPointers.add(0);
         this.columnIndices = new IntArrayList(initSize);
         this.values = new DoubleArrayList(initSize);
-        this.maxNumColumns = -1;
-    }
-
-    @Override
-    public void nextRow(@Nonnull final double[] row) {
-        for (int col = 0; col < row.length; col++) {
-            nextColumn(col, row[col]);
-        }
-        nextRow();
+        this.maxNumColumns = 0;
     }
 
     @Override
@@ -87,6 +79,5 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
             columnIndices.toArray(true), values.toArray(true), maxNumColumns);
         return matrix;
     }
-
 
 }
