@@ -144,7 +144,15 @@ public final class SparseDoubleArray implements DoubleArray {
     }
 
     public void clear() {
+        clear(true);
+    }
+
+    public void clear(boolean zeroFill) {
         mSize = 0;
+        if (zeroFill) {
+            Arrays.fill(mKeys, 0);
+            Arrays.fill(mValues, 0.d);
+        }
     }
 
     public void append(int key, double value) {

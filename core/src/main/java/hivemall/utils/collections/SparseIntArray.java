@@ -141,7 +141,15 @@ public final class SparseIntArray implements IntArray {
     }
 
     public void clear() {
+        clear(true);
+    }
+
+    public void clear(boolean zeroFill) {
         mSize = 0;
+        if (zeroFill) {
+            Arrays.fill(mKeys, 0);
+            Arrays.fill(mValues, 0);
+        }
     }
 
     public void append(int key, int value) {
