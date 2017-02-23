@@ -19,8 +19,11 @@
 package hivemall.utils.collections;
 
 import hivemall.utils.lang.ArrayUtils;
+import hivemall.utils.lang.Preconditions;
 
 import java.util.Arrays;
+
+import javax.annotation.Nonnull;
 
 public final class SparseIntArray implements IntArray {
     private static final long serialVersionUID = -2814248784231540118L;
@@ -151,6 +154,28 @@ public final class SparseIntArray implements IntArray {
         mSize++;
     }
 
+    @Nonnull
+    public int[] toArray() {
+        return toArray(true);
+    }
+
+    @Override
+    public int[] toArray(boolean copy) {
+        if (mSize == 0) {
+            return new int[0];
+        }
+
+        int last = mKeys[mSize - 1];
+        final int[] array = new int[last + 1];
+        for (int i = 0; i < mSize; i++) {
+            int k = mKeys[i];
+            int v = mValues[i];
+            Preconditions.checkArgument(k >= 0, "Negative key is not allowed for toArray(): " + k);
+            array[k] = v;
+        }
+        return array;
+    }
+
     @Override
     public String toString() {
         if (size() <= 0) {
@@ -172,4 +197,6 @@ public final class SparseIntArray implements IntArray {
         buffer.append('}');
         return buffer.toString();
     }
+
+
 }

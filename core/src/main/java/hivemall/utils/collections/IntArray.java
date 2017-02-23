@@ -20,16 +20,24 @@ package hivemall.utils.collections;
 
 import java.io.Serializable;
 
+import javax.annotation.Nonnull;
+
 public interface IntArray extends Serializable {
 
-    public abstract int get(int key);
+    public int get(int key);
 
-    public abstract int get(int key, int valueIfKeyNotFound);
+    public int get(int key, int valueIfKeyNotFound);
 
-    public abstract void put(int key, int value);
+    public void put(int key, int value);
 
-    public abstract int size();
+    public int size();
 
     public int keyAt(int index);
+
+    @Nonnull
+    public int[] toArray();
+
+    @Nonnull
+    public int[] toArray(boolean copy);
 
 }

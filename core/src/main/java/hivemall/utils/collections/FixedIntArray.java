@@ -18,8 +18,13 @@
  */
 package hivemall.utils.collections;
 
+import java.util.Arrays;
+
 import javax.annotation.Nonnull;
 
+/**
+ * A fixed INT array that has keys greater than or equals to 0.
+ */
 public final class FixedIntArray implements IntArray {
     private static final long serialVersionUID = -1450212841013810240L;
 
@@ -63,6 +68,20 @@ public final class FixedIntArray implements IntArray {
     @Override
     public int keyAt(int index) {
         return index;
+    }
+
+    @Override
+    public int[] toArray() {
+        return toArray(true);
+    }
+
+    @Override
+    public int[] toArray(boolean copy) {
+        if (copy) {
+            return Arrays.copyOf(array, size);
+        } else {
+            return array;
+        }
     }
 
 }
