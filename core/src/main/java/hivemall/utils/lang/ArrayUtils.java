@@ -24,19 +24,20 @@ import java.util.List;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public final class ArrayUtils {
 
     /**
-     * The index value when an element is not found in a list or array: <code>-1</code>. This value
-     * is returned by methods in this class and can also be used in comparisons with values returned
-     * by various method from {@link java.util.List}.
+     * The index value when an element is not found in a list or array: <code>-1</code>. This value is returned by methods in this class and can also
+     * be used in comparisons with values returned by various method from {@link java.util.List}.
      */
     public static final int INDEX_NOT_FOUND = -1;
 
     private ArrayUtils() {}
 
-    public static double[] set(double[] src, final int index, final double value) {
+    @Nonnull
+    public static double[] set(@Nonnull double[] src, final int index, final double value) {
         if (index >= src.length) {
             src = Arrays.copyOf(src, src.length * 2);
         }
@@ -44,7 +45,8 @@ public final class ArrayUtils {
         return src;
     }
 
-    public static <T> T[] set(T[] src, final int index, final T value) {
+    @Nonnull
+    public static <T> T[] set(@Nonnull T[] src, final int index, final T value) {
         if (index >= src.length) {
             src = Arrays.copyOf(src, src.length * 2);
         }
@@ -52,7 +54,8 @@ public final class ArrayUtils {
         return src;
     }
 
-    public static float[] toArray(final List<Float> lst) {
+    @Nonnull
+    public static float[] toArray(@Nonnull final List<Float> lst) {
         final int ndim = lst.size();
         final float[] ary = new float[ndim];
         int i = 0;
@@ -62,7 +65,8 @@ public final class ArrayUtils {
         return ary;
     }
 
-    public static Integer[] toObject(final int[] array) {
+    @Nonnull
+    public static Integer[] toObject(@Nonnull final int[] array) {
         final Integer[] result = new Integer[array.length];
         for (int i = 0; i < array.length; i++) {
             result[i] = array[i];
@@ -70,12 +74,14 @@ public final class ArrayUtils {
         return result;
     }
 
-    public static List<Integer> toList(final int[] array) {
+    @Nonnull
+    public static List<Integer> toList(@Nonnull final int[] array) {
         Integer[] v = toObject(array);
         return Arrays.asList(v);
     }
 
-    public static Long[] toObject(final long[] array) {
+    @Nonnull
+    public static Long[] toObject(@Nonnull final long[] array) {
         final Long[] result = new Long[array.length];
         for (int i = 0; i < array.length; i++) {
             result[i] = array[i];
@@ -83,12 +89,14 @@ public final class ArrayUtils {
         return result;
     }
 
-    public static List<Long> toList(final long[] array) {
+    @Nonnull
+    public static List<Long> toList(@Nonnull final long[] array) {
         Long[] v = toObject(array);
         return Arrays.asList(v);
     }
 
-    public static Float[] toObject(final float[] array) {
+    @Nonnull
+    public static Float[] toObject(@Nonnull final float[] array) {
         final Float[] result = new Float[array.length];
         for (int i = 0; i < array.length; i++) {
             result[i] = array[i];
@@ -96,12 +104,14 @@ public final class ArrayUtils {
         return result;
     }
 
-    public static List<Float> toList(final float[] array) {
+    @Nonnull
+    public static List<Float> toList(@Nonnull final float[] array) {
         Float[] v = toObject(array);
         return Arrays.asList(v);
     }
 
-    public static Double[] toObject(final double[] array) {
+    @Nonnull
+    public static Double[] toObject(@Nonnull final double[] array) {
         final Double[] result = new Double[array.length];
         for (int i = 0; i < array.length; i++) {
             result[i] = array[i];
@@ -109,20 +119,21 @@ public final class ArrayUtils {
         return result;
     }
 
-    public static List<Double> toList(final double[] array) {
+    @Nonnull
+    public static List<Double> toList(@Nonnull final double[] array) {
         Double[] v = toObject(array);
         return Arrays.asList(v);
     }
 
-    public static <T> void shuffle(final T[] array) {
+    public static <T> void shuffle(@Nonnull final T[] array) {
         shuffle(array, array.length);
     }
 
-    public static <T> void shuffle(final T[] array, final Random rnd) {
+    public static <T> void shuffle(@Nonnull final T[] array, final Random rnd) {
         shuffle(array, array.length, rnd);
     }
 
-    public static <T> void shuffle(final T[] array, final int size) {
+    public static <T> void shuffle(@Nonnull final T[] array, final int size) {
         Random rnd = new Random();
         shuffle(array, size, rnd);
     }
@@ -159,7 +170,9 @@ public final class ArrayUtils {
         arr[j] = tmp;
     }
 
-    public static Object[] subarray(Object[] array, int startIndexInclusive, int endIndexExclusive) {
+    @Nullable
+    public static Object[] subarray(@Nullable final Object[] array, int startIndexInclusive,
+            int endIndexExclusive) {
         if (array == null) {
             return null;
         }
@@ -179,13 +192,14 @@ public final class ArrayUtils {
         return subarray;
     }
 
-    public static void fill(final float[] a, final Random rand) {
+    public static void fill(@Nonnull final float[] a, @Nonnull final Random rand) {
         for (int i = 0, len = a.length; i < len; i++) {
             a[i] = rand.nextFloat();
         }
     }
 
-    public static int indexOf(final int[] array, final int valueToFind, int startIndex, int endIndex) {
+    public static int indexOf(@Nonnull final int[] array, final int valueToFind,
+            final int startIndex, final int endIndex) {
         if (array == null) {
             return INDEX_NOT_FOUND;
         }
@@ -201,20 +215,21 @@ public final class ArrayUtils {
         return INDEX_NOT_FOUND;
     }
 
-    public static byte[] copyOf(final byte[] original, final int newLength) {
+    @Nonnull
+    public static byte[] copyOf(@Nonnull final byte[] original, final int newLength) {
         final byte[] copy = new byte[newLength];
         System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
         return copy;
     }
 
-    public static int[] copyOf(final int[] src) {
+    public static int[] copyOf(@Nonnull final int[] src) {
         int len = src.length;
         int[] dest = new int[len];
         System.arraycopy(src, 0, dest, 0, len);
         return dest;
     }
 
-    public static void copy(final int[] src, final int[] dest) {
+    public static void copy(@Nonnull final int[] src, @Nonnull final int[] dest) {
         if (src.length != dest.length) {
             throw new IllegalArgumentException("src.legnth '" + src.length + "' != dest.length '"
                     + dest.length + "'");
@@ -222,7 +237,8 @@ public final class ArrayUtils {
         System.arraycopy(src, 0, dest, 0, src.length);
     }
 
-    public static int[] append(int[] array, int currentSize, int element) {
+    @Nonnull
+    public static int[] append(@Nonnull int[] array, final int currentSize, final int element) {
         if (currentSize + 1 > array.length) {
             int[] newArray = new int[currentSize * 2];
             System.arraycopy(array, 0, newArray, 0, currentSize);
@@ -232,13 +248,42 @@ public final class ArrayUtils {
         return array;
     }
 
-    public static int[] insert(int[] array, int currentSize, int index, int element) {
+    @Nonnull
+    public static double[] append(@Nonnull double[] array, final int currentSize,
+            final double element) {
+        if (currentSize + 1 > array.length) {
+            double[] newArray = new double[currentSize * 2];
+            System.arraycopy(array, 0, newArray, 0, currentSize);
+            array = newArray;
+        }
+        array[currentSize] = element;
+        return array;
+    }
+
+    @Nonnull
+    public static int[] insert(@Nonnull final int[] array, final int currentSize, final int index,
+            final int element) {
         if (currentSize + 1 <= array.length) {
             System.arraycopy(array, index, array, index + 1, currentSize - index);
             array[index] = element;
             return array;
         }
         int[] newArray = new int[currentSize * 2];
+        System.arraycopy(array, 0, newArray, 0, index);
+        newArray[index] = element;
+        System.arraycopy(array, index, newArray, index + 1, array.length - index);
+        return newArray;
+    }
+
+    @Nonnull
+    public static double[] insert(@Nonnull final double[] array, final int currentSize,
+            final int index, final double element) {
+        if (currentSize + 1 <= array.length) {
+            System.arraycopy(array, index, array, index + 1, currentSize - index);
+            array[index] = element;
+            return array;
+        }
+        double[] newArray = new double[currentSize * 2];
         System.arraycopy(array, 0, newArray, 0, index);
         newArray[index] = element;
         System.arraycopy(array, index, newArray, index + 1, array.length - index);
