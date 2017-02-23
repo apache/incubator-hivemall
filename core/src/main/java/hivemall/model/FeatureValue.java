@@ -47,7 +47,7 @@ public final class FeatureValue {
     public <T> T getFeature() {
         return (T) feature;
     }
-    
+
     public int getFeatureAsInt() {
         Preconditions.checkNotNull(feature);
         Preconditions.checkArgument(feature instanceof Integer);
@@ -93,7 +93,6 @@ public final class FeatureValue {
     @Nullable
     public static FeatureValue parse(@Nonnull final String s, final boolean mhash)
             throws IllegalArgumentException {
-        assert (s != null);
         final int pos = s.indexOf(':');
         if (pos == 0) {
             throw new IllegalArgumentException("Invalid feature value representation: " + s);
@@ -122,7 +121,6 @@ public final class FeatureValue {
     @Nonnull
     public static FeatureValue parseFeatureAsString(@Nonnull final String s)
             throws IllegalArgumentException {
-        assert (s != null);
         final int pos = s.indexOf(':');
         if (pos == 0) {
             throw new IllegalArgumentException("Invalid feature value representation: " + s);
@@ -142,17 +140,12 @@ public final class FeatureValue {
     }
 
     public static void parseFeatureAsString(@Nonnull final Text t, @Nonnull final FeatureValue probe) {
-        assert (t != null);
-
         String s = t.toString();
         parseFeatureAsString(s, probe);
     }
 
     public static void parseFeatureAsString(@Nonnull final String s,
             @Nonnull final FeatureValue probe) throws IllegalArgumentException {
-        assert (s != null);
-        assert (probe != null);
-
         final int pos = s.indexOf(':');
         if (pos == 0) {
             throw new IllegalArgumentException("Invalid feature value representation: " + s);
