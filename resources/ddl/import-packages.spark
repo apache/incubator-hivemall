@@ -2,12 +2,8 @@
  * An initialization script for DataFrame use
  */
 
-import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.hive.HivemallOps._
-import org.apache.spark.sql.hive.HivemallUtils
-import hivemall.xgboost.XGBoostOptions
-// Needed for implicit conversions
+import org.apache.spark.sql.hive.HivemallGroupedDataset._
 import org.apache.spark.sql.hive.HivemallUtils._
+import hivemall.xgboost.XGBoostOptions
 
