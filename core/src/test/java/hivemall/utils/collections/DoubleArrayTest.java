@@ -21,55 +21,39 @@ package hivemall.utils.collections;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class IntArrayTest {
+public class DoubleArrayTest {
 
     @Test
-    public void testFixedIntArrayToArray() {
-        FixedIntArray array = new FixedIntArray(11);
-        for (int i = 0; i < 10; i++) {
-            array.put(i, 10 + i);
-        }
-        Assert.assertEquals(11, array.size());
-        Assert.assertEquals(11, array.toArray(false).length);
-
-        int[] copied = array.toArray(true);
-        Assert.assertEquals(11, copied.length);
-        for (int i = 0; i < 10; i++) {
-            Assert.assertEquals(10 + i, copied[i]);
-        }
-    }
-
-    @Test
-    public void testSparseIntArrayToArray() {
-        SparseIntArray array = new SparseIntArray(3);
+    public void testSparseDoubleArrayToArray() {
+        SparseDoubleArray array = new SparseDoubleArray(3);
         for (int i = 0; i < 10; i++) {
             array.put(i, 10 + i);
         }
         Assert.assertEquals(10, array.size());
         Assert.assertEquals(10, array.toArray(false).length);
 
-        int[] copied = array.toArray(true);
+        double[] copied = array.toArray(true);
         Assert.assertEquals(10, copied.length);
         for (int i = 0; i < 10; i++) {
-            Assert.assertEquals(10 + i, copied[i]);
+            Assert.assertEquals(10 + i, copied[i], 0.d);
         }
     }
 
     @Test
-    public void testSparseIntArrayClear() {
-        SparseIntArray array = new SparseIntArray(3);
+    public void testSparseDoubleArrayClear() {
+        SparseDoubleArray array = new SparseDoubleArray(3);
         for (int i = 0; i < 10; i++) {
             array.put(i, 10 + i);
         }
         array.clear();
         Assert.assertEquals(0, array.size());
-        Assert.assertEquals(0, array.get(0));
+        Assert.assertEquals(0, array.get(0), 0.d);
         for (int i = 0; i < 5; i++) {
             array.put(i, 100 + i);
         }
         Assert.assertEquals(5, array.size());
         for (int i = 0; i < 5; i++) {
-            Assert.assertEquals(100 + i, array.get(i));
+            Assert.assertEquals(100 + i, array.get(i), 0.d);
         }
     }
 
