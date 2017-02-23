@@ -22,22 +22,22 @@ import java.io.Serializable;
 
 import javax.annotation.Nonnull;
 
-public interface IntArray extends Serializable {
+public interface DoubleArray extends Serializable {
 
-    public int get(int key);
+    public double get(int key);
 
-    public int get(int key, int valueIfKeyNotFound);
+    public double get(int key, double valueIfKeyNotFound);
 
-    public void put(int key, int value);
+    public void put(int key, double value);
 
     public int size();
 
     public int keyAt(int index);
 
     @Nonnull
-    public int[] toArray();
+    public double[] toArray();
 
     @Nonnull
-    public int[] toArray(boolean copy);
+    public double[] toArray(boolean copy);
 
 }

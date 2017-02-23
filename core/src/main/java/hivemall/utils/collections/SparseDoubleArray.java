@@ -25,44 +25,47 @@ import java.util.Arrays;
 
 import javax.annotation.Nonnull;
 
-public final class SparseIntArray implements IntArray {
+public final class SparseDoubleArray implements DoubleArray {
     private static final long serialVersionUID = -2814248784231540118L;
 
+    @Nonnull
     private int[] mKeys;
-    private int[] mValues;
+    @Nonnull
+    private double[] mValues;
     private int mSize;
 
-    public SparseIntArray() {
+    public SparseDoubleArray() {
         this(10);
     }
 
-    public SparseIntArray(int initialCapacity) {
+    public SparseDoubleArray(int initialCapacity) {
         mKeys = new int[initialCapacity];
-        mValues = new int[initialCapacity];
+        mValues = new double[initialCapacity];
         mSize = 0;
     }
 
-    private SparseIntArray(int[] mKeys, int[] mValues, int mSize) {
+    private SparseDoubleArray(@Nonnull int[] mKeys, @Nonnull double[] mValues, int mSize) {
         this.mKeys = mKeys;
         this.mValues = mValues;
         this.mSize = mSize;
     }
 
-    public IntArray deepCopy() {
+    @Nonnull
+    public SparseDoubleArray deepCopy() {
         int[] newKeys = new int[mSize];
-        int[] newValues = new int[mSize];
+        double[] newValues = new double[mSize];
         System.arraycopy(mKeys, 0, newKeys, 0, mSize);
         System.arraycopy(mValues, 0, newValues, 0, mSize);
-        return new SparseIntArray(newKeys, newValues, mSize);
+        return new SparseDoubleArray(newKeys, newValues, mSize);
     }
 
     @Override
-    public int get(int key) {
+    public double get(int key) {
         return get(key, 0);
     }
 
     @Override
-    public int get(int key, int valueIfKeyNotFound) {
+    public double get(int key, double valueIfKeyNotFound) {
         int i = Arrays.binarySearch(mKeys, 0, mSize, key);
         if (i < 0) {
             return valueIfKeyNotFound;
@@ -85,7 +88,7 @@ public final class SparseIntArray implements IntArray {
     }
 
     @Override
-    public void put(int key, int value) {
+    public void put(int key, double value) {
         int i = Arrays.binarySearch(mKeys, 0, mSize, key);
         if (i >= 0) {
             mValues[i] = value;
@@ -97,7 +100,7 @@ public final class SparseIntArray implements IntArray {
         }
     }
 
-    public void increment(int key, int value) {
+    public void increment(int key, double value) {
         int i = Arrays.binarySearch(mKeys, 0, mSize, key);
         if (i >= 0) {
             mValues[i] += value;
@@ -119,11 +122,11 @@ public final class SparseIntArray implements IntArray {
         return mKeys[index];
     }
 
-    public int valueAt(int index) {
+    public double valueAt(int index) {
         return mValues[index];
     }
 
-    public void setValueAt(int index, int value) {
+    public void setValueAt(int index, double value) {
         mValues[index] = value;
     }
 
@@ -131,7 +134,7 @@ public final class SparseIntArray implements IntArray {
         return Arrays.binarySearch(mKeys, 0, mSize, key);
     }
 
-    public int indexOfValue(int value) {
+    public int indexOfValue(double value) {
         for (int i = 0; i < mSize; i++) {
             if (mValues[i] == value) {
                 return i;
@@ -148,11 +151,11 @@ public final class SparseIntArray implements IntArray {
         mSize = 0;
         if (zeroFill) {
             Arrays.fill(mKeys, 0);
-            Arrays.fill(mValues, 0);
+            Arrays.fill(mValues, 0.d);
         }
     }
 
-    public void append(int key, int value) {
+    public void append(int key, double value) {
         if (mSize != 0 && key <= mKeys[mSize - 1]) {
             put(key, value);
             return;
@@ -162,22 +165,22 @@ public final class SparseIntArray implements IntArray {
         mSize++;
     }
 
-    @Nonnull
-    public int[] toArray() {
+    @Override
+    public double[] toArray() {
         return toArray(true);
     }
 
     @Override
-    public int[] toArray(boolean copy) {
+    public double[] toArray(boolean copy) {
         if (mSize == 0) {
-            return new int[0];
+            return new double[0];
         }
 
         int last = mKeys[mSize - 1];
-        final int[] array = new int[last + 1];
+        final double[] array = new double[last + 1];
         for (int i = 0; i < mSize; i++) {
             int k = mKeys[i];
-            int v = mValues[i];
+            double v = mValues[i];
             Preconditions.checkArgument(k >= 0, "Negative key is not allowed for toArray(): " + k);
             array[k] = v;
         }
@@ -199,7 +202,7 @@ public final class SparseIntArray implements IntArray {
             int key = keyAt(i);
             buffer.append(key);
             buffer.append('=');
-            int value = valueAt(i);
+            double value = valueAt(i);
             buffer.append(value);
         }
         buffer.append('}');
