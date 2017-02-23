@@ -70,6 +70,10 @@ public abstract class MatrixBuilder {
             value = 1.d;
         }
 
+        if (feature.indexOf(':') != -1) {
+            throw new IllegalArgumentException("Invaliad feature format `<index>:<value>`: " + col);
+        }
+
         int colIndex = Integer.parseInt(feature);
         return nextColumn(colIndex, value);
     }
