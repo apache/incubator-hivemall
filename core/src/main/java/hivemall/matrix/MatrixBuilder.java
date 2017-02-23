@@ -18,19 +18,12 @@
  */
 package hivemall.matrix;
 
-import hivemall.model.FeatureValue;
-
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public abstract class MatrixBuilder {
 
-    @Nonnull
-    private final FeatureValue probe;
-
-    public MatrixBuilder() {
-        this.probe = new FeatureValue();
-    }
+    public MatrixBuilder() {}
 
     public void nextRow(@Nonnull final double[] row) {
         for (int col = 0; col < row.length; col++) {
