@@ -20,11 +20,13 @@ package hivemall.utils.collections;
 
 import hivemall.utils.lang.ArrayUtils;
 
+import java.io.Closeable;
 import java.io.Serializable;
 
-public final class IntArrayList implements Serializable {
-    private static final long serialVersionUID = -2147675120406747488L;
+import javax.annotation.Nonnull;
 
+public final class IntArrayList implements Serializable, Closeable {
+    private static final long serialVersionUID = -2147675120406747488L;
     public static final int DEFAULT_CAPACITY = 12;
 
     /** array entity */
@@ -141,9 +143,18 @@ public final class IntArrayList implements Serializable {
         used = 0;
     }
 
+    @Nonnull
     public int[] toArray() {
+        return toArray(false);
+    }
+
+    @Nonnull
+    public int[] toArray(boolean close) {
         final int[] newArray = new int[used];
         System.arraycopy(data, 0, newArray, 0, used);
+        if (close) {
+            close();
+        }
         return newArray;
     }
 
@@ -163,5 +174,10 @@ public final class IntArrayList implements Serializable {
         }
         buf.append(']');
         return buf.toString();
+    }
+
+    @Override
+    public void close() {
+        this.data = null;
     }
 }

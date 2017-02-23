@@ -18,11 +18,13 @@
  */
 package hivemall.utils.collections;
 
+import java.io.Closeable;
 import java.io.Serializable;
 
-public final class DoubleArrayList implements Serializable {
-    private static final long serialVersionUID = -8155789759545975413L;
+import javax.annotation.Nonnull;
 
+public final class DoubleArrayList implements Serializable, Closeable {
+    private static final long serialVersionUID = -8155789759545975413L;
     public static final int DEFAULT_CAPACITY = 12;
 
     /** array entity */
@@ -126,9 +128,18 @@ public final class DoubleArrayList implements Serializable {
         used = 0;
     }
 
+    @Nonnull
     public double[] toArray() {
+        return toArray(false);
+    }
+
+    @Nonnull
+    public double[] toArray(boolean close) {
         final double[] newArray = new double[used];
         System.arraycopy(data, 0, newArray, 0, used);
+        if (close) {
+            close();
+        }
         return newArray;
     }
 
@@ -148,5 +159,10 @@ public final class DoubleArrayList implements Serializable {
         }
         buf.append(']');
         return buf.toString();
+    }
+
+    @Override
+    public void close() {
+        this.data = null;
     }
 }
