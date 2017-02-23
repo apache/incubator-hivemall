@@ -16,14 +16,14 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
+
 # Summary
 
 ## TABLE OF CONTENTS
 
 * [Getting Started](getting_started/README.md)
     * [Installation](getting_started/installation.md)
-    * [Install as permanent functions](getting_started/permanent-functions.md) 
+    * [Install as permanent functions](getting_started/permanent-functions.md)
     * [Input Format](getting_started/input-format.md)
 
 * [Tips for Effective Hivemall](tips/README.md)
@@ -86,7 +86,7 @@
 * [KDD2010a Tutorial](binaryclass/kdd2010a.md)
     * [Data preparation](binaryclass/kdd2010a_dataset.md)
     * [PA, CW, AROW, SCW](binaryclass/kdd2010a_scw.md)
-    
+
 * [KDD2010b Tutorial](binaryclass/kdd2010b.md)
     * [Data preparation](binaryclass/kdd2010b_dataset.md)
     * [AROW](binaryclass/kdd2010b_arow.md)
@@ -96,7 +96,7 @@
     * [PA1, AROW, SCW](binaryclass/webspam_scw.md)
 
 * [Kaggle Titanic Tutorial](binaryclass/titanic_rf.md)
-    
+
 ## Part VI - Multiclass classification
 
 * [News20 Multiclass Tutorial](multiclass/news20.md)
@@ -106,12 +106,12 @@
     * [CW, AROW, SCW](multiclass/news20_scw.md)
     * [Ensemble learning](multiclass/news20_ensemble.md)
     * [one-vs-the-rest classifier](multiclass/news20_one-vs-the-rest.md)
-    
+
 * [Iris Tutorial](multiclass/iris.md)
     * [Data preparation](multiclass/iris_dataset.md)
     * [SCW](multiclass/iris_scw.md)
     * [RandomForest](multiclass/iris_randomforest.md)
-    
+
 ## Part VII - Regression
 
 * [E2006-tfidf regression Tutorial](regression/e2006.md)
@@ -139,7 +139,7 @@
     * [Data preparation](recommend/movielens_dataset.md)
     * [Matrix Factorization](recommend/movielens_mf.md)
     * [Factorization Machine](recommend/movielens_fm.md)
-    * [10-fold Cross Validation (Matrix Factorization)](recommend/movielens_cv.md)    
+    * [10-fold Cross Validation (Matrix Factorization)](recommend/movielens_cv.md)
 
 ## Part IX - Anomaly Detection
 
@@ -148,6 +148,12 @@
 * [ChangeFinder: Detecting Outlier and Change-Point Simultaneously](anomaly/changefinder.md)
 
 ## Part X - Hivemall on Spark
+
+* [Binary Classification]
+    * [a9a Tutorial for DataFrame](spark/binaryclass/a9a_df.md)
+
+* [Regression]
+    * [E2006-tfidf regression Tutorial for DataFrame](spark/regression/e2006_df.md)
 
 * [Generic features](spark/misc/misc.md)
     * [Top-k Join processing](spark/misc/topk_join.md)
