@@ -64,15 +64,14 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
         }
 
         ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
-        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())
-                && !HiveUtils.isStructTypeInfo(arg1type.getListElementTypeInfo())) {
+        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())) {
             throw new UDFArgumentTypeException(0,
                 "The first argument `array rankItems` is invalid form: " + typeInfo[0]);
         }
         ListTypeInfo arg2type = HiveUtils.asListTypeInfo(typeInfo[1]);
         if (!HiveUtils.isPrimitiveTypeInfo(arg2type.getListElementTypeInfo())) {
             throw new UDFArgumentTypeException(1,
-                "The first argument `array rankItems` is invalid form: " + typeInfo[1]);
+                "The second argument `array correctItems` is invalid form: " + typeInfo[1]);
         }
 
         return new Evaluator();
