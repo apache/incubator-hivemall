@@ -28,9 +28,10 @@ import javax.annotation.Nonnull;
 /**
  * Read-only CSR Matrix.
  * 
- * @see http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
+ * @link http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
+ * @link http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */
-public final class ReadOnlyCSRMatrix extends Matrix {
+public final class ReadOnlyCSRMatrix extends AbstractMatrix {
 
     @Nonnull
     private final int[] rowPointers;
@@ -64,6 +65,11 @@ public final class ReadOnlyCSRMatrix extends Matrix {
     }
 
     @Override
+    public boolean shufflable() {
+        return false;
+    }
+
+    @Override
     public int numRows() {
         return numRows;
     }
@@ -79,6 +85,29 @@ public final class ReadOnlyCSRMatrix extends Matrix {
 
         int columns = rowPointers[row + 1] - rowPointers[row];
         return columns;
+    }
+
+    @Override
+    public double[] getRow(@Nonnegative final int index) {
+        final double[] row = new double[numColumns];
+        eachNonZeroInRow(index, new VectorProcedure() {
+            public void apply(int col, double value) {
+                row[col] = value;
+            }
+        });
+        return row;
+    }
+
+    @Override
+    public double[] getRow(@Nonnegative final int index, @Nonnull final double[] dst) {
+        Arrays.fill(dst, 0.d);
+        eachNonZeroInRow(index, new VectorProcedure() {
+            public void apply(int col, double value) {
+                checkColIndex(col, numColumns);
+                dst[col] = value;
+            }
+        });
+        return dst;
     }
 
     @Override
@@ -130,6 +159,44 @@ public final class ReadOnlyCSRMatrix extends Matrix {
                     + values.length);
         }
         return index;
+    }
+
+    @Override
+    public void swap(int row1, int row2) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void eachInRow(@Nonnegative int row, @Nonnull final VectorProcedure procedure) {
+        checkRowIndex(row, numRows);
+
+        final int endEx = rowPointers[row + 1];
+        for (int col = 0, j = rowPointers[row]; col < numColumns; col++) {
+            if (j < endEx && col == columnIndices[j]) {
+                double v = values[j++];
+                procedure.apply(col, v);
+            } else {
+                procedure.apply(col, 0.d);
+            }
+        }
+    }
+
+    @Override
+    public void eachNonZeroInRow(@Nonnegative int row, @Nonnull final VectorProcedure procedure) {
+        checkRowIndex(row, numRows);
+
+        final int startIn = rowPointers[row];
+        final int endEx = rowPointers[row + 1];
+        for (int i = startIn; i < endEx; i++) {
+            int col = columnIndices[i];
+            double v = values[i];
+            procedure.apply(col, v);
+        }
+    }
+
+    @Override
+    public MatrixBuilder builder() {
+        return new CSRMatrixBuilder(1024, true);
     }
 
 }

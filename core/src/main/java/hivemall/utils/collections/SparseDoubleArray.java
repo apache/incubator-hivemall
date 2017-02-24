@@ -143,6 +143,7 @@ public final class SparseDoubleArray implements DoubleArray {
         return -1;
     }
 
+    @Override
     public void clear() {
         clear(true);
     }

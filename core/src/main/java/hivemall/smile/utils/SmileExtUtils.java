@@ -18,6 +18,8 @@
  */
 package hivemall.smile.utils;
 
+import hivemall.matrix.Matrix;
+import hivemall.matrix.MatrixUtils;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
@@ -65,9 +67,9 @@ public final class SmileExtUtils {
 
     @Nonnull
     public static Attribute[] attributeTypes(@Nullable Attribute[] attributes,
-            @Nonnull final double[][] x) {
+            @Nonnull final Matrix x) {
         if (attributes == null) {
-            int p = x[0].length;
+            int p = x.numColumns();
             attributes = new Attribute[p];
             for (int i = 0; i < p; i++) {
                 attributes[i] = new NumericAttribute(i);
@@ -81,8 +83,8 @@ public final class SmileExtUtils {
                         continue;
                     }
                     int max_x = 0;
-                    for (int i = 0; i < x.length; i++) {
-                        int x_ij = (int) x[i][j];
+                    for (int i = 0, rows = x.numRows(); i < rows; i++) {
+                        int x_ij = (int) x.get(i, j);
                         if (x_ij > max_x) {
                             max_x = x_ij;
                         }
@@ -117,9 +119,9 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static int[][] sort(@Nonnull final Attribute[] attributes, @Nonnull final double[][] x) {
-        final int n = x.length;
-        final int p = x[0].length;
+    public static int[][] sort(@Nonnull final Attribute[] attributes, @Nonnull final Matrix x) {
+        final int n = x.numRows();
+        final int p = x.numColumns();
 
         final double[] a = new double[n];
         final int[][] index = new int[p][];
@@ -127,7 +129,7 @@ public final class SmileExtUtils {
         for (int j = 0; j < p; j++) {
             if (attributes[j].type == AttributeType.NUMERIC) {
                 for (int i = 0; i < n; i++) {
-                    a[i] = x[i][j];
+                    a[i] = x.get(i, j);
                 }
                 index[j] = QuickSort.sort(a);
             }
@@ -169,13 +171,13 @@ public final class SmileExtUtils {
         }
     }
 
-    public static int computeNumInputVars(final float numVars, final double[][] x) {
+    public static int computeNumInputVars(final float numVars, @Nonnull final Matrix x) {
         final int numInputVars;
         if (numVars <= 0.f) {
-            int dims = x[0].length;
+            int dims = x.numColumns();
             numInputVars = (int) Math.ceil(Math.sqrt(dims));
         } else if (numVars > 0.f && numVars <= 1.f) {
-            numInputVars = (int) (numVars * x[0].length);
+            numInputVars = (int) (numVars * x.numColumns());
         } else {
             numInputVars = (int) numVars;
         }
@@ -193,35 +195,62 @@ public final class SmileExtUtils {
         }
     }
 
-    public static void shuffle(@Nonnull final double[][] x, final int[] y, @Nonnull long seed) {
-        if (x.length != y.length) {
-            throw new IllegalArgumentException("x.length (" + x.length + ") != y.length ("
+    public static void shuffle(@Nonnull final Matrix x, @Nonnull final int[] y, long seed) {
+        final int numRows = x.numRows();
+        if (numRows != y.length) {
+            throw new IllegalArgumentException("x.length (" + numRows + ") != y.length ("
                     + y.length + ')');
         }
         if (seed == -1L) {
             seed = generateSeed();
         }
+
         final smile.math.Random rnd = new smile.math.Random(seed);
-        for (int i = x.length; i > 1; i--) {
-            int j = rnd.nextInt(i);
-            swap(x, i - 1, j);
-            swap(y, i - 1, j);
+        if (x.shufflable()) {
+            for (int i = numRows; i > 1; i--) {
+                int j = rnd.nextInt(i);
+                x.swap(i - 1, j);
+                swap(y, i - 1, j);
+            }
+        } else {
+            final int[] swapIndicies = new int[numRows];
+            shuffle(swapIndicies, rnd);
+
+            MatrixUtils.shuffle(x, swapIndicies);
+            for (int i = 0; i < numRows; i++) {
+                int j = swapIndicies[i];
+                swap(y, i, j);
+            }
         }
     }
 
-    public static void shuffle(@Nonnull final double[][] x, final double[] y, @Nonnull long seed) {
-        if (x.length != y.length) {
-            throw new IllegalArgumentException("x.length (" + x.length + ") != y.length ("
+    public static void shuffle(@Nonnull final Matrix x, @Nonnull final double[] y,
+            @Nonnull long seed) {
+        final int numRows = x.numRows();
+        if (numRows != y.length) {
+            throw new IllegalArgumentException("x.length (" + numRows + ") != y.length ("
                     + y.length + ')');
         }
         if (seed == -1L) {
             seed = generateSeed();
         }
+
         final smile.math.Random rnd = new smile.math.Random(seed);
-        for (int i = x.length; i > 1; i--) {
-            int j = rnd.nextInt(i);
-            swap(x, i - 1, j);
-            swap(y, i - 1, j);
+        if (x.shufflable()) {
+            for (int i = numRows; i > 1; i--) {
+                int j = rnd.nextInt(i);
+                x.swap(i - 1, j);
+                swap(y, i - 1, j);
+            }
+        } else {
+            final int[] swapIndicies = new int[numRows];
+            shuffle(swapIndicies, rnd);
+
+            MatrixUtils.shuffle(x, swapIndicies);
+            for (int i = 0; i < numRows; i++) {
+                int j = swapIndicies[i];
+                swap(y, i, j);
+            }
         }
     }
 
@@ -239,15 +268,6 @@ public final class SmileExtUtils {
      */
     private static void swap(final double[] x, final int i, final int j) {
         double s = x[i];
-        x[i] = x[j];
-        x[j] = s;
-    }
-
-    /**
-     * Swap two elements of an array.
-     */
-    private static void swap(final double[][] x, final int i, final int j) {
-        double[] s = x[i];
         x[i] = x[j];
         x[j] = s;
     }

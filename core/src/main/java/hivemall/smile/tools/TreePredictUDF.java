@@ -25,6 +25,7 @@ import hivemall.smile.vm.StackMachine;
 import hivemall.smile.vm.VMRuntimeException;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.codec.DeflateCodec;
+import hivemall.utils.collections.SparseDoubleArray;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
 
@@ -61,7 +62,7 @@ import org.apache.hadoop.mapred.JobConf;
 
 @Description(
         name = "tree_predict",
-        value = "_FUNC_(string modelId, int modelType, string script, array<double> features [, const boolean classification])"
+        value = "_FUNC_(string modelId, int modelType, string script, array<double|string> features [, const boolean classification])"
                 + " - Returns a prediction result of a random forest")
 @UDFType(deterministic = true, stateful = false)
 public final class TreePredictUDF extends GenericUDF {
@@ -71,6 +72,7 @@ public final class TreePredictUDF extends GenericUDF {
     private StringObjectInspector stringOI;
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureElemOI;
+    private boolean denseInput;
 
     @Nullable
     private transient Evaluator evaluator;
@@ -100,7 +102,16 @@ public final class TreePredictUDF extends GenericUDF {
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[3]);
         this.featureListOI = listOI;
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
-        this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseInput = true;
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asStringOI(elemOI);
+            this.denseInput = false;
+        } else {
+            throw new UDFArgumentException(
+                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+        }
 
         boolean classification = false;
         if (argOIs.length == 5) {
@@ -138,7 +149,7 @@ public final class TreePredictUDF extends GenericUDF {
         if (arg3 == null) {
             throw new HiveException("array<double> features was null");
         }
-        double[] features = HiveUtils.asDoubleArray(arg3, featureListOI, featureElemOI);
+        double[] features = parseFeatures(arg3);
 
         if (evaluator == null) {
             this.evaluator = getEvaluator(modelType, support_javascript_eval);
@@ -147,6 +158,51 @@ public final class TreePredictUDF extends GenericUDF {
         Writable result = evaluator.evaluate(modelId, modelType.isCompressed(), script, features,
             classification);
         return result;
+    }
+
+    @Nonnull
+    private double[] parseFeatures(@Nonnull final Object argObj) throws UDFArgumentException {
+        if (denseInput) {
+            return HiveUtils.asDoubleArray(argObj, featureListOI, featureElemOI);
+        } else {
+            final SparseDoubleArray vector = new SparseDoubleArray();
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                String col = o.toString();
+                                
+                final int pos = col.indexOf(':');
+                if (pos == 0) {
+                    throw new UDFArgumentException("Invalid feature value representation: " + col);
+                }
+
+                final String feature;
+                final double value;
+                if (pos > 0) {
+                    feature = col.substring(0, pos);
+                    String s2 = col.substring(pos + 1);
+                    value = Double.parseDouble(s2);
+                } else {
+                    feature = col;
+                    value = 1.d;
+                }
+
+                if (feature.indexOf(':') != -1) {
+                    throw new UDFArgumentException("Invaliad feature format `<index>:<value>`: " + col);
+                }
+
+                int colIndex = Integer.parseInt(feature);
+                if (colIndex < 0) {
+                    throw new UDFArgumentException("Col index MUST be greather than or equals to 0: "
+                            + colIndex);
+                }                
+                vector.put(colIndex, value);
+            }
+            return vector.toArray();
+        }     
     }
 
     @Nonnull

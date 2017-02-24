@@ -19,6 +19,10 @@
 package hivemall.smile.regression;
 
 import hivemall.UDTFWithOptions;
+import hivemall.matrix.CSRMatrixBuilder;
+import hivemall.matrix.DenseMatrixBuilder;
+import hivemall.matrix.Matrix;
+import hivemall.matrix.MatrixBuilder;
 import hivemall.smile.ModelType;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
@@ -69,7 +73,7 @@ import org.apache.hadoop.mapred.Reporter;
 
 @Description(
         name = "train_randomforest_regression",
-        value = "_FUNC_(double[] features, double target [, string options]) - "
+        value = "_FUNC_(array<double|string> features, double target [, string options]) - "
                 + "Returns a relation consists of "
                 + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests>")
 public final class RandomForestRegressionUDTF extends UDTFWithOptions {
@@ -79,7 +83,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector targetOI;
 
-    private List<double[]> featuresList;
+    private boolean denseInput;
+    private MatrixBuilder matrixBuilder;
     private DoubleArrayList targets;
     /**
      * The number of trees for each task
@@ -189,19 +194,29 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         if (argOIs.length != 2 && argOIs.length != 3) {
             throw new UDFArgumentException(
                 getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: double[] features, double target [, const string options]: "
+                        + " takes 2 or 3 arguments: array<double|string> features, double target [, const string options]: "
                         + argOIs.length);
         }
 
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureListOI = listOI;
-        this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseInput = true;
+            this.matrixBuilder = new DenseMatrixBuilder(8192, true);
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asStringOI(elemOI);
+            this.denseInput = false;
+            this.matrixBuilder = new CSRMatrixBuilder(8192, true);
+        } else {
+            throw new UDFArgumentException(
+                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+        }
         this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
 
         processOptions(argOIs);
 
-        this.featuresList = new ArrayList<double[]>(1024);
         this.targets = new DoubleArrayList(1024);
 
         ArrayList<String> fieldNames = new ArrayList<String>(5);
@@ -228,11 +243,34 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         if (args[0] == null) {
             throw new HiveException("array<double> features was null");
         }
-        double[] features = HiveUtils.asDoubleArray(args[0], featureListOI, featureElemOI);
+        parseFeatures(args[0], matrixBuilder);
         double target = PrimitiveObjectInspectorUtils.getDouble(args[1], targetOI);
-
-        featuresList.add(features);
         targets.add(target);
+    }
+
+    private void parseFeatures(@Nonnull final Object argObj, @Nonnull final MatrixBuilder builder) {
+        if (denseInput) {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                double v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
+                builder.nextColumn(i, v);
+            }
+        } else {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                String fv = o.toString();
+                builder.nextColumn(fv);
+            }
+        }
+        builder.nextRow();
     }
 
     @Override
@@ -250,10 +288,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         reportProgress(_progressReporter);
 
-        int numExamples = featuresList.size();
-        if (numExamples > 0) {
-            double[][] x = featuresList.toArray(new double[numExamples][]);
-            this.featuresList = null;
+        if (!targets.isEmpty()) {
+            Matrix x = matrixBuilder.buildMatrix();
+            this.matrixBuilder = null;
             double[] y = targets.toArray();
             this.targets = null;
 
@@ -285,10 +322,11 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
      * @param _numVars The number of variables to pick up in each node.
      * @param _seed The seed number for Random Forest
      */
-    private void train(@Nonnull final double[][] x, @Nonnull final double[] y) throws HiveException {
-        if (x.length != y.length) {
+    private void train(@Nonnull final Matrix x, @Nonnull final double[] y) throws HiveException {
+        final int numExamples = x.numRows();
+        if (numExamples != y.length) {
             throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
-                x.length, y.length));
+                numExamples, y.length));
         }
         checkOptions();
 
@@ -305,7 +343,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                     + ", seed: " + _seed);
         }
 
-        int numExamples = x.length;
         double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
         int[] oob = new int[numExamples];
         int[][] order = SmileExtUtils.sort(attributes, x);
@@ -373,14 +410,13 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         /**
          * Training instances.
          */
-        private final double[][] _x;
+        private final Matrix _x;
         /**
          * Training sample labels.
          */
         private final double[] _y;
         /**
-         * The index of training values in ascending order. Note that only numeric attributes will
-         * be sorted.
+         * The index of training values in ascending order. Note that only numeric attributes will be sorted.
          */
         private final int[][] _order;
         /**
@@ -401,9 +437,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final long _seed;
         private final AtomicInteger _remainingTasks;
 
-        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes,
-                double[][] x, double[] y, int numVars, int[][] order, double[] prediction,
-                int[] oob, long seed, AtomicInteger remainingTasks) {
+        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes, Matrix x,
+                double[] y, int numVars, int[][] order, double[] prediction, int[] oob, long seed,
+                AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;
@@ -423,7 +459,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                 _seed).nextLong();
             final smile.math.Random rnd1 = new smile.math.Random(s);
             final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
-            final int N = _x.length;
+            final int N = _x.numRows();
 
             // Training samples draw with replacement.
             final int[] bags = new int[N];
@@ -441,9 +477,10 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             incrCounter(_udtf._treeConstuctionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             // out-of-bag prediction
+            final double[] xProbe = _x.row();
             for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
-                double pred = tree.predict(_x[i]);
-                synchronized (_x[i]) {
+                double pred = tree.predict(_x.getRow(i, xProbe));
+                synchronized (_prediction) {
                     _prediction[i] += pred;
                     _oob[i]++;
                 }

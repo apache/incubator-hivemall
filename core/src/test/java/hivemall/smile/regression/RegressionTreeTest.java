@@ -18,6 +18,7 @@
  */
 package hivemall.smile.regression;
 
+import hivemall.matrix.ReadOnlyDenseMatrix2d;
 import hivemall.smile.data.Attribute;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -65,7 +66,8 @@ public class RegressionTreeTest {
             double[] trainy = Math.slice(y, loocv.train[i]);
             int maxLeafs = 10;
             smile.math.Random rand = new smile.math.Random(i);
-            RegressionTree tree = new RegressionTree(attrs, trainx, trainy, maxLeafs, rand);
+            RegressionTree tree = new RegressionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, maxLeafs, rand);
 
             double r = y[loocv.test[i]] - tree.predict(longley[loocv.test[i]]);
             rss += r * r;
@@ -108,7 +110,8 @@ public class RegressionTreeTest {
             double[][] trainx = Math.slice(longley, loocv.train[i]);
             double[] trainy = Math.slice(y, loocv.train[i]);
             int maxLeafs = Integer.MAX_VALUE;
-            RegressionTree tree = new RegressionTree(attrs, trainx, trainy, maxLeafs);
+            RegressionTree tree = new RegressionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, maxLeafs);
 
             byte[] b = tree.predictSerCodegen(true);
             RegressionTree.Node node = RegressionTree.deserializeNode(b, b.length, true);

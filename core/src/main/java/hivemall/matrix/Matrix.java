@@ -19,74 +19,66 @@
 package hivemall.matrix;
 
 import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
-public abstract class Matrix {
+public interface Matrix {
 
-    private double defaultValue;
+    public boolean readOnly();
 
-    public Matrix() {
-        this.defaultValue = 0.d;
-    }
+    public boolean shufflable();
 
-    public abstract boolean readOnly();
-
-    public void setDefaultValue(double value) {
-        this.defaultValue = value;
-    }
+    public void setDefaultValue(double value);
 
     @Nonnegative
-    public abstract int numRows();
+    public int numRows();
 
     @Nonnegative
-    public abstract int numColumns();
+    public int numColumns();
 
     @Nonnegative
-    public abstract int numColumns(@Nonnegative int row);
+    public int numColumns(@Nonnegative int row);
+
+    @Nonnull
+    public double[] row();
+
+    @Nonnull
+    public double[] getRow(@Nonnegative int index);
+
+    /**
+     * @return returns dst
+     */
+    @Nonnull
+    public double[] getRow(@Nonnegative int index, @Nonnull double[] dst);
 
     /**
      * @throws IndexOutOfBoundsException
      */
-    public final double get(@Nonnegative final int row, @Nonnegative final int col) {
-        return get(row, col, defaultValue);
-    }
+    public double get(@Nonnegative int row, @Nonnegative int col);
 
     /**
      * @throws IndexOutOfBoundsException
      */
-    public abstract double get(@Nonnegative int row, @Nonnegative int col, double defaultValue);
+    public double get(@Nonnegative int row, @Nonnegative int col, double defaultValue);
 
     /**
      * @throws IndexOutOfBoundsException
      * @throws UnsupportedOperationException
      */
-    public abstract void set(@Nonnegative int row, @Nonnegative int col, double value);
+    public void set(@Nonnegative int row, @Nonnegative int col, double value);
 
     /**
      * @throws IndexOutOfBoundsException
      * @throws UnsupportedOperationException
      */
-    public abstract double getAndSet(@Nonnegative int row, @Nonnegative final int col, double value);
+    public double getAndSet(@Nonnegative int row, @Nonnegative int col, double value);
 
-    protected static final void checkRowIndex(final int row, final int numRows) {
-        if (row < 0 || row >= numRows) {
-            throw new IndexOutOfBoundsException("Row index " + row + " out of bounds " + numRows);
-        }
-    }
+    public void swap(@Nonnegative int row1, @Nonnegative int row2);
 
-    protected static final void checkColIndex(final int col, final int numColumns) {
-        if (col < 0 || col >= numColumns) {
-            throw new IndexOutOfBoundsException("Col index " + col + " out of bounds " + numColumns);
-        }
-    }
+    public void eachInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
-    protected static final void checkIndex(final int row, final int col, final int numRows,
-            final int numColumns) {
-        if (row < 0 || row >= numRows) {
-            throw new IndexOutOfBoundsException("Row index " + row + " out of bounds " + numRows);
-        }
-        if (col < 0 || col >= numColumns) {
-            throw new IndexOutOfBoundsException("Col index " + col + " out of bounds " + numColumns);
-        }
-    }
+    public void eachNonZeroInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
+
+    @Nonnull
+    public MatrixBuilder builder();
 
 }

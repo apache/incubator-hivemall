@@ -16,30 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.utils.collections;
+package hivemall.matrix;
 
-import java.io.Serializable;
+import javax.annotation.Nonnegative;
 
-import javax.annotation.Nonnull;
+public interface VectorProcedure {
 
-public interface DoubleArray extends Serializable {
-
-    public double get(int key);
-
-    public double get(int key, double valueIfKeyNotFound);
-
-    public void put(int key, double value);
-
-    public int size();
-
-    public int keyAt(int index);
-
-    @Nonnull
-    public double[] toArray();
-
-    @Nonnull
-    public double[] toArray(boolean copy);
-    
-    public void clear();
+    void apply(@Nonnegative int i, double value);
 
 }

@@ -19,6 +19,7 @@
 package hivemall.smile.tools;
 
 import static org.junit.Assert.assertEquals;
+import hivemall.matrix.ReadOnlyDenseMatrix2d;
 import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.data.Attribute;
@@ -76,7 +77,8 @@ public class TreePredictUDFTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, 4);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                x[0].length), trainy, 4);
             assertEquals(tree.predict(x[loocv.test[i]]), evalPredict(tree, x[loocv.test[i]]));
         }
     }
@@ -103,7 +105,8 @@ public class TreePredictUDFTest {
             double[][] testx = Math.slice(datax, cv.test[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-            RegressionTree tree = new RegressionTree(attrs, trainx, trainy, 20);
+            RegressionTree tree = new RegressionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, 20);
 
             for (int j = 0; j < testx.length; j++) {
                 assertEquals(tree.predict(testx[j]), evalPredict(tree, testx[j]), 1.0);
@@ -142,7 +145,8 @@ public class TreePredictUDFTest {
         }
 
         Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-        RegressionTree tree = new RegressionTree(attrs, trainx, trainy, 20);
+        RegressionTree tree = new RegressionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+            trainx[0].length), trainy, 20);
         debugPrint(String.format("RMSE = %.4f\n", Validation.test(tree, testx, testy)));
 
         for (int i = m; i < n; i++) {

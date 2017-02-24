@@ -23,8 +23,12 @@ import javax.annotation.Nonnull;
 
 public abstract class MatrixBuilder {
 
-    public MatrixBuilder() {}
-
+    protected final boolean readOnly;
+    
+    public MatrixBuilder(boolean readOnly) {
+        this.readOnly = readOnly;
+    }    
+    
     public void nextRow(@Nonnull final double[] row) {
         for (int col = 0; col < row.length; col++) {
             nextColumn(col, row[col]);
@@ -84,6 +88,6 @@ public abstract class MatrixBuilder {
     }
 
     @Nonnull
-    public abstract Matrix buildMatrix(boolean readOnly);
+    public abstract Matrix buildMatrix();
 
 }

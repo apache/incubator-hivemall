@@ -25,10 +25,7 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
- * Compressed Sparse Row Matrix.
- * 
- * @link http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
- * @link http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
+ * Compressed Sparse Row Matrix builder.
  */
 public final class CSRMatrixBuilder extends MatrixBuilder {
 
@@ -41,8 +38,8 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
 
     private int maxNumColumns;
 
-    public CSRMatrixBuilder(int initSize) {
-        super();
+    public CSRMatrixBuilder(@Nonnegative int initSize, boolean readOnly) {
+        super(readOnly);
         this.rowPointers = new IntArrayList(initSize + 1);
         rowPointers.add(0);
         this.columnIndices = new IntArrayList(initSize);
@@ -70,7 +67,7 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public Matrix buildMatrix(boolean readOnly) {
+    public Matrix buildMatrix() {
         if (!readOnly) {
             throw new UnsupportedOperationException("Only readOnly matrix is supported");
         }

@@ -35,8 +35,8 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     @Nonnull
     private final SparseDoubleArray rowProbe;
 
-    public DenseMatrixBuilder(int initSize) {
-        super();
+    public DenseMatrixBuilder(@Nonnegative int initSize, boolean readOnly) {
+        super(readOnly);
         this.rows = new ArrayList<double[]>(initSize);
         this.maxNumColumns = 0;
         this.rowProbe = new SparseDoubleArray(32);
@@ -66,7 +66,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public Matrix buildMatrix(boolean readOnly) {
+    public Matrix buildMatrix() {
         if (!readOnly) {
             throw new UnsupportedOperationException("Only readOnly matrix is supported");
         }

@@ -18,10 +18,12 @@
  */
 package hivemall.matrix;
 
+import java.util.Arrays;
+
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public final class ReadOnlyDenseMatrix2d extends Matrix {
+public final class ReadOnlyDenseMatrix2d extends AbstractMatrix {
 
     @Nonnull
     private final double[][] data;
@@ -39,6 +41,11 @@ public final class ReadOnlyDenseMatrix2d extends Matrix {
 
     @Override
     public boolean readOnly() {
+        return true;
+    }
+
+    @Override
+    public boolean shufflable() {
         return true;
     }
 
@@ -62,6 +69,32 @@ public final class ReadOnlyDenseMatrix2d extends Matrix {
         checkRowIndex(row, numRows);
 
         return data[row].length;
+    }
+
+    @Override
+    public double[] getRow(@Nonnegative final int index) {
+        checkRowIndex(index, numRows);
+
+        final double[] row = data[index];
+        if (row.length == numRows) {
+            return row;
+        }
+
+        final double[] result = new double[numRows];
+        System.arraycopy(row, 0, result, 0, row.length);
+        return result;
+    }
+
+    @Override
+    public double[] getRow(@Nonnull final int index, @Nonnull final double[] dst) {
+        checkRowIndex(index, numRows);
+
+        final double[] row = data[index];
+        System.arraycopy(row, 0, dst, 0, row.length);
+        if (dst.length > row.length) {// zerofill
+            Arrays.fill(dst, row.length, dst.length, 0.d);
+        }
+        return dst;
     }
 
     @Override
@@ -97,6 +130,50 @@ public final class ReadOnlyDenseMatrix2d extends Matrix {
         checkColIndex(col, rowData.length);
 
         rowData[col] = value;
+    }
+
+    @Override
+    public void swap(final int row1, final int row2) {
+        checkRowIndex(row1, numRows);
+        checkRowIndex(row2, numRows);
+
+        double[] oldRow1 = data[row1];
+        data[row1] = data[row2];
+        data[row2] = oldRow1;
+    }
+
+    @Override
+    public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure) {
+        checkRowIndex(row, numRows);
+
+        final double[] rowData = data[row];
+        int col = 0;
+        for (int len = rowData.length; col < len; col++) {
+            procedure.apply(col, rowData[col]);
+        }
+        for (; col < numColumns; col++) {
+            procedure.apply(col, 0.d);
+        }
+    }
+
+    @Override
+    public void eachNonZeroInRow(@Nonnegative final int row,
+            @Nonnull final VectorProcedure procedure) {
+        checkRowIndex(row, numRows);
+
+        final double[] rowData = data[row];
+        for (int col = 0, len = rowData.length; col < len; col++) {
+            final double v = rowData[col];
+            if (v == 0.d) {
+                continue;
+            }
+            procedure.apply(col, v);
+        }
+    }
+
+    @Override
+    public MatrixBuilder builder() {
+        return new DenseMatrixBuilder(numRows, true);
     }
 
 }

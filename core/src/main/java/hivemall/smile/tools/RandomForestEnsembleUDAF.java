@@ -121,7 +121,7 @@ public final class RandomForestEnsembleUDAF extends UDAF {
                 }
             }
 
-            int[] keyArray = keyList.toArray();
+            int[] keyArray = keyList.toArray(true);
             Arrays.sort(keyArray);
             int last = keyArray[keyArray.length - 1];
 

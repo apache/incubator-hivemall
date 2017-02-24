@@ -33,6 +33,7 @@
  */
 package hivemall.smile.classification;
 
+import hivemall.matrix.Matrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
@@ -59,57 +60,41 @@ import smile.math.Math;
 import smile.math.Random;
 
 /**
- * Decision tree for classification. A decision tree can be learned by splitting the training set
- * into subsets based on an attribute value test. This process is repeated on each derived subset in
- * a recursive manner called recursive partitioning. The recursion is completed when the subset at a
- * node all has the same value of the target variable, or when splitting no longer adds value to the
- * predictions.
+ * Decision tree for classification. A decision tree can be learned by splitting the training set into subsets based on an attribute value test. This
+ * process is repeated on each derived subset in a recursive manner called recursive partitioning. The recursion is completed when the subset at a
+ * node all has the same value of the target variable, or when splitting no longer adds value to the predictions.
  * <p>
- * The algorithms that are used for constructing decision trees usually work top-down by choosing a
- * variable at each step that is the next best variable to use in splitting the set of items. "Best"
- * is defined by how well the variable splits the set into homogeneous subsets that have the same
- * value of the target variable. Different algorithms use different formulae for measuring "best".
- * Used by the CART algorithm, Gini impurity is a measure of how often a randomly chosen element
- * from the set would be incorrectly labeled if it were randomly labeled according to the
- * distribution of labels in the subset. Gini impurity can be computed by summing the probability of
- * each item being chosen times the probability of a mistake in categorizing that item. It reaches
- * its minimum (zero) when all cases in the node fall into a single target category. Information
- * gain is another popular measure, used by the ID3, C4.5 and C5.0 algorithms. Information gain is
- * based on the concept of entropy used in information theory. For categorical variables with
- * different number of levels, however, information gain are biased in favor of those attributes
- * with more levels. Instead, one may employ the information gain ratio, which solves the drawback
- * of information gain.
+ * The algorithms that are used for constructing decision trees usually work top-down by choosing a variable at each step that is the next best
+ * variable to use in splitting the set of items. "Best" is defined by how well the variable splits the set into homogeneous subsets that have the
+ * same value of the target variable. Different algorithms use different formulae for measuring "best". Used by the CART algorithm, Gini impurity is a
+ * measure of how often a randomly chosen element from the set would be incorrectly labeled if it were randomly labeled according to the distribution
+ * of labels in the subset. Gini impurity can be computed by summing the probability of each item being chosen times the probability of a mistake in
+ * categorizing that item. It reaches its minimum (zero) when all cases in the node fall into a single target category. Information gain is another
+ * popular measure, used by the ID3, C4.5 and C5.0 algorithms. Information gain is based on the concept of entropy used in information theory. For
+ * categorical variables with different number of levels, however, information gain are biased in favor of those attributes with more levels. Instead,
+ * one may employ the information gain ratio, which solves the drawback of information gain.
  * <p>
- * Classification and Regression Tree techniques have a number of advantages over many of those
- * alternative techniques.
+ * Classification and Regression Tree techniques have a number of advantages over many of those alternative techniques.
  * <dl>
  * <dt>Simple to understand and interpret.</dt>
- * <dd>In most cases, the interpretation of results summarized in a tree is very simple. This
- * simplicity is useful not only for purposes of rapid classification of new observations, but can
- * also often yield a much simpler "model" for explaining why observations are classified or
- * predicted in a particular manner.</dd>
+ * <dd>In most cases, the interpretation of results summarized in a tree is very simple. This simplicity is useful not only for purposes of rapid
+ * classification of new observations, but can also often yield a much simpler "model" for explaining why observations are classified or predicted in
+ * a particular manner.</dd>
  * <dt>Able to handle both numerical and categorical data.</dt>
- * <dd>Other techniques are usually specialized in analyzing datasets that have only one type of
- * variable.</dd>
+ * <dd>Other techniques are usually specialized in analyzing datasets that have only one type of variable.</dd>
  * <dt>Tree methods are nonparametric and nonlinear.</dt>
- * <dd>The final results of using tree methods for classification or regression can be summarized in
- * a series of (usually few) logical if-then conditions (tree nodes). Therefore, there is no
- * implicit assumption that the underlying relationships between the predictor variables and the
- * dependent variable are linear, follow some specific non-linear link function, or that they are
- * even monotonic in nature. Thus, tree methods are particularly well suited for data mining tasks,
- * where there is often little a priori knowledge nor any coherent set of theories or predictions
- * regarding which variables are related and how. In those types of data analytics, tree methods can
- * often reveal simple relationships between just a few variables that could have easily gone
- * unnoticed using other analytic techniques.</dd>
+ * <dd>The final results of using tree methods for classification or regression can be summarized in a series of (usually few) logical if-then
+ * conditions (tree nodes). Therefore, there is no implicit assumption that the underlying relationships between the predictor variables and the
+ * dependent variable are linear, follow some specific non-linear link function, or that they are even monotonic in nature. Thus, tree methods are
+ * particularly well suited for data mining tasks, where there is often little a priori knowledge nor any coherent set of theories or predictions
+ * regarding which variables are related and how. In those types of data analytics, tree methods can often reveal simple relationships between just a
+ * few variables that could have easily gone unnoticed using other analytic techniques.</dd>
  * </dl>
- * One major problem with classification and regression trees is their high variance. Often a small
- * change in the data can result in a very different series of splits, making interpretation
- * somewhat precarious. Besides, decision-tree learners can create over-complex trees that cause
- * over-fitting. Mechanisms such as pruning are necessary to avoid this problem. Another limitation
- * of trees is the lack of smoothness of the prediction surface.
+ * One major problem with classification and regression trees is their high variance. Often a small change in the data can result in a very different
+ * series of splits, making interpretation somewhat precarious. Besides, decision-tree learners can create over-complex trees that cause over-fitting.
+ * Mechanisms such as pruning are necessary to avoid this problem. Another limitation of trees is the lack of smoothness of the prediction surface.
  * <p>
- * Some techniques such as bagging, boosting, and random forest use more than one decision tree for
- * their analysis.
+ * Some techniques such as bagging, boosting, and random forest use more than one decision tree for their analysis.
  */
 public final class DecisionTree implements Classifier<double[]> {
     /**
@@ -118,9 +103,8 @@ public final class DecisionTree implements Classifier<double[]> {
     private final Attribute[] _attributes;
     private final boolean _hasNumericType;
     /**
-     * Variable importance. Every time a split of a node is made on variable the (GINI, information
-     * gain, etc.) impurity criterion for the two descendant nodes is less than the parent node.
-     * Adding up the decreases for each individual variable over the tree gives a simple measure of
+     * Variable importance. Every time a split of a node is made on variable the (GINI, information gain, etc.) impurity criterion for the two
+     * descendant nodes is less than the parent node. Adding up the decreases for each individual variable over the tree gives a simple measure of
      * variable importance.
      */
     private final double[] _importance;
@@ -153,8 +137,7 @@ public final class DecisionTree implements Classifier<double[]> {
      */
     private final int _minLeafSize;
     /**
-     * The index of training values in ascending order. Note that only numeric attributes will be
-     * sorted.
+     * The index of training values in ascending order. Note that only numeric attributes will be sorted.
      */
     private final int[][] _order;
 
@@ -165,12 +148,10 @@ public final class DecisionTree implements Classifier<double[]> {
      */
     public static enum SplitRule {
         /**
-         * Used by the CART algorithm, Gini impurity is a measure of how often a randomly chosen
-         * element from the set would be incorrectly labeled if it were randomly labeled according
-         * to the distribution of labels in the subset. Gini impurity can be computed by summing the
-         * probability of each item being chosen times the probability of a mistake in categorizing
-         * that item. It reaches its minimum (zero) when all cases in the node fall into a single
-         * target category.
+         * Used by the CART algorithm, Gini impurity is a measure of how often a randomly chosen element from the set would be incorrectly labeled if
+         * it were randomly labeled according to the distribution of labels in the subset. Gini impurity can be computed by summing the probability of
+         * each item being chosen times the probability of a mistake in categorizing that item. It reaches its minimum (zero) when all cases in the
+         * node fall into a single target category.
          */
         GINI,
         /**
@@ -237,7 +218,7 @@ public final class DecisionTree implements Classifier<double[]> {
         /**
          * Evaluate the regression tree over an instance.
          */
-        public int predict(final double[] x) {
+        public int predict(@Nonnull final double[] x) {
             if (trueChild == null && falseChild == null) {
                 return output;
             } else {
@@ -413,7 +394,7 @@ public final class DecisionTree implements Classifier<double[]> {
         /**
          * Training dataset.
          */
-        final double[][] x;
+        final Matrix x;
         /**
          * class labels.
          */
@@ -426,7 +407,7 @@ public final class DecisionTree implements Classifier<double[]> {
         /**
          * Constructor.
          */
-        public TrainNode(Node node, double[][] x, int[] y, int[] bags, int depth) {
+        public TrainNode(Node node, Matrix x, int[] y, int[] bags, int depth) {
             this.node = node;
             this.x = x;
             this.y = y;
@@ -475,7 +456,7 @@ public final class DecisionTree implements Classifier<double[]> {
                 SmileExtUtils.shuffle(variableIndex, _rnd);
             }
 
-            final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.length)
+            final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows())
                     : null;
             final int[] falseCount = new int[_k];
             for (int j = 0; j < _numVars; j++) {
@@ -530,7 +511,7 @@ public final class DecisionTree implements Classifier<double[]> {
 
                 for (int i = 0, size = bags.length; i < size; i++) {
                     int index = bags[i];
-                    int x_ij = (int) x[index][j];
+                    int x_ij = (int) x.get(index, j);
                     trueCount[x_ij][y[index]]++;
                 }
 
@@ -570,7 +551,7 @@ public final class DecisionTree implements Classifier<double[]> {
                 for (final int i : _order[j]) {
                     final int sample = samples[i];
                     if (sample > 0) {
-                        final double x_ij = x[i][j];
+                        final double x_ij = x.get(i, j);
                         final int y_i = y[i];
 
                         if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
@@ -686,7 +667,7 @@ public final class DecisionTree implements Classifier<double[]> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x[index][splitFeature] == splitValue) {
+                    if (x.get(index, splitFeature) == splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
@@ -698,7 +679,7 @@ public final class DecisionTree implements Classifier<double[]> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x[index][splitFeature] <= splitValue) {
+                    if (x.get(index, splitFeature) <= splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
@@ -762,14 +743,14 @@ public final class DecisionTree implements Classifier<double[]> {
         return impurity;
     }
 
-    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull double[][] x, @Nonnull int[] y,
+    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numLeafs) {
-        this(attributes, x, y, x[0].length, Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
+        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
     }
 
-    public DecisionTree(@Nullable Attribute[] attributes, @Nullable double[][] x,
-            @Nullable int[] y, int numLeafs, @Nullable smile.math.Random rand) {
-        this(attributes, x, y, x[0].length, Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
+    public DecisionTree(@Nullable Attribute[] attributes, @Nullable Matrix x, @Nullable int[] y,
+            int numLeafs, @Nullable smile.math.Random rand) {
+        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
     }
 
     /**
@@ -778,18 +759,17 @@ public final class DecisionTree implements Classifier<double[]> {
      * @param attributes the attribute properties.
      * @param x the training instances.
      * @param y the response variable.
-     * @param numVars the number of input variables to pick to split on at each node. It seems that
-     *        dim/3 give generally good performance, where dim is the number of variables.
+     * @param numVars the number of input variables to pick to split on at each node. It seems that dim/3 give generally good performance, where dim
+     *        is the number of variables.
      * @param maxLeafs the maximum number of leaf nodes in the tree.
      * @param minSplits the number of minimum elements in a node to split
      * @param minLeafSize the minimum size of leaf nodes.
-     * @param order the index of training values in ascending order. Note that only numeric
-     *        attributes need be sorted.
+     * @param order the index of training values in ascending order. Note that only numeric attributes need be sorted.
      * @param bags the sample set of instances for stochastic learning.
      * @param rule the splitting rule.
      * @param seed
      */
-    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull double[][] x, @Nonnull int[] y,
+    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
             @Nullable int[] bags, @Nullable int[][] order, @Nonnull SplitRule rule,
             @Nullable smile.math.Random rand) {
@@ -801,7 +781,7 @@ public final class DecisionTree implements Classifier<double[]> {
         }
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);
-        if (attributes.length != x[0].length) {
+        if (attributes.length != x.numColumns()) {
             throw new IllegalArgumentException("-attrs option is invliad: "
                     + Arrays.toString(attributes));
         }
@@ -858,13 +838,13 @@ public final class DecisionTree implements Classifier<double[]> {
         }
     }
 
-    private static void checkArgument(@Nonnull double[][] x, @Nonnull int[] y, int numVars,
+    private static void checkArgument(@Nonnull Matrix x, @Nonnull int[] y, int numVars,
             int maxDepth, int maxLeafs, int minSplits, int minLeafSize) {
-        if (x.length != y.length) {
+        if (x.numRows() != y.length) {
             throw new IllegalArgumentException(String.format(
-                "The sizes of X and Y don't match: %d != %d", x.length, y.length));
+                "The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
         }
-        if (numVars <= 0 || numVars > x[0].length) {
+        if (numVars <= 0 || numVars > x.numColumns()) {
             throw new IllegalArgumentException(
                 "Invalid number of variables to split on at a node of the tree: " + numVars);
         }
@@ -885,10 +865,9 @@ public final class DecisionTree implements Classifier<double[]> {
     }
 
     /**
-     * Returns the variable importance. Every time a split of a node is made on variable the (GINI,
-     * information gain, etc.) impurity criterion for the two descendent nodes is less than the
-     * parent node. Adding up the decreases for each individual variable over the tree gives a
-     * simple measure of variable importance.
+     * Returns the variable importance. Every time a split of a node is made on variable the (GINI, information gain, etc.) impurity criterion for the
+     * two descendent nodes is less than the parent node. Adding up the decreases for each individual variable over the tree gives a simple measure of
+     * variable importance.
      *
      * @return the variable importance
      */
@@ -902,8 +881,7 @@ public final class DecisionTree implements Classifier<double[]> {
     }
 
     /**
-     * Predicts the class label of an instance and also calculate a posteriori probabilities. Not
-     * supported.
+     * Predicts the class label of an instance and also calculate a posteriori probabilities. Not supported.
      */
     @Override
     public int predict(double[] x, double[] posteriori) {

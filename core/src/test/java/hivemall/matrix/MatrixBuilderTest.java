@@ -94,8 +94,8 @@ public class MatrixBuilderTest {
 
     @Test
     public void testReadOnlyCSRMatrixNoRow() {
-        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
-        Matrix matrix = builder.buildMatrix(true);
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
+        Matrix matrix = builder.buildMatrix();
         Assert.assertEquals(0, matrix.numRows());
         Assert.assertEquals(0, matrix.numColumns());
     }
@@ -216,7 +216,7 @@ public class MatrixBuilderTest {
 
     @Test
     public void testReadOnlyDenseMatrix2dNoRow() {
-        Matrix matrix = new DenseMatrixBuilder(1024).buildMatrix(true);
+        Matrix matrix = new DenseMatrixBuilder(1024, true).buildMatrix();
         Assert.assertEquals(0, matrix.numRows());
         Assert.assertEquals(0, matrix.numColumns());
     }
@@ -248,14 +248,14 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
         builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
         builder.nextColumn(1, 22).nextColumn(2, 23).nextRow();
         builder.nextColumn(2, 33).nextColumn(3, 34).nextColumn(4, 35).nextColumn(5, 36).nextRow();
         builder.nextColumn(3, 44).nextColumn(4, 45).nextRow();
         builder.nextColumn(5, 56).nextRow();
         builder.nextColumn(5, 66).nextRow();
-        return builder.buildMatrix(true);
+        return builder.buildMatrix();
     }
 
     private static Matrix csrMatrixFromLibSVM() {
@@ -267,14 +267,14 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
         builder.nextRow(new String[] {"0:11", "1:12", "2:13", "3:14"});
         builder.nextRow(new String[] {"1:22", "2:23"});
         builder.nextRow(new String[] {"2:33", "3:34", "4:35", "5:36"});
         builder.nextRow(new String[] {"3:44", "4:45"});
         builder.nextRow(new String[] {"5:56"});
         builder.nextRow(new String[] {"5:66"});
-        return builder.buildMatrix(true);
+        return builder.buildMatrix();
     }
 
     private static Matrix denseMatrix() {
@@ -286,14 +286,14 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
+        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024, true);
         builder.nextRow(new double[] {11, 12, 13, 14});
         builder.nextRow(new double[] {0, 22, 23});
         builder.nextRow(new double[] {0, 0, 33, 34, 35, 36});
         builder.nextRow(new double[] {0, 0, 0, 44, 45});
         builder.nextRow(new double[] {0, 0, 0, 0, 0, 56});
         builder.nextRow(new double[] {0, 0, 0, 0, 0, 66});
-        return builder.buildMatrix(true);
+        return builder.buildMatrix();
     }
 
     private static Matrix denseMatrixSparseInput() {
@@ -305,25 +305,25 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
+        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024, true);
         builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
         builder.nextColumn(1, 22).nextColumn(2, 23).nextRow();
         builder.nextColumn(2, 33).nextColumn(3, 34).nextColumn(4, 35).nextColumn(5, 36).nextRow();
         builder.nextColumn(3, 44).nextColumn(4, 45).nextRow();
         builder.nextColumn(5, 56).nextRow();
         builder.nextColumn(5, 66).nextRow();
-        return builder.buildMatrix(true);
+        return builder.buildMatrix();
     }
 
     private static Matrix denseMatrixFromLibSVM() {
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
+        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024, true);
         builder.nextRow(new String[] {"0:11", "1:12", "2:13", "3:14"});
         builder.nextRow(new String[] {"1:22", "2:23"});
         builder.nextRow(new String[] {"2:33", "3:34", "4:35", "5:36"});
         builder.nextRow(new String[] {"3:44", "4:45"});
         builder.nextRow(new String[] {"5:56"});
         builder.nextRow(new String[] {"5:66"});
-        return builder.buildMatrix(true);
+        return builder.buildMatrix();
     }
 
 }

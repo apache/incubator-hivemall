@@ -25,19 +25,19 @@ import javax.annotation.Nonnull;
 /**
  * A fixed INT array that has keys greater than or equals to 0.
  */
-public final class FixedIntArray implements IntArray {
+public final class DenseIntArray implements IntArray {
     private static final long serialVersionUID = -1450212841013810240L;
 
     @Nonnull
     private final int[] array;
     private final int size;
 
-    public FixedIntArray(@Nonnull int size) {
+    public DenseIntArray(@Nonnull int size) {
         this.array = new int[size];
         this.size = size;
     }
 
-    public FixedIntArray(@Nonnull int[] array) {
+    public DenseIntArray(@Nonnull int[] array) {
         this.array = array;
         this.size = array.length;
     }

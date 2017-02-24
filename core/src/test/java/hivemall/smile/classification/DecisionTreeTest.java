@@ -19,6 +19,7 @@
 package hivemall.smile.classification;
 
 import static org.junit.Assert.assertEquals;
+import hivemall.matrix.ReadOnlyDenseMatrix2d;
 import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree.Node;
 import hivemall.smile.data.Attribute;
@@ -79,7 +80,8 @@ public class DecisionTreeTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(weather.attributes());
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, 3);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, 3);
             if (y[loocv.test[i]] != tree.predict(x[loocv.test[i]]))
                 error++;
         }
@@ -110,7 +112,8 @@ public class DecisionTreeTest {
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
             smile.math.Random rand = new smile.math.Random(i);
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, Integer.MAX_VALUE, rand);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, Integer.MAX_VALUE, rand);
             if (y[loocv.test[i]] != tree.predict(x[loocv.test[i]]))
                 error++;
         }
@@ -140,7 +143,8 @@ public class DecisionTreeTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, 4);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, 4);
             if (y[loocv.test[i]] != tree.predict(x[loocv.test[i]]))
                 error++;
         }
@@ -168,7 +172,8 @@ public class DecisionTreeTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, 4);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, 4);
             assertEquals(tree.predict(x[loocv.test[i]]),
                 predictByStackMachine(tree, x[loocv.test[i]]));
         }
@@ -193,7 +198,8 @@ public class DecisionTreeTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, 4);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, 4);
             assertEquals(tree.predict(x[loocv.test[i]]),
                 predictByJavascript(tree, x[loocv.test[i]]));
         }
@@ -218,7 +224,8 @@ public class DecisionTreeTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, 4);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, 4);
 
             byte[] b = tree.predictSerCodegen(false);
             Node node = DecisionTree.deserializeNode(b, b.length, false);
@@ -245,7 +252,8 @@ public class DecisionTreeTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, trainx, trainy, 4);
+            DecisionTree tree = new DecisionTree(attrs, new ReadOnlyDenseMatrix2d(trainx,
+                trainx[0].length), trainy, 4);
 
             byte[] b1 = tree.predictSerCodegen(true);
             byte[] b2 = tree.predictSerCodegen(false);

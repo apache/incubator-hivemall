@@ -25,7 +25,7 @@ public class IntArrayTest {
 
     @Test
     public void testFixedIntArrayToArray() {
-        FixedIntArray array = new FixedIntArray(11);
+        DenseIntArray array = new DenseIntArray(11);
         for (int i = 0; i < 10; i++) {
             array.put(i, 10 + i);
         }

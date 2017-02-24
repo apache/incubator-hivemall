@@ -19,6 +19,10 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
+import hivemall.matrix.CSRMatrixBuilder;
+import hivemall.matrix.DenseMatrixBuilder;
+import hivemall.matrix.Matrix;
+import hivemall.matrix.MatrixBuilder;
 import hivemall.smile.ModelType;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
@@ -36,7 +40,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -63,7 +66,7 @@ import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
 @Description(name = "train_gradient_tree_boosting_classifier",
-        value = "_FUNC_(double[] features, int label [, string options]) - "
+        value = "_FUNC_(array<double|string> features, int label [, string options]) - "
                 + "Returns a relation consists of "
                 + "<int iteration, int model_type, array<string> pred_models, double intercept, "
                 + "double shrinkage, array<double> var_importance, float oob_error_rate>")
@@ -74,7 +77,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector labelOI;
 
-    private List<double[]> featuresList;
+    private boolean denseInput;
+    private MatrixBuilder matrixBuilder;
     private IntArrayList labels;
     /**
      * The number of trees for each task
@@ -197,19 +201,29 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         if (argOIs.length != 2 && argOIs.length != 3) {
             throw new UDFArgumentException(
                 getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: double[] features, int label [, const string options]: "
+                        + " takes 2 or 3 arguments: array<double|string> features, int label [, const string options]: "
                         + argOIs.length);
         }
 
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureListOI = listOI;
-        this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseInput = true;
+            this.matrixBuilder = new DenseMatrixBuilder(8192, true);
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asStringOI(elemOI);
+            this.denseInput = false;
+            this.matrixBuilder = new CSRMatrixBuilder(8192, true);
+        } else {
+            throw new UDFArgumentException(
+                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+        }
         this.labelOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
 
         processOptions(argOIs);
 
-        this.featuresList = new ArrayList<double[]>(1024);
         this.labels = new IntArrayList(1024);
 
         ArrayList<String> fieldNames = new ArrayList<String>(6);
@@ -238,11 +252,34 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         if (args[0] == null) {
             throw new HiveException("array<double> features was null");
         }
-        double[] features = HiveUtils.asDoubleArray(args[0], featureListOI, featureElemOI);
+        parseFeatures(args[0], matrixBuilder);
         int label = PrimitiveObjectInspectorUtils.getInt(args[1], labelOI);
-
-        featuresList.add(features);
         labels.add(label);
+    }
+
+    private void parseFeatures(@Nonnull final Object argObj, @Nonnull final MatrixBuilder builder) {
+        if (denseInput) {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                double v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
+                builder.nextColumn(i, v);
+            }
+        } else {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                String fv = o.toString();
+                builder.nextColumn(fv);
+            }
+        }
+        builder.nextRow();
     }
 
     @Override
@@ -252,14 +289,15 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             "hivemall.smile.GradientTreeBoostingClassifier$Counter", "iteration");
         reportProgress(_progressReporter);
 
-        int numExamples = featuresList.size();
-        double[][] x = featuresList.toArray(new double[numExamples][]);
-        this.featuresList = null;
-        int[] y = labels.toArray();
-        this.labels = null;
+        if (!labels.isEmpty()) {
+            Matrix x = matrixBuilder.buildMatrix();
+            this.matrixBuilder = null;
+            int[] y = labels.toArray();
+            this.labels = null;
 
-        // run training
-        train(x, y);
+            // run training
+            train(x, y);
+        }
 
         // clean up
         this.featureListOI = null;
@@ -287,10 +325,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
      * @param x features
      * @param y label
      */
-    private void train(@Nonnull final double[][] x, @Nonnull final int[] y) throws HiveException {
-        if (x.length != y.length) {
+    private void train(@Nonnull final Matrix x, @Nonnull final int[] y) throws HiveException {
+        final int numRows = x.numRows();
+        if (numRows != y.length) {
             throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
-                x.length, y.length));
+                numRows, y.length));
         }
         checkOptions();
         this._attributes = SmileExtUtils.attributeTypes(_attributes, x);
@@ -303,9 +342,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             throw new UDFArgumentException("Only one class or negative class labels.");
         }
         if (k == 2) {
-            int n = x.length;
-            final int[] y2 = new int[n];
-            for (int i = 0; i < n; i++) {
+            final int[] y2 = new int[numRows];
+            for (int i = 0; i < numRows; i++) {
                 if (y[i] == 1) {
                     y2[i] = 1;
                 } else {
@@ -318,7 +356,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         }
     }
 
-    private void train2(@Nonnull final double[][] x, @Nonnull final int[] y) throws HiveException {
+    private void train2(@Nonnull final Matrix x, @Nonnull final int[] y) throws HiveException {
         final int numVars = SmileExtUtils.computeNumInputVars(_numVars, x);
         if (logger.isInfoEnabled()) {
             logger.info("k: " + 2 + ", numTrees: " + _numTrees + ", shirinkage: " + _eta
@@ -327,7 +365,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     + _maxLeafNodes + ", seed: " + _seed);
         }
 
-        final int numInstances = x.length;
+        final int numInstances = x.numRows();
         final int numSamples = (int) Math.round(numInstances * _subsample);
 
         final double[] h = new double[numInstances]; // current F(x_i)
@@ -355,6 +393,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final smile.math.Random rnd1 = new smile.math.Random(s);
         final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
 
+        final double[] xProbe = x.row();
         for (int m = 0; m < _numTrees; m++) {
             reportProgress(_progressReporter);
 
@@ -373,7 +412,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag, output, rnd2);
 
             for (int i = 0; i < numInstances; i++) {
-                h[i] += _eta * tree.predict(x[i]);
+                h[i] += _eta * tree.predict(x.getRow(i, xProbe));
             }
 
             // out-of-bag error estimate
@@ -398,7 +437,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     /**
      * Train L-k tree boost.
      */
-    private void traink(final double[][] x, final int[] y, final int k) throws HiveException {
+    private void traink(final Matrix x, final int[] y, final int k) throws HiveException {
         final int numVars = SmileExtUtils.computeNumInputVars(_numVars, x);
         if (logger.isInfoEnabled()) {
             logger.info("k: " + k + ", numTrees: " + _numTrees + ", shirinkage: " + _eta
@@ -407,7 +446,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     + ", maxLeafs: " + _maxLeafNodes + ", seed: " + _seed);
         }
 
-        final int numInstances = x.length;
+        final int numInstances = x.numRows();
         final int numSamples = (int) Math.round(numInstances * _subsample);
 
         final double[][] h = new double[k][numInstances]; // boost tree output.
@@ -434,7 +473,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
 
         // out-of-bag prediction
         final int[] prediction = new int[numInstances];
-
+        final double[] xProbe = x.row();
         for (int m = 0; m < _numTrees; m++) {
             for (int i = 0; i < numInstances; i++) {
                 double max = Double.NEGATIVE_INFINITY;
@@ -490,7 +529,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 trees[j] = tree;
 
                 for (int i = 0; i < numInstances; i++) {
-                    double h_ji = h_j[i] + _eta * tree.predict(x[i]);
+                    double h_ji = h_j[i] + _eta * tree.predict(x.getRow(i, xProbe));
                     h_j[i] += h_ji;
                     if (h_ji > max_h) {
                         max_h = h_ji;
