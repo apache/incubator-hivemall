@@ -43,7 +43,7 @@ import smile.data.parser.ArffParser;
 public class RandomForestClassifierUDTFTest {
 
     @Test
-    public void testIris() throws IOException, ParseException, HiveException {
+    public void testIrisDense() throws IOException, ParseException, HiveException {
         URL url = new URL(
             "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
         InputStream is = new BufferedInputStream(url.openStream());
@@ -67,6 +67,49 @@ public class RandomForestClassifierUDTFTest {
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < x[i].length; j++) {
                 xi.add(j, x[i][j]);
+            }
+            udtf.process(new Object[] {xi, y[i]});
+            xi.clear();
+        }
+
+        final MutableInt count = new MutableInt(0);
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                count.addValue(1);
+            }
+        };
+
+        udtf.setCollector(collector);
+        udtf.close();
+
+        Assert.assertEquals(49, count.getValue());
+    }
+
+    @Test
+    public void testIrisSparse() throws IOException, ParseException, HiveException {
+        URL url = new URL(
+            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(4);
+
+        AttributeDataset iris = arffParser.parse(is);
+        int size = iris.size();
+        double[][] x = iris.toArray(new double[size][]);
+        int[] y = iris.toArray(new int[size]);
+
+        RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
+        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 49");
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
+
+        final List<String> xi = new ArrayList<String>(x[0].length);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < x[i].length; j++) {
+                xi.add(i + ":" + x[i][j]);
             }
             udtf.process(new Object[] {xi, y[i]});
             xi.clear();

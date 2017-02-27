@@ -31,7 +31,7 @@ import javax.annotation.Nonnull;
  * @link http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
  * @link http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */
-public final class ReadOnlyCSRMatrix extends AbstractMatrix {
+public final class CSRMatrix extends AbstractMatrix {
 
     @Nonnull
     private final int[] rowPointers;
@@ -45,7 +45,7 @@ public final class ReadOnlyCSRMatrix extends AbstractMatrix {
     @Nonnegative
     private final int numColumns;
 
-    public ReadOnlyCSRMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
+    public CSRMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
             @Nonnull double[] values, @Nonnegative int numColumns) {
         super();
         Preconditions.checkArgument(rowPointers.length >= 1,

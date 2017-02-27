@@ -23,7 +23,7 @@ import java.util.Arrays;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public final class ReadOnlyDenseMatrix2d extends AbstractMatrix {
+public final class DenseMatrix2d extends AbstractMatrix {
 
     @Nonnull
     private final double[][] data;
@@ -33,7 +33,7 @@ public final class ReadOnlyDenseMatrix2d extends AbstractMatrix {
     @Nonnegative
     private final int numColumns;
 
-    public ReadOnlyDenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns) {
+    public DenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns) {
         this.data = data;
         this.numRows = data.length;
         this.numColumns = numColumns;

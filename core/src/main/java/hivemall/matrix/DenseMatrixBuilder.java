@@ -73,7 +73,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
 
         int numRows = rows.size();
         double[][] data = rows.toArray(new double[numRows][]);
-        return new ReadOnlyDenseMatrix2d(data, maxNumColumns);
+        return new DenseMatrix2d(data, maxNumColumns);
     }
 
 }

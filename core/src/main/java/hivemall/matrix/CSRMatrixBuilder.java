@@ -72,7 +72,7 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
             throw new UnsupportedOperationException("Only readOnly matrix is supported");
         }
 
-        ReadOnlyCSRMatrix matrix = new ReadOnlyCSRMatrix(rowPointers.toArray(true),
+        CSRMatrix matrix = new CSRMatrix(rowPointers.toArray(true),
             columnIndices.toArray(true), values.toArray(true), maxNumColumns);
         return matrix;
     }
