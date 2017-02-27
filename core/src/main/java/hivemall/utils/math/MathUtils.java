@@ -36,6 +36,7 @@ package hivemall.utils.math;
 
 import java.util.Random;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public final class MathUtils {
@@ -295,6 +296,15 @@ public final class MathUtils {
             return 1.d;
         }
         return 0; // 0 or NaN
+    }
+
+    @Nonnull
+    public static int[] permutation(@Nonnegative final int size) {
+        final int[] perm = new int[size];
+        for (int i = 0; i < size; i++) {
+            perm[i] = i;
+        }
+        return perm;
     }
 
 }

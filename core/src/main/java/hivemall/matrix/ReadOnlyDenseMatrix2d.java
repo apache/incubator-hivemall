@@ -45,7 +45,7 @@ public final class ReadOnlyDenseMatrix2d extends AbstractMatrix {
     }
 
     @Override
-    public boolean shufflable() {
+    public boolean swappable() {
         return true;
     }
 

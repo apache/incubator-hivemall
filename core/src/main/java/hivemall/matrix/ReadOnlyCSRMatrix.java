@@ -65,7 +65,7 @@ public final class ReadOnlyCSRMatrix extends AbstractMatrix {
     }
 
     @Override
-    public boolean shufflable() {
+    public boolean swappable() {
         return false;
     }
 

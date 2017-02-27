@@ -25,6 +25,7 @@ import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.data.Attribute.NominalAttribute;
 import hivemall.smile.data.Attribute.NumericAttribute;
+import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
 
@@ -206,21 +207,20 @@ public final class SmileExtUtils {
         }
 
         final smile.math.Random rnd = new smile.math.Random(seed);
-        if (x.shufflable()) {
+        if (x.swappable()) {
             for (int i = numRows; i > 1; i--) {
                 int j = rnd.nextInt(i);
                 x.swap(i - 1, j);
                 swap(y, i - 1, j);
             }
         } else {
-            final int[] swapIndicies = new int[numRows];
-            shuffle(swapIndicies, rnd);
-
-            MatrixUtils.shuffle(x, swapIndicies);
-            for (int i = 0; i < numRows; i++) {
-                int j = swapIndicies[i];
-                swap(y, i, j);
+            final int[] indicies = MathUtils.permutation(numRows);
+            for (int i = numRows; i > 1; i--) {
+                final int j = rnd.nextInt(i);
+                swap(indicies, i - 1, j);
+                swap(y, i - i, j);
             }
+            MatrixUtils.shuffle(x, indicies);
         }
     }
 
@@ -236,21 +236,20 @@ public final class SmileExtUtils {
         }
 
         final smile.math.Random rnd = new smile.math.Random(seed);
-        if (x.shufflable()) {
+        if (x.swappable()) {
             for (int i = numRows; i > 1; i--) {
                 int j = rnd.nextInt(i);
                 x.swap(i - 1, j);
                 swap(y, i - 1, j);
             }
         } else {
-            final int[] swapIndicies = new int[numRows];
-            shuffle(swapIndicies, rnd);
-
-            MatrixUtils.shuffle(x, swapIndicies);
-            for (int i = 0; i < numRows; i++) {
-                int j = swapIndicies[i];
-                swap(y, i, j);
+            final int[] indicies = MathUtils.permutation(numRows);
+            for (int i = numRows; i > 1; i--) {
+                final int j = rnd.nextInt(i);
+                swap(indicies, i - 1, j);
+                swap(y, i - i, j);
             }
+            MatrixUtils.shuffle(x, indicies);
         }
     }
 

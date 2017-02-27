@@ -25,7 +25,7 @@ public interface Matrix {
 
     public boolean readOnly();
 
-    public boolean shufflable();
+    public boolean swappable();
 
     public void setDefaultValue(double value);
 

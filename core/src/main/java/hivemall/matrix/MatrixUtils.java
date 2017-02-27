@@ -27,21 +27,13 @@ public final class MatrixUtils {
     private MatrixUtils() {}
 
     @Nonnull
-    public static Matrix shuffle(@Nonnull final Matrix m, @Nonnull final int[] swapIndices) {
-        Preconditions.checkArgument(m.numRows() <= swapIndices.length, "m.numRow() `" + m.numRows()
-                + "` MUST be equals to or less than |swapIndicies| `" + swapIndices.length + "`");
-
-        if (m.shufflable()) {
-            for (int i = 0; i < swapIndices.length; i++) {
-                int j = swapIndices[i];
-                m.swap(i, j);
-            }
-            return m;
-        }
+    public static Matrix shuffle(@Nonnull final Matrix m, @Nonnull final int[] indices) {
+        Preconditions.checkArgument(m.numRows() <= indices.length, "m.numRow() `" + m.numRows()
+                + "` MUST be equals to or less than |swapIndicies| `" + indices.length + "`");
 
         final MatrixBuilder builder = m.builder();
-        for (int i = 0; i < swapIndices.length; i++) {
-            int j = swapIndices[i];
+        for (int i = 0; i < indices.length; i++) {
+            int j = indices[i];
             m.eachNonZeroInRow(j, new VectorProcedure() {
                 public void apply(int col, double value) {
                     builder.nextColumn(col, value);
