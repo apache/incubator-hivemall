@@ -172,6 +172,9 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             }
 
             double score = HiveUtils.getDouble(parameters[0], scoreOI);
+            if(score < 0.0d || score > 1.0d) {
+                throw new UDFArgumentException("score value MUST be in range [0,1]: " + score);
+            }
 
             int label = PrimitiveObjectInspectorUtils.getInt(parameters[1], labelOI);
             if (label == -1) {
