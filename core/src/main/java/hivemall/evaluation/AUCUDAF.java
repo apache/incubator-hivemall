@@ -50,7 +50,7 @@ import org.apache.hadoop.io.LongWritable;
 @SuppressWarnings("deprecation")
 @Description(
         name = "auc",
-        value = "_FUNC_(array rankItems | double score, array correctItems | double label "
+        value = "_FUNC_(array rankItems | double score, array correctItems | int label "
                 + "[, const int recommendSize = rankItems.size ])"
                 + " - Returns AUC")
 public final class AUCUDAF extends AbstractGenericUDAFResolver {
@@ -62,7 +62,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
                 "_FUNC_ takes two or three arguments");
         }
 
-        if (HiveUtils.isNumberTypeInfo(typeInfo[0]) && HiveUtils.isNumberTypeInfo(typeInfo[1])) {
+        if (HiveUtils.isNumberTypeInfo(typeInfo[0]) && HiveUtils.isIntegerTypeInfo(typeInfo[1])) {
             return new ClassificationEvaluator();
         } else {
             ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
@@ -164,7 +164,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             ClassificationAUCAggregationBuffer myAggr = (ClassificationAUCAggregationBuffer) agg;
 
             double score = HiveUtils.getDouble(parameters[0], scoreOI);
-            double label = HiveUtils.getDouble(parameters[1], labelOI);
+            int label = (int) HiveUtils.getDouble(parameters[1], labelOI);
 
             myAggr.iterate(score, label);
         }
@@ -273,7 +273,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             return res / (tp * fp); // scale
         }
 
-        void iterate(@Nonnull double score, @Nonnull double label) {
+        void iterate(@Nonnull double score, @Nonnull int label) {
             if (score != scorePrev) {
                 a += trapezoidArea(fp, fpPrev, tp, tpPrev);  // under (fp, tp)-(fpPrev, tpPrev)
                 scorePrev = score;

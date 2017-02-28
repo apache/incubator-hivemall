@@ -47,7 +47,7 @@ public class AUCUDAFTest {
                 PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
                         PrimitiveObjectInspector.PrimitiveCategory.DOUBLE),
                 PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.DOUBLE)};
+                        PrimitiveObjectInspector.PrimitiveCategory.INT)};
 
         evaluator = auc.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
 
@@ -76,7 +76,7 @@ public class AUCUDAFTest {
     public void test() throws Exception {
         // should be sorted by scores in a descending order
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final double[] labels = new double[] {1, 1, 0, 1, 0};
+        final int[] labels = new int[] {1, 1, 0, 1, 0};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -91,7 +91,7 @@ public class AUCUDAFTest {
     @Test
     public void testAllTruePositive() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final double[] labels = new double[] {1, 1, 1, 1, 1};
+        final int[] labels = new int[] {1, 1, 1, 1, 1};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -107,7 +107,7 @@ public class AUCUDAFTest {
     @Test
     public void testAllFalsePositive() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final double[] labels = new double[] {0, 0, 0, 0, 0};
+        final int[] labels = new int[] {0, 0, 0, 0, 0};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -123,7 +123,7 @@ public class AUCUDAFTest {
     @Test
     public void testMaxAUC() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final double[] labels = new double[] {1, 1, 1, 1, 0};
+        final int[] labels = new int[] {1, 1, 1, 1, 0};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -139,7 +139,7 @@ public class AUCUDAFTest {
     @Test
     public void testMinAUC() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final double[] labels = new double[] {0, 0, 0, 1, 1};
+        final int[] labels = new int[] {0, 0, 0, 1, 1};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -157,7 +157,7 @@ public class AUCUDAFTest {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
 
         // if TP and FP appear alternately, AUC=0.5
-        final double[] labels1 = new double[] {1, 0, 1, 0, 1};
+        final int[] labels1 = new int[] {1, 0, 1, 0, 1};
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
         for (int i = 0; i < scores.length; i++) {
@@ -165,7 +165,7 @@ public class AUCUDAFTest {
         }
         Assert.assertEquals(0.5, agg.get(), 1e-5);
 
-        final double[] labels2 = new double[] {0, 1, 0, 1, 0};
+        final int[] labels2 = new int[] {0, 1, 0, 1, 0};
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
         for (int i = 0; i < scores.length; i++) {
@@ -177,7 +177,7 @@ public class AUCUDAFTest {
     @Test
     public void testMerge() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final double[] labels = new double[] {1, 1, 0, 1, 0};
+        final int[] labels = new int[] {1, 1, 0, 1, 0};
 
         Object[] partials = new Object[3];
 
