@@ -533,6 +533,21 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION r2 AS 'hivemall.evaluation.R2UDAF'")
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS ndcg")
 sqlContext.sql("CREATE TEMPORARY FUNCTION ndcg AS 'hivemall.evaluation.NDCGUDAF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS precision")
+sqlContext.sql("CREATE TEMPORARY FUNCTION precision AS 'hivemall.evaluation.PrecisionUDAF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS recall")
+sqlContext.sql("CREATE TEMPORARY FUNCTION recall AS 'hivemall.evaluation.RecallUDAF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS mrr")
+sqlContext.sql("CREATE TEMPORARY FUNCTION mrr AS 'hivemall.evaluation.MRRUDAF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS average_precision")
+sqlContext.sql("CREATE TEMPORARY FUNCTION average_precision AS 'hivemall.evaluation.MAPUDAF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS auc")
+sqlContext.sql("CREATE TEMPORARY FUNCTION auc AS 'hivemall.evaluation.AUCUDAF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS logloss")
 sqlContext.sql("CREATE TEMPORARY FUNCTION logloss AS 'hivemall.evaluation.LogarithmicLossUDAF'")
 
