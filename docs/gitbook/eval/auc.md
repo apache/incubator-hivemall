@@ -21,7 +21,7 @@
 
 # Area Under the ROC Curve
 
-[ROC curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) and Area Under the ROC Curve (AUC) are widely-used metric for binary (i.e., positive or negative) classification problems such as [Logistic Regression](../binaryclass/a9a_lr.md).
+[ROC curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) and Area Under the ROC Curve (AUC) are widely-used metric for binary (i.e., positive or negative) classification problems such as [Logistic Regression](../binaryclass/a9a_lr.html).
 
 Binary classifiers generally predict how likely a sample is to be positive by computing probability. Ultimately, we can evaluate the classifiers by comparing the probabilities with truth positive/negative labels.
 
@@ -93,9 +93,11 @@ from (
 ) t;
 ```
 
+Note that `floor(prob / 0.2)` means that the rows are distributed to 5 bins for the AUC computation because the column `prob` is in a [0, 1] range.
+
 # Difference between AUC and Logarithmic Loss
 
-Hivemall has another metric called [Logarithmic Loss](stat_eval.md#logarithmic-loss) for binary classification. Both AUC and Logarithmic Loss compute scores for probability-label pairs. 
+Hivemall has another metric called [Logarithmic Loss](stat_eval.html#logarithmic-loss) for binary classification. Both AUC and Logarithmic Loss compute scores for probability-label pairs. 
 
 Score produced by AUC is a relative metric based on sorted pairs. On the other hand, Logarithmic Loss simply gives a metric by comparing probability with its truth label one-by-one.
 
