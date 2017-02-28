@@ -18,6 +18,7 @@
  */
 package hivemall.evaluation;
 
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -88,7 +89,7 @@ public class AUCUDAFTest {
         Assert.assertEquals(0.83333, agg.get(), 1e-5);
     }
 
-    @Test
+    @Test(expected=HiveException.class)
     public void testAllTruePositive() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
         final int[] labels = new int[] {1, 1, 1, 1, 1};
@@ -100,11 +101,11 @@ public class AUCUDAFTest {
             evaluator.iterate(agg, new Object[] {scores[i], labels[i]});
         }
 
-        // AUC for all TP scores are not defined => returns 0
-        Assert.assertEquals(0.d, agg.get(), 1e-5);
+        // AUC for all TP scores are not defined
+        agg.get();
     }
 
-    @Test
+    @Test(expected=HiveException.class)
     public void testAllFalsePositive() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
         final int[] labels = new int[] {0, 0, 0, 0, 0};
@@ -116,8 +117,8 @@ public class AUCUDAFTest {
             evaluator.iterate(agg, new Object[] {scores[i], labels[i]});
         }
 
-        // AUC for all FP scores are not defined => returns 0
-        Assert.assertEquals(0.d, agg.get(), 1e-5);
+        // AUC for all FP scores are not defined
+        agg.get();
     }
 
     @Test

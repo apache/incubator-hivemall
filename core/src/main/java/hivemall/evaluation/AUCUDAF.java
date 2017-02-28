@@ -282,9 +282,9 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             a = a - trapezoidArea(fp, fpPrev, tp, tpPrev);
         }
 
-        double get() {
+        double get() throws HiveException {
             if (tp == 0 || fp == 0) {
-                return 0.d;
+                throw new HiveException("AUC score is not defined because there is only one class in `label`.");
             }
             double res = a + trapezoidArea(fp, fpPrev, tp, tpPrev);
             return res / (tp * fp); // scale
