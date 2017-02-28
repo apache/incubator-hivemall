@@ -39,7 +39,7 @@ Once the rows are sorted by the probabilities in a descending order, AUC gives a
 
 # Compute AUC on Hivemall
 
-On Hivemall, a function `auc(double score, int label)` provides a way to compute AUC for pairs of probability and truth label.
+In Hivemall, a function `auc(double score, int label)` provides a way to compute AUC for pairs of probability and truth label.
 
 For instance, following query computes AUC of the table which was shown above:
 
@@ -54,13 +54,14 @@ with data as (
   select 0.8 as prob, 1 as label
   union all
   select 0.7 as prob, 1 as label
-), data_ordered as (
+)
+select 
+  auc(prob, label) as auc
+from (
   select prob, label
   from data
-  order by prob desc
-)
-select auc(prob, label)
-from data_ordered;
+  ORDER BY prob DESC
+) t;
 ```
 
 This query returns `0.83333` as AUC.
@@ -80,16 +81,13 @@ with data as (
   select 0.8 as prob, 1 as label
   union all
   select 0.7 as prob, 1 as label
-), data_ordered as (
-  select prob, label
-  from data
-  order by prob desc
 )
-select auc(prob, label)
+select auc(prob, label) as auc
 from (
   select prob, label
-  from data_ordered
-  distribute by floor(prob / 0.2)
+  from data
+  DISTRIBUTE BY floor(prob / 0.2)
+  SORT BY prob DESC
 ) t;
 ```
 
