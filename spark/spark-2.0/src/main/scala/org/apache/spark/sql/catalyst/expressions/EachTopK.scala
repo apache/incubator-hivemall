@@ -77,16 +77,26 @@ case class EachTopK(
         children.map(d => StructField(d.prettyName, d.dataType))
     )
 
+  private def topKRowsForGroup(): Seq[InternalRow] = if (queue.size > 0) {
+    val outputRows = queue.iterator.toSeq.reverse
+    val (headScore, _) = outputRows.head
+    val rankNum = outputRows.scanLeft((1, headScore)){ case ((rank, prevScore), (score, _)) =>
+      if (prevScore == score) (rank, score) else (rank + 1, score)
+    }
+    outputRows.zip(rankNum.map(_._1)).map { case ((_, row), index) =>
+      new JoinedRow(InternalRow(index), row)
+    }
+  } else {
+    Seq.empty
+  }
+
   override def eval(input: InternalRow): TraversableOnce[InternalRow] = {
     val groupingKey = groupingProjection(input)
     val ret = if (currentGroupingKey != groupingKey) {
-      val part = queue.iterator.toSeq.sortBy(_._1)(reverseScoreOrdering)
-          .zipWithIndex.map { case ((_, row), index) =>
-        new JoinedRow(InternalRow(1 + index), row)
-      }
+      val topKRows = topKRowsForGroup()
       currentGroupingKey = groupingKey.copy()
       queue.clear()
-      part
+      topKRows
     } else {
       Iterator.empty
     }
@@ -96,12 +106,9 @@ case class EachTopK(
 
   override def terminate(): TraversableOnce[InternalRow] = {
     if (queue.size > 0) {
-      val part = queue.iterator.toSeq.sortBy(_._1)(reverseScoreOrdering)
-          .zipWithIndex.map { case ((_, row), index) =>
-        new JoinedRow(InternalRow(1 + index), row)
-      }
+      val topKRows = topKRowsForGroup()
       queue.clear()
-      part
+      topKRows
     } else {
       Iterator.empty
     }

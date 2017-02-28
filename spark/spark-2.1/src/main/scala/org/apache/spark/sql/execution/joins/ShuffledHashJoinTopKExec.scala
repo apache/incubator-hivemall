@@ -76,19 +76,23 @@ case class ShuffledHashJoinTopKExec(
     }
 
     override def get(): Iterator[InternalRow] = {
+      val outputRows = queue.iterator.toSeq.reverse
+      val (headScore, _) = outputRows.head
+      val rankNum = outputRows.scanLeft((1, headScore)){ case ((rank, prevScore), (score, _)) =>
+        if (prevScore == score) (rank, score) else (rank + 1, score)
+      }
       val topKRow = new UnsafeRow(2)
       val bufferHolder = new BufferHolder(topKRow)
       val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 2)
       val scoreWriter = ScoreWriter(unsafeRowWriter, 1)
-      q.iterator.toSeq.sortBy(_._1)(reverseScoreOrdering).zipWithIndex.map {
-        case ((score, row), index) =>
-          // Writes to an UnsafeRow directly
-          bufferHolder.reset()
-          unsafeRowWriter.write(0, 1 + index)
-          scoreWriter.write(score)
-          topKRow.setTotalSize(bufferHolder.totalSize())
-          joinedRow.apply(topKRow, row)
-        }.iterator
+      outputRows.zip(rankNum.map(_._1)).map { case ((score, row), index) =>
+        // Writes to an UnsafeRow directly
+        bufferHolder.reset()
+        unsafeRowWriter.write(0, index)
+        scoreWriter.write(score)
+        topKRow.setTotalSize(bufferHolder.totalSize())
+        joinedRow.apply(topKRow, row)
+      }.iterator
     }
 
     override def clear(): Unit = q.clear()

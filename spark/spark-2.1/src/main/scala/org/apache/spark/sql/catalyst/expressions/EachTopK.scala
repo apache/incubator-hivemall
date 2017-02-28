@@ -83,18 +83,24 @@ case class EachTopK(
     }
   }
 
-  private def topKRowsForGroup(): Seq[InternalRow] = {
+  private def topKRowsForGroup(): Seq[InternalRow] = if (queue.size > 0) {
+    val outputRows = queue.iterator.toSeq.reverse
+    val (headScore, _) = outputRows.head
+    val rankNum = outputRows.scanLeft((1, headScore)){ case ((rank, prevScore), (score, _)) =>
+      if (prevScore == score) (rank, score) else (rank + 1, score)
+    }
     val topKRow = new UnsafeRow(1)
     val bufferHolder = new BufferHolder(topKRow)
     val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 1)
-    queue.iterator.toSeq.sortBy(_._1)(reverseScoreOrdering)
-      .zipWithIndex.map { case ((_, row), index) =>
-        // Writes to an UnsafeRow directly
-        bufferHolder.reset()
-        unsafeRowWriter.write(0, 1 + index)
-        topKRow.setTotalSize(bufferHolder.totalSize())
-        new JoinedRow(topKRow, row)
-      }
+    outputRows.zip(rankNum.map(_._1)).map { case ((_, row), index) =>
+      // Writes to an UnsafeRow directly
+      bufferHolder.reset()
+      unsafeRowWriter.write(0, index)
+      topKRow.setTotalSize(bufferHolder.totalSize())
+      new JoinedRow(topKRow, row)
+    }
+  } else {
+    Seq.empty
   }
 
   override def eval(input: InternalRow): TraversableOnce[InternalRow] = {
