@@ -287,7 +287,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             return res / (tp * fp); // scale
         }
 
-        void iterate(@Nonnull double score, @Nonnull int label) {
+        void iterate(double score, int label) {
             if (score != scorePrev) {
                 a += trapezoidArea(fp, fpPrev, tp, tpPrev);  // under (fp, tp)-(fpPrev, tpPrev)
                 scorePrev = score;
