@@ -297,7 +297,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
                 fpPrev = fp;
                 tpPrev = tp;
             }
-            if (label == 1.d) {
+            if (label == 1) {
                 tp += 1; // this finally will be the number of positive samples
             } else {
                 fp += 1; // this finally will be the number of negative samples
