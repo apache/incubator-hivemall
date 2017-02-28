@@ -42,6 +42,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
@@ -103,8 +104,8 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
-                this.scoreOI = (PrimitiveObjectInspector) parameters[0];
-                this.labelOI = (PrimitiveObjectInspector) parameters[1];
+                this.scoreOI = HiveUtils.asDoubleCompatibleOI(parameters[0]);
+                this.labelOI = HiveUtils.asIntegerOI(parameters[1]);
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 this.internalMergeOI = soi;
@@ -163,8 +164,21 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
         public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
             ClassificationAUCAggregationBuffer myAggr = (ClassificationAUCAggregationBuffer) agg;
 
+            if (parameters[0] == null) {
+                return;
+            }
+            if (parameters[1] == null) {
+                return;
+            }
+
             double score = HiveUtils.getDouble(parameters[0], scoreOI);
-            int label = (int) HiveUtils.getDouble(parameters[1], labelOI);
+
+            int label = PrimitiveObjectInspectorUtils.getInt(parameters[1], labelOI);
+            if (label == -1) {
+                label = 0;
+            } else if (label != 0 && label != 1) {
+                throw new UDFArgumentException("label MUST be 0/1 or -1/1: " + label);
+            }
 
             myAggr.iterate(score, label);
         }
