@@ -66,6 +66,7 @@
 ## Part IV - Evaluation
 
 * [Statistical evaluation of a prediction model](eval/stat_eval.md)
+* [Ranking Measures](eval/rank.md)
 
 * [Data Generation](eval/datagen.md)
     * [Logistic Regression data generation](eval/lr_datagen.md)
