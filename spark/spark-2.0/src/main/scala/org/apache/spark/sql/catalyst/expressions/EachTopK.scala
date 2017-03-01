@@ -80,7 +80,7 @@ case class EachTopK(
   private def topKRowsForGroup(): Seq[InternalRow] = if (queue.size > 0) {
     val outputRows = queue.iterator.toSeq.reverse
     val (headScore, _) = outputRows.head
-    val rankNum = outputRows.scanLeft((1, headScore)){ case ((rank, prevScore), (score, _)) =>
+    val rankNum = outputRows.scanLeft((1, headScore)) { case ((rank, prevScore), (score, _)) =>
       if (prevScore == score) (rank, score) else (rank + 1, score)
     }
     outputRows.zip(rankNum.map(_._1)).map { case ((_, row), index) =>
