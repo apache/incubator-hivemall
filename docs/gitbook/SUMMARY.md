@@ -152,7 +152,7 @@
 
 ## Part X - Hivemall on Spark
 
-* [Getting Started](getting_started/README.md)
+* [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
 
 * [Binary Classification](spark/binaryclass/index.md)
