@@ -857,6 +857,19 @@ object HivemallOps {
   }
 
   /**
+   * @see [[hivemall.anomaly.ChangeFinderUDF]]
+   * @group anomaly
+   */
+  @scala.annotation.varargs
+  def changefinder(exprs: Column*): Column = withExpr {
+    planHiveGenericUDF(
+      "hivemall.anomaly.ChangeFinderUDF",
+      "changefinder",
+      exprs
+    )
+  }
+
+  /**
    * @see [[hivemall.anomaly.SingularSpectrumTransformUDF]]
    * @group anomaly
    */
