@@ -67,6 +67,8 @@
 
 * [Statistical evaluation of a prediction model](eval/stat_eval.md)
     * [Area Under the ROC Curve](eval/auc.md)
+    
+* [Ranking Measures](eval/rank.md)
 
 * [Data Generation](eval/datagen.md)
     * [Logistic Regression data generation](eval/lr_datagen.md)
