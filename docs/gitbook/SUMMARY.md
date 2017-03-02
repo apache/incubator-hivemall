@@ -152,6 +152,9 @@
 
 ## Part X - Hivemall on Spark
 
+* [Getting Started](getting_started/README.md)
+    * [Installation](spark/getting_started/installation.md)
+
 * [Binary Classification](spark/binaryclass/index.md)
     * [a9a Tutorial for DataFrame](spark/binaryclass/a9a_df.md)
 
