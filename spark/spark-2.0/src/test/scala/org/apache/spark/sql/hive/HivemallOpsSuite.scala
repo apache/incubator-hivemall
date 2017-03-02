@@ -336,6 +336,27 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       .getMessage contains "must have a comparable type")
   }
 
+  test("HIVEMALL-76 top-K funcs must assign the same rank with the rows having the same scores") {
+    import hiveContext.implicits._
+    val testDf = Seq(
+      ("a", "1", 0.1),
+      ("b", "5", 0.1),
+      ("a", "3", 0.1),
+      ("b", "4", 0.1),
+      ("a", "2", 0.0)
+    ).toDF("key", "value", "score")
+
+    // Compute top-1 rows for each group
+    checkAnswer(
+      testDf.each_top_k(lit(2), $"key", $"score"),
+      Row(1, "a", "3", 0.1) ::
+      Row(1, "a", "1", 0.1) ::
+      Row(1, "b", "4", 0.1) ::
+      Row(1, "b", "5", 0.1) ::
+      Nil
+    )
+  }
+
   /**
    * This test fails because;
    *

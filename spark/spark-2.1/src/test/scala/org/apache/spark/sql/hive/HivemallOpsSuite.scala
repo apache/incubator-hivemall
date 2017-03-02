@@ -315,7 +315,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 
     // Compute top-1 rows for each group
     val distance = sqrt(inputDf("x") * inputDf("x") + inputDf("y") * inputDf("y")).as("score")
-    val top1Df = inputDf.each_top_k(lit(1), distance, $"key")
+    val top1Df = inputDf.each_top_k(lit(1), distance, $"key".as("group"))
     assert(top1Df.schema.toSet === Set(
       StructField("rank", IntegerType, nullable = true),
       StructField("score", DoubleType, nullable = true),
@@ -334,7 +334,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     )
 
     // Compute reverse top-1 rows for each group
-    val bottom1Df = inputDf.each_top_k(lit(-1), distance, $"key")
+    val bottom1Df = inputDf.each_top_k(lit(-1), distance, $"key".as("group"))
     checkAnswer(
       bottom1Df.select($"rank", $"key", $"value", $"data"),
       Row(1, "a", "1", Array(0, 1, 2)) ::
@@ -401,6 +401,60 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
           Row(1, 3, "user5", "pos3-1") ::
           Row(1, 1, "user6", "pos1-2") ::
           Row(1, 2, "user7", "pos2-3") ::
+          Nil
+        )
+      }
+    }
+  }
+
+  test("HIVEMALL-76 top-K funcs must assign the same rank with the rows having the same scores") {
+    import hiveContext.implicits._
+    val inputDf = Seq(
+      ("a", "1", 0.1),
+      ("b", "5", 0.1),
+      ("a", "3", 0.1),
+      ("b", "4", 0.1),
+      ("a", "2", 0.0)
+    ).toDF("key", "value", "x")
+
+    // Compute top-2 rows for each group
+    val top2Df = inputDf.each_top_k(lit(2), $"x".as("score"), $"key".as("group"))
+    checkAnswer(
+      top2Df.select($"rank", $"score", $"key", $"value"),
+      Row(1, 0.1, "a", "3") ::
+      Row(1, 0.1, "a", "1") ::
+      Row(1, 0.1, "b", "4") ::
+      Row(1, 0.1, "b", "5") ::
+      Nil
+    )
+    Seq("true", "false").map { flag =>
+      withSQLConf(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key -> flag) {
+        val inputDf = Seq(
+          ("user1", 1, 0.3, 0.5),
+          ("user2", 2, 0.1, 0.1)
+        ).toDF("userId", "group", "x", "y")
+
+        val masterDf = Seq(
+          (1, "pos1-1", 0.5, 0.1),
+          (1, "pos1-2", 0.5, 0.1),
+          (1, "pos1-3", 0.3, 0.4),
+          (2, "pos2-1", 0.8, 0.2),
+          (2, "pos2-2", 0.8, 0.2)
+        ).toDF("group", "position", "x", "y")
+
+        // Compute top-2 rows for each group
+        val distance = sqrt(
+          pow(inputDf("x") - masterDf("x"), lit(2.0)) +
+            pow(inputDf("y") - masterDf("y"), lit(2.0))
+        ).as("score")
+        val top2Df = inputDf.top_k_join(
+          lit(2), masterDf, inputDf("group") === masterDf("group"), distance)
+        checkAnswer(
+          top2Df.select($"rank", inputDf("group"), $"userId", $"position"),
+          Row(1, 1, "user1", "pos1-1") ::
+          Row(1, 1, "user1", "pos1-2") ::
+          Row(1, 2, "user2", "pos2-1") ::
+          Row(1, 2, "user2", "pos2-2") ::
           Nil
         )
       }
