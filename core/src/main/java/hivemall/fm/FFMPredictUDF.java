@@ -155,7 +155,7 @@ public final class FFMPredictUDF extends GenericUDF {
                 if (!model.getV(ei, jField, vij)) {
                     continue;
                 }
-                if (!model.getV(ej, iField, vij)) {
+                if (!model.getV(ej, iField, vji)) {
                     continue;
                 }
                 for (int f = 0; f < factors; f++) {
