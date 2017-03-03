@@ -20,28 +20,33 @@ package hivemall.matrix;
 
 import javax.annotation.Nonnegative;
 
-public abstract class AbstractMatrix implements Matrix {
+public abstract class AbstractIntMatrix implements IntMatrix {
 
-    protected double defaultValue;
+    protected int defaultValue;
 
-    public AbstractMatrix() {
-        this.defaultValue = 0.d;
+    public AbstractIntMatrix() {
+        this.defaultValue = 0;
     }
 
     @Override
-    public void setDefaultValue(double value) {
+    public void setDefaultValue(int value) {
         this.defaultValue = value;
     }
 
     @Override
-    public double[] row() {
+    public int[] row() {
         int size = numRows();
-        return new double[size];
+        return new int[size];
     }
 
     @Override
-    public final double get(@Nonnegative final int row, @Nonnegative final int col) {
+    public final int get(@Nonnegative final int row, @Nonnegative final int col) {
         return get(row, col, defaultValue);
+    }
+
+    @Override
+    public void incr(@Nonnegative final int row, @Nonnegative final int col) {
+        incr(row, col, 1);
     }
 
     protected static final void checkRowIndex(final int row, final int numRows) {
@@ -53,6 +58,15 @@ public abstract class AbstractMatrix implements Matrix {
     protected static final void checkColIndex(final int col, final int numColumns) {
         if (col < 0 || col >= numColumns) {
             throw new IndexOutOfBoundsException("Col index " + col + " out of bounds " + numColumns);
+        }
+    }
+
+    protected static final void checkIndex(final int row, final int col) {
+        if (row < 0) {
+            throw new IllegalArgumentException("Invalid row index: " + row);
+        }
+        if (col < 0) {
+            throw new IllegalArgumentException("Invalid col index: " + col);
         }
     }
 

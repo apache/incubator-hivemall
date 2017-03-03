@@ -99,4 +99,8 @@ public final class Primitives {
         return result;
     }
 
+    public static long toLong(final int high, final int low) {
+        return (((long) high) << 32) | low;
+    }
+
 }

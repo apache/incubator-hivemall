@@ -19,7 +19,9 @@
 package hivemall.matrix;
 
 import hivemall.utils.lang.Preconditions;
+import hivemall.utils.lang.mutable.MutableInt;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public final class MatrixUtils {
@@ -42,6 +44,26 @@ public final class MatrixUtils {
             builder.nextRow();
         }
         return builder.buildMatrix();
+    }
+
+    /**
+     * Returns the index of maximum value of an array.
+     * 
+     * @return -1 if there are no columns
+     */
+    public static int whichMax(@Nonnull final IntMatrix matrix, @Nonnegative final int row) {
+        final MutableInt m = new MutableInt(Integer.MIN_VALUE);
+        final MutableInt which = new MutableInt(-1);
+        matrix.eachNonZeroInRow(row, new VectorProcedure() {
+            @Override
+            public void apply(int i, int value) {
+                if (value > m.getValue()) {
+                    m.setValue(value);
+                    which.setValue(i);
+                }
+            }
+        });
+        return which.getValue();
     }
 
 }

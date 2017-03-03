@@ -18,6 +18,9 @@
  */
 package hivemall.smile.data;
 
+import hivemall.annotations.Immutable;
+import hivemall.annotations.Mutable;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -25,11 +28,9 @@ import java.io.ObjectOutput;
 public abstract class Attribute {
 
     public final AttributeType type;
-    public final int attrIndex;
 
-    Attribute(AttributeType type, int attrIndex) {
+    Attribute(AttributeType type) {
         this.type = type;
-        this.attrIndex = attrIndex;
     }
 
     public void setSize(int size) {
@@ -45,7 +46,6 @@ public abstract class Attribute {
 
     public void writeTo(ObjectOutput out) throws IOException {
         out.writeInt(type.getTypeId());
-        out.writeInt(attrIndex);
     }
 
     public enum AttributeType {
@@ -78,25 +78,27 @@ public abstract class Attribute {
 
     }
 
+    @Immutable
     public static final class NumericAttribute extends Attribute {
 
-        public NumericAttribute(int attrIndex) {
-            super(AttributeType.NUMERIC, attrIndex);
+        public NumericAttribute() {
+            super(AttributeType.NUMERIC);
         }
 
         @Override
         public String toString() {
-            return "NumericAttribute [type=" + type + ", attrIndex=" + attrIndex + "]";
+            return "NumericAttribute [type=" + type + "]";
         }
 
     }
 
+    @Mutable
     public static final class NominalAttribute extends Attribute {
 
         private int size;
 
-        public NominalAttribute(int attrIndex) {
-            super(AttributeType.NOMINAL, attrIndex);
+        public NominalAttribute() {
+            super(AttributeType.NOMINAL);
             this.size = -1;
         }
 
@@ -118,25 +120,23 @@ public abstract class Attribute {
 
         @Override
         public String toString() {
-            return "NominalAttribute [size=" + size + ", type=" + type + ", attrIndex=" + attrIndex
-                    + "]";
+            return "NominalAttribute [size=" + size + ", type=" + type + "]";
         }
 
     }
 
     public static Attribute readFrom(ObjectInput in) throws IOException {
         int typeId = in.readInt();
-        int attrIndex = in.readInt();
 
         final Attribute attr;
         final AttributeType type = AttributeType.resolve(typeId);
         switch (type) {
             case NUMERIC: {
-                attr = new NumericAttribute(attrIndex);
+                attr = new NumericAttribute();
                 break;
             }
             case NOMINAL: {
-                attr = new NominalAttribute(attrIndex);
+                attr = new NominalAttribute();
                 int size = in.readInt();
                 attr.setSize(size);
                 break;

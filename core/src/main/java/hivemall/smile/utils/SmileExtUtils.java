@@ -52,13 +52,14 @@ public final class SmileExtUtils {
         }
         final String[] opts = opt.split(",");
         final int size = opts.length;
+        final NumericAttribute immutableNumAttr = new NumericAttribute();
         final Attribute[] attr = new Attribute[size];
         for (int i = 0; i < size; i++) {
             final String type = opts[i];
             if ("Q".equals(type)) {
-                attr[i] = new NumericAttribute(i);
+                attr[i] = immutableNumAttr;
             } else if ("C".equals(type)) {
-                attr[i] = new NominalAttribute(i);
+                attr[i] = new NominalAttribute();
             } else {
                 throw new UDFArgumentException("Unexpected type: " + type);
             }
@@ -72,9 +73,7 @@ public final class SmileExtUtils {
         if (attributes == null) {
             int p = x.numColumns();
             attributes = new Attribute[p];
-            for (int i = 0; i < p; i++) {
-                attributes[i] = new NumericAttribute(i);
-            }
+            Arrays.fill(attributes, new NumericAttribute());
         } else {
             int size = attributes.length;
             for (int j = 0; j < size; j++) {
@@ -100,16 +99,17 @@ public final class SmileExtUtils {
     @Nonnull
     public static Attribute[] convertAttributeTypes(@Nonnull final smile.data.Attribute[] original) {
         final int size = original.length;
+        final NumericAttribute immutableNumAttr = new NumericAttribute();
         final Attribute[] dst = new Attribute[size];
         for (int i = 0; i < size; i++) {
             smile.data.Attribute o = original[i];
             switch (o.type) {
                 case NOMINAL: {
-                    dst[i] = new NominalAttribute(i);
+                    dst[i] = new NominalAttribute();
                     break;
                 }
                 case NUMERIC: {
-                    dst[i] = new NumericAttribute(i);
+                    dst[i] = immutableNumAttr;
                     break;
                 }
                 default:

@@ -23,6 +23,9 @@ import java.util.Arrays;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
+/**
+ * Fixed-size Dense 2-d double Matrix.
+ */
 public final class DenseMatrix2d extends AbstractMatrix {
 
     @Nonnull

@@ -20,19 +20,12 @@ package hivemall.matrix;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
-import javax.annotation.concurrent.NotThreadSafe;
 
-/**
- * Double matrix.
- */
-@NotThreadSafe
-public interface Matrix {
+public interface IntMatrix {
 
     public boolean readOnly();
 
-    public boolean swappable();
-
-    public void setDefaultValue(double value);
+    public void setDefaultValue(int value);
 
     @Nonnegative
     public int numRows();
@@ -40,50 +33,54 @@ public interface Matrix {
     @Nonnegative
     public int numColumns();
 
-    @Nonnegative
-    public int numColumns(@Nonnegative int row);
+    @Nonnull
+    public int[] row();
 
     @Nonnull
-    public double[] row();
-
-    @Nonnull
-    public double[] getRow(@Nonnegative int index);
+    public int[] getRow(@Nonnegative int index);
 
     /**
      * @return returns dst
      */
     @Nonnull
-    public double[] getRow(@Nonnegative int index, @Nonnull double[] dst);
+    public int[] getRow(@Nonnegative int index, @Nonnull int[] dst);
 
     /**
      * @throws IndexOutOfBoundsException
      */
-    public double get(@Nonnegative int row, @Nonnegative int col);
+    public int get(@Nonnegative int row, @Nonnegative int col);
 
     /**
      * @throws IndexOutOfBoundsException
      */
-    public double get(@Nonnegative int row, @Nonnegative int col, double defaultValue);
-
-    /**
-     * @throws IndexOutOfBoundsException
-     * @throws UnsupportedOperationException
-     */
-    public void set(@Nonnegative int row, @Nonnegative int col, double value);
+    public int get(@Nonnegative int row, @Nonnegative int col, int defaultValue);
 
     /**
      * @throws IndexOutOfBoundsException
      * @throws UnsupportedOperationException
      */
-    public double getAndSet(@Nonnegative int row, @Nonnegative int col, double value);
+    public void set(@Nonnegative int row, @Nonnegative int col, int value);
 
-    public void swap(@Nonnegative int row1, @Nonnegative int row2);
+    /**
+     * @throws IndexOutOfBoundsException
+     * @throws UnsupportedOperationException
+     */
+    public int getAndSet(@Nonnegative int row, @Nonnegative int col, int value);
+
+    /**
+     * @throws IndexOutOfBoundsException
+     * @throws UnsupportedOperationException
+     */
+    public void incr(@Nonnegative int row, @Nonnegative int col);
+
+    /**
+     * @throws IndexOutOfBoundsException
+     * @throws UnsupportedOperationException
+     */
+    public void incr(@Nonnegative int row, @Nonnegative int col, int delta);
 
     public void eachInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
     public void eachNonZeroInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
-
-    @Nonnull
-    public MatrixBuilder builder();
 
 }

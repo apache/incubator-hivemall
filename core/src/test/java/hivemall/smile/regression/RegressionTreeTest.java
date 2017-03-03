@@ -19,9 +19,12 @@
 package hivemall.smile.regression;
 
 import hivemall.matrix.CSRMatrixBuilder;
-import hivemall.matrix.Matrix;
 import hivemall.matrix.DenseMatrix2d;
+import hivemall.matrix.Matrix;
 import hivemall.smile.data.Attribute;
+import hivemall.smile.data.Attribute.NumericAttribute;
+
+import java.util.Arrays;
 
 import javax.annotation.Nonnull;
 
@@ -58,9 +61,7 @@ public class RegressionTreeTest {
                 112.6, 114.2, 115.7, 116.9};
 
         Attribute[] attrs = new Attribute[longley[0].length];
-        for (int i = 0; i < attrs.length; i++) {
-            attrs[i] = new Attribute.NumericAttribute(i);
-        }
+        Arrays.fill(attrs, new NumericAttribute());
 
         int n = longley.length;
         LOOCV loocv = new LOOCV(n);
@@ -104,9 +105,7 @@ public class RegressionTreeTest {
                 112.6, 114.2, 115.7, 116.9};
 
         Attribute[] attrs = new Attribute[longley[0].length];
-        for (int i = 0; i < attrs.length; i++) {
-            attrs[i] = new Attribute.NumericAttribute(i);
-        }
+        Arrays.fill(attrs, new NumericAttribute());
 
         int n = longley.length;
         LOOCV loocv = new LOOCV(n);
@@ -150,9 +149,7 @@ public class RegressionTreeTest {
                 112.6, 114.2, 115.7, 116.9};
 
         Attribute[] attrs = new Attribute[longley[0].length];
-        for (int i = 0; i < attrs.length; i++) {
-            attrs[i] = new Attribute.NumericAttribute(i);
-        }
+        Arrays.fill(attrs, new NumericAttribute());
 
         int n = longley.length;
         LOOCV loocv = new LOOCV(n);

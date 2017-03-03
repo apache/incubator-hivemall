@@ -21,8 +21,11 @@ package hivemall.smile.classification;
 import hivemall.UDTFWithOptions;
 import hivemall.matrix.CSRMatrixBuilder;
 import hivemall.matrix.DenseMatrixBuilder;
+import hivemall.matrix.IntMatrix;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixBuilder;
+import hivemall.matrix.MatrixUtils;
+import hivemall.matrix.SparseIntMatrix;
 import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
@@ -336,7 +339,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                     + _maxLeafNodes + ", splitRule: " + _splitRule + ", seed: " + _seed);
         }
 
-        int[][] prediction = new int[numExamples][labels.length]; // placeholder for out-of-bag prediction
+        IntMatrix prediction = new SparseIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
         int[][] order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
@@ -361,15 +364,15 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
      * Synchronized because {@link #forward(Object)} should be called from a single thread.
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
-            @Nonnull final double[] importance, final int[] y, final int[][] prediction,
+            @Nonnull final double[] importance, final int[] y, @Nonnull final IntMatrix prediction,
             final boolean lastTask) throws HiveException {
         int oobErrors = 0;
         int oobTests = 0;
         if (lastTask) {
             // out-of-bag error estimate
             for (int i = 0; i < y.length; i++) {
-                final int pred = smile.math.Math.whichMax(prediction[i]);
-                if (prediction[i][pred] > 0) {
+                final int pred = MatrixUtils.whichMax(prediction, i);
+                if (pred != -1 && prediction.get(i, pred) > 0) {
                     oobTests++;
                     if (pred != y[i]) {
                         oobErrors++;
@@ -401,18 +404,22 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         /**
          * Attribute properties.
          */
+        @Nonnull
         private final Attribute[] _attributes;
         /**
          * Training instances.
          */
+        @Nonnull
         private final Matrix _x;
         /**
          * Training sample labels.
          */
+        @Nonnull
         private final int[] _y;
         /**
          * The index of training values in ascending order. Note that only numeric attributes will be sorted.
          */
+        @Nonnull
         private final int[][] _order;
         /**
          * The number of variables to pick up in each node.
@@ -421,16 +428,20 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         /**
          * The out-of-bag predictions.
          */
-        private final int[][] _prediction;
+        @Nonnull
+        private final IntMatrix _prediction;
 
+        @Nonnull
         private final RandomForestClassifierUDTF _udtf;
         private final int _taskId;
         private final long _seed;
+        @Nonnull
         private final AtomicInteger _remainingTasks;
 
-        TrainingTask(RandomForestClassifierUDTF udtf, int taskId, Attribute[] attributes, Matrix x,
-                int[] y, int numVars, int[][] order, int[][] prediction, long seed,
-                AtomicInteger remainingTasks) {
+        TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
+                @Nonnull Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
+                @Nonnull int[][] order, @Nonnull IntMatrix prediction, long seed,
+                @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;
@@ -468,8 +479,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             final double[] xProbe = _x.row();
             for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
                 final int p = tree.predict(_x.getRow(i, xProbe));
-                synchronized (_prediction[i]) {
-                    _prediction[i][p]++;
+                synchronized (_prediction) {
+                    _prediction.incr(i, p);
                 }
             }
 

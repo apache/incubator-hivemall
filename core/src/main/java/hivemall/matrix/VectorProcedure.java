@@ -20,8 +20,12 @@ package hivemall.matrix;
 
 import javax.annotation.Nonnegative;
 
-public interface VectorProcedure {
+public abstract class VectorProcedure {
 
-    void apply(@Nonnegative int i, double value);
+    public VectorProcedure() {}
+
+    public void apply(@Nonnegative int i, double value) {}
+
+    public void apply(@Nonnegative int i, int value) {}
 
 }

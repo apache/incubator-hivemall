@@ -89,9 +89,13 @@ public final class Long2IntOpenHashTable implements Externalizable {
      * @return -1.f if not found
      */
     public int get(final long key) {
+        return get(key, defaultReturnValue);
+    }
+
+    public int get(final long key, final int defaultValue) {
         final int i = findKey(key);
         if (i < 0) {
-            return defaultReturnValue;
+            return defaultValue;
         }
         return _values[i];
     }
@@ -136,6 +140,51 @@ public final class Long2IntOpenHashTable implements Externalizable {
         }
         keys[keyIdx] = key;
         values[keyIdx] = value;
+        states[keyIdx] = FULL;
+        ++_used;
+        return defaultReturnValue;
+    }
+
+    public int incr(final long key, final int delta) {
+        final int hash = keyHash(key);
+        int keyLength = _keys.length;
+        int keyIdx = hash % keyLength;
+
+        boolean expanded = preAddEntry(keyIdx);
+        if (expanded) {
+            keyLength = _keys.length;
+            keyIdx = hash % keyLength;
+        }
+
+        final long[] keys = _keys;
+        final int[] values = _values;
+        final byte[] states = _states;
+
+        if (states[keyIdx] == FULL) {// double hashing
+            if (keys[keyIdx] == key) {
+                int old = values[keyIdx];
+                values[keyIdx] += delta;
+                return old;
+            }
+            // try second hash
+            int decr = 1 + (hash % (keyLength - 2));
+            for (;;) {
+                keyIdx -= decr;
+                if (keyIdx < 0) {
+                    keyIdx += keyLength;
+                }
+                if (isFree(keyIdx, key)) {
+                    break;
+                }
+                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
+                    int old = values[keyIdx];
+                    values[keyIdx] += delta;
+                    return old;
+                }
+            }
+        }
+        keys[keyIdx] = key;
+        values[keyIdx] += delta;
         states[keyIdx] = FULL;
         ++_used;
         return defaultReturnValue;
