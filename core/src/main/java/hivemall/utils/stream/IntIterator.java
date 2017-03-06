@@ -18,11 +18,10 @@
  */
 package hivemall.utils.stream;
 
-import javax.annotation.Nonnull;
+public interface IntIterator {
 
-public interface IntStream {
+    boolean hasNext();
 
-    @Nonnull
-    IntIterator iterator();
+    int next();
 
 }

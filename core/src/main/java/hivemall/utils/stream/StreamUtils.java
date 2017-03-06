@@ -39,13 +39,12 @@ public final class StreamUtils {
     private StreamUtils() {}
 
     @Nonnull
-    public static IntStream toCompressedIntStream(@Nonnull final int[] src) throws IOException {
+    public static IntStream toCompressedIntStream(@Nonnull final int[] src) {
         return toCompressedIntStream(src, Deflater.DEFAULT_COMPRESSION);
     }
 
     @Nonnull
-    public static IntStream toCompressedIntStream(@Nonnull final int[] src, final int level)
-            throws IOException {
+    public static IntStream toCompressedIntStream(@Nonnull final int[] src, final int level) {
         FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream(16384);
         Deflater deflater = new Deflater(level, true);
         DeflaterOutputStream defos = new DeflaterOutputStream(bos, deflater, 8192);
@@ -60,19 +59,88 @@ public final class StreamUtils {
             defos.finish();
             compressed = bos.toByteArray_clear();
         } catch (IOException e) {
-            throw e;
+            throw new IllegalStateException("Failed to compress int[]", e);
         } finally {
             IOUtils.closeQuietly(dos);
         }
 
-        FastByteArrayInputStream bis = new FastByteArrayInputStream(compressed);
-        InflaterInputStream infis = new InflaterInputStream(bis, new Inflater(true), 8192);
-        DataInputStream dis = new DataInputStream(infis);
+        return new InflateIntStream(compressed, count);
+    }
 
-        return new InflateIntStream(dis, count);
+    @Nonnull
+    public static IntStream toArrayIntStream(@Nonnull int[] array) {
+        return new ArrayIntStream(array);
+    }
+
+    static final class ArrayIntStream implements IntStream {
+
+        @Nonnull
+        private final int[] array;
+
+        ArrayIntStream(@Nonnull int[] array) {
+            this.array = array;
+        }
+
+        @Override
+        public ArrayIntIterator iterator() {
+            return new ArrayIntIterator(array);
+        }
+
+    }
+
+    static final class ArrayIntIterator implements IntIterator {
+
+        @Nonnull
+        private final int[] array;
+        @Nonnegative
+        private final int count;
+        @Nonnegative
+        private int index;
+
+        ArrayIntIterator(@Nonnull int[] array) {
+            this.array = array;
+            this.count = array.length;
+            this.index = 0;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < count;
+        }
+
+        @Override
+        public int next() {
+            if (index < count) {// hasNext()
+                return array[index++];
+            }
+            throw new NoSuchElementException();
+        }
+
     }
 
     static final class InflateIntStream implements IntStream {
+
+        @Nonnull
+        private final byte[] compressed;
+        @Nonnegative
+        private final int count;
+
+        InflateIntStream(@Nonnull byte[] compressed, @Nonnegative int count) {
+            this.compressed = compressed;
+            this.count = count;
+        }
+
+        @Override
+        public InflatedIntIterator iterator() {
+            FastByteArrayInputStream bis = new FastByteArrayInputStream(compressed);
+            InflaterInputStream infis = new InflaterInputStream(bis, new Inflater(true), 8192);
+            DataInputStream in = new DataInputStream(infis);
+            return new InflatedIntIterator(in, count);
+        }
+
+    }
+
+    static final class InflatedIntIterator implements IntIterator {
 
         @Nonnull
         private final DataInputStream in;
@@ -81,8 +149,8 @@ public final class StreamUtils {
         @Nonnegative
         private int index;
 
-        InflateIntStream(@Nonnull DataInputStream compressed, @Nonnegative int count) {
-            this.in = compressed;
+        InflatedIntIterator(@Nonnull DataInputStream in, @Nonnegative int count) {
+            this.in = in;
             this.count = count;
             this.index = 0;
         }
@@ -105,11 +173,6 @@ public final class StreamUtils {
                 return v;
             }
             throw new NoSuchElementException();
-        }
-
-        @Override
-        public void close() throws IOException {
-            in.close();
         }
 
     }
