@@ -78,6 +78,16 @@
 				<otherArchive>http://markmail.org/search/?q=list%3Aorg.apache.hivemall.commits</otherArchive>
 			</otherArchives>
 		</mailingList>
+		<mailingList>
+			<name>issues</name>
+			<post>issues@hivemall.incubator.apache.org</post>
+			<subscribe>issues-subscribe@hivemall.incubator.apache.org</subscribe>
+			<unsubscribe>issues-unsubscribe@hivemall.incubator.apache.org</unsubscribe>
+			<archive>https://lists.apache.org/list.html?issues@hivemall.apache.org</archive>
+			<otherArchives>
+				<otherArchive>http://markmail.org/search/?q=list%3Aorg.apache.hivemall.issues</otherArchive>
+			</otherArchives>
+		</mailingList>
 	</mailingLists>
 
 	<developers>
