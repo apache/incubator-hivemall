@@ -35,8 +35,8 @@ public abstract class AbstractMatrix implements Matrix {
 
     @Override
     public double[] row() {
-        int size = numRows();
-        return new double[size];
+        int cols = numColumns();
+        return new double[cols];
     }
 
     @Override
