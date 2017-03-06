@@ -133,7 +133,7 @@ public final class StreamUtils {
         @Override
         public InflatedIntIterator iterator() {
             FastByteArrayInputStream bis = new FastByteArrayInputStream(compressed);
-            InflaterInputStream infis = new InflaterInputStream(bis, new Inflater(true), 8192);
+            InflaterInputStream infis = new InflaterInputStream(bis, new Inflater(true), 512);
             DataInputStream in = new DataInputStream(infis);
             return new InflatedIntIterator(in, count);
         }
