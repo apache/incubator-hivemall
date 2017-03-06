@@ -60,6 +60,11 @@ public final class CSRMatrix extends AbstractMatrix {
     }
 
     @Override
+    public boolean isSparse() {
+        return true;
+    }
+
+    @Override
     public boolean readOnly() {
         return true;
     }

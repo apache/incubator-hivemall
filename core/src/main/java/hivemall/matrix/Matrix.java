@@ -28,6 +28,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 public interface Matrix {
 
+    public boolean isSparse();
+    
     public boolean readOnly();
 
     public boolean swappable();

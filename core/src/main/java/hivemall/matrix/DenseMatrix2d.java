@@ -43,6 +43,11 @@ public final class DenseMatrix2d extends AbstractMatrix {
     }
 
     @Override
+    public boolean isSparse() {
+        return false;
+    }
+
+    @Override
     public boolean readOnly() {
         return true;
     }
