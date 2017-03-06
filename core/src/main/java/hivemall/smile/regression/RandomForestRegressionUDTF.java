@@ -37,6 +37,7 @@ import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
+import hivemall.utils.stream.IntStream;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -345,7 +346,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
         int[] oob = new int[numExamples];
-        int[][] order = SmileExtUtils.sort(attributes, x);
+        IntStream[] order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
@@ -418,7 +419,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         /**
          * The index of training values in ascending order. Note that only numeric attributes will be sorted.
          */
-        private final int[][] _order;
+        private final IntStream[] _order;
         /**
          * The number of variables to pick up in each node.
          */
@@ -438,8 +439,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes, Matrix x,
-                double[] y, int numVars, int[][] order, double[] prediction, int[] oob, long seed,
-                AtomicInteger remainingTasks) {
+                double[] y, int numVars, IntStream[] order, double[] prediction, int[] oob,
+                long seed, AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;

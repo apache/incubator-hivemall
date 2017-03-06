@@ -27,6 +27,35 @@ import org.junit.Test;
 public class StreamUtilsTest {
 
     @Test
+    public void testToArrayIntStream() throws IOException {
+        Random rand = new Random(43L);
+        int[] src = new int[9999];
+        for (int i = 0; i < src.length; i++) {
+            src[i] = rand.nextInt();
+        }
+
+        IntStream stream = StreamUtils.toArrayIntStream(src);
+        IntIterator itor = stream.iterator();
+        int i = 0;
+        while (itor.hasNext()) {
+            Assert.assertEquals(src[i], itor.next());
+            i++;
+        }
+        Assert.assertFalse(itor.hasNext());
+        Assert.assertEquals(src.length, i);
+
+        itor = stream.iterator();
+        i = 0;
+        while (itor.hasNext()) {
+            Assert.assertEquals(src[i], itor.next());
+            i++;
+        }
+        Assert.assertFalse(itor.hasNext());
+        Assert.assertEquals(src.length, i);
+    }
+
+
+    @Test
     public void testToCompressedIntStreamIntArray() throws IOException {
         Random rand = new Random(43L);
         int[] src = new int[9999];
@@ -35,14 +64,23 @@ public class StreamUtilsTest {
         }
 
         IntStream stream = StreamUtils.toCompressedIntStream(src);
+        IntIterator itor = stream.iterator();
         int i = 0;
-        while (stream.hasNext()) {
-            Assert.assertEquals(src[i], stream.next());
+        while (itor.hasNext()) {
+            Assert.assertEquals(src[i], itor.next());
             i++;
         }
-        Assert.assertFalse(stream.hasNext());
+        Assert.assertFalse(itor.hasNext());
         Assert.assertEquals(src.length, i);
-        stream.close();
+
+        itor = stream.iterator();
+        i = 0;
+        while (itor.hasNext()) {
+            Assert.assertEquals(src[i], itor.next());
+            i++;
+        }
+        Assert.assertFalse(itor.hasNext());
+        Assert.assertEquals(src.length, i);
     }
 
 }

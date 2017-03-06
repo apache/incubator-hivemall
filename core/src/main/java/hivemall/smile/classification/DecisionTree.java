@@ -40,6 +40,8 @@ import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
+import hivemall.utils.stream.IntIterator;
+import hivemall.utils.stream.IntStream;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -100,6 +102,7 @@ public final class DecisionTree implements Classifier<double[]> {
     /**
      * The attributes of independent variable.
      */
+    @Nonnull
     private final Attribute[] _attributes;
     private final boolean _hasNumericType;
     /**
@@ -107,10 +110,12 @@ public final class DecisionTree implements Classifier<double[]> {
      * descendant nodes is less than the parent node. Adding up the decreases for each individual variable over the tree gives a simple measure of
      * variable importance.
      */
+    @Nonnull
     private final double[] _importance;
     /**
      * The root of the regression tree
      */
+    @Nonnull
     private final Node _root;
     /**
      * The maximum number of the tree depth
@@ -119,6 +124,7 @@ public final class DecisionTree implements Classifier<double[]> {
     /**
      * The splitting rule.
      */
+    @Nonnull
     private final SplitRule _rule;
     /**
      * The number of classes.
@@ -139,8 +145,10 @@ public final class DecisionTree implements Classifier<double[]> {
     /**
      * The index of training values in ascending order. Note that only numeric attributes will be sorted.
      */
-    private final int[][] _order;
+    @Nonnull
+    private final IntStream[] _order;
 
+    @Nonnull
     private final Random _rnd;
 
     /**
@@ -547,8 +555,9 @@ public final class DecisionTree implements Classifier<double[]> {
                 double prevx = Double.NaN;
                 int prevy = -1;
 
-                assert (samples != null);
-                for (final int i : _order[j]) {
+                final IntIterator order = _order[j].iterator();
+                while (order.hasNext()) {
+                    final int i = order.next();
                     final int sample = samples[i];
                     if (sample > 0) {
                         final double x_ij = x.get(i, j);
@@ -771,7 +780,7 @@ public final class DecisionTree implements Classifier<double[]> {
      */
     public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable int[] bags, @Nullable int[][] order, @Nonnull SplitRule rule,
+            @Nullable int[] bags, @Nullable IntStream[] order, @Nonnull SplitRule rule,
             @Nullable smile.math.Random rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 

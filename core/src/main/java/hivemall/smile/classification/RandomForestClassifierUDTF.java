@@ -40,6 +40,7 @@ import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
+import hivemall.utils.stream.IntStream;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -340,7 +341,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
 
         IntMatrix prediction = new SparseIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
-        int[][] order = SmileExtUtils.sort(attributes, x);
+        IntStream[] order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
@@ -420,7 +421,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * The index of training values in ascending order. Note that only numeric attributes will be sorted.
          */
         @Nonnull
-        private final int[][] _order;
+        private final IntStream[] _order;
         /**
          * The number of variables to pick up in each node.
          */
@@ -440,7 +441,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
                 @Nonnull Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
-                @Nonnull int[][] order, @Nonnull IntMatrix prediction, long seed,
+                @Nonnull IntStream[] order, @Nonnull IntMatrix prediction, long seed,
                 @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;

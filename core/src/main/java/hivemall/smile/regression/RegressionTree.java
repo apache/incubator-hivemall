@@ -40,6 +40,8 @@ import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
+import hivemall.utils.stream.IntIterator;
+import hivemall.utils.stream.IntStream;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -124,7 +126,7 @@ public final class RegressionTree implements Regression<double[]> {
     /**
      * The index of training values in ascending order. Note that only numeric attributes will be sorted.
      */
-    private final int[][] _order;
+    private final IntStream[] _order;
 
     private final Random _rnd;
 
@@ -538,7 +540,9 @@ public final class RegressionTree implements Regression<double[]> {
                 int trueCount = 0;
                 double prevx = Double.NaN;
 
-                for (int i : _order[j]) {
+                final IntIterator order = _order[j].iterator();
+                while (order.hasNext()) {
+                    final int i = order.next();
                     final int sample = samples[i];
                     if (sample > 0) {
                         final double x_ij = x.get(i, j);
@@ -699,7 +703,7 @@ public final class RegressionTree implements Regression<double[]> {
 
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable int[][] order, @Nullable int[] bags, @Nullable smile.math.Random rand) {
+            @Nullable IntStream[] order, @Nullable int[] bags, @Nullable smile.math.Random rand) {
         this(attributes, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
     }
 
@@ -719,7 +723,7 @@ public final class RegressionTree implements Regression<double[]> {
      */
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable int[][] order, @Nullable int[] bags, @Nullable NodeOutput output,
+            @Nullable IntStream[] order, @Nullable int[] bags, @Nullable NodeOutput output,
             @Nullable smile.math.Random rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
