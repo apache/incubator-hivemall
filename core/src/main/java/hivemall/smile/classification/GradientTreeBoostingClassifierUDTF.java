@@ -23,6 +23,7 @@ import hivemall.matrix.CSRMatrixBuilder;
 import hivemall.matrix.DenseMatrixBuilder;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixBuilder;
+import hivemall.matrix.ints.IntMatrix;
 import hivemall.smile.ModelType;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
@@ -35,7 +36,6 @@ import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
-import hivemall.utils.stream.IntStream;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -379,7 +379,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             h[i] = intercept;
         }
 
-        final IntStream[] order = SmileExtUtils.sort(_attributes, x);
+        final IntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput output = new L2NodeOutput(response);
 
         final BitSet sampled = new BitSet(numInstances);
@@ -454,7 +454,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final double[][] p = new double[k][numInstances]; // posteriori probabilities.
         final double[][] response = new double[k][numInstances]; // pseudo response.
 
-        final IntStream[] order = SmileExtUtils.sort(_attributes, x);
+        final IntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput[] output = new LKNodeOutput[k];
         for (int i = 0; i < k; i++) {
             output[i] = new LKNodeOutput(response[i], k);

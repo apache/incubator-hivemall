@@ -34,14 +34,14 @@
 package hivemall.smile.classification;
 
 import hivemall.matrix.Matrix;
+import hivemall.matrix.VectorProcedure;
+import hivemall.matrix.ints.IntMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
-import hivemall.utils.stream.IntIterator;
-import hivemall.utils.stream.IntStream;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -146,7 +146,7 @@ public final class DecisionTree implements Classifier<double[]> {
      * The index of training values in ascending order. Note that only numeric attributes will be sorted.
      */
     @Nonnull
-    private final IntStream[] _order;
+    private final IntMatrix _order;
 
     @Nonnull
     private final Random _rnd;
@@ -552,58 +552,59 @@ public final class DecisionTree implements Classifier<double[]> {
                 }
             } else if (_attributes[j].type == AttributeType.NUMERIC) {
                 final int[] trueCount = new int[_k];
-                double prevx = Double.NaN;
-                int prevy = -1;
 
-                final IntIterator order = _order[j].iterator();
-                while (order.hasNext()) {
-                    final int i = order.next();
-                    final int sample = samples[i];
-                    if (sample > 0) {
-                        final double x_ij = x.get(i, j);
-                        final int y_i = y[i];
+                _order.eachInColumn(j, new VectorProcedure() {
+                    double prevx = Double.NaN;
+                    int prevy = -1;
 
-                        if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
+                    public void apply(final int row, final int i) {
+                        final int sample = samples[i];
+                        if (sample > 0) {
+                            final double x_ij = x.get(i, j);
+                            final int y_i = y[i];
+
+                            if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
+                                prevx = x_ij;
+                                prevy = y_i;
+                                trueCount[y_i] += sample;
+                                return;
+                            }
+
+                            final int tc = Math.sum(trueCount);
+                            final int fc = n - tc;
+
+                            // skip splitting this feature.
+                            if (tc < _minSplit || fc < _minSplit) {
+                                prevx = x_ij;
+                                prevy = y_i;
+                                trueCount[y_i] += sample;
+                                return;
+                            }
+
+                            for (int l = 0; l < _k; l++) {
+                                falseCount[l] = count[l] - trueCount[l];
+                            }
+
+                            final double gain = impurity - (double) tc / n
+                                    * impurity(trueCount, tc, _rule) - (double) fc / n
+                                    * impurity(falseCount, fc, _rule);
+
+                            if (gain > splitNode.splitScore) {
+                                // new best split
+                                splitNode.splitFeature = j;
+                                splitNode.splitFeatureType = AttributeType.NUMERIC;
+                                splitNode.splitValue = (x_ij + prevx) / 2.d;
+                                splitNode.splitScore = gain;
+                                splitNode.trueChildOutput = Math.whichMax(trueCount);
+                                splitNode.falseChildOutput = Math.whichMax(falseCount);
+                            }
+
                             prevx = x_ij;
                             prevy = y_i;
                             trueCount[y_i] += sample;
-                            continue;
                         }
-
-                        final int tc = Math.sum(trueCount);
-                        final int fc = n - tc;
-
-                        // skip splitting this feature.
-                        if (tc < _minSplit || fc < _minSplit) {
-                            prevx = x_ij;
-                            prevy = y_i;
-                            trueCount[y_i] += sample;
-                            continue;
-                        }
-
-                        for (int l = 0; l < _k; l++) {
-                            falseCount[l] = count[l] - trueCount[l];
-                        }
-
-                        final double gain = impurity - (double) tc / n
-                                * impurity(trueCount, tc, _rule) - (double) fc / n
-                                * impurity(falseCount, fc, _rule);
-
-                        if (gain > splitNode.splitScore) {
-                            // new best split
-                            splitNode.splitFeature = j;
-                            splitNode.splitFeatureType = AttributeType.NUMERIC;
-                            splitNode.splitValue = (x_ij + prevx) / 2.d;
-                            splitNode.splitScore = gain;
-                            splitNode.trueChildOutput = Math.whichMax(trueCount);
-                            splitNode.falseChildOutput = Math.whichMax(falseCount);
-                        }
-
-                        prevx = x_ij;
-                        prevy = y_i;
-                        trueCount[y_i] += sample;
-                    }
-                }
+                    }//apply()                    
+                });
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "
                         + _attributes[j].type);
@@ -780,7 +781,7 @@ public final class DecisionTree implements Classifier<double[]> {
      */
     public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable int[] bags, @Nullable IntStream[] order, @Nonnull SplitRule rule,
+            @Nullable int[] bags, @Nullable IntMatrix order, @Nonnull SplitRule rule,
             @Nullable smile.math.Random rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 

@@ -34,14 +34,14 @@
 package hivemall.smile.regression;
 
 import hivemall.matrix.Matrix;
+import hivemall.matrix.VectorProcedure;
+import hivemall.matrix.ints.IntMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
-import hivemall.utils.stream.IntIterator;
-import hivemall.utils.stream.IntStream;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -126,7 +126,7 @@ public final class RegressionTree implements Regression<double[]> {
     /**
      * The index of training values in ascending order. Note that only numeric attributes will be sorted.
      */
-    private final IntStream[] _order;
+    private final IntMatrix _order;
 
     private final Random _rnd;
 
@@ -536,58 +536,60 @@ public final class RegressionTree implements Regression<double[]> {
                     }
                 }
             } else if (_attributes[j].type == AttributeType.NUMERIC) {
-                double trueSum = 0.0;
-                int trueCount = 0;
-                double prevx = Double.NaN;
 
-                final IntIterator order = _order[j].iterator();
-                while (order.hasNext()) {
-                    final int i = order.next();
-                    final int sample = samples[i];
-                    if (sample > 0) {
-                        final double x_ij = x.get(i, j);
-                        if (Double.isNaN(prevx) || x_ij == prevx) {
+                _order.eachInColumn(j, new VectorProcedure() {
+                    double trueSum = 0.0;
+                    int trueCount = 0;
+                    double prevx = Double.NaN;
+
+                    public void apply(final int row, final int i) {
+                        final int sample = samples[i];
+                        if (sample > 0) {
+                            final double x_ij = x.get(i, j);
+                            if (Double.isNaN(prevx) || x_ij == prevx) {
+                                prevx = x_ij;
+                                trueSum += sample * y[i];
+                                trueCount += sample;
+                                return;
+                            }
+
+                            final double falseCount = n - trueCount;
+
+                            // If either side is empty, skip this feature.
+                            if (trueCount < _minSplit || falseCount < _minSplit) {
+                                prevx = x_ij;
+                                trueSum += sample * y[i];
+                                trueCount += sample;
+                                return;
+                            }
+
+                            // compute penalized means
+                            final double trueMean = trueSum / trueCount;
+                            final double falseMean = (sum - trueSum) / falseCount;
+
+                            // The gain is actually -(reduction in squared error) for
+                            // sorting in priority queue, which treats smaller number with
+                            // higher priority.
+                            final double gain = (trueCount * trueMean * trueMean + falseCount
+                                    * falseMean * falseMean)
+                                    - n * split.output * split.output;
+                            if (gain > split.splitScore) {
+                                // new best split
+                                split.splitFeature = j;
+                                split.splitFeatureType = AttributeType.NUMERIC;
+                                split.splitValue = (x_ij + prevx) / 2;
+                                split.splitScore = gain;
+                                split.trueChildOutput = trueMean;
+                                split.falseChildOutput = falseMean;
+                            }
+
                             prevx = x_ij;
                             trueSum += sample * y[i];
                             trueCount += sample;
-                            continue;
                         }
+                    }//apply
+                });
 
-                        final double falseCount = n - trueCount;
-
-                        // If either side is empty, skip this feature.
-                        if (trueCount < _minSplit || falseCount < _minSplit) {
-                            prevx = x_ij;
-                            trueSum += sample * y[i];
-                            trueCount += sample;
-                            continue;
-                        }
-
-                        // compute penalized means
-                        final double trueMean = trueSum / trueCount;
-                        final double falseMean = (sum - trueSum) / falseCount;
-
-                        // The gain is actually -(reduction in squared error) for
-                        // sorting in priority queue, which treats smaller number with
-                        // higher priority.
-                        final double gain = (trueCount * trueMean * trueMean + falseCount
-                                * falseMean * falseMean)
-                                - n * split.output * split.output;
-                        if (gain > split.splitScore) {
-                            // new best split
-                            split.splitFeature = j;
-                            split.splitFeatureType = AttributeType.NUMERIC;
-                            split.splitValue = (x_ij + prevx) / 2;
-                            split.splitScore = gain;
-                            split.trueChildOutput = trueMean;
-                            split.falseChildOutput = falseMean;
-                        }
-
-                        prevx = x_ij;
-                        trueSum += sample * y[i];
-                        trueCount += sample;
-                    }
-                }
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "
                         + _attributes[j].type);
@@ -703,7 +705,7 @@ public final class RegressionTree implements Regression<double[]> {
 
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable IntStream[] order, @Nullable int[] bags, @Nullable smile.math.Random rand) {
+            @Nullable IntMatrix order, @Nullable int[] bags, @Nullable smile.math.Random rand) {
         this(attributes, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
     }
 
@@ -723,7 +725,7 @@ public final class RegressionTree implements Regression<double[]> {
      */
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable IntStream[] order, @Nullable int[] bags, @Nullable NodeOutput output,
+            @Nullable IntMatrix order, @Nullable int[] bags, @Nullable NodeOutput output,
             @Nullable smile.math.Random rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 

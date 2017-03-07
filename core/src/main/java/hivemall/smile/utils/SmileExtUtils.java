@@ -20,6 +20,8 @@ package hivemall.smile.utils;
 
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixUtils;
+import hivemall.matrix.ints.IntMatrix;
+import hivemall.matrix.ints.SparseIntMatrix;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
@@ -28,8 +30,6 @@ import hivemall.smile.data.Attribute.NumericAttribute;
 import hivemall.utils.collections.DoubleArrayList;
 import hivemall.utils.collections.IntArrayList;
 import hivemall.utils.math.MathUtils;
-import hivemall.utils.stream.IntStream;
-import hivemall.utils.stream.StreamUtils;
 
 import java.util.Arrays;
 
@@ -124,16 +124,16 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static IntStream[] sort(@Nonnull final Attribute[] attributes, @Nonnull final Matrix x) {
+    public static IntMatrix sort(@Nonnull final Attribute[] attributes, @Nonnull final Matrix x) {
         final int n = x.numRows();
         final int p = x.numColumns();
 
-        final IntStream[] index = new IntStream[p];
+        final int[][] index = new int[p][];
 
         if (x.isSparse()) {
             int initSize = n / 10;
-            final DoubleArrayList arr = new DoubleArrayList(initSize);
-            final IntArrayList brr = new IntArrayList(initSize);
+            final DoubleArrayList dlist = new DoubleArrayList(initSize);
+            final IntArrayList ilist = new IntArrayList(initSize);
             for (int j = 0; j < p; j++) {
                 if (attributes[j].type == AttributeType.NUMERIC) {
                     for (int i = 0; i < n; i++) {
@@ -141,17 +141,16 @@ public final class SmileExtUtils {
                         if (Double.isNaN(v)) {
                             continue;
                         }
-                        arr.add(v);
-                        brr.add(i);
+                        dlist.add(v);
+                        ilist.add(i);
                     }
-                    int[] indexJ = brr.toArray();
-                    QuickSort.sort(arr.array(), indexJ, indexJ.length);
-                    index[j] = StreamUtils.toCompressedIntStream(indexJ);
-                    arr.clear();
-                    brr.clear();
+                    int[] indexJ = ilist.toArray();
+                    QuickSort.sort(dlist.array(), indexJ, indexJ.length);
+                    index[j] = indexJ;
+                    dlist.clear();
+                    ilist.clear();
                 }
             }
-
         } else {
             final double[] a = new double[n];
             for (int j = 0; j < p; j++) {
@@ -159,13 +158,12 @@ public final class SmileExtUtils {
                     for (int i = 0; i < n; i++) {
                         a[i] = x.get(i, j);
                     }
-                    int[] sorted = QuickSort.sort(a);
-                    index[j] = StreamUtils.toArrayIntStream(sorted);
+                    index[j] = QuickSort.sort(a);
                 }
             }
         }
 
-        return index;
+        return new SparseIntMatrix(index);
     }
 
     @Nonnull
