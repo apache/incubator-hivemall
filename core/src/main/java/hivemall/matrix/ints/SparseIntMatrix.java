@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.matrix.ints;
 
+import hivemall.matrix.VectorProcedure;
 import hivemall.utils.collections.Long2IntOpenHashTable;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
@@ -53,6 +54,43 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
         this.elements = new Long2IntOpenHashTable(initialCapacity);
         this.numRows = numRows;
         this.numColumns = numCols;
+    }
+
+    public SparseIntMatrix(@Nonnull final int[][] columnMajorMatrix) {
+        this(columnMajorMatrix, false);
+    }
+
+    public SparseIntMatrix(@Nonnull final int[][] columnMajorMatrix, boolean nonZeroOnly) {
+        final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(
+            columnMajorMatrix.length * 3);
+
+        int numColumns = 0;
+        int numRows = 0;
+        for (int j = 0; j < columnMajorMatrix.length; j++) {
+            final int[] col = columnMajorMatrix[j];
+            if (col == null) {
+                continue;
+            }
+            for (int row = 0; row < col.length; row++) {
+                int value = col[row];
+                if (nonZeroOnly && value == 0) {
+                    continue;
+                }
+                long index = index(row, j);
+                elements.put(index, value);
+                numRows = Math.max(numRows, row + 1);
+                numColumns = Math.max(numColumns, j + 1);
+            }
+        }
+
+        this.elements = elements;
+        this.numRows = numRows;
+        this.numColumns = numColumns;
+    }
+
+    @Override
+    public boolean isSparse() {
+        return true;
     }
 
     @Override
@@ -154,8 +192,37 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
         }
     }
 
+    @Override
+    public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure) {
+        checkColIndex(col, numColumns);
+
+        for (int row = 0; row < numRows; row++) {
+            long i = index(row, col);
+            int key = elements._findKey(i);
+            if (key < 0) {
+                continue;
+            }
+            int v = elements._get(key);
+            procedure.apply(row, v);
+        }
+    }
+
+    @Override
+    public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure) {
+        checkColIndex(col, numColumns);
+
+        for (int row = 0; row < numRows; row++) {
+            long i = index(row, col);
+            int v = elements.get(i, 0);
+            if (v != 0) {
+                procedure.apply(row, v);
+            }
+        }
+    }
+
     @Nonnegative
     private static long index(@Nonnegative final int row, @Nonnegative final int col) {
         return Primitives.toLong(row, col);
     }
+
 }

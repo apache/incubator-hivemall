@@ -18,6 +18,7 @@
  */
 package hivemall.matrix;
 
+import hivemall.matrix.ints.IntMatrix;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.mutable.MutableInt;
 

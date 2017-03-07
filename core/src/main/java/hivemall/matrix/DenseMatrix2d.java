@@ -26,7 +26,7 @@ import javax.annotation.Nonnull;
 /**
  * Fixed-size Dense 2-d double Matrix.
  */
-public final class DenseMatrix2d extends AbstractMatrix {
+public final class DenseMatrix2d extends RowMajorMatrix {
 
     @Nonnull
     private final double[][] data;

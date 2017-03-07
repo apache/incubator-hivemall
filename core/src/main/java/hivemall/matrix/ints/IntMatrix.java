@@ -16,12 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.matrix.ints;
+
+import hivemall.matrix.VectorProcedure;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public interface IntMatrix {
+
+    public boolean isSparse();
 
     public boolean readOnly();
 
@@ -82,5 +86,9 @@ public interface IntMatrix {
     public void eachInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
     public void eachNonZeroInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
+
+    public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
+
+    public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 
 }

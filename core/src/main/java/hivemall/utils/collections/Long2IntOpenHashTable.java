@@ -82,22 +82,29 @@ public final class Long2IntOpenHashTable implements Externalizable {
     }
 
     public boolean containsKey(final long key) {
-        return findKey(key) >= 0;
+        return _findKey(key) >= 0;
     }
 
     /**
-     * @return -1.f if not found
+     * @return defaultReturnValue if not found
      */
     public int get(final long key) {
         return get(key, defaultReturnValue);
     }
 
     public int get(final long key, final int defaultValue) {
-        final int i = findKey(key);
+        final int i = _findKey(key);
         if (i < 0) {
             return defaultValue;
         }
         return _values[i];
+    }
+
+    public int _get(final int index) {
+        if (index < 0) {
+            return defaultReturnValue;
+        }
+        return _values[index];
     }
 
     public int put(final long key, final int value) {
@@ -212,7 +219,10 @@ public final class Long2IntOpenHashTable implements Externalizable {
         return false;
     }
 
-    protected int findKey(final long key) {
+    /**
+     * @return -1 if not found
+     */
+    public int _findKey(final long key) {
         final long[] keys = _keys;
         final byte[] states = _states;
         final int keyLength = keys.length;

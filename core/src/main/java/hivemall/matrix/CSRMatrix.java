@@ -31,7 +31,7 @@ import javax.annotation.Nonnull;
  * @link http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
  * @link http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */
-public final class CSRMatrix extends AbstractMatrix {
+public final class CSRMatrix extends RowMajorMatrix {
 
     @Nonnull
     private final int[] rowPointers;

@@ -29,7 +29,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 public interface Matrix {
 
     public boolean isSparse();
-    
+
+    public boolean isRowMajorMatrix();
+
     public boolean readOnly();
 
     public boolean swappable();
@@ -84,6 +86,10 @@ public interface Matrix {
     public void eachInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
     public void eachNonZeroInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
+
+    public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
+
+    public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 
     @Nonnull
     public MatrixBuilder builder();
