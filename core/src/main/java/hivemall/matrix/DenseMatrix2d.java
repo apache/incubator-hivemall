@@ -155,6 +155,9 @@ public final class DenseMatrix2d extends RowMajorMatrix {
         checkRowIndex(row, numRows);
 
         final double[] rowData = data[row];
+        if (rowData == null) {
+            return;
+        }
         int col = 0;
         for (int len = rowData.length; col < len; col++) {
             procedure.apply(col, rowData[col]);
@@ -170,12 +173,51 @@ public final class DenseMatrix2d extends RowMajorMatrix {
         checkRowIndex(row, numRows);
 
         final double[] rowData = data[row];
+        if (rowData == null) {
+            return;
+        }
         for (int col = 0, len = rowData.length; col < len; col++) {
             final double v = rowData[col];
             if (v == 0.d) {
                 continue;
             }
             procedure.apply(col, v);
+        }
+    }
+
+    @Override
+    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure) {
+        checkColIndex(col, numColumns);
+
+        for (int row = 0; row < numRows; row++) {
+            final double[] rowData = data[row];
+            if (rowData == null) {
+                continue;
+            }
+            if (col < rowData.length) {
+                procedure.apply(row, rowData[col]);
+            } else {
+                procedure.apply(row, 0.d);
+            }
+        }
+    }
+
+    @Override
+    public void eachInNonZeroColumn(@Nonnegative final int col,
+            @Nonnull final VectorProcedure procedure) {
+        checkColIndex(col, numColumns);
+
+        for (int row = 0; row < numRows; row++) {
+            final double[] rowData = data[row];
+            if (rowData == null) {
+                continue;
+            }
+            if (col < rowData.length) {
+                double v = rowData[col];
+                if (v != 0.d) {
+                    procedure.apply(row, v);
+                }
+            }
         }
     }
 

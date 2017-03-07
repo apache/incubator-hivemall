@@ -61,6 +61,12 @@ public abstract class AbstractIntMatrix implements IntMatrix {
         }
     }
 
+    protected static final void checkIndex(final int index) {
+        if (index < 0) {
+            throw new IllegalArgumentException("Invalid index: " + index);
+        }
+    }
+
     protected static final void checkIndex(final int row, final int col) {
         if (row < 0) {
             throw new IllegalArgumentException("Invalid row index: " + row);

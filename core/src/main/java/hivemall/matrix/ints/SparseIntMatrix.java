@@ -64,8 +64,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
         final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(
             columnMajorMatrix.length * 3);
 
-        int numColumns = 0;
-        int numRows = 0;
+        int numRows = 0, numColumns = 0;
         for (int j = 0; j < columnMajorMatrix.length; j++) {
             final int[] col = columnMajorMatrix[j];
             if (col == null) {
@@ -169,11 +168,18 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
 
     @Override
     public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure) {
-        checkRowIndex(row, numRows);
+        checkIndex(row);
+        if (row >= numRows) {
+            return;
+        }
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
-            int v = elements.get(i, defaultValue);
+            int key = elements._findKey(i);
+            if (key < 0) {
+                continue;
+            }
+            int v = elements._get(key);
             procedure.apply(col, v);
         }
     }
@@ -181,7 +187,10 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     @Override
     public void eachNonZeroInRow(@Nonnegative final int row,
             @Nonnull final VectorProcedure procedure) {
-        checkRowIndex(row, numRows);
+        checkIndex(row);
+        if (row >= numRows) {
+            return;
+        }
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
@@ -193,8 +202,11 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     }
 
     @Override
-    public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure) {
-        checkColIndex(col, numColumns);
+    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure) {
+        checkIndex(col);
+        if (col >= numColumns) {
+            return;
+        }
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
@@ -208,8 +220,12 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     }
 
     @Override
-    public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure) {
-        checkColIndex(col, numColumns);
+    public void eachInNonZeroColumn(@Nonnegative final int col,
+            @Nonnull final VectorProcedure procedure) {
+        checkIndex(col);
+        if (col >= numColumns) {
+            return;
+        }
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
