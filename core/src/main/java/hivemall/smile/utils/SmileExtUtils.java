@@ -27,8 +27,8 @@ import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.data.Attribute.NominalAttribute;
 import hivemall.smile.data.Attribute.NumericAttribute;
-import hivemall.utils.collections.DoubleArrayList;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.DoubleArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;

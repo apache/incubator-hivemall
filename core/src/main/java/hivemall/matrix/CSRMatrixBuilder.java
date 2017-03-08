@@ -18,8 +18,8 @@
  */
 package hivemall.matrix;
 
-import hivemall.utils.collections.DoubleArrayList;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.DoubleArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

@@ -39,7 +39,7 @@ import hivemall.matrix.ints.IntMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 

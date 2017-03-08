@@ -25,7 +25,7 @@ import hivemall.smile.vm.StackMachine;
 import hivemall.smile.vm.VMRuntimeException;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.codec.DeflateCodec;
-import hivemall.utils.collections.SparseDoubleArray;
+import hivemall.utils.collections.arrays.SparseDoubleArray;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
 

@@ -18,7 +18,7 @@
  */
 package hivemall.smile.tools;
 
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.Counter;
 
 import java.util.Arrays;

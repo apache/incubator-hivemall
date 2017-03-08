@@ -18,7 +18,7 @@
  */
 package hivemall.matrix;
 
-import hivemall.utils.collections.SparseDoubleArray;
+import hivemall.utils.collections.arrays.SparseDoubleArray;
 
 import java.util.ArrayList;
 import java.util.List;

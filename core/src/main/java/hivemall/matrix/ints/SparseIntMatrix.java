@@ -19,7 +19,7 @@
 package hivemall.matrix.ints;
 
 import hivemall.matrix.VectorProcedure;
-import hivemall.utils.collections.Long2IntOpenHashTable;
+import hivemall.utils.collections.maps.Long2IntOpenHashTable;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 

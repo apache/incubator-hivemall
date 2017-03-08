@@ -22,7 +22,7 @@ import hivemall.fm.Entry.AdaGradEntry;
 import hivemall.fm.Entry.FTRLEntry;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.buffer.HeapBuffer;
-import hivemall.utils.collections.Int2LongOpenHashTable;
+import hivemall.utils.collections.maps.Int2LongOpenHashTable;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.math.MathUtils;
 

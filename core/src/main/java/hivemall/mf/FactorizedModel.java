@@ -18,7 +18,7 @@
  */
 package hivemall.mf;
 
-import hivemall.utils.collections.IntOpenHashMap;
+import hivemall.utils.collections.maps.IntOpenHashMap;
 import hivemall.utils.math.MathUtils;
 
 import java.util.Random;

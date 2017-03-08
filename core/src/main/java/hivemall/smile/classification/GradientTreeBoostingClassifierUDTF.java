@@ -31,7 +31,7 @@ import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.vm.StackMachine;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.codec.DeflateCodec;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.io.IOUtils;

@@ -19,7 +19,7 @@
 package hivemall.fm;
 
 import hivemall.utils.collections.IMapIterator;
-import hivemall.utils.collections.OpenHashTable;
+import hivemall.utils.collections.maps.OpenHashTable;
 
 import javax.annotation.Nonnull;
 
