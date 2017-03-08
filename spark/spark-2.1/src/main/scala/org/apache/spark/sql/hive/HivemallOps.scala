@@ -32,6 +32,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Generate, JoinTopK, LogicalPlan}
 import org.apache.spark.sql.execution.UserProvidedPlanner
+import org.apache.spark.sql.execution.datasources.csv.{CsvToStruct, StructToCsv}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
@@ -1481,6 +1482,53 @@ object HivemallOps {
        Nil
     )
   }.as("rowid")
+
+  /**
+   * Parses a column containing a CSV string into a [[StructType]] with the specified schema.
+   * Returns `null`, in the case of an unparseable string.
+   * @group misc
+   *
+   * @param e a string column containing CSV data.
+   * @param schema the schema to use when parsing the csv string
+   * @param options options to control how the csv is parsed. accepts the same options and the
+   *                csv data source.
+   */
+  def from_csv(e: Column, schema: StructType, options: Map[String, String]): Column = withExpr {
+    CsvToStruct(schema, options, e.expr)
+  }
+
+  /**
+   * Parses a column containing a CSV string into a [[StructType]] with the specified schema.
+   * Returns `null`, in the case of an unparseable string.
+   * @group misc
+   *
+   * @param e a string column containing CSV data.
+   * @param schema the schema to use when parsing the json string
+   */
+  def from_csv(e: Column, schema: StructType): Column =
+    from_csv(e, schema, Map.empty[String, String])
+
+  /**
+   * Converts a column containing a `StructType` into a CSV string with the specified schema.
+   * Throws an exception, in the case of an unsupported type.
+   * @group misc
+   *
+   * @param e a struct column.
+   * @param options options to control how the struct column is converted into a json string.
+   *                accepts the same options and the json data source.
+   */
+  def to_csv(e: Column, options: Map[String, String]): Column = withExpr {
+    StructToCsv(options, e.expr)
+  }
+
+  /**
+   * Converts a column containing a `StructType` into a CSV string with the specified schema.
+   * Throws an exception, in the case of an unsupported type.
+   * @group misc
+   *
+   * @param e a struct column.
+   */
+  def to_csv(e: Column): Column = to_csv(e, Map.empty[String, String])
 
   /**
    * A convenient function to wrap an expression and produce a Column.
