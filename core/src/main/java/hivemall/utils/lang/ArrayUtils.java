@@ -249,6 +249,17 @@ public final class ArrayUtils {
     }
 
     @Nonnull
+    public static float[] append(@Nonnull float[] array, final int currentSize, final float element) {
+        if (currentSize + 1 > array.length) {
+            float[] newArray = new float[currentSize * 2];
+            System.arraycopy(array, 0, newArray, 0, currentSize);
+            array = newArray;
+        }
+        array[currentSize] = element;
+        return array;
+    }
+
+    @Nonnull
     public static double[] append(@Nonnull double[] array, final int currentSize,
             final double element) {
         if (currentSize + 1 > array.length) {
@@ -268,7 +279,22 @@ public final class ArrayUtils {
             array[index] = element;
             return array;
         }
-        int[] newArray = new int[currentSize * 2];
+        final int[] newArray = new int[currentSize * 2];
+        System.arraycopy(array, 0, newArray, 0, index);
+        newArray[index] = element;
+        System.arraycopy(array, index, newArray, index + 1, array.length - index);
+        return newArray;
+    }
+
+    @Nonnull
+    public static float[] insert(@Nonnull final float[] array, final int currentSize,
+            final int index, final float element) {
+        if (currentSize + 1 <= array.length) {
+            System.arraycopy(array, index, array, index + 1, currentSize - index);
+            array[index] = element;
+            return array;
+        }
+        final float[] newArray = new float[currentSize * 2];
         System.arraycopy(array, 0, newArray, 0, index);
         newArray[index] = element;
         System.arraycopy(array, index, newArray, index + 1, array.length - index);
@@ -283,7 +309,7 @@ public final class ArrayUtils {
             array[index] = element;
             return array;
         }
-        double[] newArray = new double[currentSize * 2];
+        final double[] newArray = new double[currentSize * 2];
         System.arraycopy(array, 0, newArray, 0, index);
         newArray[index] = element;
         System.arraycopy(array, index, newArray, index + 1, array.length - index);
