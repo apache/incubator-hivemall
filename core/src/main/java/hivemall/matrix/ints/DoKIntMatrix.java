@@ -27,9 +27,9 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
- * Fixed-size Sparse Int Matrix.
+ * Dictionary-of-Key Sparse Int Matrix.
  */
-public final class SparseIntMatrix extends AbstractIntMatrix {
+public final class DoKIntMatrix extends AbstractIntMatrix {
 
     @Nonnull
     private final Long2IntOpenHashTable elements;
@@ -38,15 +38,15 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     @Nonnegative
     private int numColumns;
 
-    public SparseIntMatrix() {
+    public DoKIntMatrix() {
         this(0, 0);
     }
 
-    public SparseIntMatrix(@Nonnegative int numRows, @Nonnegative int numCols) {
+    public DoKIntMatrix(@Nonnegative int numRows, @Nonnegative int numCols) {
         this(numRows, numCols, 0.05f);
     }
 
-    public SparseIntMatrix(@Nonnegative int numRows, @Nonnegative int numCols,
+    public DoKIntMatrix(@Nonnegative int numRows, @Nonnegative int numCols,
             @Nonnegative float sparsity) {
         Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f, "Invalid Sparsity value: "
                 + sparsity);
@@ -56,7 +56,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
         this.numColumns = numCols;
     }
 
-    private SparseIntMatrix(@Nonnull Long2IntOpenHashTable elements, @Nonnegative int numRows,
+    private DoKIntMatrix(@Nonnull Long2IntOpenHashTable elements, @Nonnegative int numRows,
             @Nonnegative int numColumns) {
         this.elements = elements;
         this.numRows = numRows;
@@ -206,7 +206,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     }
 
     @Nonnull
-    public static SparseIntMatrix build(@Nonnull final int[][] matrix, boolean rowMajorInput,
+    public static DoKIntMatrix build(@Nonnull final int[][] matrix, boolean rowMajorInput,
             boolean nonZeroOnly) {
         if (rowMajorInput) {
             return buildFromRowMajorMatrix(matrix, nonZeroOnly);
@@ -216,7 +216,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     }
 
     @Nonnull
-    private static SparseIntMatrix buildFromRowMajorMatrix(@Nonnull final int[][] rowMajorMatrix,
+    private static DoKIntMatrix buildFromRowMajorMatrix(@Nonnull final int[][] rowMajorMatrix,
             boolean nonZeroOnly) {
         final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(rowMajorMatrix.length * 3);
 
@@ -237,11 +237,11 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
             }
         }
 
-        return new SparseIntMatrix(elements, numRows, numColumns);
+        return new DoKIntMatrix(elements, numRows, numColumns);
     }
 
     @Nonnull
-    private static SparseIntMatrix buildFromColumnMajorMatrix(
+    private static DoKIntMatrix buildFromColumnMajorMatrix(
             @Nonnull final int[][] columnMajorMatrix, boolean nonZeroOnly) {
         final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(
             columnMajorMatrix.length * 3);
@@ -263,7 +263,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
             }
         }
 
-        return new SparseIntMatrix(elements, numRows, numColumns);
+        return new DoKIntMatrix(elements, numRows, numColumns);
     }
 
 }

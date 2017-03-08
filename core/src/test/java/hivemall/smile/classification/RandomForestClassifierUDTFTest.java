@@ -18,15 +18,22 @@
  */
 package hivemall.smile.classification;
 
+import hivemall.classifier.KernelExpansionPassiveAggressiveUDTF;
 import hivemall.utils.lang.mutable.MutableInt;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
+import java.util.zip.GZIPInputStream;
+
+import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
@@ -128,4 +135,52 @@ public class RandomForestClassifierUDTFTest {
         Assert.assertEquals(49, count.getValue());
     }
 
+    @Test
+    public void testNews20MultiClassSparse() throws IOException, ParseException, HiveException {
+        final int numTrees = 3;
+        RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
+        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees " + numTrees);
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
+
+
+        BufferedReader news20 = readFile("news20-multiclass.gz");
+        ArrayList<String> features = new ArrayList<String>();
+        String line = news20.readLine();
+        while (line != null) {
+            StringTokenizer tokens = new StringTokenizer(line, " ");
+            int label = Integer.parseInt(tokens.nextToken());
+            while (tokens.hasMoreTokens()) {
+                features.add(tokens.nextToken());
+            }
+            Assert.assertFalse(features.isEmpty());
+            udtf.process(new Object[] {features, label});
+
+            features.clear();
+            line = news20.readLine();
+        }
+        news20.close();
+
+        final MutableInt count = new MutableInt(0);
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                count.addValue(1);
+            }
+        };
+        udtf.setCollector(collector);
+        udtf.close();
+
+        Assert.assertEquals(numTrees, count.getValue());
+    }
+
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        InputStream is = KernelExpansionPassiveAggressiveUDTF.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
+    }
 }

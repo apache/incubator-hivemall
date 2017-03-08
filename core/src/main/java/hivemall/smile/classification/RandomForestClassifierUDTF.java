@@ -25,7 +25,7 @@ import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixBuilder;
 import hivemall.matrix.MatrixUtils;
 import hivemall.matrix.ints.IntMatrix;
-import hivemall.matrix.ints.SparseIntMatrix;
+import hivemall.matrix.ints.DOKIntMatrix;
 import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
@@ -339,7 +339,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                     + _maxLeafNodes + ", splitRule: " + _splitRule + ", seed: " + _seed);
         }
 
-        IntMatrix prediction = new SparseIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
+        IntMatrix prediction = new DOKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
         IntMatrix order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();

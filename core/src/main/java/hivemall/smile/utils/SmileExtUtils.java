@@ -21,7 +21,7 @@ package hivemall.smile.utils;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixUtils;
 import hivemall.matrix.ints.IntMatrix;
-import hivemall.matrix.ints.SparseIntMatrix;
+import hivemall.matrix.ints.DOKIntMatrix;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
@@ -163,7 +163,7 @@ public final class SmileExtUtils {
             }
         }
 
-        return SparseIntMatrix.build(index, false, false);
+        return DOKIntMatrix.build(index, false, false);
     }
 
     @Nonnull
