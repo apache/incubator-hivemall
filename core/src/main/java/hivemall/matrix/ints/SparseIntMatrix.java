@@ -43,7 +43,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     }
 
     public SparseIntMatrix(@Nonnegative int numRows, @Nonnegative int numCols) {
-        this(numCols, numCols, 0.05f);
+        this(numRows, numCols, 0.05f);
     }
 
     public SparseIntMatrix(@Nonnegative int numRows, @Nonnegative int numCols,
@@ -56,32 +56,8 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
         this.numColumns = numCols;
     }
 
-    public SparseIntMatrix(@Nonnull final int[][] columnMajorMatrix) {
-        this(columnMajorMatrix, false);
-    }
-
-    public SparseIntMatrix(@Nonnull final int[][] columnMajorMatrix, boolean nonZeroOnly) {
-        final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(
-            columnMajorMatrix.length * 3);
-
-        int numRows = 0, numColumns = 0;
-        for (int j = 0; j < columnMajorMatrix.length; j++) {
-            final int[] col = columnMajorMatrix[j];
-            if (col == null) {
-                continue;
-            }
-            for (int row = 0; row < col.length; row++) {
-                int value = col[row];
-                if (nonZeroOnly && value == 0) {
-                    continue;
-                }
-                long index = index(row, j);
-                elements.put(index, value);
-                numRows = Math.max(numRows, row + 1);
-                numColumns = Math.max(numColumns, j + 1);
-            }
-        }
-
+    private SparseIntMatrix(@Nonnull Long2IntOpenHashTable elements, @Nonnegative int numRows,
+            @Nonnegative int numColumns) {
         this.elements = elements;
         this.numRows = numRows;
         this.numColumns = numColumns;
@@ -239,6 +215,67 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     @Nonnegative
     private static long index(@Nonnegative final int row, @Nonnegative final int col) {
         return Primitives.toLong(row, col);
+    }
+
+    @Nonnull
+    public static SparseIntMatrix build(@Nonnull final int[][] matrix, boolean rowMajorInput,
+            boolean nonZeroOnly) {
+        if (rowMajorInput) {
+            return buildFromRowMajorMatrix(matrix, nonZeroOnly);
+        } else {
+            return buildFromColumnMajorMatrix(matrix, nonZeroOnly);
+        }
+    }
+
+    @Nonnull
+    private static SparseIntMatrix buildFromRowMajorMatrix(@Nonnull final int[][] rowMajorMatrix,
+            boolean nonZeroOnly) {
+        final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(rowMajorMatrix.length * 3);
+
+        int numRows = rowMajorMatrix.length, numColumns = 0;
+        for (int i = 0; i < rowMajorMatrix.length; i++) {
+            final int[] row = rowMajorMatrix[i];
+            if (row == null) {
+                continue;
+            }
+            numColumns = Math.max(numColumns, row.length);
+            for (int col = 0; col < row.length; col++) {
+                int value = row[col];
+                if (nonZeroOnly && value == 0) {
+                    continue;
+                }
+                long index = index(i, col);
+                elements.put(index, value);
+            }
+        }
+
+        return new SparseIntMatrix(elements, numRows, numColumns);
+    }
+
+    @Nonnull
+    private static SparseIntMatrix buildFromColumnMajorMatrix(
+            @Nonnull final int[][] columnMajorMatrix, boolean nonZeroOnly) {
+        final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(
+            columnMajorMatrix.length * 3);
+
+        int numRows = 0, numColumns = columnMajorMatrix.length;
+        for (int j = 0; j < columnMajorMatrix.length; j++) {
+            final int[] col = columnMajorMatrix[j];
+            if (col == null) {
+                continue;
+            }
+            numRows = Math.max(numRows, col.length);
+            for (int row = 0; row < col.length; row++) {
+                int value = col[row];
+                if (nonZeroOnly && value == 0) {
+                    continue;
+                }
+                long index = index(row, j);
+                elements.put(index, value);
+            }
+        }
+
+        return new SparseIntMatrix(elements, numRows, numColumns);
     }
 
 }

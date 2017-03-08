@@ -91,7 +91,6 @@ public class MatrixBuilderTest {
         Assert.assertEquals(Double.NaN, matrix.get(5, 4), 0.d);
     }
 
-
     @Test
     public void testReadOnlyCSRMatrixNoRow() {
         CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
@@ -237,6 +236,17 @@ public class MatrixBuilderTest {
     public void testReadOnlyDenseMatrix2dFailOutOfBound2() {
         Matrix matrix = denseMatrix();
         matrix.get(6, 7);
+    }
+
+    @Test
+    public void testCSRMatrixNullRow() {
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
+        builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
+        builder.nextColumn(1, 22).nextColumn(2, 23).nextRow();
+        builder.nextRow();
+        builder.nextColumn(3, 66).nextRow();
+        Matrix matrix = builder.buildMatrix();
+        Assert.assertEquals(4, matrix.numRows());
     }
 
     private static Matrix csrMatrix() {

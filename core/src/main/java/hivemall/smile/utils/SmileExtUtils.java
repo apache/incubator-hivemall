@@ -163,7 +163,7 @@ public final class SmileExtUtils {
             }
         }
 
-        return new SparseIntMatrix(index);
+        return SparseIntMatrix.build(index, false, false);
     }
 
     @Nonnull
