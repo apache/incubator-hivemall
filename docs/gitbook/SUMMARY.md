@@ -163,6 +163,7 @@
 
 * [Generic features](spark/misc/misc.md)
     * [Top-k Join processing](spark/misc/topk_join.md)
+    * [Ohter utility functions](spark/misc/functions.md)
 
 ## Part X - External References
 

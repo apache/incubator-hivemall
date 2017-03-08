@@ -805,6 +805,47 @@ final class HivemallOps(df: DataFrame) extends Logging {
     JoinTopK(kInt, df.logicalPlan, right.logicalPlan, Inner, Option(joinExprs.expr))(score.named)
   }
 
+  private def doFlatten(schema: StructType, prefix: Option[String] = None) : Seq[Column] = {
+    schema.fields.flatMap { f =>
+      val colName = prefix.map(p => s"$p.${f.name}").getOrElse(f.name)
+      f.dataType match {
+        case st: StructType => doFlatten(st, Option(colName))
+        case _ => col(colName).as(colName) :: Nil
+      }
+    }
+  }
+
+  /**
+   * Flattens a nested schema into a flat one.
+   * @group misc
+   *
+   * For example:
+   * {{{
+   *  scala> val df = Seq((0, (1, (3.0, "a")), (5, 0.9))).toDF()
+   *  scala> df.printSchema
+   *  root
+   *   |-- _1: integer (nullable = false)
+   *   |-- _2: struct (nullable = true)
+   *   |    |-- _1: integer (nullable = false)
+   *   |    |-- _2: struct (nullable = true)
+   *   |    |    |-- _1: double (nullable = false)
+   *   |    |    |-- _2: string (nullable = true)
+   *   |-- _3: struct (nullable = true)
+   *   |    |-- _1: integer (nullable = false)
+   *   |    |-- _2: double (nullable = false)
+   *
+   *  scala> df.flatten.printSchema
+   *  root
+   *   |-- _1: integer (nullable = false)
+   *   |-- _2._1: integer (nullable = true)
+   *   |-- _2._2._1: double (nullable = true)
+   *   |-- _2._2._2: string (nullable = true)
+   *   |-- _3._1: integer (nullable = true)
+   *   |-- _3._2: double (nullable = true)
+   * }}}
+   */
+  def flatten(): DataFrame = df.select(doFlatten(df.schema): _*)
+
   /**
    * @see [[hivemall.dataset.LogisticRegressionDataGeneratorUDTF]]
    * @group misc
