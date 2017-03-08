@@ -144,10 +144,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
 
     @Override
     public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure) {
-        checkIndex(row);
-        if (row >= numRows) {
-            return;
-        }
+        checkRowIndex(row, numRows);
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
@@ -163,10 +160,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     @Override
     public void eachNonZeroInRow(@Nonnegative final int row,
             @Nonnull final VectorProcedure procedure) {
-        checkIndex(row);
-        if (row >= numRows) {
-            return;
-        }
+        checkRowIndex(row, numRows);
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
@@ -179,10 +173,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
 
     @Override
     public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure) {
-        checkIndex(col);
-        if (col >= numColumns) {
-            return;
-        }
+        checkColIndex(col, numColumns);
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
@@ -198,10 +189,7 @@ public final class SparseIntMatrix extends AbstractIntMatrix {
     @Override
     public void eachInNonZeroColumn(@Nonnegative final int col,
             @Nonnull final VectorProcedure procedure) {
-        checkIndex(col);
-        if (col >= numColumns) {
-            return;
-        }
+        checkColIndex(col, numColumns);
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
