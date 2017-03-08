@@ -340,4 +340,11 @@ public final class ArrayUtils {
         return true;
     }
 
+    public static void copy(@Nonnull final float[] src, @Nonnull final double[] dst) {
+        final int size = Math.min(src.length, dst.length);
+        for (int i = 0; i < size; i++) {
+            dst[i] = src[i];
+        }
+    }
+
 }
