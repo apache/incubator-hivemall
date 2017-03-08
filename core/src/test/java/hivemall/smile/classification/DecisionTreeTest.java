@@ -306,7 +306,7 @@ public class DecisionTreeTest {
             return new DenseMatrix2d(x, x[0].length);
         } else {
             int numRows = x.length;
-            CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
+            CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
             for (int i = 0; i < numRows; i++) {
                 builder.nextRow(x[i]);
             }

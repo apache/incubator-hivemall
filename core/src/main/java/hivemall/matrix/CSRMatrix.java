@@ -200,8 +200,8 @@ public final class CSRMatrix extends RowMajorMatrix {
     }
 
     @Override
-    public MatrixBuilder builder() {
-        return new CSRMatrixBuilder(1024, true);
+    public CSRMatrixBuilder builder() {
+        return new CSRMatrixBuilder(values.length);
     }
 
 }

@@ -30,6 +30,11 @@ public abstract class RowMajorMatrix extends AbstractMatrix {
     }
 
     @Override
+    public boolean isColumnMajorMatrix() {
+        return false;
+    }
+
+    @Override
     public void eachInColumn(int col, VectorProcedure procedure) {
         throw new UnsupportedOperationException();
     }

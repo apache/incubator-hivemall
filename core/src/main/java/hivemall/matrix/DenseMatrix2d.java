@@ -141,7 +141,7 @@ public final class DenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
-    public void swap(final int row1, final int row2) {
+    public void swap(@Nonnegative final int row1, @Nonnegative final int row2) {
         checkRowIndex(row1, numRows);
         checkRowIndex(row2, numRows);
 
@@ -222,8 +222,8 @@ public final class DenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
-    public MatrixBuilder builder() {
-        return new DenseMatrixBuilder(numRows, true);
+    public DenseMatrixBuilder builder() {
+        return new DenseMatrixBuilder(numRows);
     }
 
 }

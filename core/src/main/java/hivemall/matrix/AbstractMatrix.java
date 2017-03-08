@@ -62,6 +62,15 @@ public abstract class AbstractMatrix implements Matrix {
         }
     }
 
+    protected static final void checkIndex(final int row, final int col) {
+        if (row < 0) {
+            throw new IndexOutOfBoundsException("Invalid row index " + row);
+        }
+        if (col < 0) {
+            throw new IndexOutOfBoundsException("Invalid col index " + col);
+        }
+    }
+
     protected static final void checkIndex(final int row, final int col, final int numRows,
             final int numColumns) {
         if (row < 0 || row >= numRows) {

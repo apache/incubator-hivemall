@@ -137,7 +137,7 @@ public class RandomForestClassifierUDTFTest {
 
     @Test
     public void testNews20MultiClassSparse() throws IOException, ParseException, HiveException {
-        final int numTrees = 3;
+        final int numTrees = 1;
         RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees " + numTrees);

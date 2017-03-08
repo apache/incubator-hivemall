@@ -18,30 +18,37 @@
  */
 package hivemall.matrix;
 
-public abstract class ColumnMajorMatrix extends AbstractMatrix {
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
-    public ColumnMajorMatrix() {
+public final class DoKMatrixBuilder extends MatrixBuilder {
+
+    @Nonnull
+    private final DoKMatrix matrix;
+
+    private int row;
+
+    public DoKMatrixBuilder(@Nonnegative int initSize) {
         super();
+        this.row = 0;
+        this.matrix = new DoKMatrix(initSize);
     }
 
     @Override
-    public boolean isRowMajorMatrix() {
-        return false;
+    public DoKMatrixBuilder nextRow() {
+        row++;
+        return this;
     }
 
     @Override
-    public boolean isColumnMajorMatrix() {
-        return true;
+    public DoKMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+        matrix.set(row, col, value);
+        return this;
     }
 
     @Override
-    public void eachInRow(int row, VectorProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void eachNonZeroInRow(int row, VectorProcedure procedure) {
-        throw new UnsupportedOperationException();
+    public DoKMatrix buildMatrix() {
+        return matrix;
     }
 
 }

@@ -212,11 +212,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         if (HiveUtils.isNumberOI(elemOI)) {
             this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
             this.denseInput = true;
-            this.matrixBuilder = new DenseMatrixBuilder(8192, true);
+            this.matrixBuilder = new DenseMatrixBuilder(8192);
         } else if (HiveUtils.isStringOI(elemOI)) {
             this.featureElemOI = HiveUtils.asStringOI(elemOI);
             this.denseInput = false;
-            this.matrixBuilder = new CSRMatrixBuilder(8192, true);
+            this.matrixBuilder = new CSRMatrixBuilder(8192);
         } else {
             throw new UDFArgumentException(
                 "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
@@ -326,7 +326,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
      * @param x features
      * @param y label
      */
-    private void train(@Nonnull final Matrix x, @Nonnull final int[] y) throws HiveException {
+    private void train(@Nonnull Matrix x, @Nonnull final int[] y) throws HiveException {
         final int numRows = x.numRows();
         if (numRows != y.length) {
             throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
@@ -336,7 +336,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this._attributes = SmileExtUtils.attributeTypes(_attributes, x);
 
         // Shuffle training samples    
-        SmileExtUtils.shuffle(x, y, _seed);
+        x = SmileExtUtils.shuffle(x, y, _seed);
 
         final int k = smile.math.Math.max(y) + 1;
         if (k < 2) {

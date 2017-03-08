@@ -32,6 +32,8 @@ public interface Matrix {
 
     public boolean isRowMajorMatrix();
 
+    public boolean isColumnMajorMatrix();
+
     public boolean readOnly();
 
     public boolean swappable();

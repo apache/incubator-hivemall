@@ -20,8 +20,8 @@ package hivemall.smile.utils;
 
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixUtils;
+import hivemall.matrix.ints.DoKIntMatrix;
 import hivemall.matrix.ints.IntMatrix;
-import hivemall.matrix.ints.DOKIntMatrix;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
@@ -163,7 +163,7 @@ public final class SmileExtUtils {
             }
         }
 
-        return DOKIntMatrix.build(index, false, false);
+        return DoKIntMatrix.build(index, false, false);
     }
 
     @Nonnull
@@ -223,7 +223,8 @@ public final class SmileExtUtils {
         }
     }
 
-    public static void shuffle(@Nonnull final Matrix x, @Nonnull final int[] y, long seed) {
+    @Nonnull
+    public static Matrix shuffle(@Nonnull final Matrix x, @Nonnull final int[] y, long seed) {
         final int numRows = x.numRows();
         if (numRows != y.length) {
             throw new IllegalArgumentException("x.length (" + numRows + ") != y.length ("
@@ -240,6 +241,7 @@ public final class SmileExtUtils {
                 x.swap(i - 1, j);
                 swap(y, i - 1, j);
             }
+            return x;
         } else {
             final int[] indicies = MathUtils.permutation(numRows);
             for (int i = numRows; i > 1; i--) {
@@ -247,11 +249,12 @@ public final class SmileExtUtils {
                 swap(indicies, i - 1, j);
                 swap(y, i - i, j);
             }
-            MatrixUtils.shuffle(x, indicies);
+            return MatrixUtils.shuffle(x, indicies);
         }
     }
 
-    public static void shuffle(@Nonnull final Matrix x, @Nonnull final double[] y,
+    @Nonnull
+    public static Matrix shuffle(@Nonnull final Matrix x, @Nonnull final double[] y,
             @Nonnull long seed) {
         final int numRows = x.numRows();
         if (numRows != y.length) {
@@ -269,6 +272,7 @@ public final class SmileExtUtils {
                 x.swap(i - 1, j);
                 swap(y, i - 1, j);
             }
+            return x;
         } else {
             final int[] indicies = MathUtils.permutation(numRows);
             for (int i = numRows; i > 1; i--) {
@@ -276,7 +280,7 @@ public final class SmileExtUtils {
                 swap(indicies, i - 1, j);
                 swap(y, i - i, j);
             }
-            MatrixUtils.shuffle(x, indicies);
+            return MatrixUtils.shuffle(x, indicies);
         }
     }
 

@@ -24,8 +24,8 @@ import hivemall.matrix.DenseMatrixBuilder;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixBuilder;
 import hivemall.matrix.MatrixUtils;
+import hivemall.matrix.ints.DoKIntMatrix;
 import hivemall.matrix.ints.IntMatrix;
-import hivemall.matrix.ints.DOKIntMatrix;
 import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
@@ -207,11 +207,11 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         if (HiveUtils.isNumberOI(elemOI)) {
             this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
             this.denseInput = true;
-            this.matrixBuilder = new DenseMatrixBuilder(8192, true);
+            this.matrixBuilder = new DenseMatrixBuilder(8192);
         } else if (HiveUtils.isStringOI(elemOI)) {
             this.featureElemOI = HiveUtils.asStringOI(elemOI);
             this.denseInput = false;
-            this.matrixBuilder = new CSRMatrixBuilder(8192, true);
+            this.matrixBuilder = new CSRMatrixBuilder(8192);
         } else {
             throw new UDFArgumentException(
                 "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
@@ -318,7 +318,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
      * @param numVars The number of variables to pick up in each node.
      * @param seed The seed number for Random Forest
      */
-    private void train(@Nonnull final Matrix x, @Nonnull final int[] y) throws HiveException {
+    private void train(@Nonnull Matrix x, @Nonnull final int[] y) throws HiveException {
         final int numExamples = x.numRows();
         if (numExamples != y.length) {
             throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
@@ -327,7 +327,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         checkOptions();
 
         // Shuffle training samples    
-        SmileExtUtils.shuffle(x, y, _seed);
+        x = SmileExtUtils.shuffle(x, y, _seed);
 
         int[] labels = SmileExtUtils.classLables(y);
         Attribute[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
@@ -339,7 +339,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                     + _maxLeafNodes + ", splitRule: " + _splitRule + ", seed: " + _seed);
         }
 
-        IntMatrix prediction = new DOKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
+        IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
         IntMatrix order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();

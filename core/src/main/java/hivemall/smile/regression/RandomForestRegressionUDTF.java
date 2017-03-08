@@ -205,11 +205,11 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         if (HiveUtils.isNumberOI(elemOI)) {
             this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
             this.denseInput = true;
-            this.matrixBuilder = new DenseMatrixBuilder(8192, true);
+            this.matrixBuilder = new DenseMatrixBuilder(8192);
         } else if (HiveUtils.isStringOI(elemOI)) {
             this.featureElemOI = HiveUtils.asStringOI(elemOI);
             this.denseInput = false;
-            this.matrixBuilder = new CSRMatrixBuilder(8192, true);
+            this.matrixBuilder = new CSRMatrixBuilder(8192);
         } else {
             throw new UDFArgumentException(
                 "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
@@ -323,7 +323,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
      * @param _numVars The number of variables to pick up in each node.
      * @param _seed The seed number for Random Forest
      */
-    private void train(@Nonnull final Matrix x, @Nonnull final double[] y) throws HiveException {
+    private void train(@Nonnull Matrix x, @Nonnull final double[] y) throws HiveException {
         final int numExamples = x.numRows();
         if (numExamples != y.length) {
             throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
@@ -331,8 +331,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         }
         checkOptions();
 
-        // Shuffle training samples 
-        SmileExtUtils.shuffle(x, y, _seed);
+        // Shuffle training samples
+        x = SmileExtUtils.shuffle(x, y, _seed);
 
         Attribute[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
         int numInputVars = SmileExtUtils.computeNumInputVars(_numVars, x);

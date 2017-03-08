@@ -38,8 +38,8 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
 
     private int maxNumColumns;
 
-    public CSRMatrixBuilder(@Nonnegative int initSize, boolean readOnly) {
-        super(readOnly);
+    public CSRMatrixBuilder(@Nonnegative int initSize) {
+        super();
         this.rowPointers = new IntArrayList(initSize + 1);
         rowPointers.add(0);
         this.columnIndices = new IntArrayList(initSize);
@@ -67,13 +67,9 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public Matrix buildMatrix() {
-        if (!readOnly) {
-            throw new UnsupportedOperationException("Only readOnly matrix is supported");
-        }
-
-        CSRMatrix matrix = new CSRMatrix(rowPointers.toArray(true),
-            columnIndices.toArray(true), values.toArray(true), maxNumColumns);
+    public CSRMatrix buildMatrix() {
+        CSRMatrix matrix = new CSRMatrix(rowPointers.toArray(true), columnIndices.toArray(true),
+            values.toArray(true), maxNumColumns);
         return matrix;
     }
 

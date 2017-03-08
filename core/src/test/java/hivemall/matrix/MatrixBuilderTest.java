@@ -93,7 +93,7 @@ public class MatrixBuilderTest {
 
     @Test
     public void testReadOnlyCSRMatrixNoRow() {
-        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
         Matrix matrix = builder.buildMatrix();
         Assert.assertEquals(0, matrix.numRows());
         Assert.assertEquals(0, matrix.numColumns());
@@ -109,6 +109,40 @@ public class MatrixBuilderTest {
     public void testReadOnlyCSRMatrixGetFail2() {
         Matrix matrix = csrMatrix();
         matrix.get(6, 7);
+    }
+
+    @Test
+    public void testDoKMatrixFromLibSVM() {
+        Matrix matrix = dokMatrixFromLibSVM();
+        Assert.assertEquals(6, matrix.numRows());
+        Assert.assertEquals(6, matrix.numColumns());
+        Assert.assertEquals(4, matrix.numColumns(0));
+        Assert.assertEquals(2, matrix.numColumns(1));
+        Assert.assertEquals(4, matrix.numColumns(2));
+        Assert.assertEquals(2, matrix.numColumns(3));
+        Assert.assertEquals(1, matrix.numColumns(4));
+        Assert.assertEquals(1, matrix.numColumns(5));
+
+        Assert.assertEquals(11d, matrix.get(0, 0), 0.d);
+        Assert.assertEquals(12d, matrix.get(0, 1), 0.d);
+        Assert.assertEquals(13d, matrix.get(0, 2), 0.d);
+        Assert.assertEquals(14d, matrix.get(0, 3), 0.d);
+        Assert.assertEquals(22d, matrix.get(1, 1), 0.d);
+        Assert.assertEquals(23d, matrix.get(1, 2), 0.d);
+        Assert.assertEquals(33d, matrix.get(2, 2), 0.d);
+        Assert.assertEquals(34d, matrix.get(2, 3), 0.d);
+        Assert.assertEquals(35d, matrix.get(2, 4), 0.d);
+        Assert.assertEquals(36d, matrix.get(2, 5), 0.d);
+        Assert.assertEquals(44d, matrix.get(3, 3), 0.d);
+        Assert.assertEquals(45d, matrix.get(3, 4), 0.d);
+        Assert.assertEquals(56d, matrix.get(4, 5), 0.d);
+        Assert.assertEquals(66d, matrix.get(5, 5), 0.d);
+
+        Assert.assertEquals(0.d, matrix.get(5, 4), 0.d);
+        Assert.assertEquals(-1.d, matrix.get(5, 4, -1.d), 0.d);
+
+        matrix.setDefaultValue(Double.NaN);
+        Assert.assertEquals(Double.NaN, matrix.get(5, 4), 0.d);
     }
 
     @Test
@@ -215,7 +249,7 @@ public class MatrixBuilderTest {
 
     @Test
     public void testReadOnlyDenseMatrix2dNoRow() {
-        Matrix matrix = new DenseMatrixBuilder(1024, true).buildMatrix();
+        Matrix matrix = new DenseMatrixBuilder(1024).buildMatrix();
         Assert.assertEquals(0, matrix.numRows());
         Assert.assertEquals(0, matrix.numColumns());
     }
@@ -240,7 +274,7 @@ public class MatrixBuilderTest {
 
     @Test
     public void testCSRMatrixNullRow() {
-        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
         builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
         builder.nextColumn(1, 22).nextColumn(2, 23).nextRow();
         builder.nextRow();
@@ -249,7 +283,7 @@ public class MatrixBuilderTest {
         Assert.assertEquals(4, matrix.numRows());
     }
 
-    private static Matrix csrMatrix() {
+    private static CSRMatrix csrMatrix() {
         /*
         11  12  13  14  0   0
         0   22  23  0   0   0
@@ -258,7 +292,7 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
         builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
         builder.nextColumn(1, 22).nextColumn(2, 23).nextRow();
         builder.nextColumn(2, 33).nextColumn(3, 34).nextColumn(4, 35).nextColumn(5, 36).nextRow();
@@ -268,7 +302,7 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static Matrix csrMatrixFromLibSVM() {
+    private static CSRMatrix csrMatrixFromLibSVM() {
         /*
         11  12  13  14  0   0
         0   22  23  0   0   0
@@ -277,7 +311,7 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024, true);
+        CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);
         builder.nextRow(new String[] {"0:11", "1:12", "2:13", "3:14"});
         builder.nextRow(new String[] {"1:22", "2:23"});
         builder.nextRow(new String[] {"2:33", "3:34", "4:35", "5:36"});
@@ -287,7 +321,7 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static Matrix denseMatrix() {
+    private static DoKMatrix dokMatrixFromLibSVM() {
         /*
         11  12  13  14  0   0
         0   22  23  0   0   0
@@ -296,7 +330,26 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024, true);
+        DoKMatrixBuilder builder = new DoKMatrixBuilder(1024);
+        builder.nextRow(new String[] {"0:11", "1:12", "2:13", "3:14"});
+        builder.nextRow(new String[] {"1:22", "2:23"});
+        builder.nextRow(new String[] {"2:33", "3:34", "4:35", "5:36"});
+        builder.nextRow(new String[] {"3:44", "4:45"});
+        builder.nextRow(new String[] {"5:56"});
+        builder.nextRow(new String[] {"5:66"});
+        return builder.buildMatrix();
+    }
+
+    private static DenseMatrix2d denseMatrix() {
+        /*
+        11  12  13  14  0   0
+        0   22  23  0   0   0
+        0   0   33  34  35  36
+        0   0   0   44  45  0
+        0   0   0   0   0   56
+        0   0   0   0   0   66
+        */
+        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
         builder.nextRow(new double[] {11, 12, 13, 14});
         builder.nextRow(new double[] {0, 22, 23});
         builder.nextRow(new double[] {0, 0, 33, 34, 35, 36});
@@ -306,7 +359,7 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static Matrix denseMatrixSparseInput() {
+    private static DenseMatrix2d denseMatrixSparseInput() {
         /*
         11  12  13  14  0   0
         0   22  23  0   0   0
@@ -315,7 +368,7 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024, true);
+        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
         builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
         builder.nextColumn(1, 22).nextColumn(2, 23).nextRow();
         builder.nextColumn(2, 33).nextColumn(3, 34).nextColumn(4, 35).nextColumn(5, 36).nextRow();
@@ -325,8 +378,8 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static Matrix denseMatrixFromLibSVM() {
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024, true);
+    private static DenseMatrix2d denseMatrixFromLibSVM() {
+        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
         builder.nextRow(new String[] {"0:11", "1:12", "2:13", "3:14"});
         builder.nextRow(new String[] {"1:22", "2:23"});
         builder.nextRow(new String[] {"2:33", "3:34", "4:35", "5:36"});

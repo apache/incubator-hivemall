@@ -35,15 +35,15 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     @Nonnull
     private final SparseDoubleArray rowProbe;
 
-    public DenseMatrixBuilder(@Nonnegative int initSize, boolean readOnly) {
-        super(readOnly);
+    public DenseMatrixBuilder(@Nonnegative int initSize) {
+        super();
         this.rows = new ArrayList<double[]>(initSize);
         this.maxNumColumns = 0;
         this.rowProbe = new SparseDoubleArray(32);
     }
 
     @Override
-    public MatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+    public DenseMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
         if (value == 0.d) {
             return this;
         }
@@ -52,7 +52,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public MatrixBuilder nextRow() {
+    public DenseMatrixBuilder nextRow() {
         double[] row = rowProbe.toArray();
         rowProbe.clear();
         nextRow(row);
@@ -66,11 +66,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public Matrix buildMatrix() {
-        if (!readOnly) {
-            throw new UnsupportedOperationException("Only readOnly matrix is supported");
-        }
-
+    public DenseMatrix2d buildMatrix() {
         int numRows = rows.size();
         double[][] data = rows.toArray(new double[numRows][]);
         return new DenseMatrix2d(data, maxNumColumns);
