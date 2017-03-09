@@ -130,8 +130,15 @@ public final class FloatArrayList implements Serializable {
     }
 
     public float[] toArray() {
+        return toArray(false);
+    }
+
+    public float[] toArray(boolean close) {
         final float[] newArray = new float[used];
         System.arraycopy(data, 0, newArray, 0, used);
+        if (close) {
+            this.data = null;
+        }
         return newArray;
     }
 

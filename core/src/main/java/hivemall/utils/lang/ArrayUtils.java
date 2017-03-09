@@ -170,6 +170,18 @@ public final class ArrayUtils {
         arr[j] = tmp;
     }
 
+    public static void swap(@Nonnull final long[] arr, final int i, final int j) {
+        long tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+
+    public static void swap(@Nonnull final double[] arr, final int i, final int j) {
+        double tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+
     @Nullable
     public static Object[] subarray(@Nullable final Object[] array, int startIndexInclusive,
             int endIndexExclusive) {
@@ -344,6 +356,98 @@ public final class ArrayUtils {
         final int size = Math.min(src.length, dst.length);
         for (int i = 0; i < size; i++) {
             dst[i] = src[i];
+        }
+    }
+
+    public static void sort(final long[] arr, final double[] brr) {
+        sort(arr, brr, arr.length);
+    }
+
+    public static void sort(final long[] arr, final double[] brr, final int n) {
+        final int NSTACK = 64;
+        final int M = 7;
+        final int[] istack = new int[NSTACK];
+
+        int jstack = -1;
+        int l = 0;
+        int ir = n - 1;
+
+        int i, j, k;
+        long a;
+        double b;
+        for (;;) {
+            if (ir - l < M) {
+                for (j = l + 1; j <= ir; j++) {
+                    a = arr[j];
+                    b = brr[j];
+                    for (i = j - 1; i >= l; i--) {
+                        if (arr[i] <= a) {
+                            break;
+                        }
+                        arr[i + 1] = arr[i];
+                        brr[i + 1] = brr[i];
+                    }
+                    arr[i + 1] = a;
+                    brr[i + 1] = b;
+                }
+                if (jstack < 0) {
+                    break;
+                }
+                ir = istack[jstack--];
+                l = istack[jstack--];
+            } else {
+                k = (l + ir) >> 1;
+                swap(arr, k, l + 1);
+                swap(brr, k, l + 1);
+                if (arr[l] > arr[ir]) {
+                    swap(arr, l, ir);
+                    swap(brr, l, ir);
+                }
+                if (arr[l + 1] > arr[ir]) {
+                    swap(arr, l + 1, ir);
+                    swap(brr, l + 1, ir);
+                }
+                if (arr[l] > arr[l + 1]) {
+                    swap(arr, l, l + 1);
+                    swap(brr, l, l + 1);
+                }
+                i = l + 1;
+                j = ir;
+                a = arr[l + 1];
+                b = brr[l + 1];
+                for (;;) {
+                    do {
+                        i++;
+                    } while (arr[i] < a);
+                    do {
+                        j--;
+                    } while (arr[j] > a);
+                    if (j < i) {
+                        break;
+                    }
+                    swap(arr, i, j);
+                    swap(brr, i, j);
+                }
+                arr[l + 1] = arr[j];
+                arr[j] = a;
+                brr[l + 1] = brr[j];
+                brr[j] = b;
+                jstack += 2;
+
+                if (jstack >= NSTACK) {
+                    throw new IllegalStateException("NSTACK too small in sort.");
+                }
+
+                if (ir - i + 1 >= j - l) {
+                    istack[jstack] = ir;
+                    istack[jstack - 1] = i;
+                    ir = j - 1;
+                } else {
+                    istack[jstack] = j - 1;
+                    istack[jstack - 1] = l;
+                    l = i;
+                }
+            }
         }
     }
 

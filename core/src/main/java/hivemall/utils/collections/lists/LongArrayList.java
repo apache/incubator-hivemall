@@ -132,8 +132,16 @@ public final class LongArrayList implements Serializable {
 
     @Nonnull
     public long[] toArray() {
+        return toArray(false);
+    }
+
+    @Nonnull
+    public long[] toArray(boolean close) {
         final long[] newArray = new long[used];
         System.arraycopy(data, 0, newArray, 0, used);
+        if (close) {
+            this.data = null;
+        }
         return newArray;
     }
 

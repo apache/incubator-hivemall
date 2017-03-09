@@ -100,7 +100,15 @@ public final class Primitives {
     }
 
     public static long toLong(final int high, final int low) {
-        return (((long) high) << 32) | low;
+        return ((long) high << 32) | ((long) low & 0xffffffffL);
+    }
+
+    public static int getHigh(final long key) {
+        return (int) (key >>> 32) & 0xffffffff;
+    }
+
+    public static int getLow(final long key) {
+        return (int) key & 0xffffffff;
     }
 
 }
