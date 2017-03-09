@@ -1509,7 +1509,7 @@ object HivemallOps {
     from_csv(e, schema, Map.empty[String, String])
 
   /**
-   * Converts a column containing a `StructType` into a CSV string with the specified schema.
+   * Converts a column containing a [[StructType]] into a CSV string with the specified schema.
    * Throws an exception, in the case of an unsupported type.
    * @group misc
    *
@@ -1522,7 +1522,7 @@ object HivemallOps {
   }
 
   /**
-   * Converts a column containing a `StructType` into a CSV string with the specified schema.
+   * Converts a column containing a [[StructType]] into a CSV string with the specified schema.
    * Throws an exception, in the case of an unsupported type.
    * @group misc
    *
