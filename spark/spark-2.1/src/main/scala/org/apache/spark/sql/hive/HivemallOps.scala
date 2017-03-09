@@ -805,13 +805,31 @@ final class HivemallOps(df: DataFrame) extends Logging {
     JoinTopK(kInt, df.logicalPlan, right.logicalPlan, Inner, Option(joinExprs.expr))(score.named)
   }
 
-  private def doFlatten(schema: StructType, prefix: Option[String] = None) : Seq[Column] = {
+  private def doFlatten(schema: StructType, separator: Char, prefixParts: Seq[String] = Seq.empty)
+    : Seq[Column] = {
     schema.fields.flatMap { f =>
-      val colName = prefix.map(p => s"$p.${f.name}").getOrElse(f.name)
+      val colNameParts = prefixParts :+ f.name
       f.dataType match {
-        case st: StructType => doFlatten(st, Option(colName))
-        case _ => col(colName).as(colName) :: Nil
+        case st: StructType =>
+          doFlatten(st, separator, colNameParts)
+        case _ =>
+          col(colNameParts.mkString(".")).as(colNameParts.mkString(separator.toString)) :: Nil
       }
+    }
+  }
+
+  // Converts string representation of a character to actual character
+  @throws[IllegalArgumentException]
+  private def toChar(str: String): Char = {
+    if (str.length == 1) {
+      str.charAt(0) match {
+        case '$' | '_' | '.' => str.charAt(0)
+        case _ => throw new IllegalArgumentException(
+          "Must use '$', '_', or '.' for separator, but got " + str)
+      }
+    } else {
+      throw new IllegalArgumentException(
+        s"Separator cannot be more than one character: $str")
     }
   }
 
@@ -834,17 +852,18 @@ final class HivemallOps(df: DataFrame) extends Logging {
    *   |    |-- _1: integer (nullable = false)
    *   |    |-- _2: double (nullable = false)
    *
-   *  scala> df.flatten.printSchema
+   *  scala> df.flatten(separator = "$").printSchema
    *  root
    *   |-- _1: integer (nullable = false)
-   *   |-- _2._1: integer (nullable = true)
-   *   |-- _2._2._1: double (nullable = true)
-   *   |-- _2._2._2: string (nullable = true)
-   *   |-- _3._1: integer (nullable = true)
-   *   |-- _3._2: double (nullable = true)
+   *   |-- _2$_1: integer (nullable = true)
+   *   |-- _2$_2$_1: double (nullable = true)
+   *   |-- _2$_2$_2: string (nullable = true)
+   *   |-- _3$_1: integer (nullable = true)
+   *   |-- _3$_2: double (nullable = true)
    * }}}
    */
-  def flatten(): DataFrame = df.select(doFlatten(df.schema): _*)
+  def flatten(separator: String = "$"): DataFrame =
+    df.select(doFlatten(df.schema, toChar(separator)): _*)
 
   /**
    * @see [[hivemall.dataset.LogisticRegressionDataGeneratorUDTF]]

@@ -466,17 +466,25 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     val df = Seq((0, (1, "a", (3.0, "b")), (5, 0.9, "c", "d"), 9)).toDF()
     assert(df.flatten().schema === StructType(
       StructField("_1", IntegerType, nullable = false) ::
-      StructField("_2._1", IntegerType, nullable = true) ::
-      StructField("_2._2", StringType, nullable = true) ::
-      StructField("_2._3._1", DoubleType, nullable = true) ::
-      StructField("_2._3._2", StringType, nullable = true) ::
-      StructField("_3._1", IntegerType, nullable = true) ::
-      StructField("_3._2", DoubleType, nullable = true) ::
-      StructField("_3._3", StringType, nullable = true) ::
-      StructField("_3._4", StringType, nullable = true) ::
+      StructField("_2$_1", IntegerType, nullable = true) ::
+      StructField("_2$_2", StringType, nullable = true) ::
+      StructField("_2$_3$_1", DoubleType, nullable = true) ::
+      StructField("_2$_3$_2", StringType, nullable = true) ::
+      StructField("_3$_1", IntegerType, nullable = true) ::
+      StructField("_3$_2", DoubleType, nullable = true) ::
+      StructField("_3$_3", StringType, nullable = true) ::
+      StructField("_3$_4", StringType, nullable = true) ::
       StructField("_4", IntegerType, nullable = false) ::
       Nil
     ))
+    checkAnswer(df.flatten("$").select("_2$_1"), Row(1))
+    checkAnswer(df.flatten("_").select("_2__1"), Row(1))
+    checkAnswer(df.flatten(".").select("`_2._1`"), Row(1))
+
+    val errMsg1 = intercept[IllegalArgumentException] { df.flatten("\t") }
+    assert(errMsg1.getMessage.startsWith("Must use '$', '_', or '.' for separator, but got"))
+    val errMsg2 = intercept[IllegalArgumentException] { df.flatten("12") }
+    assert(errMsg2.getMessage.startsWith("Separator cannot be more than one character:"))
   }
 
   /**

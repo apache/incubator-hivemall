@@ -35,13 +35,13 @@ root
  |    |-- _1: integer (nullable = false)
  |    |-- _2: double (nullable = false)
 
-scala> df.flatten.printSchema
+scala> df.flatten(separator = "$").printSchema
 root
  |-- _1: integer (nullable = false)
- |-- _2._1: integer (nullable = true)
- |-- _2._2._1: double (nullable = true)
- |-- _2._2._2: string (nullable = true)
- |-- _3._1: integer (nullable = true)
- |-- _3._2: double (nullable = true)
+ |-- _2$_1: integer (nullable = true)
+ |-- _2$_2$_1: double (nullable = true)
+ |-- _2$_2$_2: string (nullable = true)
+ |-- _3$_1: integer (nullable = true)
+ |-- _3$_2: double (nullable = true)
 ```
 
