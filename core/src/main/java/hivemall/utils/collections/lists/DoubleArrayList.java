@@ -44,20 +44,24 @@ public final class DoubleArrayList implements Serializable {
         this.used = initValues.length;
     }
 
-    public void add(double value) {
+    @Nonnull
+    public DoubleArrayList add(double value) {
         if (used >= data.length) {
             expand(used + 1);
         }
         data[used++] = value;
+        return this;
     }
 
-    public void add(double[] values) {
+    @Nonnull
+    public DoubleArrayList add(@Nonnull double[] values) {
         final int needs = used + values.length;
         if (needs >= data.length) {
             expand(needs);
         }
         System.arraycopy(values, 0, data, used, values.length);
         this.used = needs;
+        return this;
     }
 
     /**
@@ -77,21 +81,18 @@ public final class DoubleArrayList implements Serializable {
     }
 
     public double remove(int index) {
-        final double ret;
-        if (index > used) {
+        if (index >= used) {
             throw new IndexOutOfBoundsException();
-        } else if (index == used) {
-            ret = data[--used];
-        } else { // index < used
-            // removed value
+        }
+
+        final double ret;
+        if (index == used) {
             ret = data[index];
-            final double[] newarray = new double[--used];
-            // prefix
-            System.arraycopy(data, 0, newarray, 0, index - 1);
-            // appendix
-            System.arraycopy(data, index + 1, newarray, index, used - index);
-            // set fields.
-            this.data = newarray;
+            --used;
+        } else { // index < used
+            ret = data[index];
+            System.arraycopy(data, index + 1, data, index, used - index - 1);
+            --used;
         }
         return ret;
     }

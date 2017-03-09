@@ -20,6 +20,8 @@ package hivemall.utils.collections.lists;
 
 import java.io.Serializable;
 
+import javax.annotation.Nonnull;
+
 public final class FloatArrayList implements Serializable {
     private static final long serialVersionUID = 8764828070342317585L;
 
@@ -43,20 +45,24 @@ public final class FloatArrayList implements Serializable {
         this.used = initValues.length;
     }
 
-    public void add(float value) {
+    @Nonnull
+    public FloatArrayList add(float value) {
         if (used >= data.length) {
             expand(used + 1);
         }
         data[used++] = value;
+        return this;
     }
 
-    public void add(float[] values) {
+    @Nonnull
+    public FloatArrayList add(@Nonnull float[] values) {
         final int needs = used + values.length;
         if (needs >= data.length) {
             expand(needs);
         }
         System.arraycopy(values, 0, data, used, values.length);
         this.used = needs;
+        return this;
     }
 
     /**
@@ -76,21 +82,18 @@ public final class FloatArrayList implements Serializable {
     }
 
     public float remove(int index) {
-        final float ret;
-        if (index > used) {
+        if (index >= used) {
             throw new IndexOutOfBoundsException();
-        } else if (index == used) {
-            ret = data[--used];
-        } else { // index < used
-            // removed value
+        }
+
+        final float ret;
+        if (index == used) {
             ret = data[index];
-            final float[] newarray = new float[--used];
-            // prefix
-            System.arraycopy(data, 0, newarray, 0, index - 1);
-            // appendix
-            System.arraycopy(data, index + 1, newarray, index, used - index);
-            // set fields.
-            this.data = newarray;
+            --used;
+        } else { // index < used
+            ret = data[index];
+            System.arraycopy(data, index + 1, data, index, used - index - 1);
+            --used;
         }
         return ret;
     }

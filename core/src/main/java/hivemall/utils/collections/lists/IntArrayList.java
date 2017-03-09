@@ -46,20 +46,24 @@ public final class IntArrayList implements Serializable {
         this.used = initValues.length;
     }
 
-    public void add(final int value) {
+    @Nonnull
+    public IntArrayList add(final int value) {
         if (used >= data.length) {
             expand(used + 1);
         }
         data[used++] = value;
+        return this;
     }
 
-    public void add(final int[] values) {
+    @Nonnull
+    public IntArrayList add(@Nonnull final int[] values) {
         final int needs = used + values.length;
         if (needs >= data.length) {
             expand(needs);
         }
         System.arraycopy(values, 0, data, used, values.length);
         this.used = needs;
+        return this;
     }
 
     /**
@@ -79,21 +83,18 @@ public final class IntArrayList implements Serializable {
     }
 
     public int remove(final int index) {
-        final int ret;
-        if (index > used) {
+        if (index >= used) {
             throw new IndexOutOfBoundsException();
-        } else if (index == used) {
-            ret = data[--used];
-        } else { // index < used
-            // removed value
+        }
+
+        final int ret;
+        if (index == used) {
             ret = data[index];
-            final int[] newarray = new int[--used];
-            // prefix
-            System.arraycopy(data, 0, newarray, 0, index - 1);
-            // appendix
-            System.arraycopy(data, index + 1, newarray, index, used - index);
-            // set fields.
-            this.data = newarray;
+            --used;
+        } else { // index < used
+            ret = data[index];
+            System.arraycopy(data, index + 1, data, index, used - index - 1);
+            --used;
         }
         return ret;
     }
