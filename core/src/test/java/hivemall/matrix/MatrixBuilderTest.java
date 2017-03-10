@@ -53,8 +53,7 @@ public class MatrixBuilderTest {
         Assert.assertEquals(0.d, matrix.get(5, 4), 0.d);
         Assert.assertEquals(-1.d, matrix.get(5, 4, -1.d), 0.d);
 
-        matrix.setDefaultValue(Double.NaN);
-        Assert.assertEquals(Double.NaN, matrix.get(5, 4), 0.d);
+        Assert.assertEquals(Double.NaN, matrix.get(5, 4, Double.NaN), 0.d);
     }
 
     @Test
@@ -87,8 +86,7 @@ public class MatrixBuilderTest {
         Assert.assertEquals(0.d, matrix.get(5, 4), 0.d);
         Assert.assertEquals(-1.d, matrix.get(5, 4, -1.d), 0.d);
 
-        matrix.setDefaultValue(Double.NaN);
-        Assert.assertEquals(Double.NaN, matrix.get(5, 4), 0.d);
+        Assert.assertEquals(Double.NaN, matrix.get(5, 4, Double.NaN), 0.d);
     }
 
     @Test
@@ -141,8 +139,7 @@ public class MatrixBuilderTest {
         Assert.assertEquals(0.d, matrix.get(5, 4), 0.d);
         Assert.assertEquals(-1.d, matrix.get(5, 4, -1.d), 0.d);
 
-        matrix.setDefaultValue(Double.NaN);
-        Assert.assertEquals(Double.NaN, matrix.get(5, 4), 0.d);
+        Assert.assertEquals(Double.NaN, matrix.get(5, 4, Double.NaN), 0.d);
     }
 
     @Test
@@ -252,12 +249,6 @@ public class MatrixBuilderTest {
         Matrix matrix = new DenseMatrixBuilder(1024).buildMatrix();
         Assert.assertEquals(0, matrix.numRows());
         Assert.assertEquals(0, matrix.numColumns());
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testReadOnlyDenseMatrix2dFailToChangeDefaultValue() {
-        Matrix matrix = denseMatrix();
-        matrix.setDefaultValue(Double.NaN);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)

@@ -38,7 +38,8 @@ public interface Matrix {
 
     public boolean swappable();
 
-    public void setDefaultValue(double value);
+    /** The Number of Non-Zeros */
+    public int nnz();
 
     @Nonnegative
     public int numRows();

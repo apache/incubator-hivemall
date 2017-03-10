@@ -33,6 +33,8 @@ public final class DoKMatrix extends AbstractMatrix {
     private int numRows;
     @Nonnegative
     private int numColumns;
+    @Nonnegative
+    private int nnz;
 
     public DoKMatrix() {
         this(0, 0);
@@ -43,19 +45,25 @@ public final class DoKMatrix extends AbstractMatrix {
     }
 
     public DoKMatrix(@Nonnegative int numRows, @Nonnegative int numCols, @Nonnegative float sparsity) {
+        super();
         Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f, "Invalid Sparsity value: "
                 + sparsity);
         int initialCapacity = Math.max(16384, Math.round(numRows * numCols * sparsity));
         this.elements = new Long2DoubleOpenHashTable(initialCapacity);
+        elements.defaultReturnValue(0.d);
         this.numRows = numRows;
         this.numColumns = numCols;
+        this.nnz = 0;
     }
 
     public DoKMatrix(@Nonnegative int initSize) {
+        super();
         int initialCapacity = Math.max(initSize, 16384);
         this.elements = new Long2DoubleOpenHashTable(initialCapacity);
+        elements.defaultReturnValue(0.d);
         this.numRows = 0;
         this.numColumns = 0;
+        this.nnz = 0;
     }
 
     @Override
@@ -81,6 +89,11 @@ public final class DoKMatrix extends AbstractMatrix {
     @Override
     public boolean swappable() {
         return true;
+    }
+
+    @Override
+    public int nnz() {
+        return nnz;
     }
 
     @Override
@@ -118,7 +131,7 @@ public final class DoKMatrix extends AbstractMatrix {
         final int end = Math.min(dst.length, numColumns);
         for (int col = 0; col < end; col++) {
             long index = index(row, col);
-            double v = elements.get(index, defaultValue);
+            double v = elements.get(index);
             dst[col] = v;
         }
 
@@ -138,11 +151,16 @@ public final class DoKMatrix extends AbstractMatrix {
     public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         checkIndex(row, col);
 
-        long index = index(row, col);
-        elements.put(index, value);
-        this.numRows = Math.max(numRows, row + 1);
-        this.numColumns = Math.max(numColumns, col + 1);
+        if (value == 0.d) {
+            return;
+        }
 
+        long index = index(row, col);
+        if (elements.put(index, value, 0.d) != 0.d) {
+            nnz++;
+            this.numRows = Math.max(numRows, row + 1);
+            this.numColumns = Math.max(numColumns, col + 1);
+        }
     }
 
     @Override
@@ -151,9 +169,12 @@ public final class DoKMatrix extends AbstractMatrix {
         checkIndex(row, col);
 
         long index = index(row, col);
-        double old = elements.put(index, value);
-        this.numRows = Math.max(numRows, row + 1);
-        this.numColumns = Math.max(numColumns, col + 1);
+        double old = elements.put(index, value, 0.d);
+        if (old != 0.d) {
+            nnz++;
+            this.numRows = Math.max(numRows, row + 1);
+            this.numColumns = Math.max(numColumns, col + 1);
+        }
         return old;
     }
 

@@ -37,6 +37,8 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
     private final DoubleArrayList values;
 
     private int maxNumColumns;
+    /** The Number of Non-Zeros */
+    private int nnz;
 
     public CSRMatrixBuilder(@Nonnegative int initSize) {
         super();
@@ -45,6 +47,7 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
         this.columnIndices = new IntArrayList(initSize);
         this.values = new DoubleArrayList(initSize);
         this.maxNumColumns = 0;
+        this.nnz = 0;
     }
 
     @Override
@@ -63,13 +66,14 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
         columnIndices.add(col);
         values.add(value);
         this.maxNumColumns = Math.max(col + 1, maxNumColumns);
+        this.nnz++;
         return this;
     }
 
     @Override
     public CSRMatrix buildMatrix() {
         CSRMatrix matrix = new CSRMatrix(rowPointers.toArray(true), columnIndices.toArray(true),
-            values.toArray(true), maxNumColumns);
+            values.toArray(true), maxNumColumns, nnz);
         return matrix;
     }
 

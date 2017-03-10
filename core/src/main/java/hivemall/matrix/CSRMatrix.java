@@ -44,9 +44,11 @@ public final class CSRMatrix extends RowMajorMatrix {
     private final int numRows;
     @Nonnegative
     private final int numColumns;
+    @Nonnegative
+    private final int nnz;
 
     public CSRMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
-            @Nonnull double[] values, @Nonnegative int numColumns) {
+            @Nonnull double[] values, @Nonnegative int numColumns, @Nonnegative int nnz) {
         super();
         Preconditions.checkArgument(rowPointers.length >= 1,
             "rowPointers must be greather than 0: " + rowPointers.length);
@@ -57,6 +59,7 @@ public final class CSRMatrix extends RowMajorMatrix {
         this.values = values;
         this.numRows = rowPointers.length - 1;
         this.numColumns = numColumns;
+        this.nnz = nnz;
     }
 
     @Override
@@ -72,6 +75,11 @@ public final class CSRMatrix extends RowMajorMatrix {
     @Override
     public boolean swappable() {
         return false;
+    }
+
+    @Override
+    public int nnz() {
+        return nnz;
     }
 
     @Override

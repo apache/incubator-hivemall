@@ -35,11 +35,19 @@ public final class DenseMatrix2d extends RowMajorMatrix {
     private final int numRows;
     @Nonnegative
     private final int numColumns;
+    @Nonnegative
+    private int nnz;
 
     public DenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns) {
+        this(data, numColumns, nnz(data));
+    }
+
+    public DenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns, @Nonnegative int nnz) {
+        super();
         this.data = data;
         this.numRows = data.length;
         this.numColumns = numColumns;
+        this.nnz = nnz;
     }
 
     @Override
@@ -58,8 +66,8 @@ public final class DenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
-    public void setDefaultValue(double value) {
-        throw new UnsupportedOperationException("The defaultValue of a DenseMatrix is fixed to 0.d");
+    public int nnz() {
+        return nnz;
     }
 
     @Override
@@ -127,16 +135,25 @@ public final class DenseMatrix2d extends RowMajorMatrix {
 
         double old = rowData[col];
         rowData[col] = value;
+        if (old == 0.d && value != 0.d) {
+            ++nnz;
+        }
         return old;
     }
 
     @Override
     public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         checkIndex(row, col, numRows, numColumns);
+        if (value == 0.d) {
+            return;
+        }
 
         final double[] rowData = data[row];
         checkColIndex(col, rowData.length);
 
+        if (rowData[col] == 0.d) {
+            ++nnz;
+        }
         rowData[col] = value;
     }
 
@@ -224,6 +241,19 @@ public final class DenseMatrix2d extends RowMajorMatrix {
     @Override
     public DenseMatrixBuilder builder() {
         return new DenseMatrixBuilder(numRows);
+    }
+
+    private static int nnz(@Nonnull final double[][] data) {
+        int count = 0;
+        for (int i = 0; i < data.length; i++) {
+            final double[] row = data[i];
+            for (int j = 0; j < row.length; j++) {
+                if (row[j] != 0.d) {
+                    ++count;
+                }
+            }
+        }
+        return count;
     }
 
 }

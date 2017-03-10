@@ -31,6 +31,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     @Nonnull
     private final List<double[]> rows;
     private int maxNumColumns;
+    private int nnz;
 
     @Nonnull
     private final SparseDoubleArray rowProbe;
@@ -39,6 +40,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
         super();
         this.rows = new ArrayList<double[]>(initSize);
         this.maxNumColumns = 0;
+        this.nnz = 0;
         this.rowProbe = new SparseDoubleArray(32);
     }
 
@@ -48,6 +50,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
             return this;
         }
         rowProbe.put(col, value);
+        nnz++;
         return this;
     }
 
@@ -69,7 +72,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     public DenseMatrix2d buildMatrix() {
         int numRows = rows.size();
         double[][] data = rows.toArray(new double[numRows][]);
-        return new DenseMatrix2d(data, maxNumColumns);
+        return new DenseMatrix2d(data, maxNumColumns, nnz);
     }
 
 }

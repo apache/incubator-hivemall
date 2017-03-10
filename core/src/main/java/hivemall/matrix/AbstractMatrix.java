@@ -22,16 +22,7 @@ import javax.annotation.Nonnegative;
 
 public abstract class AbstractMatrix implements Matrix {
 
-    protected double defaultValue;
-
-    public AbstractMatrix() {
-        this.defaultValue = 0.d;
-    }
-
-    @Override
-    public void setDefaultValue(double value) {
-        this.defaultValue = value;
-    }
+    public AbstractMatrix() {}
 
     @Override
     public double[] row() {
@@ -41,7 +32,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     @Override
     public final double get(@Nonnegative final int row, @Nonnegative final int col) {
-        return get(row, col, defaultValue);
+        return get(row, col, 0.d);
     }
 
     protected static final void checkRowIndex(final int row, final int numRows) {
