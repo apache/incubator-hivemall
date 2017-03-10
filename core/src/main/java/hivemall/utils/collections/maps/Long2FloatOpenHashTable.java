@@ -45,7 +45,7 @@ public final class Long2FloatOpenHashTable implements Externalizable {
 
     protected int _used = 0;
     protected int _threshold;
-    protected float defaultReturnValue = -1.f;
+    protected float defaultReturnValue = 0.f;
 
     protected long[] _keys;
     protected float[] _values;

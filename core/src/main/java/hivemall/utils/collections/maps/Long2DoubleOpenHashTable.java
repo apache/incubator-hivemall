@@ -45,7 +45,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
 
     protected int _used = 0;
     protected int _threshold;
-    protected double defaultReturnValue = -1.d;
+    protected double defaultReturnValue = 0.d;
 
     protected long[] _keys;
     protected double[] _values;
@@ -121,6 +121,10 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
     }
 
     public double put(final long key, final double value) {
+        return put(key, value, defaultReturnValue);
+    }
+
+    public double put(final long key, final double value, final double defaultValue) {
         final int hash = keyHash(key);
         int keyLength = _keys.length;
         int keyIdx = hash % keyLength;
@@ -162,7 +166,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         values[keyIdx] = value;
         states[keyIdx] = FULL;
         ++_used;
-        return defaultReturnValue;
+        return defaultValue;
     }
 
     /** Return weather the required slot is free for new entry */
