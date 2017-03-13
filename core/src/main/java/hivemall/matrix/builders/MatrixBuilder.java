@@ -16,7 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.matrix.builders;
+
+import hivemall.matrix.Matrix;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

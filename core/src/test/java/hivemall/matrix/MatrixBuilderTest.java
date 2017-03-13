@@ -18,6 +18,13 @@
  */
 package hivemall.matrix;
 
+import hivemall.matrix.builders.CSRMatrixBuilder;
+import hivemall.matrix.builders.DoKMatrixBuilder;
+import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
+import hivemall.matrix.dense.RowMajorDenseMatrix2d;
+import hivemall.matrix.sparse.CSRMatrix;
+import hivemall.matrix.sparse.DoKMatrix;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -246,7 +253,7 @@ public class MatrixBuilderTest {
 
     @Test
     public void testReadOnlyDenseMatrix2dNoRow() {
-        Matrix matrix = new DenseMatrixBuilder(1024).buildMatrix();
+        Matrix matrix = new RowMajorDenseMatrixBuilder(1024).buildMatrix();
         Assert.assertEquals(0, matrix.numRows());
         Assert.assertEquals(0, matrix.numColumns());
     }
@@ -331,7 +338,7 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static DenseMatrix2d denseMatrix() {
+    private static RowMajorDenseMatrix2d denseMatrix() {
         /*
         11  12  13  14  0   0
         0   22  23  0   0   0
@@ -340,7 +347,7 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
+        RowMajorDenseMatrixBuilder builder = new RowMajorDenseMatrixBuilder(1024);
         builder.nextRow(new double[] {11, 12, 13, 14});
         builder.nextRow(new double[] {0, 22, 23});
         builder.nextRow(new double[] {0, 0, 33, 34, 35, 36});
@@ -350,7 +357,7 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static DenseMatrix2d denseMatrixSparseInput() {
+    private static RowMajorDenseMatrix2d denseMatrixSparseInput() {
         /*
         11  12  13  14  0   0
         0   22  23  0   0   0
@@ -359,7 +366,7 @@ public class MatrixBuilderTest {
         0   0   0   0   0   56
         0   0   0   0   0   66
         */
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
+        RowMajorDenseMatrixBuilder builder = new RowMajorDenseMatrixBuilder(1024);
         builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
         builder.nextColumn(1, 22).nextColumn(2, 23).nextRow();
         builder.nextColumn(2, 33).nextColumn(3, 34).nextColumn(4, 35).nextColumn(5, 36).nextRow();
@@ -369,8 +376,8 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static DenseMatrix2d denseMatrixFromLibSVM() {
-        DenseMatrixBuilder builder = new DenseMatrixBuilder(1024);
+    private static RowMajorDenseMatrix2d denseMatrixFromLibSVM() {
+        RowMajorDenseMatrixBuilder builder = new RowMajorDenseMatrixBuilder(1024);
         builder.nextRow(new String[] {"0:11", "1:12", "2:13", "3:14"});
         builder.nextRow(new String[] {"1:22", "2:23"});
         builder.nextRow(new String[] {"2:33", "3:34", "4:35", "5:36"});

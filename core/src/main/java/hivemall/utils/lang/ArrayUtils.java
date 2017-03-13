@@ -176,6 +176,12 @@ public final class ArrayUtils {
         arr[j] = tmp;
     }
 
+    public static void swap(@Nonnull final float[] arr, final int i, final int j) {
+        float tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+
     public static void swap(@Nonnull final double[] arr, final int i, final int j) {
         double tmp = arr[i];
         arr[i] = arr[j];
@@ -210,7 +216,7 @@ public final class ArrayUtils {
         }
     }
 
-    public static int indexOf(@Nonnull final int[] array, final int valueToFind,
+    public static int indexOf(@Nullable final int[] array, final int valueToFind,
             final int startIndex, final int endIndex) {
         if (array == null) {
             return INDEX_NOT_FOUND;
@@ -220,6 +226,36 @@ public final class ArrayUtils {
             throw new IllegalArgumentException("Illegal startIndex: " + startIndex);
         }
         for (int i = startIndex; i < til; i++) {
+            if (valueToFind == array[i]) {
+                return i;
+            }
+        }
+        return INDEX_NOT_FOUND;
+    }
+
+    public static int lastIndexOf(@Nullable final int[] array, final int valueToFind, int startIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        return lastIndexOf(array, valueToFind, startIndex, array.length);
+    }
+
+    /**
+     * @param startIndex inclusive start index
+     * @param endIndex exclusive end index
+     */
+    public static int lastIndexOf(@Nullable final int[] array, final int valueToFind,
+            int startIndex, int endIndex) {
+        if (array == null) {
+            return INDEX_NOT_FOUND;
+        }
+        if (startIndex < 0) {
+            throw new IllegalArgumentException("startIndex out of bound: " + startIndex);
+        }
+        if (endIndex >= array.length) {
+            throw new IllegalArgumentException("endIndex out of bound: " + endIndex);
+        }
+        for (int i = endIndex - 1; i >= startIndex; i--) {
             if (valueToFind == array[i]) {
                 return i;
             }
@@ -449,6 +485,234 @@ public final class ArrayUtils {
                 }
             }
         }
+    }
+
+    public static void sort(@Nonnull final int[] arr, @Nonnull final int[] brr,
+            @Nonnull final double[] crr) {
+        sort(arr, brr, crr, arr.length);
+    }
+
+    public static void sort(@Nonnull final int[] arr, @Nonnull final int[] brr,
+            @Nonnull final double[] crr, final int n) {
+        Preconditions.checkArgument(arr.length >= n);
+        Preconditions.checkArgument(brr.length >= n);
+        Preconditions.checkArgument(crr.length >= n);
+
+        final int NSTACK = 64;
+        final int M = 7;
+        final int[] istack = new int[NSTACK];
+
+        int jstack = -1;
+        int l = 0;
+        int ir = n - 1;
+
+        int i, j, k;
+        int a, b;
+        double c;
+        for (;;) {
+            if (ir - l < M) {
+                for (j = l + 1; j <= ir; j++) {
+                    a = arr[j];
+                    b = brr[j];
+                    c = crr[j];
+                    for (i = j - 1; i >= l; i--) {
+                        if (arr[i] <= a) {
+                            break;
+                        }
+                        arr[i + 1] = arr[i];
+                        brr[i + 1] = brr[i];
+                        crr[i + 1] = crr[i];
+                    }
+                    arr[i + 1] = a;
+                    brr[i + 1] = b;
+                    crr[i + 1] = c;
+                }
+                if (jstack < 0) {
+                    break;
+                }
+                ir = istack[jstack--];
+                l = istack[jstack--];
+            } else {
+                k = (l + ir) >> 1;
+                swap(arr, k, l + 1);
+                swap(brr, k, l + 1);
+                swap(crr, k, l + 1);
+                if (arr[l] > arr[ir]) {
+                    swap(arr, l, ir);
+                    swap(brr, l, ir);
+                    swap(crr, l, ir);
+                }
+                if (arr[l + 1] > arr[ir]) {
+                    swap(arr, l + 1, ir);
+                    swap(brr, l + 1, ir);
+                    swap(crr, l + 1, ir);
+                }
+                if (arr[l] > arr[l + 1]) {
+                    swap(arr, l, l + 1);
+                    swap(brr, l, l + 1);
+                    swap(crr, l, l + 1);
+                }
+                i = l + 1;
+                j = ir;
+                a = arr[l + 1];
+                b = brr[l + 1];
+                c = crr[l + 1];
+                for (;;) {
+                    do {
+                        i++;
+                    } while (arr[i] < a);
+                    do {
+                        j--;
+                    } while (arr[j] > a);
+                    if (j < i) {
+                        break;
+                    }
+                    swap(arr, i, j);
+                    swap(brr, i, j);
+                    swap(crr, i, j);
+                }
+                arr[l + 1] = arr[j];
+                arr[j] = a;
+                brr[l + 1] = brr[j];
+                brr[j] = b;
+                crr[l + 1] = crr[j];
+                crr[j] = c;
+                jstack += 2;
+
+                if (jstack >= NSTACK) {
+                    throw new IllegalStateException("NSTACK too small in sort.");
+                }
+
+                if (ir - i + 1 >= j - l) {
+                    istack[jstack] = ir;
+                    istack[jstack - 1] = i;
+                    ir = j - 1;
+                } else {
+                    istack[jstack] = j - 1;
+                    istack[jstack - 1] = l;
+                    l = i;
+                }
+            }
+        }
+    }
+
+    public static void sort(@Nonnull final int[] arr, @Nonnull final int[] brr,
+            @Nonnull final float[] crr) {
+        sort(arr, brr, crr, arr.length);
+    }
+
+    public static void sort(@Nonnull final int[] arr, @Nonnull final int[] brr,
+            @Nonnull final float[] crr, final int n) {
+        Preconditions.checkArgument(arr.length >= n);
+        Preconditions.checkArgument(brr.length >= n);
+        Preconditions.checkArgument(crr.length >= n);
+
+        final int NSTACK = 64;
+        final int M = 7;
+        final int[] istack = new int[NSTACK];
+
+        int jstack = -1;
+        int l = 0;
+        int ir = n - 1;
+
+        int i, j, k;
+        int a, b;
+        float c;
+        for (;;) {
+            if (ir - l < M) {
+                for (j = l + 1; j <= ir; j++) {
+                    a = arr[j];
+                    b = brr[j];
+                    c = crr[j];
+                    for (i = j - 1; i >= l; i--) {
+                        if (arr[i] <= a) {
+                            break;
+                        }
+                        arr[i + 1] = arr[i];
+                        brr[i + 1] = brr[i];
+                        crr[i + 1] = crr[i];
+                    }
+                    arr[i + 1] = a;
+                    brr[i + 1] = b;
+                    crr[i + 1] = c;
+                }
+                if (jstack < 0) {
+                    break;
+                }
+                ir = istack[jstack--];
+                l = istack[jstack--];
+            } else {
+                k = (l + ir) >> 1;
+                swap(arr, k, l + 1);
+                swap(brr, k, l + 1);
+                swap(crr, k, l + 1);
+                if (arr[l] > arr[ir]) {
+                    swap(arr, l, ir);
+                    swap(brr, l, ir);
+                    swap(crr, l, ir);
+                }
+                if (arr[l + 1] > arr[ir]) {
+                    swap(arr, l + 1, ir);
+                    swap(brr, l + 1, ir);
+                    swap(crr, l + 1, ir);
+                }
+                if (arr[l] > arr[l + 1]) {
+                    swap(arr, l, l + 1);
+                    swap(brr, l, l + 1);
+                    swap(crr, l, l + 1);
+                }
+                i = l + 1;
+                j = ir;
+                a = arr[l + 1];
+                b = brr[l + 1];
+                c = crr[l + 1];
+                for (;;) {
+                    do {
+                        i++;
+                    } while (arr[i] < a);
+                    do {
+                        j--;
+                    } while (arr[j] > a);
+                    if (j < i) {
+                        break;
+                    }
+                    swap(arr, i, j);
+                    swap(brr, i, j);
+                    swap(crr, i, j);
+                }
+                arr[l + 1] = arr[j];
+                arr[j] = a;
+                brr[l + 1] = brr[j];
+                brr[j] = b;
+                crr[l + 1] = crr[j];
+                crr[j] = c;
+                jstack += 2;
+
+                if (jstack >= NSTACK) {
+                    throw new IllegalStateException("NSTACK too small in sort.");
+                }
+
+                if (ir - i + 1 >= j - l) {
+                    istack[jstack] = ir;
+                    istack[jstack - 1] = i;
+                    ir = j - 1;
+                } else {
+                    istack[jstack] = j - 1;
+                    istack[jstack - 1] = l;
+                    l = i;
+                }
+            }
+        }
+    }
+
+    public static int count(@Nonnull final int[] values, final int valueToFind) {
+        int cnt = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == valueToFind) {
+                cnt++;
+            }
+        }
+        return cnt;
     }
 
 }

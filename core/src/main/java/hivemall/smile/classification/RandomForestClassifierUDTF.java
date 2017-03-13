@@ -19,11 +19,11 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
-import hivemall.matrix.CSRMatrixBuilder;
-import hivemall.matrix.DenseMatrixBuilder;
 import hivemall.matrix.Matrix;
-import hivemall.matrix.MatrixBuilder;
 import hivemall.matrix.MatrixUtils;
+import hivemall.matrix.builders.CSRMatrixBuilder;
+import hivemall.matrix.builders.MatrixBuilder;
+import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
 import hivemall.matrix.ints.DoKIntMatrix;
 import hivemall.matrix.ints.IntMatrix;
 import hivemall.smile.ModelType;
@@ -207,7 +207,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         if (HiveUtils.isNumberOI(elemOI)) {
             this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
             this.denseInput = true;
-            this.matrixBuilder = new DenseMatrixBuilder(8192);
+            this.matrixBuilder = new RowMajorDenseMatrixBuilder(8192);
         } else if (HiveUtils.isStringOI(elemOI)) {
             this.featureElemOI = HiveUtils.asStringOI(elemOI);
             this.denseInput = false;

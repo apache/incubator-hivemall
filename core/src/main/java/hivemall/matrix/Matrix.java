@@ -18,6 +18,8 @@
  */
 package hivemall.matrix;
 
+import hivemall.matrix.builders.MatrixBuilder;
+
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -93,6 +95,12 @@ public interface Matrix {
     public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 
     public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
+
+    @Nonnull
+    public Matrix toRowMajorMatrix();
+    
+    @Nonnull
+    public Matrix toColumnMajorMatrix();
 
     @Nonnull
     public MatrixBuilder builder();

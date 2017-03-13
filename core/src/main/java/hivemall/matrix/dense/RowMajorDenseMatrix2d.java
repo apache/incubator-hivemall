@@ -16,7 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.matrix.dense;
+
+import hivemall.matrix.Matrix;
+import hivemall.matrix.RowMajorMatrix;
+import hivemall.matrix.VectorProcedure;
+import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
 
 import java.util.Arrays;
 
@@ -26,7 +31,7 @@ import javax.annotation.Nonnull;
 /**
  * Fixed-size Dense 2-d double Matrix.
  */
-public final class DenseMatrix2d extends RowMajorMatrix {
+public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
 
     @Nonnull
     private final double[][] data;
@@ -38,11 +43,12 @@ public final class DenseMatrix2d extends RowMajorMatrix {
     @Nonnegative
     private int nnz;
 
-    public DenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns) {
+    public RowMajorDenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns) {
         this(data, numColumns, nnz(data));
     }
 
-    public DenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns, @Nonnegative int nnz) {
+    public RowMajorDenseMatrix2d(@Nonnull double[][] data, @Nonnegative int numColumns,
+            @Nonnegative int nnz) {
         super();
         this.data = data;
         this.numRows = data.length;
@@ -239,8 +245,29 @@ public final class DenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
-    public DenseMatrixBuilder builder() {
-        return new DenseMatrixBuilder(numRows);
+    public Matrix toColumnMajorMatrix() {
+        final double[][] colrow = new double[numColumns][numRows];
+        int nnz = 0;
+        for (int i = 0; i < data.length; i++) {
+            final double[] rowData = data[i];
+            if (rowData == null) {
+                continue;
+            }
+            for (int j = 0; j < rowData.length; j++) {
+                final double v = rowData[j];
+                if (v == 0.d) {
+                    continue;
+                }
+                colrow[i][j] = v;
+                nnz++;
+            }
+        }
+        return new ColumnMajorDenseMatrix2d(colrow, numRows, nnz);
+    }
+
+    @Override
+    public RowMajorDenseMatrixBuilder builder() {
+        return new RowMajorDenseMatrixBuilder(numRows);
     }
 
     private static int nnz(@Nonnull final double[][] data) {

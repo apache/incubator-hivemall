@@ -18,9 +18,9 @@
  */
 package hivemall.smile.regression;
 
-import hivemall.matrix.CSRMatrixBuilder;
-import hivemall.matrix.DenseMatrix2d;
 import hivemall.matrix.Matrix;
+import hivemall.matrix.builders.CSRMatrixBuilder;
+import hivemall.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.NumericAttribute;
 
@@ -172,7 +172,7 @@ public class RegressionTreeTest {
     @Nonnull
     private static Matrix matrix(@Nonnull final double[][] x, boolean dense) {
         if (dense) {
-            return new DenseMatrix2d(x, x[0].length);
+            return new RowMajorDenseMatrix2d(x, x[0].length);
         } else {
             int numRows = x.length;
             CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);

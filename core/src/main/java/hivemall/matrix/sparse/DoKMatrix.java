@@ -16,8 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.matrix.sparse;
 
+import hivemall.annotations.Experimental;
+import hivemall.matrix.AbstractMatrix;
+import hivemall.matrix.Matrix;
+import hivemall.matrix.VectorProcedure;
+import hivemall.matrix.builders.DoKMatrixBuilder;
 import hivemall.utils.collections.maps.Long2DoubleOpenHashTable;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
@@ -25,6 +30,7 @@ import hivemall.utils.lang.Primitives;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
+@Experimental
 public final class DoKMatrix extends AbstractMatrix {
 
     @Nonnull
@@ -264,6 +270,16 @@ public final class DoKMatrix extends AbstractMatrix {
                 procedure.apply(row, v);
             }
         }
+    }
+
+    @Override
+    public Matrix toRowMajorMatrix() {
+        return this; // TODO
+    }
+
+    @Override
+    public Matrix toColumnMajorMatrix() {
+        return this; // TODO
     }
 
     @Override

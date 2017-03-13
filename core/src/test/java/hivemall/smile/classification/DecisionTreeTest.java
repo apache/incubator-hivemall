@@ -19,9 +19,9 @@
 package hivemall.smile.classification;
 
 import static org.junit.Assert.assertEquals;
-import hivemall.matrix.CSRMatrixBuilder;
 import hivemall.matrix.Matrix;
-import hivemall.matrix.DenseMatrix2d;
+import hivemall.matrix.builders.CSRMatrixBuilder;
+import hivemall.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree.Node;
 import hivemall.smile.data.Attribute;
@@ -303,7 +303,7 @@ public class DecisionTreeTest {
     @Nonnull
     private static Matrix matrix(@Nonnull final double[][] x, boolean dense) {
         if (dense) {
-            return new DenseMatrix2d(x, x[0].length);
+            return new RowMajorDenseMatrix2d(x, x[0].length);
         } else {
             int numRows = x.length;
             CSRMatrixBuilder builder = new CSRMatrixBuilder(1024);

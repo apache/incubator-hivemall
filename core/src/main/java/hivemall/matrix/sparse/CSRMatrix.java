@@ -16,8 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.matrix.sparse;
 
+import hivemall.matrix.Matrix;
+import hivemall.matrix.RowMajorMatrix;
+import hivemall.matrix.VectorProcedure;
+import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.utils.lang.Preconditions;
 
 import java.util.Arrays;
@@ -48,7 +52,7 @@ public final class CSRMatrix extends RowMajorMatrix {
     private final int nnz;
 
     public CSRMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
-            @Nonnull double[] values, @Nonnegative int numColumns, @Nonnegative int nnz) {
+            @Nonnull double[] values, @Nonnegative int numColumns) {
         super();
         Preconditions.checkArgument(rowPointers.length >= 1,
             "rowPointers must be greather than 0: " + rowPointers.length);
@@ -59,7 +63,7 @@ public final class CSRMatrix extends RowMajorMatrix {
         this.values = values;
         this.numRows = rowPointers.length - 1;
         this.numColumns = numColumns;
-        this.nnz = nnz;
+        this.nnz = values.length;
     }
 
     @Override
@@ -205,6 +209,45 @@ public final class CSRMatrix extends RowMajorMatrix {
             double v = values[i];
             procedure.apply(col, v);
         }
+    }
+
+    @Nonnull
+    public Matrix toColumnMajorMatrix() {
+        final int[] columnPointers = new int[numColumns + 1];
+        final int[] rowIndicies = new int[nnz];
+        final double[] cscValues = new double[nnz];
+
+        // compute nnz per for each column
+        for (int j = 0; j < columnIndices.length; j++) {
+            columnPointers[columnIndices[j]]++;
+        }
+        for (int j = 0, sum = 0; j < numColumns; j++) {
+            int curr = columnPointers[j];
+            columnPointers[j] = sum;
+            sum += curr;
+        }
+        columnPointers[numColumns] = nnz;
+
+        for (int i = 0; i < numRows; i++) {
+            for (int j = rowPointers[i], last = rowPointers[i + 1]; j < last; j++) {
+                int col = columnIndices[j];
+                int dst = columnPointers[col];
+
+                rowIndicies[dst] = i;
+                cscValues[dst] = values[j];
+
+                columnPointers[col]++;
+            }
+        }
+
+        // shift column pointers
+        for (int j = 0, last = 0; j <= numColumns; j++) {
+            int tmp = columnPointers[j];
+            columnPointers[j] = last;
+            last = tmp;
+        }
+
+        return new CSCMatrix(columnPointers, rowIndicies, cscValues, numRows, numColumns);
     }
 
     @Override

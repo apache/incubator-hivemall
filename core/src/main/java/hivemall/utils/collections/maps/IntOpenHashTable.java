@@ -237,6 +237,11 @@ public final class IntOpenHashTable<V> implements Externalizable {
         return null;
     }
 
+    @Nonnull
+    public IMapIterator<V> entries() {
+        return new MapIterator();
+    }
+
     public int size() {
         return _used;
     }
@@ -333,6 +338,67 @@ public final class IntOpenHashTable<V> implements Externalizable {
         this._keys = keys;
         this._values = (V[]) values;
         this._states = states;
+    }
+
+    public interface IMapIterator<V> {
+
+        public boolean hasNext();
+
+        /**
+         * @return -1 if not found
+         */
+        public int next();
+
+        public int getKey();
+
+        public V getValue();
+
+    }
+
+    private final class MapIterator implements IMapIterator<V> {
+
+        int nextEntry;
+        int lastEntry = -1;
+
+        MapIterator() {
+            this.nextEntry = nextEntry(0);
+        }
+
+        /** find the index of next full entry */
+        int nextEntry(int index) {
+            while (index < _keys.length && _states[index] != FULL) {
+                index++;
+            }
+            return index;
+        }
+
+        public boolean hasNext() {
+            return nextEntry < _keys.length;
+        }
+
+        public int next() {
+            if (!hasNext()) {
+                return -1;
+            }
+            int curEntry = nextEntry;
+            this.lastEntry = curEntry;
+            this.nextEntry = nextEntry(curEntry + 1);
+            return curEntry;
+        }
+
+        public int getKey() {
+            if (lastEntry == -1) {
+                throw new IllegalStateException();
+            }
+            return _keys[lastEntry];
+        }
+
+        public V getValue() {
+            if (lastEntry == -1) {
+                throw new IllegalStateException();
+            }
+            return _values[lastEntry];
+        }
     }
 
 }

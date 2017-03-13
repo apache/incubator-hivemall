@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.matrix.builders;
 
+import hivemall.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.utils.collections.arrays.SparseDoubleArray;
 
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ import java.util.List;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public final class DenseMatrixBuilder extends MatrixBuilder {
+public final class RowMajorDenseMatrixBuilder extends MatrixBuilder {
 
     @Nonnull
     private final List<double[]> rows;
@@ -36,7 +37,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     @Nonnull
     private final SparseDoubleArray rowProbe;
 
-    public DenseMatrixBuilder(@Nonnegative int initSize) {
+    public RowMajorDenseMatrixBuilder(@Nonnegative int initSize) {
         super();
         this.rows = new ArrayList<double[]>(initSize);
         this.maxNumColumns = 0;
@@ -45,7 +46,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public DenseMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+    public RowMajorDenseMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
         if (value == 0.d) {
             return this;
         }
@@ -55,7 +56,7 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public DenseMatrixBuilder nextRow() {
+    public RowMajorDenseMatrixBuilder nextRow() {
         double[] row = rowProbe.toArray();
         rowProbe.clear();
         nextRow(row);
@@ -69,10 +70,10 @@ public final class DenseMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public DenseMatrix2d buildMatrix() {
+    public RowMajorDenseMatrix2d buildMatrix() {
         int numRows = rows.size();
         double[][] data = rows.toArray(new double[numRows][]);
-        return new DenseMatrix2d(data, maxNumColumns, nnz);
+        return new RowMajorDenseMatrix2d(data, maxNumColumns, nnz);
     }
 
 }

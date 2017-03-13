@@ -44,4 +44,9 @@ public abstract class RowMajorMatrix extends AbstractMatrix {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public RowMajorMatrix toRowMajorMatrix() {
+        return this;
+    }
+
 }
