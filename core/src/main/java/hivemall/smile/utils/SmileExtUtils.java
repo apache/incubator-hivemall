@@ -18,10 +18,12 @@
  */
 package hivemall.smile.utils;
 
+import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixUtils;
-import hivemall.matrix.ints.DoKIntMatrix;
-import hivemall.matrix.ints.IntMatrix;
+import hivemall.matrix.VectorProcedure;
+import hivemall.matrix.ints.ColumnMajorDenseIntMatrix2d;
+import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
@@ -29,6 +31,7 @@ import hivemall.smile.data.Attribute.NominalAttribute;
 import hivemall.smile.data.Attribute.NumericAttribute;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
@@ -72,12 +75,52 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static Attribute[] attributeTypes(@Nullable Attribute[] attributes,
+    public static Attribute[] attributeTypes(@Nullable final Attribute[] attributes,
             @Nonnull final Matrix x) {
         if (attributes == null) {
             int p = x.numColumns();
-            attributes = new Attribute[p];
-            Arrays.fill(attributes, new NumericAttribute());
+            Attribute[] newAttributes = new Attribute[p];
+            Arrays.fill(newAttributes, new NumericAttribute());
+            return newAttributes;
+        }
+
+        if (x.isRowMajorMatrix()) {
+            for (int i = 0, rows = x.numRows(); i < rows; i++) {
+                x.eachNonZeroInRow(i, new VectorProcedure() {
+                    @Override
+                    public void apply(final int j, final double value) {
+                        final Attribute attr = attributes[j];
+                        if (attr.type == AttributeType.NOMINAL) {
+                            final int x_ij = ((int) value) + 1;
+                            final int prevSize = attr.getSize();
+                            if (x_ij > prevSize) {
+                                attr.setSize(x_ij);
+                            }
+                        }
+                    }
+                });
+            }
+        } else if (x.isColumnMajorMatrix()) {
+            int size = attributes.length;
+            for (int j = 0; j < size; j++) {
+                Attribute attr = attributes[j];
+                if (attr.type == AttributeType.NOMINAL) {
+                    if (attr.getSize() != -1) {
+                        continue;
+                    }
+                    final MutableInt max_x = new MutableInt(0);
+                    x.eachInNonZeroColumn(j, new VectorProcedure() {
+                        @Override
+                        public void apply(final int i, final double value) {
+                            final int x_ij = (int) value;
+                            if (x_ij > max_x.getValue()) {
+                                max_x.setValue(x_ij);
+                            }
+                        }
+                    });
+                    attr.setSize(max_x.getValue() + 1);
+                }
+            }
         } else {
             int size = attributes.length;
             for (int j = 0; j < size; j++) {
@@ -124,32 +167,34 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static IntMatrix sort(@Nonnull final Attribute[] attributes, @Nonnull final Matrix x) {
+    public static ColumnMajorIntMatrix sort(@Nonnull final Attribute[] attributes,
+            @Nonnull final Matrix x) {
         final int n = x.numRows();
         final int p = x.numColumns();
 
         final int[][] index = new int[p][];
-
         if (x.isSparse()) {
             int initSize = n / 10;
             final DoubleArrayList dlist = new DoubleArrayList(initSize);
             final IntArrayList ilist = new IntArrayList(initSize);
+
+            final ColumnMajorMatrix x2 = x.toColumnMajorMatrix();
             for (int j = 0; j < p; j++) {
-                if (attributes[j].type == AttributeType.NUMERIC) {
-                    for (int i = 0; i < n; i++) {
-                        double v = x.get(i, j, Double.NaN);
-                        if (Double.isNaN(v)) {
-                            continue;
-                        }
+                if (attributes[j].type != AttributeType.NUMERIC) {
+                    continue;
+                }
+                x2.eachInNonZeroColumn(j, new VectorProcedure() {
+                    @Override
+                    public void apply(final int i, final double v) {
                         dlist.add(v);
                         ilist.add(i);
                     }
-                    int[] indexJ = ilist.toArray();
-                    QuickSort.sort(dlist.array(), indexJ, indexJ.length);
-                    index[j] = indexJ;
-                    dlist.clear();
-                    ilist.clear();
-                }
+                });
+                int[] indexJ = ilist.toArray();
+                QuickSort.sort(dlist.array(), indexJ, indexJ.length);
+                index[j] = indexJ;
+                dlist.clear();
+                ilist.clear();
             }
         } else {
             final double[] a = new double[n];
@@ -163,7 +208,7 @@ public final class SmileExtUtils {
             }
         }
 
-        return DoKIntMatrix.build(index, false, false);
+        return new ColumnMajorDenseIntMatrix2d(index, n);
     }
 
     @Nonnull

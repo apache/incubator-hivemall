@@ -97,10 +97,10 @@ public interface Matrix {
     public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 
     @Nonnull
-    public Matrix toRowMajorMatrix();
-    
+    public RowMajorMatrix toRowMajorMatrix();
+
     @Nonnull
-    public Matrix toColumnMajorMatrix();
+    public ColumnMajorMatrix toColumnMajorMatrix();
 
     @Nonnull
     public MatrixBuilder builder();

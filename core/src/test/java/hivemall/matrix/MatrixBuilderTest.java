@@ -18,10 +18,12 @@
  */
 package hivemall.matrix;
 
+import hivemall.matrix.builders.CSCMatrixBuilder;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.builders.DoKMatrixBuilder;
 import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
 import hivemall.matrix.dense.RowMajorDenseMatrix2d;
+import hivemall.matrix.sparse.CSCMatrix;
 import hivemall.matrix.sparse.CSRMatrix;
 import hivemall.matrix.sparse.DoKMatrix;
 
@@ -115,6 +117,110 @@ public class MatrixBuilderTest {
         Matrix matrix = csrMatrix();
         matrix.get(6, 7);
     }
+
+    @Test
+    public void testCSCMatrixFromLibSVM() {
+        CSCMatrix matrix = cscMatrixFromLibSVM();
+        Assert.assertEquals(6, matrix.numRows());
+        Assert.assertEquals(6, matrix.numColumns());
+        Assert.assertEquals(4, matrix.numColumns(0));
+        Assert.assertEquals(2, matrix.numColumns(1));
+        Assert.assertEquals(4, matrix.numColumns(2));
+        Assert.assertEquals(2, matrix.numColumns(3));
+        Assert.assertEquals(1, matrix.numColumns(4));
+        Assert.assertEquals(1, matrix.numColumns(5));
+
+        Assert.assertEquals(11d, matrix.get(0, 0), 0.d);
+        Assert.assertEquals(12d, matrix.get(0, 1), 0.d);
+        Assert.assertEquals(13d, matrix.get(0, 2), 0.d);
+        Assert.assertEquals(14d, matrix.get(0, 3), 0.d);
+        Assert.assertEquals(22d, matrix.get(1, 1), 0.d);
+        Assert.assertEquals(23d, matrix.get(1, 2), 0.d);
+        Assert.assertEquals(33d, matrix.get(2, 2), 0.d);
+        Assert.assertEquals(34d, matrix.get(2, 3), 0.d);
+        Assert.assertEquals(35d, matrix.get(2, 4), 0.d);
+        Assert.assertEquals(36d, matrix.get(2, 5), 0.d);
+        Assert.assertEquals(44d, matrix.get(3, 3), 0.d);
+        Assert.assertEquals(45d, matrix.get(3, 4), 0.d);
+        Assert.assertEquals(56d, matrix.get(4, 5), 0.d);
+        Assert.assertEquals(66d, matrix.get(5, 5), 0.d);
+
+        Assert.assertEquals(0.d, matrix.get(5, 4), 0.d);
+        Assert.assertEquals(-1.d, matrix.get(5, 4, -1.d), 0.d);
+
+        Assert.assertEquals(Double.NaN, matrix.get(5, 4, Double.NaN), 0.d);
+    }
+
+    @Test
+    public void testCSC2CSR() {
+        CSCMatrix csc = cscMatrixFromLibSVM();
+        RowMajorMatrix csr = csc.toRowMajorMatrix();
+        Assert.assertTrue(csr instanceof CSRMatrix);
+        Assert.assertEquals(6, csr.numRows());
+        Assert.assertEquals(6, csr.numColumns());
+        Assert.assertEquals(4, csr.numColumns(0));
+        Assert.assertEquals(2, csr.numColumns(1));
+        Assert.assertEquals(4, csr.numColumns(2));
+        Assert.assertEquals(2, csr.numColumns(3));
+        Assert.assertEquals(1, csr.numColumns(4));
+        Assert.assertEquals(1, csr.numColumns(5));
+
+        Assert.assertEquals(11d, csr.get(0, 0), 0.d);
+        Assert.assertEquals(12d, csr.get(0, 1), 0.d);
+        Assert.assertEquals(13d, csr.get(0, 2), 0.d);
+        Assert.assertEquals(14d, csr.get(0, 3), 0.d);
+        Assert.assertEquals(22d, csr.get(1, 1), 0.d);
+        Assert.assertEquals(23d, csr.get(1, 2), 0.d);
+        Assert.assertEquals(33d, csr.get(2, 2), 0.d);
+        Assert.assertEquals(34d, csr.get(2, 3), 0.d);
+        Assert.assertEquals(35d, csr.get(2, 4), 0.d);
+        Assert.assertEquals(36d, csr.get(2, 5), 0.d);
+        Assert.assertEquals(44d, csr.get(3, 3), 0.d);
+        Assert.assertEquals(45d, csr.get(3, 4), 0.d);
+        Assert.assertEquals(56d, csr.get(4, 5), 0.d);
+        Assert.assertEquals(66d, csr.get(5, 5), 0.d);
+
+        Assert.assertEquals(0.d, csr.get(5, 4), 0.d);
+        Assert.assertEquals(-1.d, csr.get(5, 4, -1.d), 0.d);
+
+        Assert.assertEquals(Double.NaN, csr.get(5, 4, Double.NaN), 0.d);
+    }
+
+    @Test
+    public void testCSC2CSR2CSR() {
+        CSCMatrix csc = cscMatrixFromLibSVM();
+        CSCMatrix csc2 = csc.toRowMajorMatrix().toColumnMajorMatrix();
+        Assert.assertEquals(csc.nnz(), csc2.nnz());
+        Assert.assertEquals(6, csc2.numRows());
+        Assert.assertEquals(6, csc2.numColumns());
+        Assert.assertEquals(4, csc2.numColumns(0));
+        Assert.assertEquals(2, csc2.numColumns(1));
+        Assert.assertEquals(4, csc2.numColumns(2));
+        Assert.assertEquals(2, csc2.numColumns(3));
+        Assert.assertEquals(1, csc2.numColumns(4));
+        Assert.assertEquals(1, csc2.numColumns(5));
+
+        Assert.assertEquals(11d, csc2.get(0, 0), 0.d);
+        Assert.assertEquals(12d, csc2.get(0, 1), 0.d);
+        Assert.assertEquals(13d, csc2.get(0, 2), 0.d);
+        Assert.assertEquals(14d, csc2.get(0, 3), 0.d);
+        Assert.assertEquals(22d, csc2.get(1, 1), 0.d);
+        Assert.assertEquals(23d, csc2.get(1, 2), 0.d);
+        Assert.assertEquals(33d, csc2.get(2, 2), 0.d);
+        Assert.assertEquals(34d, csc2.get(2, 3), 0.d);
+        Assert.assertEquals(35d, csc2.get(2, 4), 0.d);
+        Assert.assertEquals(36d, csc2.get(2, 5), 0.d);
+        Assert.assertEquals(44d, csc2.get(3, 3), 0.d);
+        Assert.assertEquals(45d, csc2.get(3, 4), 0.d);
+        Assert.assertEquals(56d, csc2.get(4, 5), 0.d);
+        Assert.assertEquals(66d, csc2.get(5, 5), 0.d);
+
+        Assert.assertEquals(0.d, csc2.get(5, 4), 0.d);
+        Assert.assertEquals(-1.d, csc2.get(5, 4, -1.d), 0.d);
+
+        Assert.assertEquals(Double.NaN, csc2.get(5, 4, Double.NaN), 0.d);
+    }
+
 
     @Test
     public void testDoKMatrixFromLibSVM() {
@@ -318,6 +424,26 @@ public class MatrixBuilderTest {
         builder.nextRow(new String[] {"5:66"});
         return builder.buildMatrix();
     }
+
+    private static CSCMatrix cscMatrixFromLibSVM() {
+        /*
+        11  12  13  14  0   0
+        0   22  23  0   0   0
+        0   0   33  34  35  36
+        0   0   0   44  45  0
+        0   0   0   0   0   56
+        0   0   0   0   0   66
+        */
+        CSCMatrixBuilder builder = new CSCMatrixBuilder(1024);
+        builder.nextRow(new String[] {"0:11", "1:12", "2:13", "3:14"});
+        builder.nextRow(new String[] {"1:22", "2:23"});
+        builder.nextRow(new String[] {"2:33", "3:34", "4:35", "5:36"});
+        builder.nextRow(new String[] {"3:44", "4:45"});
+        builder.nextRow(new String[] {"5:56"});
+        builder.nextRow(new String[] {"5:66"});
+        return builder.buildMatrix();
+    }
+
 
     private static DoKMatrix dokMatrixFromLibSVM() {
         /*

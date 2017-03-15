@@ -20,7 +20,8 @@ package hivemall.matrix.sparse;
 
 import hivemall.annotations.Experimental;
 import hivemall.matrix.AbstractMatrix;
-import hivemall.matrix.Matrix;
+import hivemall.matrix.ColumnMajorMatrix;
+import hivemall.matrix.RowMajorMatrix;
 import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.DoKMatrixBuilder;
 import hivemall.utils.collections.maps.Long2DoubleOpenHashTable;
@@ -162,7 +163,7 @@ public final class DoKMatrix extends AbstractMatrix {
         }
 
         long index = index(row, col);
-        if (elements.put(index, value, 0.d) != 0.d) {
+        if (elements.put(index, value, 0.d) == 0.d) {
             nnz++;
             this.numRows = Math.max(numRows, row + 1);
             this.numColumns = Math.max(numColumns, col + 1);
@@ -176,7 +177,7 @@ public final class DoKMatrix extends AbstractMatrix {
 
         long index = index(row, col);
         double old = elements.put(index, value, 0.d);
-        if (old != 0.d) {
+        if (old == 0.d) {
             nnz++;
             this.numRows = Math.max(numRows, row + 1);
             this.numColumns = Math.max(numColumns, col + 1);
@@ -273,13 +274,13 @@ public final class DoKMatrix extends AbstractMatrix {
     }
 
     @Override
-    public Matrix toRowMajorMatrix() {
-        return this; // TODO
+    public RowMajorMatrix toRowMajorMatrix() {
+        throw new UnsupportedOperationException("Not yet supported");
     }
 
     @Override
-    public Matrix toColumnMajorMatrix() {
-        return this; // TODO
+    public ColumnMajorMatrix toColumnMajorMatrix() {
+        throw new UnsupportedOperationException("Not yet supported");
     }
 
     @Override

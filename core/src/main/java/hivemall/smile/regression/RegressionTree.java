@@ -35,7 +35,7 @@ package hivemall.smile.regression;
 
 import hivemall.matrix.Matrix;
 import hivemall.matrix.VectorProcedure;
-import hivemall.matrix.ints.IntMatrix;
+import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
@@ -126,7 +126,7 @@ public final class RegressionTree implements Regression<double[]> {
     /**
      * The index of training values in ascending order. Note that only numeric attributes will be sorted.
      */
-    private final IntMatrix _order;
+    private final ColumnMajorIntMatrix _order;
 
     private final Random _rnd;
 
@@ -705,7 +705,8 @@ public final class RegressionTree implements Regression<double[]> {
 
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable IntMatrix order, @Nullable int[] bags, @Nullable smile.math.Random rand) {
+            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
+            @Nullable smile.math.Random rand) {
         this(attributes, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
     }
 
@@ -725,8 +726,8 @@ public final class RegressionTree implements Regression<double[]> {
      */
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable IntMatrix order, @Nullable int[] bags, @Nullable NodeOutput output,
-            @Nullable smile.math.Random rand) {
+            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
+            @Nullable NodeOutput output, @Nullable smile.math.Random rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);

@@ -23,7 +23,7 @@ import hivemall.matrix.Matrix;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.builders.MatrixBuilder;
 import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.matrix.ints.IntMatrix;
+import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.ModelType;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
@@ -379,7 +379,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             h[i] = intercept;
         }
 
-        final IntMatrix order = SmileExtUtils.sort(_attributes, x);
+        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput output = new L2NodeOutput(response);
 
         final BitSet sampled = new BitSet(numInstances);
@@ -454,7 +454,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final double[][] p = new double[k][numInstances]; // posteriori probabilities.
         final double[][] response = new double[k][numInstances]; // pseudo response.
 
-        final IntMatrix order = SmileExtUtils.sort(_attributes, x);
+        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput[] output = new LKNodeOutput[k];
         for (int i = 0; i < k; i++) {
             output[i] = new LKNodeOutput(response[i], k);

@@ -18,7 +18,6 @@
  */
 package hivemall.matrix.dense;
 
-import hivemall.matrix.Matrix;
 import hivemall.matrix.RowMajorMatrix;
 import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
@@ -245,7 +244,7 @@ public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
-    public Matrix toColumnMajorMatrix() {
+    public ColumnMajorDenseMatrix2d toColumnMajorMatrix() {
         final double[][] colrow = new double[numColumns][numRows];
         int nnz = 0;
         for (int i = 0; i < data.length; i++) {

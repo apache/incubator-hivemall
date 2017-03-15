@@ -21,7 +21,6 @@ package hivemall.matrix.sparse;
 import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.CSCMatrixBuilder;
-import hivemall.matrix.builders.MatrixBuilder;
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
 
@@ -173,7 +172,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     private int getIndex(@Nonnegative final int row, @Nonnegative final int col) {
         int leftIn = columnPointers[col];
         int rightEx = columnPointers[col + 1];
-        final int index = Arrays.binarySearch(rowIndicies, leftIn, rightEx, col);
+        final int index = Arrays.binarySearch(rowIndicies, leftIn, rightEx, row);
         if (index >= 0 && index >= values.length) {
             throw new IndexOutOfBoundsException("Value index " + index + " out of range "
                     + values.length);
@@ -254,7 +253,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     }
 
     @Override
-    public MatrixBuilder builder() {
+    public CSCMatrixBuilder builder() {
         return new CSCMatrixBuilder(nnz);
     }
 

@@ -18,7 +18,6 @@
  */
 package hivemall.matrix.sparse;
 
-import hivemall.matrix.Matrix;
 import hivemall.matrix.RowMajorMatrix;
 import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.CSRMatrixBuilder;
@@ -212,7 +211,7 @@ public final class CSRMatrix extends RowMajorMatrix {
     }
 
     @Nonnull
-    public Matrix toColumnMajorMatrix() {
+    public CSCMatrix toColumnMajorMatrix() {
         final int[] columnPointers = new int[numColumns + 1];
         final int[] rowIndicies = new int[nnz];
         final double[] cscValues = new double[nnz];

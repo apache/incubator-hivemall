@@ -24,6 +24,7 @@ import hivemall.matrix.MatrixUtils;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.builders.MatrixBuilder;
 import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
+import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.matrix.ints.DoKIntMatrix;
 import hivemall.matrix.ints.IntMatrix;
 import hivemall.smile.ModelType;
@@ -326,7 +327,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
         checkOptions();
 
-        // Shuffle training samples    
+        // Shuffle training samples
         x = SmileExtUtils.shuffle(x, y, _seed);
 
         int[] labels = SmileExtUtils.classLables(y);
@@ -340,7 +341,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
 
         IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
-        IntMatrix order = SmileExtUtils.sort(attributes, x);
+        ColumnMajorIntMatrix order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
@@ -420,7 +421,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * The index of training values in ascending order. Note that only numeric attributes will be sorted.
          */
         @Nonnull
-        private final IntMatrix _order;
+        private final ColumnMajorIntMatrix _order;
         /**
          * The number of variables to pick up in each node.
          */
@@ -440,7 +441,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
                 @Nonnull Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
-                @Nonnull IntMatrix order, @Nonnull IntMatrix prediction, long seed,
+                @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction, long seed,
                 @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;

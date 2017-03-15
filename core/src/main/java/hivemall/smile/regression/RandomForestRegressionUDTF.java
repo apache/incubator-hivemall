@@ -23,7 +23,7 @@ import hivemall.matrix.Matrix;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.builders.MatrixBuilder;
 import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.matrix.ints.IntMatrix;
+import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.ModelType;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
@@ -346,7 +346,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
         int[] oob = new int[numExamples];
-        IntMatrix order = SmileExtUtils.sort(attributes, x);
+        ColumnMajorIntMatrix order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
@@ -419,7 +419,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         /**
          * The index of training values in ascending order. Note that only numeric attributes will be sorted.
          */
-        private final IntMatrix _order;
+        private final ColumnMajorIntMatrix _order;
         /**
          * The number of variables to pick up in each node.
          */
@@ -439,8 +439,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes, Matrix x,
-                double[] y, int numVars, IntMatrix order, double[] prediction, int[] oob,
-                long seed, AtomicInteger remainingTasks) {
+                double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction,
+                int[] oob, long seed, AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;

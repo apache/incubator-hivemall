@@ -21,7 +21,8 @@ package hivemall.matrix.builders;
 import hivemall.matrix.sparse.CSCMatrix;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
-import hivemall.utils.lang.ArrayUtils;
+
+import java.util.Arrays;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -48,13 +49,13 @@ public final class CSCMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public MatrixBuilder nextRow() {
+    public CSCMatrixBuilder nextRow() {
         row++;
         return this;
     }
 
     @Override
-    public MatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+    public CSCMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
         rows.add(row);
         cols.add(col);
         values.add((float) value);
@@ -68,25 +69,53 @@ public final class CSCMatrixBuilder extends MatrixBuilder {
             throw new IllegalStateException("No element in the matrix");
         }
 
-        int[] colsArray = cols.toArray(true);
+        final int[] columnIndices = cols.toArray(true);
         final int[] rowsIndicies = rows.toArray(true);
         final double[] valuesArray = values.toArray(true);
 
         // convert to column major
-        ArrayUtils.sort(colsArray, rowsIndicies, valuesArray);
+        final int nnz = valuesArray.length;
+        SortObj[] sortObjs = new SortObj[nnz];
+        for (int i = 0; i < nnz; i++) {
+            sortObjs[i] = new SortObj(columnIndices[i], rowsIndicies[i], valuesArray[i]);
+        }
+        Arrays.sort(sortObjs);
+        for (int i = 0; i < nnz; i++) {
+            columnIndices[i] = sortObjs[i].columnIndex;
+            rowsIndicies[i] = sortObjs[i].rowsIndex;
+            valuesArray[i] = sortObjs[i].value;
+        }
+        sortObjs = null;
 
-        final IntArrayList colPointers = new IntArrayList(1024);
-        int prev = colsArray[0];
-        for (int j = 1; j < colsArray.length; j++) {
-            int curr = colsArray[j];
-            if (curr != prev) {
-                colPointers.add(curr);
+        final int[] columnPointers = new int[maxNumColumns + 1];
+        int prevCol = -1;
+        for (int j = 0; j < columnIndices.length; j++) {
+            int currCol = columnIndices[j];
+            if (currCol != prevCol) {
+                columnPointers[currCol] = j;
+                prevCol = currCol;
             }
         }
-        colsArray = null; // help GC
+        columnPointers[maxNumColumns] = nnz; // nnz
 
-        return new CSCMatrix(colPointers.toArray(true), rowsIndicies, valuesArray, row,
-            maxNumColumns);
+        return new CSCMatrix(columnPointers, rowsIndicies, valuesArray, row, maxNumColumns);
+    }
+
+    private static final class SortObj implements Comparable<SortObj> {
+        final int columnIndex;
+        final int rowsIndex;
+        final double value;
+
+        SortObj(int columnIndex, int rowsIndex, double value) {
+            this.columnIndex = columnIndex;
+            this.rowsIndex = rowsIndex;
+            this.value = value;
+        }
+
+        @Override
+        public int compareTo(SortObj o) {
+            return Integer.compare(columnIndex, o.columnIndex);
+        }
     }
 
 }
