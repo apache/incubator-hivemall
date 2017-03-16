@@ -18,7 +18,7 @@
  */
 package hivemall.matrix.ints;
 
-import hivemall.matrix.VectorProcedure;
+import hivemall.vector.VectorProcedure;
 
 public abstract class ColumnMajorIntMatrix extends AbstractIntMatrix {
 

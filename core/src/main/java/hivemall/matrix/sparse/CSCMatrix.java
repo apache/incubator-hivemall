@@ -19,10 +19,10 @@
 package hivemall.matrix.sparse;
 
 import hivemall.matrix.ColumnMajorMatrix;
-import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.CSCMatrixBuilder;
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
+import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
 

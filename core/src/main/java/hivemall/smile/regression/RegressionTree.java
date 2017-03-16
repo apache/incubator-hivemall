@@ -34,7 +34,6 @@
 package hivemall.smile.regression;
 
 import hivemall.matrix.Matrix;
-import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
@@ -42,6 +41,7 @@ import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
+import hivemall.vector.VectorProcedure;
 
 import java.io.Externalizable;
 import java.io.IOException;

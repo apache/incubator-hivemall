@@ -1,7 +1,7 @@
 package hivemall.matrix.ints;
 
-import hivemall.matrix.VectorProcedure;
 import hivemall.utils.lang.mutable.MutableInt;
+import hivemall.vector.VectorProcedure;
 
 import org.junit.Assert;
 import org.junit.Test;

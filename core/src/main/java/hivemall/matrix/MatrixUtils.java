@@ -22,6 +22,7 @@ import hivemall.matrix.builders.MatrixBuilder;
 import hivemall.matrix.ints.IntMatrix;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.mutable.MutableInt;
+import hivemall.vector.VectorProcedure;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

@@ -19,6 +19,7 @@
 package hivemall.matrix;
 
 import hivemall.matrix.builders.MatrixBuilder;
+import hivemall.vector.VectorProcedure;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

@@ -22,11 +22,11 @@ import hivemall.annotations.Experimental;
 import hivemall.matrix.AbstractMatrix;
 import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.RowMajorMatrix;
-import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.DoKMatrixBuilder;
 import hivemall.utils.collections.maps.Long2DoubleOpenHashTable;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
+import hivemall.vector.VectorProcedure;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

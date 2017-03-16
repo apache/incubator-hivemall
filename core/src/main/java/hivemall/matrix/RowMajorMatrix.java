@@ -18,6 +18,8 @@
  */
 package hivemall.matrix;
 
+import hivemall.vector.VectorProcedure;
+
 public abstract class RowMajorMatrix extends AbstractMatrix {
 
     public RowMajorMatrix() {

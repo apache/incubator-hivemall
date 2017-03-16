@@ -19,9 +19,9 @@
 package hivemall.matrix.sparse;
 
 import hivemall.matrix.RowMajorMatrix;
-import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.utils.lang.Preconditions;
+import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
 

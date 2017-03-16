@@ -19,9 +19,9 @@
 package hivemall.matrix.dense;
 
 import hivemall.matrix.ColumnMajorMatrix;
-import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.ColumnMajorDenseMatrixBuilder;
 import hivemall.utils.lang.Preconditions;
+import hivemall.vector.VectorProcedure;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

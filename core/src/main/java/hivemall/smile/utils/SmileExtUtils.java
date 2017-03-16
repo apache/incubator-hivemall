@@ -21,7 +21,6 @@ package hivemall.smile.utils;
 import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixUtils;
-import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.ints.ColumnMajorDenseIntMatrix2d;
 import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.classification.DecisionTree.SplitRule;
@@ -33,6 +32,7 @@ import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.math.MathUtils;
+import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
 
