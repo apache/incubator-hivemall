@@ -21,6 +21,7 @@ package hivemall.matrix.dense;
 import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.VectorProcedure;
 import hivemall.matrix.builders.ColumnMajorDenseMatrixBuilder;
+import hivemall.utils.lang.Preconditions;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -90,6 +91,9 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
         int numColumns = 0;
         for (int j = 0; j < data.length; j++) {
             final double[] col = data[j];
+            if (col == null) {
+                continue;
+            }
             if (row < col.length && col[row] != 0.d) {
                 numColumns++;
             }
@@ -111,6 +115,9 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
 
         for (int j = 0; j < data.length; j++) {
             final double[] col = data[j];
+            if (col == null) {
+                continue;
+            }
             if (index < col.length) {
                 dst[j] = col[index];
             }
@@ -123,7 +130,7 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
         checkIndex(row, col, numRows, numColumns);
 
         final double[] colData = data[col];
-        if (row >= colData.length) {
+        if (colData == null || row >= colData.length) {
             return defaultValue;
         }
         return colData[row];
@@ -134,6 +141,7 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
         checkIndex(row, col, numRows, numColumns);
 
         final double[] colData = data[col];
+        Preconditions.checkNotNull(colData, "col does not exists: " + col);
         checkRowIndex(row, colData.length);
 
         final double old = colData[row];
@@ -152,6 +160,7 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
         }
 
         final double[] colData = data[col];
+        Preconditions.checkNotNull(colData, "col does not exists: " + col);
         checkRowIndex(row, colData.length);
 
         if (colData[row] == 0.d) {
@@ -218,6 +227,26 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
                 nnz++;
             }
         }
+        for (int i = 0; i < rowcol.length; i++) {
+            final double[] row = rowcol[i];
+            final int last = numColumns - 1;
+            int maxj = last;
+            for (; maxj >= 0; maxj--) {
+                if (row[maxj] != 0.d) {
+                    break;
+                }
+            }
+            if (maxj == last) {
+                continue;
+            } else if (maxj < 0) {
+                rowcol[i] = null;
+                continue;
+            }
+            final double[] dstRow = new double[maxj + 1];
+            System.arraycopy(row, 0, dstRow, 0, dstRow.length);
+            rowcol[i] = dstRow;
+        }
+
         return new RowMajorDenseMatrix2d(rowcol, numColumns, nnz);
     }
 

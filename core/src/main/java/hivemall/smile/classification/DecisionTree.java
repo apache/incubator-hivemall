@@ -553,7 +553,7 @@ public final class DecisionTree implements Classifier<double[]> {
             } else if (_attributes[j].type == AttributeType.NUMERIC) {
                 final int[] trueCount = new int[_k];
 
-                _order.eachInNonZeroColumn(j, new VectorProcedure() {
+                _order.eachInColumn(j, new VectorProcedure() {
                     double prevx = Double.NaN;
                     int prevy = -1;
 

@@ -20,8 +20,10 @@ package hivemall.matrix;
 
 import hivemall.matrix.builders.CSCMatrixBuilder;
 import hivemall.matrix.builders.CSRMatrixBuilder;
+import hivemall.matrix.builders.ColumnMajorDenseMatrixBuilder;
 import hivemall.matrix.builders.DoKMatrixBuilder;
 import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
+import hivemall.matrix.dense.ColumnMajorDenseMatrix2d;
 import hivemall.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.matrix.sparse.CSCMatrix;
 import hivemall.matrix.sparse.CSRMatrix;
@@ -257,7 +259,7 @@ public class MatrixBuilderTest {
 
     @Test
     public void testReadOnlyDenseMatrix2d() {
-        Matrix matrix = denseMatrix();
+        Matrix matrix = rowMajorDenseMatrix();
         Assert.assertEquals(6, matrix.numRows());
         Assert.assertEquals(6, matrix.numColumns());
         Assert.assertEquals(4, matrix.numColumns(0));
@@ -366,14 +368,119 @@ public class MatrixBuilderTest {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testReadOnlyDenseMatrix2dFailOutOfBound1() {
-        Matrix matrix = denseMatrix();
+        Matrix matrix = rowMajorDenseMatrix();
         matrix.get(7, 5);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testReadOnlyDenseMatrix2dFailOutOfBound2() {
-        Matrix matrix = denseMatrix();
+        Matrix matrix = rowMajorDenseMatrix();
         matrix.get(6, 7);
+    }
+
+    @Test
+    public void testColumnMajorDenseMatrix2d() {
+        ColumnMajorDenseMatrix2d colMatrix = columnMajorDenseMatrix();
+
+        Assert.assertEquals(6, colMatrix.numRows());
+        Assert.assertEquals(6, colMatrix.numColumns());
+        Assert.assertEquals(4, colMatrix.numColumns(0));
+        Assert.assertEquals(2, colMatrix.numColumns(1));
+        Assert.assertEquals(4, colMatrix.numColumns(2));
+        Assert.assertEquals(2, colMatrix.numColumns(3));
+        Assert.assertEquals(1, colMatrix.numColumns(4));
+        Assert.assertEquals(1, colMatrix.numColumns(5));
+
+        Assert.assertEquals(11d, colMatrix.get(0, 0), 0.d);
+        Assert.assertEquals(12d, colMatrix.get(0, 1), 0.d);
+        Assert.assertEquals(13d, colMatrix.get(0, 2), 0.d);
+        Assert.assertEquals(14d, colMatrix.get(0, 3), 0.d);
+        Assert.assertEquals(22d, colMatrix.get(1, 1), 0.d);
+        Assert.assertEquals(23d, colMatrix.get(1, 2), 0.d);
+        Assert.assertEquals(33d, colMatrix.get(2, 2), 0.d);
+        Assert.assertEquals(34d, colMatrix.get(2, 3), 0.d);
+        Assert.assertEquals(35d, colMatrix.get(2, 4), 0.d);
+        Assert.assertEquals(36d, colMatrix.get(2, 5), 0.d);
+        Assert.assertEquals(44d, colMatrix.get(3, 3), 0.d);
+        Assert.assertEquals(45d, colMatrix.get(3, 4), 0.d);
+        Assert.assertEquals(56d, colMatrix.get(4, 5), 0.d);
+        Assert.assertEquals(66d, colMatrix.get(5, 5), 0.d);
+
+        Assert.assertEquals(0.d, colMatrix.get(5, 4), 0.d);
+
+        Assert.assertEquals(0.d, colMatrix.get(1, 0), 0.d);
+        Assert.assertEquals(0.d, colMatrix.get(1, 3), 0.d);
+        Assert.assertEquals(0.d, colMatrix.get(1, 0), 0.d);
+    }
+
+    @Test
+    public void testDenseMatrixColumnMajor2RowMajor() {
+        ColumnMajorDenseMatrix2d colMatrix = columnMajorDenseMatrix();
+        RowMajorDenseMatrix2d rowMatrix = colMatrix.toRowMajorMatrix();
+
+        Assert.assertEquals(6, rowMatrix.numRows());
+        Assert.assertEquals(6, rowMatrix.numColumns());
+        Assert.assertEquals(4, rowMatrix.numColumns(0));
+        Assert.assertEquals(3, rowMatrix.numColumns(1));
+        Assert.assertEquals(6, rowMatrix.numColumns(2));
+        Assert.assertEquals(5, rowMatrix.numColumns(3));
+        Assert.assertEquals(6, rowMatrix.numColumns(4));
+        Assert.assertEquals(6, rowMatrix.numColumns(5));
+
+        Assert.assertEquals(11d, rowMatrix.get(0, 0), 0.d);
+        Assert.assertEquals(12d, rowMatrix.get(0, 1), 0.d);
+        Assert.assertEquals(13d, rowMatrix.get(0, 2), 0.d);
+        Assert.assertEquals(14d, rowMatrix.get(0, 3), 0.d);
+        Assert.assertEquals(22d, rowMatrix.get(1, 1), 0.d);
+        Assert.assertEquals(23d, rowMatrix.get(1, 2), 0.d);
+        Assert.assertEquals(33d, rowMatrix.get(2, 2), 0.d);
+        Assert.assertEquals(34d, rowMatrix.get(2, 3), 0.d);
+        Assert.assertEquals(35d, rowMatrix.get(2, 4), 0.d);
+        Assert.assertEquals(36d, rowMatrix.get(2, 5), 0.d);
+        Assert.assertEquals(44d, rowMatrix.get(3, 3), 0.d);
+        Assert.assertEquals(45d, rowMatrix.get(3, 4), 0.d);
+        Assert.assertEquals(56d, rowMatrix.get(4, 5), 0.d);
+        Assert.assertEquals(66d, rowMatrix.get(5, 5), 0.d);
+
+        Assert.assertEquals(0.d, rowMatrix.get(5, 4), 0.d);
+
+        Assert.assertEquals(0.d, rowMatrix.get(1, 0), 0.d);
+        Assert.assertEquals(0.d, rowMatrix.get(1, 3), 0.d);
+        Assert.assertEquals(0.d, rowMatrix.get(1, 0), 0.d);
+
+        // convert back to column major matrix
+
+        colMatrix = rowMatrix.toColumnMajorMatrix();
+
+        Assert.assertEquals(6, colMatrix.numRows());
+        Assert.assertEquals(6, colMatrix.numColumns());
+        Assert.assertEquals(4, colMatrix.numColumns(0));
+        Assert.assertEquals(2, colMatrix.numColumns(1));
+        Assert.assertEquals(4, colMatrix.numColumns(2));
+        Assert.assertEquals(2, colMatrix.numColumns(3));
+        Assert.assertEquals(1, colMatrix.numColumns(4));
+        Assert.assertEquals(1, colMatrix.numColumns(5));
+
+        Assert.assertEquals(11d, colMatrix.get(0, 0), 0.d);
+        Assert.assertEquals(12d, colMatrix.get(0, 1), 0.d);
+        Assert.assertEquals(13d, colMatrix.get(0, 2), 0.d);
+        Assert.assertEquals(14d, colMatrix.get(0, 3), 0.d);
+        Assert.assertEquals(22d, colMatrix.get(1, 1), 0.d);
+        Assert.assertEquals(23d, colMatrix.get(1, 2), 0.d);
+        Assert.assertEquals(33d, colMatrix.get(2, 2), 0.d);
+        Assert.assertEquals(34d, colMatrix.get(2, 3), 0.d);
+        Assert.assertEquals(35d, colMatrix.get(2, 4), 0.d);
+        Assert.assertEquals(36d, colMatrix.get(2, 5), 0.d);
+        Assert.assertEquals(44d, colMatrix.get(3, 3), 0.d);
+        Assert.assertEquals(45d, colMatrix.get(3, 4), 0.d);
+        Assert.assertEquals(56d, colMatrix.get(4, 5), 0.d);
+        Assert.assertEquals(66d, colMatrix.get(5, 5), 0.d);
+
+        Assert.assertEquals(0.d, colMatrix.get(5, 4), 0.d);
+
+        Assert.assertEquals(0.d, colMatrix.get(1, 0), 0.d);
+        Assert.assertEquals(0.d, colMatrix.get(1, 3), 0.d);
+        Assert.assertEquals(0.d, colMatrix.get(1, 0), 0.d);
     }
 
     @Test
@@ -464,7 +571,7 @@ public class MatrixBuilderTest {
         return builder.buildMatrix();
     }
 
-    private static RowMajorDenseMatrix2d denseMatrix() {
+    private static RowMajorDenseMatrix2d rowMajorDenseMatrix() {
         /*
         11  12  13  14  0   0
         0   22  23  0   0   0
@@ -474,6 +581,25 @@ public class MatrixBuilderTest {
         0   0   0   0   0   66
         */
         RowMajorDenseMatrixBuilder builder = new RowMajorDenseMatrixBuilder(1024);
+        builder.nextRow(new double[] {11, 12, 13, 14});
+        builder.nextRow(new double[] {0, 22, 23});
+        builder.nextRow(new double[] {0, 0, 33, 34, 35, 36});
+        builder.nextRow(new double[] {0, 0, 0, 44, 45});
+        builder.nextRow(new double[] {0, 0, 0, 0, 0, 56});
+        builder.nextRow(new double[] {0, 0, 0, 0, 0, 66});
+        return builder.buildMatrix();
+    }
+
+    private static ColumnMajorDenseMatrix2d columnMajorDenseMatrix() {
+        /*
+        11  12  13  14  0   0
+        0   22  23  0   0   0
+        0   0   33  34  35  36
+        0   0   0   44  45  0
+        0   0   0   0   0   56
+        0   0   0   0   0   66
+        */
+        ColumnMajorDenseMatrixBuilder builder = new ColumnMajorDenseMatrixBuilder(1024);
         builder.nextRow(new double[] {11, 12, 13, 14});
         builder.nextRow(new double[] {0, 22, 23});
         builder.nextRow(new double[] {0, 0, 33, 34, 35, 36});

@@ -143,17 +143,21 @@ public final class DoKIntMatrix extends AbstractIntMatrix {
     }
 
     @Override
-    public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure) {
+    public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkRowIndex(row, numRows);
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
-            int key = elements._findKey(i);
+            final int key = elements._findKey(i);
             if (key < 0) {
-                continue;
+                if (nullOutput) {
+                    procedure.apply(col, defaultValue);
+                }
+            } else {
+                int v = elements._get(key);
+                procedure.apply(col, v);
             }
-            int v = elements._get(key);
-            procedure.apply(col, v);
         }
     }
 
@@ -172,17 +176,21 @@ public final class DoKIntMatrix extends AbstractIntMatrix {
     }
 
     @Override
-    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure) {
+    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkColIndex(col, numColumns);
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
-            int key = elements._findKey(i);
+            final int key = elements._findKey(i);
             if (key < 0) {
-                continue;
+                if (nullOutput) {
+                    procedure.apply(row, defaultValue);
+                }
+            } else {
+                int v = elements._get(key);
+                procedure.apply(row, v);
             }
-            int v = elements._get(key);
-            procedure.apply(row, v);
         }
     }
 

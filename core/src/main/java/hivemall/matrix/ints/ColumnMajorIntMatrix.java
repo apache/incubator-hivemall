@@ -27,7 +27,7 @@ public abstract class ColumnMajorIntMatrix extends AbstractIntMatrix {
     }
 
     @Override
-    public void eachInRow(int row, VectorProcedure procedure) {
+    public void eachInRow(int row, VectorProcedure procedure, boolean nullOutput) {
         throw new UnsupportedOperationException();
     }
 

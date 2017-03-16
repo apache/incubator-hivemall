@@ -18,7 +18,10 @@
  */
 package hivemall.matrix.ints;
 
+import hivemall.matrix.VectorProcedure;
+
 import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
 public abstract class AbstractIntMatrix implements IntMatrix {
 
@@ -84,6 +87,16 @@ public abstract class AbstractIntMatrix implements IntMatrix {
         if (col < 0 || col >= numColumns) {
             throw new IndexOutOfBoundsException("Col index " + col + " out of bounds " + numColumns);
         }
+    }
+
+    @Override
+    public void eachInRow(final int row, @Nonnull final VectorProcedure procedure) {
+        eachInRow(row, procedure, false);
+    }
+
+    @Override
+    public void eachInColumn(final int col, @Nonnull final VectorProcedure procedure) {
+        eachInColumn(col, procedure, false);
     }
 
 }

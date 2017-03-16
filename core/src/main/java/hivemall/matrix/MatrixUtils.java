@@ -56,7 +56,7 @@ public final class MatrixUtils {
     public static int whichMax(@Nonnull final IntMatrix matrix, @Nonnegative final int row) {
         final MutableInt m = new MutableInt(Integer.MIN_VALUE);
         final MutableInt which = new MutableInt(-1);
-        matrix.eachNonZeroInRow(row, new VectorProcedure() {
+        matrix.eachInRow(row, new VectorProcedure() {
             @Override
             public void apply(int i, int value) {
                 if (value > m.getValue()) {
