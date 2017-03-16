@@ -487,6 +487,25 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     assert(errMsg2.getMessage.startsWith("Separator cannot be more than one character:"))
   }
 
+  test("misc - from_csv") {
+    import hiveContext.implicits._
+    val df = Seq("""1,abc""").toDF()
+    val schema = new StructType().add("a", IntegerType).add("b", StringType)
+    checkAnswer(
+      df.select(from_csv($"value", schema)),
+      Row(Row(1, "abc")) :: Nil)
+  }
+
+  test("misc - to_csv") {
+    import hiveContext.implicits._
+    val df = Seq((1, "a", (0, 3.9, "abc")), (8, "c", (2, 0.4, "def"))).toDF()
+    checkAnswer(
+      df.select(to_csv($"_3")),
+      Row("0,3.9,abc") ::
+      Row("2,0.4,def") ::
+      Nil)
+  }
+
   /**
    * This test fails because;
    *
