@@ -33,6 +33,7 @@
  */
 package hivemall.smile.regression;
 
+import hivemall.annotations.VisibleForTesting;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.data.Attribute;
@@ -40,14 +41,14 @@ import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
-import hivemall.utils.lang.StringUtils;
+import hivemall.vector.DenseVector;
+import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -92,7 +93,7 @@ import smile.regression.Regression;
  * @see GradientTreeBoost
  * @see RandomForest
  */
-public final class RegressionTree implements Regression<double[]> {
+public final class RegressionTree implements Regression<Vector> {
     /**
      * The attributes of independent variable.
      */
@@ -194,22 +195,27 @@ public final class RegressionTree implements Regression<double[]> {
             this.output = output;
         }
 
+        @VisibleForTesting
+        public double predict(@Nonnull final double[] x) {
+            return predict(new DenseVector(x));
+        }
+
         /**
          * Evaluate the regression tree over an instance.
          */
-        public double predict(final double[] x) {
+        public double predict(@Nonnull final Vector x) {
             if (trueChild == null && falseChild == null) {
                 return output;
             } else {
                 if (splitFeatureType == AttributeType.NOMINAL) {
                     // REVIEWME if(Math.equals(x[splitFeature], splitValue)) {
-                    if (x[splitFeature] == splitValue) {
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
                     }
                 } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    if (x[splitFeature] <= splitValue) {
+                    if (x.get(splitFeature, Double.NaN) <= splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
@@ -588,7 +594,7 @@ public final class RegressionTree implements Regression<double[]> {
                             trueCount += sample;
                         }
                     }//apply
-                });
+                }, false);
 
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "
@@ -830,8 +836,13 @@ public final class RegressionTree implements Regression<double[]> {
         return _importance;
     }
 
+    @VisibleForTesting
+    public double predict(@Nonnull final double[] x) {
+        return predict(new DenseVector(x));
+    }
+
     @Override
-    public double predict(double[] x) {
+    public double predict(@Nonnull final Vector x) {
         return _root.predict(x);
     }
 
@@ -839,14 +850,6 @@ public final class RegressionTree implements Regression<double[]> {
         StringBuilder buf = new StringBuilder(1024);
         _root.jsCodegen(buf, 0);
         return buf.toString();
-    }
-
-    public String predictOpCodegen(@Nonnull String sep) {
-        List<String> opslist = new ArrayList<String>();
-        _root.opCodegen(opslist, 0);
-        opslist.add("call end");
-        String scripts = StringUtils.concat(opslist, sep);
-        return scripts;
     }
 
     @Nonnull

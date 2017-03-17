@@ -86,7 +86,7 @@ public final class SmileExtUtils {
 
         if (x.isRowMajorMatrix()) {
             for (int i = 0, rows = x.numRows(); i < rows; i++) {
-                x.eachNonZeroInRow(i, new VectorProcedure() {
+                x.eachInRow(i, new VectorProcedure() {
                     @Override
                     public void apply(final int j, final double value) {
                         final Attribute attr = attributes[j];
@@ -98,18 +98,18 @@ public final class SmileExtUtils {
                             }
                         }
                     }
-                });
+                }, false);
             }
         } else if (x.isColumnMajorMatrix()) {
             int size = attributes.length;
             for (int j = 0; j < size; j++) {
-                Attribute attr = attributes[j];
+                final Attribute attr = attributes[j];
                 if (attr.type == AttributeType.NOMINAL) {
                     if (attr.getSize() != -1) {
                         continue;
                     }
                     final MutableInt max_x = new MutableInt(0);
-                    x.eachInNonZeroColumn(j, new VectorProcedure() {
+                    x.eachInColumn(j, new VectorProcedure() {
                         @Override
                         public void apply(final int i, final double value) {
                             final int x_ij = (int) value;
@@ -117,7 +117,7 @@ public final class SmileExtUtils {
                                 max_x.setValue(x_ij);
                             }
                         }
-                    });
+                    }, false);
                     attr.setSize(max_x.getValue() + 1);
                 }
             }
@@ -183,13 +183,13 @@ public final class SmileExtUtils {
                 if (attributes[j].type != AttributeType.NUMERIC) {
                     continue;
                 }
-                x2.eachInNonZeroColumn(j, new VectorProcedure() {
+                x2.eachInColumn(j, new VectorProcedure() {
                     @Override
                     public void apply(final int i, final double v) {
                         dlist.add(v);
                         ilist.add(i);
                     }
-                });
+                }, false);
                 int[] indexJ = ilist.toArray();
                 QuickSort.sort(dlist.array(), indexJ, indexJ.length);
                 index[j] = indexJ;

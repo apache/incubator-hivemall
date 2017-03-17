@@ -28,18 +28,15 @@ import hivemall.smile.ModelType;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
-import hivemall.smile.vm.StackMachine;
 import hivemall.utils.codec.Base91;
-import hivemall.utils.codec.DeflateCodec;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.datetime.StopWatch;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
+import hivemall.vector.Vector;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -478,9 +475,10 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             incrCounter(_udtf._treeConstuctionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             // out-of-bag prediction
-            final double[] xProbe = _x.row();
+            final Vector xProbe = _x.rowVector();
             for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
-                double pred = tree.predict(_x.getRow(i, xProbe));
+                _x.getRow(i, xProbe);
+                final double pred = tree.predict(xProbe);
                 synchronized (_prediction) {
                     _prediction[i] += pred;
                     _oob[i]++;
@@ -511,47 +509,14 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                     break;
                 }
                 case opscode:
-                case opscode_compressed: {
-                    String s = tree.predictOpCodegen(StackMachine.SEP);
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        model = new Text(b);
-                    } else {
-                        model = new Text(s);
-                    }
-                    break;
-                }
+                case opscode_compressed:
                 case javascript:
                 case javascript_compressed: {
-                    String s = tree.predictJsCodegen();
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        model = new Text(b);
-                    } else {
-                        model = new Text(s);
-                    }
-                    break;
+                    throw new HiveException("Deprecated model output type: " + outputType
+                            + ". Build a model again.");
                 }
                 default:
-                    throw new HiveException("Unexpected output type: " + outputType
+                    throw new HiveException("Unexpected model output type: " + outputType
                             + ". Use javascript for the output instead");
             }
             return model;

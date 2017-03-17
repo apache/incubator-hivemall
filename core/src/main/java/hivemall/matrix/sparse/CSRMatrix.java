@@ -183,7 +183,8 @@ public final class CSRMatrix extends RowMajorMatrix {
     }
 
     @Override
-    public void eachInRow(@Nonnegative int row, @Nonnull final VectorProcedure procedure) {
+    public void eachInRow(@Nonnegative int row, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkRowIndex(row, numRows);
 
         final int endEx = rowPointers[row + 1];
@@ -192,7 +193,9 @@ public final class CSRMatrix extends RowMajorMatrix {
                 double v = values[j++];
                 procedure.apply(col, v);
             } else {
-                procedure.apply(col, 0.d);
+                if (nullOutput) {
+                    procedure.apply(col, 0.d);
+                }
             }
         }
     }
@@ -205,8 +208,10 @@ public final class CSRMatrix extends RowMajorMatrix {
         final int endEx = rowPointers[row + 1];
         for (int i = startIn; i < endEx; i++) {
             int col = columnIndices[i];
-            double v = values[i];
-            procedure.apply(col, v);
+            final double v = values[i];
+            if (v != 0.d) {
+                procedure.apply(col, v);
+            }
         }
     }
 

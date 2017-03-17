@@ -16,17 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.smile.vm;
+package hivemall.vector;
 
-public class VMRuntimeException extends Exception {
-    private static final long serialVersionUID = -7378149197872357802L;
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
-    public VMRuntimeException(String message) {
-        super(message);
-    }
+public interface Vector {
 
-    public VMRuntimeException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    public double get(@Nonnegative int index);
+
+    public double get(@Nonnegative int index, double defaultValue);
+
+    /**
+     * @throws UnsupportedOperationException
+     */
+    public void set(@Nonnegative int index, double value);
+
+    public void each(@Nonnull VectorProcedure procedure);
+
+    public int size();
+    
+    public void clear();
 
 }

@@ -21,6 +21,7 @@ package hivemall.matrix.dense;
 import hivemall.matrix.RowMajorMatrix;
 import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
 import hivemall.utils.lang.Preconditions;
+import hivemall.vector.DenseVector;
 import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
@@ -95,6 +96,11 @@ public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
             return 0;
         }
         return r.length;
+    }
+
+    @Override
+    public DenseVector rowVector() {
+        return new DenseVector(numColumns);
     }
 
     @Override
@@ -186,19 +192,28 @@ public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
-    public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure) {
+    public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkRowIndex(row, numRows);
 
         final double[] rowData = data[row];
         if (rowData == null) {
+            if (nullOutput) {
+                for (int j = 0; j < numColumns; j++) {
+                    procedure.apply(j, 0.d);
+                }
+            }
             return;
         }
+
         int col = 0;
         for (int len = rowData.length; col < len; col++) {
             procedure.apply(col, rowData[col]);
         }
-        for (; col < numColumns; col++) {
-            procedure.apply(col, 0.d);
+        if (nullOutput) {
+            for (; col < numColumns; col++) {
+                procedure.apply(col, 0.d);
+            }
         }
     }
 
@@ -213,26 +228,25 @@ public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
         }
         for (int col = 0, len = rowData.length; col < len; col++) {
             final double v = rowData[col];
-            if (v == 0.d) {
-                continue;
+            if (v != 0.d) {
+                procedure.apply(col, v);
             }
-            procedure.apply(col, v);
         }
     }
 
     @Override
-    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure) {
+    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkColIndex(col, numColumns);
 
         for (int row = 0; row < numRows; row++) {
             final double[] rowData = data[row];
-            if (rowData == null) {
-                continue;
-            }
-            if (col < rowData.length) {
+            if (rowData != null && col < rowData.length) {
                 procedure.apply(row, rowData[col]);
             } else {
-                procedure.apply(row, 0.d);
+                if (nullOutput) {
+                    procedure.apply(row, 0.d);
+                }
             }
         }
     }
@@ -248,7 +262,7 @@ public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
                 continue;
             }
             if (col < rowData.length) {
-                double v = rowData[col];
+                final double v = rowData[col];
                 if (v != 0.d) {
                     procedure.apply(row, v);
                 }

@@ -16,54 +16,51 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.matrix;
+package hivemall.vector;
 
-import hivemall.vector.Vector;
-import hivemall.vector.VectorProcedure;
+import hivemall.utils.collections.arrays.SparseDoubleArray;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public abstract class RowMajorMatrix extends AbstractMatrix {
+public final class SparseVector extends AbstractVector {
 
-    public RowMajorMatrix() {
+    @Nonnull
+    private final SparseDoubleArray values;
+
+    public SparseVector() {
         super();
+        this.values = new SparseDoubleArray();
+    }
+
+    public SparseVector(@Nonnull SparseDoubleArray values) {
+        super();
+        this.values = values;
     }
 
     @Override
-    public boolean isRowMajorMatrix() {
-        return true;
+    public double get(@Nonnegative final int index, final double defaultValue) {
+        return values.get(index, defaultValue);
     }
 
     @Override
-    public boolean isColumnMajorMatrix() {
-        return false;
+    public void set(@Nonnegative final int index, final double value) {
+        values.put(index, value);
     }
 
     @Override
-    public void getRow(@Nonnegative final int index, @Nonnull final Vector row) {
-        row.clear();
-        eachInRow(index, new VectorProcedure() {
-            @Override
-            public void apply(final int i, final double value) {
-                row.set(i, value);
-            }
-        }, false);
+    public void each(@Nonnull final VectorProcedure procedure) {
+        values.each(procedure);
     }
 
     @Override
-    public void eachInColumn(int col, VectorProcedure procedure, boolean nullOutput) {
-        throw new UnsupportedOperationException();
+    public int size() {
+        return values.size();
     }
 
     @Override
-    public void eachInNonZeroColumn(int col, VectorProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public RowMajorMatrix toRowMajorMatrix() {
-        return this;
+    public void clear() {
+        values.clear();
     }
 
 }

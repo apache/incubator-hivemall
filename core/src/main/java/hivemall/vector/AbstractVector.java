@@ -16,37 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.smile.vm;
+package hivemall.vector;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import javax.annotation.Nonnegative;
 
-public final class Operation {
+public abstract class AbstractVector implements Vector {
 
-    final OperationEnum op;
-    final String operand;
+    public AbstractVector() {}
 
-    public Operation(@Nonnull OperationEnum op) {
-        this(op, null);
+    @Override
+    public double get(@Nonnegative final int index) {
+        return get(index, 0.d);
     }
 
-    public Operation(@Nonnull OperationEnum op, @Nullable String operand) {
-        this.op = op;
-        this.operand = operand;
-    }
-
-    public enum OperationEnum {
-        ADD, SUB, DIV, MUL, DUP, // reserved
-        PUSH, POP, GOTO, IFEQ, IFEQ2, IFGE, IFGT, IFLE, IFLT, CALL; // used
-
-        static OperationEnum valueOfLowerCase(String op) {
-            return OperationEnum.valueOf(op.toUpperCase());
+    protected static final void checkIndex(final int index) {
+        if (index < 0) {
+            throw new IndexOutOfBoundsException("Invalid index " + index);
         }
     }
 
-    @Override
-    public String toString() {
-        return op.toString() + (operand != null ? (" " + operand) : "");
+    protected static final void checkIndex(final int index, final int size) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("Index " + index + " out of bounds " + size);
+        }
     }
 
 }

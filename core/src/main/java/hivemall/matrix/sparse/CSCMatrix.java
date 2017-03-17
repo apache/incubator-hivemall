@@ -22,6 +22,7 @@ import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.builders.CSCMatrixBuilder;
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
+import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
@@ -105,10 +106,10 @@ public final class CSCMatrix extends ColumnMajorMatrix {
 
         final int numCols = columnPointers.length - 1;
         for (int j = 0; j < numCols; j++) {
-            int k = Arrays.binarySearch(rowIndicies, columnPointers[j], columnPointers[j + 1],
-                index);
+            final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
+                columnPointers[j + 1], index);
             if (k >= 0) {
-                row[j] = values[j];
+                row[j] = values[k];
             }
         }
 
@@ -121,14 +122,29 @@ public final class CSCMatrix extends ColumnMajorMatrix {
 
         final int last = Math.min(dst.length, columnPointers.length - 1);
         for (int j = 0; j < last; j++) {
-            int k = Arrays.binarySearch(rowIndicies, columnPointers[j], columnPointers[j + 1],
-                index);
+            final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
+                columnPointers[j + 1], index);
             if (k >= 0) {
-                dst[j] = values[j];
+                dst[j] = values[k];
             }
         }
 
         return dst;
+    }
+
+    @Override
+    public void getRow(final int index, @Nonnull final Vector row) {
+        checkRowIndex(index, numRows);
+        row.clear();
+
+        for (int j = 0, last = columnPointers.length - 1; j < last; j++) {
+            final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
+                columnPointers[j + 1], index);
+            if (k >= 0) {
+                double v = values[k];
+                row.set(j, v);
+            }
+        }
     }
 
     @Override
@@ -186,7 +202,8 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     }
 
     @Override
-    public void eachInColumn(final int col, @Nonnull final VectorProcedure procedure) {
+    public void eachInColumn(final int col, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkColIndex(col, numColumns);
 
         final int endEx = columnPointers[col + 1];
@@ -195,7 +212,9 @@ public final class CSCMatrix extends ColumnMajorMatrix {
                 double v = values[i++];
                 procedure.apply(row, v);
             } else {
-                procedure.apply(row, 0.d);
+                if (nullOutput) {
+                    procedure.apply(row, 0.d);
+                }
             }
         }
     }
@@ -208,8 +227,10 @@ public final class CSCMatrix extends ColumnMajorMatrix {
         final int endEx = columnPointers[col + 1];
         for (int j = startIn; j < endEx; j++) {
             int row = rowIndicies[j];
-            double v = values[j];
-            procedure.apply(row, v);
+            final double v = values[j];
+            if (v != 0.d) {
+                procedure.apply(row, v);
+            }
         }
     }
 

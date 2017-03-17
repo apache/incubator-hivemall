@@ -21,26 +21,17 @@ package hivemall.smile.tools;
 import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.regression.RegressionTree;
-import hivemall.smile.vm.StackMachine;
-import hivemall.smile.vm.VMRuntimeException;
 import hivemall.utils.codec.Base91;
-import hivemall.utils.codec.DeflateCodec;
-import hivemall.utils.collections.arrays.SparseDoubleArray;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.IOUtils;
+import hivemall.vector.DenseVector;
+import hivemall.vector.SparseVector;
+import hivemall.vector.Vector;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.script.Bindings;
-import javax.script.Compilable;
-import javax.script.CompiledScript;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.MapredContext;
@@ -73,6 +64,8 @@ public final class TreePredictUDF extends GenericUDF {
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureElemOI;
     private boolean denseInput;
+    @Nullable
+    private Vector featuresProbe;
 
     @Nullable
     private transient Evaluator evaluator;
@@ -149,23 +142,44 @@ public final class TreePredictUDF extends GenericUDF {
         if (arg3 == null) {
             throw new HiveException("array<double> features was null");
         }
-        double[] features = parseFeatures(arg3);
+        this.featuresProbe = parseFeatures(arg3, featuresProbe);
 
         if (evaluator == null) {
             this.evaluator = getEvaluator(modelType, support_javascript_eval);
         }
 
-        Writable result = evaluator.evaluate(modelId, modelType.isCompressed(), script, features,
-            classification);
+        Writable result = evaluator.evaluate(modelId, modelType.isCompressed(), script,
+            featuresProbe, classification);
         return result;
     }
 
     @Nonnull
-    private double[] parseFeatures(@Nonnull final Object argObj) throws UDFArgumentException {
+    private Vector parseFeatures(@Nonnull final Object argObj, @Nullable Vector probe)
+            throws UDFArgumentException {
         if (denseInput) {
-            return HiveUtils.asDoubleArray(argObj, featureListOI, featureElemOI);
+            final int length = featureListOI.getListLength(argObj);
+            if (probe == null) {
+                probe = new DenseVector(length);
+            } else if (length != probe.size()) {
+                probe = new DenseVector(length);
+            }
+
+            for (int i = 0; i < length; i++) {
+                final Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    probe.set(i, 0.d);
+                } else {
+                    double v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
+                    probe.set(i, v);
+                }
+            }
         } else {
-            final SparseDoubleArray vector = new SparseDoubleArray();
+            if (probe == null) {
+                probe = new SparseVector();
+            } else {
+                probe.clear();
+            }
+
             final int length = featureListOI.getListLength(argObj);
             for (int i = 0; i < length; i++) {
                 Object o = featureListOI.getListElement(argObj, i);
@@ -173,7 +187,7 @@ public final class TreePredictUDF extends GenericUDF {
                     continue;
                 }
                 String col = o.toString();
-                                
+
                 final int pos = col.indexOf(':');
                 if (pos == 0) {
                     throw new UDFArgumentException("Invalid feature value representation: " + col);
@@ -191,18 +205,19 @@ public final class TreePredictUDF extends GenericUDF {
                 }
 
                 if (feature.indexOf(':') != -1) {
-                    throw new UDFArgumentException("Invaliad feature format `<index>:<value>`: " + col);
+                    throw new UDFArgumentException("Invaliad feature format `<index>:<value>`: "
+                            + col);
                 }
 
-                int colIndex = Integer.parseInt(feature);
+                final int colIndex = Integer.parseInt(feature);
                 if (colIndex < 0) {
-                    throw new UDFArgumentException("Col index MUST be greather than or equals to 0: "
-                            + colIndex);
-                }                
-                vector.put(colIndex, value);
+                    throw new UDFArgumentException(
+                        "Col index MUST be greather than or equals to 0: " + colIndex);
+                }
+                probe.set(colIndex, value);
             }
-            return vector.toArray();
-        }     
+        }
+        return probe;
     }
 
     @Nonnull
@@ -212,22 +227,15 @@ public final class TreePredictUDF extends GenericUDF {
         switch (type) {
             case serialization:
             case serialization_compressed: {
-                evaluator = new JavaSerializationEvaluator();
+                evaluator = new Evaluator();
                 break;
             }
             case opscode:
-            case opscode_compressed: {
-                evaluator = new StackmachineEvaluator();
-                break;
-            }
+            case opscode_compressed:
             case javascript:
             case javascript_compressed: {
-                if (!supportJavascriptEval) {
-                    throw new UDFArgumentException(
-                        "Javascript evaluation is not allowed in Treasure Data env");
-                }
-                evaluator = new JavascriptEvaluator();
-                break;
+                throw new UDFArgumentException("Deprecated model type `" + type
+                        + "`. Please build models again.");
             }
             default:
                 throw new UDFArgumentException("Unexpected model type was detected: " + type);
@@ -241,7 +249,6 @@ public final class TreePredictUDF extends GenericUDF {
         this.stringOI = null;
         this.featureElemOI = null;
         this.featureListOI = null;
-        IOUtils.closeQuietly(evaluator);
         this.evaluator = null;
     }
 
@@ -250,27 +257,17 @@ public final class TreePredictUDF extends GenericUDF {
         return "tree_predict(" + Arrays.toString(children) + ")";
     }
 
-    public interface Evaluator extends Closeable {
-
-        @Nullable
-        Writable evaluate(@Nonnull String modelId, boolean compressed, @Nonnull final Text script,
-                @Nonnull final double[] features, final boolean classification)
-                throws HiveException;
-
-    }
-
-    static final class JavaSerializationEvaluator implements Evaluator {
+    static final class Evaluator {
 
         @Nullable
         private String prevModelId = null;
         private DecisionTree.Node cNode = null;
         private RegressionTree.Node rNode = null;
 
-        JavaSerializationEvaluator() {}
+        Evaluator() {}
 
-        @Override
         public Writable evaluate(@Nonnull String modelId, boolean compressed, @Nonnull Text script,
-                double[] features, boolean classification) throws HiveException {
+                @Nonnull Vector features, boolean classification) throws HiveException {
             if (classification) {
                 return evaluateClassification(modelId, compressed, script, features);
             } else {
@@ -279,7 +276,7 @@ public final class TreePredictUDF extends GenericUDF {
         }
 
         private IntWritable evaluateClassification(@Nonnull String modelId, boolean compressed,
-                @Nonnull Text script, double[] features) throws HiveException {
+                @Nonnull Text script, @Nonnull Vector features) throws HiveException {
             if (!modelId.equals(prevModelId)) {
                 this.prevModelId = modelId;
                 int length = script.getLength();
@@ -293,7 +290,7 @@ public final class TreePredictUDF extends GenericUDF {
         }
 
         private DoubleWritable evaluteRegression(@Nonnull String modelId, boolean compressed,
-                @Nonnull Text script, double[] features) throws HiveException {
+                @Nonnull Text script, @Nonnull Vector features) throws HiveException {
             if (!modelId.equals(prevModelId)) {
                 this.prevModelId = modelId;
                 int length = script.getLength();
@@ -304,168 +301,6 @@ public final class TreePredictUDF extends GenericUDF {
             assert (rNode != null);
             double result = rNode.predict(features);
             return new DoubleWritable(result);
-        }
-
-        @Override
-        public void close() throws IOException {}
-
-    }
-
-    static final class StackmachineEvaluator implements Evaluator {
-
-        private String prevModelId = null;
-        private StackMachine prevVM = null;
-        private DeflateCodec codec = null;
-
-        StackmachineEvaluator() {}
-
-        @Override
-        public Writable evaluate(@Nonnull String modelId, boolean compressed, @Nonnull Text script,
-                double[] features, boolean classification) throws HiveException {
-            final String scriptStr;
-            if (compressed) {
-                if (codec == null) {
-                    this.codec = new DeflateCodec(false, true);
-                }
-                byte[] b = script.getBytes();
-                int len = script.getLength();
-                b = Base91.decode(b, 0, len);
-                try {
-                    b = codec.decompress(b);
-                } catch (IOException e) {
-                    throw new HiveException("decompression failed", e);
-                }
-                scriptStr = new String(b);
-            } else {
-                scriptStr = script.toString();
-            }
-
-            final StackMachine vm;
-            if (modelId.equals(prevModelId)) {
-                vm = prevVM;
-            } else {
-                vm = new StackMachine();
-                try {
-                    vm.compile(scriptStr);
-                } catch (VMRuntimeException e) {
-                    throw new HiveException("failed to compile StackMachine", e);
-                }
-                this.prevModelId = modelId;
-                this.prevVM = vm;
-            }
-
-            try {
-                vm.eval(features);
-            } catch (VMRuntimeException vme) {
-                throw new HiveException("failed to eval StackMachine", vme);
-            } catch (Throwable e) {
-                throw new HiveException("failed to eval StackMachine", e);
-            }
-
-            Double result = vm.getResult();
-            if (result == null) {
-                return null;
-            }
-            if (classification) {
-                return new IntWritable(result.intValue());
-            } else {
-                return new DoubleWritable(result.doubleValue());
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            IOUtils.closeQuietly(codec);
-        }
-
-    }
-
-    static final class JavascriptEvaluator implements Evaluator {
-
-        private final ScriptEngine scriptEngine;
-        private final Compilable compilableEngine;
-
-        private String prevModelId = null;
-        private CompiledScript prevCompiled;
-
-        private DeflateCodec codec = null;
-
-        JavascriptEvaluator() throws UDFArgumentException {
-            ScriptEngineManager manager = new ScriptEngineManager();
-            ScriptEngine engine = manager.getEngineByExtension("js");
-            if (!(engine instanceof Compilable)) {
-                throw new UDFArgumentException("ScriptEngine was not compilable: "
-                        + engine.getFactory().getEngineName() + " version "
-                        + engine.getFactory().getEngineVersion());
-            }
-            this.scriptEngine = engine;
-            this.compilableEngine = (Compilable) engine;
-        }
-
-        @Override
-        public Writable evaluate(@Nonnull String modelId, boolean compressed, @Nonnull Text script,
-                double[] features, boolean classification) throws HiveException {
-            final String scriptStr;
-            if (compressed) {
-                if (codec == null) {
-                    this.codec = new DeflateCodec(false, true);
-                }
-                byte[] b = script.getBytes();
-                int len = script.getLength();
-                b = Base91.decode(b, 0, len);
-                try {
-                    b = codec.decompress(b);
-                } catch (IOException e) {
-                    throw new HiveException("decompression failed", e);
-                }
-                scriptStr = new String(b);
-            } else {
-                scriptStr = script.toString();
-            }
-
-            final CompiledScript compiled;
-            if (modelId.equals(prevModelId)) {
-                compiled = prevCompiled;
-            } else {
-                try {
-                    compiled = compilableEngine.compile(scriptStr);
-                } catch (ScriptException e) {
-                    throw new HiveException("failed to compile: \n" + script, e);
-                }
-                this.prevCompiled = compiled;
-            }
-
-            final Bindings bindings = scriptEngine.createBindings();
-            final Object result;
-            try {
-                bindings.put("x", features);
-                result = compiled.eval(bindings);
-            } catch (ScriptException se) {
-                throw new HiveException("failed to evaluate: \n" + script, se);
-            } catch (Throwable e) {
-                throw new HiveException("failed to evaluate: \n" + script, e);
-            } finally {
-                bindings.clear();
-            }
-
-            if (result == null) {
-                return null;
-            }
-            if (!(result instanceof Number)) {
-                throw new HiveException("Got an unexpected non-number result: " + result);
-            }
-            if (classification) {
-                Number casted = (Number) result;
-                return new IntWritable(casted.intValue());
-            } else {
-                Number casted = (Number) result;
-                return new DoubleWritable(casted.doubleValue());
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            IOUtils.closeQuietly(codec);
         }
 
     }

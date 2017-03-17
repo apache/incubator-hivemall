@@ -18,6 +18,8 @@
  */
 package hivemall.smile;
 
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+
 public enum ModelType {
 
     // not compressed
@@ -42,16 +44,16 @@ public enum ModelType {
         return compressed;
     }
 
-    public static ModelType resolve(String name, boolean compressed) {
+    public static ModelType resolve(String name, boolean compressed) throws UDFArgumentException {
         name = name.toLowerCase();
-        if ("opscode".equals(name) || "vm".equals(name)) {
-            return compressed ? opscode_compressed : opscode;
-        } else if ("javascript".equals(name) || "js".equals(name)) {
-            return compressed ? javascript_compressed : javascript;
-        } else if ("serialization".equals(name) || "ser".equals(name)) {
+        if ("serialization".equals(name) || "ser".equals(name)) {
             return compressed ? serialization_compressed : serialization;
+        } else if ("opscode".equals(name) || "vm".equals(name)) {
+            throw new UDFArgumentException("Deprecated model type: " + name);
+        } else if ("javascript".equals(name) || "js".equals(name)) {
+            throw new UDFArgumentException("Deprecated model type: " + name);
         } else {
-            throw new IllegalStateException("Unexpected output type: " + name);
+            throw new UDFArgumentException("Unexpected output type: " + name);
         }
     }
 

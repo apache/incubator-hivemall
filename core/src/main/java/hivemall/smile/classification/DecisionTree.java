@@ -33,6 +33,7 @@
  */
 package hivemall.smile.classification;
 
+import hivemall.annotations.VisibleForTesting;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.data.Attribute;
@@ -40,14 +41,14 @@ import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
-import hivemall.utils.lang.StringUtils;
+import hivemall.vector.DenseVector;
+import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -98,7 +99,7 @@ import smile.math.Random;
  * <p>
  * Some techniques such as bagging, boosting, and random forest use more than one decision tree for their analysis.
  */
-public final class DecisionTree implements Classifier<double[]> {
+public final class DecisionTree implements Classifier<Vector> {
     /**
      * The attributes of independent variable.
      */
@@ -223,21 +224,26 @@ public final class DecisionTree implements Classifier<double[]> {
             this.output = output;
         }
 
+        @VisibleForTesting
+        public int predict(@Nonnull final double[] x) {
+            return predict(new DenseVector(x));
+        }
+
         /**
          * Evaluate the regression tree over an instance.
          */
-        public int predict(@Nonnull final double[] x) {
+        public int predict(@Nonnull final Vector x) {
             if (trueChild == null && falseChild == null) {
                 return output;
             } else {
                 if (splitFeatureType == AttributeType.NOMINAL) {
-                    if (x[splitFeature] == splitValue) {
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
                     }
                 } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    if (x[splitFeature] <= splitValue) {
+                    if (x.get(splitFeature, Double.NaN) <= splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
@@ -604,7 +610,7 @@ public final class DecisionTree implements Classifier<double[]> {
                             trueCount[y_i] += sample;
                         }
                     }//apply()                    
-                });
+                }, false);
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "
                         + _attributes[j].type);
@@ -885,8 +891,13 @@ public final class DecisionTree implements Classifier<double[]> {
         return _importance;
     }
 
+    @VisibleForTesting
+    public int predict(@Nonnull final double[] x) {
+        return predict(new DenseVector(x));
+    }
+
     @Override
-    public int predict(final double[] x) {
+    public int predict(@Nonnull final Vector x) {
         return _root.predict(x);
     }
 
@@ -894,7 +905,7 @@ public final class DecisionTree implements Classifier<double[]> {
      * Predicts the class label of an instance and also calculate a posteriori probabilities. Not supported.
      */
     @Override
-    public int predict(double[] x, double[] posteriori) {
+    public int predict(Vector x, double[] posteriori) {
         throw new UnsupportedOperationException("Not supported.");
     }
 
@@ -902,14 +913,6 @@ public final class DecisionTree implements Classifier<double[]> {
         StringBuilder buf = new StringBuilder(1024);
         _root.jsCodegen(buf, 0);
         return buf.toString();
-    }
-
-    public String predictOpCodegen(String sep) {
-        List<String> opslist = new ArrayList<String>();
-        _root.opCodegen(opslist, 0);
-        opslist.add("call end");
-        String scripts = StringUtils.concat(opslist, sep);
-        return scripts;
     }
 
     @Nonnull

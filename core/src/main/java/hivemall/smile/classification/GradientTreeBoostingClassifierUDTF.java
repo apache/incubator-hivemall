@@ -28,16 +28,13 @@ import hivemall.smile.ModelType;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
-import hivemall.smile.vm.StackMachine;
 import hivemall.utils.codec.Base91;
-import hivemall.utils.codec.DeflateCodec;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
+import hivemall.vector.Vector;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -394,7 +391,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final smile.math.Random rnd1 = new smile.math.Random(s);
         final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
 
-        final double[] xProbe = x.row();
+        final Vector xProbe = x.rowVector();
         for (int m = 0; m < _numTrees; m++) {
             reportProgress(_progressReporter);
 
@@ -413,7 +410,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag, output, rnd2);
 
             for (int i = 0; i < numInstances; i++) {
-                h[i] += _eta * tree.predict(x.getRow(i, xProbe));
+                x.getRow(i, xProbe);
+                h[i] += _eta * tree.predict(xProbe);
             }
 
             // out-of-bag error estimate
@@ -474,7 +472,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
 
         // out-of-bag prediction
         final int[] prediction = new int[numInstances];
-        final double[] xProbe = x.row();
+        final Vector xProbe = x.rowVector();
         for (int m = 0; m < _numTrees; m++) {
             for (int i = 0; i < numInstances; i++) {
                 double max = Double.NEGATIVE_INFINITY;
@@ -530,7 +528,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 trees[j] = tree;
 
                 for (int i = 0; i < numInstances; i++) {
-                    double h_ji = h_j[i] + _eta * tree.predict(x.getRow(i, xProbe));
+                    x.getRow(i, xProbe);
+                    double h_ji = h_j[i] + _eta * tree.predict(xProbe);
                     h_j[i] += h_ji;
                     if (h_ji > max_h) {
                         max_h = h_ji;
@@ -606,48 +605,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 break;
             }
             case opscode:
-            case opscode_compressed: {
-                for (int i = 0; i < m; i++) {
-                    String s = trees[i].predictOpCodegen(StackMachine.SEP);
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        models[i] = new Text(b);
-                    } else {
-                        models[i] = new Text(s);
-                    }
-                }
-                break;
-            }
+            case opscode_compressed:
             case javascript:
             case javascript_compressed: {
-                for (int i = 0; i < m; i++) {
-                    String s = trees[i].predictJsCodegen();
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        models[i] = new Text(b);
-                    } else {
-                        models[i] = new Text(s);
-                    }
-                }
-                break;
+                throw new HiveException("Deprecated model type: " + outputType
+                        + ". Build a model again");
             }
             default:
                 throw new HiveException("Unexpected output type: " + outputType

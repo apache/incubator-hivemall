@@ -22,13 +22,9 @@ import static org.junit.Assert.assertEquals;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.dense.RowMajorDenseMatrix2d;
-import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree.Node;
 import hivemall.smile.data.Attribute;
-import hivemall.smile.tools.TreePredictUDF;
 import hivemall.smile.utils.SmileExtUtils;
-import hivemall.smile.vm.StackMachine;
-import hivemall.utils.lang.ArrayUtils;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -39,13 +35,6 @@ import java.text.ParseException;
 import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.IntWritable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -146,56 +135,6 @@ public class DecisionTreeTest {
     }
 
     @Test
-    public void testIrisStackmachine() throws IOException, ParseException, HiveException {
-        URL url = new URL(
-            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
-        InputStream is = new BufferedInputStream(url.openStream());
-
-        ArffParser arffParser = new ArffParser();
-        arffParser.setResponseIndex(4);
-        AttributeDataset iris = arffParser.parse(is);
-        double[][] x = iris.toArray(new double[iris.size()][]);
-        int[] y = iris.toArray(new int[iris.size()]);
-
-        int n = x.length;
-        LOOCV loocv = new LOOCV(n);
-        for (int i = 0; i < n; i++) {
-            double[][] trainx = Math.slice(x, loocv.train[i]);
-            int[] trainy = Math.slice(y, loocv.train[i]);
-
-            Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, matrix(trainx, true), trainy, 4);
-            assertEquals(tree.predict(x[loocv.test[i]]),
-                predictByStackMachine(tree, x[loocv.test[i]]));
-        }
-    }
-
-    @Test
-    public void testIrisJavascript() throws IOException, ParseException, HiveException {
-        URL url = new URL(
-            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
-        InputStream is = new BufferedInputStream(url.openStream());
-
-        ArffParser arffParser = new ArffParser();
-        arffParser.setResponseIndex(4);
-        AttributeDataset iris = arffParser.parse(is);
-        double[][] x = iris.toArray(new double[iris.size()][]);
-        int[] y = iris.toArray(new int[iris.size()]);
-
-        int n = x.length;
-        LOOCV loocv = new LOOCV(n);
-        for (int i = 0; i < n; i++) {
-            double[][] trainx = Math.slice(x, loocv.train[i]);
-            int[] trainy = Math.slice(y, loocv.train[i]);
-
-            Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, matrix(trainx, true), trainy, 4);
-            assertEquals(tree.predict(x[loocv.test[i]]),
-                predictByJavascript(tree, x[loocv.test[i]]));
-        }
-    }
-
-    @Test
     public void testIrisSerializedObj() throws IOException, ParseException, HiveException {
         URL url = new URL(
             "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
@@ -250,54 +189,6 @@ public class DecisionTreeTest {
             Node node = DecisionTree.deserializeNode(b1, b1.length, true);
             assertEquals(tree.predict(x[loocv.test[i]]), node.predict(x[loocv.test[i]]));
         }
-    }
-
-    private static int predictByStackMachine(DecisionTree tree, double[] x) throws HiveException,
-            IOException {
-        String script = tree.predictOpCodegen(StackMachine.SEP);
-        debugPrint(script);
-
-        TreePredictUDF udf = new TreePredictUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
-        DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
-                new DeferredJavaObject(ModelType.opscode.getId()), new DeferredJavaObject(script),
-                new DeferredJavaObject(ArrayUtils.toList(x)), new DeferredJavaObject(true)};
-
-        IntWritable result = (IntWritable) udf.evaluate(arguments);
-        result = (IntWritable) udf.evaluate(arguments);
-        udf.close();
-        return result.get();
-    }
-
-    private static int predictByJavascript(DecisionTree tree, double[] x) throws HiveException,
-            IOException {
-        String script = tree.predictJsCodegen();
-        debugPrint(script);
-
-        TreePredictUDF udf = new TreePredictUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
-
-        DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
-                new DeferredJavaObject(ModelType.javascript.getId()),
-                new DeferredJavaObject(script), new DeferredJavaObject(ArrayUtils.toList(x)),
-                new DeferredJavaObject(true)};
-
-        IntWritable result = (IntWritable) udf.evaluate(arguments);
-        result = (IntWritable) udf.evaluate(arguments);
-        udf.close();
-        return result.get();
     }
 
     @Nonnull

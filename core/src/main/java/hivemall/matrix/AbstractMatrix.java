@@ -18,7 +18,12 @@
  */
 package hivemall.matrix;
 
+import hivemall.vector.SparseVector;
+import hivemall.vector.Vector;
+import hivemall.vector.VectorProcedure;
+
 import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
 public abstract class AbstractMatrix implements Matrix {
 
@@ -28,6 +33,11 @@ public abstract class AbstractMatrix implements Matrix {
     public double[] row() {
         int cols = numColumns();
         return new double[cols];
+    }
+
+    @Override
+    public Vector rowVector() {
+        return new SparseVector();
     }
 
     @Override
@@ -70,6 +80,16 @@ public abstract class AbstractMatrix implements Matrix {
         if (col < 0 || col >= numColumns) {
             throw new IndexOutOfBoundsException("Col index " + col + " out of bounds " + numColumns);
         }
+    }
+
+    @Override
+    public void eachInRow(final int row, @Nonnull final VectorProcedure procedure) {
+        eachInRow(row, procedure, true);
+    }
+
+    @Override
+    public void eachInColumn(final int col, @Nonnull final VectorProcedure procedure) {
+        eachInColumn(col, procedure, true);
     }
 
 }

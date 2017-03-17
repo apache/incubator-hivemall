@@ -21,6 +21,7 @@ package hivemall.matrix.dense;
 import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.builders.ColumnMajorDenseMatrixBuilder;
 import hivemall.utils.lang.Preconditions;
+import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
 
 import javax.annotation.Nonnegative;
@@ -126,6 +127,23 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
     }
 
     @Override
+    public void getRow(final int index, @Nonnull final Vector row) {
+        checkRowIndex(index, numRows);
+        row.clear();
+
+        for (int j = 0; j < data.length; j++) {
+            final double[] col = data[j];
+            if (col == null) {
+                continue;
+            }
+            if (index < col.length) {
+                double v = col[index];
+                row.set(j, v);
+            }
+        }
+    }
+
+    @Override
     public double get(final int row, final int col, final double defaultValue) {
         checkIndex(row, col, numRows, numColumns);
 
@@ -175,19 +193,28 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
     }
 
     @Override
-    public void eachInColumn(final int col, @Nonnull final VectorProcedure procedure) {
+    public void eachInColumn(final int col, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkColIndex(col, numColumns);
 
         final double[] colData = data[col];
         if (colData == null) {
+            if (nullOutput) {
+                for (int i = 0; i < numRows; i++) {
+                    procedure.apply(i, 0.d);
+                }
+            }
             return;
         }
+
         int row = 0;
         for (int len = colData.length; row < len; row++) {
             procedure.apply(row, colData[row]);
         }
-        for (; row < numRows; row++) {
-            procedure.apply(row, 0.d);
+        if (nullOutput) {
+            for (; row < numRows; row++) {
+                procedure.apply(row, 0.d);
+            }
         }
     }
 
@@ -202,10 +229,9 @@ public final class ColumnMajorDenseMatrix2d extends ColumnMajorMatrix {
         int row = 0;
         for (int len = colData.length; row < len; row++) {
             final double v = colData[row];
-            if (v == 0.d) {
-                continue;
+            if (v != 0.d) {
+                procedure.apply(row, v);
             }
-            procedure.apply(row, v);
         }
     }
 

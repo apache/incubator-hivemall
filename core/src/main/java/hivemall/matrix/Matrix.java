@@ -19,6 +19,7 @@
 package hivemall.matrix;
 
 import hivemall.matrix.builders.MatrixBuilder;
+import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
 
 import javax.annotation.Nonnegative;
@@ -57,6 +58,9 @@ public interface Matrix {
     public double[] row();
 
     @Nonnull
+    public Vector rowVector();
+
+    @Nonnull
     public double[] getRow(@Nonnegative int index);
 
     /**
@@ -64,6 +68,8 @@ public interface Matrix {
      */
     @Nonnull
     public double[] getRow(@Nonnegative int index, @Nonnull double[] dst);
+
+    public void getRow(@Nonnegative int index, @Nonnull Vector row);
 
     /**
      * @throws IndexOutOfBoundsException
@@ -91,9 +97,15 @@ public interface Matrix {
 
     public void eachInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
+    public void eachInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure,
+            boolean nullOutput);
+
     public void eachNonZeroInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
     public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
+
+    public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure,
+            boolean nullOutput);
 
     public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 

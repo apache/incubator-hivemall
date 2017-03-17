@@ -20,6 +20,7 @@ package hivemall.utils.collections.arrays;
 
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
+import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
 
@@ -186,6 +187,14 @@ public final class SparseDoubleArray implements DoubleArray {
             array[k] = v;
         }
         return array;
+    }
+
+    public void each(@Nonnull final VectorProcedure procedure) {
+        for (int i = 0; i < mSize; i++) {
+            int k = mKeys[i];
+            double v = mValues[i];
+            procedure.apply(k, v);
+        }
     }
 
     @Override

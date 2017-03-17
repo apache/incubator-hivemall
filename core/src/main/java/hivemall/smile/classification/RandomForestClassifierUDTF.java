@@ -32,17 +32,14 @@ import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
-import hivemall.smile.vm.StackMachine;
 import hivemall.utils.codec.Base91;
-import hivemall.utils.codec.DeflateCodec;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
+import hivemall.vector.Vector;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -137,7 +134,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
         opts.addOption("output", "output_type", true,
-            "The output type (serialization/ser or opscode/vm or javascript/js) [default: serialization]");
+            "The output type (serialization/ser) [default: serialization]");
         opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY]");
         opts.addOption("disable_compression", false,
             "Whether to disable compression of the output script [default: false]");
@@ -477,9 +474,10 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                 _udtf._splitRule, rnd2);
 
             // out-of-bag prediction
-            final double[] xProbe = _x.row();
+            final Vector xProbe = _x.rowVector();
             for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
-                final int p = tree.predict(_x.getRow(i, xProbe));
+                _x.getRow(i, xProbe);
+                final int p = tree.predict(xProbe);
                 synchronized (_prediction) {
                     _prediction.incr(i, p);
                 }
@@ -506,48 +504,14 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                     break;
                 }
                 case opscode:
-                case opscode_compressed: {
-                    String s = tree.predictOpCodegen(StackMachine.SEP);
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        model = new Text(b);
-                    } else {
-                        model = new Text(s);
-                    }
-                    break;
-                }
+                case opscode_compressed:
                 case javascript:
                 case javascript_compressed: {
-                    String s = tree.predictJsCodegen();
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        model = new Text(b);
-                    } else {
-                        model = new Text(s);
-                    }
-                    break;
+                    throw new HiveException("Deprecated model type: " + outputType
+                            + ". Build a model again.");
                 }
                 default:
-                    throw new HiveException("Unexpected output type: " + outputType
-                            + ". Use javascript for the output instead");
+                    throw new HiveException("Unexpected output type: " + outputType);
             }
             return model;
         }

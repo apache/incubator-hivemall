@@ -38,12 +38,12 @@ public final class MatrixUtils {
 
         final MatrixBuilder builder = m.builder();
         for (int i = 0; i < indices.length; i++) {
-            int j = indices[i];
-            m.eachNonZeroInRow(j, new VectorProcedure() {
+            final int j = indices[i];
+            m.eachInRow(j, new VectorProcedure() {
                 public void apply(int col, double value) {
                     builder.nextColumn(col, value);
                 }
-            });
+            }, false);
             builder.nextRow();
         }
         return builder.buildMatrix();
@@ -65,7 +65,7 @@ public final class MatrixUtils {
                     which.setValue(i);
                 }
             }
-        });
+        }, false);
         return which.getValue();
     }
 

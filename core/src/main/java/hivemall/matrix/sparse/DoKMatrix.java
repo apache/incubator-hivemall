@@ -26,6 +26,7 @@ import hivemall.matrix.builders.DoKMatrixBuilder;
 import hivemall.utils.collections.maps.Long2DoubleOpenHashTable;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
+import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
 
 import javax.annotation.Nonnegative;
@@ -137,12 +138,26 @@ public final class DoKMatrix extends AbstractMatrix {
 
         final int end = Math.min(dst.length, numColumns);
         for (int col = 0; col < end; col++) {
-            long index = index(row, col);
-            double v = elements.get(index);
+            long k = index(row, col);
+            double v = elements.get(k);
             dst[col] = v;
         }
 
         return dst;
+    }
+
+    @Override
+    public void getRow(@Nonnegative final int index, @Nonnull final Vector row) {
+        checkRowIndex(index, numRows);
+        row.clear();
+
+        for (int col = 0; col < numColumns; col++) {
+            long k = index(index, col);
+            final double v = elements.get(k, 0.d);
+            if (v != 0.d) {
+                row.set(col, v);
+            }
+        }
     }
 
     @Override
@@ -216,17 +231,21 @@ public final class DoKMatrix extends AbstractMatrix {
     }
 
     @Override
-    public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure) {
+    public void eachInRow(@Nonnegative final int row, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkRowIndex(row, numRows);
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
-            int key = elements._findKey(i);
+            final int key = elements._findKey(i);
             if (key < 0) {
-                continue;
+                if (nullOutput) {
+                    procedure.apply(col, 0.d);
+                }
+            } else {
+                double v = elements._get(key);
+                procedure.apply(col, v);
             }
-            double v = elements._get(key);
-            procedure.apply(col, v);
         }
     }
 
@@ -237,7 +256,7 @@ public final class DoKMatrix extends AbstractMatrix {
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
-            double v = elements.get(i, 0.d);
+            final double v = elements.get(i, 0.d);
             if (v != 0.d) {
                 procedure.apply(col, v);
             }
@@ -245,17 +264,21 @@ public final class DoKMatrix extends AbstractMatrix {
     }
 
     @Override
-    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure) {
+    public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure,
+            final boolean nullOutput) {
         checkColIndex(col, numColumns);
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
-            int key = elements._findKey(i);
+            final int key = elements._findKey(i);
             if (key < 0) {
-                continue;
+                if (nullOutput) {
+                    procedure.apply(row, 0.d);
+                }
+            } else {
+                double v = elements._get(key);
+                procedure.apply(row, v);
             }
-            double v = elements._get(key);
-            procedure.apply(row, v);
         }
     }
 
@@ -266,7 +289,7 @@ public final class DoKMatrix extends AbstractMatrix {
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
-            double v = elements.get(i, 0.d);
+            final double v = elements.get(i, 0.d);
             if (v != 0.d) {
                 procedure.apply(row, v);
             }
