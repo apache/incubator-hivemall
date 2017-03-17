@@ -57,7 +57,7 @@ public class AUCUDAFTest {
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
         fieldNames.add("a");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-        fieldNames.add("minScore");
+        fieldNames.add("maxScore");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("fp");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);

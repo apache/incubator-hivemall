@@ -93,7 +93,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
         private StructObjectInspector internalMergeOI;
         private StructField aField;
-        private StructField minScoreField;
+        private StructField maxScoreField;
         private StructField fpField;
         private StructField tpField;
         private StructField fpPrevField;
@@ -117,7 +117,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 this.internalMergeOI = soi;
                 this.aField = soi.getStructFieldRef("a");
-                this.minScoreField = soi.getStructFieldRef("minScore");
+                this.maxScoreField = soi.getStructFieldRef("maxScore");
                 this.fpField = soi.getStructFieldRef("fp");
                 this.tpField = soi.getStructFieldRef("tp");
                 this.fpPrevField = soi.getStructFieldRef("fpPrev");
@@ -143,7 +143,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
             fieldNames.add("a");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-            fieldNames.add("minScore");
+            fieldNames.add("maxScore");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             fieldNames.add("fp");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
@@ -220,7 +220,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
             Object[] partialResult = new Object[9];
             partialResult[0] = new DoubleWritable(myAggr.a);
-            partialResult[1] = new DoubleWritable(myAggr.minScore);
+            partialResult[1] = new DoubleWritable(myAggr.maxScore);
             partialResult[2] = new LongWritable(myAggr.fp);
             partialResult[3] = new LongWritable(myAggr.tp);
             partialResult[4] = new LongWritable(myAggr.fpPrev);
@@ -239,7 +239,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             }
 
             Object aObj = internalMergeOI.getStructFieldData(partial, aField);
-            Object minScoreObj = internalMergeOI.getStructFieldData(partial, minScoreField);
+            Object maxScoreObj = internalMergeOI.getStructFieldData(partial, maxScoreField);
             Object fpObj = internalMergeOI.getStructFieldData(partial, fpField);
             Object tpObj = internalMergeOI.getStructFieldData(partial, tpField);
             Object fpPrevObj = internalMergeOI.getStructFieldData(partial, fpPrevField);
@@ -249,7 +249,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             Object tpCountsObj = internalMergeOI.getStructFieldData(partial, tpCountsField);
 
             double a = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(aObj);
-            double minScore = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(minScoreObj);
+            double maxScore = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(maxScoreObj);
             long fp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(fpObj);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
             long fpPrev = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(fpPrevObj);
@@ -279,7 +279,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
                 PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(tpCountsObj);
 
             ClassificationAUCAggregationBuffer myAggr = (ClassificationAUCAggregationBuffer) agg;
-            myAggr.merge(a, minScore, fp, tp, fpPrev, tpPrev, partialAreas, fpCounts, tpCounts);
+            myAggr.merge(a, maxScore, fp, tp, fpPrev, tpPrev, partialAreas, fpCounts, tpCounts);
         }
 
         @Override
@@ -293,7 +293,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
     public static class ClassificationAUCAggregationBuffer extends AbstractAggregationBuffer {
 
-        double a, scorePrev, minScore;
+        double a, scorePrev, maxScore;
         long fp, tp, fpPrev, tpPrev;
         Map<Double, Double> partialAreas;
         Map<Double, Long> fpCounts, tpCounts;
@@ -305,7 +305,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
         void reset() {
             this.a = 0.d;
             this.scorePrev = Double.POSITIVE_INFINITY;
-            this.minScore = 0.d;
+            this.maxScore = 0.d;
             this.fp = 0;
             this.tp = 0;
             this.fpPrev = 0;
@@ -315,7 +315,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             this.tpCounts = new HashMap<Double, Long>();
         }
 
-        void merge(double o_a, double o_minScore, long o_fp, long o_tp,
+        void merge(double o_a, double o_maxScore, long o_fp, long o_tp,
                 long o_fpPrev, long o_tpPrev, Map<Double, Double> o_partialAreas,
                 Map<Double, Long> o_fpCounts, Map<Double, Long> o_tpCounts) {
 
@@ -328,9 +328,9 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             o_a += trapezoidArea(o_fp, o_fpPrev, o_tp, o_tpPrev);
 
             // store source results
-            partialAreas.put(o_minScore, o_a);
-            fpCounts.put(o_minScore, o_fp);
-            tpCounts.put(o_minScore, o_tp);
+            partialAreas.put(o_maxScore, o_a);
+            fpCounts.put(o_maxScore, o_fp);
+            tpCounts.put(o_maxScore, o_tp);
         }
 
         double get() throws HiveException {
@@ -371,8 +371,8 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
         void iterate(double score, int label) {
             if (score != scorePrev) {
                 if (scorePrev == Double.POSITIVE_INFINITY) {
-                    // store minimum score for merging
-                    minScore = score;
+                    // store maximum score for merging
+                    maxScore = score;
                 }
                 a += trapezoidArea(fp, fpPrev, tp, tpPrev); // under (fp, tp)-(fpPrev, tpPrev)
                 scorePrev = score;
