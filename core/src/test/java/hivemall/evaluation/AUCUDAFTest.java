@@ -21,6 +21,7 @@ package hivemall.evaluation;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
+import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
@@ -56,7 +57,7 @@ public class AUCUDAFTest {
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
         fieldNames.add("a");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-        fieldNames.add("scorePrev");
+        fieldNames.add("minScore");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("fp");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
@@ -66,6 +67,24 @@ public class AUCUDAFTest {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
         fieldNames.add("tpPrev");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+
+        MapObjectInspector partialAreasOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+        fieldNames.add("partialAreas");
+        fieldOIs.add(partialAreasOI);
+
+        MapObjectInspector fpCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        fieldNames.add("fpCounts");
+        fieldOIs.add(fpCountsOI);
+
+        MapObjectInspector tpCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        fieldNames.add("tpCounts");
+        fieldOIs.add(tpCountsOI);
 
         partialOI = new ObjectInspector[2];
         partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);

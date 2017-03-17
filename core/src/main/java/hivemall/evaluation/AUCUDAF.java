@@ -23,6 +23,10 @@ import hivemall.utils.hadoop.HiveUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import javax.annotation.Nonnull;
 
@@ -35,7 +39,9 @@ import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
@@ -87,11 +93,14 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
         private StructObjectInspector internalMergeOI;
         private StructField aField;
-        private StructField scorePrevField;
+        private StructField minScoreField;
         private StructField fpField;
         private StructField tpField;
         private StructField fpPrevField;
         private StructField tpPrevField;
+        private StructField partialAreasField;
+        private StructField fpCountsField;
+        private StructField tpCountsField;
 
         public ClassificationEvaluator() {}
 
@@ -108,11 +117,14 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 this.internalMergeOI = soi;
                 this.aField = soi.getStructFieldRef("a");
-                this.scorePrevField = soi.getStructFieldRef("scorePrev");
+                this.minScoreField = soi.getStructFieldRef("minScore");
                 this.fpField = soi.getStructFieldRef("fp");
                 this.tpField = soi.getStructFieldRef("tp");
                 this.fpPrevField = soi.getStructFieldRef("fpPrev");
                 this.tpPrevField = soi.getStructFieldRef("tpPrev");
+                this.partialAreasField = soi.getStructFieldRef("partialAreas");
+                this.fpCountsField = soi.getStructFieldRef("fpCounts");
+                this.tpCountsField = soi.getStructFieldRef("tpCounts");
             }
 
             // initialize output
@@ -131,7 +143,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
             fieldNames.add("a");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-            fieldNames.add("scorePrev");
+            fieldNames.add("minScore");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             fieldNames.add("fp");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
@@ -141,6 +153,24 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
             fieldNames.add("tpPrev");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+
+            MapObjectInspector partialAreasOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+            fieldNames.add("partialAreas");
+            fieldOIs.add(partialAreasOI);
+
+            MapObjectInspector fpCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+            fieldNames.add("fpCounts");
+            fieldOIs.add(fpCountsOI);
+
+            MapObjectInspector tpCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+            fieldNames.add("tpCounts");
+            fieldOIs.add(tpCountsOI);
 
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
@@ -188,13 +218,17 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
         public Object terminatePartial(AggregationBuffer agg) throws HiveException {
             ClassificationAUCAggregationBuffer myAggr = (ClassificationAUCAggregationBuffer) agg;
 
-            Object[] partialResult = new Object[6];
+            Object[] partialResult = new Object[9];
             partialResult[0] = new DoubleWritable(myAggr.a);
-            partialResult[1] = new DoubleWritable(myAggr.scorePrev);
+            partialResult[1] = new DoubleWritable(myAggr.minScore);
             partialResult[2] = new LongWritable(myAggr.fp);
             partialResult[3] = new LongWritable(myAggr.tp);
             partialResult[4] = new LongWritable(myAggr.fpPrev);
             partialResult[5] = new LongWritable(myAggr.tpPrev);
+            partialResult[6] = myAggr.partialAreas;
+            partialResult[7] = myAggr.fpCounts;
+            partialResult[8] = myAggr.tpCounts;
+
             return partialResult;
         }
 
@@ -205,20 +239,47 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             }
 
             Object aObj = internalMergeOI.getStructFieldData(partial, aField);
-            Object scorePrevObj = internalMergeOI.getStructFieldData(partial, scorePrevField);
+            Object minScoreObj = internalMergeOI.getStructFieldData(partial, minScoreField);
             Object fpObj = internalMergeOI.getStructFieldData(partial, fpField);
             Object tpObj = internalMergeOI.getStructFieldData(partial, tpField);
             Object fpPrevObj = internalMergeOI.getStructFieldData(partial, fpPrevField);
             Object tpPrevObj = internalMergeOI.getStructFieldData(partial, tpPrevField);
+            Object partialAreasObj = internalMergeOI.getStructFieldData(partial, partialAreasField);
+            Object fpCountsObj = internalMergeOI.getStructFieldData(partial, fpCountsField);
+            Object tpCountsObj = internalMergeOI.getStructFieldData(partial, tpCountsField);
+
             double a = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(aObj);
-            double scorePrev = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(scorePrevObj);
+            double minScore = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(minScoreObj);
             long fp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(fpObj);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
             long fpPrev = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(fpPrevObj);
             long tpPrev = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpPrevObj);
 
+            // [workaround]
+            // java.lang.ClassCastException: org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap
+            if (partialAreasObj instanceof LazyBinaryMap) {
+                partialAreasObj = ((LazyBinaryMap) partialAreasObj).getMap();
+            }
+            Map<Double, Double> partialAreas = (Map<Double, Double>) ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(partialAreasObj);
+
+            if (fpCountsObj instanceof LazyBinaryMap) {
+                fpCountsObj = ((LazyBinaryMap) fpCountsObj).getMap();
+            }
+            Map<Double, Long> fpCounts = (Map<Double, Long>) ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(fpCountsObj);
+
+            if (tpCountsObj instanceof LazyBinaryMap) {
+                tpCountsObj = ((LazyBinaryMap) tpCountsObj).getMap();
+            }
+            Map<Double, Long> tpCounts = (Map<Double, Long>) ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(tpCountsObj);
+
             ClassificationAUCAggregationBuffer myAggr = (ClassificationAUCAggregationBuffer) agg;
-            myAggr.merge(a, scorePrev, fp, tp, fpPrev, tpPrev);
+            myAggr.merge(a, minScore, fp, tp, fpPrev, tpPrev, partialAreas, fpCounts, tpCounts);
         }
 
         @Override
@@ -232,8 +293,10 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
     public static class ClassificationAUCAggregationBuffer extends AbstractAggregationBuffer {
 
-        double a, scorePrev;
+        double a, scorePrev, minScore;
         long fp, tp, fpPrev, tpPrev;
+        Map<Double, Double> partialAreas;
+        Map<Double, Long> fpCounts, tpCounts;
 
         public ClassificationAUCAggregationBuffer() {
             super();
@@ -242,56 +305,75 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
         void reset() {
             this.a = 0.d;
             this.scorePrev = Double.POSITIVE_INFINITY;
+            this.minScore = 0.d;
             this.fp = 0;
             this.tp = 0;
             this.fpPrev = 0;
             this.tpPrev = 0;
+            this.partialAreas = new HashMap<Double, Double>();
+            this.fpCounts = new HashMap<Double, Long>();
+            this.tpCounts = new HashMap<Double, Long>();
         }
 
-        void merge(double o_a, double o_scorePrev, long o_fp, long o_tp, long o_fpPrev,
-                long o_tpPrev) {
-            // compute the latest, not scaled AUC
-            a += trapezoidArea(fp, fpPrev, tp, tpPrev);
+        void merge(double o_a, double o_minScore, long o_fp, long o_tp,
+                long o_fpPrev, long o_tpPrev, Map<Double, Double> o_partialAreas,
+                Map<Double, Long> o_fpCounts, Map<Double, Long> o_tpCounts) {
+
+            // merge past results
+            partialAreas.putAll(o_partialAreas);
+            fpCounts.putAll(o_fpCounts);
+            tpCounts.putAll(o_tpCounts);
+
+            // finalize source AUC computation
             o_a += trapezoidArea(o_fp, o_fpPrev, o_tp, o_tpPrev);
 
-            // sum up the partial areas
-            a += o_a;
-            if (scorePrev >= o_scorePrev) { // self is left-side
-                // adjust combined area by adding missing rectangle
-                a += trapezoidArea(fp + o_fp, fp, tp, tp);
-
-                // combine TP/FP counts; left-side curve should be base
-                fp += o_fp;
-                tp += o_tp;
-                fpPrev = fp + o_fpPrev;
-                tpPrev = tp + o_tpPrev;
-            } else { // self is right-side
-                a = a + trapezoidArea(fp + o_fp, o_fp, o_tp, o_tp);
-
-                fp += o_fp;
-                tp += o_tp;
-                fpPrev += o_fp;
-                tpPrev += o_tp;
-            }
-
-            // set current appropriate `scorePrev`
-            scorePrev = Math.min(scorePrev, o_scorePrev);
-
-            // subtract so that get() works correctly
-            a -= trapezoidArea(fp, fpPrev, tp, tpPrev);
+            // store source results
+            partialAreas.put(o_minScore, o_a);
+            fpCounts.put(o_minScore, o_fp);
+            tpCounts.put(o_minScore, o_tp);
         }
 
         double get() throws HiveException {
-            if (tp == 0 || fp == 0) {
+            double res = a;
+            long fpAccum = fp;
+            long tpAccum = tp;
+            long fpPrevAccum = fpPrev;
+            long tpPrevAccum = tpPrev;
+
+            // Merge from right (smaller score) to left (larger score)
+            for (Map.Entry<Double, Double> e : new TreeMap<Double, Double>(partialAreas).entrySet()) {
+                double k = e.getKey();
+
+                // sum up partial area
+                res += e.getValue();
+
+                // adjust combined area by adding missing rectangle
+                res += trapezoidArea(0, fpAccum, tpCounts.get(k), tpCounts.get(k));
+
+                fpPrevAccum += fpCounts.get(k);
+                tpPrevAccum += tpCounts.get(k);
+
+                fpAccum += fpCounts.get(k);
+                tpAccum += tpCounts.get(k);
+            }
+
+            if (tpAccum == 0 || fpAccum == 0) {
                 throw new HiveException(
                     "AUC score is not defined because there is only one class in `label`.");
             }
-            double res = a + trapezoidArea(fp, fpPrev, tp, tpPrev);
-            return res / (tp * fp); // scale
+
+            // finalize by adding a trapezoid based on the last tp/fp counts
+            res += trapezoidArea(fpAccum, fpPrevAccum, tpAccum, tpPrevAccum);
+
+            return res / (tpAccum * fpAccum); // scale
         }
 
         void iterate(double score, int label) {
             if (score != scorePrev) {
+                if (scorePrev == Double.POSITIVE_INFINITY) {
+                    // store minimum score for merging
+                    minScore = score;
+                }
                 a += trapezoidArea(fp, fpPrev, tp, tpPrev); // under (fp, tp)-(fpPrev, tpPrev)
                 scorePrev = score;
                 fpPrev = fp;
