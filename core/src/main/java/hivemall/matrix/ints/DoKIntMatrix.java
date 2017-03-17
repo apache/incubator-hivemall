@@ -168,7 +168,7 @@ public final class DoKIntMatrix extends AbstractIntMatrix {
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
-            int v = elements.get(i, 0);
+            final int v = elements.get(i, 0);
             if (v != 0) {
                 procedure.apply(col, v);
             }
@@ -201,7 +201,7 @@ public final class DoKIntMatrix extends AbstractIntMatrix {
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
-            int v = elements.get(i, 0);
+            final int v = elements.get(i, 0);
             if (v != 0) {
                 procedure.apply(row, v);
             }

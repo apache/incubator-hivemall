@@ -123,7 +123,7 @@ public class IntMatrixTest {
                 public void apply(int i, int value) {
                     count.addValue(1);
                 }
-            });
+            }, false);
         }
         Assert.assertEquals(1 + 2 + 3 + 4 + 4 + 6, count.getValue());
 
@@ -159,7 +159,7 @@ public class IntMatrixTest {
                 public void apply(int i, int value) {
                     count.addValue(1);
                 }
-            });
+            }, false);
         }
         Assert.assertEquals(1 + 2 + 3 + 4 + 4 + 6, count.getValue());
 
@@ -198,7 +198,7 @@ public class IntMatrixTest {
                 public void apply(int i, int value) {
                     count.addValue(1);
                 }
-            });
+            }, false);
         }
         Assert.assertEquals(1 + 2 + 3 + 4 + 4 + 6, count.getValue());
 
@@ -234,7 +234,7 @@ public class IntMatrixTest {
                 public void apply(int i, int value) {
                     count.addValue(1);
                 }
-            });
+            }, false);
         }
         Assert.assertEquals(1 + 2 + 3 + 4 + 4 + 6, count.getValue());
 
@@ -273,7 +273,7 @@ public class IntMatrixTest {
                 public void apply(int i, int value) {
                     count.addValue(1);
                 }
-            });
+            }, false);
         }
         Assert.assertEquals(4 + 3 + 6 + 5 + 6 + 6, count.getValue());
 

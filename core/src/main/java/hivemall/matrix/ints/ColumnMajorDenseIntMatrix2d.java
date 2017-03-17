@@ -133,8 +133,14 @@ public final class ColumnMajorDenseIntMatrix2d extends ColumnMajorIntMatrix {
 
         final int[] colData = data[col];
         if (colData == null) {
+            if (nullOutput) {
+                for (int i = 0; i < numRows; i++) {
+                    procedure.apply(i, defaultValue);
+                }
+            }
             return;
         }
+
         int row = 0;
         for (int len = colData.length; row < len; row++) {
             procedure.apply(row, colData[row]);

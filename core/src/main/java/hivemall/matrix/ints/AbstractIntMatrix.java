@@ -91,12 +91,12 @@ public abstract class AbstractIntMatrix implements IntMatrix {
 
     @Override
     public void eachInRow(final int row, @Nonnull final VectorProcedure procedure) {
-        eachInRow(row, procedure, false);
+        eachInRow(row, procedure, true);
     }
 
     @Override
     public void eachInColumn(final int col, @Nonnull final VectorProcedure procedure) {
-        eachInColumn(col, procedure, false);
+        eachInColumn(col, procedure, true);
     }
 
 }
