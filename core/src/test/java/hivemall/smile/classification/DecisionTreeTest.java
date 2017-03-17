@@ -46,12 +46,6 @@ import smile.validation.LOOCV;
 public class DecisionTreeTest {
     private static final boolean DEBUG = false;
 
-    /**
-     * Test of learn method, of class DecisionTree.
-     * 
-     * @throws ParseException
-     * @throws IOException
-     */
     @Test
     public void testWeather() throws IOException, ParseException {
         int responseIndex = 4;
@@ -84,6 +78,15 @@ public class DecisionTreeTest {
             "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff",
             responseIndex, numLeafs, false);
         assertEquals(8, error);
+    }
+
+    @Test
+    public void testIrisSparseDenseEquals() throws IOException, ParseException {
+        int responseIndex = 4;
+        int numLeafs = Integer.MAX_VALUE;
+        runAndCompareSparseAndDense(
+            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff",
+            responseIndex, numLeafs);
     }
 
     @Test
@@ -133,6 +136,34 @@ public class DecisionTreeTest {
         debugPrint("Decision Tree error = " + error);
         return error;
     }
+
+    private static void runAndCompareSparseAndDense(String datasetUrl, int responseIndex,
+            int numLeafs) throws IOException, ParseException {
+        URL url = new URL(datasetUrl);
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(responseIndex);
+
+        AttributeDataset ds = arffParser.parse(is);
+        double[][] x = ds.toArray(new double[ds.size()][]);
+        int[] y = ds.toArray(new int[ds.size()]);
+
+        int n = x.length;
+        LOOCV loocv = new LOOCV(n);
+        for (int i = 0; i < n; i++) {
+            double[][] trainx = Math.slice(x, loocv.train[i]);
+            int[] trainy = Math.slice(y, loocv.train[i]);
+
+            Attribute[] attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
+            DecisionTree dtree = new DecisionTree(attrs, matrix(trainx, true), trainy, numLeafs,
+                new smile.math.Random(i));
+            DecisionTree stree = new DecisionTree(attrs, matrix(trainx, false), trainy, numLeafs,
+                new smile.math.Random(i));
+            Assert.assertEquals(dtree.predict(x[loocv.test[i]]), stree.predict(x[loocv.test[i]]));
+        }
+    }
+
 
     @Test
     public void testIrisSerializedObj() throws IOException, ParseException, HiveException {

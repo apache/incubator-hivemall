@@ -19,6 +19,7 @@
 package hivemall.smile.classification;
 
 import hivemall.classifier.KernelExpansionPassiveAggressiveUDTF;
+import hivemall.utils.codec.Base91;
 import hivemall.utils.lang.mutable.MutableInt;
 
 import java.io.BufferedInputStream;
@@ -41,6 +42,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -115,8 +117,9 @@ public class RandomForestClassifierUDTFTest {
 
         final List<String> xi = new ArrayList<String>(x[0].length);
         for (int i = 0; i < size; i++) {
-            for (int j = 0; j < x[i].length; j++) {
-                xi.add(i + ":" + x[i][j]);
+            double[] row = x[i];
+            for (int j = 0; j < row.length; j++) {
+                xi.add(j + ":" + row[j]);
             }
             udtf.process(new Object[] {xi, y[i]});
             xi.clear();
@@ -133,6 +136,128 @@ public class RandomForestClassifierUDTFTest {
         udtf.close();
 
         Assert.assertEquals(49, count.getValue());
+    }
+
+    @Test
+    public void testIrisSparseDenseEquals() throws IOException, ParseException, HiveException {
+        String urlString = "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff";
+        DecisionTree.Node denseNode = getDecisionTreeFromDenseInput(urlString);
+        DecisionTree.Node sparseNode = getDecisionTreeFromSparseInput(urlString);
+
+        URL url = new URL(urlString);
+        InputStream is = new BufferedInputStream(url.openStream());
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(4);
+
+        AttributeDataset iris = arffParser.parse(is);
+        int size = iris.size();
+        double[][] x = iris.toArray(new double[size][]);
+
+        int diff = 0;
+        for (int i = 0; i < size; i++) {
+            if (denseNode.predict(x[i]) != sparseNode.predict(x[i])) {
+                diff++;
+            }
+        }
+
+        Assert.assertTrue("large diff " + diff + " between two predictions", diff < 10);
+    }
+
+    private static DecisionTree.Node getDecisionTreeFromDenseInput(String urlString)
+            throws IOException, ParseException, HiveException {
+        URL url = new URL(urlString);
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(4);
+
+        AttributeDataset iris = arffParser.parse(is);
+        int size = iris.size();
+        double[][] x = iris.toArray(new double[size][]);
+        int[] y = iris.toArray(new int[size]);
+
+        RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
+        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 1 -seed 71");
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
+
+        final List<Double> xi = new ArrayList<Double>(x[0].length);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < x[i].length; j++) {
+                xi.add(j, x[i][j]);
+            }
+            udtf.process(new Object[] {xi, y[i]});
+            xi.clear();
+        }
+
+        final Text[] placeholder = new Text[1];
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                Object[] forward = (Object[]) input;
+                placeholder[0] = (Text) forward[2];
+            }
+        };
+
+        udtf.setCollector(collector);
+        udtf.close();
+
+        Text modelTxt = placeholder[0];
+        Assert.assertNotNull(modelTxt);
+
+        byte[] b = Base91.decode(modelTxt.getBytes(), 0, modelTxt.getLength());
+        DecisionTree.Node node = DecisionTree.deserializeNode(b, b.length, true);
+        return node;
+    }
+
+    private static DecisionTree.Node getDecisionTreeFromSparseInput(String urlString)
+            throws IOException, ParseException, HiveException {
+        URL url = new URL(urlString);
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(4);
+
+        AttributeDataset iris = arffParser.parse(is);
+        int size = iris.size();
+        double[][] x = iris.toArray(new double[size][]);
+        int[] y = iris.toArray(new int[size]);
+
+        RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
+        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 1 -seed 71");
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
+
+        final List<String> xi = new ArrayList<String>(x[0].length);
+        for (int i = 0; i < size; i++) {
+            final double[] row = x[i];
+            for (int j = 0; j < row.length; j++) {
+                xi.add(j + ":" + row[j]);
+            }
+            udtf.process(new Object[] {xi, y[i]});
+            xi.clear();
+        }
+
+        final Text[] placeholder = new Text[1];
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                Object[] forward = (Object[]) input;
+                placeholder[0] = (Text) forward[2];
+            }
+        };
+
+        udtf.setCollector(collector);
+        udtf.close();
+
+        Text modelTxt = placeholder[0];
+        Assert.assertNotNull(modelTxt);
+
+        byte[] b = Base91.decode(modelTxt.getBytes(), 0, modelTxt.getLength());
+        DecisionTree.Node node = DecisionTree.deserializeNode(b, b.length, true);
+        return node;
     }
 
     @Test
