@@ -95,8 +95,8 @@ public class AUCUDAFTest {
     @Test
     public void test() throws Exception {
         // should be sorted by scores in a descending order
-        final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final int[] labels = new int[] {1, 1, 0, 1, 0};
+        final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.3, 0.2};
+        final int[] labels = new int[] {1, 1, 0, 1, 1, 0};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -105,7 +105,7 @@ public class AUCUDAFTest {
             evaluator.iterate(agg, new Object[] {scores[i], labels[i]});
         }
 
-        Assert.assertEquals(0.83333, agg.get(), 1e-5);
+        Assert.assertEquals(0.75, agg.get(), 1e-5);
     }
 
     @Test(expected=HiveException.class)
@@ -196,8 +196,8 @@ public class AUCUDAFTest {
 
     @Test
     public void testMerge() throws Exception {
-        final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
-        final int[] labels = new int[] {1, 1, 0, 1, 0};
+        final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.3, 0.2};
+        final int[] labels = new int[] {1, 1, 0, 1, 1, 0};
 
         Object[] partials = new Object[3];
 
@@ -219,6 +219,7 @@ public class AUCUDAFTest {
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
         evaluator.iterate(agg, new Object[] {scores[4], labels[4]});
+        evaluator.iterate(agg, new Object[] {scores[5], labels[5]});
         partials[2] = evaluator.terminatePartial(agg);
 
         // merge bins
@@ -232,7 +233,7 @@ public class AUCUDAFTest {
             evaluator.merge(agg, partials[orders[i][1]]);
             evaluator.merge(agg, partials[orders[i][2]]);
 
-            Assert.assertEquals(0.83333, agg.get(), 1e-5);
+            Assert.assertEquals(0.75, agg.get(), 1e-5);
         }
     }
 }
