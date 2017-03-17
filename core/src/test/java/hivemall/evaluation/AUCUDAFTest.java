@@ -86,6 +86,18 @@ public class AUCUDAFTest {
         fieldNames.add("tpCounts");
         fieldOIs.add(tpCountsOI);
 
+        MapObjectInspector fpPrevCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        fieldNames.add("fpPrevCounts");
+        fieldOIs.add(fpPrevCountsOI);
+
+        MapObjectInspector tpPrevCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        fieldNames.add("tpPrevCounts");
+        fieldOIs.add(tpPrevCountsOI);
+
         partialOI = new ObjectInspector[2];
         partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
 
@@ -234,6 +246,112 @@ public class AUCUDAFTest {
             evaluator.merge(agg, partials[orders[i][2]]);
 
             Assert.assertEquals(0.75, agg.get(), 1e-5);
+        }
+    }
+
+    @Test
+    public void test100() throws Exception {
+        final double[] scores = new double[] {
+                0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
+                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
+                0.8, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7,
+                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6,
+                0.6, 0.6, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,
+                0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3,
+                0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
+                0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+        final int[] labels = new int[] {
+                1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+                0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                1, 0, 0, 1, 1, 1, 1, 1, 1, 0,
+                0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+                0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+                0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+                1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                1, 1, 1, 0, 0, 0, 0, 0, 0, 0};
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < scores.length; i++) {
+            evaluator.iterate(agg, new Object[] {scores[i], labels[i]});
+        }
+
+        // should equal to scikit-learn's result
+        Assert.assertEquals(0.567226890756, agg.get(), 1e-5);
+    }
+
+    @Test
+    public void testMerge100() throws Exception {
+        final double[] scores = new double[] {
+            0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
+            0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
+            0.8, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7,
+            0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6,
+            0.6, 0.6, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+            0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,
+            0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3,
+            0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+            0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
+            0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+        final int[] labels = new int[] {
+            1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+            0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 1, 1, 1, 1, 1, 1, 0,
+            0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+            0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+            0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 1, 1, 0, 0, 0, 0, 0, 0, 0};
+
+        Object[] partials = new Object[3];
+
+        // bin #1 (score is in [0.9, 0.7])
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        int i = 0;
+        while (scores[i] > 0.6) {
+            evaluator.iterate(agg, new Object[] {scores[i], labels[i]});
+            i++;
+        }
+        partials[0] = evaluator.terminatePartial(agg);
+
+        // bin #2 (score is in [0.6, 0.4])
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        while (scores[i] > 0.3) {
+            evaluator.iterate(agg, new Object[] {scores[i], labels[i]});
+            i++;
+        }
+        partials[1] = evaluator.terminatePartial(agg);
+
+        // bin #3 (score is in [0.3, 0.1])
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        while (i < 100) {
+            evaluator.iterate(agg, new Object[] {scores[i], labels[i]});
+            i++;
+        }
+        partials[2] = evaluator.terminatePartial(agg);
+
+        // merge bins
+        // merge in a different order; e.g., <bin0, bin1>, <bin1, bin0> should return same value
+        final int[][] orders = new int[][] {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}, {2, 0, 1}};
+        for (int j = 0; j < orders.length; j++) {
+            evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL2, partialOI);
+            evaluator.reset(agg);
+
+            evaluator.merge(agg, partials[orders[j][0]]);
+            evaluator.merge(agg, partials[orders[j][1]]);
+            evaluator.merge(agg, partials[orders[j][2]]);
+
+            Assert.assertEquals(0.567226890756, agg.get(), 1e-5);
         }
     }
 }
