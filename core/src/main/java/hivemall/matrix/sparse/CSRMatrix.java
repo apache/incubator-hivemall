@@ -187,15 +187,23 @@ public final class CSRMatrix extends RowMajorMatrix {
             final boolean nullOutput) {
         checkRowIndex(row, numRows);
 
+        final int startIn = rowPointers[row];
         final int endEx = rowPointers[row + 1];
-        for (int col = 0, j = rowPointers[row]; col < numColumns; col++) {
-            if (j < endEx && col == columnIndices[j]) {
-                double v = values[j++];
-                procedure.apply(col, v);
-            } else {
-                if (nullOutput) {
+
+        if (nullOutput) {
+            for (int col = 0, j = startIn; col < numColumns; col++) {
+                if (j < endEx && col == columnIndices[j]) {
+                    double v = values[j++];
+                    procedure.apply(col, v);
+                } else {
                     procedure.apply(col, 0.d);
                 }
+            }
+        } else {
+            for (int i = startIn; i < endEx; i++) {
+                int col = columnIndices[i];
+                double v = values[i];
+                procedure.apply(col, v);
             }
         }
     }

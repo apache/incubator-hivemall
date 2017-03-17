@@ -206,15 +206,23 @@ public final class CSCMatrix extends ColumnMajorMatrix {
             final boolean nullOutput) {
         checkColIndex(col, numColumns);
 
+        final int startIn = columnPointers[col];
         final int endEx = columnPointers[col + 1];
-        for (int row = 0, i = columnPointers[col]; row < numRows; row++) {
-            if (i < endEx && row == rowIndicies[i]) {
-                double v = values[i++];
-                procedure.apply(row, v);
-            } else {
-                if (nullOutput) {
+
+        if (nullOutput) {
+            for (int row = 0, i = startIn; row < numRows; row++) {
+                if (i < endEx && row == rowIndicies[i]) {
+                    double v = values[i++];
+                    procedure.apply(row, v);
+                } else {
                     procedure.apply(row, 0.d);
                 }
+            }
+        } else {
+            for (int j = startIn; j < endEx; j++) {
+                int row = rowIndicies[j];
+                double v = values[j];
+                procedure.apply(row, v);
             }
         }
     }
