@@ -382,7 +382,8 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             fpPrevCounts.put(maxScore, fpPrev);
             tpPrevCounts.put(maxScore, tpPrev);
 
-            SortedMap<Double, Double> sortedPartialAreas = new TreeMap<Double, Double>(partialAreas);
+            SortedMap<Double, Double> sortedPartialAreas = new TreeMap<Double, Double>(Collections.reverseOrder());
+            sortedPartialAreas.putAll(partialAreas);
 
             // initialize with right-most partial result
             double firstKey = sortedPartialAreas.firstKey();
@@ -393,7 +394,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             long tpPrevAccum = tpPrevCounts.get(firstKey);
             sortedPartialAreas.remove(firstKey);
 
-            // Merge from right (smaller score) to left (larger score)
+            // Merge from left (larger score) to right (smaller score)
             for (Map.Entry<Double, Double> e : sortedPartialAreas.entrySet()) {
                 double k = e.getKey();
 
@@ -401,13 +402,13 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
                 res += e.getValue();
 
                 // adjust combined area by adding missing rectangle
-                res += trapezoidArea(0, fpAccum, tpCounts.get(k), tpCounts.get(k));
+                res += trapezoidArea(0, fpCounts.get(k), tpAccum, tpAccum);
 
-                fpPrevAccum += fpCounts.get(k);
-                tpPrevAccum += tpCounts.get(k);
-
-                fpAccum += fpCounts.get(k);
-                tpAccum += tpCounts.get(k);
+                // sum up (prev) TP/FP count
+                fpPrevAccum = fpAccum + fpPrevCounts.get(k);
+                tpPrevAccum = tpAccum + tpPrevCounts.get(k);
+                fpAccum = fpAccum + fpCounts.get(k);
+                tpAccum = tpAccum + tpCounts.get(k);
             }
 
             if (tpAccum == 0 || fpAccum == 0) {
