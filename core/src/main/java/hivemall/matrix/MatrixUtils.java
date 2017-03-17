@@ -38,8 +38,8 @@ public final class MatrixUtils {
 
         final MatrixBuilder builder = m.builder();
         for (int i = 0; i < indices.length; i++) {
-            final int j = indices[i];
-            m.eachInRow(j, new VectorProcedure() {
+            final int idx = indices[i];
+            m.eachInRow(idx, new VectorProcedure() {
                 public void apply(int col, double value) {
                     builder.nextColumn(col, value);
                 }

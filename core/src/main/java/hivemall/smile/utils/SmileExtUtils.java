@@ -283,16 +283,18 @@ public final class SmileExtUtils {
         if (x.swappable()) {
             for (int i = numRows; i > 1; i--) {
                 int j = rnd.nextInt(i);
-                x.swap(i - 1, j);
-                swap(y, i - 1, j);
+                int k = i - 1;
+                x.swap(k, j);
+                swap(y, k, j);
             }
             return x;
         } else {
             final int[] indicies = MathUtils.permutation(numRows);
             for (int i = numRows; i > 1; i--) {
-                final int j = rnd.nextInt(i);
-                swap(indicies, i - 1, j);
-                swap(y, i - i, j);
+                int j = rnd.nextInt(i);
+                int k = i - 1;
+                swap(indicies, k, j);
+                swap(y, k, j);
             }
             return MatrixUtils.shuffle(x, indicies);
         }
@@ -314,16 +316,18 @@ public final class SmileExtUtils {
         if (x.swappable()) {
             for (int i = numRows; i > 1; i--) {
                 int j = rnd.nextInt(i);
-                x.swap(i - 1, j);
-                swap(y, i - 1, j);
+                int k = i - 1;
+                x.swap(k, j);
+                swap(y, k, j);
             }
             return x;
         } else {
             final int[] indicies = MathUtils.permutation(numRows);
             for (int i = numRows; i > 1; i--) {
-                final int j = rnd.nextInt(i);
-                swap(indicies, i - 1, j);
-                swap(y, i - i, j);
+                int j = rnd.nextInt(i);
+                int k = i - 1;
+                swap(indicies, k, j);
+                swap(y, k, j);
             }
             return MatrixUtils.shuffle(x, indicies);
         }
