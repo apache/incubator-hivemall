@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-import java.util.List;
 import java.util.PriorityQueue;
 
 import javax.annotation.Nonnull;
@@ -276,57 +275,6 @@ public final class RegressionTree implements Regression<Vector> {
                             + splitFeatureType);
                 }
             }
-        }
-
-        public int opCodegen(final List<String> scripts, int depth) {
-            int selfDepth = 0;
-            final StringBuilder buf = new StringBuilder();
-            if (trueChild == null && falseChild == null) {
-                buf.append("push ").append(output);
-                scripts.add(buf.toString());
-                buf.setLength(0);
-                buf.append("goto last");
-                scripts.add(buf.toString());
-                selfDepth += 2;
-            } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    buf.append("push ").append("x[").append(splitFeature).append("]");
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("push ").append(splitValue);
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("ifeq ");
-                    scripts.add(buf.toString());
-                    depth += 3;
-                    selfDepth += 3;
-                    int trueDepth = trueChild.opCodegen(scripts, depth);
-                    selfDepth += trueDepth;
-                    scripts.set(depth - 1, "ifeq " + String.valueOf(depth + trueDepth));
-                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
-                    selfDepth += falseDepth;
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    buf.append("push ").append("x[").append(splitFeature).append("]");
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("push ").append(splitValue);
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("ifle ");
-                    scripts.add(buf.toString());
-                    depth += 3;
-                    selfDepth += 3;
-                    int trueDepth = trueChild.opCodegen(scripts, depth);
-                    selfDepth += trueDepth;
-                    scripts.set(depth - 1, "ifle " + String.valueOf(depth + trueDepth));
-                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
-                    selfDepth += falseDepth;
-                } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
-                }
-            }
-            return selfDepth;
         }
 
         @Override
