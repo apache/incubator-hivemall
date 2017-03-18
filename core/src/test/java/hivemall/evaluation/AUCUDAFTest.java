@@ -55,9 +55,9 @@ public class AUCUDAFTest {
 
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-        fieldNames.add("a");
+        fieldNames.add("indexScore");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-        fieldNames.add("maxScore");
+        fieldNames.add("area");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("fp");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
@@ -68,35 +68,35 @@ public class AUCUDAFTest {
         fieldNames.add("tpPrev");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
 
-        MapObjectInspector partialAreasOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+        MapObjectInspector areaPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-        fieldNames.add("partialAreas");
-        fieldOIs.add(partialAreasOI);
+        fieldNames.add("areaPartialMap");
+        fieldOIs.add(areaPartialMapOI);
 
-        MapObjectInspector fpCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+        MapObjectInspector fpPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
             PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("fpCounts");
-        fieldOIs.add(fpCountsOI);
+        fieldNames.add("fpPartialMap");
+        fieldOIs.add(fpPartialMapOI);
 
-        MapObjectInspector tpCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+        MapObjectInspector tpPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
             PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("tpCounts");
-        fieldOIs.add(tpCountsOI);
+        fieldNames.add("tpPartialMap");
+        fieldOIs.add(tpPartialMapOI);
 
-        MapObjectInspector fpPrevCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+        MapObjectInspector fpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
             PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("fpPrevCounts");
-        fieldOIs.add(fpPrevCountsOI);
+        fieldNames.add("fpPrevPartialMap");
+        fieldOIs.add(fpPrevPartialMapOI);
 
-        MapObjectInspector tpPrevCountsOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+        MapObjectInspector tpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
             PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("tpPrevCounts");
-        fieldOIs.add(tpPrevCountsOI);
+        fieldNames.add("tpPrevPartialMap");
+        fieldOIs.add(tpPrevPartialMapOI);
 
         partialOI = new ObjectInspector[2];
         partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
