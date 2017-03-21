@@ -131,7 +131,11 @@ public final class SmileExtUtils {
                     }
                     int max_x = 0;
                     for (int i = 0, rows = x.numRows(); i < rows; i++) {
-                        int x_ij = (int) x.get(i, j);
+                        final double v = x.get(i, j, Double.NaN);
+                        if (Double.isNaN(v)) {
+                            continue;
+                        }
+                        int x_ij = (int) v;
                         if (x_ij > max_x) {
                             max_x = x_ij;
                         }
@@ -190,6 +194,9 @@ public final class SmileExtUtils {
                         ilist.add(i);
                     }
                 }, false);
+                if (ilist.isEmpty()) {
+                    continue;
+                }
                 int[] indexJ = ilist.toArray();
                 QuickSort.sort(dlist.array(), indexJ, indexJ.length);
                 index[j] = indexJ;

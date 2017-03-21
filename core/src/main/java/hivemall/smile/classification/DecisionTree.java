@@ -40,7 +40,10 @@ import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.collections.sets.IntArraySet;
+import hivemall.utils.collections.sets.IntSet;
 import hivemall.utils.lang.ObjectUtils;
+import hivemall.utils.math.MathUtils;
 import hivemall.vector.DenseVector;
 import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
@@ -409,21 +412,12 @@ public final class DecisionTree implements Classifier<Vector> {
 
             final double impurity = impurity(count, numSamples, _rule);
 
-            final int p = _attributes.length;
-            final int[] variableIndex = new int[p];
-            for (int i = 0; i < p; i++) {
-                variableIndex[i] = i;
-            }
-            if (_numVars < p) {
-                SmileExtUtils.shuffle(variableIndex, _rnd);
-            }
-
             final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows())
                     : null;
             final int[] falseCount = new int[_k];
-            for (int j = 0; j < _numVars; j++) {
-                Node split = findBestSplit(numSamples, count, falseCount, impurity,
-                    variableIndex[j], samples);
+            for (int varJ : variableIndex(x, bags)) {
+                final Node split = findBestSplit(numSamples, count, falseCount, impurity, varJ,
+                    samples);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
                     node.splitFeatureType = split.splitFeatureType;
@@ -435,6 +429,30 @@ public final class DecisionTree implements Classifier<Vector> {
             }
 
             return (node.splitFeature != -1);
+        }
+
+        private int[] variableIndex(@Nonnull final Matrix x, @Nonnull final int[] bags) {
+            final int[] variableIndex;
+            if (x.isSparse()) {
+                final IntSet cols = new IntArraySet(_numVars);
+                for (int row : bags) {
+                    x.eachInRow(row, new VectorProcedure() {
+                        public void apply(int col, double value) {
+                            cols.add(col);
+                        }
+                    }, false);
+                }
+                variableIndex = cols.toArray(false);
+            } else {
+                variableIndex = MathUtils.permutation(_attributes.length);
+            }
+
+            if (_numVars < variableIndex.length) {
+                SmileExtUtils.shuffle(variableIndex, _rnd);
+                return Arrays.copyOf(variableIndex, _numVars);
+
+            }
+            return variableIndex;
         }
 
         private boolean sampleCount(@Nonnull final int[] count) {
@@ -473,7 +491,11 @@ public final class DecisionTree implements Classifier<Vector> {
 
                 for (int i = 0, size = bags.length; i < size; i++) {
                     int index = bags[i];
-                    int x_ij = (int) x.get(index, j);
+                    final double v = x.get(index, j, Double.NaN);
+                    if (Double.isNaN(v)) {
+                        continue;
+                    }
+                    int x_ij = (int) v;
                     trueCount[x_ij][y[index]]++;
                 }
 
@@ -513,50 +535,55 @@ public final class DecisionTree implements Classifier<Vector> {
 
                     public void apply(final int row, final int i) {
                         final int sample = samples[i];
-                        if (sample > 0) {
-                            final double x_ij = x.get(i, j);
-                            final int y_i = y[i];
+                        if (sample == 0) {
+                            return;
+                        }
 
-                            if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
-                                prevx = x_ij;
-                                prevy = y_i;
-                                trueCount[y_i] += sample;
-                                return;
-                            }
+                        final double x_ij = x.get(i, j, Double.NaN);
+                        if (Double.isNaN(x_ij)) {
+                            return;
+                        }
+                        final int y_i = y[i];
 
-                            final int tc = Math.sum(trueCount);
-                            final int fc = n - tc;
-
-                            // skip splitting this feature.
-                            if (tc < _minSplit || fc < _minSplit) {
-                                prevx = x_ij;
-                                prevy = y_i;
-                                trueCount[y_i] += sample;
-                                return;
-                            }
-
-                            for (int l = 0; l < _k; l++) {
-                                falseCount[l] = count[l] - trueCount[l];
-                            }
-
-                            final double gain = impurity - (double) tc / n
-                                    * impurity(trueCount, tc, _rule) - (double) fc / n
-                                    * impurity(falseCount, fc, _rule);
-
-                            if (gain > splitNode.splitScore) {
-                                // new best split
-                                splitNode.splitFeature = j;
-                                splitNode.splitFeatureType = AttributeType.NUMERIC;
-                                splitNode.splitValue = (x_ij + prevx) / 2.d;
-                                splitNode.splitScore = gain;
-                                splitNode.trueChildOutput = Math.whichMax(trueCount);
-                                splitNode.falseChildOutput = Math.whichMax(falseCount);
-                            }
-
+                        if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
                             prevx = x_ij;
                             prevy = y_i;
                             trueCount[y_i] += sample;
+                            return;
                         }
+
+                        final int tc = Math.sum(trueCount);
+                        final int fc = n - tc;
+
+                        // skip splitting this feature.
+                        if (tc < _minSplit || fc < _minSplit) {
+                            prevx = x_ij;
+                            prevy = y_i;
+                            trueCount[y_i] += sample;
+                            return;
+                        }
+
+                        for (int l = 0; l < _k; l++) {
+                            falseCount[l] = count[l] - trueCount[l];
+                        }
+
+                        final double gain = impurity - (double) tc / n
+                                * impurity(trueCount, tc, _rule) - (double) fc / n
+                                * impurity(falseCount, fc, _rule);
+
+                        if (gain > splitNode.splitScore) {
+                            // new best split
+                            splitNode.splitFeature = j;
+                            splitNode.splitFeatureType = AttributeType.NUMERIC;
+                            splitNode.splitValue = (x_ij + prevx) / 2.d;
+                            splitNode.splitScore = gain;
+                            splitNode.trueChildOutput = Math.whichMax(trueCount);
+                            splitNode.falseChildOutput = Math.whichMax(falseCount);
+                        }
+
+                        prevx = x_ij;
+                        prevy = y_i;
+                        trueCount[y_i] += sample;
                     }//apply()                    
                 }, false);
             } else {
@@ -631,7 +658,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature) == splitValue) {
+                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
@@ -643,7 +670,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature) <= splitValue) {
+                    if (x.get(index, splitFeature, Double.NaN) <= splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
@@ -676,8 +703,9 @@ public final class DecisionTree implements Classifier<Vector> {
             case GINI: {
                 impurity = 1.0;
                 for (int i = 0; i < count.length; i++) {
-                    if (count[i] > 0) {
-                        double p = (double) count[i] / n;
+                    final int count_i = count[i];
+                    if (count_i > 0) {
+                        double p = (double) count_i / n;
                         impurity -= p * p;
                     }
                 }

@@ -42,6 +42,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
@@ -262,10 +263,11 @@ public class RandomForestClassifierUDTFTest {
 
     @Test
     public void testNews20MultiClassSparse() throws IOException, ParseException, HiveException {
-        final int numTrees = 1;
+        final int numTrees = 10;
         RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees " + numTrees);
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-seed 71 -trees "
+                    + numTrees);
         udtf.initialize(new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
@@ -289,8 +291,13 @@ public class RandomForestClassifierUDTFTest {
         news20.close();
 
         final MutableInt count = new MutableInt(0);
+        final MutableInt oobErrors = new MutableInt(0);
+        final MutableInt oobTests = new MutableInt(0);
         Collector collector = new Collector() {
             public void collect(Object input) throws HiveException {
+                Object[] forward = (Object[]) input;
+                oobErrors.addValue(((IntWritable) forward[4]).get());
+                oobTests.addValue(((IntWritable) forward[5]).get());
                 count.addValue(1);
             }
         };
@@ -298,7 +305,62 @@ public class RandomForestClassifierUDTFTest {
         udtf.close();
 
         Assert.assertEquals(numTrees, count.getValue());
+        float oobErrorRate = ((float) oobErrors.getValue()) / oobTests.getValue();
+        // TODO why multi-class classification so bad??
+        Assert.assertTrue("oob error rate is too high: " + oobErrorRate, oobErrorRate < 0.85);
     }
+
+    @Test
+    public void testNews20BinarySparse() throws IOException, ParseException, HiveException {
+        final int numTrees = 10;
+        RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
+        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-seed 71 -trees "
+                    + numTrees);
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
+
+
+        BufferedReader news20 = readFile("news20-small.binary.gz");
+        ArrayList<String> features = new ArrayList<String>();
+        String line = news20.readLine();
+        while (line != null) {
+            StringTokenizer tokens = new StringTokenizer(line, " ");
+            int label = Integer.parseInt(tokens.nextToken());
+            if (label == -1) {
+                label = 0;
+            }
+            while (tokens.hasMoreTokens()) {
+                features.add(tokens.nextToken());
+            }
+            Assert.assertFalse(features.isEmpty());
+            udtf.process(new Object[] {features, label});
+
+            features.clear();
+            line = news20.readLine();
+        }
+        news20.close();
+
+        final MutableInt count = new MutableInt(0);
+        final MutableInt oobErrors = new MutableInt(0);
+        final MutableInt oobTests = new MutableInt(0);
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                Object[] forward = (Object[]) input;
+                oobErrors.addValue(((IntWritable) forward[4]).get());
+                oobTests.addValue(((IntWritable) forward[5]).get());
+                count.addValue(1);
+            }
+        };
+        udtf.setCollector(collector);
+        udtf.close();
+
+        Assert.assertEquals(numTrees, count.getValue());
+        float oobErrorRate = ((float) oobErrors.getValue()) / oobTests.getValue();
+        Assert.assertTrue("oob error rate is too high: " + oobErrorRate, oobErrorRate < 0.4);
+    }
+
 
     @Nonnull
     private static BufferedReader readFile(@Nonnull String fileName) throws IOException {

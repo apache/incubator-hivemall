@@ -40,7 +40,10 @@ import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.collections.sets.IntArraySet;
+import hivemall.utils.collections.sets.IntSet;
 import hivemall.utils.lang.ObjectUtils;
+import hivemall.utils.math.MathUtils;
 import hivemall.vector.DenseVector;
 import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
@@ -409,22 +412,14 @@ public final class RegressionTree implements Regression<Vector> {
             }
 
             final double sum = node.output * numSamples;
-            final int p = _attributes.length;
-            final int[] variables = new int[p];
-            for (int i = 0; i < p; i++) {
-                variables[i] = i;
-            }
 
-            if (_numVars < p) {
-                SmileExtUtils.shuffle(variables, _rnd);
-            }
 
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2      
             final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows())
                     : null;
-            for (int j = 0; j < _numVars; j++) {
-                Node split = findBestSplit(numSamples, sum, variables[j], samples);
+            for (int varJ : variableIndex(x, bags)) {
+                final Node split = findBestSplit(numSamples, sum, varJ, samples);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
                     node.splitFeatureType = split.splitFeatureType;
@@ -436,6 +431,30 @@ public final class RegressionTree implements Regression<Vector> {
             }
 
             return node.splitFeature != -1;
+        }
+
+        private int[] variableIndex(@Nonnull final Matrix x, @Nonnull final int[] bags) {
+            final int[] variableIndex;
+            if (x.isSparse()) {
+                final IntSet cols = new IntArraySet(_numVars);
+                for (int row : bags) {
+                    x.eachInRow(row, new VectorProcedure() {
+                        public void apply(int col, double value) {
+                            cols.add(col);
+                        }
+                    }, false);
+                }
+                variableIndex = cols.toArray(false);
+            } else {
+                variableIndex = MathUtils.permutation(_attributes.length);
+            }
+
+            if (_numVars < variableIndex.length) {
+                SmileExtUtils.shuffle(variableIndex, _rnd);
+                return Arrays.copyOf(variableIndex, _numVars);
+
+            }
+            return variableIndex;
         }
 
         /**
@@ -459,7 +478,11 @@ public final class RegressionTree implements Regression<Vector> {
                     // For each true feature of this datum increment the
                     // sufficient statistics for the "true" branch to evaluate
                     // splitting on this feature.
-                    int index = (int) x.get(i, j);
+                    final double v = x.get(i, j, Double.NaN);
+                    if (Double.isNaN(v)) {
+                        continue;
+                    }
+                    int index = (int) v;
                     trueSum[index] += y[i];
                     ++trueCount[index];
                 }
@@ -498,49 +521,55 @@ public final class RegressionTree implements Regression<Vector> {
 
                     public void apply(final int row, final int i) {
                         final int sample = samples[i];
-                        if (sample > 0) {
-                            final double x_ij = x.get(i, j);
-                            if (Double.isNaN(prevx) || x_ij == prevx) {
-                                prevx = x_ij;
-                                trueSum += sample * y[i];
-                                trueCount += sample;
-                                return;
-                            }
-
-                            final double falseCount = n - trueCount;
-
-                            // If either side is empty, skip this feature.
-                            if (trueCount < _minSplit || falseCount < _minSplit) {
-                                prevx = x_ij;
-                                trueSum += sample * y[i];
-                                trueCount += sample;
-                                return;
-                            }
-
-                            // compute penalized means
-                            final double trueMean = trueSum / trueCount;
-                            final double falseMean = (sum - trueSum) / falseCount;
-
-                            // The gain is actually -(reduction in squared error) for
-                            // sorting in priority queue, which treats smaller number with
-                            // higher priority.
-                            final double gain = (trueCount * trueMean * trueMean + falseCount
-                                    * falseMean * falseMean)
-                                    - n * split.output * split.output;
-                            if (gain > split.splitScore) {
-                                // new best split
-                                split.splitFeature = j;
-                                split.splitFeatureType = AttributeType.NUMERIC;
-                                split.splitValue = (x_ij + prevx) / 2;
-                                split.splitScore = gain;
-                                split.trueChildOutput = trueMean;
-                                split.falseChildOutput = falseMean;
-                            }
-
-                            prevx = x_ij;
-                            trueSum += sample * y[i];
-                            trueCount += sample;
+                        if (sample == 0) {
+                            return;
                         }
+                        final double x_ij = x.get(i, j, Double.NaN);
+                        if (Double.isNaN(x_ij)) {
+                            return;
+                        }
+                        final double y_i = y[i];
+
+                        if (Double.isNaN(prevx) || x_ij == prevx) {
+                            prevx = x_ij;
+                            trueSum += sample * y_i;
+                            trueCount += sample;
+                            return;
+                        }
+
+                        final double falseCount = n - trueCount;
+
+                        // If either side is empty, skip this feature.
+                        if (trueCount < _minSplit || falseCount < _minSplit) {
+                            prevx = x_ij;
+                            trueSum += sample * y_i;
+                            trueCount += sample;
+                            return;
+                        }
+
+                        // compute penalized means
+                        final double trueMean = trueSum / trueCount;
+                        final double falseMean = (sum - trueSum) / falseCount;
+
+                        // The gain is actually -(reduction in squared error) for
+                        // sorting in priority queue, which treats smaller number with
+                        // higher priority.
+                        final double gain = (trueCount * trueMean * trueMean + falseCount
+                                * falseMean * falseMean)
+                                - n * split.output * split.output;
+                        if (gain > split.splitScore) {
+                            // new best split
+                            split.splitFeature = j;
+                            split.splitFeatureType = AttributeType.NUMERIC;
+                            split.splitValue = (x_ij + prevx) / 2;
+                            split.splitScore = gain;
+                            split.trueChildOutput = trueMean;
+                            split.falseChildOutput = falseMean;
+                        }
+
+                        prevx = x_ij;
+                        trueSum += sample * y_i;
+                        trueCount += sample;
                     }//apply
                 }, false);
 
@@ -619,7 +648,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature) == splitValue) {
+                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
@@ -631,7 +660,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature) <= splitValue) {
+                    if (x.get(index, splitFeature, Double.NaN) <= splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
