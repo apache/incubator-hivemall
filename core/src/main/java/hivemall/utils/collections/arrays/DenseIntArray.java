@@ -61,6 +61,11 @@ public final class DenseIntArray implements IntArray {
     }
 
     @Override
+    public void increment(int index, int value) {
+        array[index] += value;
+    }
+
+    @Override
     public int size() {
         return array.length;
     }

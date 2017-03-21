@@ -97,6 +97,7 @@ public final class SparseIntArray implements IntArray {
         }
     }
 
+    @Override
     public void increment(int key, int value) {
         int i = Arrays.binarySearch(mKeys, 0, mSize, key);
         if (i >= 0) {

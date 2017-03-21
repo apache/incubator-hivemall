@@ -30,6 +30,8 @@ public interface IntArray extends Serializable {
 
     public void put(int key, int value);
 
+    public void increment(int key, int value);
+
     public int size();
 
     public int keyAt(int index);
