@@ -428,9 +428,10 @@ public final class DecisionTree implements Classifier<Vector> {
                 }
             }
 
-            return (node.splitFeature != -1);
+            return node.splitFeature != -1;
         }
 
+        @Nonnull
         private int[] variableIndex(@Nonnull final Matrix x, @Nonnull final int[] bags) {
             final int[] variableIndex;
             if (x.isSparse()) {
@@ -450,7 +451,6 @@ public final class DecisionTree implements Classifier<Vector> {
             if (_numVars < variableIndex.length) {
                 SmileExtUtils.shuffle(variableIndex, _rnd);
                 return Arrays.copyOf(variableIndex, _numVars);
-
             }
             return variableIndex;
         }
@@ -713,8 +713,9 @@ public final class DecisionTree implements Classifier<Vector> {
             }
             case ENTROPY: {
                 for (int i = 0; i < count.length; i++) {
-                    if (count[i] > 0) {
-                        double p = (double) count[i] / n;
+                    final int count_i = count[i];
+                    if (count_i > 0) {
+                        double p = (double) count_i / n;
                         impurity -= p * Math.log2(p);
                     }
                 }
@@ -723,8 +724,9 @@ public final class DecisionTree implements Classifier<Vector> {
             case CLASSIFICATION_ERROR: {
                 impurity = 0.d;
                 for (int i = 0; i < count.length; i++) {
-                    if (count[i] > 0) {
-                        impurity = Math.max(impurity, (double) count[i] / n);
+                    final int count_i = count[i];
+                    if (count_i > 0) {
+                        impurity = Math.max(impurity, (double) count_i / n);
                     }
                 }
                 impurity = Math.abs(1.d - impurity);

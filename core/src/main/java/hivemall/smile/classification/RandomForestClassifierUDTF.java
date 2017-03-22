@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -427,6 +428,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * The out-of-bag predictions.
          */
         @Nonnull
+        @GuardedBy("_udtf")
         private final IntMatrix _prediction;
 
         @Nonnull
@@ -478,7 +480,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
                 _x.getRow(i, xProbe);
                 final int p = tree.predict(xProbe);
-                synchronized (_prediction) {
+                synchronized (_udtf) {
                     _prediction.incr(i, p);
                 }
             }
