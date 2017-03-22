@@ -20,7 +20,7 @@ package hivemall.lda;
 
 import org.junit.Test;
 
-public class OnlineLDATest {
+public class OnlineLDAModelTest {
 
 	@Test
 	public void testRunability() {
