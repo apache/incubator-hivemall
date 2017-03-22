@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.common;
+package hivemall.utils.sampling;
 
 import java.util.Arrays;
 import java.util.List;

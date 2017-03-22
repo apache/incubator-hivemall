@@ -40,10 +40,8 @@ import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
-import hivemall.utils.collections.sets.IntArraySet;
-import hivemall.utils.collections.sets.IntSet;
 import hivemall.utils.lang.ObjectUtils;
-import hivemall.utils.math.MathUtils;
+import hivemall.utils.sampling.IntReservoirSampler;
 import hivemall.vector.DenseVector;
 import hivemall.vector.Vector;
 import hivemall.vector.VectorProcedure;
@@ -59,6 +57,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.roaringbitmap.IntConsumer;
+import org.roaringbitmap.RoaringBitmap;
 
 import smile.classification.Classifier;
 import smile.math.Math;
@@ -433,9 +433,9 @@ public final class DecisionTree implements Classifier<Vector> {
 
         @Nonnull
         private int[] variableIndex(@Nonnull final Matrix x, @Nonnull final int[] bags) {
-            final int[] variableIndex;
+            final IntReservoirSampler sampler = new IntReservoirSampler(_numVars, _rnd.nextLong());
             if (x.isSparse()) {
-                final IntSet cols = new IntArraySet(_numVars);
+                final RoaringBitmap cols = new RoaringBitmap();
                 final VectorProcedure proc = new VectorProcedure() {
                     public void apply(final int col) {
                         cols.add(col);
@@ -444,16 +444,17 @@ public final class DecisionTree implements Classifier<Vector> {
                 for (final int row : bags) {
                     x.eachColumnIndexInRow(row, proc);
                 }
-                variableIndex = cols.toArray(false);
+                cols.forEach(new IntConsumer() {
+                    public void accept(final int k) {
+                        sampler.add(k);
+                    }
+                });
             } else {
-                variableIndex = MathUtils.permutation(_attributes.length);
+                for (int i = 0, size = _attributes.length; i < size; i++) {
+                    sampler.add(i);
+                }
             }
-
-            if (_numVars < variableIndex.length) {
-                SmileExtUtils.shuffle(variableIndex, _rnd);
-                return Arrays.copyOf(variableIndex, _numVars);
-            }
-            return variableIndex;
+            return sampler.getSample();
         }
 
         private boolean sampleCount(@Nonnull final int[] count) {
