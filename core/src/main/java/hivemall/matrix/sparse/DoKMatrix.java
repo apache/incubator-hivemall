@@ -264,6 +264,19 @@ public final class DoKMatrix extends AbstractMatrix {
     }
 
     @Override
+    public void eachColumnIndexInRow(int row, VectorProcedure procedure) {
+        checkRowIndex(row, numRows);
+
+        for (int col = 0; col < numColumns; col++) {
+            long i = index(row, col);
+            final int key = elements._findKey(i);
+            if (key != -1) {
+                procedure.apply(col);
+            }
+        }
+    }
+
+    @Override
     public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure,
             final boolean nullOutput) {
         checkColIndex(col, numColumns);

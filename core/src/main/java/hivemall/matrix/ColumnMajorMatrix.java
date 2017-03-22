@@ -42,6 +42,11 @@ public abstract class ColumnMajorMatrix extends AbstractMatrix {
     }
 
     @Override
+    public void eachColumnIndexInRow(int row, VectorProcedure procedure) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void eachNonZeroInRow(int row, VectorProcedure procedure) {
         throw new UnsupportedOperationException();
     }

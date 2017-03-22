@@ -102,6 +102,8 @@ public interface Matrix {
 
     public void eachNonZeroInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
+    public void eachColumnIndexInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
+
     public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 
     public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure,

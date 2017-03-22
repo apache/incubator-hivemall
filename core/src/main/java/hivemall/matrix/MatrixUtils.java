@@ -37,13 +37,14 @@ public final class MatrixUtils {
                 + "` MUST be equals to or less than |swapIndicies| `" + indices.length + "`");
 
         final MatrixBuilder builder = m.builder();
+        final VectorProcedure proc = new VectorProcedure() {
+            public void apply(int col, double value) {
+                builder.nextColumn(col, value);
+            }
+        };
         for (int i = 0; i < indices.length; i++) {
-            final int idx = indices[i];
-            m.eachInRow(idx, new VectorProcedure() {
-                public void apply(int col, double value) {
-                    builder.nextColumn(col, value);
-                }
-            }, false);
+            int idx = indices[i];
+            m.eachInRow(idx, proc, false);
             builder.nextRow();
         }
         return builder.buildMatrix();

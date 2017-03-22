@@ -321,7 +321,6 @@ public class RandomForestClassifierUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
 
-
         BufferedReader news20 = readFile("news20-small.binary.gz");
         ArrayList<String> features = new ArrayList<String>();
         String line = news20.readLine();
@@ -334,10 +333,10 @@ public class RandomForestClassifierUDTFTest {
             while (tokens.hasMoreTokens()) {
                 features.add(tokens.nextToken());
             }
-            Assert.assertFalse(features.isEmpty());
-            udtf.process(new Object[] {features, label});
-
-            features.clear();
+            if(!features.isEmpty()) {
+                udtf.process(new Object[] {features, label});
+                features.clear();
+            }
             line = news20.readLine();
         }
         news20.close();

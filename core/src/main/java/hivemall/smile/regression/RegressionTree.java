@@ -437,12 +437,13 @@ public final class RegressionTree implements Regression<Vector> {
             final int[] variableIndex;
             if (x.isSparse()) {
                 final IntSet cols = new IntArraySet(_numVars);
-                for (int row : bags) {
-                    x.eachInRow(row, new VectorProcedure() {
-                        public void apply(int col, double value) {
-                            cols.add(col);
-                        }
-                    }, false);
+                final VectorProcedure proc = new VectorProcedure() {
+                    public void apply(int col, double value) {
+                        cols.add(col);
+                    }
+                };
+                for (final int row : bags) {
+                    x.eachInRow(row, proc, false);
                 }
                 variableIndex = cols.toArray(false);
             } else {

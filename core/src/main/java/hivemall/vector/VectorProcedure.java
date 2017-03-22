@@ -28,4 +28,6 @@ public abstract class VectorProcedure {
 
     public void apply(@Nonnegative int i, int value) {}
 
+    public void apply(@Nonnegative int i) {}
+
 }

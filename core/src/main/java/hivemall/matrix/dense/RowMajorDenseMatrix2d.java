@@ -235,6 +235,20 @@ public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
+    public void eachColumnIndexInRow(@Nonnegative final int row,
+            @Nonnull final VectorProcedure procedure) {
+        checkRowIndex(row, numRows);
+
+        final double[] rowData = data[row];
+        if (rowData == null) {
+            return;
+        }
+        for (int col = 0, len = rowData.length; col < len; col++) {
+            procedure.apply(col);
+        }
+    }
+
+    @Override
     public void eachInColumn(@Nonnegative final int col, @Nonnull final VectorProcedure procedure,
             final boolean nullOutput) {
         checkColIndex(col, numColumns);

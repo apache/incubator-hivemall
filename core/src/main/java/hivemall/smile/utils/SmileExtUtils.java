@@ -85,39 +85,43 @@ public final class SmileExtUtils {
         }
 
         if (x.isRowMajorMatrix()) {
-            for (int i = 0, rows = x.numRows(); i < rows; i++) {
-                x.eachInRow(i, new VectorProcedure() {
-                    @Override
-                    public void apply(final int j, final double value) {
-                        final Attribute attr = attributes[j];
-                        if (attr.type == AttributeType.NOMINAL) {
-                            final int x_ij = ((int) value) + 1;
-                            final int prevSize = attr.getSize();
-                            if (x_ij > prevSize) {
-                                attr.setSize(x_ij);
-                            }
+            final VectorProcedure proc = new VectorProcedure() {
+                @Override
+                public void apply(final int j, final double value) {
+                    final Attribute attr = attributes[j];
+                    if (attr.type == AttributeType.NOMINAL) {
+                        final int x_ij = ((int) value) + 1;
+                        final int prevSize = attr.getSize();
+                        if (x_ij > prevSize) {
+                            attr.setSize(x_ij);
                         }
                     }
-                }, false);
+                }
+            };
+            for (int i = 0, rows = x.numRows(); i < rows; i++) {
+                x.eachInRow(i, proc, false);
             }
         } else if (x.isColumnMajorMatrix()) {
-            int size = attributes.length;
+            final MutableInt max_x = new MutableInt(0);
+            final VectorProcedure proc = new VectorProcedure() {
+                @Override
+                public void apply(final int i, final double value) {
+                    final int x_ij = (int) value;
+                    if (x_ij > max_x.getValue()) {
+                        max_x.setValue(x_ij);
+                    }
+                }
+            };
+
+            final int size = attributes.length;
             for (int j = 0; j < size; j++) {
                 final Attribute attr = attributes[j];
                 if (attr.type == AttributeType.NOMINAL) {
                     if (attr.getSize() != -1) {
                         continue;
                     }
-                    final MutableInt max_x = new MutableInt(0);
-                    x.eachInColumn(j, new VectorProcedure() {
-                        @Override
-                        public void apply(final int i, final double value) {
-                            final int x_ij = (int) value;
-                            if (x_ij > max_x.getValue()) {
-                                max_x.setValue(x_ij);
-                            }
-                        }
-                    }, false);
+                    max_x.setValue(0);
+                    x.eachInColumn(j, proc, false);
                     attr.setSize(max_x.getValue() + 1);
                 }
             }
@@ -181,19 +185,20 @@ public final class SmileExtUtils {
             int initSize = n / 10;
             final DoubleArrayList dlist = new DoubleArrayList(initSize);
             final IntArrayList ilist = new IntArrayList(initSize);
+            final VectorProcedure proc = new VectorProcedure() {
+                @Override
+                public void apply(final int i, final double v) {
+                    dlist.add(v);
+                    ilist.add(i);
+                }
+            };
 
             final ColumnMajorMatrix x2 = x.toColumnMajorMatrix();
             for (int j = 0; j < p; j++) {
                 if (attributes[j].type != AttributeType.NUMERIC) {
                     continue;
                 }
-                x2.eachInColumn(j, new VectorProcedure() {
-                    @Override
-                    public void apply(final int i, final double v) {
-                        dlist.add(v);
-                        ilist.add(i);
-                    }
-                }, false);
+                x2.eachInColumn(j, proc, false);
                 if (ilist.isEmpty()) {
                     continue;
                 }

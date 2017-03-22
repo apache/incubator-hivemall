@@ -436,12 +436,13 @@ public final class DecisionTree implements Classifier<Vector> {
             final int[] variableIndex;
             if (x.isSparse()) {
                 final IntSet cols = new IntArraySet(_numVars);
-                for (int row : bags) {
-                    x.eachInRow(row, new VectorProcedure() {
-                        public void apply(int col, double value) {
-                            cols.add(col);
-                        }
-                    }, false);
+                final VectorProcedure proc = new VectorProcedure() {
+                    public void apply(final int col) {
+                        cols.add(col);
+                    }
+                };
+                for (final int row : bags) {
+                    x.eachColumnIndexInRow(row, proc);
                 }
                 variableIndex = cols.toArray(false);
             } else {
@@ -685,7 +686,6 @@ public final class DecisionTree implements Classifier<Vector> {
         }
 
     }
-
 
     /**
      * Returns the impurity of a node.
