@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package hivemall.lda;
 
 import java.util.ArrayList;
@@ -10,7 +28,7 @@ import java.util.Set;
 import org.apache.commons.math3.distribution.GammaDistribution;
 import org.apache.commons.math3.special.Gamma;
 
-public class OnlineLDAModel {
+public final class OnlineLDAModel {
 	
 	//
 	boolean printLambda = false;
@@ -312,7 +330,8 @@ public class OnlineLDAModel {
 			System.out.println("===================================");
 			ArrayList<String> sortedWords = getSortedLambda(k);
 			System.out.println("k:" + k + " sortedWords.size():" + sortedWords.size());
-			for(int tt=0; tt<50; tt++){
+			int topN = Math.min(50, lambda_.keySet().size());
+			for(int tt=0; tt<topN; tt++){
 				String label = sortedWords.get(tt);
 				System.out.println("No." + tt + "\t" + label + "[" + label.length() + "]" + ":\t" + lambda_.get(label)[k] / lambdaSum);
 			}
