@@ -71,15 +71,13 @@ public final class OnlineLDAModel {
 	
 //	private int batchSize_;
 	
-	private Set<String> stopWordSet = new HashSet<String>();
-	
 	private ArrayList<HashMap<String, Float>> miniBatchMap; 
 	
 	
 //	private String[] Symbols = {"\\", "/", ">" ,"<" ,"-" ,"," ,"." ,"(" ,")" ,":" ,";" ,"'" ,"[" ,"]","!" ,"*" ,"#" ,"+","%" ,"@","&","?","$","0","1","2","3","4","5","6","7","8","9","\t","_","{","}","=","|"};
 	
 	// Constructor
-	public OnlineLDAModel(int K, double alpha, double eta, int totalD, double tau0, double kappa, int batchSize, String tmpStopWord){
+	public OnlineLDAModel(int K, double alpha, double eta, int totalD, double tau0, double kappa, int batchSize){
 		// Initialize Free Params
 		K_ = K;
 		alpha_ = (float)alpha;
@@ -93,37 +91,6 @@ public final class OnlineLDAModel {
 		setRandomParams();
 		setParams();
 		setDummyLambda();
-		setStopWord(tmpStopWord);
-	}
-
-	public OnlineLDAModel(int K, double alpha, double eta, int totalD, double tau0, double kappa, int batchSize){
-
-		String tmpStopWord = "";
-
-		K_ = K;
-		alpha_ = (float)alpha;
-		eta_ = (float)eta;
-		tmpTotalD_ = totalD;
-		tau0_ = tau0;
-		kappa_ = kappa;
-//		batchSize_= batchSize;
-		
-		// Initialize Internal Params
-		setRandomParams();
-		setParams();
-		setDummyLambda();
-		setStopWord(tmpStopWord);
-	}
-
-	private void setStopWord(String stopWord) {
-		String[] tmpStopWords = stopWord.split(","); 
-
-		for(int w=0, SIZE = tmpStopWords.length; w<SIZE; w++){
-			tmpStopWords[w] = tmpStopWords[w].replace(" ","");
-		}
-		for(int w=0, SIZE = tmpStopWords.length; w<SIZE; w++){
-			stopWordSet.add(tmpStopWords[w]);
-		}
 	}
 
 	private void setDummyLambda() {
@@ -592,9 +559,6 @@ public final class OnlineLDAModel {
 				}
 				String label = label_value[0];
 				float  value = Float.parseFloat(label_value[1]);
-				if(stopWordSet.contains(label)){
-					continue;
-				}
 				mapd.put(label, value);
 			}
 			miniBatchMap.add(mapd);
