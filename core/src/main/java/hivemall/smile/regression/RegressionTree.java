@@ -210,7 +210,6 @@ public final class RegressionTree implements Regression<Vector> {
                 return output;
             } else {
                 if (splitFeatureType == AttributeType.NOMINAL) {
-                    // REVIEWME if(Math.equals(x[splitFeature], splitValue)) {
                     if (x.get(splitFeature, Double.NaN) == splitValue) {
                         return trueChild.predict(x);
                     } else {

@@ -251,6 +251,9 @@ public final class MathUtils {
     }
 
     public static boolean equals(@Nonnull final float value, final float expected, final float delta) {
+        if (Double.isNaN(value)) {
+            return false;
+        }
         if (Math.abs(expected - value) > delta) {
             return false;
         }
@@ -259,19 +262,20 @@ public final class MathUtils {
 
     public static boolean equals(@Nonnull final double value, final double expected,
             final double delta) {
+        if (Double.isNaN(value)) {
+            return false;
+        }
         if (Math.abs(expected - value) > delta) {
             return false;
         }
         return true;
     }
 
-    public static boolean almostEquals(@Nonnull final float value, final float expected,
-            final float delta) {
+    public static boolean almostEquals(@Nonnull final float value, final float expected) {
         return equals(value, expected, 1E-15f);
     }
 
-    public static boolean almostEquals(@Nonnull final double value, final double expected,
-            final double delta) {
+    public static boolean almostEquals(@Nonnull final double value, final double expected) {
         return equals(value, expected, 1E-15d);
     }
 
