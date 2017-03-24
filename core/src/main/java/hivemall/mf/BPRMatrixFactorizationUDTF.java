@@ -63,7 +63,7 @@ import org.apache.hadoop.mapred.Reporter;
         value = "_FUNC_(INT user, INT posItem, INT negItem [, String options])"
                 + " - Returns a relation <INT i, FLOAT Pi, FLOAT Qi [, FLOAT Bi]>")
 public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements RatingInitilizer {
-    private static final Log LOG = LogFactory.getLog(OnlineMatrixFactorizationUDTF.class);
+    private static final Log LOG = LogFactory.getLog(BPRMatrixFactorizationUDTF.class);
     private static final int RECORD_BYTES = (Integer.SIZE + Integer.SIZE + Integer.SIZE) / 8;
 
     // Option variables
