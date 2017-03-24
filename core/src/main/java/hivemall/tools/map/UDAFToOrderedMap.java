@@ -65,13 +65,13 @@ public class UDAFToOrderedMap extends UDAFToMap {
         }
 
         if (reverseOrder) {
-            return new ReverseOrdereMapEvaluator();
+            return new ReverseOrderedMapEvaluator();
         } else {
-            return new NaturalOrdereMapEvaluator();
+            return new NaturalOrderedMapEvaluator();
         }
     }
 
-    public static class NaturalOrdereMapEvaluator extends UDAFToMapEvaluator {
+    public static class NaturalOrderedMapEvaluator extends UDAFToMapEvaluator {
 
         @Override
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
@@ -81,7 +81,7 @@ public class UDAFToOrderedMap extends UDAFToMap {
 
     }
 
-    public static class ReverseOrdereMapEvaluator extends UDAFToMapEvaluator {
+    public static class ReverseOrderedMapEvaluator extends UDAFToMapEvaluator {
 
         @Override
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
