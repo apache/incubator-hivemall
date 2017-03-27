@@ -442,7 +442,7 @@ public final class RegressionTree implements Regression<Vector> {
                     }
                 };
                 for (final int row : bags) {
-                    x.eachInRow(row, proc, false);
+                    x.eachNonNullInRow(row, proc);
                 }
                 variableIndex = cols.toArray(false);
             } else {
@@ -514,7 +514,7 @@ public final class RegressionTree implements Regression<Vector> {
                 }
             } else if (_attributes[j].type == AttributeType.NUMERIC) {
 
-                _order.eachInColumn(j, new VectorProcedure() {
+                _order.eachNonNullInColumn(j, new VectorProcedure() {
                     double trueSum = 0.0;
                     int trueCount = 0;
                     double prevx = Double.NaN;
@@ -571,7 +571,7 @@ public final class RegressionTree implements Regression<Vector> {
                         trueSum += sample * y_i;
                         trueCount += sample;
                     }//apply
-                }, false);
+                });
 
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "

@@ -92,4 +92,14 @@ public abstract class AbstractMatrix implements Matrix {
         eachInColumn(col, procedure, true);
     }
 
+    @Override
+    public void eachNonNullInRow(final int row, @Nonnull final VectorProcedure procedure) {
+        eachInRow(row, procedure, false);
+    }
+
+    @Override
+    public void eachNonNullInColumn(final int col, @Nonnull final VectorProcedure procedure) {
+        eachInColumn(col, procedure, false);
+    }
+
 }

@@ -43,12 +43,12 @@ public abstract class RowMajorMatrix extends AbstractMatrix {
     @Override
     public void getRow(@Nonnegative final int index, @Nonnull final Vector row) {
         row.clear();
-        eachInRow(index, new VectorProcedure() {
+        eachNonNullInRow(index, new VectorProcedure() {
             @Override
             public void apply(final int i, final double value) {
                 row.set(i, value);
             }
-        }, false);
+        });
     }
 
     @Override
@@ -57,7 +57,7 @@ public abstract class RowMajorMatrix extends AbstractMatrix {
     }
 
     @Override
-    public void eachInNonZeroColumn(int col, VectorProcedure procedure) {
+    public void eachNonZeroInColumn(int col, VectorProcedure procedure) {
         throw new UnsupportedOperationException();
     }
 

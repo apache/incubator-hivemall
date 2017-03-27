@@ -266,7 +266,7 @@ public final class RowMajorDenseMatrix2d extends RowMajorMatrix {
     }
 
     @Override
-    public void eachInNonZeroColumn(@Nonnegative final int col,
+    public void eachNonZeroInColumn(@Nonnegative final int col,
             @Nonnull final VectorProcedure procedure) {
         checkColIndex(col, numColumns);
 

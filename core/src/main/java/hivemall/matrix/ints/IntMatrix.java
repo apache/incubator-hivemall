@@ -88,6 +88,8 @@ public interface IntMatrix {
     public void eachInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure,
             boolean nullOutput);
 
+    public void eachNonNullInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
+
     public void eachNonZeroInRow(@Nonnegative int row, @Nonnull VectorProcedure procedure);
 
     public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
@@ -95,6 +97,8 @@ public interface IntMatrix {
     public void eachInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure,
             boolean nullOutput);
 
-    public void eachInNonZeroColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
+    public void eachNonNullInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
+
+    public void eachNonZeroInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 
 }

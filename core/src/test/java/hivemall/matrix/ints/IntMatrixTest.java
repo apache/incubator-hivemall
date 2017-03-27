@@ -158,7 +158,7 @@ public class IntMatrixTest {
 
         count.setValue(0);
         for (int j = 0; j < 6; j++) {
-            matrix.eachInNonZeroColumn(j, new VectorProcedure() {
+            matrix.eachNonZeroInColumn(j, new VectorProcedure() {
                 @Override
                 public void apply(int i, int value) {
                     count.addValue(1);
@@ -194,7 +194,7 @@ public class IntMatrixTest {
 
         count.setValue(0);
         for (int j = 0; j < 6; j++) {
-            matrix.eachInNonZeroColumn(j, new VectorProcedure() {
+            matrix.eachNonZeroInColumn(j, new VectorProcedure() {
                 @Override
                 public void apply(int i, int value) {
                     count.addValue(1);
@@ -233,7 +233,7 @@ public class IntMatrixTest {
 
         count.setValue(0);
         for (int j = 0; j < 6; j++) {
-            matrix.eachInNonZeroColumn(j, new VectorProcedure() {
+            matrix.eachNonZeroInColumn(j, new VectorProcedure() {
                 @Override
                 public void apply(int i, int value) {
                     count.addValue(1);
@@ -269,7 +269,7 @@ public class IntMatrixTest {
 
         count.setValue(0);
         for (int j = 0; j < 6; j++) {
-            matrix.eachInNonZeroColumn(j, new VectorProcedure() {
+            matrix.eachNonZeroInColumn(j, new VectorProcedure() {
                 @Override
                 public void apply(int i, int value) {
                     count.addValue(1);

@@ -228,7 +228,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     }
 
     @Override
-    public void eachInNonZeroColumn(final int col, @Nonnull final VectorProcedure procedure) {
+    public void eachNonZeroInColumn(final int col, @Nonnull final VectorProcedure procedure) {
         checkColIndex(col, numColumns);
 
         final int startIn = columnPointers[col];

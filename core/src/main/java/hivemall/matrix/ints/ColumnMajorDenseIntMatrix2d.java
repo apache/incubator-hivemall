@@ -153,7 +153,7 @@ public final class ColumnMajorDenseIntMatrix2d extends ColumnMajorIntMatrix {
     }
 
     @Override
-    public void eachInNonZeroColumn(final int col, @Nonnull final VectorProcedure procedure) {
+    public void eachNonZeroInColumn(final int col, @Nonnull final VectorProcedure procedure) {
         checkColIndex(col, numColumns);
 
         final int[] colData = data[col];

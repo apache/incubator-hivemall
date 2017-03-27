@@ -44,7 +44,7 @@ public final class MatrixUtils {
         };
         for (int i = 0; i < indices.length; i++) {
             int idx = indices[i];
-            m.eachInRow(idx, proc, false);
+            m.eachNonNullInRow(idx, proc);
             builder.nextRow();
         }
         return builder.buildMatrix();

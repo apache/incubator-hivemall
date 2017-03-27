@@ -296,7 +296,7 @@ public final class DoKMatrix extends AbstractMatrix {
     }
 
     @Override
-    public void eachInNonZeroColumn(@Nonnegative final int col,
+    public void eachNonZeroInColumn(@Nonnegative final int col,
             @Nonnull final VectorProcedure procedure) {
         checkColIndex(col, numColumns);
 

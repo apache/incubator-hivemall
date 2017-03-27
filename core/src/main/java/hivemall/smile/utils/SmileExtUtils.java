@@ -99,7 +99,7 @@ public final class SmileExtUtils {
                 }
             };
             for (int i = 0, rows = x.numRows(); i < rows; i++) {
-                x.eachInRow(i, proc, false);
+                x.eachNonNullInRow(i, proc);
             }
         } else if (x.isColumnMajorMatrix()) {
             final MutableInt max_x = new MutableInt(0);
@@ -121,7 +121,7 @@ public final class SmileExtUtils {
                         continue;
                     }
                     max_x.setValue(0);
-                    x.eachInColumn(j, proc, false);
+                    x.eachNonNullInColumn(j, proc);
                     attr.setSize(max_x.getValue() + 1);
                 }
             }
@@ -198,7 +198,7 @@ public final class SmileExtUtils {
                 if (attributes[j].type != AttributeType.NUMERIC) {
                     continue;
                 }
-                x2.eachInColumn(j, proc, false);
+                x2.eachNonNullInColumn(j, proc);
                 if (ilist.isEmpty()) {
                     continue;
                 }

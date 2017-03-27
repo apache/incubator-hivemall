@@ -195,7 +195,7 @@ public final class DoKIntMatrix extends AbstractIntMatrix {
     }
 
     @Override
-    public void eachInNonZeroColumn(@Nonnegative final int col,
+    public void eachNonZeroInColumn(@Nonnegative final int col,
             @Nonnull final VectorProcedure procedure) {
         checkColIndex(col, numColumns);
 
