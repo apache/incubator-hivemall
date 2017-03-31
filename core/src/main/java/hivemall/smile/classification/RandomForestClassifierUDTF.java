@@ -27,7 +27,6 @@ import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
 import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.matrix.ints.DoKIntMatrix;
 import hivemall.matrix.ints.IntMatrix;
-import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -59,6 +59,7 @@ import org.apache.hadoop.hive.ql.exec.MapredContext;
 import org.apache.hadoop.hive.ql.exec.MapredContextAccessor;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -75,7 +76,7 @@ import org.apache.hadoop.mapred.Reporter;
         name = "train_randomforest_classifier",
         value = "_FUNC_(array<double|string> features, int label [, string options]) - "
                 + "Returns a relation consists of "
-                + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests>")
+                + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests, double weight>")
 public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(RandomForestClassifierUDTF.class);
 
@@ -107,7 +108,6 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesLeaf;
     private long _seed;
     private Attribute[] _attributes;
-    private ModelType _outputType;
     private SplitRule _splitRule;
 
     @Nullable
@@ -134,11 +134,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
-        opts.addOption("output", "output_type", true,
-            "The output type (serialization/ser) [default: serialization]");
         opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY]");
-        opts.addOption("disable_compression", false,
-            "Whether to disable compression of the output script [default: false]");
         return opts;
     }
 
@@ -149,9 +145,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         float numVars = -1.f;
         Attribute[] attrs = null;
         long seed = -1L;
-        String output = "serialization";
         SplitRule splitRule = SplitRule.GINI;
-        boolean compress = true;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -170,11 +164,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                 minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
-            output = cl.getOptionValue("output", output);
             splitRule = SmileExtUtils.resolveSplitRule(cl.getOptionValue("split_rule", "GINI"));
-            if (cl.hasOption("disable_compression")) {
-                compress = false;
-            }
         }
 
         this._numTrees = trees;
@@ -185,7 +175,6 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
         this._attributes = attrs;
-        this._outputType = ModelType.resolve(output, compress);
         this._splitRule = splitRule;
 
         return cl;
@@ -221,14 +210,14 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
         this.labels = new IntArrayList(1024);
 
-        ArrayList<String> fieldNames = new ArrayList<String>(6);
-        ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(6);
+        final ArrayList<String> fieldNames = new ArrayList<String>(6);
+        final ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(6);
 
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        fieldNames.add("model_type");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-        fieldNames.add("pred_model");
+        fieldNames.add("model_weight");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+        fieldNames.add("model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("var_importance");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
@@ -361,10 +350,12 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
     /**
      * Synchronized because {@link #forward(Object)} should be called from a single thread.
+     * 
+     * @param accuracy
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
-            @Nonnull final double[] importance, final int[] y, @Nonnull final IntMatrix prediction,
-            final boolean lastTask) throws HiveException {
+            @Nonnull final double[] importance, @Nonnegative final double accuracy, final int[] y,
+            @Nonnull final IntMatrix prediction, final boolean lastTask) throws HiveException {
         int oobErrors = 0;
         int oobTests = 0;
         if (lastTask) {
@@ -380,10 +371,10 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             }
         }
 
-        String modelId = RandomUtils.getUUID();
         final Object[] forwardObjs = new Object[6];
+        String modelId = RandomUtils.getUUID();
         forwardObjs[0] = new Text(modelId);
-        forwardObjs[1] = new IntWritable(_outputType.getId());
+        forwardObjs[1] = new DoubleWritable(accuracy);
         forwardObjs[2] = model;
         forwardObjs[3] = WritableUtils.toWritableList(importance);
         forwardObjs[4] = new IntWritable(oobErrors);
@@ -476,46 +467,36 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                 _udtf._splitRule, rnd2);
 
             // out-of-bag prediction
+            int oob = 0;
+            int correct = 0;
             final Vector xProbe = _x.rowVector();
             for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
+                oob++;
                 _x.getRow(i, xProbe);
                 final int p = tree.predict(xProbe);
+                if (p == _y[i]) {
+                    correct++;
+                }
                 synchronized (_udtf) {
                     _prediction.incr(i, p);
                 }
             }
 
-            Text model = getModel(tree, _udtf._outputType);
+            Text model = getModel(tree);
             double[] importance = tree.importance();
+            double accuracy = (oob == 0) ? 1.0d : (double) correct / oob;
             int remain = _remainingTasks.decrementAndGet();
             boolean lastTask = (remain == 0);
-            _udtf.forward(_taskId + 1, model, importance, _y, _prediction, lastTask);
+            _udtf.forward(_taskId + 1, model, importance, accuracy, _y, _prediction, lastTask);
 
             return Integer.valueOf(remain);
         }
 
-        private static Text getModel(@Nonnull final DecisionTree tree,
-                @Nonnull final ModelType outputType) throws HiveException {
-            final Text model;
-            switch (outputType) {
-                case serialization:
-                case serialization_compressed: {
-                    byte[] b = tree.predictSerCodegen(outputType.isCompressed());
-                    b = Base91.encode(b);
-                    model = new Text(b);
-                    break;
-                }
-                case opscode:
-                case opscode_compressed:
-                case javascript:
-                case javascript_compressed: {
-                    throw new HiveException("Deprecated model type: " + outputType
-                            + ". Build a model again.");
-                }
-                default:
-                    throw new HiveException("Unexpected output type: " + outputType);
-            }
-            return model;
+        @Nonnull
+        private static Text getModel(@Nonnull final DecisionTree tree) throws HiveException {
+            byte[] b = tree.predictSerCodegen(true);
+            b = Base91.encode(b);
+            return new Text(b);
         }
 
     }

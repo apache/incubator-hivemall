@@ -18,23 +18,26 @@
  */
 package hivemall.smile.tools;
 
-import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree;
+import hivemall.smile.classification.PredictionHandler;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.WritableUtils;
+import hivemall.utils.lang.Preconditions;
 import hivemall.vector.DenseVector;
 import hivemall.vector.SparseVector;
 import hivemall.vector.Vector;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.MapredContext;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
@@ -42,25 +45,23 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.JobConf;
 
 @Description(
         name = "tree_predict",
-        value = "_FUNC_(string modelId, int modelType, string script, array<double|string> features [, const boolean classification])"
+        value = "_FUNC_(string modelId, string model, array<double|string> features [, const boolean classification])"
                 + " - Returns a prediction result of a random forest")
 @UDFType(deterministic = true, stateful = false)
 public final class TreePredictUDF extends GenericUDF {
 
     private boolean classification;
-    private PrimitiveObjectInspector modelTypeOI;
-    private StringObjectInspector stringOI;
+    private StringObjectInspector modelOI;
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureElemOI;
     private boolean denseInput;
@@ -69,30 +70,15 @@ public final class TreePredictUDF extends GenericUDF {
 
     @Nullable
     private transient Evaluator evaluator;
-    private boolean support_javascript_eval = true;
-
-    @Override
-    public void configure(MapredContext context) {
-        super.configure(context);
-
-        if (context != null) {
-            JobConf conf = context.getJobConf();
-            String tdJarVersion = conf.get("td.jar.version");
-            if (tdJarVersion != null) {
-                this.support_javascript_eval = false;
-            }
-        }
-    }
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length != 4 && argOIs.length != 5) {
-            throw new UDFArgumentException("_FUNC_ takes 4 or 5 arguments");
+        if (argOIs.length != 3 && argOIs.length != 4) {
+            throw new UDFArgumentException("_FUNC_ takes 3 or 4 arguments");
         }
 
-        this.modelTypeOI = HiveUtils.asIntegerOI(argOIs[1]);
-        this.stringOI = HiveUtils.asStringOI(argOIs[2]);
-        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[3]);
+        this.modelOI = HiveUtils.asStringOI(argOIs[1]);
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[2]);
         this.featureListOI = listOI;
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         if (HiveUtils.isNumberOI(elemOI)) {
@@ -103,24 +89,31 @@ public final class TreePredictUDF extends GenericUDF {
             this.denseInput = false;
         } else {
             throw new UDFArgumentException(
-                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+                "_FUNC_ takes array<double> or array<string> for the second argument: "
+                        + listOI.getTypeName());
         }
 
         boolean classification = false;
-        if (argOIs.length == 5) {
-            classification = HiveUtils.getConstBoolean(argOIs[4]);
+        if (argOIs.length == 4) {
+            classification = HiveUtils.getConstBoolean(argOIs[3]);
         }
         this.classification = classification;
 
         if (classification) {
-            return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+            List<String> fieldNames = new ArrayList<String>(2);
+            List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(2);
+            fieldNames.add("value");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+            fieldNames.add("proba");
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         } else {
             return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
         }
     }
 
     @Override
-    public Writable evaluate(@Nonnull DeferredObject[] arguments) throws HiveException {
+    public Object evaluate(@Nonnull DeferredObject[] arguments) throws HiveException {
         Object arg0 = arguments[0].get();
         if (arg0 == null) {
             throw new HiveException("ModelId was null");
@@ -129,28 +122,22 @@ public final class TreePredictUDF extends GenericUDF {
         String modelId = arg0.toString();
 
         Object arg1 = arguments[1].get();
-        int modelTypeId = PrimitiveObjectInspectorUtils.getInt(arg1, modelTypeOI);
-        ModelType modelType = ModelType.resolve(modelTypeId);
+        if (arg1 == null) {
+            return null;
+        }
+        Text model = modelOI.getPrimitiveWritableObject(arg1);
 
         Object arg2 = arguments[2].get();
         if (arg2 == null) {
-            return null;
-        }
-        Text script = stringOI.getPrimitiveWritableObject(arg2);
-
-        Object arg3 = arguments[3].get();
-        if (arg3 == null) {
             throw new HiveException("array<double> features was null");
         }
-        this.featuresProbe = parseFeatures(arg3, featuresProbe);
+        this.featuresProbe = parseFeatures(arg2, featuresProbe);
 
         if (evaluator == null) {
-            this.evaluator = getEvaluator(modelType, support_javascript_eval);
+            this.evaluator = classification ? new ClassificationEvaluator()
+                    : new RegressionEvaluator();
         }
-
-        Writable result = evaluator.evaluate(modelId, modelType.isCompressed(), script,
-            featuresProbe, classification);
-        return result;
+        return evaluator.evaluate(modelId, model, featuresProbe);
     }
 
     @Nonnull
@@ -220,33 +207,9 @@ public final class TreePredictUDF extends GenericUDF {
         return probe;
     }
 
-    @Nonnull
-    private static Evaluator getEvaluator(@Nonnull ModelType type, boolean supportJavascriptEval)
-            throws UDFArgumentException {
-        final Evaluator evaluator;
-        switch (type) {
-            case serialization:
-            case serialization_compressed: {
-                evaluator = new Evaluator();
-                break;
-            }
-            case opscode:
-            case opscode_compressed:
-            case javascript:
-            case javascript_compressed: {
-                throw new UDFArgumentException("Deprecated model type `" + type
-                        + "`. Please build models again.");
-            }
-            default:
-                throw new UDFArgumentException("Unexpected model type was detected: " + type);
-        }
-        return evaluator;
-    }
-
     @Override
     public void close() throws IOException {
-        this.modelTypeOI = null;
-        this.stringOI = null;
+        this.modelOI = null;
         this.featureElemOI = null;
         this.featureListOI = null;
         this.evaluator = null;
@@ -257,52 +220,81 @@ public final class TreePredictUDF extends GenericUDF {
         return "tree_predict(" + Arrays.toString(children) + ")";
     }
 
-    static final class Evaluator {
+    interface Evaluator {
+
+        @Nonnull
+        Object evaluate(@Nonnull String modelId, @Nonnull Text model, @Nonnull Vector features)
+                throws HiveException;
+
+    }
+
+    static final class ClassificationEvaluator implements Evaluator {
+
+        @Nonnull
+        private final Object[] result;
 
         @Nullable
         private String prevModelId = null;
         private DecisionTree.Node cNode = null;
+
+        ClassificationEvaluator() {
+            this.result = new Object[2];
+        }
+
+        @Nonnull
+        public Object[] evaluate(@Nonnull final String modelId, @Nonnull final Text script,
+                @Nonnull final Vector features) throws HiveException {
+            if (!modelId.equals(prevModelId)) {
+                this.prevModelId = modelId;
+                int length = script.getLength();
+                byte[] b = script.getBytes();
+                b = Base91.decode(b, 0, length);
+                this.cNode = DecisionTree.deserializeNode(b, b.length, true);
+            }
+
+            Arrays.fill(result, null);
+            Preconditions.checkNotNull(cNode);
+            cNode.predict(features, new PredictionHandler() {
+                public void handle(int output, double[] posteriori) {
+                    result[0] = new IntWritable(output);
+                    result[1] = WritableUtils.toWritableList(posteriori);
+                }
+            });
+
+            return result;
+        }
+
+    }
+
+    static final class RegressionEvaluator implements Evaluator {
+
+        @Nonnull
+        private final DoubleWritable result;
+
+        @Nullable
+        private String prevModelId = null;
         private RegressionTree.Node rNode = null;
 
-        Evaluator() {}
-
-        public Writable evaluate(@Nonnull String modelId, boolean compressed, @Nonnull Text script,
-                @Nonnull Vector features, boolean classification) throws HiveException {
-            if (classification) {
-                return evaluateClassification(modelId, compressed, script, features);
-            } else {
-                return evaluteRegression(modelId, compressed, script, features);
-            }
+        RegressionEvaluator() {
+            this.result = new DoubleWritable();
         }
 
-        private IntWritable evaluateClassification(@Nonnull String modelId, boolean compressed,
-                @Nonnull Text script, @Nonnull Vector features) throws HiveException {
+        @Nonnull
+        public DoubleWritable evaluate(@Nonnull final String modelId, @Nonnull final Text script,
+                @Nonnull final Vector features) throws HiveException {
             if (!modelId.equals(prevModelId)) {
                 this.prevModelId = modelId;
                 int length = script.getLength();
                 byte[] b = script.getBytes();
                 b = Base91.decode(b, 0, length);
-                this.cNode = DecisionTree.deserializeNode(b, b.length, compressed);
+                this.rNode = RegressionTree.deserializeNode(b, b.length, true);
             }
-            assert (cNode != null);
-            int result = cNode.predict(features);
-            return new IntWritable(result);
-        }
+            Preconditions.checkNotNull(rNode);
 
-        private DoubleWritable evaluteRegression(@Nonnull String modelId, boolean compressed,
-                @Nonnull Text script, @Nonnull Vector features) throws HiveException {
-            if (!modelId.equals(prevModelId)) {
-                this.prevModelId = modelId;
-                int length = script.getLength();
-                byte[] b = script.getBytes();
-                b = Base91.decode(b, 0, length);
-                this.rNode = RegressionTree.deserializeNode(b, b.length, compressed);
-            }
-            assert (rNode != null);
-            double result = rNode.predict(features);
-            return new DoubleWritable(result);
+            double value = rNode.predict(features);
+            result.set(value);
+            return result;
         }
-
     }
 
 }

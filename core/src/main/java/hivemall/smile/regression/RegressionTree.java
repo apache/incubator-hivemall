@@ -197,6 +197,10 @@ public final class RegressionTree implements Regression<Vector> {
             this.output = output;
         }
 
+        private boolean isLeaf() {
+            return trueChild == null && falseChild == null;
+        }
+
         @VisibleForTesting
         public double predict(@Nonnull final double[] x) {
             return predict(new DenseVector(x));
@@ -281,46 +285,56 @@ public final class RegressionTree implements Regression<Vector> {
 
         @Override
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeDouble(output);
             out.writeInt(splitFeature);
             if (splitFeatureType == null) {
-                out.writeInt(-1);
+                out.writeByte(-1);
             } else {
-                out.writeInt(splitFeatureType.getTypeId());
+                out.writeByte(splitFeatureType.getTypeId());
             }
             out.writeDouble(splitValue);
-            if (trueChild == null) {
-                out.writeBoolean(false);
-            } else {
+
+            if (isLeaf()) {
                 out.writeBoolean(true);
-                trueChild.writeExternal(out);
-            }
-            if (falseChild == null) {
-                out.writeBoolean(false);
+                out.writeDouble(output);
             } else {
-                out.writeBoolean(true);
-                falseChild.writeExternal(out);
+                out.writeBoolean(false);
+                if (trueChild == null) {
+                    out.writeBoolean(false);
+                } else {
+                    out.writeBoolean(true);
+                    trueChild.writeExternal(out);
+                }
+                if (falseChild == null) {
+                    out.writeBoolean(false);
+                } else {
+                    out.writeBoolean(true);
+                    falseChild.writeExternal(out);
+                }
             }
         }
 
         @Override
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            this.output = in.readDouble();
             this.splitFeature = in.readInt();
-            int typeId = in.readInt();
+            byte typeId = in.readByte();
             if (typeId == -1) {
                 this.splitFeatureType = null;
             } else {
                 this.splitFeatureType = AttributeType.resolve(typeId);
             }
             this.splitValue = in.readDouble();
-            if (in.readBoolean()) {
-                this.trueChild = new Node();
-                trueChild.readExternal(in);
-            }
-            if (in.readBoolean()) {
-                this.falseChild = new Node();
-                falseChild.readExternal(in);
+
+            if (in.readBoolean()) {// isLeaf()
+                this.output = in.readDouble();
+            } else {
+                if (in.readBoolean()) {
+                    this.trueChild = new Node();
+                    trueChild.readExternal(in);
+                }
+                if (in.readBoolean()) {
+                    this.falseChild = new Node();
+                    falseChild.readExternal(in);
+                }
             }
         }
     }

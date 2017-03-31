@@ -185,6 +185,11 @@ public final class DecisionTree implements Classifier<Vector> {
          */
         int output = -1;
         /**
+         * Posteriori probability based on sample ratios in this node.
+         */
+        @Nullable
+        double[] posteriori = null;
+        /**
          * The split feature for this node.
          */
         int splitFeature = -1;
@@ -219,11 +224,13 @@ public final class DecisionTree implements Classifier<Vector> {
 
         public Node() {}// for Externalizable
 
-        /**
-         * Constructor.
-         */
-        public Node(int output) {
+        public Node(int output, @Nonnull double[] posteriori) {
             this.output = output;
+            this.posteriori = posteriori;
+        }
+
+        private boolean isLeaf() {
+            return posteriori != null;
         }
 
         @VisibleForTesting
@@ -249,6 +256,32 @@ public final class DecisionTree implements Classifier<Vector> {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
+                    }
+                } else {
+                    throw new IllegalStateException("Unsupported attribute type: "
+                            + splitFeatureType);
+                }
+            }
+        }
+
+        /**
+         * Evaluate the regression tree over an instance.
+         */
+        public void predict(@Nonnull final Vector x, @Nonnull final PredictionHandler handler) {
+            if (trueChild == null && falseChild == null) {
+                handler.handle(output, posteriori);
+            } else {
+                if (splitFeatureType == AttributeType.NOMINAL) {
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
+                        trueChild.predict(x, handler);
+                    } else {
+                        falseChild.predict(x, handler);
+                    }
+                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                    if (x.get(splitFeature, Double.NaN) <= splitValue) {
+                        trueChild.predict(x, handler);
+                    } else {
+                        falseChild.predict(x, handler);
                     }
                 } else {
                     throw new IllegalStateException("Unsupported attribute type: "
@@ -297,46 +330,69 @@ public final class DecisionTree implements Classifier<Vector> {
 
         @Override
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(output);
             out.writeInt(splitFeature);
             if (splitFeatureType == null) {
-                out.writeInt(-1);
+                out.writeByte(-1);
             } else {
-                out.writeInt(splitFeatureType.getTypeId());
+                out.writeByte(splitFeatureType.getTypeId());
             }
             out.writeDouble(splitValue);
-            if (trueChild == null) {
-                out.writeBoolean(false);
-            } else {
+
+            if (isLeaf()) {
                 out.writeBoolean(true);
-                trueChild.writeExternal(out);
-            }
-            if (falseChild == null) {
-                out.writeBoolean(false);
+
+                out.writeInt(output);
+                out.writeInt(posteriori.length);
+                for (int i = 0; i < posteriori.length; i++) {
+                    out.writeDouble(posteriori[i]);
+                }
             } else {
-                out.writeBoolean(true);
-                falseChild.writeExternal(out);
+                out.writeBoolean(false);
+
+                if (trueChild == null) {
+                    out.writeBoolean(false);
+                } else {
+                    out.writeBoolean(true);
+                    trueChild.writeExternal(out);
+                }
+                if (falseChild == null) {
+                    out.writeBoolean(false);
+                } else {
+                    out.writeBoolean(true);
+                    falseChild.writeExternal(out);
+                }
             }
         }
 
         @Override
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            this.output = in.readInt();
             this.splitFeature = in.readInt();
-            int typeId = in.readInt();
+            byte typeId = in.readByte();
             if (typeId == -1) {
                 this.splitFeatureType = null;
             } else {
                 this.splitFeatureType = AttributeType.resolve(typeId);
             }
             this.splitValue = in.readDouble();
-            if (in.readBoolean()) {
-                this.trueChild = new Node();
-                trueChild.readExternal(in);
-            }
-            if (in.readBoolean()) {
-                this.falseChild = new Node();
-                falseChild.readExternal(in);
+
+            if (in.readBoolean()) {//isLeaf
+                this.output = in.readInt();
+
+                final int size = in.readInt();
+                final double[] posteriori = new double[size];
+                for (int i = 0; i < size; i++) {
+                    posteriori[i] = in.readDouble();
+                }
+                this.posteriori = posteriori;
+            } else {
+                if (in.readBoolean()) {
+                    this.trueChild = new Node();
+                    trueChild.readExternal(in);
+                }
+                if (in.readBoolean()) {
+                    this.falseChild = new Node();
+                    falseChild.readExternal(in);
+                }
             }
         }
 
@@ -531,7 +587,7 @@ public final class DecisionTree implements Classifier<Vector> {
             } else if (_attributes[j].type == AttributeType.NUMERIC) {
                 final int[] trueCount = new int[_k];
 
-                _order.eachInColumn(j, new VectorProcedure() {
+                _order.eachNonNullInColumn(j, new VectorProcedure() {
                     double prevx = Double.NaN;
                     int prevy = -1;
 
@@ -587,7 +643,7 @@ public final class DecisionTree implements Classifier<Vector> {
                         prevy = y_i;
                         trueCount[y_i] += sample;
                     }//apply()                    
-                }, false);
+                });
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "
                         + _attributes[j].type);
@@ -608,8 +664,14 @@ public final class DecisionTree implements Classifier<Vector> {
             int childBagSize = (int) (bags.length * 0.4);
             IntArrayList trueBags = new IntArrayList(childBagSize);
             IntArrayList falseBags = new IntArrayList(childBagSize);
-            int tc = splitSamples(trueBags, falseBags);
+            double[] trueChildPosteriori = new double[_k];
+            double[] falseChildPosteriori = new double[_k];
+            int tc = splitSamples(trueBags, falseBags, trueChildPosteriori, falseChildPosteriori);
             int fc = bags.length - tc;
+            for (int i = 0; i < _k; i++) {
+                trueChildPosteriori[i] /= tc;
+                falseChildPosteriori[i] /= fc;
+            }
             this.bags = null; // help GC for recursive call
 
             if (tc < _minLeafSize || fc < _minLeafSize) {
@@ -621,7 +683,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 return false;
             }
 
-            node.trueChild = new Node(node.trueChildOutput);
+            node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
             TrainNode trueChild = new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
             trueBags = null; // help GC for recursive call
             if (tc >= _minSplit && trueChild.findBestSplit()) {
@@ -632,7 +694,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 }
             }
 
-            node.falseChild = new Node(node.falseChildOutput);
+            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
             TrainNode falseChild = new TrainNode(node.falseChild, x, y, falseBags.toArray(),
                 depth + 1);
             falseBags = null; // help GC for recursive call
@@ -645,15 +707,19 @@ public final class DecisionTree implements Classifier<Vector> {
             }
 
             _importance[node.splitFeature] += node.splitScore;
+            node.posteriori = null; // posteriori is not needed for non-leaf nodes
 
             return true;
         }
 
         /**
+         * @param falseChildPosteriori
+         * @param trueChildPosteriori
          * @return the number of true samples
          */
         private int splitSamples(@Nonnull final IntArrayList trueBags,
-                @Nonnull final IntArrayList falseBags) {
+                @Nonnull final IntArrayList falseBags, @Nonnull final double[] trueChildPosteriori,
+                @Nonnull final double[] falseChildPosteriori) {
             int tc = 0;
             if (node.splitFeatureType == AttributeType.NOMINAL) {
                 final int splitFeature = node.splitFeature;
@@ -662,9 +728,11 @@ public final class DecisionTree implements Classifier<Vector> {
                     final int index = bags[i];
                     if (x.get(index, splitFeature, Double.NaN) == splitValue) {
                         trueBags.add(index);
+                        trueChildPosteriori[y[index]]++;
                         tc++;
                     } else {
                         falseBags.add(index);
+                        falseChildPosteriori[y[index]]++;
                     }
                 }
             } else if (node.splitFeatureType == AttributeType.NUMERIC) {
@@ -674,9 +742,11 @@ public final class DecisionTree implements Classifier<Vector> {
                     final int index = bags[i];
                     if (x.get(index, splitFeature, Double.NaN) <= splitValue) {
                         trueBags.add(index);
+                        trueChildPosteriori[y[index]]++;
                         tc++;
                     } else {
                         falseBags.add(index);
+                        falseChildPosteriori[y[index]]++;
                     }
                 }
             } else {
@@ -806,7 +876,11 @@ public final class DecisionTree implements Classifier<Vector> {
             }
         }
 
-        this._root = new Node(Math.whichMax(count));
+        final double[] posteriori = new double[_k];
+        for (int i = 0; i < _k; i++) {
+            posteriori[i] = (double) count[i] / n;
+        }
+        this._root = new Node(Math.whichMax(count), posteriori);
 
         final TrainNode trainRoot = new TrainNode(_root, x, y, bags, 1);
         if (maxLeafs == Integer.MAX_VALUE) {

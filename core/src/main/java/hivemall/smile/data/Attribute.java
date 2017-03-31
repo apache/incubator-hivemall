@@ -45,23 +45,23 @@ public abstract class Attribute {
     }
 
     public void writeTo(ObjectOutput out) throws IOException {
-        out.writeInt(type.getTypeId());
+        out.writeByte(type.getTypeId());
     }
 
     public enum AttributeType {
-        NUMERIC(1), NOMINAL(2);
+        NUMERIC((byte) 1), NOMINAL((byte) 2);
 
-        private final int id;
+        private final byte id;
 
-        private AttributeType(int id) {
+        private AttributeType(byte id) {
             this.id = id;
         }
 
-        public int getTypeId() {
+        public byte getTypeId() {
             return id;
         }
 
-        public static AttributeType resolve(int id) {
+        public static AttributeType resolve(byte id) {
             final AttributeType type;
             switch (id) {
                 case 1:
@@ -126,9 +126,9 @@ public abstract class Attribute {
     }
 
     public static Attribute readFrom(ObjectInput in) throws IOException {
-        int typeId = in.readInt();
-
         final Attribute attr;
+
+        byte typeId = in.readByte();
         final AttributeType type = AttributeType.resolve(typeId);
         switch (type) {
             case NUMERIC: {

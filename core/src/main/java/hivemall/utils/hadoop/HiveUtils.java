@@ -56,6 +56,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BinaryObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
@@ -256,6 +257,10 @@ public final class HiveUtils {
                 && isNumberListOI(((ListObjectInspector) oi).getListElementObjectInspector());
     }
 
+    public static boolean isConstString(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isStringOI(oi);
+    }
+
     public static boolean isPrimitiveTypeInfo(@Nonnull TypeInfo typeInfo) {
         return typeInfo.getCategory() == ObjectInspector.Category.PRIMITIVE;
     }
@@ -308,20 +313,43 @@ public final class HiveUtils {
         }
     }
 
-    public static boolean isStringTypeInfo(@Nonnull TypeInfo typeInfo) {
+    public static boolean isIntTypeInfo(@Nonnull TypeInfo typeInfo) {
+        if (typeInfo.getCategory() != ObjectInspector.Category.PRIMITIVE) {
+            return false;
+        }
+        return ((PrimitiveTypeInfo) typeInfo).getPrimitiveCategory() == PrimitiveCategory.INT;
+    }
+
+    public static boolean isFloatingPointTypeInfo(@Nonnull TypeInfo typeInfo) {
         if (typeInfo.getCategory() != ObjectInspector.Category.PRIMITIVE) {
             return false;
         }
         switch (((PrimitiveTypeInfo) typeInfo).getPrimitiveCategory()) {
-            case STRING:
+            case DOUBLE:
+            case FLOAT:
                 return true;
             default:
                 return false;
         }
     }
 
-    public static boolean isConstString(@Nonnull final ObjectInspector oi) {
-        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isStringOI(oi);
+    public static boolean isStringTypeInfo(@Nonnull TypeInfo typeInfo) {
+        if (typeInfo.getCategory() != ObjectInspector.Category.PRIMITIVE) {
+            return false;
+        }
+        return ((PrimitiveTypeInfo) typeInfo).getPrimitiveCategory() == PrimitiveCategory.STRING;
+    }
+
+    public static boolean isListTypeInfo(@Nonnull TypeInfo typeInfo) {
+        return typeInfo.getCategory() == Category.LIST;
+    }
+
+    public static boolean isFloatingPointListTypeInfo(@Nonnull TypeInfo typeInfo) {
+        if (typeInfo.getCategory() != Category.LIST) {
+            return false;
+        }
+        TypeInfo elemTypeInfo = ((ListTypeInfo) typeInfo).getListElementTypeInfo();
+        return isFloatingPointTypeInfo(elemTypeInfo);
     }
 
     @Nonnull

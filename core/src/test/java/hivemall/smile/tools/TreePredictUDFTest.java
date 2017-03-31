@@ -19,7 +19,6 @@
 package hivemall.smile.tools;
 
 import hivemall.matrix.dense.RowMajorDenseMatrix2d;
-import hivemall.smile.ModelType;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
@@ -165,44 +164,40 @@ public class TreePredictUDFTest {
     }
 
     private static int evalPredict(DecisionTree tree, double[] x) throws HiveException, IOException {
-        byte[] b = tree.predictSerCodegen(false);
+        byte[] b = tree.predictSerCodegen(true);
         byte[] encoded = Base91.encode(b);
         Text model = new Text(encoded);
 
         TreePredictUDF udf = new TreePredictUDF();
         udf.initialize(new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.writableStringObjectInspector,
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
         DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
-                new DeferredJavaObject(ModelType.serialization.getId()),
                 new DeferredJavaObject(model), new DeferredJavaObject(ArrayUtils.toList(x)),
                 new DeferredJavaObject(true)};
 
-        IntWritable result = (IntWritable) udf.evaluate(arguments);
+        Object[] result = (Object[]) udf.evaluate(arguments);
         udf.close();
-        return result.get();
+        return ((IntWritable) result[0]).get();
     }
 
     private static double evalPredict(RegressionTree tree, double[] x) throws HiveException,
             IOException {
-        byte[] b = tree.predictSerCodegen(false);
+        byte[] b = tree.predictSerCodegen(true);
         byte[] encoded = Base91.encode(b);
         Text model = new Text(encoded);
 
         TreePredictUDF udf = new TreePredictUDF();
         udf.initialize(new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.writableStringObjectInspector,
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)});
         DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
-                new DeferredJavaObject(ModelType.serialization.getId()),
                 new DeferredJavaObject(model), new DeferredJavaObject(ArrayUtils.toList(x)),
                 new DeferredJavaObject(false)};
 
