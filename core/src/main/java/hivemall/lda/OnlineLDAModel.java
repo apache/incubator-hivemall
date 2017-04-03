@@ -23,7 +23,10 @@ import hivemall.utils.lang.Preconditions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 import java.util.HashMap;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.commons.math3.distribution.GammaDistribution;
 import org.apache.commons.math3.special.Gamma;
@@ -460,44 +463,35 @@ public final class OnlineLDAModel {
     public void showTopicWords() {
         System.out.println("SHOW TOPIC WORDS:");
         System.out.println("WORD SIZE:" + lambda_.size());
-        for (int k = 0; k < K_; k++) {
 
-            float lambdaSum = 0;
+        for (int k = 0; k < K_; k++) {
+            float lambdaSum = 0.f;
+            SortedMap<Float, String> sortedLambda = new TreeMap<Float, String>(Collections.reverseOrder());
+
             for (String label : lambda_.keySet()) {
-                lambdaSum += lambda_.get(label)[k];
+                float lambda = lambda_.get(label)[k];
+                lambdaSum += lambda;
+                sortedLambda.put(lambda, label);
             }
 
             System.out.print("Topic:" + k);
-
             System.out.println("===================================");
-            ArrayList<String> sortedWords = getSortedLambda(k);
-            System.out.println("k:" + k + " sortedWords.size():" + sortedWords.size());
+            System.out.println("k:" + k + " sortedWords.size():" + sortedLambda.size());
+
             int topN = Math.min(50, lambda_.keySet().size());
-            for (int tt = 0; tt < topN; tt++) {
-                String label = sortedWords.get(tt);
+            int tt = 0;
+            for (Map.Entry<Float, String> e : sortedLambda.entrySet()) {
+                String label = e.getValue();
                 System.out.println("No." + tt + "\t" + label + "[" + label.length() + "]" + ":\t"
-                        + lambda_.get(label)[k] / lambdaSum);
+                    + lambda_.get(label)[k] / lambdaSum);
+
+                if (++tt == topN) {
+                    break;
+                }
             }
+
             System.out.println("==========================================");
         }
-    }
-
-    private ArrayList<String> getSortedLambda(int k) {
-        ArrayList<String> ret = new ArrayList<String>();
-        ArrayList<LabelValueTuple> compareList = new ArrayList<LabelValueTuple>();
-
-        for (String label : lambda_.keySet()) {
-            float tmpValue = lambda_.get(label)[k];
-            compareList.add(new LabelValueTuple(label, tmpValue));
-        }
-
-        Collections.sort(compareList, new LabelValueTupleComparator());
-
-        for (int w = 0, W = compareList.size(); w < W; w++) {
-            String label = compareList.get(w).getLabel();
-            ret.add(label);
-        }
-        return ret;
     }
 
 }
