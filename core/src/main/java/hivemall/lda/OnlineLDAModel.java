@@ -276,7 +276,7 @@ public final class OnlineLDAModel {
         miniBatchSize = miniBatch.length;
 
         for (int d = 0; d < miniBatchSize; d++) {
-            accumWordCount = miniBatch[d].length;
+            accumWordCount += miniBatch[d].length;
         }
     }
 
@@ -388,7 +388,7 @@ public final class OnlineLDAModel {
         Arrays.fill(lambdaSum, 0.f);
         for (int k = 0; k < K_; k++) {
             for (String label : lambda_.keySet()) {
-                lambdaSum[k] = lambda_.get(label)[k];
+                lambdaSum[k] += lambda_.get(label)[k];
             }
         }
 
