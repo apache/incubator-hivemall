@@ -18,7 +18,6 @@
  */
 package hivemall.smile.tools;
 
-import hivemall.tools.array.ArrayAvgGenericUDAF.Evaluator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Preconditions;
@@ -56,7 +55,7 @@ import org.apache.hadoop.io.IntWritable;
 
 @Description(
         name = "rf_ensemble",
-        value = "_FUNC_(int yhat, double model_weight, array<double> posteriori)"
+        value = "_FUNC_(int yhat, double model_weight, array<double> proba)"
                 + " - Returns emsebled prediction results in <int label, double probability, array<double> probabilities>")
 public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver {
 
@@ -78,7 +77,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
             throw new UDFArgumentTypeException(2, "ARRAY<double> is expected for posteriori: "
                     + typeInfo[2]);
         }
-        return new Evaluator();
+        return new RfEvaluator();
     }
 
 
@@ -118,6 +117,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 this.sizeField = soi.getStructFieldRef("size");
                 this.weightsField = soi.getStructFieldRef("weights");
                 this.posterioriField = soi.getStructFieldRef("posteriori");
+                this.sizeFieldOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
                 this.weightsFieldOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
                 this.posterioriFieldOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             }
@@ -181,13 +181,14 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
         @Override
         public Object terminatePartial(AggregationBuffer agg) throws HiveException {
             RfAggregationBuffer buf = (RfAggregationBuffer) agg;
-            if (buf._weights == null) {
+            if (buf._k == -1) {
                 return null;
             }
 
-            Object[] partial = new Object[2];
-            partial[0] = WritableUtils.toWritableList(buf._weights);
-            partial[1] = WritableUtils.toWritableList(buf._posteriori);
+            Object[] partial = new Object[3];
+            partial[0] = new IntWritable(buf._k);
+            partial[1] = WritableUtils.toWritableList(buf._weights);
+            partial[2] = WritableUtils.toWritableList(buf._posteriori);
             return partial;
         }
 
@@ -248,6 +249,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
 
         public RfAggregationBuffer() {
             super();
+            reset();
         }
 
         void reset() {
@@ -280,12 +282,13 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 @Nonnull StandardListObjectInspector posterioriOI) throws HiveException {
 
             if (size != _k) {
-                if (size == -1) {
+                if (_k == -1) {
                     this._k = size;
                     this._weights = new double[size];
                     this._posteriori = new double[size];
                 } else {
-                    throw new HiveException("Mismatch in the number of elements");
+                    throw new HiveException("Mismatch in the number of elements: _k=" + _k
+                            + ", size=" + size);
                 }
             }
 
@@ -305,7 +308,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
             if (_k == -1) {
                 return 0;
             }
-            return _k * SizeOf.DOUBLE * 2;
+            return SizeOf.INT + _k * SizeOf.DOUBLE * 2;
         }
 
     }

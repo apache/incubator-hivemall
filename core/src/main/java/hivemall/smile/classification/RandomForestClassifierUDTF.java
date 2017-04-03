@@ -111,6 +111,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private long _seed;
     private Attribute[] _attributes;
     private SplitRule _splitRule;
+    private boolean _stratifiedSampling;
 
     @Nullable
     private double[] _classWeight;
@@ -140,6 +141,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
         opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY]");
+        opts.addOption("stratified", "stratified_sampling", false,
+            "Enable Stratified sampling for unbalanced data");
         return opts;
     }
 
@@ -152,6 +155,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         long seed = -1L;
         SplitRule splitRule = SplitRule.GINI;
         double[] classWeight = null;
+        boolean stratifiedSampling = false;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -171,6 +175,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
             splitRule = SmileExtUtils.resolveSplitRule(cl.getOptionValue("split_rule", "GINI"));
+            stratifiedSampling = cl.hasOption("stratified_sampling");
 
             if (argOIs.length >= 4) {
                 classWeight = HiveUtils.getConstDoubleArray(argOIs[3]);
@@ -198,6 +203,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._seed = seed;
         this._attributes = attrs;
         this._splitRule = splitRule;
+        this._stratifiedSampling = stratifiedSampling;
         this._classWeight = classWeight;
 
         return cl;
@@ -356,7 +362,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
             tasks.add(new TrainingTask(this, i, attributes, x, y, numInputVars, order, prediction,
-                s, remainingTasks, _classWeight));
+                s, remainingTasks));
         }
 
         MapredContext mapredContext = MapredContextAccessor.get();
@@ -451,13 +457,10 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         @Nonnull
         private final AtomicInteger _remainingTasks;
 
-        @Nullable
-        private final double[] _classWeight;
-
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
                 @Nonnull Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
                 @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction, long seed,
-                @Nonnull AtomicInteger remainingTasks, @Nullable double[] classWeight) {
+                @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;
@@ -468,7 +471,6 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             this._prediction = prediction;
             this._seed = seed;
             this._remainingTasks = remainingTasks;
-            this._classWeight = classWeight;
         }
 
         @Override
@@ -480,34 +482,12 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             final int N = _x.numRows();
 
             // Training samples draw with replacement.
-            final IntArrayList bags = new IntArrayList(N);
             final BitSet sampled = new BitSet(N);
-
-            // Stratified sampling for unbalanced data
-            // https://en.wikipedia.org/wiki/Stratified_sampling
-            final int k = smile.math.Math.max(_y) + 1;
-            final IntArrayList cj = new IntArrayList(N / k);
-            for (int l = 0; l < k; l++) {
-                int nj = 0;
-                for (int i = 0; i < N; i++) {
-                    if (_y[i] == l) {
-                        cj.add(i);
-                        nj++;
-                    }
-                }
-                final int size = (_classWeight == null) ? nj : (int) (nj * _classWeight[l]);
-                for (int j = 0; j < size; j++) {
-                    int xi = rnd1.nextInt(nj);
-                    int index = cj.get(xi);
-                    bags.add(index);
-                    sampled.set(index);
-                }
-                cj.clear();
-            }
+            final int[] bags = sampling(sampled, N, rnd1);
 
             DecisionTree tree = new DecisionTree(_attributes, _x, _y, _numVars, _udtf._maxDepth,
-                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf,
-                bags.toArray(true), _order, _udtf._splitRule, rnd2);
+                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf, bags, _order,
+                _udtf._splitRule, rnd2);
 
             // out-of-bag prediction
             int oob = 0;
@@ -533,6 +513,59 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             _udtf.forward(_taskId + 1, model, importance, accuracy, _y, _prediction, lastTask);
 
             return Integer.valueOf(remain);
+        }
+
+        @Nonnull
+        private int[] sampling(@Nonnull final BitSet sampled, final int N,
+                @Nonnull smile.math.Random rnd) {
+            return _udtf._stratifiedSampling ? stratifiedSampling(sampled, N, rnd)
+                    : uniformSampling(sampled, N, rnd);
+        }
+
+        @Nonnull
+        private static int[] uniformSampling(@Nonnull final BitSet sampled, final int N,
+                final smile.math.Random rnd) {
+            final int[] bags = new int[N];
+            for (int i = 0; i < N; i++) {
+                int index = rnd.nextInt(N);
+                bags[i] = index;
+                sampled.set(index);
+            }
+            return bags;
+        }
+
+        /**
+         * Stratified sampling for unbalanced data.
+         * 
+         * @link https://en.wikipedia.org/wiki/Stratified_sampling
+         */
+        @Nonnull
+        private int[] stratifiedSampling(@Nonnull final BitSet sampled, final int N,
+                final smile.math.Random rnd) {
+            final IntArrayList bagsList = new IntArrayList(N);
+            final int k = smile.math.Math.max(_y) + 1;
+            final IntArrayList cj = new IntArrayList(N / k);
+            for (int l = 0; l < k; l++) {
+                int nj = 0;
+                for (int i = 0; i < N; i++) {
+                    if (_y[i] == l) {
+                        cj.add(i);
+                        nj++;
+                    }
+                }
+                final int size = (_udtf._classWeight == null) ? nj
+                        : (int) (nj * _udtf._classWeight[l]);
+                for (int j = 0; j < size; j++) {
+                    int xi = rnd.nextInt(nj);
+                    int index = cj.get(xi);
+                    bagsList.add(index);
+                    sampled.set(index);
+                }
+                cj.clear();
+            }
+            int[] bags = bagsList.toArray(true);
+            SmileExtUtils.shuffle(bags, rnd);
+            return bags;
         }
 
         @Nonnull
