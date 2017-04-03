@@ -307,7 +307,7 @@ public class RandomForestClassifierUDTFTest {
         Assert.assertEquals(numTrees, count.getValue());
         float oobErrorRate = ((float) oobErrors.getValue()) / oobTests.getValue();
         // TODO why multi-class classification so bad??
-        Assert.assertTrue("oob error rate is too high: " + oobErrorRate, oobErrorRate < 0.85);
+        Assert.assertTrue("oob error rate is too high: " + oobErrorRate, oobErrorRate < 0.8);
     }
 
     @Test
@@ -357,7 +357,7 @@ public class RandomForestClassifierUDTFTest {
 
         Assert.assertEquals(numTrees, count.getValue());
         float oobErrorRate = ((float) oobErrors.getValue()) / oobTests.getValue();
-        Assert.assertTrue("oob error rate is too high: " + oobErrorRate, oobErrorRate < 0.4);
+        Assert.assertTrue("oob error rate is too high: " + oobErrorRate, oobErrorRate < 0.3);
     }
 
 

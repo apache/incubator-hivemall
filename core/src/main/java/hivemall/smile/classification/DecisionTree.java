@@ -870,7 +870,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 count[y[i]]++;
             }
         } else {
-            for (int i = 0; i < n; i++) {
+            for (int i = 0, size = bags.length; i < size; i++) {
                 int index = bags[i];
                 count[y[index]]++;
             }
@@ -957,7 +957,6 @@ public final class DecisionTree implements Classifier<Vector> {
     /**
      * Predicts the class label of an instance and also calculate a posteriori probabilities. Not supported.
      */
-    @Override
     public int predict(Vector x, double[] posteriori) {
         throw new UnsupportedOperationException("Not supported.");
     }

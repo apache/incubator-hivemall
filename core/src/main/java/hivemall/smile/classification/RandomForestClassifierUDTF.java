@@ -40,6 +40,7 @@ import hivemall.utils.lang.RandomUtils;
 import hivemall.vector.Vector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -58,6 +59,7 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.MapredContext;
 import org.apache.hadoop.hive.ql.exec.MapredContextAccessor;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -74,7 +76,7 @@ import org.apache.hadoop.mapred.Reporter;
 
 @Description(
         name = "train_randomforest_classifier",
-        value = "_FUNC_(array<double|string> features, int label [, string options]) - "
+        value = "_FUNC_(array<double|string> features, int label [, const array<double> classWeights, const string options]) - "
                 + "Returns a relation consists of "
                 + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests, double weight>")
 public final class RandomForestClassifierUDTF extends UDTFWithOptions {
@@ -109,6 +111,9 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private long _seed;
     private Attribute[] _attributes;
     private SplitRule _splitRule;
+
+    @Nullable
+    private double[] _classWeight;
 
     @Nullable
     private Reporter _progressReporter;
@@ -146,6 +151,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         Attribute[] attrs = null;
         long seed = -1L;
         SplitRule splitRule = SplitRule.GINI;
+        double[] classWeight = null;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -165,6 +171,22 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
             splitRule = SmileExtUtils.resolveSplitRule(cl.getOptionValue("split_rule", "GINI"));
+
+            if (argOIs.length >= 4) {
+                classWeight = HiveUtils.getConstDoubleArray(argOIs[3]);
+                if (classWeight != null) {
+                    for (int i = 0; i < classWeight.length; i++) {
+                        double v = classWeight[i];
+                        if (Double.isNaN(v)) {
+                            classWeight[i] = 1.0d;
+                        } else if (v <= 0.d) {
+                            throw new UDFArgumentTypeException(3,
+                                "each classWeight must be greather than 0: "
+                                        + Arrays.toString(classWeight));
+                        }
+                    }
+                }
+            }
         }
 
         this._numTrees = trees;
@@ -176,16 +198,16 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._seed = seed;
         this._attributes = attrs;
         this._splitRule = splitRule;
+        this._classWeight = classWeight;
 
         return cl;
     }
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length != 2 && argOIs.length != 3) {
+        if (argOIs.length < 2 || argOIs.length > 4) {
             throw new UDFArgumentException(
-                getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: array<double|string> features, int label [, const string options]: "
+                "_FUNC_ takes 2 ~ 4 arguments: array<double|string> features, int label [, const string options, const array<double> classWeight]: "
                         + argOIs.length);
         }
 
@@ -334,7 +356,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
             tasks.add(new TrainingTask(this, i, attributes, x, y, numInputVars, order, prediction,
-                s, remainingTasks));
+                s, remainingTasks, _classWeight));
         }
 
         MapredContext mapredContext = MapredContextAccessor.get();
@@ -429,10 +451,13 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         @Nonnull
         private final AtomicInteger _remainingTasks;
 
+        @Nullable
+        private final double[] _classWeight;
+
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
                 @Nonnull Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
                 @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction, long seed,
-                @Nonnull AtomicInteger remainingTasks) {
+                @Nonnull AtomicInteger remainingTasks, @Nullable double[] classWeight) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;
@@ -443,6 +468,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             this._prediction = prediction;
             this._seed = seed;
             this._remainingTasks = remainingTasks;
+            this._classWeight = classWeight;
         }
 
         @Override
@@ -454,17 +480,34 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             final int N = _x.numRows();
 
             // Training samples draw with replacement.
-            final int[] bags = new int[N];
+            final IntArrayList bags = new IntArrayList(N);
             final BitSet sampled = new BitSet(N);
-            for (int i = 0; i < N; i++) {
-                int index = rnd1.nextInt(N);
-                bags[i] = index;
-                sampled.set(index);
+
+            // Stratified sampling for unbalanced data
+            // https://en.wikipedia.org/wiki/Stratified_sampling
+            final int k = smile.math.Math.max(_y) + 1;
+            final IntArrayList cj = new IntArrayList(N / k);
+            for (int l = 0; l < k; l++) {
+                int nj = 0;
+                for (int i = 0; i < N; i++) {
+                    if (_y[i] == l) {
+                        cj.add(i);
+                        nj++;
+                    }
+                }
+                final int size = (_classWeight == null) ? nj : (int) (nj * _classWeight[l]);
+                for (int j = 0; j < size; j++) {
+                    int xi = rnd1.nextInt(nj);
+                    int index = cj.get(xi);
+                    bags.add(index);
+                    sampled.set(index);
+                }
+                cj.clear();
             }
 
             DecisionTree tree = new DecisionTree(_attributes, _x, _y, _numVars, _udtf._maxDepth,
-                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf, bags, _order,
-                _udtf._splitRule, rnd2);
+                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf,
+                bags.toArray(true), _order, _udtf._splitRule, rnd2);
 
             // out-of-bag prediction
             int oob = 0;
