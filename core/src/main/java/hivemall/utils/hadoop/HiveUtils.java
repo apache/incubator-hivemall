@@ -57,6 +57,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
+import org.apache.hadoop.hive.serde2.objectinspector.StandardConstantListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BinaryObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
@@ -410,6 +411,38 @@ public final class HiveUtils {
             Object o = lst.get(i);
             if (o != null) {
                 ary[i] = o.toString();
+            }
+        }
+        return ary;
+    }
+
+    @Nullable
+    public static double[] getConstDoubleArray(@Nonnull final ObjectInspector oi)
+            throws UDFArgumentException {
+        if (!ObjectInspectorUtils.isConstantObjectInspector(oi)) {
+            throw new UDFArgumentException("argument must be a constant value: "
+                    + TypeInfoUtils.getTypeInfoFromObjectInspector(oi));
+        }
+        ConstantObjectInspector constOI = (ConstantObjectInspector) oi;
+        if (constOI.getCategory() != Category.LIST) {
+            throw new UDFArgumentException("argument must be an array: "
+                    + TypeInfoUtils.getTypeInfoFromObjectInspector(oi));
+        }
+        StandardConstantListObjectInspector listOI = (StandardConstantListObjectInspector) constOI;
+        PrimitiveObjectInspector elemOI = HiveUtils.asDoubleCompatibleOI(listOI.getListElementObjectInspector());
+
+        final List<?> lst = listOI.getWritableConstantValue();
+        if (lst == null) {
+            return null;
+        }
+        final int size = lst.size();
+        final double[] ary = new double[size];
+        for (int i = 0; i < size; i++) {
+            Object o = lst.get(i);
+            if (o == null) {
+                ary[i] = Double.NaN;
+            } else {
+                ary[i] = PrimitiveObjectInspectorUtils.getDouble(o, elemOI);
             }
         }
         return ary;
