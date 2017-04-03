@@ -62,9 +62,9 @@ public final class OnlineLDAModel {
     private double SCALE = 1.d / SHAPE;
 
     // parameters
-    ArrayList<HashMap<String, float[]>> phi_;
-    float[][] gamma_;
-    HashMap<String, float[]> lambda_;
+    private ArrayList<HashMap<String, float[]>> phi_;
+    private float[][] gamma_;
+    private HashMap<String, float[]> lambda_;
 
     // check convergence in the expectation (E) step
     private double DELTA = 1E-5;
@@ -447,6 +447,14 @@ public final class OnlineLDAModel {
         }
 
         return score;
+    }
+
+    public double getLambda(String label, int k) {
+        Preconditions.checkArgument(lambda_.containsKey(label),
+            "Word `" + label + "` is not in the corpus.");
+        Preconditions.checkArgument(k < lambda_.get(label).length,
+            "Topic index must be in [0, " + lambda_.get(label).length + "]");
+        return lambda_.get(label)[k];
     }
 
     public void showTopicWords() {

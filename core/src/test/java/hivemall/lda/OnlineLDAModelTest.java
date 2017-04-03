@@ -18,15 +18,15 @@
  */
 package hivemall.lda;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class OnlineLDAModelTest {
     private static final boolean DEBUG = true;
 
     @Test
-    public void testRunability() {
+    public void test() {
         int K = 2;
-        int batchSize = 1; // purely online setting
         int numIter = 20;
 
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8);
@@ -42,6 +42,20 @@ public class OnlineLDAModelTest {
         }
 
         model.showTopicWords();
+
+        int k1, k2;
+        if (model.getLambda("fruits", 0) > model.getLambda("apples", 0)) {
+            // topic 0 MUST represent doc#1
+            k1 = 0;
+            k2 = 1;
+        } else {
+            k1 = 1;
+            k2 = 0;
+        }
+        Assert.assertTrue("`vegetables` SHOULD be more suitable topic word than `flu` in topic 0",
+            model.getLambda("vegetables", k1) > model.getLambda("flu", k1));
+        Assert.assertTrue("`avocados` SHOULD be more suitable topic word than `healthy` in topic 1",
+            model.getLambda("avocados", k2) > model.getLambda("healthy", k2));
     }
 
     private static void println(String msg) {
