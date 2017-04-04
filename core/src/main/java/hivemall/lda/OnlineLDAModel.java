@@ -20,6 +20,7 @@ package hivemall.lda;
 
 import hivemall.utils.lang.Preconditions;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,9 +66,9 @@ public final class OnlineLDAModel {
     private double SCALE = 1.d / SHAPE;
 
     // parameters
-    private ArrayList<HashMap<String, float[]>> phi_;
+    private List<Map<String, float[]>> phi_;
     private float[][] gamma_;
-    private HashMap<String, float[]> lambda_;
+    private Map<String, float[]> lambda_;
 
     // check convergence in the expectation (E) step
     private double DELTA = 1E-5;
@@ -76,7 +77,7 @@ public final class OnlineLDAModel {
     private int dummySize = 100;
     private float[][] dummyLambdas;
 
-    private ArrayList<HashMap<String, Float>> miniBatchMap;
+    private List<Map<String, Float>> miniBatchMap;
     private int miniBatchSize;
 
     private int accumDocCount = 0;
@@ -185,7 +186,7 @@ public final class OnlineLDAModel {
         }
 
         // dirichlet_expectation_2d(lambda_)
-        HashMap<String, float[]> ElogBeta = new HashMap<String, float[]>();
+        Map<String, float[]> ElogBeta = new HashMap<String, float[]>();
         for (int k = 0; k < K_; k++) {
             float lambdaSum_k = 0.f;
             for (String label : lambda_.keySet()) {
@@ -238,7 +239,7 @@ public final class OnlineLDAModel {
 
     private void stepM() {
         // calculate lambdaBar
-        HashMap<String, float[]> lambdaBar = new HashMap<String, float[]>();
+        Map<String, float[]> lambdaBar = new HashMap<String, float[]>();
 
         float docRatio = (float) D_ / (float) miniBatchSize;
 
@@ -284,11 +285,11 @@ public final class OnlineLDAModel {
     }
 
     private void makeMiniBatchMap(String[][] miniBatch) {
-        miniBatchMap = new ArrayList<HashMap<String, Float>>(); // initialize
+        miniBatchMap = new ArrayList<Map<String, Float>>(); // initialize
 
         // parse document
         for (int d = 0; d < miniBatchSize; d++) {
-            HashMap<String, Float> docMap = new HashMap<String, Float>();
+            Map<String, Float> docMap = new HashMap<String, Float>();
 
             // parse features
             for (int w = 0; w < miniBatch[d].length; w++) {
@@ -307,7 +308,7 @@ public final class OnlineLDAModel {
     }
 
     private void updateSizeOfParameterForMiniBatch() {
-        phi_ = new ArrayList<HashMap<String, float[]>>();
+        phi_ = new ArrayList<Map<String, float[]>>();
         gamma_ = new float[miniBatchSize][];
 
         for (int d = 0; d < miniBatchSize; d++) {
@@ -315,7 +316,7 @@ public final class OnlineLDAModel {
             gamma_[d] = gammad;
 
             // phi_ not needed to be initialized
-            HashMap<String, float[]> phid = new HashMap<String, float[]>();
+            Map<String, float[]> phid = new HashMap<String, float[]>();
             for (String label : miniBatchMap.get(d).keySet()) {
                 float[] tmpFArray = new float[K_];
                 phid.put(label, tmpFArray);
