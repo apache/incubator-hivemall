@@ -158,7 +158,7 @@ public final class SmileExtUtils {
         final Attribute[] dst = new Attribute[size];
         for (int i = 0; i < size; i++) {
             smile.data.Attribute o = original[i];
-            switch (o.getType()) {
+            switch (o.type) {
                 case NOMINAL: {
                     dst[i] = new NominalAttribute();
                     break;
@@ -168,7 +168,7 @@ public final class SmileExtUtils {
                     break;
                 }
                 default:
-                    throw new UnsupportedOperationException("Unsupported type: " + o.getType());
+                    throw new UnsupportedOperationException("Unsupported type: " + o.type);
             }
         }
         return dst;
