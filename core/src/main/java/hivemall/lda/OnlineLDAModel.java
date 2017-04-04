@@ -434,6 +434,10 @@ public final class OnlineLDAModel {
         return lambda_.get(label)[k];
     }
 
+    public SortedMap<Float, String> getTopicWords(int k) {
+        return getTopicWords(k, lambda_.keySet().size());
+    }
+
     public SortedMap<Float, String> getTopicWords(int k, int topN) {
         float lambdaSum = 0.f;
         SortedMap<Float, String> sortedLambda = new TreeMap<Float, String>(Collections.reverseOrder());

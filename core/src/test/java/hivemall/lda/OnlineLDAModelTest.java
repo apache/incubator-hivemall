@@ -48,7 +48,7 @@ public class OnlineLDAModelTest {
 
         println("Topic 0:");
         println("========");
-        topicWords = model.getTopicWords(0, 9);
+        topicWords = model.getTopicWords(0);
         for (Map.Entry<Float, String> e : topicWords.entrySet()) {
             println(e.getKey() + " " + e.getValue());
         }
@@ -56,7 +56,7 @@ public class OnlineLDAModelTest {
 
         println("Topic 1:");
         println("========");
-        topicWords = model.getTopicWords(1, 9);
+        topicWords = model.getTopicWords(1);
         for (Map.Entry<Float, String> e : topicWords.entrySet()) {
             println(e.getKey() + " " + e.getValue());
         }
