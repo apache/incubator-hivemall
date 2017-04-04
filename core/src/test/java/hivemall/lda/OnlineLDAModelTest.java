@@ -18,6 +18,9 @@
  */
 package hivemall.lda;
 
+import java.util.Map;
+import java.util.SortedMap;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +44,24 @@ public class OnlineLDAModelTest {
             println("Iteration " + it + ": perplexity = " + model.computePerplexity());
         }
 
-        model.showTopicWords();
+        SortedMap<Float, String> topicWords;
+
+        println("Topic 0:");
+        println("========");
+        topicWords = model.getTopicWords(0, 9);
+        for (Map.Entry<Float, String> e : topicWords.entrySet()) {
+            println(e.getKey() + " " + e.getValue());
+        }
+        println("========");
+
+        println("Topic 1:");
+        println("========");
+        topicWords = model.getTopicWords(1, 9);
+        for (Map.Entry<Float, String> e : topicWords.entrySet()) {
+            println(e.getKey() + " " + e.getValue());
+        }
+        println("========");
+
 
         int k1, k2;
         if (model.getLambda("fruits", 0) > model.getLambda("apples", 0)) {

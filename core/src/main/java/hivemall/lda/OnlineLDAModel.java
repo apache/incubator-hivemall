@@ -34,10 +34,6 @@ import org.apache.commons.math3.special.Gamma;
 
 public final class OnlineLDAModel {
 
-    private static final boolean printLambda = false;
-    private static final boolean printGamma = false;
-    private static final boolean printPhi = false;
-
     // number of topics
     private int K_;
 
@@ -123,13 +119,6 @@ public final class OnlineLDAModel {
 
         rhot = Math.pow(tau0_ + time, -kappa_);
 
-        if (printLambda) {
-            System.out.println("lambda:");
-            for (String key : lambda_.keySet()) {
-                System.out.println(Arrays.toString(lambda_.get(key)));
-            }
-        }
-
         // get the number of words(Nd) for each documents
         getMiniBatchParams(miniBatch);
         accumDocCount += miniBatchSize;
@@ -152,22 +141,6 @@ public final class OnlineLDAModel {
 
         // Maximization
         stepM();
-
-        if (printGamma) {
-            System.out.println("gamma:");
-            for (int d = 0; d < miniBatchSize; d++) {
-                System.out.println(Arrays.toString(gamma_[d]));
-            }
-        }
-
-        if (printPhi) {
-            System.out.println("phi");
-            for (int d = 0; d < miniBatchSize; d++) {
-                for (String label : miniBatchMap.get(d).keySet()) {
-                    System.out.println(Arrays.toString(phi_.get(d).get(label)));
-                }
-            }
-        }
     }
 
     private void stepE() {
@@ -461,38 +434,31 @@ public final class OnlineLDAModel {
         return lambda_.get(label)[k];
     }
 
-    public void showTopicWords() {
-        System.out.println("SHOW TOPIC WORDS:");
-        System.out.println("WORD SIZE:" + lambda_.size());
+    public SortedMap<Float, String> getTopicWords(int k, int topN) {
+        float lambdaSum = 0.f;
+        SortedMap<Float, String> sortedLambda = new TreeMap<Float, String>(Collections.reverseOrder());
 
-        for (int k = 0; k < K_; k++) {
-            float lambdaSum = 0.f;
-            SortedMap<Float, String> sortedLambda = new TreeMap<Float, String>(Collections.reverseOrder());
-
-            for (String label : lambda_.keySet()) {
-                float lambda = lambda_.get(label)[k];
-                lambdaSum += lambda;
-                sortedLambda.put(lambda, label);
-            }
-
-            System.out.print("Topic:" + k);
-            System.out.println("===================================");
-            System.out.println("k:" + k + " sortedWords.size():" + sortedLambda.size());
-
-            int topN = Math.min(50, lambda_.keySet().size());
-            int tt = 0;
-            for (Map.Entry<Float, String> e : sortedLambda.entrySet()) {
-                String label = e.getValue();
-                System.out.println("No." + tt + "\t" + label + "[" + label.length() + "]" + ":\t"
-                    + lambda_.get(label)[k] / lambdaSum);
-
-                if (++tt == topN) {
-                    break;
-                }
-            }
-
-            System.out.println("==========================================");
+        for (String label : lambda_.keySet()) {
+            float lambda = lambda_.get(label)[k];
+            lambdaSum += lambda;
+            sortedLambda.put(lambda, label);
         }
+
+        SortedMap<Float, String> ret = new TreeMap<Float, String>(Collections.reverseOrder());
+
+        topN = Math.min(topN, lambda_.keySet().size());
+        int tt = 0;
+        for (Map.Entry<Float, String> e : sortedLambda.entrySet()) {
+            float lambda = e.getKey();
+            String label = e.getValue();
+            ret.put(lambda / lambdaSum, label);
+
+            if (++tt == topN) {
+                break;
+            }
+        }
+
+        return ret;
     }
 
 }
