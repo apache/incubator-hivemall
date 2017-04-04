@@ -72,7 +72,7 @@ public final class OnlineLDAModel {
     private Map<String, float[]> lambda_;
 
     // check convergence in the expectation (E) step
-    private static double DELTA = 1E-5;
+    private double delta_ = 1E-5;
 
     // for update size of lambda_
     private static int dummySize_ = 100;
@@ -85,7 +85,7 @@ public final class OnlineLDAModel {
     private int accumDocCount_ = 0;
     private int accumWordCount_ = 0;
 
-    public OnlineLDAModel(int K, float alpha, float eta, int D, double tau0, double kappa) {
+    public OnlineLDAModel(int K, float alpha, float eta, int D, double tau0, double kappa, double delta) {
         Preconditions.checkArgument(0.d < tau0, "tau0 MUST be positive: " + tau0);
         Preconditions.checkArgument(0.5 < kappa && kappa <= 1.d,
             "kappa MUST be in (0.5, 1.0]: " + kappa);
@@ -96,6 +96,7 @@ public final class OnlineLDAModel {
         D_ = D;
         tau0_ = tau0;
         kappa_ = kappa;
+        delta_ = delta;
 
         // initialize a random number generator
         gd_ = new GammaDistribution(SHAPE, SCALE);
@@ -340,7 +341,7 @@ public final class OnlineLDAModel {
                 diff += Math.abs(lastGamma[d][k] - nextGamma[d][k]);
             }
         }
-        return (diff < DELTA * miniBatchSize_ * K_);
+        return (diff < delta_ * miniBatchSize_ * K_);
     }
 
     /**

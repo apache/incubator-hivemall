@@ -32,7 +32,7 @@ public class OnlineLDAModelTest {
         int K = 2;
         int numIter = 20;
 
-        OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8);
+        OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
         for (int it = 0; it < numIter; it++) {
             // online (i.e., one-by-one) updating
