@@ -18,7 +18,7 @@
  */
 package hivemall.smile.tools;
 
-import hivemall.matrix.dense.RowMajorDenseMatrix2d;
+import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;

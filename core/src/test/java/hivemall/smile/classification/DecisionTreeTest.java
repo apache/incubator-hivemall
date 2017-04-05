@@ -19,10 +19,10 @@
 package hivemall.smile.classification;
 
 import static org.junit.Assert.assertEquals;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.builders.CSRMatrixBuilder;
+import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.matrix.Matrix;
-import hivemall.matrix.builders.CSRMatrixBuilder;
-import hivemall.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.classification.DecisionTree.Node;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;

@@ -19,13 +19,14 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.builders.CSRMatrixBuilder;
+import hivemall.math.matrix.builders.MatrixBuilder;
+import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.matrix.Matrix;
-import hivemall.matrix.builders.CSRMatrixBuilder;
-import hivemall.matrix.builders.MatrixBuilder;
-import hivemall.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.vector.Vector;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
@@ -35,7 +36,6 @@ import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.math.MathUtils;
-import hivemall.vector.Vector;
 
 import java.util.ArrayList;
 import java.util.Arrays;

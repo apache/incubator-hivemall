@@ -18,9 +18,9 @@
  */
 package hivemall.utils.collections.arrays;
 
+import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
-import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
 

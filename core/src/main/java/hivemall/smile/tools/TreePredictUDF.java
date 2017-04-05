@@ -18,6 +18,9 @@
  */
 package hivemall.smile.tools;
 
+import hivemall.math.vector.DenseVector;
+import hivemall.math.vector.SparseVector;
+import hivemall.math.vector.Vector;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.classification.PredictionHandler;
 import hivemall.smile.regression.RegressionTree;
@@ -25,9 +28,6 @@ import hivemall.utils.codec.Base91;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Preconditions;
-import hivemall.vector.DenseVector;
-import hivemall.vector.SparseVector;
-import hivemall.vector.Vector;
 
 import java.io.IOException;
 import java.util.ArrayList;

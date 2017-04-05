@@ -18,13 +18,14 @@
  */
 package hivemall.smile.utils;
 
+import hivemall.math.matrix.ColumnMajorMatrix;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.MatrixUtils;
+import hivemall.math.matrix.ints.ColumnMajorDenseIntMatrix2d;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.matrix.ColumnMajorMatrix;
-import hivemall.matrix.Matrix;
-import hivemall.matrix.MatrixUtils;
-import hivemall.matrix.ints.ColumnMajorDenseIntMatrix2d;
-import hivemall.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
@@ -34,7 +35,6 @@ import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.math.MathUtils;
-import hivemall.vector.VectorProcedure;
 
 import java.util.Arrays;
 

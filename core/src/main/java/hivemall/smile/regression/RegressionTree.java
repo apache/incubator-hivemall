@@ -34,10 +34,13 @@
 package hivemall.smile.regression;
 
 import hivemall.annotations.VisibleForTesting;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.matrix.Matrix;
-import hivemall.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.vector.DenseVector;
+import hivemall.math.vector.Vector;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
@@ -46,9 +49,6 @@ import hivemall.utils.collections.sets.IntArraySet;
 import hivemall.utils.collections.sets.IntSet;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.math.MathUtils;
-import hivemall.vector.DenseVector;
-import hivemall.vector.Vector;
-import hivemall.vector.VectorProcedure;
 
 import java.io.Externalizable;
 import java.io.IOException;
