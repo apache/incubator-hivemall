@@ -18,6 +18,8 @@
  */
 package hivemall.smile.utils;
 
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.ColumnMajorMatrix;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixUtils;
@@ -273,7 +275,7 @@ public final class SmileExtUtils {
         return Thread.currentThread().getId() * System.nanoTime();
     }
 
-    public static void shuffle(@Nonnull final int[] x, @Nonnull final smile.math.Random rnd) {
+    public static void shuffle(@Nonnull final int[] x, @Nonnull final PRNG rnd) {
         for (int i = x.length; i > 1; i--) {
             int j = rnd.nextInt(i);
             swap(x, i - 1, j);
@@ -291,7 +293,7 @@ public final class SmileExtUtils {
             seed = generateSeed();
         }
 
-        final smile.math.Random rnd = new smile.math.Random(seed);
+        final PRNG rnd = RandomNumberGeneratorFactory.createPRNG(seed);
         if (x.swappable()) {
             for (int i = numRows; i > 1; i--) {
                 int j = rnd.nextInt(i);
@@ -324,7 +326,7 @@ public final class SmileExtUtils {
             seed = generateSeed();
         }
 
-        final smile.math.Random rnd = new smile.math.Random(seed);
+        final PRNG rnd = RandomNumberGeneratorFactory.createPRNG(seed);
         if (x.swappable()) {
             for (int i = numRows; i > 1; i--) {
                 int j = rnd.nextInt(i);

@@ -19,6 +19,8 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.MatrixUtils;
 import hivemall.matrix.builders.CSRMatrixBuilder;
@@ -475,10 +477,10 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
         @Override
         public Integer call() throws HiveException {
-            long s = (this._seed == -1L) ? SmileExtUtils.generateSeed() : new smile.math.Random(
-                _seed).nextLong();
-            final smile.math.Random rnd1 = new smile.math.Random(s);
-            final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
+            long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
+                    : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
+            final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
+            final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
             final int N = _x.numRows();
 
             // Training samples draw with replacement.
@@ -516,15 +518,14 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
 
         @Nonnull
-        private int[] sampling(@Nonnull final BitSet sampled, final int N,
-                @Nonnull smile.math.Random rnd) {
+        private int[] sampling(@Nonnull final BitSet sampled, final int N, @Nonnull PRNG rnd) {
             return _udtf._stratifiedSampling ? stratifiedSampling(sampled, N, rnd)
                     : uniformSampling(sampled, N, rnd);
         }
 
         @Nonnull
         private static int[] uniformSampling(@Nonnull final BitSet sampled, final int N,
-                final smile.math.Random rnd) {
+                final PRNG rnd) {
             final int[] bags = new int[N];
             for (int i = 0; i < N; i++) {
                 int index = rnd.nextInt(N);
@@ -540,8 +541,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * @link https://en.wikipedia.org/wiki/Stratified_sampling
          */
         @Nonnull
-        private int[] stratifiedSampling(@Nonnull final BitSet sampled, final int N,
-                final smile.math.Random rnd) {
+        private int[] stratifiedSampling(@Nonnull final BitSet sampled, final int N, final PRNG rnd) {
             final IntArrayList bagsList = new IntArrayList(N);
             final int k = smile.math.Math.max(_y) + 1;
             final IntArrayList cj = new IntArrayList(N / k);

@@ -34,6 +34,8 @@
 package hivemall.smile.regression;
 
 import hivemall.annotations.VisibleForTesting;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.data.Attribute;
@@ -61,7 +63,6 @@ import javax.annotation.Nullable;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 import smile.math.Math;
-import smile.math.Random;
 import smile.regression.GradientTreeBoost;
 import smile.regression.RandomForest;
 import smile.regression.Regression;
@@ -131,7 +132,7 @@ public final class RegressionTree implements Regression<Vector> {
      */
     private final ColumnMajorIntMatrix _order;
 
-    private final Random _rnd;
+    private final PRNG _rnd;
 
     private final NodeOutput _nodeOutput;
 
@@ -696,14 +697,13 @@ public final class RegressionTree implements Regression<Vector> {
     }
 
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
-            int maxLeafs, @Nullable smile.math.Random rand) {
+            int maxLeafs, @Nullable PRNG rand) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, rand);
     }
 
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
-            @Nullable smile.math.Random rand) {
+            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags, @Nullable PRNG rand) {
         this(attributes, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
     }
 
@@ -724,7 +724,7 @@ public final class RegressionTree implements Regression<Vector> {
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
             @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
-            @Nullable NodeOutput output, @Nullable smile.math.Random rand) {
+            @Nullable NodeOutput output, @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);
@@ -740,7 +740,7 @@ public final class RegressionTree implements Regression<Vector> {
         this._minLeafSize = minLeafSize;
         this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
         this._importance = new double[_attributes.length];
-        this._rnd = (rand == null) ? new smile.math.Random() : rand;
+        this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
         this._nodeOutput = output;
 
         int n = 0;

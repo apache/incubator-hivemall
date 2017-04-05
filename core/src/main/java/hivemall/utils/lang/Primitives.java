@@ -18,6 +18,8 @@
  */
 package hivemall.utils.lang;
 
+import javax.annotation.Nonnull;
+
 public final class Primitives {
     public static final int INT_BYTES = Integer.SIZE / Byte.SIZE;
     public static final int DOUBLE_BYTES = Double.SIZE / Byte.SIZE;
@@ -109,6 +111,16 @@ public final class Primitives {
 
     public static int getLow(final long key) {
         return (int) key & 0xffffffff;
+    }
+
+    @Nonnull
+    public static byte[] toBytes(long l) {
+        final byte[] retVal = new byte[8];
+        for (int i = 0; i < 8; i++) {
+            retVal[i] = (byte) l;
+            l >>= 8;
+        }
+        return retVal;
     }
 
 }

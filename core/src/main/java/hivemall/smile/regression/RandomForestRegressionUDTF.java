@@ -19,6 +19,8 @@
 package hivemall.smile.regression;
 
 import hivemall.UDTFWithOptions;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.builders.MatrixBuilder;
@@ -444,10 +446,10 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         @Override
         public Integer call() throws HiveException {
-            long s = (this._seed == -1L) ? SmileExtUtils.generateSeed() : new smile.math.Random(
-                _seed).nextLong();
-            final smile.math.Random rnd1 = new smile.math.Random(s);
-            final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
+            long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
+                    : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
+            final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
+            final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
             final int N = _x.numRows();
 
             // Training samples draw with replacement.

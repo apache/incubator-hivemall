@@ -266,8 +266,8 @@ public class RandomForestClassifierUDTFTest {
         final int numTrees = 10;
         RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-seed 71 -trees "
-                    + numTrees);
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-stratified_sampling -seed 71 -trees " + numTrees);
         udtf.initialize(new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
@@ -333,7 +333,7 @@ public class RandomForestClassifierUDTFTest {
             while (tokens.hasMoreTokens()) {
                 features.add(tokens.nextToken());
             }
-            if(!features.isEmpty()) {
+            if (!features.isEmpty()) {
                 udtf.process(new Object[] {features, label});
                 features.clear();
             }

@@ -19,6 +19,8 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.builders.MatrixBuilder;
@@ -373,9 +375,9 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         }
 
         long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
-                : new smile.math.Random(_seed).nextLong();
-        final smile.math.Random rnd1 = new smile.math.Random(s);
-        final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
+                : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
+        final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
+        final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
 
         final Vector xProbe = x.rowVector();
         for (int m = 0; m < _numTrees; m++) {
@@ -449,9 +451,9 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final int[] perm = MathUtils.permutation(numInstances);
 
         long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
-                : new smile.math.Random(_seed).nextLong();
-        final smile.math.Random rnd1 = new smile.math.Random(s);
-        final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
+                : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
+        final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
+        final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
 
         // out-of-bag prediction
         final int[] prediction = new int[numInstances];

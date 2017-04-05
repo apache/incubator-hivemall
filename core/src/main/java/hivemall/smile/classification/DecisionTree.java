@@ -34,6 +34,8 @@
 package hivemall.smile.classification;
 
 import hivemall.annotations.VisibleForTesting;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.smile.data.Attribute;
@@ -62,7 +64,6 @@ import org.roaringbitmap.RoaringBitmap;
 
 import smile.classification.Classifier;
 import smile.math.Math;
-import smile.math.Random;
 
 /**
  * Decision tree for classification. A decision tree can be learned by splitting the training set into subsets based on an attribute value test. This
@@ -152,7 +153,7 @@ public final class DecisionTree implements Classifier<Vector> {
     private final ColumnMajorIntMatrix _order;
 
     @Nonnull
-    private final Random _rnd;
+    private final PRNG _rnd;
 
     /**
      * The criterion to choose variable to split instances.
@@ -668,10 +669,6 @@ public final class DecisionTree implements Classifier<Vector> {
             double[] falseChildPosteriori = new double[_k];
             int tc = splitSamples(trueBags, falseBags, trueChildPosteriori, falseChildPosteriori);
             int fc = bags.length - tc;
-            for (int i = 0; i < _k; i++) {
-                trueChildPosteriori[i] /= tc;
-                falseChildPosteriori[i] /= fc;
-            }
             this.bags = null; // help GC for recursive call
 
             if (tc < _minLeafSize || fc < _minLeafSize) {
@@ -681,6 +678,11 @@ public final class DecisionTree implements Classifier<Vector> {
                 node.splitValue = Double.NaN;
                 node.splitScore = 0.0;
                 return false;
+            }
+
+            for (int i = 0; i < _k; i++) {
+                trueChildPosteriori[i] /= tc;
+                falseChildPosteriori[i] /= fc;
             }
 
             node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
@@ -814,7 +816,7 @@ public final class DecisionTree implements Classifier<Vector> {
     }
 
     public DecisionTree(@Nullable Attribute[] attributes, @Nullable Matrix x, @Nullable int[] y,
-            int numLeafs, @Nullable smile.math.Random rand) {
+            int numLeafs, @Nullable PRNG rand) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
     }
 
@@ -837,7 +839,7 @@ public final class DecisionTree implements Classifier<Vector> {
     public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
             @Nullable int[] bags, @Nullable ColumnMajorIntMatrix order, @Nonnull SplitRule rule,
-            @Nullable smile.math.Random rand) {
+            @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
         this._k = Math.max(y) + 1;
@@ -859,7 +861,7 @@ public final class DecisionTree implements Classifier<Vector> {
         this._rule = rule;
         this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
         this._importance = new double[_attributes.length];
-        this._rnd = (rand == null) ? new smile.math.Random() : rand;
+        this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
 
         final int n = y.length;
         final int[] count = new int[_k];

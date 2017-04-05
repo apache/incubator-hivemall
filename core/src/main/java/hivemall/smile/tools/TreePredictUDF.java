@@ -104,7 +104,7 @@ public final class TreePredictUDF extends GenericUDF {
             List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(2);
             fieldNames.add("value");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-            fieldNames.add("proba");
+            fieldNames.add("posteriori");
             fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         } else {

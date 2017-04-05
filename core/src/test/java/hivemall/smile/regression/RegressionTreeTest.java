@@ -18,6 +18,7 @@
  */
 package hivemall.smile.regression;
 
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.dense.RowMajorDenseMatrix2d;
@@ -70,9 +71,8 @@ public class RegressionTreeTest {
             double[][] trainx = Math.slice(longley, loocv.train[i]);
             double[] trainy = Math.slice(y, loocv.train[i]);
             int maxLeafs = 10;
-            smile.math.Random rand = new smile.math.Random(i);
             RegressionTree tree = new RegressionTree(attrs, matrix(trainx, true), trainy, maxLeafs,
-                rand);
+                RandomNumberGeneratorFactory.createPRNG(i));
 
             double r = y[loocv.test[i]] - tree.predict(longley[loocv.test[i]]);
             rss += r * r;
@@ -114,9 +114,8 @@ public class RegressionTreeTest {
             double[][] trainx = Math.slice(longley, loocv.train[i]);
             double[] trainy = Math.slice(y, loocv.train[i]);
             int maxLeafs = 10;
-            smile.math.Random rand = new smile.math.Random(i);
             RegressionTree tree = new RegressionTree(attrs, matrix(trainx, false), trainy,
-                maxLeafs, rand);
+                maxLeafs, RandomNumberGeneratorFactory.createPRNG(i));
 
             double r = y[loocv.test[i]] - tree.predict(longley[loocv.test[i]]);
             rss += r * r;

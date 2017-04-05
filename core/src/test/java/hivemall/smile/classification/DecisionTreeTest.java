@@ -19,6 +19,7 @@
 package hivemall.smile.classification;
 
 import static org.junit.Assert.assertEquals;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.matrix.Matrix;
 import hivemall.matrix.builders.CSRMatrixBuilder;
 import hivemall.matrix.dense.RowMajorDenseMatrix2d;
@@ -125,9 +126,8 @@ public class DecisionTreeTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
-            smile.math.Random rand = new smile.math.Random(i);
             DecisionTree tree = new DecisionTree(attrs, matrix(trainx, dense), trainy, numLeafs,
-                rand);
+                RandomNumberGeneratorFactory.createPRNG(i));
             if (y[loocv.test[i]] != tree.predict(x[loocv.test[i]])) {
                 error++;
             }
@@ -157,13 +157,12 @@ public class DecisionTreeTest {
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
             DecisionTree dtree = new DecisionTree(attrs, matrix(trainx, true), trainy, numLeafs,
-                new smile.math.Random(i));
+                RandomNumberGeneratorFactory.createPRNG(i));
             DecisionTree stree = new DecisionTree(attrs, matrix(trainx, false), trainy, numLeafs,
-                new smile.math.Random(i));
+                RandomNumberGeneratorFactory.createPRNG(i));
             Assert.assertEquals(dtree.predict(x[loocv.test[i]]), stree.predict(x[loocv.test[i]]));
         }
     }
-
 
     @Test
     public void testIrisSerializedObj() throws IOException, ParseException, HiveException {
