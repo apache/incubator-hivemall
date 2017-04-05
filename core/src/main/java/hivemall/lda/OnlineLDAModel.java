@@ -143,16 +143,7 @@ public final class OnlineLDAModel {
         updateSizeOfParameterForMiniBatch();
 
         // Expectation
-        float[][] lastGamma;
-        do {
-            // (deep) copy the last gamma values
-            lastGamma = new float[gamma_.length][];
-            for (int d = 0; d < gamma_.length; d++) {
-                lastGamma[d] = gamma_[d].clone();
-            }
-
-            stepE();
-        } while (!checkGammaDiff(lastGamma, gamma_));
+        stepE();
 
         // Maximization
         stepM();
@@ -161,71 +152,86 @@ public final class OnlineLDAModel {
     }
 
     private void stepE() {
-        // 1) Updating phi
+        float[] gammaPrev_d;
 
-        // dirichlet_expectation_2d(gamma_)
-        float[][] eLogTheta = new float[miniBatchSize_][K_];
+        // for each of mini-batch documents, update gamma until convergence
         for (int d = 0; d < miniBatchSize_; d++) {
-            float gammaSum_d = 0.f;
-            for (int k = 0; k < K_; k++) {
-                gammaSum_d += gamma_[d][k];
-            }
-            for (int k = 0; k < K_; k++) {
-                eLogTheta[d][k] = (float) (Gamma.digamma(gamma_[d][k]) - Gamma.digamma(gammaSum_d));
-            }
+            do {
+                // (deep) copy the last gamma values
+                gammaPrev_d = gamma_[d].clone();
+
+                updatePhiForSingleDoc(d);
+                updateGammaForSingleDoc(d);
+            } while (!checkGammaDiff(gammaPrev_d, gamma_[d]));
+        }
+
+    }
+
+    private void updatePhiForSingleDoc(int d) {
+        // dirichlet_expectation_2d(gamma_)
+        float[] eLogTheta_d = new float[K_];
+        float gammaSum_d = 0.f;
+        for (int k = 0; k < K_; k++) {
+            gammaSum_d += gamma_[d][k];
+        }
+        for (int k = 0; k < K_; k++) {
+            eLogTheta_d[k] = (float) (Gamma.digamma(gamma_[d][k]) - Gamma.digamma(gammaSum_d));
         }
 
         // dirichlet_expectation_2d(lambda_)
-        Map<String, float[]> eLogBeta = new HashMap<String, float[]>();
+        Map<String, float[]> eLogBeta_d = new HashMap<String, float[]>();
         for (int k = 0; k < K_; k++) {
             float lambdaSum_k = 0.f;
             for (String label : lambda_.keySet()) {
                 lambdaSum_k += lambda_.get(label)[k];
             }
-            for (int d = 0; d < miniBatchSize_; d++) {
-                for (String label : miniBatchMap_.get(d).keySet()) {
-                    float[] eLogBeta_label;
-                    if (eLogBeta.containsKey(label)) {
-                        eLogBeta_label = eLogBeta.get(label);
-                    } else {
-                        eLogBeta_label = new float[K_];
-                        Arrays.fill(eLogBeta_label, 0.f);
-                    }
-
-                    eLogBeta_label[k] = (float) (Gamma.digamma(lambda_.get(label)[k]) - Gamma.digamma(lambdaSum_k));
-                    eLogBeta.put(label, eLogBeta_label);
+            for (String label : miniBatchMap_.get(d).keySet()) {
+                float[] eLogBeta_label;
+                if (eLogBeta_d.containsKey(label)) {
+                    eLogBeta_label = eLogBeta_d.get(label);
+                } else {
+                    eLogBeta_label = new float[K_];
+                    Arrays.fill(eLogBeta_label, 0.f);
                 }
+
+                eLogBeta_label[k] = (float) (Gamma.digamma(lambda_.get(label)[k]) - Gamma.digamma(lambdaSum_k));
+                eLogBeta_d.put(label, eLogBeta_label);
             }
         }
 
         // updating phi w/ normalization
-        for (int d = 0; d < miniBatchSize_; d++) {
-            for (String label : miniBatchMap_.get(d).keySet()) {
-                float normalizer = 0.f;
-                for (int k = 0; k < K_; k++) {
-                    float phi_dwk = (float) Math.exp(eLogTheta[d][k]
-                            + eLogBeta.get(label)[k]) + 1E-20f;
-                    phi_.get(d).get(label)[k] = phi_dwk;
-                    normalizer += phi_dwk;
-                }
-
-                // normalize
-                for (int k = 0; k < K_; k++) {
-                    phi_.get(d).get(label)[k] /= normalizer;
-                }
-            }
-        }
-
-        // 2) Updating gamma
-        for (int d = 0; d < miniBatchSize_; d++) {
+        for (String label : miniBatchMap_.get(d).keySet()) {
+            float normalizer = 0.f;
             for (int k = 0; k < K_; k++) {
-                float gamma_dk = alpha_;
-                for (String label : miniBatchMap_.get(d).keySet()) {
-                    gamma_dk += phi_.get(d).get(label)[k] * miniBatchMap_.get(d).get(label);
-                }
-                gamma_[d][k] = gamma_dk;
+                float phi_dwk = (float) Math.exp(eLogTheta_d[k]
+                        + eLogBeta_d.get(label)[k]) + 1E-20f;
+                phi_.get(d).get(label)[k] = phi_dwk;
+                normalizer += phi_dwk;
+            }
+
+            // normalize
+            for (int k = 0; k < K_; k++) {
+                phi_.get(d).get(label)[k] /= normalizer;
             }
         }
+    }
+
+    private void updateGammaForSingleDoc(int d) {
+        for (int k = 0; k < K_; k++) {
+            float gamma_dk = alpha_;
+            for (String label : miniBatchMap_.get(d).keySet()) {
+                gamma_dk += phi_.get(d).get(label)[k] * miniBatchMap_.get(d).get(label);
+            }
+            gamma_[d][k] = gamma_dk;
+        }
+    }
+
+    private boolean checkGammaDiff(float[] gammaPrev, float[] gammaNext) {
+        double diff = 0.d;
+        for (int k = 0; k < K_; k++) {
+            diff += Math.abs(gammaPrev[k] - gammaNext[k]);
+        }
+        return (diff / K_) < delta_;
     }
 
     private void stepM() {
@@ -341,16 +347,6 @@ public final class OnlineLDAModel {
         }
 
         return ret;
-    }
-
-    private boolean checkGammaDiff(float[][] lastGamma, float[][] nextGamma) {
-        double diff = 0.d;
-        for (int d = 0; d < miniBatchSize_; d++) {
-            for (int k = 0; k < K_; k++) {
-                diff += Math.abs(lastGamma[d][k] - nextGamma[d][k]);
-            }
-        }
-        return (diff < delta_ * miniBatchSize_ * K_);
     }
 
     /**
