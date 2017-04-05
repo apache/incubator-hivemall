@@ -461,4 +461,24 @@ public final class OnlineLDAModel {
 
         return ret;
     }
+
+    public float[] getTopicDistribution(@Nonnull String[] doc) {
+        miniBatchSize_ = 1;
+        makeMiniBatchMap(new String[][] {doc});
+        initParams();
+        stepE();
+
+        float[] topicDistr = new float[K_];
+
+        // normalize
+        float gammaSum = 0.f;
+        for (int k = 0; k < K_; k++) {
+            gammaSum += gamma_[0][k];
+        }
+        for (int k = 0; k < K_; k++) {
+            topicDistr[k] = gamma_[0][k] / gammaSum;
+        }
+
+        return topicDistr;
+    }
 }

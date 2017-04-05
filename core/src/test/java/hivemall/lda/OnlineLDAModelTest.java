@@ -36,18 +36,20 @@ public class OnlineLDAModelTest {
 
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
+        String[][] doc1 = new String[][] {new String[] {"fruits:1", "healthy:1", "vegetables:1"}};
+        String[][] doc2 = new String[][] {new String[] {"apples:1", "avocados:1", "colds:1", "flu:1",
+                "like:2", "oranges:1"}};
+
         do {
             // online (i.e., one-by-one) updating
-            model.train(new String[][] {new String[] {"fruits:1", "healthy:1", "vegetables:1"}});
-
-            model.train(new String[][] {new String[] {"apples:1", "avocados:1", "colds:1", "flu:1",
-                    "like:2", "oranges:1"}});
+            model.train(doc1);
+            model.train(doc2);
 
             it++;
             perplexityPrev = perplexity;
             perplexity = model.computePerplexity();
             println("Iteration " + it + ": perplexity = " + perplexity);
-        } while(Math.abs(perplexityPrev - perplexity) >= 1E-1f);
+        } while(Math.abs(perplexityPrev - perplexity) >= 1E-5f);
 
         SortedMap<Float, String> topicWords;
 
@@ -67,9 +69,9 @@ public class OnlineLDAModelTest {
         }
         println("========");
 
-
         int k1, k2;
-        if (model.getLambda("fruits", 0) > model.getLambda("apples", 0)) {
+        float[] topicDistr = model.getTopicDistribution(doc1[0]);
+        if (topicDistr[0] > topicDistr[1]) {
             // topic 0 MUST represent doc#1
             k1 = 0;
             k2 = 1;
