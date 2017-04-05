@@ -192,7 +192,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
 
             Object[] partial = new Object[2];
             partial[0] = new IntWritable(buf._k);
-            partial[2] = WritableUtils.toWritableList(buf._posteriori);
+            partial[1] = WritableUtils.toWritableList(buf._posteriori);
             return partial;
         }
 
