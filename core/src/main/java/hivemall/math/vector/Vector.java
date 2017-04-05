@@ -32,10 +32,15 @@ public interface Vector {
      */
     public void set(@Nonnegative int index, double value);
 
+    public void incr(@Nonnegative int index, double delta);
+
     public void each(@Nonnull VectorProcedure procedure);
 
     public int size();
-    
+
     public void clear();
+
+    @Nonnull
+    public double[] toArray();
 
 }

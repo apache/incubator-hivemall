@@ -49,6 +49,11 @@ public final class SparseVector extends AbstractVector {
     }
 
     @Override
+    public void incr(@Nonnegative final int index, final double delta) {
+        values.increment(index, delta);
+    }
+
+    @Override
     public void each(@Nonnull final VectorProcedure procedure) {
         values.each(procedure);
     }
@@ -61,6 +66,11 @@ public final class SparseVector extends AbstractVector {
     @Override
     public void clear() {
         values.clear();
+    }
+
+    @Override
+    public double[] toArray() {
+        return values.toArray();
     }
 
 }

@@ -59,6 +59,13 @@ public final class DenseVector extends AbstractVector {
     }
 
     @Override
+    public void incr(@Nonnegative final int index, final double delta) {
+        checkIndex(index, size);
+
+        values[index] += delta;
+    }
+
+    @Override
     public void each(@Nonnull final VectorProcedure procedure) {
         for (int i = 0; i < values.length; i++) {
             procedure.apply(i, values[i]);
@@ -73,6 +80,11 @@ public final class DenseVector extends AbstractVector {
     @Override
     public void clear() {
         Arrays.fill(values, 0.d);
+    }
+
+    @Override
+    public double[] toArray() {
+        return values;
     }
 
 }
