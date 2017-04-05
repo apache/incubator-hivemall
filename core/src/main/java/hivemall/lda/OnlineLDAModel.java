@@ -52,7 +52,7 @@ public final class OnlineLDAModel {
 
     // defined by (tau0 + updateCount)^(-kappa_)
     // controls how much old lambda is forgotten
-    private double rhot;
+    private double rhot_;
 
     // positive value which downweights early iterations
     @Nonnegative
@@ -132,7 +132,7 @@ public final class OnlineLDAModel {
     public void train(@Nonnull String[][] miniBatch) {
         miniBatchSize_ = miniBatch.length;
 
-        rhot = Math.pow(tau0_ + updateCount_, -kappa_);
+        rhot_ = Math.pow(tau0_ + updateCount_, -kappa_);
 
         // get the number of words(Nd) for each documents
         getMiniBatchParams(miniBatch);
@@ -262,7 +262,7 @@ public final class OnlineLDAModel {
                 Arrays.fill(lambdaBar_label, eta_);
             }
             for (int k = 0; k < K_; k++) {
-                lambda_label[k] = (float) ((1.d - rhot) * lambda_label[k] + rhot * lambdaBar_label[k]);
+                lambda_label[k] = (float) ((1.d - rhot_) * lambda_label[k] + rhot_ * lambdaBar_label[k]);
             }
             lambda_.put(label, lambda_label);
         }
