@@ -50,7 +50,8 @@ public final class OnlineLDAModel {
     // in the truly online setting, this can be an estimate of the maximum number of documents that could ever seen
     private int D_ = 11102;
 
-    // defined by (tau0 + countEMStep)^(-kappa_)
+    // defined by (tau0 + updateCount)^(-kappa_)
+    // controls how much old lambda is forgotten
     private double rhot;
 
     // positive value which downweights early iterations
@@ -59,6 +60,9 @@ public final class OnlineLDAModel {
 
     // exponential decay rate (i.e., learning rate) which must be in (0.5, 1] to guarantee convergence
     private double kappa_ = 0.7;
+
+    // how many times EM steps are launched; later EM steps do not drastically forget old lambda
+    private long updateCount_;
 
     // random number generator
     private final GammaDistribution gd_;
@@ -98,6 +102,8 @@ public final class OnlineLDAModel {
         kappa_ = kappa;
         delta_ = delta;
 
+        updateCount_ = 1L;
+
         // initialize a random number generator
         gd_ = new GammaDistribution(SHAPE, SCALE);
         gd_.reseedRandomGenerator(1001);
@@ -123,10 +129,10 @@ public final class OnlineLDAModel {
         return ary;
     }
 
-    public void train(@Nonnull String[][] miniBatch, long time) {
+    public void train(@Nonnull String[][] miniBatch) {
         miniBatchSize_ = miniBatch.length;
 
-        rhot = Math.pow(tau0_ + time, -kappa_);
+        rhot = Math.pow(tau0_ + updateCount_, -kappa_);
 
         // get the number of words(Nd) for each documents
         getMiniBatchParams(miniBatch);
@@ -150,6 +156,8 @@ public final class OnlineLDAModel {
 
         // Maximization
         stepM();
+
+        updateCount_ += 1;
     }
 
     private void stepE() {

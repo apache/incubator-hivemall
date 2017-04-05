@@ -179,7 +179,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
 
         count++;
         recordTrainSampleToTempFile(wordCounts);
-        model.train(new String[][] {wordCounts}, count); // mini-batch w/ single sample
+        model.train(new String[][] {wordCounts}); // mini-batch w/ single sample
     }
 
     protected void recordTrainSampleToTempFile(@Nonnull final String[] wordCounts) throws HiveException {
@@ -213,8 +213,8 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
         for (String wc : wordCounts) {
             wcLength += wc.getBytes().length;
         }
-        // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ..., count
-        int recordBytes = (Integer.SIZE * 3 + Integer.SIZE * wcLength) / 8 + wcLength;
+        // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
+        int recordBytes = (Integer.SIZE * 2 + Integer.SIZE * wcLength) / 8 + wcLength;
         int remain = buf.remaining();
         if (remain < recordBytes) {
             writeBuffer(buf, dst);
@@ -226,7 +226,6 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
             buf.putInt(wc.length());
             buf.put(wc.getBytes());
         }
-        buf.putLong(count);
     }
 
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
@@ -288,15 +287,15 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                             buf.get(bytes);
                             wordCounts[j] = new String(bytes);
                         }
-                        long t = buf.getLong();
-                        model.train(new String[][] {wordCounts}, t);
+                        model.train(new String[][] {wordCounts});
                     }
                     // TODO: check perplexity and break if the model is successfully learnt
                     buf.rewind();
                 }
                 logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
-                        + " training examples on memory (thus " + NumberUtils.formatNumber(count)
+                        + " training examples on memory (thus "
+                        + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
                         + " training updates in total) ");
             } else {// read training examples in the temporary file and invoke train for each example
 
@@ -364,8 +363,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                                 buf.get(bytes);
                                 wordCounts[j] = new String(bytes);
                             }
-                            long t = buf.getLong();
-                            model.train(new String[][] {wordCounts}, t);
+                            model.train(new String[][] {wordCounts});
 
                             remain -= recordBytes;
                         }
@@ -376,7 +374,8 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                 logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
-                        + NumberUtils.formatNumber(count) + " training updates in total)");
+                        + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
+                        + " training updates in total)");
             }
         } finally {
             // delete the temporary file and release resources
