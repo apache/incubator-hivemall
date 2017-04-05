@@ -16,7 +16,9 @@ RUN set -eux && \
       -e 's!${category}!cdh5!g' \
       /etc/apt/sources.list.d/cloudera.list && \
     apt update && \
-    apt install -y --no-install-recommends maven hadoop-conf-pseudo hive && \
+    apt install -y --no-install-recommends hadoop-conf-pseudo hive maven ruby npm && \
+    ln -s /usr/bin/nodejs /usr/bin/node && \
+    npm install -g gitbook-cli && \
     su hdfs -c 'hdfs namenode -format' && \
     rm /usr/lib/hadoop/lib/slf4j-log4j12.jar && \
     ln -s /usr/lib/parquet/lib/slf4j-log4j12-*.jar \
@@ -36,9 +38,9 @@ RUN set -eux && \
       mvn package -Dmaven.test.skip=true -pl core; \
     fi) && \
     \
-    rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*
+    rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* /root/.m2/*
 
 VOLUME /hivemall/ /root/data/
-EXPOSE 19888 50070
+EXPOSE 8000 19888 50070
 
 CMD ["sh", "-c", "./init.sh && bash"]
