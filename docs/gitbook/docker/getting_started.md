@@ -1,0 +1,42 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+
+# Getting Started
+
+## How to run
+1. Install the following
+  * `Docker Engine 1.6+`
+  * [OPT] `Docker Compose 1.10+` (optional but recommended)
+2. Build Image
+  * `docker-compose build`
+3. Run Container
+  * `docker run -it ${your data volume and port options} hivemall`
+  * Or
+    1. Edit `docker-compose.yml`
+    2. `docker-compose up -d && docker exec -it hivemall sh -c './init.sh && bash'`
+4. Start Hivemall (in container)
+  1. [OPT] Load data into HDFS
+    * You can load iris dataset by just `./prepare_iris.sh`
+  2. `hive` to run Hive with Hivemall
+  3. Run your queries
+
+
+## Notice
+* **Use for testing only**
+* Including build tools for Hivemall

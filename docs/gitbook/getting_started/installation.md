@@ -42,3 +42,13 @@ $ hive
 add jar /tmp/hivemall-core-xxx-with-dependencies.jar;
 source /tmp/define-all.hive;
 ```
+
+
+Other choices
+=============
+
+You can also run Hivemall on the following
+
+* [Apache Spark](../spark/getting_started/installation.md)
+* [Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)
+* [Apache Hive on Docker](../docker/getting_started.md) for testing
