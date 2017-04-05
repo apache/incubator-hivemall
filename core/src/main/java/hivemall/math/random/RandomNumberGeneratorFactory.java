@@ -80,7 +80,8 @@ public final class RandomNumberGeneratorFactory {
                 rng = new SmileRandom(seed);
                 break;
             case smileMT:
-                rng = new SmileRandom(new smile.math.random.MersenneTwister(Long.hashCode(seed)));
+                rng = new SmileRandom(new smile.math.random.MersenneTwister(
+                    Primitives.hashCode(seed)));
                 break;
             case smileMT64:
                 rng = new SmileRandom(new smile.math.random.MersenneTwister64(seed));

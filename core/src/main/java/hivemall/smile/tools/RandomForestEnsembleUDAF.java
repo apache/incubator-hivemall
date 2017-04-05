@@ -59,14 +59,16 @@ import org.apache.hadoop.io.IntWritable;
                 + " - Returns emsebled prediction results in <int label, double probability, array<double> probabilities>")
 public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver {
 
-    private RandomForestEnsembleUDAF() {}// prevent instantiation
+    public RandomForestEnsembleUDAF() {
+        super();
+    }
 
     @Override
     public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentLengthException("Expected 2 or 3 arguments but got "
                     + typeInfo.length);
-        }        
+        }
         if (!HiveUtils.isIntegerTypeInfo(typeInfo[0])) {
             throw new UDFArgumentTypeException(0, "Expected INT for yhat: " + typeInfo[0]);
         }
@@ -79,7 +81,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 throw new UDFArgumentTypeException(2, "Expected DOUBLE or FLOAT for model_weight: "
                         + typeInfo[2]);
             }
-        }        
+        }
         return new RfEvaluator();
     }
 

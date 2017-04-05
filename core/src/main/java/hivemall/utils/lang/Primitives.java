@@ -123,4 +123,8 @@ public final class Primitives {
         return retVal;
     }
 
+    public static int hashCode(final long value) {
+        return (int) (value ^ (value >>> 32));
+    }
+
 }
