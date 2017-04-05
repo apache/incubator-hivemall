@@ -1,0 +1,16 @@
+version: '2'
+services:
+  hivemall:
+    build:
+      context: .
+      args:
+        - PREBUILD=false
+    image: hivemall
+    container_name: hivemall
+    ports:
+      - "19888:19888"
+      - "50070:50070"
+    volumes:
+      - ".:/hivemall/"
+      #- "/path/to/data/:/root/data/"
+    command: sh -c "./init.sh && tail -f /dev/null"
