@@ -30,6 +30,7 @@ import hivemall.math.matrix.ints.IntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
@@ -45,7 +46,9 @@ import hivemall.utils.lang.RandomUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -258,7 +261,13 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         fieldNames.add("model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("var_importance");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        if (denseInput) {
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        } else {
+            fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        }
         fieldNames.add("oob_errors");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldNames.add("oob_tests");
@@ -392,7 +401,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
      * @param accuracy
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
-            @Nonnull final double[] importance, @Nonnegative final double accuracy, final int[] y,
+            @Nonnull final Vector importance, @Nonnegative final double accuracy, final int[] y,
             @Nonnull final IntMatrix prediction, final boolean lastTask) throws HiveException {
         int oobErrors = 0;
         int oobTests = 0;
@@ -414,7 +423,18 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         forwardObjs[0] = new Text(modelId);
         forwardObjs[1] = new DoubleWritable(accuracy);
         forwardObjs[2] = model;
-        forwardObjs[3] = WritableUtils.toWritableList(importance);
+        if (denseInput) {
+            forwardObjs[3] = WritableUtils.toWritableList(importance.toArray());
+        } else {
+            final Map<IntWritable, DoubleWritable> map = new HashMap<IntWritable, DoubleWritable>(
+                importance.size());
+            importance.each(new VectorProcedure() {
+                public void apply(int i, double value) {
+                    map.put(new IntWritable(i), new DoubleWritable(value));
+                }
+            });
+            forwardObjs[3] = map;
+        }
         forwardObjs[4] = new IntWritable(oobErrors);
         forwardObjs[5] = new IntWritable(oobTests);
         forward(forwardObjs);
@@ -516,7 +536,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             }
 
             Text model = getModel(tree);
-            double[] importance = tree.importance();
+            Vector importance = tree.importance();
             double accuracy = (oob == 0) ? 1.0d : (double) correct / oob;
             int remain = _remainingTasks.decrementAndGet();
             boolean lastTask = (remain == 0);

@@ -39,6 +39,7 @@ import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
+import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.data.Attribute;
@@ -115,7 +116,7 @@ public final class DecisionTree implements Classifier<Vector> {
      * variable importance.
      */
     @Nonnull
-    private final double[] _importance;
+    private final Vector _importance;
     /**
      * The root of the regression tree
      */
@@ -708,7 +709,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 }
             }
 
-            _importance[node.splitFeature] += node.splitScore;
+            _importance.incr(node.splitFeature, node.splitScore);
             node.posteriori = null; // posteriori is not needed for non-leaf nodes
 
             return true;
@@ -860,7 +861,7 @@ public final class DecisionTree implements Classifier<Vector> {
         this._minLeafSize = minLeafSize;
         this._rule = rule;
         this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
-        this._importance = new double[_attributes.length];
+        this._importance = x.isSparse() ? new SparseVector() : new DenseVector(_attributes.length);
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
 
         final int n = y.length;
@@ -942,7 +943,8 @@ public final class DecisionTree implements Classifier<Vector> {
      *
      * @return the variable importance
      */
-    public double[] importance() {
+    @Nonnull
+    public Vector importance() {
         return _importance;
     }
 
