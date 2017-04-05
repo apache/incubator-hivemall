@@ -161,22 +161,22 @@ public final class OnlineLDAModel {
     }
 
     private void stepE() {
-        // 1) Updating phi_
+        // 1) Updating phi
 
         // dirichlet_expectation_2d(gamma_)
-        float[][] ElogTheta = new float[miniBatchSize_][K_];
+        float[][] eLogTheta = new float[miniBatchSize_][K_];
         for (int d = 0; d < miniBatchSize_; d++) {
             float gammaSum_d = 0.f;
             for (int k = 0; k < K_; k++) {
                 gammaSum_d += gamma_[d][k];
             }
             for (int k = 0; k < K_; k++) {
-                ElogTheta[d][k] = (float) (Gamma.digamma(gamma_[d][k]) - Gamma.digamma(gammaSum_d));
+                eLogTheta[d][k] = (float) (Gamma.digamma(gamma_[d][k]) - Gamma.digamma(gammaSum_d));
             }
         }
 
         // dirichlet_expectation_2d(lambda_)
-        Map<String, float[]> ElogBeta = new HashMap<String, float[]>();
+        Map<String, float[]> eLogBeta = new HashMap<String, float[]>();
         for (int k = 0; k < K_; k++) {
             float lambdaSum_k = 0.f;
             for (String label : lambda_.keySet()) {
@@ -184,28 +184,29 @@ public final class OnlineLDAModel {
             }
             for (int d = 0; d < miniBatchSize_; d++) {
                 for (String label : miniBatchMap_.get(d).keySet()) {
-                    float[] ElogBeta_label;
-                    if (ElogBeta.containsKey(label)) {
-                        ElogBeta_label = ElogBeta.get(label);
+                    float[] eLogBeta_label;
+                    if (eLogBeta.containsKey(label)) {
+                        eLogBeta_label = eLogBeta.get(label);
                     } else {
-                        ElogBeta_label = new float[K_];
-                        Arrays.fill(ElogBeta_label, 0.f);
+                        eLogBeta_label = new float[K_];
+                        Arrays.fill(eLogBeta_label, 0.f);
                     }
 
-                    ElogBeta_label[k] = (float) (Gamma.digamma(lambda_.get(label)[k]) - Gamma.digamma(lambdaSum_k));
-                    ElogBeta.put(label, ElogBeta_label);
+                    eLogBeta_label[k] = (float) (Gamma.digamma(lambda_.get(label)[k]) - Gamma.digamma(lambdaSum_k));
+                    eLogBeta.put(label, eLogBeta_label);
                 }
             }
         }
 
-        // updating phi_ w/ normalization
+        // updating phi w/ normalization
         for (int d = 0; d < miniBatchSize_; d++) {
             for (String label : miniBatchMap_.get(d).keySet()) {
                 float normalizer = 0.f;
                 for (int k = 0; k < K_; k++) {
-                    phi_.get(d).get(label)[k] = (float) Math.exp(ElogTheta[d][k]
-                            + ElogBeta.get(label)[k]) + 1E-20f;
-                    normalizer += phi_.get(d).get(label)[k];
+                    float phi_dwk = (float) Math.exp(eLogTheta[d][k]
+                            + eLogBeta.get(label)[k]) + 1E-20f;
+                    phi_.get(d).get(label)[k] = phi_dwk;
+                    normalizer += phi_dwk;
                 }
 
                 // normalize
@@ -215,7 +216,7 @@ public final class OnlineLDAModel {
             }
         }
 
-        // 2) Updating gamma_
+        // 2) Updating gamma
         for (int d = 0; d < miniBatchSize_; d++) {
             for (int k = 0; k < K_; k++) {
                 float gamma_dk = alpha_;
@@ -228,24 +229,24 @@ public final class OnlineLDAModel {
     }
 
     private void stepM() {
-        // calculate lambdaBar
-        Map<String, float[]> lambdaBar = new HashMap<String, float[]>();
+        // calculate lambdaNext
+        Map<String, float[]> lambdaNext = new HashMap<String, float[]>();
 
         float docRatio = (float) D_ / (float) miniBatchSize_;
 
         for (int d = 0; d < miniBatchSize_; d++) {
             for (String label : miniBatchMap_.get(d).keySet()) {
-                float[] lambdaBar_label;
-                if (lambdaBar.containsKey(label)) {
-                    lambdaBar_label = lambdaBar.get(label);
+                float[] lambdaNext_label;
+                if (lambdaNext.containsKey(label)) {
+                    lambdaNext_label = lambdaNext.get(label);
                 } else {
-                    lambdaBar_label = new float[K_];
-                    Arrays.fill(lambdaBar_label, eta_);
+                    lambdaNext_label = new float[K_];
+                    Arrays.fill(lambdaNext_label, eta_);
                 }
                 for (int k = 0; k < K_; k++) {
-                    lambdaBar_label[k] += docRatio * phi_.get(d).get(label)[k];
+                    lambdaNext_label[k] += docRatio * phi_.get(d).get(label)[k];
                 }
-                lambdaBar.put(label, lambdaBar_label);
+                lambdaNext.put(label, lambdaNext_label);
             }
         }
 
@@ -254,15 +255,15 @@ public final class OnlineLDAModel {
             String label = e.getKey();
             float[] lambda_label = e.getValue();
 
-            float[] lambdaBar_label;
-            if (lambdaBar.containsKey(label)) {
-                lambdaBar_label = lambdaBar.get(label);
+            float[] lambdaNext_label;
+            if (lambdaNext.containsKey(label)) {
+                lambdaNext_label = lambdaNext.get(label);
             } else {
-                lambdaBar_label = new float[K_];
-                Arrays.fill(lambdaBar_label, eta_);
+                lambdaNext_label = new float[K_];
+                Arrays.fill(lambdaNext_label, eta_);
             }
             for (int k = 0; k < K_; k++) {
-                lambda_label[k] = (float) ((1.d - rhot_) * lambda_label[k] + rhot_ * lambdaBar_label[k]);
+                lambda_label[k] = (float) ((1.d - rhot_) * lambda_label[k] + rhot_ * lambdaNext_label[k]);
             }
             lambda_.put(label, lambda_label);
         }
@@ -397,14 +398,14 @@ public final class OnlineLDAModel {
 
                 tmp = 0.f;
                 for (int k = 0; k < K_; k++) {
-                    float ElogTheta_dk = (float) (Gamma.digamma(gamma_[d][k]) - Gamma.digamma(gammaSum[d]));
-                    float ElogBeta_kw = 0.f;
+                    float eLogTheta_dk = (float) (Gamma.digamma(gamma_[d][k]) - Gamma.digamma(gammaSum[d]));
+                    float eLogBeta_kw = 0.f;
                     if (lambda_.containsKey(d)) {
-                        ElogBeta_kw = (float) (Gamma.digamma(lambda_.get(d)[k] - Gamma.digamma(lambdaSum[k])));
+                        eLogBeta_kw = (float) (Gamma.digamma(lambda_.get(d)[k] - Gamma.digamma(lambdaSum[k])));
                     }
 
                     tmp += phi_.get(d).get(label)[k]
-                            * (ElogTheta_dk + ElogBeta_kw - Math.log(phi_.get(d).get(label)[k]));
+                            * (eLogTheta_dk + eLogBeta_kw - Math.log(phi_.get(d).get(label)[k]));
                 }
                 score += wordCount * tmp;
             }
