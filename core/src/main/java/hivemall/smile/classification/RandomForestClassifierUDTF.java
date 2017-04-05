@@ -38,6 +38,7 @@ import hivemall.utils.codec.Base91;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
+import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
 
@@ -114,6 +115,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private Attribute[] _attributes;
     private SplitRule _splitRule;
     private boolean _stratifiedSampling;
+    private double _subsample;
 
     @Nullable
     private double[] _classWeight;
@@ -145,6 +147,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY]");
         opts.addOption("stratified", "stratified_sampling", false,
             "Enable Stratified sampling for unbalanced data");
+        opts.addOption("subsample", true, "Sampling rate in range (0.0,1.0]");
         return opts;
     }
 
@@ -158,6 +161,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         SplitRule splitRule = SplitRule.GINI;
         double[] classWeight = null;
         boolean stratifiedSampling = false;
+        double subsample = 1.0d;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -178,6 +182,9 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
             splitRule = SmileExtUtils.resolveSplitRule(cl.getOptionValue("split_rule", "GINI"));
             stratifiedSampling = cl.hasOption("stratified_sampling");
+            subsample = Primitives.parseDouble(cl.getOptionValue("subsample"), 1.0d);
+            Preconditions.checkArgument(subsample > 0.d && subsample <= 1.0d,
+                UDFArgumentException.class, "Invalid -subsample value: " + subsample);
 
             if (argOIs.length >= 4) {
                 classWeight = HiveUtils.getConstDoubleArray(argOIs[3]);
@@ -206,6 +213,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._attributes = attrs;
         this._splitRule = splitRule;
         this._stratifiedSampling = stratifiedSampling;
+        this._subsample = subsample;
         this._classWeight = classWeight;
 
         return cl;
@@ -519,15 +527,16 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
         @Nonnull
         private int[] sampling(@Nonnull final BitSet sampled, final int N, @Nonnull PRNG rnd) {
-            return _udtf._stratifiedSampling ? stratifiedSampling(sampled, N, rnd)
-                    : uniformSampling(sampled, N, rnd);
+            return _udtf._stratifiedSampling ? stratifiedSampling(sampled, N, _udtf._subsample, rnd)
+                    : uniformSampling(sampled, N, _udtf._subsample, rnd);
         }
 
         @Nonnull
         private static int[] uniformSampling(@Nonnull final BitSet sampled, final int N,
-                final PRNG rnd) {
+                final double subsample, final PRNG rnd) {
+            final int size = (int) Math.round(N * subsample);
             final int[] bags = new int[N];
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < size; i++) {
                 int index = rnd.nextInt(N);
                 bags[i] = index;
                 sampled.set(index);
@@ -541,7 +550,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * @link https://en.wikipedia.org/wiki/Stratified_sampling
          */
         @Nonnull
-        private int[] stratifiedSampling(@Nonnull final BitSet sampled, final int N, final PRNG rnd) {
+        private int[] stratifiedSampling(@Nonnull final BitSet sampled, final int N,
+                final double subsample, final PRNG rnd) {
             final IntArrayList bagsList = new IntArrayList(N);
             final int k = smile.math.Math.max(_y) + 1;
             final IntArrayList cj = new IntArrayList(N / k);
@@ -553,8 +563,11 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                         nj++;
                     }
                 }
-                final int size = (_udtf._classWeight == null) ? nj
-                        : (int) (nj * _udtf._classWeight[l]);
+                if (subsample != 1.0d) {
+                    nj = (int) Math.round(nj * subsample);
+                }
+                final int size = (_udtf._classWeight == null) ? nj : (int) Math.round(nj
+                        * _udtf._classWeight[l]);
                 for (int j = 0; j < size; j++) {
                     int xi = rnd.nextInt(nj);
                     int index = cj.get(xi);
