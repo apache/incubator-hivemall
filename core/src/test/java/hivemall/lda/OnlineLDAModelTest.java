@@ -36,10 +36,10 @@ public class OnlineLDAModelTest {
 
         for (int it = 0; it < numIter; it++) {
             // online (i.e., one-by-one) updating
-            model.train(new String[][] {new String[] {"fruits:1", "healthy:1", "vegetables:1"}}, 1);
+            model.train(new String[][] {new String[] {"fruits:1", "healthy:1", "vegetables:1"}}, 1L);
 
             model.train(new String[][] {new String[] {"apples:1", "avocados:1", "colds:1", "flu:1",
-                    "like:2", "oranges:1"}}, 2);
+                    "like:2", "oranges:1"}}, 2L);
 
             println("Iteration " + it + ": perplexity = " + model.computePerplexity());
         }

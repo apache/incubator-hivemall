@@ -69,8 +69,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
     protected double delta;
 
     // number of proceeded training samples
-    // TODO: have to be long
-    protected int count;
+    protected long count;
 
     protected OnlineLDAModel model;
 
@@ -149,7 +148,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
         processOptions(argOIs);
 
         this.model = new OnlineLDAModel(topic, alpha, eta, numDoc, tau0, kappa, delta);
-        this.count = 0;
+        this.count = 0L;
 
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -227,7 +226,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
             buf.putInt(wc.length());
             buf.put(wc.getBytes());
         }
-        buf.putInt(count);
+        buf.putLong(count);
     }
 
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
@@ -289,7 +288,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                             buf.get(bytes);
                             wordCounts[j] = new String(bytes);
                         }
-                        int t = buf.getInt();
+                        long t = buf.getLong();
                         model.train(new String[][] {wordCounts}, t);
                     }
                     // TODO: check perplexity and break if the model is successfully learnt
@@ -365,7 +364,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                                 buf.get(bytes);
                                 wordCounts[j] = new String(bytes);
                             }
-                            int t = buf.getInt();
+                            long t = buf.getLong();
                             model.train(new String[][] {wordCounts}, t);
 
                             remain -= recordBytes;

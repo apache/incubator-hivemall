@@ -123,7 +123,7 @@ public final class OnlineLDAModel {
         return ary;
     }
 
-    public void train(@Nonnull String[][] miniBatch, int time) {
+    public void train(@Nonnull String[][] miniBatch, long time) {
         miniBatchSize_ = miniBatch.length;
 
         rhot = Math.pow(tau0_ + time, -kappa_);
