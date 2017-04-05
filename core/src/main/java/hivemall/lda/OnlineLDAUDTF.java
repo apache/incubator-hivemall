@@ -100,7 +100,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
         opts.addOption("tau", "tau0", true,
             "The parameter which downweights early iterations [default: 64.0]");
         opts.addOption("kappa", true, "Exponential decay rate (i.e., learning rate) [default: 0.7]");
-        opts.addOption("iter", "iterations", true, "The number of iterations [default: 1]");
+        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 1]");
         opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
         return opts;
     }
@@ -272,6 +272,8 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                 buf.flip();
 
                 int iter = 2;
+                float perplexityPrev;
+                float perplexity = model.computePerplexity();
                 for (; iter <= iterations; iter++) {
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
@@ -289,8 +291,13 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                         }
                         model.train(new String[][] {wordCounts});
                     }
-                    // TODO: check perplexity and break if the model is successfully learnt
                     buf.rewind();
+
+                    perplexityPrev = perplexity;
+                    perplexity = model.computePerplexity();
+                    if (Math.abs(perplexityPrev - perplexity) < 1E-1f) {
+                        break;
+                    }
                 }
                 logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
@@ -319,6 +326,8 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
 
                 // run iterations
                 int iter = 2;
+                float perplexityPrev;
+                float perplexity = model.computePerplexity();
                 for (; iter <= iterations; iter++) {
                     setCounterValue(iterCounter, iter);
 
@@ -369,7 +378,12 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
                         }
                         buf.compact();
                     }
-                    // TODO: check perplexity and break if the model is successfully learnt
+
+                    perplexityPrev = perplexity;
+                    perplexity = model.computePerplexity();
+                    if (Math.abs(perplexityPrev - perplexity) < 1E-1f) {
+                        break;
+                    }
                 }
                 logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)

@@ -30,19 +30,24 @@ public class OnlineLDAModelTest {
     @Test
     public void test() {
         int K = 2;
-        int numIter = 20;
+        int it = 0;
+        float perplexityPrev;
+        float perplexity = Float.MAX_VALUE;
 
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
-        for (int it = 0; it < numIter; it++) {
+        do {
             // online (i.e., one-by-one) updating
             model.train(new String[][] {new String[] {"fruits:1", "healthy:1", "vegetables:1"}});
 
             model.train(new String[][] {new String[] {"apples:1", "avocados:1", "colds:1", "flu:1",
                     "like:2", "oranges:1"}});
 
-            println("Iteration " + it + ": perplexity = " + model.computePerplexity());
-        }
+            it++;
+            perplexityPrev = perplexity;
+            perplexity = model.computePerplexity();
+            println("Iteration " + it + ": perplexity = " + perplexity);
+        } while(Math.abs(perplexityPrev - perplexity) >= 1E-1f);
 
         SortedMap<Float, String> topicWords;
 
