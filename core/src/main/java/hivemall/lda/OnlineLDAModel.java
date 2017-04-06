@@ -134,7 +134,7 @@ public final class OnlineLDAModel {
 
         makeMiniBatchMap(miniBatch);
 
-        initParams();
+        initParams(true);
 
         rhot_ = Math.pow(tau0_ + updateCount_, -kappa_);
 
@@ -170,12 +170,17 @@ public final class OnlineLDAModel {
         }
     }
 
-    private void initParams() {
+    private void initParams(boolean gammaWithRandom) {
         phi_ = new ArrayList<Map<String, float[]>>();
         gamma_ = new float[miniBatchSize_][];
 
         for (int d = 0; d < miniBatchSize_; d++) {
-            gamma_[d] = generateRandomFloatArray(K_);
+            if (gammaWithRandom) {
+                gamma_[d] = generateRandomFloatArray(K_);
+            } else {
+                gamma_[d] = new float[K_];
+                Arrays.fill(gamma_[d], 1.f);;
+            }
 
             // phi does not needed to be initialized
             Map<String, float[]> phi_d = new HashMap<String, float[]>();
@@ -465,7 +470,7 @@ public final class OnlineLDAModel {
     public float[] getTopicDistribution(@Nonnull String[] doc) {
         miniBatchSize_ = 1;
         makeMiniBatchMap(new String[][] {doc});
-        initParams();
+        initParams(false);
         stepE();
 
         float[] topicDistr = new float[K_];
