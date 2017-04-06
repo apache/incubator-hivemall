@@ -205,7 +205,7 @@ final class GroupedDataEx protected[sql](
     val udaf = HiveUDAFFunction(
         new HiveFunctionWrapper("hivemall.smile.tools.RandomForestEnsembleUDAF"),
         Seq(predict).map(df.col(_).expr),
-        isUDAFBridgeRequired = true)
+        isUDAFBridgeRequired = false)
       .toAggregateExpression()
     toDF((Alias(udaf, udaf.prettyString)() :: Nil).toSeq)
   }
