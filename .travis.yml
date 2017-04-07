@@ -35,9 +35,8 @@ notifications:
 
 script:
   - mvn -q scalastyle:check test -Pspark-2.1
-  # test the spark-1.6/2.0 modules only in the following runs
+  # test the spark-2.0 modules only in the following runs
   - mvn -q scalastyle:check clean -Pspark-2.0 -pl spark/spark-2.0 -am test -Dtest=none
-  - mvn -q scalastyle:check clean -Pspark-1.6 -pl spark/spark-1.6 -am test -Dtest=none
 
 after_success:
   - mvn clean cobertura:cobertura coveralls:report

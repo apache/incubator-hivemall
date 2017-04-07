@@ -293,17 +293,6 @@
 			</properties>
 		</profile>
 		<profile>
-			<id>spark-1.6</id>
-			<modules>
-				<module>spark/spark-1.6</module>
-				<module>spark/spark-common</module>
-			</modules>
-			<properties>
-				<spark.version>1.6.2</spark.version>
-				<spark.binary.version>1.6</spark.binary.version>
-			</properties>
-		</profile>
-		<profile>
 			<id>compile-xgboost</id>
 			<build>
 				<plugins>
