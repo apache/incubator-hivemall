@@ -29,7 +29,7 @@
   * `docker run -it ${your data volume and port options} hivemall`
   * Or
     1. Edit `docker-compose.yml`
-    2. `docker-compose up -d && docker exec -it hivemall sh -c './init.sh && bash'`
+    2. `docker-compose up -d && docker exec -it hivemall bash` (Note: need to wait for initialization)
 4. Start Hivemall (in container)
   1. [OPT] Load data into HDFS
     * You can load iris dataset by just `./prepare_iris.sh`
