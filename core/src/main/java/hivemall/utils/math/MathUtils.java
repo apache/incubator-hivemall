@@ -36,6 +36,7 @@ package hivemall.utils.math;
 
 import java.util.Random;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public final class MathUtils {
@@ -250,6 +251,9 @@ public final class MathUtils {
     }
 
     public static boolean equals(@Nonnull final float value, final float expected, final float delta) {
+        if (Double.isNaN(value)) {
+            return false;
+        }
         if (Math.abs(expected - value) > delta) {
             return false;
         }
@@ -258,19 +262,20 @@ public final class MathUtils {
 
     public static boolean equals(@Nonnull final double value, final double expected,
             final double delta) {
+        if (Double.isNaN(value)) {
+            return false;
+        }
         if (Math.abs(expected - value) > delta) {
             return false;
         }
         return true;
     }
 
-    public static boolean almostEquals(@Nonnull final float value, final float expected,
-            final float delta) {
+    public static boolean almostEquals(@Nonnull final float value, final float expected) {
         return equals(value, expected, 1E-15f);
     }
 
-    public static boolean almostEquals(@Nonnull final double value, final double expected,
-            final double delta) {
+    public static boolean almostEquals(@Nonnull final double value, final double expected) {
         return equals(value, expected, 1E-15d);
     }
 
@@ -295,6 +300,15 @@ public final class MathUtils {
             return 1.d;
         }
         return 0; // 0 or NaN
+    }
+
+    @Nonnull
+    public static int[] permutation(@Nonnegative final int size) {
+        final int[] perm = new int[size];
+        for (int i = 0; i < size; i++) {
+            perm[i] = i;
+        }
+        return perm;
     }
 
 }

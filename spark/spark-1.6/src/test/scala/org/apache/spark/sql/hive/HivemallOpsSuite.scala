@@ -543,16 +543,17 @@ final class HivemallOpsSuite extends HivemallQueryTest {
     val row7 = df7.groupby($"c0").maxrow("c2", "c1").as("c0", "c1").select($"c1.col1").collect
     assert(row7(0).getString(0) == "id-0")
 
-    val df8 = Seq((1, 1), (1, 2), (2, 1), (1, 5)).toDF.as("c0", "c1")
-    val row8 = df8.groupby($"c0").rf_ensemble("c1").as("c0", "c1").select("c1.probability").collect
-    assert(row8(0).getDouble(0) ~== 0.3333333333)
-    assert(row8(1).getDouble(0) ~== 1.0)
+    // val df8 = Seq((1, 1), (1, 2), (2, 1), (1, 5)).toDF.as("c0", "c1")
+    // val row8 = df8.groupby($"c0").rf_ensemble("c1").as("c0", "c1")
+    //    .select("c1.probability").collect
+    // assert(row8(0).getDouble(0) ~== 0.3333333333)
+    // assert(row8(1).getDouble(0) ~== 1.0)
 
-    val df9 = Seq((1, 3), (1, 8), (2, 9), (1, 1)).toDF.as("c0", "c1")
-    val row9 = df9.groupby($"c0").agg("c1" -> "rf_ensemble").as("c0", "c1")
-      .select("c1.probability").collect
-    assert(row9(0).getDouble(0) ~== 0.3333333333)
-    assert(row9(1).getDouble(0) ~== 1.0)
+    // val df9 = Seq((1, 3), (1, 8), (2, 9), (1, 1)).toDF.as("c0", "c1")
+    // val row9 = df9.groupby($"c0").agg("c1" -> "rf_ensemble").as("c0", "c1")
+    //   .select("c1.probability").collect
+    // assert(row9(0).getDouble(0) ~== 0.3333333333)
+    // assert(row9(1).getDouble(0) ~== 1.0)
   }
 
   test("user-defined aggregators for evaluation") {

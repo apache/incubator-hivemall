@@ -18,127 +18,289 @@
  */
 package hivemall.smile.tools;
 
-import hivemall.utils.collections.IntArrayList;
-import hivemall.utils.lang.Counter;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.WritableUtils;
+import hivemall.utils.lang.Preconditions;
+import hivemall.utils.lang.SizeOf;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.UDAF;
-import org.apache.hadoop.hive.ql.exec.UDAFEvaluator;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StandardListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
+import org.apache.hadoop.io.IntWritable;
 
-@SuppressWarnings("deprecation")
-@Description(name = "rf_ensemble",
-        value = "_FUNC_(int y) - Returns emsebled prediction results of Random Forest classifiers")
-public final class RandomForestEnsembleUDAF extends UDAF {
+@Description(
+        name = "rf_ensemble",
+        value = "_FUNC_(int yhat, array<double> proba [, double model_weight=1.0])"
+                + " - Returns emsebled prediction results in <int label, double probability, array<double> probabilities>")
+public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver {
 
-    public static class RandomForestPredictUDAFEvaluator implements UDAFEvaluator {
-
-        private Counter<Integer> partial;
-
-        @Override
-        public void init() {
-            this.partial = null;
-        }
-
-        public boolean iterate(Integer k) {
-            if (k == null) {
-                return true;
-            }
-            if (partial == null) {
-                this.partial = new Counter<Integer>();
-            }
-            partial.increment(k);
-            return true;
-        }
-
-        /*
-         * https://cwiki.apache.org/confluence/display/Hive/GenericUDAFCaseStudy#GenericUDAFCaseStudy-terminatePartial
-         */
-        public Map<Integer, Integer> terminatePartial() {
-            if (partial == null) {
-                return null;
-            }
-
-            if (partial.size() == 0) {
-                return null;
-            } else {
-                return partial.getMap(); // CAN NOT return Counter here
-            }
-        }
-
-        public boolean merge(Map<Integer, Integer> o) {
-            if (o == null) {
-                return true;
-            }
-
-            if (partial == null) {
-                this.partial = new Counter<Integer>();
-            }
-            partial.addAll(o);
-            return true;
-        }
-
-        public Result terminate() {
-            if (partial == null) {
-                return null;
-            }
-            if (partial.size() == 0) {
-                return null;
-            }
-
-            return new Result(partial);
-        }
+    public RandomForestEnsembleUDAF() {
+        super();
     }
 
-    public static final class Result {
-        @SuppressWarnings("unused")
-        private Integer label;
-        @SuppressWarnings("unused")
-        private Double probability;
-        @SuppressWarnings("unused")
-        private List<Double> probabilities;
-
-        Result(Counter<Integer> partial) {
-            final Map<Integer, Integer> counts = partial.getMap();
-            int size = counts.size();
-            assert (size > 0) : size;
-            IntArrayList keyList = new IntArrayList(size);
-
-            long totalCnt = 0L;
-            Integer maxKey = null;
-            int maxCnt = Integer.MIN_VALUE;
-            for (Map.Entry<Integer, Integer> e : counts.entrySet()) {
-                Integer key = e.getKey();
-                keyList.add(key);
-                int cnt = e.getValue().intValue();
-                totalCnt += cnt;
-                if (cnt >= maxCnt) {
-                    maxCnt = cnt;
-                    maxKey = key;
-                }
-            }
-
-            int[] keyArray = keyList.toArray();
-            Arrays.sort(keyArray);
-            int last = keyArray[keyArray.length - 1];
-
-            double totalCnt_d = (double) totalCnt;
-            final Double[] probabilities = new Double[Math.max(2, last + 1)];
-            for (int i = 0, len = probabilities.length; i < len; i++) {
-                final Integer cnt = counts.get(Integer.valueOf(i));
-                if (cnt == null) {
-                    probabilities[i] = Double.valueOf(0d);
-                } else {
-                    probabilities[i] = Double.valueOf(cnt.intValue() / totalCnt_d);
-                }
-            }
-            this.label = maxKey;
-            this.probability = Double.valueOf(maxCnt / totalCnt_d);
-            this.probabilities = Arrays.asList(probabilities);
+    @Override
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+        if (typeInfo.length != 2 && typeInfo.length != 3) {
+            throw new UDFArgumentLengthException("Expected 2 or 3 arguments but got "
+                    + typeInfo.length);
         }
+        if (!HiveUtils.isIntegerTypeInfo(typeInfo[0])) {
+            throw new UDFArgumentTypeException(0, "Expected INT for yhat: " + typeInfo[0]);
+        }
+        if (!HiveUtils.isFloatingPointListTypeInfo(typeInfo[1])) {
+            throw new UDFArgumentTypeException(1, "ARRAY<double> is expected for posteriori: "
+                    + typeInfo[1]);
+        }
+        if (typeInfo.length == 3) {
+            if (!HiveUtils.isFloatingPointTypeInfo(typeInfo[2])) {
+                throw new UDFArgumentTypeException(2, "Expected DOUBLE or FLOAT for model_weight: "
+                        + typeInfo[2]);
+            }
+        }
+        return new RfEvaluator();
+    }
+
+
+    @SuppressWarnings("deprecation")
+    public static final class RfEvaluator extends GenericUDAFEvaluator {
+
+        private PrimitiveObjectInspector yhatOI;
+        private ListObjectInspector posterioriOI;
+        private PrimitiveObjectInspector posterioriElemOI;
+        @Nullable
+        private PrimitiveObjectInspector weightOI;
+
+        private StructObjectInspector internalMergeOI;
+        private StructField sizeField, posterioriField;
+        private IntObjectInspector sizeFieldOI;
+        private StandardListObjectInspector posterioriFieldOI;
+
+        public RfEvaluator() {
+            super();
+        }
+
+        @Override
+        public ObjectInspector init(@Nonnull Mode mode, @Nonnull ObjectInspector[] parameters)
+                throws HiveException {
+            super.init(mode, parameters);
+            // initialize input
+            if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
+                this.yhatOI = HiveUtils.asIntegerOI(parameters[0]);
+                this.posterioriOI = HiveUtils.asListOI(parameters[1]);
+                this.posterioriElemOI = HiveUtils.asDoubleCompatibleOI(posterioriOI.getListElementObjectInspector());
+                if (parameters.length == 3) {
+                    this.weightOI = HiveUtils.asDoubleCompatibleOI(parameters[2]);
+                }
+            } else {// from partial aggregation
+                StructObjectInspector soi = (StructObjectInspector) parameters[0];
+                this.internalMergeOI = soi;
+                this.sizeField = soi.getStructFieldRef("size");
+                this.posterioriField = soi.getStructFieldRef("posteriori");
+                this.sizeFieldOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+                this.posterioriFieldOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+            }
+
+            // initialize output
+            final ObjectInspector outputOI;
+            if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
+                List<String> fieldNames = new ArrayList<>(3);
+                List<ObjectInspector> fieldOIs = new ArrayList<>(3);
+                fieldNames.add("size");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+                fieldNames.add("posteriori");
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
+                    fieldOIs);
+            } else {// terminate
+                List<String> fieldNames = new ArrayList<>(3);
+                List<ObjectInspector> fieldOIs = new ArrayList<>(3);
+                fieldNames.add("label");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+                fieldNames.add("probability");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                fieldNames.add("probabilities");
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
+                    fieldOIs);
+            }
+            return outputOI;
+        }
+
+        @Override
+        public RfAggregationBuffer getNewAggregationBuffer() throws HiveException {
+            RfAggregationBuffer buf = new RfAggregationBuffer();
+            reset(buf);
+            return buf;
+        }
+
+        @Override
+        public void reset(AggregationBuffer agg) throws HiveException {
+            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            buf.reset();
+        }
+
+        @Override
+        public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
+            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+
+            Preconditions.checkNotNull(parameters[0]);
+            int yhat = PrimitiveObjectInspectorUtils.getInt(parameters[0], yhatOI);
+            Preconditions.checkNotNull(parameters[1]);
+            double[] posteriori = HiveUtils.asDoubleArray(parameters[1], posterioriOI,
+                posterioriElemOI);
+
+            double weight = 1.0d;
+            if (parameters.length == 3) {
+                Preconditions.checkNotNull(parameters[2]);
+                weight = PrimitiveObjectInspectorUtils.getDouble(parameters[2], weightOI);
+            }
+
+            buf.iterate(yhat, weight, posteriori);
+        }
+
+        @Override
+        public Object terminatePartial(AggregationBuffer agg) throws HiveException {
+            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            if (buf._k == -1) {
+                return null;
+            }
+
+            Object[] partial = new Object[2];
+            partial[0] = new IntWritable(buf._k);
+            partial[1] = WritableUtils.toWritableList(buf._posteriori);
+            return partial;
+        }
+
+        @Override
+        public void merge(AggregationBuffer agg, Object partial) throws HiveException {
+            if (partial == null) {
+                return;
+            }
+            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+
+            Object o1 = internalMergeOI.getStructFieldData(partial, sizeField);
+            int size = sizeFieldOI.get(o1);
+            Object posteriori = internalMergeOI.getStructFieldData(partial, posterioriField);
+
+            // --------------------------------------------------------------
+            // [workaround]
+            // java.lang.ClassCastException: org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray
+            // cannot be cast to [Ljava.lang.Object;
+            if (posteriori instanceof LazyBinaryArray) {
+                posteriori = ((LazyBinaryArray) posteriori).getList();
+            }
+
+            buf.merge(size, posteriori, posterioriFieldOI);
+        }
+
+        @Override
+        public Object terminate(AggregationBuffer agg) throws HiveException {
+            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            if (buf._k == -1) {
+                return null;
+            }
+
+            double[] posteriori = buf._posteriori;
+            int label = smile.math.Math.whichMax(posteriori);
+            smile.math.Math.unitize1(posteriori);
+            double proba = posteriori[label];
+
+            Object[] result = new Object[3];
+            result[0] = new IntWritable(label);
+            result[1] = new DoubleWritable(proba);
+            result[2] = WritableUtils.toWritableList(posteriori);
+            return result;
+        }
+
+    }
+
+    public static final class RfAggregationBuffer extends AbstractAggregationBuffer {
+
+        @Nullable
+        private double[] _posteriori;
+        private int _k;
+
+        public RfAggregationBuffer() {
+            super();
+            reset();
+        }
+
+        void reset() {
+            this._posteriori = null;
+            this._k = -1;
+        }
+
+        void iterate(final int yhat, final double weight, @Nonnull final double[] posteriori)
+                throws HiveException {
+            if (_posteriori == null) {
+                this._k = posteriori.length;
+                this._posteriori = new double[_k];
+            }
+            if (yhat >= _k) {
+                throw new HiveException("Predicted class " + yhat + " is out of bounds: " + _k);
+            }
+            if (posteriori.length != _k) {
+                throw new HiveException("Given |posteriori| " + posteriori.length
+                        + " is differs from expected one: " + _k);
+            }
+
+            _posteriori[yhat] += (posteriori[yhat] * weight);
+        }
+
+        void merge(int size, @Nonnull Object posterioriObj,
+                @Nonnull StandardListObjectInspector posterioriOI) throws HiveException {
+
+            if (size != _k) {
+                if (_k == -1) {
+                    this._k = size;
+                    this._posteriori = new double[size];
+                } else {
+                    throw new HiveException("Mismatch in the number of elements: _k=" + _k
+                            + ", size=" + size);
+                }
+            }
+
+            final double[] posteriori = _posteriori;
+            final DoubleObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+            for (int i = 0, len = _k; i < len; i++) {
+                Object o2 = posterioriOI.getListElement(posterioriObj, i);
+                posteriori[i] += doubleOI.get(o2);
+            }
+        }
+
+        @Override
+        public int estimate() {
+            if (_k == -1) {
+                return 0;
+            }
+            return SizeOf.INT + _k * SizeOf.DOUBLE;
+        }
+
     }
 
 }

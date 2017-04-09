@@ -24,8 +24,8 @@ import hivemall.common.LossFunctions;
 import hivemall.model.FeatureValue;
 import hivemall.model.PredictionModel;
 import hivemall.model.PredictionResult;
-import hivemall.utils.collections.Int2FloatOpenHashTable;
-import hivemall.utils.collections.Int2FloatOpenHashTable.IMapIterator;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable.IMapIterator;
 import hivemall.utils.hashing.HashFunction;
 import hivemall.utils.lang.Preconditions;
 

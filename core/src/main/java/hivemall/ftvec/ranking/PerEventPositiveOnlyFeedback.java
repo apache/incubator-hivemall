@@ -18,7 +18,7 @@
  */
 package hivemall.ftvec.ranking;
 
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ArrayUtils;
 
 import java.util.Random;

@@ -109,7 +109,7 @@
 		<dependency>
 			<groupId>com.github.haifengl</groupId>
 			<artifactId>smile-core</artifactId>
-			<version>1.0.3</version>
+			<version>1.0.4</version>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>
@@ -128,6 +128,12 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
 			<version>3.6.1</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.roaringbitmap</groupId>
+			<artifactId>RoaringBitmap</artifactId>
+			<version>[0.6,)</version>
 			<scope>compile</scope>
 		</dependency>
 
@@ -198,6 +204,8 @@
 									<include>com.github.haifengl:smile-math</include>
 									<include>com.github.haifengl:smile-data</include>
 									<include>org.tukaani:xz</include>
+									<include>org.apache.commons:commons-math3</include>
+									<include>org.roaringbitmap:RoaringBitmap</include>
 								</includes>
 							</artifactSet>
 							<transformers>

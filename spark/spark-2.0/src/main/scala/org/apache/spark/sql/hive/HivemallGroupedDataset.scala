@@ -127,7 +127,7 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
         "rf_ensemble",
         new HiveFunctionWrapper("hivemall.smile.tools.RandomForestEnsembleUDAF"),
         Seq(predict).map(df.col(_).expr),
-        isUDAFBridgeRequired = true)
+        isUDAFBridgeRequired = false)
       .toAggregateExpression()
     toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
   }

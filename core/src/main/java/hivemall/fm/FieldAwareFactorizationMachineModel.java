@@ -19,8 +19,8 @@
 package hivemall.fm;
 
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
-import hivemall.utils.collections.DoubleArray3D;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.arrays.DoubleArray3D;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.NumberUtils;
 
 import java.util.Arrays;

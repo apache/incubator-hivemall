@@ -18,6 +18,8 @@
  */
 package hivemall.utils.lang;
 
+import javax.annotation.Nonnull;
+
 public final class Primitives {
     public static final int INT_BYTES = Integer.SIZE / Byte.SIZE;
     public static final int DOUBLE_BYTES = Double.SIZE / Byte.SIZE;
@@ -97,6 +99,32 @@ public final class Primitives {
             throw new IllegalArgumentException("Out of range: " + value);
         }
         return result;
+    }
+
+    public static long toLong(final int high, final int low) {
+        return ((long) high << 32) | ((long) low & 0xffffffffL);
+    }
+
+    public static int getHigh(final long key) {
+        return (int) (key >>> 32) & 0xffffffff;
+    }
+
+    public static int getLow(final long key) {
+        return (int) key & 0xffffffff;
+    }
+
+    @Nonnull
+    public static byte[] toBytes(long l) {
+        final byte[] retVal = new byte[8];
+        for (int i = 0; i < 8; i++) {
+            retVal[i] = (byte) l;
+            l >>= 8;
+        }
+        return retVal;
+    }
+
+    public static int hashCode(final long value) {
+        return (int) (value ^ (value >>> 32));
     }
 
 }

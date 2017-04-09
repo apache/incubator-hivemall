@@ -18,7 +18,7 @@
  */
 package hivemall.utils.math;
 
-import hivemall.utils.collections.DoubleArrayList;
+import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.lang.Preconditions;
 
 import java.util.Arrays;

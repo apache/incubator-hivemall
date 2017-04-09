@@ -18,9 +18,9 @@
  */
 package hivemall.ftvec.ranking;
 
-import hivemall.utils.collections.IntArrayList;
-import hivemall.utils.collections.IntOpenHashMap;
-import hivemall.utils.collections.IntOpenHashMap.IMapIterator;
+import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.collections.maps.IntOpenHashMap;
+import hivemall.utils.collections.maps.IntOpenHashMap.IMapIterator;
 
 import java.util.BitSet;
 

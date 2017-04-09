@@ -18,11 +18,23 @@
  */
 package hivemall.smile.utils;
 
+import hivemall.math.matrix.ColumnMajorMatrix;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.MatrixUtils;
+import hivemall.math.matrix.ints.ColumnMajorDenseIntMatrix2d;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.data.Attribute.NominalAttribute;
 import hivemall.smile.data.Attribute.NumericAttribute;
+import hivemall.utils.collections.lists.DoubleArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.lang.mutable.MutableInt;
+import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
 
@@ -49,13 +61,14 @@ public final class SmileExtUtils {
         }
         final String[] opts = opt.split(",");
         final int size = opts.length;
+        final NumericAttribute immutableNumAttr = new NumericAttribute();
         final Attribute[] attr = new Attribute[size];
         for (int i = 0; i < size; i++) {
             final String type = opts[i];
             if ("Q".equals(type)) {
-                attr[i] = new NumericAttribute(i);
+                attr[i] = immutableNumAttr;
             } else if ("C".equals(type)) {
-                attr[i] = new NominalAttribute(i);
+                attr[i] = new NominalAttribute();
             } else {
                 throw new UDFArgumentException("Unexpected type: " + type);
             }
@@ -64,13 +77,55 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static Attribute[] attributeTypes(@Nullable Attribute[] attributes,
-            @Nonnull final double[][] x) {
+    public static Attribute[] attributeTypes(@Nullable final Attribute[] attributes,
+            @Nonnull final Matrix x) {
         if (attributes == null) {
-            int p = x[0].length;
-            attributes = new Attribute[p];
-            for (int i = 0; i < p; i++) {
-                attributes[i] = new NumericAttribute(i);
+            int p = x.numColumns();
+            Attribute[] newAttributes = new Attribute[p];
+            Arrays.fill(newAttributes, new NumericAttribute());
+            return newAttributes;
+        }
+
+        if (x.isRowMajorMatrix()) {
+            final VectorProcedure proc = new VectorProcedure() {
+                @Override
+                public void apply(final int j, final double value) {
+                    final Attribute attr = attributes[j];
+                    if (attr.type == AttributeType.NOMINAL) {
+                        final int x_ij = ((int) value) + 1;
+                        final int prevSize = attr.getSize();
+                        if (x_ij > prevSize) {
+                            attr.setSize(x_ij);
+                        }
+                    }
+                }
+            };
+            for (int i = 0, rows = x.numRows(); i < rows; i++) {
+                x.eachNonNullInRow(i, proc);
+            }
+        } else if (x.isColumnMajorMatrix()) {
+            final MutableInt max_x = new MutableInt(0);
+            final VectorProcedure proc = new VectorProcedure() {
+                @Override
+                public void apply(final int i, final double value) {
+                    final int x_ij = (int) value;
+                    if (x_ij > max_x.getValue()) {
+                        max_x.setValue(x_ij);
+                    }
+                }
+            };
+
+            final int size = attributes.length;
+            for (int j = 0; j < size; j++) {
+                final Attribute attr = attributes[j];
+                if (attr.type == AttributeType.NOMINAL) {
+                    if (attr.getSize() != -1) {
+                        continue;
+                    }
+                    max_x.setValue(0);
+                    x.eachNonNullInColumn(j, proc);
+                    attr.setSize(max_x.getValue() + 1);
+                }
             }
         } else {
             int size = attributes.length;
@@ -81,8 +136,12 @@ public final class SmileExtUtils {
                         continue;
                     }
                     int max_x = 0;
-                    for (int i = 0; i < x.length; i++) {
-                        int x_ij = (int) x[i][j];
+                    for (int i = 0, rows = x.numRows(); i < rows; i++) {
+                        final double v = x.get(i, j, Double.NaN);
+                        if (Double.isNaN(v)) {
+                            continue;
+                        }
+                        int x_ij = (int) v;
                         if (x_ij > max_x) {
                             max_x = x_ij;
                         }
@@ -97,16 +156,17 @@ public final class SmileExtUtils {
     @Nonnull
     public static Attribute[] convertAttributeTypes(@Nonnull final smile.data.Attribute[] original) {
         final int size = original.length;
+        final NumericAttribute immutableNumAttr = new NumericAttribute();
         final Attribute[] dst = new Attribute[size];
         for (int i = 0; i < size; i++) {
             smile.data.Attribute o = original[i];
             switch (o.type) {
                 case NOMINAL: {
-                    dst[i] = new NominalAttribute(i);
+                    dst[i] = new NominalAttribute();
                     break;
                 }
                 case NUMERIC: {
-                    dst[i] = new NumericAttribute(i);
+                    dst[i] = immutableNumAttr;
                     break;
                 }
                 default:
@@ -117,23 +177,52 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static int[][] sort(@Nonnull final Attribute[] attributes, @Nonnull final double[][] x) {
-        final int n = x.length;
-        final int p = x[0].length;
+    public static ColumnMajorIntMatrix sort(@Nonnull final Attribute[] attributes,
+            @Nonnull final Matrix x) {
+        final int n = x.numRows();
+        final int p = x.numColumns();
 
-        final double[] a = new double[n];
         final int[][] index = new int[p][];
-
-        for (int j = 0; j < p; j++) {
-            if (attributes[j].type == AttributeType.NUMERIC) {
-                for (int i = 0; i < n; i++) {
-                    a[i] = x[i][j];
+        if (x.isSparse()) {
+            int initSize = n / 10;
+            final DoubleArrayList dlist = new DoubleArrayList(initSize);
+            final IntArrayList ilist = new IntArrayList(initSize);
+            final VectorProcedure proc = new VectorProcedure() {
+                @Override
+                public void apply(final int i, final double v) {
+                    dlist.add(v);
+                    ilist.add(i);
                 }
-                index[j] = QuickSort.sort(a);
+            };
+
+            final ColumnMajorMatrix x2 = x.toColumnMajorMatrix();
+            for (int j = 0; j < p; j++) {
+                if (attributes[j].type != AttributeType.NUMERIC) {
+                    continue;
+                }
+                x2.eachNonNullInColumn(j, proc);
+                if (ilist.isEmpty()) {
+                    continue;
+                }
+                int[] indexJ = ilist.toArray();
+                QuickSort.sort(dlist.array(), indexJ, indexJ.length);
+                index[j] = indexJ;
+                dlist.clear();
+                ilist.clear();
+            }
+        } else {
+            final double[] a = new double[n];
+            for (int j = 0; j < p; j++) {
+                if (attributes[j].type == AttributeType.NUMERIC) {
+                    for (int i = 0; i < n; i++) {
+                        a[i] = x.get(i, j);
+                    }
+                    index[j] = QuickSort.sort(a);
+                }
             }
         }
 
-        return index;
+        return new ColumnMajorDenseIntMatrix2d(index, n);
     }
 
     @Nonnull
@@ -169,13 +258,13 @@ public final class SmileExtUtils {
         }
     }
 
-    public static int computeNumInputVars(final float numVars, final double[][] x) {
+    public static int computeNumInputVars(final float numVars, @Nonnull final Matrix x) {
         final int numInputVars;
         if (numVars <= 0.f) {
-            int dims = x[0].length;
+            int dims = x.numColumns();
             numInputVars = (int) Math.ceil(Math.sqrt(dims));
         } else if (numVars > 0.f && numVars <= 1.f) {
-            numInputVars = (int) (numVars * x[0].length);
+            numInputVars = (int) (numVars * x.numColumns());
         } else {
             numInputVars = (int) numVars;
         }
@@ -186,42 +275,75 @@ public final class SmileExtUtils {
         return Thread.currentThread().getId() * System.nanoTime();
     }
 
-    public static void shuffle(@Nonnull final int[] x, @Nonnull final smile.math.Random rnd) {
+    public static void shuffle(@Nonnull final int[] x, @Nonnull final PRNG rnd) {
         for (int i = x.length; i > 1; i--) {
             int j = rnd.nextInt(i);
             swap(x, i - 1, j);
         }
     }
 
-    public static void shuffle(@Nonnull final double[][] x, final int[] y, @Nonnull long seed) {
-        if (x.length != y.length) {
-            throw new IllegalArgumentException("x.length (" + x.length + ") != y.length ("
+    @Nonnull
+    public static Matrix shuffle(@Nonnull final Matrix x, @Nonnull final int[] y, long seed) {
+        final int numRows = x.numRows();
+        if (numRows != y.length) {
+            throw new IllegalArgumentException("x.length (" + numRows + ") != y.length ("
                     + y.length + ')');
         }
         if (seed == -1L) {
             seed = generateSeed();
         }
-        final smile.math.Random rnd = new smile.math.Random(seed);
-        for (int i = x.length; i > 1; i--) {
-            int j = rnd.nextInt(i);
-            swap(x, i - 1, j);
-            swap(y, i - 1, j);
+
+        final PRNG rnd = RandomNumberGeneratorFactory.createPRNG(seed);
+        if (x.swappable()) {
+            for (int i = numRows; i > 1; i--) {
+                int j = rnd.nextInt(i);
+                int k = i - 1;
+                x.swap(k, j);
+                swap(y, k, j);
+            }
+            return x;
+        } else {
+            final int[] indicies = MathUtils.permutation(numRows);
+            for (int i = numRows; i > 1; i--) {
+                int j = rnd.nextInt(i);
+                int k = i - 1;
+                swap(indicies, k, j);
+                swap(y, k, j);
+            }
+            return MatrixUtils.shuffle(x, indicies);
         }
     }
 
-    public static void shuffle(@Nonnull final double[][] x, final double[] y, @Nonnull long seed) {
-        if (x.length != y.length) {
-            throw new IllegalArgumentException("x.length (" + x.length + ") != y.length ("
+    @Nonnull
+    public static Matrix shuffle(@Nonnull final Matrix x, @Nonnull final double[] y,
+            @Nonnull long seed) {
+        final int numRows = x.numRows();
+        if (numRows != y.length) {
+            throw new IllegalArgumentException("x.length (" + numRows + ") != y.length ("
                     + y.length + ')');
         }
         if (seed == -1L) {
             seed = generateSeed();
         }
-        final smile.math.Random rnd = new smile.math.Random(seed);
-        for (int i = x.length; i > 1; i--) {
-            int j = rnd.nextInt(i);
-            swap(x, i - 1, j);
-            swap(y, i - 1, j);
+
+        final PRNG rnd = RandomNumberGeneratorFactory.createPRNG(seed);
+        if (x.swappable()) {
+            for (int i = numRows; i > 1; i--) {
+                int j = rnd.nextInt(i);
+                int k = i - 1;
+                x.swap(k, j);
+                swap(y, k, j);
+            }
+            return x;
+        } else {
+            final int[] indicies = MathUtils.permutation(numRows);
+            for (int i = numRows; i > 1; i--) {
+                int j = rnd.nextInt(i);
+                int k = i - 1;
+                swap(indicies, k, j);
+                swap(y, k, j);
+            }
+            return MatrixUtils.shuffle(x, indicies);
         }
     }
 
@@ -239,15 +361,6 @@ public final class SmileExtUtils {
      */
     private static void swap(final double[] x, final int i, final int j) {
         double s = x[i];
-        x[i] = x[j];
-        x[j] = s;
-    }
-
-    /**
-     * Swap two elements of an array.
-     */
-    private static void swap(final double[][] x, final int i, final int j) {
-        double[] s = x[i];
         x[i] = x[j];
         x[j] = s;
     }
