@@ -47,7 +47,7 @@ fi
 XGBOOST_HASHVAL='7ab15a0b31c870c7779691639f521df3ccd4a56e'
 
 # Move to a top directory
-if [ "$HIVEMALL_HOME" == "" ]; then
+if [ "$HIVEMALL_HOME" = "" ]; then
   if [ -e ../bin/${0##*/} ]; then
     HIVEMALL_HOME=`pwd`/..
   elif [ -e ./bin/${0##*/} ]; then
