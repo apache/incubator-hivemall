@@ -19,6 +19,7 @@
 package hivemall.classifier;
 
 import hivemall.LearnerBaseUDTF;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
 import hivemall.model.IWeightValue;
 import hivemall.model.PredictionModel;
@@ -57,6 +58,14 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
 
     protected PredictionModel model;
     protected int count;
+
+    public BinaryOnlineClassifierUDTF() {
+        this(false);
+    }
+    
+    public BinaryOnlineClassifierUDTF(boolean enableNewModel) {
+        super(enableNewModel);
+    }
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -151,7 +160,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         assert (label == -1 || label == 0 || label == 1) : label;
     }
 
-    //@VisibleForTesting
+    @VisibleForTesting
     void train(List<?> features, int label) {
         FeatureValue[] featureVector = parseFeatures(features);
         train(featureVector, label);

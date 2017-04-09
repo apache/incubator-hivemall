@@ -20,10 +20,10 @@ package hivemall.classifier;
 
 import hivemall.annotations.Experimental;
 import hivemall.annotations.VisibleForTesting;
-import hivemall.common.LossFunctions;
 import hivemall.model.FeatureValue;
 import hivemall.model.PredictionModel;
 import hivemall.model.PredictionResult;
+import hivemall.optimizer.LossFunctions;
 import hivemall.utils.collections.Int2FloatOpenHashTable;
 import hivemall.utils.collections.Int2FloatOpenHashTable.IMapIterator;
 import hivemall.utils.hashing.HashFunction;

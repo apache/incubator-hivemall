@@ -52,8 +52,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.FloatWritable;
 
 /**
- * The base class for regression algorithms. RegressionBaseUDTF provides general implementation for
- * online training and batch training.
+ * The base class for regression algorithms. RegressionBaseUDTF provides general implementation for online training and batch training.
  */
 public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(RegressionBaseUDTF.class);
@@ -69,6 +68,14 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
     // The accumulated delta of each weight values.
     protected transient Map<Object, FloatAccumulator> accumulated;
     protected int sampled;
+
+    public RegressionBaseUDTF() {
+        this(false);
+    }
+
+    public RegressionBaseUDTF(boolean enableNewModel) {
+        super(enableNewModel);
+    }
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -235,7 +242,7 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
 
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
-        final float grad = computeUpdate(target, predicted);
+        final float grad = computeGradient(target, predicted);
 
         if (is_mini_batch) {
             accumulateUpdate(features, grad);
@@ -247,12 +254,11 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
         }
     }
 
-    protected float computeUpdate(float target, float predicted) {
-        throw new IllegalStateException();
-    }
-
-    protected IWeightValue getNewWeight(IWeightValue old_w, float delta) {
-        throw new IllegalStateException();
+    /**
+     * Compute a gradient by using a loss function in derived classes
+     */
+    protected float computeGradient(float target, float predicted) {
+        throw new UnsupportedOperationException();
     }
 
     protected final void accumulateUpdate(@Nonnull final FeatureValue[] features, final float coeff) {
