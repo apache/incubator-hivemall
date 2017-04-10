@@ -79,9 +79,11 @@ public class OnlineLDAModelTest {
             k1 = 1;
             k2 = 0;
         }
-        Assert.assertTrue("`vegetables` SHOULD be more suitable topic word than `flu` in topic " + k1,
+        Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
+            + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
             model.getLambda("vegetables", k1) > model.getLambda("flu", k1));
-        Assert.assertTrue("`avocados` SHOULD be more suitable topic word than `healthy` in topic " + k2,
+        Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
+            + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
             model.getLambda("avocados", k2) > model.getLambda("healthy", k2));
     }
 
