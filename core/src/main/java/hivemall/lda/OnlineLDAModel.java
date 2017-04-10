@@ -78,10 +78,6 @@ public final class OnlineLDAModel {
     // check convergence in the expectation (E) step
     private double delta_ = 1E-5;
 
-    // used to doubly randomize later-initialized lambda values
-    @Nonnull
-    private final float[][] dummyLambdas_;
-
     private List<Map<String, Float>> miniBatchMap_;
     private int miniBatchSize_;
 
@@ -111,20 +107,6 @@ public final class OnlineLDAModel {
 
         // initialize the parameters
         lambda_ = new HashMap<String, float[]>(100);
-
-        dummyLambdas_ = generateDummyLambda(100);
-    }
-
-    @Nonnull
-    private float[][] generateDummyLambda(int size) {
-        float[][] ary = new float[size][];
-        for (int row = 0; row < size; row++) {
-            ary[row] = new float[K_];
-            for (int k = 0; k < K_; k++) {
-                ary[row][k] = (float) gd_.sample();
-            }
-        }
-        return ary;
     }
 
     public void train(@Nonnull String[][] miniBatch) {
@@ -196,12 +178,7 @@ public final class OnlineLDAModel {
             // lambda for newly observed word
             for (String label : miniBatchMap_.get(d).keySet()) {
                 if (!lambda_.containsKey(label)) {
-                    int dummyLambdaIdx = lambda_.size() % dummyLambdas_.length;
-                    float[] lambda_label = generateRandomFloatArray(K_);
-                    for (int k = 0; k < K_; k++) {
-                        lambda_label[k] *= dummyLambdas_[dummyLambdaIdx][k];
-                    }
-                    lambda_.put(label, lambda_label);
+                    lambda_.put(label, generateRandomFloatArray(K_));
                 }
             }
         }
@@ -443,11 +420,7 @@ public final class OnlineLDAModel {
     public void setLambda(String label, int k, float lambda) {
         float[] lambda_label;
         if (!lambda_.containsKey(label)) {
-            int dummyLambdaIdx = lambda_.size() % dummyLambdas_.length;
             lambda_label = generateRandomFloatArray(K_);
-            for (int ki = 0; ki < K_; ki++) {
-                lambda_label[k] *= dummyLambdas_[dummyLambdaIdx][ki];
-            }
         } else {
             lambda_label = this.lambda_.get(label);
         }
