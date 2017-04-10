@@ -51,7 +51,7 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 @Description(
-        name = "lda",
+        name = "train_lda",
         value = "_FUNC_(array<string> words[, const string options])"
                 + " - Returns a relation consists of <int topic, string word, float score>")
 public class OnlineLDAUDTF extends UDTFWithOptions {
