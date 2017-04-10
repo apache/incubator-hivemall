@@ -62,7 +62,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.Text;
 
 @Description(
         name = "lda_predict",
@@ -127,9 +126,11 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
         private StructField topicOptionField;
         private StructField alphaOptionField;
         private StructField deltaOptionField;
+        private PrimitiveObjectInspector wcListElemOI;
         private StandardListObjectInspector wcListOI;
         private StandardMapObjectInspector lambdaMapOI;
-        private StandardListObjectInspector lambdaMapElemOI;
+        private PrimitiveObjectInspector lambdaMapKeyOI;
+        private StandardListObjectInspector lambdaMapValueOI;
 
         public Evaluator() {}
 
@@ -210,9 +211,11 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.topicOptionField = soi.getStructFieldRef("topic");
                 this.alphaOptionField = soi.getStructFieldRef("alpha");
                 this.deltaOptionField = soi.getStructFieldRef("delta");
+                this.wcListElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.wcListOI = ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-                this.lambdaMapElemOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+                this.lambdaMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                this.lambdaMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(
                     PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
                 this.lambdaMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
@@ -244,7 +247,7 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
 
             fieldNames.add("wcList");
             fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.writableStringObjectInspector));
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
             fieldNames.add("lambdaMap");
             fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
@@ -292,7 +295,7 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
             int label = PrimitiveObjectInspectorUtils.getInt(parameters[2], labelOI);
             float lambda = HiveUtils.getFloat(parameters[3], lambdaOI);
 
-            myAggr.iterate(new Text(word), value, label, lambda);
+            myAggr.iterate(word, value, label, lambda);
         }
 
         @Override
@@ -325,22 +328,41 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
             if (wcListObj instanceof LazyBinaryArray) {
                 wcListObj = ((LazyBinaryArray) wcListObj).getList();
             }
-            // String objects are passed as org.apache.hadoop.io.Text
-            List<Text> wcList = (List<Text>) wcListOI.getList(wcListObj);
+            List<?> wcListRaw = wcListOI.getList(wcListObj);
+
+            // fix list elements to Java String objects
+            int wcListSize = wcListRaw.size();
+            List<String> wcList = new ArrayList<String>();
+            for (int i = 0; i < wcListSize; i++) {
+                wcList.add(PrimitiveObjectInspectorUtils.getString(wcListRaw.get(i), wcListElemOI));
+            }
 
             Object lambdaMapObj = internalMergeOI.getStructFieldData(partial, lambdaMapField);
             if (lambdaMapObj instanceof LazyBinaryMap) {
                 lambdaMapObj = ((LazyBinaryMap) lambdaMapObj).getMap();
             }
-            Map<Text, Object> lambdaMapUncastElems = (Map<Text, Object>) lambdaMapOI.getMap(lambdaMapObj);
+            Map<?, ?> lambdaMapRaw = lambdaMapOI.getMap(lambdaMapObj);
 
-            Map<Text, List<Float>> lambdaMap = new HashMap<Text, List<Float>>();
-            for (Text key : lambdaMapUncastElems.keySet()) {
-                Object lambdaMapElemObj = lambdaMapUncastElems.get(key);
-                if (lambdaMapElemObj instanceof  LazyBinaryArray) {
-                    lambdaMapElemObj = ((LazyBinaryArray) lambdaMapElemObj).getList();
+            Map<String, List<Float>> lambdaMap = new HashMap<String, List<Float>>();
+            for (Map.Entry<?, ?> e : lambdaMapRaw.entrySet()) {
+                // fix map keys to Java String objects
+                String word = PrimitiveObjectInspectorUtils.getString(e.getKey(), lambdaMapKeyOI);
+
+                Object lambdaMapValueObj = e.getValue();
+                if (lambdaMapValueObj instanceof  LazyBinaryArray) {
+                    lambdaMapValueObj = ((LazyBinaryArray) lambdaMapValueObj).getList();
                 }
-                lambdaMap.put(key, (List<Float>) lambdaMapElemOI.getList(lambdaMapElemObj));
+                List<?> lambdaMapValueRaw = lambdaMapValueOI.getList(lambdaMapValueObj);
+
+                // fix map values to lists of Java Float objects
+                int lambdaMapValueSize = lambdaMapValueRaw.size();
+                List<Float> lambdaMapValue = new ArrayList<Float>();
+                for (int i = 0; i < lambdaMapValueSize; i++) {
+                    Object lambdaObj = lambdaMapValueRaw.get(i);
+                    lambdaMapValue.add(((FloatWritable) lambdaObj).get());
+                }
+
+                lambdaMap.put(word, lambdaMapValue);
             }
 
             // restore options from partial result
@@ -383,8 +405,8 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
 
     public static class OnlineLDAPredictAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
-        private List<Text> wcList;
-        private Map<Text, List<Float>> lambdaMap;
+        private List<String> wcList;
+        private Map<String, List<Float>> lambdaMap;
 
         private int topic;
         private float alpha;
@@ -401,12 +423,12 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
         }
 
         void reset() {
-            this.wcList = new ArrayList<Text>();
-            this.lambdaMap = new HashMap<Text, List<Float>>();
+            this.wcList = new ArrayList<String>();
+            this.lambdaMap = new HashMap<String, List<Float>>();
         }
 
-        void iterate(Text word, float value, int label, float lambda) {
-            wcList.add(new Text(word.toString() + ":" + value));
+        void iterate(String word, float value, int label, float lambda) {
+            wcList.add(word + ":" + value);
 
             // for an unforeseen word, initialize its lambdas w/ -1s
             if (!lambdaMap.containsKey(word)) {
@@ -420,11 +442,11 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
             lambdaMap.put(word, lambda_word);
         }
 
-        void merge(List<Text> o_wcList, Map<Text, List<Float>> o_lambdaMap) {
+        void merge(List<String> o_wcList, Map<String, List<Float>> o_lambdaMap) {
             wcList.addAll(o_wcList);
 
-            for (Map.Entry<Text, List<Float>> e : o_lambdaMap.entrySet()) {
-                Text o_word = e.getKey();
+            for (Map.Entry<String, List<Float>> e : o_lambdaMap.entrySet()) {
+                String o_word = e.getKey();
                 List<Float> o_lambda_word = e.getValue();
 
                 if (!lambdaMap.containsKey(o_word)) { // for an unforeseen word
@@ -444,18 +466,16 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
         float[] get() {
             OnlineLDAModel model = new OnlineLDAModel(topic, alpha, delta);
 
-            for (Text word : lambdaMap.keySet()) {
+            for (String word : lambdaMap.keySet()) {
                 List<Float> lambda_word = lambdaMap.get(word);
                 for (int k = 0; k < topic; k++) {
-                    Object lambdaObj = lambda_word.get(k); // this should be FloatWritable
-                    float lambda = ((FloatWritable) lambdaObj).get();
-                    model.setLambda(word.toString(), k, lambda);
+                    model.setLambda(word, k, lambda_word.get(k));
                 }
             }
 
             String[] wcArray = new String[wcList.size()];
             for (int i = 0; i < wcArray.length; i++) {
-                wcArray[i] = wcList.get(i).toString();
+                wcArray[i] = wcList.get(i);
             }
 
             return model.getTopicDistribution(wcArray);
