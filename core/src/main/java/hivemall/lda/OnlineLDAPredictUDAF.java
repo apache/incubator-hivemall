@@ -70,8 +70,6 @@ import org.apache.hadoop.io.IntWritable;
 public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
     private static final Log logger = LogFactory.getLog(OnlineLDAPredictUDAF.class);
 
-    private OnlineLDAPredictUDAF() {}
-
     @Override
     public Evaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 4 && typeInfo.length != 5) {
@@ -359,7 +357,11 @@ public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
                 List<Float> lambdaMapValue = new ArrayList<Float>();
                 for (int i = 0; i < lambdaMapValueSize; i++) {
                     Object lambdaObj = lambdaMapValueRaw.get(i);
-                    lambdaMapValue.add(((FloatWritable) lambdaObj).get());
+                    if (lambdaObj instanceof FloatWritable) {
+                        lambdaMapValue.add(((FloatWritable) lambdaObj).get());
+                    } else {
+                        lambdaMapValue.add((Float) lambdaObj);
+                    }
                 }
 
                 lambdaMap.put(word, lambdaMapValue);
