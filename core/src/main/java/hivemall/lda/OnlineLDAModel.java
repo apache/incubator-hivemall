@@ -88,6 +88,10 @@ public final class OnlineLDAModel {
     private int docCount_ = 0;
     private int wordCount_ = 0;
 
+    public OnlineLDAModel(int K, float alpha, double delta) { // for E step only instantiation
+        this(K, alpha, 1 / 20.f, 11102, 1020, 0.7, delta);
+    }
+
     public OnlineLDAModel(int K, float alpha, float eta, int D, double tau0, double kappa, double delta) {
         Preconditions.checkArgument(0.d < tau0, "tau0 MUST be positive: " + tau0);
         Preconditions.checkArgument(0.5 < kappa && kappa <= 1.d,
@@ -434,6 +438,21 @@ public final class OnlineLDAModel {
         Preconditions.checkArgument(k < lambda_.get(label).length,
             "Topic index must be in [0, " + lambda_.get(label).length + "]");
         return lambda_.get(label)[k];
+    }
+
+    public void setLambda(String label, int k, float lambda) {
+        float[] lambda_label;
+        if (!lambda_.containsKey(label)) {
+            int dummyLambdaIdx = lambda_.size() % dummyLambdas_.length;
+            lambda_label = generateRandomFloatArray(K_);
+            for (int ki = 0; ki < K_; ki++) {
+                lambda_label[k] *= dummyLambdas_[dummyLambdaIdx][ki];
+            }
+        } else {
+            lambda_label = this.lambda_.get(label);
+        }
+        lambda_label[k] = lambda;
+        this.lambda_.put(label, lambda_label);
     }
 
     public SortedMap<Float, String> getTopicWords(int k) {
