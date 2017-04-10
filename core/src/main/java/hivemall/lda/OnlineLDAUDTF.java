@@ -428,4 +428,19 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
         logger.info("Forwarded topic words each of " + topic + " topics");
     }
 
+    /*
+     * For testing:
+     */
+
+    public double getLambda(String label, int k) {
+        return model.getLambda(label, k);
+    }
+
+    public SortedMap<Float, String> getTopicWords(int k) {
+        return model.getTopicWords(k);
+    }
+
+    public float[] getTopicDistribution(@Nonnull String[] doc) {
+        return model.getTopicDistribution(doc);
+    }
 }
