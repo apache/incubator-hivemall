@@ -158,32 +158,32 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
 
             MapObjectInspector areaPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
             fieldNames.add("areaPartialMap");
             fieldOIs.add(areaPartialMapOI);
 
             MapObjectInspector fpPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector);
             fieldNames.add("fpPartialMap");
             fieldOIs.add(fpPartialMapOI);
 
             MapObjectInspector tpPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector);
             fieldNames.add("tpPartialMap");
             fieldOIs.add(tpPartialMapOI);
 
             MapObjectInspector fpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector);
             fieldNames.add("fpPrevPartialMap");
             fieldOIs.add(fpPrevPartialMapOI);
 
             MapObjectInspector tpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector);
             fieldNames.add("tpPrevPartialMap");
             fieldOIs.add(tpPrevPartialMapOI);
 
@@ -275,28 +275,28 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             long tpPrev = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpPrevObj);
 
             Map<Double, Double> areaPartialMap = (Map<Double, Double>) ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector).getMap(
                 HiveUtils.castLazyBinaryObject(areaPartialMapObj));
 
             Map<Double, Long> fpPartialMap = (Map<Double, Long>) ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector).getMap(
                 HiveUtils.castLazyBinaryObject(fpPartialMapObj));
 
             Map<Double, Long> tpPartialMap = (Map<Double, Long>) ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector).getMap(
                 HiveUtils.castLazyBinaryObject(tpPartialMapObj));
 
             Map<Double, Long> fpPrevPartialMap = (Map<Double, Long>) ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector).getMap(
                 HiveUtils.castLazyBinaryObject(fpPrevPartialMapObj));
 
             Map<Double, Long> tpPrevPartialMap = (Map<Double, Long>) ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector).getMap(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector).getMap(
                 HiveUtils.castLazyBinaryObject(tpPrevPartialMapObj));
 
             ClassificationAUCAggregationBuffer myAggr = (ClassificationAUCAggregationBuffer) agg;
