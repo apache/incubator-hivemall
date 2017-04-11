@@ -150,7 +150,11 @@
 * [Change-Point Detection using Singular Spectrum Transformation (SST)](anomaly/sst.md)
 * [ChangeFinder: Detecting Outlier and Change-Point Simultaneously](anomaly/changefinder.md)
 
-## Part X - Hivemall on Spark
+## Part X - Document Analysis
+
+* [Topic Modeling using Latent Dirichlet Allocation (LDA)](document_analysis/lda.md)
+
+## Part XI - Hivemall on Spark
 
 * [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
@@ -165,7 +169,7 @@
     * [Top-k Join processing](spark/misc/topk_join.md)
     * [Other utility functions](spark/misc/functions.md)
 
-## Part XI - External References
+## Part XII - External References
 
 * [Hivemall on Apache Spark](https://github.com/maropu/hivemall-spark)
 * [Hivemall on Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)
