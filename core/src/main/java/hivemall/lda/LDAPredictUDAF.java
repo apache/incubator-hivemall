@@ -129,6 +129,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         private StandardMapObjectInspector lambdaMapOI;
         private PrimitiveObjectInspector lambdaMapKeyOI;
         private StandardListObjectInspector lambdaMapValueOI;
+        private PrimitiveObjectInspector lambdaMapValueElemOI;
 
         public Evaluator() {}
 
@@ -213,15 +214,11 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.alphaOptionField = soi.getStructFieldRef("alpha");
                 this.deltaOptionField = soi.getStructFieldRef("delta");
                 this.wcListElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                this.wcListOI = ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+                this.wcListOI = ObjectInspectorFactory.getStandardListObjectInspector(wcListElemOI);
                 this.lambdaMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                this.lambdaMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
-                this.lambdaMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    ObjectInspectorFactory.getStandardListObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaFloatObjectInspector));
+                this.lambdaMapValueElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                this.lambdaMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(lambdaMapValueElemOI);
+                this.lambdaMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(lambdaMapKeyOI, lambdaMapValueOI);
             }
 
             // initialize output
@@ -357,17 +354,12 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
                 // fix map values to lists of Java Float objects
                 int lambdaMapValueSize = lambdaMapValueRaw.size();
-                List<Float> lambdaMapValue = new ArrayList<Float>();
+                List<Float> lambda_word = new ArrayList<Float>();
                 for (int i = 0; i < lambdaMapValueSize; i++) {
-                    Object lambdaObj = lambdaMapValueRaw.get(i);
-                    if (lambdaObj instanceof FloatWritable) {
-                        lambdaMapValue.add(((FloatWritable) lambdaObj).get());
-                    } else {
-                        lambdaMapValue.add((Float) lambdaObj);
-                    }
+                    lambda_word.add(HiveUtils.getFloat(lambdaMapValueRaw.get(i), lambdaMapValueElemOI));
                 }
 
-                lambdaMap.put(word, lambdaMapValue);
+                lambdaMap.put(word, lambda_word);
             }
 
             // restore options from partial result
@@ -478,11 +470,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 }
             }
 
-            String[] wcArray = new String[wcList.size()];
-            for (int i = 0; i < wcArray.length; i++) {
-                wcArray[i] = wcList.get(i);
-            }
-
+            String[] wcArray = wcList.toArray(new String[wcList.size()]);
             return model.getTopicDistribution(wcArray);
         }
     }
