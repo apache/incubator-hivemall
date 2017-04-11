@@ -597,6 +597,16 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sst")
 sqlContext.sql("CREATE TEMPORARY FUNCTION sst AS 'hivemall.anomaly.SingularSpectrumTransformUDF'")
 
 /**
+ * Latent Dirichlet Allocation
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_lda")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_lda AS 'hivemall.lda.LDAUDTF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lda_predict")
+sqlContext.sql("CREATE TEMPORARY FUNCTION lda_predict AS 'hivemall.lda.LDAPredictUDAF'")
+
+/**
  * Smile related features
  */
 

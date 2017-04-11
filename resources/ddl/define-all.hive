@@ -612,6 +612,16 @@ create temporary function changefinder as 'hivemall.anomaly.ChangeFinderUDF';
 drop temporary function if exists sst;
 create temporary function sst as 'hivemall.anomaly.SingularSpectrumTransformUDF';
 
+---------------------------------
+-- Latent Dirichlet Allocation --
+---------------------------------
+
+drop temporary function if exists train_lda;
+create temporary function train_lda as 'hivemall.lda.LDAUDTF';
+
+drop temporary function if exists lda_predict;
+create temporary function lda_predict as 'hivemall.lda.LDAPredictUDAF';
+
 ----------------------------
 -- Smile related features --
 ----------------------------
