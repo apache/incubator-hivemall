@@ -31,12 +31,12 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OnlineLDAUDTFTest {
+public class LDAUDTFTest {
     private static final boolean DEBUG = false;
 
     @Test
     public void test() throws HiveException {
-        OnlineLDAUDTF udtf = new OnlineLDAUDTF();
+        LDAUDTF udtf = new LDAUDTF();
 
         ObjectInspector[] argOIs = new ObjectInspector[] {
             ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),

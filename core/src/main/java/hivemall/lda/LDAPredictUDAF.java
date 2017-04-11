@@ -67,8 +67,8 @@ import org.apache.hadoop.io.IntWritable;
         name = "lda_predict",
         value = "_FUNC_(string word, float value, int label, float lambda[, const string options])"
                 + " - Returns a list which consists of <int label, float prob>")
-public final class OnlineLDAPredictUDAF extends AbstractGenericUDAFResolver {
-    private static final Log logger = LogFactory.getLog(OnlineLDAPredictUDAF.class);
+public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
+    private static final Log logger = LogFactory.getLog(LDAPredictUDAF.class);
 
     @Override
     public Evaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {

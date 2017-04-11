@@ -54,8 +54,8 @@ import javax.annotation.Nonnull;
         name = "train_lda",
         value = "_FUNC_(array<string> words[, const string options])"
                 + " - Returns a relation consists of <int topic, string word, float score>")
-public class OnlineLDAUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(OnlineLDAUDTF.class);
+public class LDAUDTF extends UDTFWithOptions {
+    private static final Log logger = LogFactory.getLog(LDAUDTF.class);
     private static final int INT_BYTES = Integer.SIZE / 8;
 
     // Options
@@ -79,7 +79,7 @@ public class OnlineLDAUDTF extends UDTFWithOptions {
     protected NioStatefullSegment fileIO;
     protected ByteBuffer inputBuf;
 
-    public OnlineLDAUDTF() {
+    public LDAUDTF() {
         this.topic = 10;
         this.alpha = 1.f / topic;
         this.eta = 1.f / topic;

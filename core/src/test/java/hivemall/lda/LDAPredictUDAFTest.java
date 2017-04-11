@@ -34,12 +34,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class OnlineLDAPredictUDAFTest {
-    OnlineLDAPredictUDAF udaf;
+public class LDAPredictUDAFTest {
+    LDAPredictUDAF udaf;
     GenericUDAFEvaluator evaluator;
     ObjectInspector[] inputOIs;
     ObjectInspector[] partialOI;
-    OnlineLDAPredictUDAF.OnlineLDAPredictAggregationBuffer agg;
+    LDAPredictUDAF.OnlineLDAPredictAggregationBuffer agg;
 
     String[] words;
     int[] labels;
@@ -47,7 +47,7 @@ public class OnlineLDAPredictUDAFTest {
 
     @Before
     public void setUp() throws Exception {
-        udaf = new OnlineLDAPredictUDAF();
+        udaf = new LDAPredictUDAF();
 
         inputOIs = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
@@ -88,7 +88,7 @@ public class OnlineLDAPredictUDAFTest {
         partialOI = new ObjectInspector[4];
         partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
 
-        agg = (OnlineLDAPredictUDAF.OnlineLDAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
+        agg = (LDAPredictUDAF.OnlineLDAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
 
         words = new String[] {"fruits", "vegetables", "healthy", "flu", "apples", "oranges", "like", "avocados", "colds",
             "colds", "avocados", "oranges", "like", "apples", "flu", "healthy", "vegetables", "fruits"};
