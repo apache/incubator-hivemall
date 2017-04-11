@@ -440,6 +440,10 @@ public class LDAUDTF extends UDTFWithOptions {
         return model.getTopicWords(k);
     }
 
+    public SortedMap<Float, String> getTopicWords(int k, int topN) {
+        return model.getTopicWords(k, topN);
+    }
+
     public float[] getTopicDistribution(@Nonnull String[] doc) {
         return model.getTopicDistribution(doc);
     }
