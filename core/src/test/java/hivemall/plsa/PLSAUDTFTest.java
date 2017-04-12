@@ -33,7 +33,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class PLSAUDTFTest {
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     @Test
     public void test() throws HiveException {
