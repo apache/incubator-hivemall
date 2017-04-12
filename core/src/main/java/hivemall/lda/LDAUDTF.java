@@ -68,6 +68,7 @@ public class LDAUDTF extends UDTFWithOptions {
     protected double kappa;
     protected int iterations;
     protected double delta;
+    protected double eps;
 
     // number of proceeded training samples
     protected long count;
@@ -89,6 +90,7 @@ public class LDAUDTF extends UDTFWithOptions {
         this.kappa = 0.7;
         this.iterations = 1;
         this.delta = 1E-5d;
+        this.eps = 1E-1d;
     }
 
     @Override
@@ -103,6 +105,7 @@ public class LDAUDTF extends UDTFWithOptions {
         opts.addOption("kappa", true, "Exponential decay rate (i.e., learning rate) [default: 0.7]");
         opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 1]");
         opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
+        opts.addOption("eps", "epsilon", true, "Check convergence based on the difference of perplexity [default: 1E-1]");
         return opts;
     }
 
@@ -302,7 +305,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
                     perplexityPrev = perplexity;
                     perplexity = model.computePerplexity();
-                    if (Math.abs(perplexityPrev - perplexity) < 1E-1f) {
+                    if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
                 }
@@ -394,7 +397,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
                     perplexityPrev = perplexity;
                     perplexity = model.computePerplexity();
-                    if (Math.abs(perplexityPrev - perplexity) < 1E-1f) {
+                    if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
                 }
