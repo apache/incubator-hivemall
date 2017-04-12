@@ -433,11 +433,14 @@ public class LDAUDTF extends UDTFWithOptions {
         for (int k = 0; k < topic; k++) {
             topicIdx.set(k);
 
-            final SortedMap<Float, String> topicWords = model.getTopicWords(k);
-            for (Map.Entry<Float, String> e : topicWords.entrySet()) {
-                word.set(e.getValue());
+            final SortedMap<Float, List<String>> topicWords = model.getTopicWords(k);
+            for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
                 score.set(e.getKey());
-                forward(forwardObjs);
+                List<String> words = e.getValue();
+                for (int i = 0; i < words.size(); i++) {
+                    word.set(words.get(i));
+                    forward(forwardObjs);
+                }
             }
         }
 
@@ -452,11 +455,11 @@ public class LDAUDTF extends UDTFWithOptions {
         return model.getLambda(label, k);
     }
 
-    public SortedMap<Float, String> getTopicWords(int k) {
+    public SortedMap<Float, List<String>> getTopicWords(int k) {
         return model.getTopicWords(k);
     }
 
-    public SortedMap<Float, String> getTopicWords(int k, int topN) {
+    public SortedMap<Float, List<String>> getTopicWords(int k, int topN) {
         return model.getTopicWords(k, topN);
     }
 

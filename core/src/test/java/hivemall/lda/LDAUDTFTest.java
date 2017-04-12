@@ -65,21 +65,27 @@ public class LDAUDTFTest {
             udtf.process(new Object[]{ Arrays.asList(doc2) });
         }
 
-        SortedMap<Float, String> topicWords;
+        SortedMap<Float, List<String>> topicWords;
 
         println("Topic 0:");
         println("========");
         topicWords = udtf.getTopicWords(0);
-        for (Map.Entry<Float, String> e : topicWords.entrySet()) {
-            println(e.getKey() + " " + e.getValue());
+        for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
+            List<String> words = e.getValue();
+            for (int i = 0; i < words.size(); i++) {
+                println(e.getKey() + " " + words.get(i));
+            }
         }
         println("========");
 
         println("Topic 1:");
         println("========");
         topicWords = udtf.getTopicWords(1);
-        for (Map.Entry<Float, String> e : topicWords.entrySet()) {
-            println(e.getKey() + " " + e.getValue());
+        for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
+            List<String> words = e.getValue();
+            for (int i = 0; i < words.size(); i++) {
+                println(e.getKey() + " " + words.get(i));
+            }
         }
         println("========");
 
@@ -141,14 +147,17 @@ public class LDAUDTFTest {
             line = news20.readLine();
         }
 
-        SortedMap<Float, String> topicWords;
+        SortedMap<Float, List<String>> topicWords;
 
         for (int k = 0; k < 20; k++) {
             println("========");
             println("Topic " + k);
             topicWords = udtf.getTopicWords(k, 5);
-            for (Map.Entry<Float, String> e : topicWords.entrySet()) {
-                println(e.getKey() + " " + e.getValue());
+            for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
+                List<String> words = e.getValue();
+                for (int i = 0; i < words.size(); i++) {
+                    println(e.getKey() + " " + words.get(i));
+                }
             }
             println("========");
         }

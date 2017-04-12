@@ -428,28 +428,35 @@ public final class OnlineLDAModel {
         this.lambda_.put(label, lambda_label);
     }
 
-    public SortedMap<Float, String> getTopicWords(int k) {
+    public SortedMap<Float, List<String>> getTopicWords(int k) {
         return getTopicWords(k, lambda_.keySet().size());
     }
 
-    public SortedMap<Float, String> getTopicWords(int k, int topN) {
+    public SortedMap<Float, List<String>> getTopicWords(int k, int topN) {
         float lambdaSum = 0.f;
-        SortedMap<Float, String> sortedLambda = new TreeMap<Float, String>(Collections.reverseOrder());
+        SortedMap<Float, List<String>> sortedLambda = new TreeMap<Float, List<String>>(Collections.reverseOrder());
 
         for (String label : lambda_.keySet()) {
             float lambda = lambda_.get(label)[k];
             lambdaSum += lambda;
-            sortedLambda.put(lambda, label);
+
+            List<String> labels = new ArrayList<String>();
+            if (sortedLambda.containsKey(lambda)) {
+                labels = sortedLambda.get(lambda);
+            }
+            labels.add(label);
+
+            sortedLambda.put(lambda, labels);
         }
 
-        SortedMap<Float, String> ret = new TreeMap<Float, String>(Collections.reverseOrder());
+        SortedMap<Float, List<String>> ret = new TreeMap<Float, List<String>>(Collections.reverseOrder());
 
         topN = Math.min(topN, lambda_.keySet().size());
         int tt = 0;
-        for (Map.Entry<Float, String> e : sortedLambda.entrySet()) {
+        for (Map.Entry<Float, List<String>> e : sortedLambda.entrySet()) {
             float lambda = e.getKey();
-            String label = e.getValue();
-            ret.put(lambda / lambdaSum, label);
+            List<String> labels = e.getValue();
+            ret.put(lambda / lambdaSum, labels);
 
             if (++tt == topN) {
                 break;

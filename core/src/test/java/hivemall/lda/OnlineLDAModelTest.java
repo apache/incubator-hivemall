@@ -19,6 +19,7 @@
 package hivemall.lda;
 
 import java.util.Map;
+import java.util.List;
 import java.util.SortedMap;
 
 import org.junit.Assert;
@@ -48,23 +49,29 @@ public class OnlineLDAModelTest {
             perplexityPrev = perplexity;
             perplexity = model.computePerplexity();
             println("Iteration " + it + ": perplexity = " + perplexity);
-        } while(Math.abs(perplexityPrev - perplexity) >= 1E-5f);
+        } while(Math.abs(perplexityPrev - perplexity) >= 1E-6f);
 
-        SortedMap<Float, String> topicWords;
+        SortedMap<Float, List<String>> topicWords;
 
         println("Topic 0:");
         println("========");
         topicWords = model.getTopicWords(0);
-        for (Map.Entry<Float, String> e : topicWords.entrySet()) {
-            println(e.getKey() + " " + e.getValue());
+        for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
+            List<String> words = e.getValue();
+            for (int i = 0; i < words.size(); i++) {
+                println(e.getKey() + " " + words.get(i));
+            }
         }
         println("========");
 
         println("Topic 1:");
         println("========");
         topicWords = model.getTopicWords(1);
-        for (Map.Entry<Float, String> e : topicWords.entrySet()) {
-            println(e.getKey() + " " + e.getValue());
+        for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
+            List<String> words = e.getValue();
+            for (int i = 0; i < words.size(); i++) {
+                println(e.getKey() + " " + words.get(i));
+            }
         }
         println("========");
 
