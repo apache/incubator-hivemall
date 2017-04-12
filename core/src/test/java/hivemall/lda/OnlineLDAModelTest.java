@@ -36,14 +36,13 @@ public class OnlineLDAModelTest {
 
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
-        String[][] doc1 = new String[][] {new String[] {"fruits:1", "healthy:1", "vegetables:1"}};
-        String[][] doc2 = new String[][] {new String[] {"apples:1", "avocados:1", "colds:1", "flu:1",
-                "like:2", "oranges:1"}};
+        String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
+        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
+        String[][] miniBatch = new String[][] {doc1, doc2};
 
         do {
             // online (i.e., one-by-one) updating
-            model.train(doc1);
-            model.train(doc2);
+            model.train(miniBatch);
 
             it++;
             perplexityPrev = perplexity;
@@ -70,7 +69,7 @@ public class OnlineLDAModelTest {
         println("========");
 
         int k1, k2;
-        float[] topicDistr = model.getTopicDistribution(doc1[0]);
+        float[] topicDistr = model.getTopicDistribution(doc1);
         if (topicDistr[0] > topicDistr[1]) {
             // topic 0 MUST represent doc#1
             k1 = 0;

@@ -28,6 +28,7 @@ import hivemall.utils.lang.Primitives;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.SortedMap;
@@ -273,10 +274,12 @@ public class LDAUDTF extends UDTFWithOptions {
 
                 int iter = 2;
                 float perplexityPrev;
-                float perplexity = model.computePerplexity();
+                float perplexity = Float.MAX_VALUE;
                 for (; iter <= iterations; iter++) {
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
+
+                    List<String[]> miniBatchList = new ArrayList<String[]>();
 
                     while (buf.remaining() > 0) {
                         int recordBytes = buf.getInt();
@@ -289,9 +292,13 @@ public class LDAUDTF extends UDTFWithOptions {
                             buf.get(bytes);
                             wordCounts[j] = new String(bytes);
                         }
-                        model.train(new String[][] {wordCounts});
+                        miniBatchList.add(wordCounts);
                     }
                     buf.rewind();
+
+                    String[][] miniBatch = new String[miniBatchList.size()][];
+                    miniBatchList.toArray(miniBatch);
+                    model.train(miniBatch);
 
                     perplexityPrev = perplexity;
                     perplexity = model.computePerplexity();
@@ -327,7 +334,7 @@ public class LDAUDTF extends UDTFWithOptions {
                 // run iterations
                 int iter = 2;
                 float perplexityPrev;
-                float perplexity = model.computePerplexity();
+                float perplexity = Float.MAX_VALUE;
                 for (; iter <= iterations; iter++) {
                     setCounterValue(iterCounter, iter);
 
@@ -348,6 +355,8 @@ public class LDAUDTF extends UDTFWithOptions {
                             break;
                         }
                         assert (bytesRead > 0) : bytesRead;
+
+                        List<String[]> miniBatchList = new ArrayList<String[]>();
 
                         // reads training examples from a buffer
                         buf.flip();
@@ -372,11 +381,15 @@ public class LDAUDTF extends UDTFWithOptions {
                                 buf.get(bytes);
                                 wordCounts[j] = new String(bytes);
                             }
-                            model.train(new String[][] {wordCounts});
+                            miniBatchList.add(wordCounts);
 
                             remain -= recordBytes;
                         }
                         buf.compact();
+
+                        String[][] miniBatch = new String[miniBatchList.size()][];
+                        miniBatchList.toArray(miniBatch);
+                        model.train(miniBatch);
                     }
 
                     perplexityPrev = perplexity;
