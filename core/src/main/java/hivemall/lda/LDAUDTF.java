@@ -134,6 +134,7 @@ public class LDAUDTF extends UDTFWithOptions {
                     "'-iterations' must be greater than or equals to 1: " + iterations);
             }
             this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
+            this.eps = Primitives.parseDouble(cl.getOptionValue("epsilon"), 1E-1d);
         }
 
         return cl;
