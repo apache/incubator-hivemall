@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.clustering;
+package hivemall.topicmodel;
 
 import hivemall.utils.lang.Preconditions;
 

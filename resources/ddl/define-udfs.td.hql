@@ -158,8 +158,8 @@ create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAt
 -- since Hivemall v0.5-rc.1
 create temporary function changefinder as 'hivemall.anomaly.ChangeFinderUDF';
 create temporary function sst as 'hivemall.anomaly.SingularSpectrumTransformUDF';
-create temporary function train_lda as 'hivemall.clustering.LDAUDTF';
-create temporary function lda_predict as 'hivemall.clustering.LDAPredictUDAF';
+create temporary function train_lda as 'hivemall.topicmodel.LDAUDTF';
+create temporary function lda_predict as 'hivemall.topicmodel.LDAPredictUDAF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

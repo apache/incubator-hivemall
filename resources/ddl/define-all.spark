@@ -597,14 +597,14 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sst")
 sqlContext.sql("CREATE TEMPORARY FUNCTION sst AS 'hivemall.anomaly.SingularSpectrumTransformUDF'")
 
 /**
- * Clustering
+ * Topic Modeling
  */
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_lda")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_lda AS 'hivemall.clustering.LDAUDTF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_lda AS 'hivemall.topicmodel.LDAUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lda_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION lda_predict AS 'hivemall.clustering.LDAPredictUDAF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION lda_predict AS 'hivemall.topicmodel.LDAPredictUDAF'")
 
 /**
  * Smile related features

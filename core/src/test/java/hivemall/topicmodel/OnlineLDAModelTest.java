@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.clustering;
+package hivemall.topicmodel;
 
 import java.util.Map;
 import java.util.List;

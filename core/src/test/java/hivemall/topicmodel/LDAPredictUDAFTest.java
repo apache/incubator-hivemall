@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.clustering;
+package hivemall.topicmodel;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;

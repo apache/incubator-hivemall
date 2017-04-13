@@ -616,15 +616,15 @@ CREATE FUNCTION changefinder as 'hivemall.anomaly.ChangeFinderUDF' USING JAR '${
 DROP FUNCTION IF EXISTS sst;
 CREATE FUNCTION sst as 'hivemall.anomaly.SingularSpectrumTransformUDF' USING JAR '${hivemall_jar}';
 
-----------------
--- Clustering --
-----------------
+--------------------
+-- Topic Modeling --
+--------------------
 
 DROP FUNCTION IF EXISTS train_lda;
-CREATE FUNCTION train_lda as 'hivemall.clustering.LDAUDTF' USING JAR '${hivemall_jar}';
+CREATE FUNCTION train_lda as 'hivemall.topicmodel.LDAUDTF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS lda_predict;
-CREATE FUNCTION lda_predict as 'hivemall.clustering.LDAPredictUDAF' USING JAR '${hivemall_jar}';
+CREATE FUNCTION lda_predict as 'hivemall.topicmodel.LDAPredictUDAF' USING JAR '${hivemall_jar}';
 
 ----------------------------
 -- Smile related features --
