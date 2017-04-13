@@ -150,9 +150,9 @@
 * [Change-Point Detection using Singular Spectrum Transformation (SST)](anomaly/sst.md)
 * [ChangeFinder: Detecting Outlier and Change-Point Simultaneously](anomaly/changefinder.md)
 
-## Part X - Document Analysis
+## Part X - Clustering
 
-* [Topic Modeling using Latent Dirichlet Allocation (LDA)](document_analysis/lda.md)
+* [Latent Dirichlet Allocation](clustering/lda.md)
 
 ## Part XI - Hivemall on Spark
 
