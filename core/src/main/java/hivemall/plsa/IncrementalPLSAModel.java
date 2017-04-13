@@ -289,4 +289,30 @@ public final class IncrementalPLSAModel {
     public float getProbability(String word, int z) {
         return p_zw_.get(word)[z];
     }
+
+    public void setProbability(String word, int z, float prob) {
+        float[] prob_word;
+
+        if (!p_zw_.containsKey(word)) {
+            prob_word = new float[K_];
+            for (int k = 0; k < K_; k++) {
+                prob_word[k] = rng_.nextFloat();
+            }
+        } else {
+            prob_word = p_zw_.get(word);
+        }
+
+        prob_word[z] = prob;
+
+        // normalize
+        float sum = 0.f;
+        for (int k = 0; k < K_; k++) {
+            sum += prob_word[k];
+        }
+        for (int k = 0; k < K_; k++) {
+            prob_word[k] /= sum;
+        }
+
+        p_zw_.put(word, prob_word);
+    }
 }
