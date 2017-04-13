@@ -29,6 +29,7 @@ RUN set -eux && \
     cd /hivemall && \
     HIVEMALL_VERSION=`cat VERSION` && \
     find /hivemall/resources/docker -mindepth 1 -maxdepth 1 \
+      -not -name 'Dockerfile' -a -not -name 'docker-compose.yml' \
       -exec sh -c 'f={} && ln -s $f /root/${f##*/}' \; && \
     ln -s /hivemall/resources/ddl/define-all.hive /root/define-all.hive && \
     ln -s /hivemall/target/hivemall-core-${HIVEMALL_VERSION}-with-dependencies.jar \

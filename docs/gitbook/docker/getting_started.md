@@ -24,12 +24,13 @@
   * `Docker Engine 1.6+`
   * [OPT] `Docker Compose 1.10+` (optional but recommended)
 2. Build Image
-  * `docker-compose build`
+  * `docker build -f resources/docker/Dockerfile .`
+  * Or, `docker-compose -f resources/docker/docker-compose.yml build`
 3. Run Container
   * `docker run -it ${your data volume and port options} hivemall`
   * Or
-    1. Edit `docker-compose.yml`
-    2. `docker-compose up -d && docker exec -it hivemall bash` (Note: need to wait for initialization)
+    1. Edit `resources/docker/docker-compose.yml`
+    2. `docker-compose -f resources/docker/docker-compose.yml up -d && docker exec -it hivemall bash` (Note: need to wait for initialization)
 4. Start Hivemall (in container)
   1. [OPT] Load data into HDFS
     * You can load iris dataset by just `./prepare_iris.sh`
