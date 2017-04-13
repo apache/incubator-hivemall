@@ -607,10 +607,10 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lda_predict")
 sqlContext.sql("CREATE TEMPORARY FUNCTION lda_predict AS 'hivemall.topicmodel.LDAPredictUDAF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_plsa")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_plsa AS 'hivemall.plsa.PLSAUDTF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_plsa AS 'hivemall.topicmodel.PLSAUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS plsa_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION plsa_predict AS 'hivemall.plsa.PLSAPredictUDAF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION plsa_predict AS 'hivemall.topicmodel.PLSAPredictUDAF'")
 
 /**
  * Geo Spatial Functions

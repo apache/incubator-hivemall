@@ -623,10 +623,10 @@ drop temporary function if exists lda_predict;
 create temporary function lda_predict as 'hivemall.topicmodel.LDAPredictUDAF';
 
 drop temporary function if exists train_plsa;
-create temporary function train_plsa as 'hivemall.plsa.PLSAUDTF';
+create temporary function train_plsa as 'hivemall.topicmodel.PLSAUDTF';
 
 drop temporary function if exists plsa_predict;
-create temporary function plsa_predict as 'hivemall.plsa.PLSAPredictUDAF';
+create temporary function plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF';
 
 ---------------------------
 -- Geo-Spatial functions --

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.plsa;
+package hivemall.topicmodel;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.CommandLineUtils;
