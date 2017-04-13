@@ -48,8 +48,6 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
-import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
@@ -323,10 +321,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
             Object wcListObj = internalMergeOI.getStructFieldData(partial, wcListField);
 
-            if (wcListObj instanceof LazyBinaryArray) {
-                wcListObj = ((LazyBinaryArray) wcListObj).getList();
-            }
-            List<?> wcListRaw = wcListOI.getList(wcListObj);
+            List<?> wcListRaw = wcListOI.getList(HiveUtils.castLazyBinaryObject(wcListObj));
 
             // fix list elements to Java String objects
             int wcListSize = wcListRaw.size();
@@ -336,10 +331,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             }
 
             Object lambdaMapObj = internalMergeOI.getStructFieldData(partial, lambdaMapField);
-            if (lambdaMapObj instanceof LazyBinaryMap) {
-                lambdaMapObj = ((LazyBinaryMap) lambdaMapObj).getMap();
-            }
-            Map<?, ?> lambdaMapRaw = lambdaMapOI.getMap(lambdaMapObj);
+            Map<?, ?> lambdaMapRaw = lambdaMapOI.getMap(HiveUtils.castLazyBinaryObject(lambdaMapObj));
 
             Map<String, List<Float>> lambdaMap = new HashMap<String, List<Float>>();
             for (Map.Entry<?, ?> e : lambdaMapRaw.entrySet()) {
@@ -347,10 +339,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 String word = PrimitiveObjectInspectorUtils.getString(e.getKey(), lambdaMapKeyOI);
 
                 Object lambdaMapValueObj = e.getValue();
-                if (lambdaMapValueObj instanceof  LazyBinaryArray) {
-                    lambdaMapValueObj = ((LazyBinaryArray) lambdaMapValueObj).getList();
-                }
-                List<?> lambdaMapValueRaw = lambdaMapValueOI.getList(lambdaMapValueObj);
+                List<?> lambdaMapValueRaw = lambdaMapValueOI.getList(HiveUtils.castLazyBinaryObject(lambdaMapValueObj));
 
                 // fix map values to lists of Java Float objects
                 int lambdaMapValueSize = lambdaMapValueRaw.size();
