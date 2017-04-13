@@ -49,6 +49,8 @@ import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.lazy.LazyInteger;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazyString;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap;
 import org.apache.hadoop.hive.serde2.objectinspector.ConstantObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
@@ -986,5 +988,15 @@ public final class HiveUtils {
         tbl.setProperty("columns.types", columnTypes.toString());
         serde.initialize(conf, tbl);
         return serde;
+    }
+
+    @Nonnull
+    public static Object castLazyBinaryObject(@Nonnull final Object obj) {
+        if (obj instanceof LazyBinaryMap) {
+            return ((LazyBinaryMap) obj).getMap();
+        } else if (obj instanceof LazyBinaryArray) {
+            return ((LazyBinaryArray) obj).getList();
+        }
+        return obj;
     }
 }
