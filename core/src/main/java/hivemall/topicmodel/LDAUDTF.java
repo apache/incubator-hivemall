@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -72,6 +73,7 @@ public class LDAUDTF extends UDTFWithOptions {
     protected int iterations;
     protected double delta;
     protected double eps;
+    protected int miniBatchSize;
 
     // if `num_doc` option is not given, this flag will be true
     // in that case, UDTF automatically sets `count` value to the _D parameter in an online LDA model
@@ -79,6 +81,9 @@ public class LDAUDTF extends UDTFWithOptions {
 
     // number of proceeded training samples
     protected long count;
+
+    protected String[][] miniBatch;
+    protected int miniBatchCount;
 
     protected OnlineLDAModel model;
 
@@ -98,6 +103,7 @@ public class LDAUDTF extends UDTFWithOptions {
         this.iterations = 1;
         this.delta = 1E-5d;
         this.eps = 1E-1d;
+        this.miniBatchSize = 1; // truly online setting
     }
 
     @Override
@@ -114,6 +120,7 @@ public class LDAUDTF extends UDTFWithOptions {
         opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
         opts.addOption("eps", "epsilon", true,
             "Check convergence based on the difference of perplexity [default: 1E-1]");
+        opts.addOption("s", "mini_batch_size", true, "Repeat model updating per mini-batch [default: 1]");
         return opts;
     }
 
@@ -143,6 +150,7 @@ public class LDAUDTF extends UDTFWithOptions {
             }
             this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
             this.eps = Primitives.parseDouble(cl.getOptionValue("epsilon"), 1E-1d);
+            this.miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), 1);
         }
 
         return cl;
@@ -163,6 +171,8 @@ public class LDAUDTF extends UDTFWithOptions {
         this.model = new OnlineLDAModel(topic, alpha, eta, numDoc, tau0, kappa, delta);
         this.count = 0L;
         this.isAutoD = (numDoc < 0);
+        this.miniBatch = new String[miniBatchSize][];
+        this.miniBatchCount = 0;
 
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -197,7 +207,15 @@ public class LDAUDTF extends UDTFWithOptions {
         }
 
         recordTrainSampleToTempFile(wordCounts);
-        model.train(new String[][] {wordCounts}); // mini-batch w/ single sample
+
+        miniBatch[miniBatchCount] = wordCounts;
+        miniBatchCount++;
+
+        if (miniBatchCount == miniBatchSize) {
+            model.train(miniBatch);
+            miniBatch = new String[miniBatchSize][]; // clear
+            miniBatchCount = 0;
+        }
     }
 
     protected void recordTrainSampleToTempFile(@Nonnull final String[] wordCounts)
@@ -264,6 +282,9 @@ public class LDAUDTF extends UDTFWithOptions {
             this.model = null;
             return;
         }
+        if (miniBatchCount > 0) { // update for remaining samples
+            model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
+        }
         if (iterations > 1) {
             runIterativeTraining(iterations);
         }
@@ -291,13 +312,18 @@ public class LDAUDTF extends UDTFWithOptions {
                 buf.flip();
 
                 int iter = 2;
-                float perplexityPrev;
-                float perplexity = Float.MAX_VALUE;
+                float perplexityPrev = Float.MAX_VALUE;
+                float perplexity;
+                int numTrain;
                 for (; iter <= iterations; iter++) {
+                    perplexity = 0.f;
+                    numTrain = 0;
+
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
 
-                    List<String[]> miniBatchList = new ArrayList<String[]>();
+                    miniBatch = new String[miniBatchSize][];
+                    miniBatchCount = 0;
 
                     while (buf.remaining() > 0) {
                         int recordBytes = buf.getInt();
@@ -310,19 +336,34 @@ public class LDAUDTF extends UDTFWithOptions {
                             buf.get(bytes);
                             wordCounts[j] = new String(bytes);
                         }
-                        miniBatchList.add(wordCounts);
+
+                        miniBatch[miniBatchCount] = wordCounts;
+                        miniBatchCount++;
+
+                        if (miniBatchCount == miniBatchSize) {
+                            model.train(miniBatch);
+                            perplexity += model.computePerplexity();
+                            numTrain++;
+
+                            miniBatch = new String[miniBatchSize][]; // clear
+                            miniBatchCount = 0;
+                        }
                     }
                     buf.rewind();
 
-                    String[][] miniBatch = new String[miniBatchList.size()][];
-                    miniBatchList.toArray(miniBatch);
-                    model.train(miniBatch);
+                    // update for remaining samples
+                    if (miniBatchCount > 0) { // update for remaining samples
+                        model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
+                        perplexity += model.computePerplexity();
+                        numTrain++;
+                    }
 
-                    perplexityPrev = perplexity;
-                    perplexity = model.computePerplexity();
+                    logger.info("Perplexity: " + perplexity + ", Num train: " + numTrain);
+                    perplexity /= numTrain; // mean perplexity over `numTrain` mini-batches
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
+                    perplexityPrev = perplexity;
                 }
                 logger.info("Performed "
                         + Math.min(iter, iterations)
@@ -353,9 +394,16 @@ public class LDAUDTF extends UDTFWithOptions {
 
                 // run iterations
                 int iter = 2;
-                float perplexityPrev;
-                float perplexity = Float.MAX_VALUE;
+                float perplexityPrev = Float.MAX_VALUE;
+                float perplexity;
+                int numTrain;
                 for (; iter <= iterations; iter++) {
+                    perplexity = 0.f;
+                    numTrain = 0;
+
+                    miniBatch = new String[miniBatchSize][];
+                    miniBatchCount = 0;
+
                     setCounterValue(iterCounter, iter);
 
                     buf.clear();
@@ -375,8 +423,6 @@ public class LDAUDTF extends UDTFWithOptions {
                             break;
                         }
                         assert (bytesRead > 0) : bytesRead;
-
-                        List<String[]> miniBatchList = new ArrayList<String[]>();
 
                         // reads training examples from a buffer
                         buf.flip();
@@ -401,22 +447,37 @@ public class LDAUDTF extends UDTFWithOptions {
                                 buf.get(bytes);
                                 wordCounts[j] = new String(bytes);
                             }
-                            miniBatchList.add(wordCounts);
+
+                            miniBatch[miniBatchCount] = wordCounts;
+                            miniBatchCount++;
+
+                            if (miniBatchCount == miniBatchSize) {
+                                model.train(miniBatch);
+                                perplexity += model.computePerplexity();
+                                numTrain++;
+
+                                miniBatch = new String[miniBatchSize][]; // clear
+                                miniBatchCount = 0;
+                            }
 
                             remain -= recordBytes;
                         }
                         buf.compact();
-
-                        String[][] miniBatch = new String[miniBatchList.size()][];
-                        miniBatchList.toArray(miniBatch);
-                        model.train(miniBatch);
                     }
 
-                    perplexityPrev = perplexity;
-                    perplexity = model.computePerplexity();
+                    // update for remaining samples
+                    if (miniBatchCount > 0) { // update for remaining samples
+                        model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
+                        perplexity += model.computePerplexity();
+                        numTrain++;
+                    }
+
+                    logger.info("Perplexity: " + perplexity + ", Num train: " + numTrain);
+                    perplexity /= numTrain; // mean perplexity over `numTrain` mini-batches
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
+                    perplexityPrev = perplexity;
                 }
                 logger.info("Performed "
                         + Math.min(iter, iterations)
