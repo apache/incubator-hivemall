@@ -67,7 +67,7 @@ public class LDAUDTF extends UDTFWithOptions {
     protected int topic;
     protected float alpha;
     protected float eta;
-    protected long numDoc;
+    protected int numDoc;
     protected double tau0;
     protected double kappa;
     protected int iterations;
@@ -75,7 +75,7 @@ public class LDAUDTF extends UDTFWithOptions {
     protected double eps;
     protected int miniBatchSize;
 
-    // if `num_doc` option is not given, this flag will be true
+    // if `num_docs` option is not given, this flag will be true
     // in that case, UDTF automatically sets `count` value to the _D parameter in an online LDA model
     protected boolean isAutoD;
 
@@ -97,7 +97,7 @@ public class LDAUDTF extends UDTFWithOptions {
         this.topic = 10;
         this.alpha = 1.f / topic;
         this.eta = 1.f / topic;
-        this.numDoc = -1L;
+        this.numDoc = -1;
         this.tau0 = 64.d;
         this.kappa = 0.7;
         this.iterations = 1;
@@ -112,7 +112,7 @@ public class LDAUDTF extends UDTFWithOptions {
         opts.addOption("k", "topic", true, "The number of topics [default: 10]");
         opts.addOption("alpha", true, "The hyperparameter for theta [default: 1/k]");
         opts.addOption("eta", true, "The hyperparameter for beta [default: 1/k]");
-        opts.addOption("d", "num_doc", true, "The total number of documents [default: auto]");
+        opts.addOption("d", "num_docs", true, "The total number of documents [default: auto]");
         opts.addOption("tau", "tau0", true,
             "The parameter which downweights early iterations [default: 64.0]");
         opts.addOption("kappa", true, "Exponential decay rate (i.e., learning rate) [default: 0.7]");
@@ -134,7 +134,7 @@ public class LDAUDTF extends UDTFWithOptions {
             this.topic = Primitives.parseInt(cl.getOptionValue("topic"), 10);
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topic);
             this.eta = Primitives.parseFloat(cl.getOptionValue("eta"), 1.f / topic);
-            this.numDoc = Primitives.parseLong(cl.getOptionValue("num_doc"), -1L);
+            this.numDoc = Primitives.parseInt(cl.getOptionValue("num_docs"), -1);
             this.tau0 = Primitives.parseDouble(cl.getOptionValue("tau0"), 64.d);
             if (tau0 <= 0.d) {
                 throw new UDFArgumentException("'-tau0' must be positive: " + tau0);
@@ -170,7 +170,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         this.model = new OnlineLDAModel(topic, alpha, eta, numDoc, tau0, kappa, delta);
         this.count = 0L;
-        this.isAutoD = (numDoc < 0L);
+        this.isAutoD = (numDoc < 0);
         this.miniBatch = new String[miniBatchSize][];
         this.miniBatchCount = 0;
 
@@ -203,7 +203,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         count++;
         if (isAutoD) {
-            model.setNumTotalDocs(count);
+            model.setNumTotalDocs((int) count);
         }
 
         recordTrainSampleToTempFile(wordCounts);
