@@ -67,7 +67,7 @@ public class LDAUDTF extends UDTFWithOptions {
     protected int topic;
     protected float alpha;
     protected float eta;
-    protected int numDoc;
+    protected long numDoc;
     protected double tau0;
     protected double kappa;
     protected int iterations;
@@ -97,7 +97,7 @@ public class LDAUDTF extends UDTFWithOptions {
         this.topic = 10;
         this.alpha = 1.f / topic;
         this.eta = 1.f / topic;
-        this.numDoc = -1;
+        this.numDoc = -1L;
         this.tau0 = 64.d;
         this.kappa = 0.7;
         this.iterations = 1;
@@ -134,7 +134,7 @@ public class LDAUDTF extends UDTFWithOptions {
             this.topic = Primitives.parseInt(cl.getOptionValue("topic"), 10);
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topic);
             this.eta = Primitives.parseFloat(cl.getOptionValue("eta"), 1.f / topic);
-            this.numDoc = Primitives.parseInt(cl.getOptionValue("num_doc"), -1);
+            this.numDoc = Primitives.parseLong(cl.getOptionValue("num_doc"), -1L);
             this.tau0 = Primitives.parseDouble(cl.getOptionValue("tau0"), 64.d);
             if (tau0 <= 0.d) {
                 throw new UDFArgumentException("'-tau0' must be positive: " + tau0);
@@ -170,7 +170,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         this.model = new OnlineLDAModel(topic, alpha, eta, numDoc, tau0, kappa, delta);
         this.count = 0L;
-        this.isAutoD = (numDoc < 0);
+        this.isAutoD = (numDoc < 0L);
         this.miniBatch = new String[miniBatchSize][];
         this.miniBatchCount = 0;
 
@@ -203,7 +203,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         count++;
         if (isAutoD) {
-            model.setNumTotalDocs((int) count);
+            model.setNumTotalDocs(count);
         }
 
         recordTrainSampleToTempFile(wordCounts);
