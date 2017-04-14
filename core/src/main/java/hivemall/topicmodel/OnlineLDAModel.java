@@ -121,14 +121,16 @@ public final class OnlineLDAModel {
 
         _miniBatchSize = miniBatch.length;
 
+        makeMiniBatchMap(miniBatch);
+
         // get the number of words(Nd) for each documents
         _wordCount = 0;
         for (int d = 0; d < _miniBatchSize; d++) {
-            _wordCount += miniBatch[d].length;
+            for (float n : _miniBatchMap.get(d).values()) {
+                _wordCount += n;
+            }
         }
         _docCount = _miniBatchSize;
-
-        makeMiniBatchMap(miniBatch);
 
         initParams(true);
 
