@@ -48,7 +48,7 @@ public final class OnlineLDAModel {
 
     // total number of documents
     // in the truly online setting, this can be an estimate of the maximum number of documents that could ever seen
-    private int _D = 11102;
+    private int _D = -1;
 
     // defined by (tau0 + updateCount)^(-kappa_)
     // controls how much old lambda is forgotten
@@ -87,7 +87,7 @@ public final class OnlineLDAModel {
     private int _wordCount = 0;
 
     public OnlineLDAModel(int K, float alpha, double delta) { // for E step only instantiation
-        this(K, alpha, 1 / 20.f, 11102, 1020, 0.7, delta);
+        this(K, alpha, 1 / 20.f, -1, 1020, 0.7, delta);
     }
 
     public OnlineLDAModel(int K, float alpha, float eta, int D, double tau0, double kappa,
@@ -112,7 +112,14 @@ public final class OnlineLDAModel {
         _lambda = new HashMap<String, float[]>(100);
     }
 
+    public void setNumTotalDocs(int D) {
+        Preconditions.checkArgument(D > 0, "Total number of documents MUST be positive: " + D);
+        _D = D;
+    }
+
     public void train(@Nonnull String[][] miniBatch) {
+        Preconditions.checkArgument(_D > 0, "Total number of documents MUST be set via `setNumTotalDocs()`");
+
         _miniBatchSize = miniBatch.length;
 
         // get the number of words(Nd) for each documents

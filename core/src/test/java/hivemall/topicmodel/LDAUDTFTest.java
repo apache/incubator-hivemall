@@ -54,7 +54,7 @@ public class LDAUDTFTest {
         ObjectInspector[] argOIs = new ObjectInspector[] {
             ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
             ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 2 -iter 20")};
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 2 -iter 20 -num_doc 2")};
 
         udtf.initialize(argOIs);
 
