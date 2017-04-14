@@ -19,6 +19,7 @@
 package hivemall.topicmodel;
 
 import hivemall.UDTFWithOptions;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
@@ -55,8 +56,6 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
-
-import com.google.common.annotations.VisibleForTesting;
 
 @Description(name = "train_lda", value = "_FUNC_(array<string> words[, const string options])"
         + " - Returns a relation consists of <int topic, string word, float score>")
@@ -120,7 +119,8 @@ public class LDAUDTF extends UDTFWithOptions {
         opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
         opts.addOption("eps", "epsilon", true,
             "Check convergence based on the difference of perplexity [default: 1E-1]");
-        opts.addOption("s", "mini_batch_size", true, "Repeat model updating per mini-batch [default: 1]");
+        opts.addOption("s", "mini_batch_size", true,
+            "Repeat model updating per mini-batch [default: 1]");
         return opts;
     }
 
@@ -213,7 +213,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         if (miniBatchCount == miniBatchSize) {
             model.train(miniBatch);
-            miniBatch = new String[miniBatchSize][]; // clear
+            Arrays.fill(miniBatch, null); // clear
             miniBatchCount = 0;
         }
     }
@@ -248,6 +248,9 @@ public class LDAUDTF extends UDTFWithOptions {
 
         int wcLength = 0;
         for (String wc : wordCounts) {
+            if (wc == null) {
+                continue;
+            }
             wcLength += wc.getBytes().length;
         }
         // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
@@ -260,6 +263,9 @@ public class LDAUDTF extends UDTFWithOptions {
         buf.putInt(recordBytes);
         buf.putInt(wordCounts.length);
         for (String wc : wordCounts) {
+            if (wc == null) {
+                continue;
+            }
             buf.putInt(wc.length());
             buf.put(wc.getBytes());
         }
@@ -322,7 +328,7 @@ public class LDAUDTF extends UDTFWithOptions {
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
 
-                    miniBatch = new String[miniBatchSize][];
+                    Arrays.fill(miniBatch, null); // clear
                     miniBatchCount = 0;
 
                     while (buf.remaining() > 0) {
@@ -345,7 +351,7 @@ public class LDAUDTF extends UDTFWithOptions {
                             perplexity += model.computePerplexity();
                             numTrain++;
 
-                            miniBatch = new String[miniBatchSize][]; // clear
+                            Arrays.fill(miniBatch, null); // clear
                             miniBatchCount = 0;
                         }
                     }
@@ -401,7 +407,7 @@ public class LDAUDTF extends UDTFWithOptions {
                     perplexity = 0.f;
                     numTrain = 0;
 
-                    miniBatch = new String[miniBatchSize][];
+                    Arrays.fill(miniBatch, null); // clear
                     miniBatchCount = 0;
 
                     setCounterValue(iterCounter, iter);
@@ -456,7 +462,7 @@ public class LDAUDTF extends UDTFWithOptions {
                                 perplexity += model.computePerplexity();
                                 numTrain++;
 
-                                miniBatch = new String[miniBatchSize][]; // clear
+                                Arrays.fill(miniBatch, null); // clear
                                 miniBatchCount = 0;
                             }
 
