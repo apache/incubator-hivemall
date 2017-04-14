@@ -54,13 +54,13 @@ public class LDAUDTFTest {
         ObjectInspector[] argOIs = new ObjectInspector[] {
             ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
             ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 2 -iter 20 -num_doc 2")};
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 2 -num_doc 2")};
 
         udtf.initialize(argOIs);
 
         String[] doc1 = new String[]{"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[]{"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
-        for (int it = 0; it < 20; it++) {
+        for (int it = 0; it < 5; it++) {
             udtf.process(new Object[]{ Arrays.asList(doc1) });
             udtf.process(new Object[]{ Arrays.asList(doc2) });
         }
@@ -115,7 +115,7 @@ public class LDAUDTFTest {
         ObjectInspector[] argOIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 20 -delta 0.1")};
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 20 -delta 0.1 -num_doc 100")};
 
         udtf.initialize(argOIs);
 
