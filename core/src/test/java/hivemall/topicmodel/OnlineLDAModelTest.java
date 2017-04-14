@@ -39,16 +39,22 @@ public class OnlineLDAModelTest {
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
-        String[][] miniBatch = new String[][] {doc1, doc2};
 
         do {
+            perplexityPrev = perplexity;
+            perplexity = 0.f;
+
             // online (i.e., one-by-one) updating
-            model.train(miniBatch);
+            model.train(new String[][] {doc1});
+            perplexity += model.computePerplexity();
+
+            model.train(new String[][] {doc2});
+            perplexity += model.computePerplexity();
+
+            perplexity /= 2.f; // mean perplexity for the 2 docs
 
             it++;
-            perplexityPrev = perplexity;
-            perplexity = model.computePerplexity();
-            println("Iteration " + it + ": perplexity = " + perplexity);
+            println("Iteration " + it + ": mean perplexity = " + perplexity);
         } while(Math.abs(perplexityPrev - perplexity) >= 1E-6f);
 
         SortedMap<Float, List<String>> topicWords;

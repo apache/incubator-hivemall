@@ -82,6 +82,7 @@ public final class OnlineLDAModel {
     private List<Map<String, Float>> _miniBatchMap;
     private int _miniBatchSize;
 
+    // for computing perplexity
     private int _docCount = 0;
     private int _wordCount = 0;
 
@@ -115,10 +116,11 @@ public final class OnlineLDAModel {
         _miniBatchSize = miniBatch.length;
 
         // get the number of words(Nd) for each documents
+        _wordCount = 0;
         for (int d = 0; d < _miniBatchSize; d++) {
             _wordCount += miniBatch[d].length;
         }
-        _docCount += _miniBatchSize;
+        _docCount = _miniBatchSize;
 
         makeMiniBatchMap(miniBatch);
 
