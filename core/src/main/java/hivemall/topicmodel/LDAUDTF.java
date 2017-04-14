@@ -24,14 +24,18 @@ import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.SizeOf;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -40,7 +44,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -48,16 +55,12 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
+import com.google.common.annotations.VisibleForTesting;
 
-@Description(
-        name = "train_lda",
-        value = "_FUNC_(array<string> words[, const string options])"
-                + " - Returns a relation consists of <int topic, string word, float score>")
+@Description(name = "train_lda", value = "_FUNC_(array<string> words[, const string options])"
+        + " - Returns a relation consists of <int topic, string word, float score>")
 public class LDAUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(LDAUDTF.class);
-    private static final int INT_BYTES = Integer.SIZE / 8;
 
     // Options
     protected int topic;
@@ -105,7 +108,8 @@ public class LDAUDTF extends UDTFWithOptions {
         opts.addOption("kappa", true, "Exponential decay rate (i.e., learning rate) [default: 0.7]");
         opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 1]");
         opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
-        opts.addOption("eps", "epsilon", true, "Check convergence based on the difference of perplexity [default: 1E-1]");
+        opts.addOption("eps", "epsilon", true,
+            "Check convergence based on the difference of perplexity [default: 1E-1]");
         return opts;
     }
 
@@ -124,7 +128,7 @@ public class LDAUDTF extends UDTFWithOptions {
             if (tau0 <= 0.d) {
                 throw new UDFArgumentException("'-tau0' must be positive: " + tau0);
             }
-            this.kappa = Primitives.parseDouble(cl.getOptionValue("kappa"), 0.7);
+            this.kappa = Primitives.parseDouble(cl.getOptionValue("kappa"), 0.7d);
             if (kappa <= 0.5 || kappa > 1.d) {
                 throw new UDFArgumentException("'-kappa' must be in (0.5, 1.0]: " + kappa);
             }
@@ -187,7 +191,8 @@ public class LDAUDTF extends UDTFWithOptions {
         model.train(new String[][] {wordCounts}); // mini-batch w/ single sample
     }
 
-    protected void recordTrainSampleToTempFile(@Nonnull final String[] wordCounts) throws HiveException {
+    protected void recordTrainSampleToTempFile(@Nonnull final String[] wordCounts)
+            throws HiveException {
         if (iterations == 1) {
             return;
         }
@@ -267,7 +272,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         final Reporter reporter = getReporter();
         final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-                "hivemall.lda.OnlineLDA$Counter", "iteration");
+            "hivemall.lda.OnlineLDA$Counter", "iteration");
 
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file
@@ -310,7 +315,9 @@ public class LDAUDTF extends UDTFWithOptions {
                         break;
                     }
                 }
-                logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
+                logger.info("Performed "
+                        + Math.min(iter, iterations)
+                        + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on memory (thus "
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
@@ -365,13 +372,13 @@ public class LDAUDTF extends UDTFWithOptions {
                         // reads training examples from a buffer
                         buf.flip();
                         int remain = buf.remaining();
-                        if (remain < INT_BYTES) {
+                        if (remain < SizeOf.INT) {
                             throw new HiveException("Illegal file format was detected");
                         }
-                        while (remain >= INT_BYTES) {
+                        while (remain >= SizeOf.INT) {
                             int pos = buf.position();
                             int recordBytes = buf.getInt();
-                            remain -= INT_BYTES;
+                            remain -= SizeOf.INT;
                             if (remain < recordBytes) {
                                 buf.position(pos);
                                 break;
@@ -402,7 +409,9 @@ public class LDAUDTF extends UDTFWithOptions {
                         break;
                     }
                 }
-                logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
+                logger.info("Performed "
+                        + Math.min(iter, iterations)
+                        + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
@@ -452,19 +461,23 @@ public class LDAUDTF extends UDTFWithOptions {
      * For testing:
      */
 
-    public double getLambda(String label, int k) {
+    @VisibleForTesting
+    double getLambda(String label, int k) {
         return model.getLambda(label, k);
     }
 
-    public SortedMap<Float, List<String>> getTopicWords(int k) {
+    @VisibleForTesting
+    SortedMap<Float, List<String>> getTopicWords(int k) {
         return model.getTopicWords(k);
     }
 
-    public SortedMap<Float, List<String>> getTopicWords(int k, int topN) {
+    @VisibleForTesting
+    SortedMap<Float, List<String>> getTopicWords(int k, int topN) {
         return model.getTopicWords(k, topN);
     }
 
-    public float[] getTopicDistribution(@Nonnull String[] doc) {
+    @VisibleForTesting
+    float[] getTopicDistribution(@Nonnull String[] doc) {
         return model.getTopicDistribution(doc);
     }
 }

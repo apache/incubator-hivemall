@@ -26,6 +26,8 @@ Hivemall enables you to analyze your documents based on LDA. This page gives usa
 
 <!-- toc -->
 
+*Note: This feature is supported from Hivemall v0.5-rc.1 or later.*
+
 # Prepare document data
 
 Assume that we already have a table `docs` which contains many documents as string format:

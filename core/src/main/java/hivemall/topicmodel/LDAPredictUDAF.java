@@ -24,11 +24,11 @@ import hivemall.utils.lang.Primitives;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Collections;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -37,8 +37,6 @@ import javax.annotation.Nonnull;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
@@ -51,28 +49,27 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardMapObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "lda_predict",
+@Description(name = "lda_predict",
         value = "_FUNC_(string word, float value, int label, float lambda[, const string options])"
                 + " - Returns a list which consists of <int label, float prob>")
 public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
-    private static final Log logger = LogFactory.getLog(LDAPredictUDAF.class);
 
     @Override
     public Evaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 4 && typeInfo.length != 5) {
             throw new UDFArgumentLengthException(
-                "Expected argument length is 4 or 5 but given argument length was " + typeInfo.length);
+                "Expected argument length is 4 or 5 but given argument length was "
+                        + typeInfo.length);
         }
 
         if (!HiveUtils.isStringTypeInfo(typeInfo[0])) {
@@ -81,21 +78,25 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[1])) {
             throw new UDFArgumentTypeException(1,
-                "Number type is expected for the second argument value: " + typeInfo[1].getTypeName());
+                "Number type is expected for the second argument value: "
+                        + typeInfo[1].getTypeName());
         }
         if (!HiveUtils.isIntegerTypeInfo(typeInfo[2])) {
             throw new UDFArgumentTypeException(2,
-                "Integer type is expected for the third argument label: " + typeInfo[2].getTypeName());
+                "Integer type is expected for the third argument label: "
+                        + typeInfo[2].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[3])) {
             throw new UDFArgumentTypeException(3,
-                "Number type is expected for the forth argument lambda: " + typeInfo[3].getTypeName());
+                "Number type is expected for the forth argument lambda: "
+                        + typeInfo[3].getTypeName());
         }
 
         if (typeInfo.length == 5) {
             if (!HiveUtils.isStringTypeInfo(typeInfo[4])) {
                 throw new UDFArgumentTypeException(4,
-                    "String type is expected for the fifth argument lambda: " + typeInfo[4].getTypeName());
+                    "String type is expected for the fifth argument lambda: "
+                            + typeInfo[4].getTypeName());
             }
         }
 
@@ -135,7 +136,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             Options opts = new Options();
             opts.addOption("k", "topic", true, "The number of topics [required]");
             opts.addOption("alpha", true, "The hyperparameter for theta [default: 1/k]");
-            opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
+            opts.addOption("delta", true,
+                "Check convergence in the expectation step [default: 1E-5]");
             return opts;
         }
 
@@ -161,7 +163,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 PrintWriter pw = new PrintWriter(sw);
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp(pw, HelpFormatter.DEFAULT_WIDTH, cmdLineSyntax, null, opts,
-                        HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
+                    HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
                 pw.flush();
                 String helpMsg = sw.toString();
                 throw new UDFArgumentException(helpMsg);
@@ -182,7 +184,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
             this.topic = Primitives.parseInt(cl.getOptionValue("topic"), 0);
             if (topic < 1) {
-                throw new UDFArgumentException("A positive integer MUST be set to an option `-topic`: " + topic);
+                throw new UDFArgumentException(
+                    "A positive integer MUST be set to an option `-topic`: " + topic);
             }
 
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topic);
@@ -216,7 +219,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.lambdaMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.lambdaMapValueElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.lambdaMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(lambdaMapValueElemOI);
-                this.lambdaMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(lambdaMapKeyOI, lambdaMapValueOI);
+                this.lambdaMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+                    lambdaMapKeyOI, lambdaMapValueOI);
             }
 
             // initialize output
@@ -231,8 +235,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 fieldNames.add("probability");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
-                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(
-                    ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs));
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardStructObjectInspector(
+                    fieldNames, fieldOIs));
             }
             return outputOI;
         }
@@ -242,14 +246,12 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
             fieldNames.add("wcList");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
             fieldNames.add("lambdaMap");
             fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
 
             fieldNames.add("topic");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
@@ -263,6 +265,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public AggregationBuffer getNewAggregationBuffer() throws HiveException {
             AggregationBuffer myAggr = new OnlineLDAPredictAggregationBuffer();
@@ -271,18 +274,20 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg) throws HiveException {
+        public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
+                throws HiveException {
             OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
             myAggr.reset();
             myAggr.setOptions(topic, alpha, delta);
         }
 
         @Override
-        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg, Object[] parameters)
-                throws HiveException {
+        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
+                Object[] parameters) throws HiveException {
             OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
 
-            if (parameters[0] == null || parameters[1] == null || parameters[2] == null || parameters[3] == null) {
+            if (parameters[0] == null || parameters[1] == null || parameters[2] == null
+                    || parameters[3] == null) {
                 return;
             }
 
@@ -298,7 +303,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
-            if(myAggr.wcList.size() == 0) {
+            if (myAggr.wcList.size() == 0) {
                 return null;
             }
 
@@ -345,7 +350,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 int lambdaMapValueSize = lambdaMapValueRaw.size();
                 List<Float> lambda_word = new ArrayList<Float>();
                 for (int i = 0; i < lambdaMapValueSize; i++) {
-                    lambda_word.add(HiveUtils.getFloat(lambdaMapValueRaw.get(i), lambdaMapValueElemOI));
+                    lambda_word.add(HiveUtils.getFloat(lambdaMapValueRaw.get(i),
+                        lambdaMapValueElemOI));
                 }
 
                 lambdaMap.put(word, lambda_word);
@@ -372,7 +378,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
             float[] topicDistr = myAggr.get();
 
-            SortedMap<Float, Integer> sortedDistr = new TreeMap<Float, Integer>(Collections.reverseOrder());
+            SortedMap<Float, Integer> sortedDistr = new TreeMap<Float, Integer>(
+                Collections.reverseOrder());
             for (int i = 0; i < topicDistr.length; i++) {
                 sortedDistr.put(topicDistr[i], i);
             }
@@ -389,7 +396,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static class OnlineLDAPredictAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
+    public static class OnlineLDAPredictAggregationBuffer extends
+            GenericUDAFEvaluator.AbstractAggregationBuffer {
 
         private List<String> wcList;
         private Map<String, List<Float>> lambdaMap;
@@ -418,7 +426,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
             // for an unforeseen word, initialize its lambdas w/ -1s
             if (!lambdaMap.containsKey(word)) {
-                List<Float> lambdaEmpty_word = new ArrayList<Float>(Collections.nCopies(topic, -1.f));
+                List<Float> lambdaEmpty_word = new ArrayList<Float>(
+                    Collections.nCopies(topic, -1.f));
                 lambdaMap.put(word, lambdaEmpty_word);
             }
 
