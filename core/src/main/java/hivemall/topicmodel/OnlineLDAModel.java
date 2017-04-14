@@ -453,14 +453,13 @@ public final class OnlineLDAModel {
         for (String label : _lambda.keySet()) {
             float lambda = _lambda.get(label)[k];
             lambdaSum += lambda;
-
-            List<String> labels = new ArrayList<String>();
-            if (sortedLambda.containsKey(lambda)) {
-                labels = sortedLambda.get(lambda);
+            
+            List<String> labels = sortedLambda.get(lambda);
+            if(labels == null) {
+                labels = new ArrayList<String>();
+                sortedLambda.put(lambda, labels);
             }
             labels.add(label);
-
-            sortedLambda.put(lambda, labels);
         }
 
         SortedMap<Float, List<String>> ret = new TreeMap<Float, List<String>>(
