@@ -52,7 +52,7 @@ public final class OnlineLDAModel {
 
     // total number of documents
     // in the truly online setting, this can be an estimate of the maximum number of documents that could ever seen
-    private int _D = -1;
+    private long _D = -1L;
 
     // defined by (tau0 + updateCount)^(-kappa_)
     // controls how much old lambda is forgotten
@@ -93,10 +93,10 @@ public final class OnlineLDAModel {
     private int _wordCount = 0;
 
     public OnlineLDAModel(int K, float alpha, double delta) { // for E step only instantiation
-        this(K, alpha, 1 / 20.f, -1, 1020, 0.7, delta);
+        this(K, alpha, 1 / 20.f, -1L, 1020, 0.7, delta);
     }
 
-    public OnlineLDAModel(int K, float alpha, float eta, int D, double tau0, double kappa,
+    public OnlineLDAModel(int K, float alpha, float eta, long D, double tau0, double kappa,
             double delta) {
         Preconditions.checkArgument(0.d < tau0, "tau0 MUST be positive: " + tau0);
         Preconditions.checkArgument(0.5 < kappa && kappa <= 1.d, "kappa MUST be in (0.5, 1.0]: "
@@ -120,26 +120,26 @@ public final class OnlineLDAModel {
         this._miniBatchMap = new ArrayList<Map<String, Float>>();
     }
 
-    public void setNumTotalDocs(@Nonnegative int D) {
+    public void setNumTotalDocs(@Nonnegative long D) {
         this._D = D;
     }
 
     public void train(@Nonnull final String[][] miniBatch) {
-        Preconditions.checkArgument(_D > 0,
+        Preconditions.checkArgument(_D > 0L,
             "Total number of documents MUST be set via `setNumTotalDocs()`");
 
         this._miniBatchSize = miniBatch.length;
 
+        initMiniBatchMap(miniBatch, _miniBatchMap);
+
         // get the number of words(Nd) for each documents
         _wordCount = 0;
-        for (final String[] e : miniBatch) {
-            if (e != null) {
-                _wordCount += e.length;
+        for (int d = 0; d < _miniBatchSize; d++) {
+            for (float n : _miniBatchMap.get(d).values()) {
+                _wordCount += n;
             }
         }
         this._docCount = _miniBatchSize;
-
-        initMiniBatchMap(miniBatch, _miniBatchMap);
 
         initParams(true);
 
@@ -292,7 +292,7 @@ public final class OnlineLDAModel {
         // calculate lambdaNext
         final Map<String, float[]> lambdaNext = new HashMap<String, float[]>();
 
-        float docRatio = (float) _D / (float) _miniBatchSize;
+        float docRatio = (float)((double) _D / _miniBatchSize);
 
         for (int d = 0; d < _miniBatchSize; d++) {
             for (String label : _miniBatchMap.get(d).keySet()) {
