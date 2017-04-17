@@ -89,7 +89,7 @@ public final class OnlineLDAModel {
     private int _miniBatchSize;
 
     // for computing perplexity
-    private int _docCount = 0;
+    private float _docRatio = 1.f;
     private int _wordCount = 0;
 
     public OnlineLDAModel(int K, float alpha, double delta) { // for E step only instantiation
@@ -133,13 +133,13 @@ public final class OnlineLDAModel {
         initMiniBatchMap(miniBatch, _miniBatchMap);
 
         // get the number of words(Nd) for each documents
-        _wordCount = 0;
+        this._wordCount = 0;
         for (int d = 0; d < _miniBatchSize; d++) {
             for (float n : _miniBatchMap.get(d).values()) {
-                _wordCount += n;
+                this._wordCount += n;
             }
         }
-        this._docCount = _miniBatchSize;
+        this._docRatio = (float)((double) _D / _miniBatchSize);
 
         initParams(true);
 
@@ -292,8 +292,6 @@ public final class OnlineLDAModel {
         // calculate lambdaNext
         final Map<String, float[]> lambdaNext = new HashMap<String, float[]>();
 
-        float docRatio = (float)((double) _D / _miniBatchSize);
-
         for (int d = 0; d < _miniBatchSize; d++) {
             for (String label : _miniBatchMap.get(d).keySet()) {
                 float[] lambdaNext_label;
@@ -304,7 +302,7 @@ public final class OnlineLDAModel {
                     Arrays.fill(lambdaNext_label, _eta);
                 }
                 for (int k = 0; k < _K; k++) {
-                    lambdaNext_label[k] += docRatio * _phi.get(d).get(label)[k];
+                    lambdaNext_label[k] += _docRatio * _phi.get(d).get(label)[k];
                 }
                 lambdaNext.put(label, lambdaNext_label);
             }
@@ -339,7 +337,7 @@ public final class OnlineLDAModel {
      */
     public float computePerplexity() {
         float bound = computeApproxBoundForMiniBatch();
-        float perWordBound = bound / (float) _wordCount;
+        float perWordBound = bound / (_docRatio * _wordCount);
         return (float) Math.exp(-1.f * perWordBound);
     }
 
@@ -350,66 +348,80 @@ public final class OnlineLDAModel {
         float score = 0.f;
 
         // prepare
-        final float[] gammaSum = new float[_miniBatchSize];
-        for (int d = 0; d < gammaSum.length; d++) {
-            gammaSum[d] += MathUtils.sum(_gamma[d], _K);
-        }
-        final float[] lambdaSum = new float[_K];
-        for (float[] lambda_l : _lambda.values()) {
-            MathUtils.add(lambdaSum, lambda_l, _K);
-        }
-
-        // E[log p(docs | theta, beta)]
+        float[] gammaSum = new float[_miniBatchSize];
+        Arrays.fill(gammaSum, 0.f);
         for (int d = 0; d < _miniBatchSize; d++) {
-            // for each word in the document
-            for (String label : _miniBatchMap.get(d).keySet()) {
-                float wordCount = _miniBatchMap.get(d).get(label);
+            for (int k = 0; k < _K; k++) {
+                gammaSum[d] += _gamma[d][k];
+            }
+        }
+        float[] lambdaSum = new float[_K];
+        Arrays.fill(lambdaSum, 0.f);
+        for (int k = 0; k < _K; k++) {
+            for (String label : _lambda.keySet()) {
+                lambdaSum[k] += _lambda.get(label)[k];
+            }
+        }
 
-                float tmp = 0.f;
+        for (int d = 0; d < _miniBatchSize; d++) {
+            // E[log p(doc | theta, beta)]
+            Map<String, Float> doc = _miniBatchMap.get(d);
+            for (String label : doc.keySet()) { // for each word in the document
+                float[] temp = new float[_K];
+                float max = Float.MIN_VALUE;
                 for (int k = 0; k < _K; k++) {
                     float eLogTheta_dk = (float) (Gamma.digamma(_gamma[d][k]) - Gamma.digamma(gammaSum[d]));
-                    float eLogBeta_kw = 0.f;
-                    if (_lambda.containsKey(d)) {
-                        eLogBeta_kw = (float) (Gamma.digamma(_lambda.get(d)[k]
-                                - Gamma.digamma(lambdaSum[k])));
-                    }
+                    float eLogBeta_kw = (float) (Gamma.digamma(_lambda.get(label)[k])
+                            - Gamma.digamma(lambdaSum[k]));
 
-                    tmp += _phi.get(d).get(label)[k]
-                            * (eLogTheta_dk + eLogBeta_kw - Math.log(_phi.get(d).get(label)[k]));
+                    temp[k] = eLogTheta_dk + eLogBeta_kw;
+                    if (temp[k] > max) {
+                        max = temp[k];
+                    }
                 }
-                score += wordCount * tmp;
+
+                float logsumexp = 0.f;
+                for (int k = 0; k < _K; k++) {
+                    logsumexp += (float) Math.exp(temp[k] - max);
+                }
+                logsumexp = max + (float) Math.log(logsumexp);
+
+                // sum( wordCount * logsumexp )
+                score += doc.get(label) * logsumexp;
             }
 
             // E[log p(theta | alpha) - log q(theta | gamma)]
-            score -= Gamma.logGamma(gammaSum[d]);
-            float tmp = 0.f;
             for (int k = 0; k < _K; k++) {
-                float gamma_dk = _gamma[d][k];
-                tmp += (_alpha - gamma_dk) * (Gamma.digamma(gamma_dk) - Gamma.digamma(gammaSum[d]))
-                        + Gamma.logGamma(gamma_dk);
-                tmp /= _docCount;
+                // sum( (alpha - gammad) * Elogthetad )
+                score += (_alpha - _gamma[d][k])
+                        * (float) (Gamma.digamma(_gamma[d][k]) - Gamma.digamma(gammaSum[d]));
+
+                // sum( gammaln(gammad) - gammaln(alpha) )
+                score += (float) Gamma.logGamma(_gamma[d][k]) - (float) Gamma.logGamma(_alpha);
             }
-            score += tmp;
+            score += (float) Gamma.logGamma(_K * _alpha); // gammaln(sum(alpha))
+            score -= Gamma.logGamma(gammaSum[d]); // gammaln(sum(gammad))
+        }
 
-            // E[log p(beta | eta) - log q (beta | lambda)]
-            tmp = 0.f;
-            for (int k = 0; k < _K; k++) {
-                float tmpPartial = 0.f;
-                for (String label : _lambda.keySet()) {
-                    tmpPartial += (_eta - _lambda.get(label)[k])
-                            * (float) (Gamma.digamma(_lambda.get(label)[k]) - Gamma.digamma(lambdaSum[k]))
-                            * (float) (Gamma.logGamma(_lambda.get(label)[k]));
-                }
+        // assuming likelihood for when corpus in the documents is only a subset of the whole corpus
+        // (i.e., online setting)
+        // likelihood is always roughly on the same scale
+        score *= _docRatio;
 
-                tmp += (-1.f * (float) Gamma.logGamma(lambdaSum[k]) - tmpPartial);
+        // E[log p(beta | eta) - log q (beta | lambda)]
+        float etaSum = _eta * _lambda.size(); // vocabSize * eta
+        for (int k = 0; k < _K; k++) {
+            for (String label : _lambda.keySet()) {
+                // sum( (eta - lambda) * Elogbeta )
+                score += (_eta - _lambda.get(label)[k])
+                        * (float) (Gamma.digamma(_lambda.get(label)[k]) - Gamma.digamma(lambdaSum[k]));
+
+                // sum( gammaln(lambda) - gammaln(eta) )
+                score += (float) (Gamma.logGamma(_lambda.get(label)[k])) - (float) Gamma.logGamma(_eta);
             }
-            score += (tmp / _miniBatchSize);
 
-            float W = _lambda.size();
-            tmp = (float) (Gamma.logGamma(_K * _alpha))
-                    - (float) (_K * (Gamma.logGamma(_alpha)))
-                    + (((float) (Gamma.logGamma(W * _eta)) - (float) (-1.f * W * (Gamma.logGamma(_eta)))) / _docCount);
-            score += tmp;
+            // sum( gammaln(etaSum) - gammaln( sum(lambda, 1) )
+            score += (float) Gamma.logGamma(etaSum) - (float) Gamma.logGamma(lambdaSum[k]);
         }
 
         return score;
@@ -482,7 +494,18 @@ public final class OnlineLDAModel {
     @Nonnull
     public float[] getTopicDistribution(@Nonnull final String[] doc) {
         this._miniBatchSize = 1;
+
         initMiniBatchMap(new String[][] {doc}, _miniBatchMap);
+
+        // get the number of words(Nd) for each documents
+        this._wordCount = 0;
+        for (int d = 0; d < _miniBatchSize; d++) {
+            for (float n : _miniBatchMap.get(d).values()) {
+                this._wordCount += n;
+            }
+        }
+        this._docRatio = (float)((double) _D / _miniBatchSize);
+
         initParams(false);
 
         eStep();
