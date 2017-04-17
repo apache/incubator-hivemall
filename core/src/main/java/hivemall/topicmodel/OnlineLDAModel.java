@@ -18,7 +18,11 @@
  */
 package hivemall.topicmodel;
 
+import hivemall.annotations.VisibleForTesting;
+import hivemall.model.FeatureValue;
+import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
+import hivemall.utils.math.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,7 +52,7 @@ public final class OnlineLDAModel {
 
     // total number of documents
     // in the truly online setting, this can be an estimate of the maximum number of documents that could ever seen
-    private long _D = -1;
+    private int _D = -1;
 
     // defined by (tau0 + updateCount)^(-kappa_)
     // controls how much old lambda is forgotten
@@ -74,12 +78,14 @@ public final class OnlineLDAModel {
     @Nonnull
     private List<Map<String, float[]>> _phi;
     private float[][] _gamma;
-    private Map<String, float[]> _lambda;
+    @Nonnull
+    private final Map<String, float[]> _lambda;
 
     // check convergence in the expectation (E) step
     private double _delta = 1e-5;
 
-    private List<Map<String, Float>> _miniBatchMap;
+    @Nonnull
+    private final List<Map<String, Float>> _miniBatchMap;
     private int _miniBatchSize;
 
     // for computing perplexity
@@ -87,54 +93,57 @@ public final class OnlineLDAModel {
     private int _wordCount = 0;
 
     public OnlineLDAModel(int K, float alpha, double delta) { // for E step only instantiation
-        this(K, alpha, 1 / 20.f, -1L, 1020, 0.7, delta);
+        this(K, alpha, 1 / 20.f, -1, 1020, 0.7, delta);
     }
 
-    public OnlineLDAModel(int K, float alpha, float eta, long D, double tau0, double kappa,
+    public OnlineLDAModel(int K, float alpha, float eta, int D, double tau0, double kappa,
             double delta) {
         Preconditions.checkArgument(0.d < tau0, "tau0 MUST be positive: " + tau0);
         Preconditions.checkArgument(0.5 < kappa && kappa <= 1.d, "kappa MUST be in (0.5, 1.0]: "
                 + kappa);
 
-        _K = K;
-        _alpha = alpha;
-        _eta = eta;
-        _D = D;
-        _tau0 = tau0;
-        _kappa = kappa;
-        _delta = delta;
+        this._K = K;
+        this._alpha = alpha;
+        this._eta = eta;
+        this._D = D;
+        this._tau0 = tau0;
+        this._kappa = kappa;
+        this._delta = delta;
 
         // initialize a random number generator
-        _gd = new GammaDistribution(SHAPE, SCALE);
+        this._gd = new GammaDistribution(SHAPE, SCALE);
         _gd.reseedRandomGenerator(1001);
 
         // initialize the parameters
-        _lambda = new HashMap<String, float[]>(100);
+        this._lambda = new HashMap<String, float[]>(100);
+
+        this._miniBatchMap = new ArrayList<Map<String, Float>>();
     }
 
-    public void setNumTotalDocs(@Nonnegative long D) {
-        _D = D;
+    public void setNumTotalDocs(@Nonnegative int D) {
+        this._D = D;
     }
 
-    public void train(@Nonnull String[][] miniBatch) {
-        Preconditions.checkArgument(_D > 0L, "Total number of documents MUST be set via `setNumTotalDocs()`");
+    public void train(@Nonnull final String[][] miniBatch) {
+        Preconditions.checkArgument(_D > 0,
+            "Total number of documents MUST be set via `setNumTotalDocs()`");
 
-        _miniBatchSize = miniBatch.length;
-
-        makeMiniBatchMap(miniBatch);
+        this._miniBatchSize = miniBatch.length;
 
         // get the number of words(Nd) for each documents
         _wordCount = 0;
-        for (int d = 0; d < _miniBatchSize; d++) {
-            for (float n : _miniBatchMap.get(d).values()) {
-                _wordCount += n;
+        for (final String[] e : miniBatch) {
+            if (e != null) {
+                _wordCount += e.length;
             }
         }
-        _docCount = _miniBatchSize;
+        this._docCount = _miniBatchSize;
+
+        initMiniBatchMap(miniBatch, _miniBatchMap);
 
         initParams(true);
 
-        _rhot = Math.pow(_tau0 + _updateCount, -_kappa);
+        this._rhot = Math.pow(_tau0 + _updateCount, -_kappa);
 
         // Expectation
         eStep();
@@ -142,29 +151,35 @@ public final class OnlineLDAModel {
         // Maximization
         mStep();
 
-        _updateCount += 1;
+        _updateCount++;
     }
 
-    private void makeMiniBatchMap(String[][] miniBatch) {
-        _miniBatchMap = new ArrayList<Map<String, Float>>(); // initialize
+    private static void initMiniBatchMap(@Nonnull final String[][] miniBatch,
+            @Nonnull final List<Map<String, Float>> map) {
+        map.clear();
+
+        final FeatureValue probe = new FeatureValue();
 
         // parse document
-        for (int d = 0; d < _miniBatchSize; d++) {
-            Map<String, Float> docMap = new HashMap<String, Float>();
+        for (final String[] e : miniBatch) {
+            if (e == null) {
+                continue;
+            }
+
+            final Map<String, Float> docMap = new HashMap<String, Float>();
 
             // parse features
-            for (int w = 0; w < miniBatch[d].length; w++) {
-                String fv = miniBatch[d][w];
-                String[] parsedFeature = fv.split(":"); // [`label`, `value`]
-                if (parsedFeature.length == 1) { // wrong format
+            for (String fv : e) {
+                if (fv == null) {
                     continue;
                 }
-                String label = parsedFeature[0];
-                float value = Float.parseFloat(parsedFeature[1]);
+                FeatureValue.parseFeatureAsString(fv, probe);
+                String label = probe.getFeatureAsString();
+                float value = probe.getValueAsFloat();
                 docMap.put(label, value);
             }
 
-            _miniBatchMap.add(docMap);
+            map.add(docMap);
         }
     }
 
@@ -174,56 +189,41 @@ public final class OnlineLDAModel {
 
         for (int d = 0; d < _miniBatchSize; d++) {
             if (gammaWithRandom) {
-                _gamma[d] = generateRandomFloatArray(_K);
+                _gamma[d] = ArrayUtils.newRandomFloatArray(_K, _gd);
             } else {
-                _gamma[d] = new float[_K];
-                Arrays.fill(_gamma[d], 1.f);
+                _gamma[d] = ArrayUtils.newInstance(_K, 1.f);
             }
 
-            // phi does not needed to be initialized
-            Map<String, float[]> phi_d = new HashMap<String, float[]>();
+            final Map<String, float[]> phi_d = new HashMap<String, float[]>();
+            _phi.add(phi_d);
             for (String label : _miniBatchMap.get(d).keySet()) {
                 phi_d.put(label, new float[_K]);
-            }
-            _phi.add(phi_d);
-
-            // lambda for newly observed word
-            for (String label : _miniBatchMap.get(d).keySet()) {
-                if (!_lambda.containsKey(label)) {
-                    _lambda.put(label, generateRandomFloatArray(_K));
+                if (!_lambda.containsKey(label)) { // lambda for newly observed word
+                    _lambda.put(label, ArrayUtils.newRandomFloatArray(_K, _gd));
                 }
             }
         }
     }
 
-    @Nonnull
-    private float[] generateRandomFloatArray(@Nonnegative int size) {
-        float[] ret = new float[size];
-        for (int i = 0; i < size; i++) {
-            ret[i] = (float) _gd.sample();
-        }
-        return ret;
-    }
-
     private void eStep() {
-        float[] gammaPrev_d;
+        float[] gamma_d, gammaPrev_d;
 
         // for each of mini-batch documents, update gamma until convergence
         for (int d = 0; d < _miniBatchSize; d++) {
+            gamma_d = _gamma[d];
             do {
                 // (deep) copy the last gamma values
-                gammaPrev_d = _gamma[d].clone();
+                gammaPrev_d = gamma_d.clone();
 
                 updatePhiForSingleDoc(d);
                 updateGammaForSingleDoc(d);
-            } while (!checkGammaDiff(gammaPrev_d, _gamma[d]));
+            } while (!checkGammaDiff(gammaPrev_d, gamma_d));
         }
-
     }
 
-    private void updatePhiForSingleDoc(int d) {
+    private void updatePhiForSingleDoc(@Nonnegative final int d) {
         // dirichlet_expectation_2d(gamma_)
-        float[] eLogTheta_d = new float[_K];
+        final float[] eLogTheta_d = new float[_K];
         float gammaSum_d = 0.f;
         for (int k = 0; k < _K; k++) {
             gammaSum_d += _gamma[d][k];
@@ -233,14 +233,14 @@ public final class OnlineLDAModel {
         }
 
         // dirichlet_expectation_2d(lambda_)
-        Map<String, float[]> eLogBeta_d = new HashMap<String, float[]>();
+        final Map<String, float[]> eLogBeta_d = new HashMap<String, float[]>();
         for (int k = 0; k < _K; k++) {
             float lambdaSum_k = 0.f;
             for (String label : _lambda.keySet()) {
                 lambdaSum_k += _lambda.get(label)[k];
             }
             for (String label : _miniBatchMap.get(d).keySet()) {
-                float[] eLogBeta_label;
+                final float[] eLogBeta_label;
                 if (eLogBeta_d.containsKey(label)) {
                     eLogBeta_label = eLogBeta_d.get(label);
                 } else {
@@ -269,7 +269,7 @@ public final class OnlineLDAModel {
         }
     }
 
-    private void updateGammaForSingleDoc(int d) {
+    private void updateGammaForSingleDoc(@Nonnegative final int d) {
         for (int k = 0; k < _K; k++) {
             float gamma_dk = _alpha;
             for (String label : _miniBatchMap.get(d).keySet()) {
@@ -279,7 +279,8 @@ public final class OnlineLDAModel {
         }
     }
 
-    private boolean checkGammaDiff(float[] gammaPrev, float[] gammaNext) {
+    private boolean checkGammaDiff(@Nonnull final float[] gammaPrev,
+            @Nonnull final float[] gammaNext) {
         double diff = 0.d;
         for (int k = 0; k < _K; k++) {
             diff += Math.abs(gammaPrev[k] - gammaNext[k]);
@@ -289,9 +290,9 @@ public final class OnlineLDAModel {
 
     private void mStep() {
         // calculate lambdaNext
-        Map<String, float[]> lambdaNext = new HashMap<String, float[]>();
+        final Map<String, float[]> lambdaNext = new HashMap<String, float[]>();
 
-        float docRatio = (float)((double) _D / _miniBatchSize);
+        float docRatio = (float) _D / (float) _miniBatchSize;
 
         for (int d = 0; d < _miniBatchSize; d++) {
             for (String label : _miniBatchMap.get(d).keySet()) {
@@ -329,7 +330,7 @@ public final class OnlineLDAModel {
         }
     }
 
-    /**
+    /*
      * Methods for debugging and checking convergence:
      */
 
@@ -347,32 +348,24 @@ public final class OnlineLDAModel {
      */
     private float computeApproxBoundForMiniBatch() {
         float score = 0.f;
-        float tmp;
 
         // prepare
-        float[] gammaSum = new float[_miniBatchSize];
-        Arrays.fill(gammaSum, 0.f);
-        for (int d = 0; d < _miniBatchSize; d++) {
-            for (int k = 0; k < _K; k++) {
-                gammaSum[d] += _gamma[d][k];
-            }
+        final float[] gammaSum = new float[_miniBatchSize];
+        for (int d = 0; d < gammaSum.length; d++) {
+            gammaSum[d] += MathUtils.sum(_gamma[d], _K);
         }
-        float[] lambdaSum = new float[_K];
-        Arrays.fill(lambdaSum, 0.f);
-        for (int k = 0; k < _K; k++) {
-            for (String label : _lambda.keySet()) {
-                lambdaSum[k] += _lambda.get(label)[k];
-            }
+        final float[] lambdaSum = new float[_K];
+        for (float[] lambda_l : _lambda.values()) {
+            MathUtils.add(lambdaSum, lambda_l, _K);
         }
 
         // E[log p(docs | theta, beta)]
         for (int d = 0; d < _miniBatchSize; d++) {
-
             // for each word in the document
             for (String label : _miniBatchMap.get(d).keySet()) {
                 float wordCount = _miniBatchMap.get(d).get(label);
 
-                tmp = 0.f;
+                float tmp = 0.f;
                 for (int k = 0; k < _K; k++) {
                     float eLogTheta_dk = (float) (Gamma.digamma(_gamma[d][k]) - Gamma.digamma(gammaSum[d]));
                     float eLogBeta_kw = 0.f;
@@ -388,12 +381,12 @@ public final class OnlineLDAModel {
             }
 
             // E[log p(theta | alpha) - log q(theta | gamma)]
-            score -= (Gamma.logGamma(gammaSum[d]));
-            tmp = 0.f;
+            score -= Gamma.logGamma(gammaSum[d]);
+            float tmp = 0.f;
             for (int k = 0; k < _K; k++) {
-                tmp += (_alpha - _gamma[d][k])
-                        * (Gamma.digamma(_gamma[d][k]) - Gamma.digamma(gammaSum[d]))
-                        + (Gamma.logGamma(_gamma[d][k]));
+                float gamma_dk = _gamma[d][k];
+                tmp += (_alpha - gamma_dk) * (Gamma.digamma(gamma_dk) - Gamma.digamma(gammaSum[d]))
+                        + Gamma.logGamma(gamma_dk);
                 tmp /= _docCount;
             }
             score += tmp;
@@ -422,47 +415,53 @@ public final class OnlineLDAModel {
         return score;
     }
 
-    public double getLambda(String label, int k) {
-        Preconditions.checkArgument(_lambda.containsKey(label), "Word `" + label
-                + "` is not in the corpus.");
-        Preconditions.checkArgument(k < _lambda.get(label).length, "Topic index must be in [0, "
-                + _lambda.get(label).length + "]");
-        return _lambda.get(label)[k];
+    @VisibleForTesting
+    double getLambda(@Nonnull final String label, @Nonnegative final int k) {
+        final float[] lambda = _lambda.get(label);
+        if (lambda == null) {
+            throw new IllegalArgumentException("Word `" + label + "` is not in the corpus.");
+        }
+        if (k >= lambda.length) {
+            throw new IllegalArgumentException("Topic index must be in [0, "
+                    + _lambda.get(label).length + "]");
+        }
+        return lambda[k];
     }
 
-    public void setLambda(String label, int k, float lambda) {
-        float[] lambda_label;
-        if (!_lambda.containsKey(label)) {
-            lambda_label = generateRandomFloatArray(_K);
-        } else {
-            lambda_label = this._lambda.get(label);
+    public void setLambda(@Nonnull final String label, @Nonnegative final int k, final float lambda) {
+        float[] lambda_label = _lambda.get(label);
+        if (lambda_label == null) {
+            lambda_label = ArrayUtils.newRandomFloatArray(_K, _gd);
+            _lambda.put(label, lambda_label);
         }
         lambda_label[k] = lambda;
-        this._lambda.put(label, lambda_label);
     }
 
-    public SortedMap<Float, List<String>> getTopicWords(int k) {
+    @Nonnull
+    public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int k) {
         return getTopicWords(k, _lambda.keySet().size());
     }
 
-    public SortedMap<Float, List<String>> getTopicWords(int k, int topN) {
+    @Nonnull
+    public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int k,
+            @Nonnegative int topN) {
         float lambdaSum = 0.f;
-        SortedMap<Float, List<String>> sortedLambda = new TreeMap<Float, List<String>>(
+        final SortedMap<Float, List<String>> sortedLambda = new TreeMap<Float, List<String>>(
             Collections.reverseOrder());
 
         for (String label : _lambda.keySet()) {
             float lambda = _lambda.get(label)[k];
             lambdaSum += lambda;
-            
+
             List<String> labels = sortedLambda.get(lambda);
-            if(labels == null) {
+            if (labels == null) {
                 labels = new ArrayList<String>();
                 sortedLambda.put(lambda, labels);
             }
             labels.add(label);
         }
 
-        SortedMap<Float, List<String>> ret = new TreeMap<Float, List<String>>(
+        final SortedMap<Float, List<String>> ret = new TreeMap<Float, List<String>>(
             Collections.reverseOrder());
 
         topN = Math.min(topN, _lambda.keySet().size());
@@ -481,23 +480,20 @@ public final class OnlineLDAModel {
     }
 
     @Nonnull
-    public float[] getTopicDistribution(@Nonnull String[] doc) {
-        _miniBatchSize = 1;
-        makeMiniBatchMap(new String[][] {doc});
+    public float[] getTopicDistribution(@Nonnull final String[] doc) {
+        this._miniBatchSize = 1;
+        initMiniBatchMap(new String[][] {doc}, _miniBatchMap);
         initParams(false);
+
         eStep();
 
-        float[] topicDistr = new float[_K];
-
-        // normalize
-        float gammaSum = 0.f;
+        // normalize topic distribution
+        final float[] topicDistr = new float[_K];
+        final float[] gamma0 = _gamma[0];
+        final float gammaSum = MathUtils.sum(gamma0);
         for (int k = 0; k < _K; k++) {
-            gammaSum += _gamma[0][k];
+            topicDistr[k] = gamma0[k] / gammaSum;
         }
-        for (int k = 0; k < _K; k++) {
-            topicDistr[k] = _gamma[0][k] / gammaSum;
-        }
-
         return topicDistr;
     }
 
