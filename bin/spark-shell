@@ -71,7 +71,7 @@ install_app() {
 # install Spark under the bin/ folder if needed.
 install_spark() {
   local SPARK_VERSION=`grep "<spark.version>" "${_DIR}/../pom.xml" | head -n1 | awk -F '[<>]' '{print $3}'`
-  local HADOOP_VERSION=`grep "<hadoop.version>" "${_DIR}/../pom.xml" | head -n1 | awk -F '[<>]' '{print $3}'`
+  local HADOOP_VERSION=`grep "<hadoop.version>" "${_DIR}/../pom.xml" | head -n1 | awk -F '[<>]' '{print $3}' | cut -d '.' -f1-2`
   local SPARK_DIR="${_DIR}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}"
   local APACHE_MIRROR=${APACHE_MIRROR:-'http://d3kbcqa49mib13.cloudfront.net'}
 

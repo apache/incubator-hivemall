@@ -234,7 +234,7 @@
 					<junitxml>.</junitxml>
 					<filereports>SparkTestSuite.txt</filereports>
 					<argLine>-ea -Xmx2g -XX:MaxPermSize=${MaxPermGen} -XX:ReservedCodeCacheSize=${CodeCacheSize}</argLine>
-					<stderr/>
+					<stderr />
 					<environmentVariables>
 						<SPARK_PREPEND_CLASSES>1</SPARK_PREPEND_CLASSES>
 						<SPARK_SCALA_VERSION>${scala.binary.version}</SPARK_SCALA_VERSION>
