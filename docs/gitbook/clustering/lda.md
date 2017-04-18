@@ -22,11 +22,12 @@ Topic modeling is a way to analyze massive documents by clustering them into som
 - D. M. Blei, et al. [Latent Dirichlet Allocation](http://www.jmlr.org/papers/v3/blei03a.html). Journal of Machine Learning Research 3, pp. 993-1022, 2003.
 - M. D. Hoffman, et al. [Online Learning for Latent Dirichlet Allocation](https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation). NIPS 2010.
 
-Hivemall enables you to analyze your documents based on LDA. This page gives usage instructions of the feature.
+Hivemall enables you to analyze your data such as, but not limited to, documents based on LDA. This page gives usage instructions of the feature.
 
 <!-- toc -->
 
-*Note: This feature is supported from Hivemall v0.5-rc.1 or later.*
+> #### Note
+> This feature is supported from Hivemall v0.5-rc.1 or later.
 
 # Prepare document data
 
@@ -41,32 +42,33 @@ Assume that we already have a table `docs` which contains many documents as stri
 Hivemall has several functions which are particularly useful for text processing. More specifically, by using `tokenize()` and `is_stopword()`, you can immediately convert the documents to [bag-of-words](https://en.wikipedia.org/wiki/Bag-of-words_model)-like format:
 
 ```sql
-select
-  docid,
-  feature(word, count(word)) as word_count
-from docs t1 LATERAL VIEW explode(tokenize(doc, true)) t2 as word
-where
-  not is_stopword(word)
-group by
-  docid, word
+with word_counts as (
+  select
+    docid,
+    feature(word, count(word)) as word_count
+  from docs t1 LATERAL VIEW explode(tokenize(doc, true)) t2 as word
+  where
+    not is_stopword(word)
+  group by
+    docid, word
+)
+select docid, collect_set(word_count) as feature
+from word_counts
+group by docid
 ;
 ```
 
-| docid | word_count |
+| docid | feature |
 |:---:|:---|
-|1  |     fruits:1 |
-|1  |     healthy:1|
-|1  |     vegetables:1 |
-|2  |     apples:1 |
-|2  |     avocados:1 |
-|2  |     colds:1 |
-|2   |    flu:1 |
-|2 |      like:2 |
-|2|       oranges:1 |
+|1  | ["fruits:1","healthy:1","vegetables:1"] |
+|2  | ["apples:1","avocados:1","colds:1","flu:1","like:2","oranges:1"] |
+
+> #### Note
+> It should be noted that, as long as your data can be represented as the feature format, LDA can be applied for arbitrary data as a generic clustering technique.
 
 # Building Topic Models and Finding Topic Words
 
-For each document, collecting `word_count`s in the last table creates a feature vector as an input to the `train_lda()` function:
+Each feature vector is input to the `train_lda()` function:
 
 ```sql
 with word_counts as (
@@ -86,6 +88,7 @@ from (
   from word_counts
   group by docid
 ) t
+order by label, lambda desc
 ;
 ```
 
