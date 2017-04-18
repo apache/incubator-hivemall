@@ -99,6 +99,36 @@ public class OnlineLDAModelTest {
             model.getLambda("avocados", k2) > model.getLambda("healthy", k2));
     }
 
+    @Test
+    public void testPerplexity() {
+        int K = 2;
+        int it = 0;
+        float perplexityPrev;
+        float perplexity = Float.MAX_VALUE;
+
+        OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
+
+        String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
+        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
+
+        do {
+            perplexityPrev = perplexity;
+
+            model.train(new String[][] {doc1, doc2});
+            perplexity = model.computePerplexity();
+
+            it++;
+            println("Iteration " + it + ": mean perplexity = " + perplexity);
+        } while(Math.abs(perplexityPrev - perplexity) >= 1E-6f);
+
+        // For the same data and hyperparameters,
+        // scikit-learn Python library (implemented based on Matthew D. Hoffman's onlineldavb code)
+        // returns perplexity=15 in a batch setting and perplexity=22 in an online setting.
+        // Hivemall needs to converge to the similar perplexity.
+        Assert.assertTrue("Perplexity SHOULD be in [12, 25]; "
+            + "converged perplexity is too small or large for some reasons",12.f <= perplexity && perplexity <= 25.f);
+    }
+
     private static void println(String msg) {
         if (DEBUG) {
             System.out.println(msg);
