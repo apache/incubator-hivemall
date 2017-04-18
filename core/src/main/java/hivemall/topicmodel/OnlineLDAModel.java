@@ -88,7 +88,7 @@ public final class OnlineLDAModel {
 
     // for computing perplexity
     private float _docRatio = 1.f;
-    private int _wordCount = 0;
+    private long _wordCount = 0L;
 
     public OnlineLDAModel(int K, float alpha, double delta) { // for E step only instantiation
         this(K, alpha, 1 / 20.f, -1L, 1020, 0.7, delta);
@@ -158,7 +158,7 @@ public final class OnlineLDAModel {
         initMiniBatchMap(miniBatch, _miniBatchMap);
 
         // accumulate the number of words for each documents
-        this._wordCount = 0;
+        this._wordCount = 0L;
         for (int d = 0; d < _miniBatchSize; d++) {
             for (float n : _miniBatchMap.get(d).values()) {
                 this._wordCount += n;
