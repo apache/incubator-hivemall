@@ -194,7 +194,7 @@ public class LDAUDTF extends UDTFWithOptions {
         for (int i = 0; i < length; i++) {
             Object o = wordCountsOI.getListElement(args[0], i);
             if (o == null) {
-                continue;
+                throw new HiveException("Given feature vector contains invalid elements");
             }
             String s = o.toString();
             wordCounts[j] = s;

@@ -118,8 +118,9 @@ public class OnlineLDAModelTest {
             perplexity = model.computePerplexity();
 
             it++;
-            println("Iteration " + it + ": mean perplexity = " + perplexity);
         } while(Math.abs(perplexityPrev - perplexity) >= 1E-6f);
+
+        println("Iterated " + it + " times, perplexity = " + perplexity);
 
         // For the same data and hyperparameters,
         // scikit-learn Python library (implemented based on Matthew D. Hoffman's onlineldavb code)
