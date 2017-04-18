@@ -84,7 +84,7 @@ public class LDAUDTF extends UDTFWithOptions {
     protected String[][] miniBatch;
     protected int miniBatchCount;
 
-    protected OnlineLDAModel model;
+    protected transient OnlineLDAModel model;
 
     protected ListObjectInspector wordCountsOI;
 
@@ -168,7 +168,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         processOptions(argOIs);
 
-        this.model = new OnlineLDAModel(topic, alpha, eta, numDocs, tau0, kappa, delta);
+        this.model = null;
         this.count = 0L;
         this.isAutoD = (numDocs < 0L);
         this.miniBatch = new String[miniBatchSize][];
@@ -186,8 +186,16 @@ public class LDAUDTF extends UDTFWithOptions {
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
+    protected void initModel() {
+        this.model = new OnlineLDAModel(topic, alpha, eta, numDocs, tau0, kappa, delta);
+    }
+
     @Override
     public void process(Object[] args) throws HiveException {
+        if (model == null) {
+            initModel();
+        }
+
         int length = wordCountsOI.getListLength(args[0]);
         String[] wordCounts = new String[length];
         int j = 0;
