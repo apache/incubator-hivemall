@@ -20,7 +20,8 @@
 Prerequisites
 ============
 
-* Hive v0.12 or later
+* Hadoop v2.4.0 or later
+* Hive v0.13 or later
 * Java 7 or later
 * [hivemall-core-xxx-with-dependencies.jar](https://github.com/myui/hivemall/releases)
 * [define-all.hive](https://github.com/myui/hivemall/releases)
@@ -42,3 +43,14 @@ $ hive
 add jar /tmp/hivemall-core-xxx-with-dependencies.jar;
 source /tmp/define-all.hive;
 ```
+
+Build from Source
+==================
+
+```sh
+$ git clone https://github.com/apache/incubator-hivemall.git
+$ cd incubator-hivemall
+$ bin/build.sh
+```
+
+Then, you can find hivemall jars in `./target`.
