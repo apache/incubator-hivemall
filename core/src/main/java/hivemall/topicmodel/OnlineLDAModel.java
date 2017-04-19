@@ -247,33 +247,32 @@ public final class OnlineLDAModel {
 
         // Dirichlet expectation (2d) for lambda
         final float[] lambdaSum = new float[_K];
-        for (float[] lambda : _lambda.values()) {
-            MathUtils.add(lambdaSum, lambda, _K);
+        for (float[] lambda_label : _lambda.values()) {
+            MathUtils.add(lambdaSum, lambda_label, _K);
         }
         final Map<String, float[]> eLogBeta_d = new HashMap<String, float[]>();
-        for (int k = 0; k < _K; k++) {
-            for (String label : doc.keySet()) {
-                final float[] eLogBeta_label;
-                if (eLogBeta_d.containsKey(label)) {
-                    eLogBeta_label = eLogBeta_d.get(label);
-                } else {
-                    eLogBeta_label = new float[_K];
-                }
+        for (String label : doc.keySet()) {
+            final float[] lambda_label = _lambda.get(label);
+            float[] eLogBeta_label = eLogBeta_d.get(label);
+            if (eLogBeta_label == null) {
+                eLogBeta_label = new float[_K];
                 eLogBeta_d.put(label, eLogBeta_label);
-
-                eLogBeta_label[k] = (float) (Gamma.digamma(_lambda.get(label)[k]) - Gamma.digamma(lambdaSum[k]));
+            }
+            for (int k = 0; k < _K; k++) {
+                eLogBeta_label[k] = (float) (Gamma.digamma(lambda_label[k]) - Gamma.digamma(lambdaSum[k]));
             }
         }
 
         // updating phi w/ normalization
         for (String label : doc.keySet()) {
             final float[] phi_label = _phi.get(d).get(label);
-            _phi.get(d).put(label, phi_label);
+            final float[] eLogBeta_label = eLogBeta_d.get(label);
 
             float normalizer = 0.f;
             for (int k = 0; k < _K; k++) {
-                phi_label[k] = (float) Math.exp(eLogTheta_d[k] + eLogBeta_d.get(label)[k]) + 1E-20f;
-                normalizer += phi_label[k];
+                final float phiVal = (float) Math.exp(eLogTheta_d[k] + eLogBeta_label[k]) + 1E-20f;
+                phi_label[k] = phiVal;
+                normalizer += phiVal;
             }
 
             // normalize
@@ -287,12 +286,16 @@ public final class OnlineLDAModel {
         final Map<String, Float> doc = _miniBatchMap.get(d);
         final Map<String, float[]> phi_d = _phi.get(d);
 
+        final float[] gamma_d = _gamma[d];
         for (int k = 0; k < _K; k++) {
-            float gamma_dk = _alpha;
-            for (Map.Entry<String, Float> e : doc.entrySet()) {
-                gamma_dk += phi_d.get(e.getKey())[k] * e.getValue();
+            gamma_d[k] = _alpha;
+        }
+        for (Map.Entry<String, Float> e : doc.entrySet()) {
+            final float[] phi_label = phi_d.get(e.getKey());
+            final float val = e.getValue();
+            for (int k = 0; k < _K; k++) {
+                gamma_d[k] += phi_label[k] * val;
             }
-            _gamma[d][k] = gamma_dk;
         }
     }
 
@@ -311,13 +314,11 @@ public final class OnlineLDAModel {
         for (int d = 0; d < _miniBatchSize; d++) {
             final Map<String, float[]> phi_d = _phi.get(d);
             for (String label : _miniBatchMap.get(d).keySet()) {
-                float[] lambdaTilde_label;
-                if (lambdaTilde.containsKey(label)) {
-                    lambdaTilde_label = lambdaTilde.get(label);
-                } else {
+                float[] lambdaTilde_label = lambdaTilde.get(label);
+                if (lambdaTilde_label == null) {
                     lambdaTilde_label = ArrayUtils.newInstance(_K, _eta);
+                    lambdaTilde.put(label, lambdaTilde_label);
                 }
-                lambdaTilde.put(label, lambdaTilde_label);
 
                 final float[] phi_label = phi_d.get(label);
                 for (int k = 0; k < _K; k++) {
@@ -331,13 +332,10 @@ public final class OnlineLDAModel {
             String label = e.getKey();
             final float[] lambda_label = e.getValue();
 
-            float[] lambdaTilde_label;
-            if (lambdaTilde.containsKey(label)) {
-                lambdaTilde_label = lambdaTilde.get(label);
-            } else {
+            float[] lambdaTilde_label = lambdaTilde.get(label);
+            if (lambdaTilde_label == null) {
                 lambdaTilde_label = ArrayUtils.newInstance(_K, _eta);
             }
-            _lambda.put(label, lambda_label);
 
             for (int k = 0; k < _K; k++) {
                 lambda_label[k] = (float) ((1.d - _rhot) * lambda_label[k] + _rhot
@@ -366,22 +364,30 @@ public final class OnlineLDAModel {
         for (int d = 0; d < _miniBatchSize; d++) {
             gammaSum[d] = MathUtils.sum(_gamma[d]);
         }
+        final float[] digamma_gammaSum = MathUtils.digamma(gammaSum);
+
         final float[] lambdaSum = new float[_K];
-        for (float[] lambda : _lambda.values()) {
-            MathUtils.add(lambdaSum, lambda, _K);
+        for (float[] lambda_label : _lambda.values()) {
+            MathUtils.add(lambdaSum, lambda_label, _K);
         }
+        final float[] digamma_lambdaSum = MathUtils.digamma(lambdaSum);
+
+        final float logGamma_alpha = (float) Gamma.logGamma(_alpha);
+        final float logGamma_alphaSum = (float) Gamma.logGamma(_K * _alpha);
 
         for (int d = 0; d < _miniBatchSize; d++) {
+            final float digamma_gammaSum_d = digamma_gammaSum[d];
+
             // E[log p(doc | theta, beta)]
             for (Map.Entry<String, Float> e : _miniBatchMap.get(d).entrySet()) {
-                final float[] lambda = _lambda.get(e.getKey());
+                final float[] lambda_label = _lambda.get(e.getKey());
 
                 // logsumexp( Elogthetad + Elogbetad )
                 final float[] temp = new float[_K];
                 float max = Float.MIN_VALUE;
                 for (int k = 0; k < _K; k++) {
-                    final float eLogTheta_dk = (float) (Gamma.digamma(_gamma[d][k]) - Gamma.digamma(gammaSum[d]));
-                    final float eLogBeta_kw = (float) (Gamma.digamma(lambda[k]) - Gamma.digamma(lambdaSum[k]));
+                    final float eLogTheta_dk = (float) Gamma.digamma(_gamma[d][k]) - digamma_gammaSum_d;
+                    final float eLogBeta_kw = (float) Gamma.digamma(lambda_label[k]) - digamma_lambdaSum[k];
 
                     temp[k] = eLogTheta_dk + eLogBeta_kw;
                     if (temp[k] > max) {
@@ -400,14 +406,16 @@ public final class OnlineLDAModel {
 
             // E[log p(theta | alpha) - log q(theta | gamma)]
             for (int k = 0; k < _K; k++) {
+                final float gamma_dk = _gamma[d][k];
+
                 // sum( (alpha - gammad) * Elogthetad )
-                score += (_alpha - _gamma[d][k])
-                        * (float) (Gamma.digamma(_gamma[d][k]) - Gamma.digamma(gammaSum[d]));
+                score += (_alpha - gamma_dk)
+                        * ((float) Gamma.digamma(gamma_dk) - digamma_gammaSum_d);
 
                 // sum( gammaln(gammad) - gammaln(alpha) )
-                score += (float) (Gamma.logGamma(_gamma[d][k]) - Gamma.logGamma(_alpha));
+                score += (float) Gamma.logGamma(gamma_dk) - logGamma_alpha;
             }
-            score += (float) Gamma.logGamma(_K * _alpha); // gammaln(sum(alpha))
+            score += logGamma_alphaSum; // gammaln(sum(alpha))
             score -= Gamma.logGamma(gammaSum[d]); // gammaln(sum(gammad))
         }
 
@@ -415,20 +423,25 @@ public final class OnlineLDAModel {
         // (i.e., online setting); likelihood should be always roughly on the same scale
         score *= _docRatio;
 
+        final float logGamma_eta = (float) Gamma.logGamma(_eta);
+        final float logGamma_etaSum = (float) Gamma.logGamma(_eta * _lambda.size()); // vocabulary size * eta
+
         // E[log p(beta | eta) - log q (beta | lambda)]
-        float etaSum = _eta * _lambda.size(); // vocabulary size * eta
-        for (int k = 0; k < _K; k++) {
-            for (float[] lambda : _lambda.values()) {
+        for (float[] lambda_label : _lambda.values()) {
+            for (int k = 0; k < _K; k++) {
+                final float lambda_k = lambda_label[k];
+
                 // sum( (eta - lambda) * Elogbeta )
-                score += (_eta - lambda[k])
-                        * (float) (Gamma.digamma(lambda[k]) - Gamma.digamma(lambdaSum[k]));
+                score += (_eta - lambda_k)
+                        * (float) (Gamma.digamma(lambda_k) - digamma_lambdaSum[k]);
 
                 // sum( gammaln(lambda) - gammaln(eta) )
-                score += (float) (Gamma.logGamma(lambda[k]) - Gamma.logGamma(_eta));
+                score += (float) Gamma.logGamma(lambda_k) - logGamma_eta;
             }
-
+        }
+        for (int k = 0; k < _K; k++) {
             // sum( gammaln(etaSum) - gammaln( lambdaSum_k )
-            score += (float) (Gamma.logGamma(etaSum) - Gamma.logGamma(lambdaSum[k]));
+            score += logGamma_etaSum - (float) Gamma.logGamma(lambdaSum[k]);
         }
 
         return score;
@@ -436,24 +449,24 @@ public final class OnlineLDAModel {
 
     @VisibleForTesting
     double getLambda(@Nonnull final String label, @Nonnegative final int k) {
-        final float[] lambda = _lambda.get(label);
-        if (lambda == null) {
+        final float[] lambda_label = _lambda.get(label);
+        if (lambda_label == null) {
             throw new IllegalArgumentException("Word `" + label + "` is not in the corpus.");
         }
-        if (k >= lambda.length) {
+        if (k >= lambda_label.length) {
             throw new IllegalArgumentException("Topic index must be in [0, "
                     + _lambda.get(label).length + "]");
         }
-        return lambda[k];
+        return lambda_label[k];
     }
 
-    public void setLambda(@Nonnull final String label, @Nonnegative final int k, final float lambda) {
+    public void setLambda(@Nonnull final String label, @Nonnegative final int k, final float lambda_k) {
         float[] lambda_label = _lambda.get(label);
         if (lambda_label == null) {
             lambda_label = ArrayUtils.newRandomFloatArray(_K, _gd);
             _lambda.put(label, lambda_label);
         }
-        lambda_label[k] = lambda;
+        lambda_label[k] = lambda_k;
     }
 
     @Nonnull
@@ -469,13 +482,13 @@ public final class OnlineLDAModel {
             Collections.reverseOrder());
 
         for (Map.Entry<String, float[]> e : _lambda.entrySet()) {
-            final float lambda = e.getValue()[k];
-            lambdaSum += lambda;
+            final float lambda_k = e.getValue()[k];
+            lambdaSum += lambda_k;
 
-            List<String> labels = sortedLambda.get(lambda);
+            List<String> labels = sortedLambda.get(lambda_k);
             if (labels == null) {
                 labels = new ArrayList<String>();
-                sortedLambda.put(lambda, labels);
+                sortedLambda.put(lambda_k, labels);
             }
             labels.add(e.getKey());
         }

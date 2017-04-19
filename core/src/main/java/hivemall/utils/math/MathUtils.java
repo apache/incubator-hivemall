@@ -40,6 +40,8 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.math3.special.Gamma;
+
 public final class MathUtils {
 
     private MathUtils() {}
@@ -340,6 +342,16 @@ public final class MathUtils {
         for (int i = 0; i < size; i++) {
             dst[i] += toAdd[i];
         }
+    }
+
+    @Nonnull
+    public static float[] digamma(@Nonnull final float[] a) {
+        final int k = a.length;
+        final float[] ret = new float[k];
+        for (int i = 0; i < k; i++) {
+            ret[i] = (float) Gamma.digamma(a[i]);
+        }
+        return ret;
     }
 
 }
