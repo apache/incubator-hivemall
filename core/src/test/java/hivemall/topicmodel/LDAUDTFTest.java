@@ -18,20 +18,10 @@
  */
 package hivemall.topicmodel;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.Arrays;
-import java.util.StringTokenizer;
-import java.util.zip.GZIPInputStream;
-import java.text.ParseException;
-
-import hivemall.classifier.KernelExpansionPassiveAggressiveUDTFTest;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -41,8 +31,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.annotation.Nonnull;
 
 public class LDAUDTFTest {
     private static final boolean DEBUG = false;
@@ -108,90 +96,9 @@ public class LDAUDTFTest {
             udtf.getLambda("avocados", k2) > udtf.getLambda("healthy", k2));
     }
 
-    @Test
-    public void testNews20() throws IOException, ParseException, HiveException {
-        LDAUDTF udtf = new LDAUDTF();
-
-        ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 20 -delta 0.1 -num_docs 100")};
-
-        udtf.initialize(argOIs);
-
-        BufferedReader news20 = readFile("news20-small.binary.gz");
-
-        List<String> doc = new ArrayList<String>();
-
-        String[] docInClass1 = new String[0];
-        String[] docInClass2 = new String[0];
-
-        String line = news20.readLine();
-        while (line != null) {
-            StringTokenizer tokens = new StringTokenizer(line, " ");
-            int label = Integer.parseInt(tokens.nextToken());
-
-            while (tokens.hasMoreTokens()) {
-                doc.add(tokens.nextToken());
-            }
-
-            udtf.process(new Object[]{ doc });
-
-            if (docInClass1.length == 0 && label == 1) { // store first +1 document
-                docInClass1 = doc.toArray(new String[doc.size()]);
-            } else if (docInClass2.length == 0 && label == -1) { // store first -1 document
-                docInClass2 = doc.toArray(new String[doc.size()]);
-            }
-
-            doc.clear();
-            line = news20.readLine();
-        }
-
-        SortedMap<Float, List<String>> topicWords;
-
-        for (int k = 0; k < 20; k++) {
-            println("========");
-            println("Topic " + k);
-            topicWords = udtf.getTopicWords(k, 5);
-            for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
-                List<String> words = e.getValue();
-                for (int i = 0; i < words.size(); i++) {
-                    println(e.getKey() + " " + words.get(i));
-                }
-            }
-            println("========");
-        }
-
-        int k1 = findMaxTopic(udtf.getTopicDistribution(docInClass1));
-        int k2 = findMaxTopic(udtf.getTopicDistribution(docInClass2));
-        Assert.assertTrue("Two documents which are respectively in class#1 (+1) and #2 (-1) are assigned to the same topic: "
-            + k1 + ". Documents in the different class SHOULD be assigned to the different topics.", k1 != k2);
-    }
-
     private static void println(String msg) {
         if (DEBUG) {
             System.out.println(msg);
         }
-    }
-
-    @Nonnull
-    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
-        // use data stored for KPA UDTF test
-        InputStream is = KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
-        if (fileName.endsWith(".gz")) {
-            is = new GZIPInputStream(is);
-        }
-        return new BufferedReader(new InputStreamReader(is));
-    }
-
-    @Nonnull
-    private static int findMaxTopic(@Nonnull float[] topicDistr) {
-        int maxIdx = 0;
-        for (int i = 1; i < topicDistr.length; i++) {
-            if (topicDistr[maxIdx] < topicDistr[i]) {
-                maxIdx = i;
-            }
-        }
-        return maxIdx;
     }
 }

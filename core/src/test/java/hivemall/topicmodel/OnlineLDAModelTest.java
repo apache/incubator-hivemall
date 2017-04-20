@@ -18,12 +18,26 @@
  */
 package hivemall.topicmodel;
 
-import java.util.Map;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.SortedMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
+import java.util.StringTokenizer;
+import java.util.zip.GZIPInputStream;
+
+import hivemall.classifier.KernelExpansionPassiveAggressiveUDTFTest;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import javax.annotation.Nonnull;
 
 public class OnlineLDAModelTest {
     private static final boolean DEBUG = false;
@@ -130,10 +144,109 @@ public class OnlineLDAModelTest {
             + "converged perplexity is too small or large for some reasons",12.f <= perplexity && perplexity <= 25.f);
     }
 
+    @Test
+    public void testNews20() throws IOException {
+        int K = 20;
+        int numTotalDocs = 2000;
+        int miniBatchSize = 2;
+
+        int cnt, it;
+
+        OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, numTotalDocs, 80, 0.8, 1E-3d);
+
+        BufferedReader news20 = readFile("news20-multiclass.gz");
+
+        String[][] docs = new String[K][];
+
+        String line = news20.readLine();
+        List<String> doc = new ArrayList<String>();
+
+        cnt = 0;
+        while (line != null) {
+            StringTokenizer tokens = new StringTokenizer(line, " ");
+
+            int k = Integer.parseInt(tokens.nextToken()) - 1;
+
+            while (tokens.hasMoreTokens()) {
+                doc.add(tokens.nextToken());
+            }
+
+            // store first document in each of K classes
+            if (docs[k] == null) {
+                docs[k] = doc.toArray(new String[doc.size()]);
+                cnt++;
+            }
+
+            if (cnt == K) {
+                break;
+            }
+
+            doc.clear();
+            line = news20.readLine();
+        }
+        println("Stored " + cnt + " docs. Start training w/ mini-batch size: " + miniBatchSize);
+
+        float perplexityPrev;
+        float perplexity = Float.MAX_VALUE;
+
+        it = 0;
+        do {
+            perplexityPrev = perplexity;
+            perplexity = 0.f;
+
+            int head = 0;
+            cnt = 0;
+            while (head < K) {
+                int tail = head + miniBatchSize;
+                model.train(Arrays.copyOfRange(docs, head, tail));
+                perplexity += model.computePerplexity();
+                head = tail;
+                cnt++;
+                println("Processed mini-batch#" + cnt);
+            }
+
+            perplexity /= cnt;
+
+            it++;
+
+            println("Iteration " + it + ": mean perplexity = " + perplexity);
+        } while(Math.abs(perplexityPrev - perplexity) >= 1E-1f);
+
+        Set<Integer> topics = new HashSet<Integer>();
+        for (int k = 0; k < K; k++) {
+            topics.add(findMaxTopic(model.getTopicDistribution(docs[k])));
+        }
+
+        int n = topics.size();
+        Assert.assertTrue("At least 15 documents SHOULD be classified to different topics, "
+                + "but there are only " + n + " unique topics.", n >= 15);
+    }
+
     private static void println(String msg) {
         if (DEBUG) {
             System.out.println(msg);
         }
+    }
+
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        // use data stored for KPA UDTF test
+        InputStream is = KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
+    }
+
+    @Nonnull
+    private static int findMaxTopic(@Nonnull float[] topicDistr) {
+        int maxIdx = 0;
+        for (int i = 1; i < topicDistr.length; i++) {
+            if (topicDistr[maxIdx] < topicDistr[i]) {
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
     }
 
 }
