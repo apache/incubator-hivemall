@@ -220,57 +220,81 @@ public final class OnlineLDAModel {
     }
 
     private void eStep() {
+        // since lambda is invariant in the expectation step,
+        // `digamma`s of lambda values for Elogbeta are pre-computed
+        final float[] lambdaSum = new float[_K];
+        final Map<String, float[]> digamma_lambda = new HashMap<String, float[]>();
+        for (Map.Entry<String, float[]> e : _lambda.entrySet()) {
+            String label = e.getKey();
+            float[] lambda_label = e.getValue();
+
+            // for digamma(lambdaSum)
+            MathUtils.add(lambdaSum, lambda_label, _K);
+
+            float[] digamma_lambda_label = new float[_K];
+            digamma_lambda.put(label, MathUtils.digamma(lambda_label));
+        }
+        final float[] digamma_lambdaSum = MathUtils.digamma(lambdaSum);
+
         float[] gamma_d, gammaPrev_d;
+        Map<String, float[]> eLogBeta_d;
 
         // for each of mini-batch documents, update gamma until convergence
         for (int d = 0; d < _miniBatchSize; d++) {
             gamma_d = _gamma[d];
+            eLogBeta_d = computeElogBetaPerDoc(d, digamma_lambda, digamma_lambdaSum);
+
             do {
                 // (deep) copy the last gamma values
                 gammaPrev_d = gamma_d.clone();
 
-                updatePhiPerDoc(d);
+                updatePhiPerDoc(d, eLogBeta_d);
                 updateGammaPerDoc(d);
             } while (!checkGammaDiff(gammaPrev_d, gamma_d));
         }
     }
 
-    private void updatePhiPerDoc(@Nonnegative final int d) {
+    @Nonnull
+    private Map<String, float[]> computeElogBetaPerDoc(@Nonnegative final int d,
+            @Nonnull Map<String, float[]> digamma_lambda, @Nonnull float[] digamma_lambdaSum) {
+        // Dirichlet expectation (2d) for lambda
+        final Map<String, float[]> eLogBeta_d = new HashMap<String, float[]>();
         final Map<String, Float> doc = _miniBatchMap.get(d);
 
-        // Dirichlet expectation (2d) for gamma
-        final float[] eLogTheta_d = new float[_K];
-        final float gammaSum_d = MathUtils.sum(_gamma[d]);
-        for (int k = 0; k < _K; k++) {
-            eLogTheta_d[k] = (float) (Gamma.digamma(_gamma[d][k]) - Gamma.digamma(gammaSum_d));
-        }
-
-        // Dirichlet expectation (2d) for lambda
-        final float[] lambdaSum = new float[_K];
-        for (float[] lambda_label : _lambda.values()) {
-            MathUtils.add(lambdaSum, lambda_label, _K);
-        }
-        final Map<String, float[]> eLogBeta_d = new HashMap<String, float[]>();
         for (String label : doc.keySet()) {
-            final float[] lambda_label = _lambda.get(label);
             float[] eLogBeta_label = eLogBeta_d.get(label);
             if (eLogBeta_label == null) {
                 eLogBeta_label = new float[_K];
                 eLogBeta_d.put(label, eLogBeta_label);
             }
+            final float[] digamma_lambda_label = digamma_lambda.get(label);
             for (int k = 0; k < _K; k++) {
-                eLogBeta_label[k] = (float) (Gamma.digamma(lambda_label[k]) - Gamma.digamma(lambdaSum[k]));
+                eLogBeta_label[k] = digamma_lambda_label[k] - digamma_lambdaSum[k];
             }
         }
 
+        return eLogBeta_d;
+    }
+
+    private void updatePhiPerDoc(@Nonnegative final int d, @Nonnull Map<String, float[]> eLogBeta_d) {
+        // Dirichlet expectation (2d) for gamma
+        final float[] eLogTheta_d = new float[_K];
+        final float[] gamma_d = _gamma[d];
+        final float digamma_gammaSum_d = (float) Gamma.digamma(MathUtils.sum(gamma_d));
+        for (int k = 0; k < _K; k++) {
+            eLogTheta_d[k] = (float) Gamma.digamma(gamma_d[k]) - digamma_gammaSum_d;
+        }
+
         // updating phi w/ normalization
-        for (String label : doc.keySet()) {
-            final float[] phi_label = _phi.get(d).get(label);
+        final Map<String, float[]> phi_d = _phi.get(d);
+        final Map<String, Float> doc = _miniBatchMap.get(d);
+        for (String label :  doc.keySet()) {
+            final float[] phi_label = phi_d.get(label);
             final float[] eLogBeta_label = eLogBeta_d.get(label);
 
             float normalizer = 0.f;
             for (int k = 0; k < _K; k++) {
-                final float phiVal = (float) Math.exp(eLogTheta_d[k] + eLogBeta_label[k]) + 1E-20f;
+                float phiVal = (float) Math.exp(eLogBeta_label[k] + eLogTheta_d[k]) + 1E-20f;
                 phi_label[k] = phiVal;
                 normalizer += phiVal;
             }
