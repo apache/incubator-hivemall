@@ -153,9 +153,9 @@ public final class OnlineLDAModel {
     }
 
     private void preprocessMiniBatch(@Nonnull final String[][] miniBatch) {
-        this._miniBatchSize = miniBatch.length;
-
         initMiniBatchMap(miniBatch, _miniBatchMap);
+
+        this._miniBatchSize = _miniBatchMap.size();
 
         // accumulate the number of words for each documents
         this._wordCount = 0L;
