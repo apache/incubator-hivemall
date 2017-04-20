@@ -87,12 +87,34 @@ from (
   select docid, collect_set(word_count) as feature
   from word_counts
   group by docid
+  order by docid
 ) t
-order by label, lambda desc
 ;
 ```
 
 Here, an option `-topic 2` specifies the number of topics we assume in the set of documents.
+
+Notice that `order by docid` ensures building a LDA model precisely in a single node. In case that you like to launch `train_lda` in parallel, following query hopefully returns similar (but might be slightly approximated) result:
+
+```sql
+with word_counts as (
+  -- same as above
+)
+select
+  label, word, avg(lambda) as lambda
+from (
+  select
+    train_lda(feature, "-topic 2 -iter 20") as (label, word, lambda)
+  from (
+    select docid, collect_set(f) as feature
+    from word_counts
+    group by docid
+  ) t1
+) t2
+group by label, word
+order by lambda desc
+;
+```
 
 Eventually, a new table `lda_model` is generated as shown below:
 
