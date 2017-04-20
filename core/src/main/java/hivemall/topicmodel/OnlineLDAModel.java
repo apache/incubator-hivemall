@@ -40,13 +40,13 @@ import org.apache.commons.math3.special.Gamma;
 public final class OnlineLDAModel {
 
     // number of topics
-    private int _K;
+    private final int _K;
 
     // prior on weight vectors "theta ~ Dir(alpha_)"
-    private float _alpha = 1 / 2.f;
+    private final float _alpha;
 
     // prior on topics "beta"
-    private float _eta = 1 / 20.f;
+    private final float _eta;
 
     // total number of documents
     // in the truly online setting, this can be an estimate of the maximum number of documents that could ever seen
@@ -58,10 +58,10 @@ public final class OnlineLDAModel {
 
     // positive value which downweights early iterations
     @Nonnegative
-    private double _tau0 = 1020;
+    private final double _tau0;
 
     // exponential decay rate (i.e., learning rate) which must be in (0.5, 1] to guarantee convergence
-    private double _kappa = 0.7d;
+    private final double _kappa;
 
     // how many times EM steps are launched; later EM steps do not drastically forget old lambda
     private long _updateCount = 0L;
@@ -69,8 +69,8 @@ public final class OnlineLDAModel {
     // random number generator
     @Nonnull
     private final GammaDistribution _gd;
-    private static double SHAPE = 100.d;
-    private static double SCALE = 1.d / SHAPE;
+    private static final double SHAPE = 100.d;
+    private static final double SCALE = 1.d / SHAPE;
 
     // parameters
     @Nonnull
@@ -80,7 +80,7 @@ public final class OnlineLDAModel {
     private final Map<String, float[]> _lambda;
 
     // check convergence in the expectation (E) step
-    private double _delta = 1e-5;
+    private final double _delta;
 
     @Nonnull
     private final List<Map<String, Float>> _miniBatchMap;
