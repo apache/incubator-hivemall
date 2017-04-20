@@ -54,6 +54,10 @@ public final class FeatureValue {
         return ((Integer) feature).intValue();
     }
 
+    public String getFeatureAsString() {
+        return feature.toString();
+    }
+
     public double getValue() {
         return value;
     }

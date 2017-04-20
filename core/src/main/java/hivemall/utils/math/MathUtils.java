@@ -38,6 +38,9 @@ import java.util.Random;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.apache.commons.math3.special.Gamma;
 
 public final class MathUtils {
 
@@ -309,6 +312,46 @@ public final class MathUtils {
             perm[i] = i;
         }
         return perm;
+    }
+
+    public static float sum(@Nullable final float[] a) {
+        if (a == null) {
+            return 0.f;
+        }
+
+        float sum = 0.f;
+        for (float v : a) {
+            sum += v;
+        }
+        return sum;
+    }
+
+    public static float sum(@Nullable final float[] a, @Nonnegative final int size) {
+        if (a == null) {
+            return 0.f;
+        }
+
+        float sum = 0.f;
+        for (int i = 0; i < size; i++) {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    public static void add(@Nonnull final float[] dst, @Nonnull final float[] toAdd, final int size) {
+        for (int i = 0; i < size; i++) {
+            dst[i] += toAdd[i];
+        }
+    }
+
+    @Nonnull
+    public static float[] digamma(@Nonnull final float[] a) {
+        final int k = a.length;
+        final float[] ret = new float[k];
+        for (int i = 0; i < k; i++) {
+            ret[i] = (float) Gamma.digamma(a[i]);
+        }
+        return ret;
     }
 
 }

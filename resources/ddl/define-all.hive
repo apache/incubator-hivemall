@@ -612,6 +612,16 @@ create temporary function changefinder as 'hivemall.anomaly.ChangeFinderUDF';
 drop temporary function if exists sst;
 create temporary function sst as 'hivemall.anomaly.SingularSpectrumTransformUDF';
 
+--------------------
+-- Topic Modeling --
+--------------------
+
+drop temporary function if exists train_lda;
+create temporary function train_lda as 'hivemall.topicmodel.LDAUDTF';
+
+drop temporary function if exists lda_predict;
+create temporary function lda_predict as 'hivemall.topicmodel.LDAPredictUDAF';
+
 ----------------------------
 -- Smile related features --
 ----------------------------
