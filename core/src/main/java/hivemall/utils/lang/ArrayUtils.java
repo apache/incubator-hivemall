@@ -23,8 +23,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.apache.commons.math3.distribution.GammaDistribution;
 
 public final class ArrayUtils {
 
@@ -713,6 +716,23 @@ public final class ArrayUtils {
             }
         }
         return cnt;
+    }
+
+    @Nonnull
+    public static float[] newInstance(@Nonnegative int size, float filledValue) {
+        final float[] a = new float[size];
+        Arrays.fill(a, filledValue);
+        return a;
+    }
+    
+    @Nonnull
+    public static float[] newRandomFloatArray(@Nonnegative final int size,
+            @Nonnull final GammaDistribution gd) {
+        final float[] ret = new float[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = (float) gd.sample();
+        }
+        return ret;
     }
 
 }
