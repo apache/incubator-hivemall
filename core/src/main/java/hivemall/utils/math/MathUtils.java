@@ -314,44 +314,91 @@ public final class MathUtils {
         return perm;
     }
 
-    public static float sum(@Nullable final float[] a) {
-        if (a == null) {
-            return 0.f;
+    public static double sum(@Nullable final float[] arr) {
+        if (arr == null) {
+            return 0.d;
         }
 
-        float sum = 0.f;
-        for (float v : a) {
+        double sum = 0.d;
+        for (float v : arr) {
             sum += v;
         }
         return sum;
     }
 
-    public static float sum(@Nullable final float[] a, @Nonnegative final int size) {
-        if (a == null) {
-            return 0.f;
-        }
-
-        float sum = 0.f;
+    public static void add(@Nonnull final float[] src, @Nonnull final float[] dst, final int size) {
         for (int i = 0; i < size; i++) {
-            sum += a[i];
+            dst[i] += src[i];
         }
-        return sum;
     }
 
-    public static void add(@Nonnull final float[] dst, @Nonnull final float[] toAdd, final int size) {
+    public static void add(@Nonnull final float[] src, @Nonnull final double[] dst, final int size) {
         for (int i = 0; i < size; i++) {
-            dst[i] += toAdd[i];
+            dst[i] += src[i];
         }
     }
 
     @Nonnull
-    public static float[] digamma(@Nonnull final float[] a) {
-        final int k = a.length;
+    public static float[] digamma(@Nonnull final float[] arr) {
+        final int k = arr.length;
         final float[] ret = new float[k];
         for (int i = 0; i < k; i++) {
-            ret[i] = (float) Gamma.digamma(a[i]);
+            ret[i] = (float) Gamma.digamma(arr[i]);
         }
         return ret;
+    }
+
+    @Nonnull
+    public static double[] digamma(@Nonnull final double[] arr) {
+        final int k = arr.length;
+        final double[] ret = new double[k];
+        for (int i = 0; i < k; i++) {
+            ret[i] = Gamma.digamma(arr[i]);
+        }
+        return ret;
+    }
+
+    public static float logsumexp(@Nonnull final float[] arr) {
+        if (arr.length == 0) {
+            return 0.f;
+        }
+        float max = 0.f;
+        for (final float v : arr) {
+            if (v > max) {
+                max = v;
+            }
+        }
+        return logsumexp(arr, max);
+    }
+
+    public static float logsumexp(@Nonnull final float[] arr, final float max) {
+        double logsumexp = 0.d;
+        for (final float v : arr) {
+            logsumexp += Math.exp(v - max);
+        }
+        logsumexp = Math.log(logsumexp) + max;
+        return (float) logsumexp;
+    }
+
+    public static double logsumexp(@Nonnull final double[] arr) {
+        if (arr.length == 0) {
+            return 0.d;
+        }
+        double max = 0.d;
+        for (final double v : arr) {
+            if (v > max) {
+                max = v;
+            }
+        }
+        return logsumexp(arr, max);
+    }
+
+    public static double logsumexp(@Nonnull final double[] arr, final double max) {
+        double logsumexp = 0.d;
+        for (final double v : arr) {
+            logsumexp += Math.exp(v - max);
+        }
+        return Math.log(logsumexp) + max;
     }
 
 }

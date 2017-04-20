@@ -196,8 +196,8 @@ public class LDAUDTF extends UDTFWithOptions {
             initModel();
         }
 
-        int length = wordCountsOI.getListLength(args[0]);
-        String[] wordCounts = new String[length];
+        final int length = wordCountsOI.getListLength(args[0]);
+        final String[] wordCounts = new String[length];
         int j = 0;
         for (int i = 0; i < length; i++) {
             Object o = wordCountsOI.getListElement(args[0], i);
@@ -207,6 +207,9 @@ public class LDAUDTF extends UDTFWithOptions {
             String s = o.toString();
             wordCounts[j] = s;
             j++;
+        }
+        if (j == 0) {// avoid empty documents
+            return;
         }
 
         count++;
