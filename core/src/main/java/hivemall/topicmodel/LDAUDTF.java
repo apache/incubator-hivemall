@@ -99,10 +99,10 @@ public class LDAUDTF extends UDTFWithOptions {
         this.numDocs = -1L;
         this.tau0 = 64.d;
         this.kappa = 0.7;
-        this.iterations = 1;
-        this.delta = 1E-5d;
+        this.iterations = 10;
+        this.delta = 1E-3d;
         this.eps = 1E-1d;
-        this.miniBatchSize = 1; // truly online setting
+        this.miniBatchSize = 128; // if 1, truly online setting
     }
 
     @Override
@@ -115,12 +115,12 @@ public class LDAUDTF extends UDTFWithOptions {
         opts.addOption("tau", "tau0", true,
             "The parameter which downweights early iterations [default: 64.0]");
         opts.addOption("kappa", true, "Exponential decay rate (i.e., learning rate) [default: 0.7]");
-        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 1]");
-        opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
+        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 10]");
+        opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-3]");
         opts.addOption("eps", "epsilon", true,
             "Check convergence based on the difference of perplexity [default: 1E-1]");
         opts.addOption("s", "mini_batch_size", true,
-            "Repeat model updating per mini-batch [default: 1]");
+            "Repeat model updating per mini-batch [default: 128]");
         return opts;
     }
 
@@ -143,14 +143,14 @@ public class LDAUDTF extends UDTFWithOptions {
             if (kappa <= 0.5 || kappa > 1.d) {
                 throw new UDFArgumentException("'-kappa' must be in (0.5, 1.0]: " + kappa);
             }
-            this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
+            this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
             if (iterations < 1) {
                 throw new UDFArgumentException(
                     "'-iterations' must be greater than or equals to 1: " + iterations);
             }
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
+            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-3d);
             this.eps = Primitives.parseDouble(cl.getOptionValue("epsilon"), 1E-1d);
-            this.miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), 1);
+            this.miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), 128);
         }
 
         return cl;
@@ -211,7 +211,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         count++;
         if (isAutoD) {
-            model.setNumTotalDocs((int) count);
+            model.setNumTotalDocs(count);
         }
 
         recordTrainSampleToTempFile(wordCounts);
