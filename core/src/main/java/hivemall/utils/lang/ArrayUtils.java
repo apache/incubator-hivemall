@@ -719,12 +719,12 @@ public final class ArrayUtils {
     }
 
     @Nonnull
-    public static float[] newInstance(@Nonnegative int size, float filledValue) {
+    public static float[] newFloatArray(@Nonnegative int size, float filledValue) {
         final float[] a = new float[size];
         Arrays.fill(a, filledValue);
         return a;
     }
-    
+
     @Nonnull
     public static float[] newRandomFloatArray(@Nonnegative final int size,
             @Nonnull final GammaDistribution gd) {
