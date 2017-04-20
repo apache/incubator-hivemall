@@ -18,6 +18,8 @@
  */
 package hivemall.evaluation;
 
+import java.util.ArrayList;
+
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
@@ -26,10 +28,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,10 +44,8 @@ public class AUCUDAFTest {
         auc = new AUCUDAF();
 
         inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.DOUBLE),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.INT)};
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT)};
 
         evaluator = auc.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
 
@@ -120,7 +116,7 @@ public class AUCUDAFTest {
         Assert.assertEquals(0.8125, agg.get(), 1e-5);
     }
 
-    @Test(expected=HiveException.class)
+    @Test(expected = HiveException.class)
     public void testAllTruePositive() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
         final int[] labels = new int[] {1, 1, 1, 1, 1};
@@ -136,7 +132,7 @@ public class AUCUDAFTest {
         agg.get();
     }
 
-    @Test(expected=HiveException.class)
+    @Test(expected = HiveException.class)
     public void testAllFalsePositive() throws Exception {
         final double[] scores = new double[] {0.8, 0.7, 0.5, 0.3, 0.2};
         final int[] labels = new int[] {0, 0, 0, 0, 0};
@@ -236,7 +232,8 @@ public class AUCUDAFTest {
 
         // merge bins
         // merge in a different order; e.g., <bin0, bin1>, <bin1, bin0> should return same value
-        final int[][] orders = new int[][] {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}, {2, 0, 1}};
+        final int[][] orders = new int[][] { {0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0},
+                {2, 0, 1}};
         for (int i = 0; i < orders.length; i++) {
             evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL2, partialOI);
             evaluator.reset(agg);
@@ -251,28 +248,17 @@ public class AUCUDAFTest {
 
     @Test
     public void test100() throws Exception {
-        final double[] scores = new double[] {
-                0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
-                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
-                0.8, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7,
-                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6,
-                0.6, 0.6, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,
-                0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3,
-                0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
-                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
+        final double[] scores = new double[] {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
+                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.7, 0.7,
+                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6, 0.6, 0.6,
+                0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4,
+                0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
+                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
                 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
-        final int[] labels = new int[] {
-                1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-                1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
-                0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-                1, 0, 0, 1, 1, 1, 1, 1, 1, 0,
-                0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-                0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-                0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-                1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-                1, 1, 1, 0, 0, 0, 0, 0, 0, 0};
+        final int[] labels = new int[] {1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+                0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1,
+                1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1,
+                1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -287,28 +273,17 @@ public class AUCUDAFTest {
 
     @Test
     public void testMerge100() throws Exception {
-        final double[] scores = new double[] {
-            0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
-            0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
-            0.8, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7,
-            0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6,
-            0.6, 0.6, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-            0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,
-            0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3,
-            0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
-            0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
-            0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
-        final int[] labels = new int[] {
-            1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
-            0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-            1, 0, 0, 1, 1, 1, 1, 1, 1, 0,
-            0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-            0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-            0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-            1, 1, 1, 0, 0, 0, 0, 0, 0, 0};
+        final double[] scores = new double[] {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
+                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.7, 0.7,
+                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6, 0.6, 0.6,
+                0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4,
+                0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
+                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
+                0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+        final int[] labels = new int[] {1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+                0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1,
+                1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1,
+                1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0};
 
         Object[] partials = new Object[3];
 
@@ -342,7 +317,8 @@ public class AUCUDAFTest {
 
         // merge bins
         // merge in a different order; e.g., <bin0, bin1>, <bin1, bin0> should return same value
-        final int[][] orders = new int[][] {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}, {2, 0, 1}};
+        final int[][] orders = new int[][] { {0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0},
+                {2, 0, 1}};
         for (int j = 0; j < orders.length; j++) {
             evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL2, partialOI);
             evaluator.reset(agg);
