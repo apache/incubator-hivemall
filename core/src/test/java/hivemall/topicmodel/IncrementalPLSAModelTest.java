@@ -40,16 +40,16 @@ import org.junit.Test;
 import javax.annotation.Nonnull;
 
 public class IncrementalPLSAModelTest {
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     @Test
-    public void test() {
+    public void testOnline() {
         int K = 2;
         int it = 0;
         float perplexityPrev;
         float perplexity = Float.MAX_VALUE;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-4d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
@@ -70,6 +70,72 @@ public class IncrementalPLSAModelTest {
 
             it++;
             println("Iteration " + it + ": mean perplexity = " + perplexity);
+        } while (Math.abs(perplexityPrev - perplexity) >= 1E-3f);
+
+        SortedMap<Float, List<String>> topicWords;
+
+        println("Topic 0:");
+        println("========");
+        topicWords = model.getTopicWords(0);
+        for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
+            List<String> words = e.getValue();
+            for (int i = 0; i < words.size(); i++) {
+                println(e.getKey() + " " + words.get(i));
+            }
+        }
+        println("========");
+
+        println("Topic 1:");
+        println("========");
+        topicWords = model.getTopicWords(1);
+        for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
+            List<String> words = e.getValue();
+            for (int i = 0; i < words.size(); i++) {
+                println(e.getKey() + " " + words.get(i));
+            }
+        }
+        println("========");
+
+
+        int k1, k2;
+        float[] topicDistr = model.getTopicDistribution(doc1);
+        if (topicDistr[0] > topicDistr[1]) {
+            // topic 0 MUST represent doc#1
+            k1 = 0;
+            k2 = 1;
+        } else {
+            k1 = 1;
+            k2 = 0;
+        }
+        Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
+                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+            model.getProbability("vegetables", k1) > model.getProbability("flu", k1));
+        Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
+                + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
+            model.getProbability("avocados", k2) > model.getProbability("healthy", k2));
+    }
+
+    @Test
+    public void testMiniBatch() {
+        int K = 2;
+        int it = 0;
+        float perplexityPrev;
+        float perplexity = Float.MAX_VALUE;
+
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-5d);
+
+        String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
+        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
+                "oranges:1"};
+
+        do {
+            perplexityPrev = perplexity;
+
+            model.train(new String[][] {doc1, doc2});
+            perplexity = model.computePerplexity();
+
+            it++;
+            println("Iteration " + it + ": perplexity = " + perplexity);
         } while (Math.abs(perplexityPrev - perplexity) >= 1E-5f);
 
         SortedMap<Float, List<String>> topicWords;
@@ -122,7 +188,7 @@ public class IncrementalPLSAModelTest {
 
         int cnt, it;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.3f, 1E-5d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-6d);
 
         BufferedReader news20 = readFile("news20-multiclass.gz");
 
@@ -180,7 +246,7 @@ public class IncrementalPLSAModelTest {
             it++;
 
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while (Math.abs(perplexityPrev - perplexity) >= 1E-1f);
+        } while (Math.abs(perplexityPrev - perplexity) >= 1E-3f);
 
         Set<Integer> topics = new HashSet<Integer>();
         for (int k = 0; k < K; k++) {
