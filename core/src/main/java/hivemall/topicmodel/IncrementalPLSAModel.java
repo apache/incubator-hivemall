@@ -85,19 +85,19 @@ public final class IncrementalPLSAModel {
 
         initParams();
 
-        final Map<String, float[]> pPrev_zw = new HashMap<String, float[]>();
+        final List<float[]> pPrev_dz = new ArrayList<float[]>();
 
         for (int d = 0; d < _miniBatchSize; d++) {
             do {
-                pPrev_zw.clear();
-                pPrev_zw.putAll(_p_zw);
+                pPrev_dz.clear();
+                pPrev_dz.addAll(_p_dz);
 
                 // Expectation
                 eStep(d);
 
                 // Maximization
                 mStep(d);
-            } while (!isPzwConverged(d, pPrev_zw, _p_zw));
+            } while (!isPdzConverged(d, pPrev_dz, _p_dz)); // until get stable value of P(z|d)
         }
     }
 
@@ -221,15 +221,13 @@ public final class IncrementalPLSAModel {
         }
     }
 
-    private boolean isPzwConverged(@Nonnegative final int d,
-            @Nonnull final Map<String, float[]> pPrev_zw, @Nonnull final Map<String, float[]> p_zw) {
+    private boolean isPdzConverged(@Nonnegative final int d,
+            @Nonnull final List<float[]> pPrev_dz, @Nonnull final List<float[]> p_dz) {
         double diff = 0.d;
-        for (final String label : _miniBatchDocs.get(d).keySet()) {
-            final float[] pPrev_zw_w = pPrev_zw.get(label);
-            final float[] p_zw_w = p_zw.get(label);
-            for (int z = 0; z < _K; z++) {
-                diff += Math.abs(pPrev_zw_w[z] - p_zw_w[z]);
-            }
+        final float[] pPrev_dz_d = pPrev_dz.get(d);
+        final float[] p_dz_d = p_dz.get(d);
+        for (int z = 0; z < _K; z++) {
+            diff += Math.abs(pPrev_dz_d[z] - p_dz_d[z]);
         }
         return (diff / _K) < _delta;
     }
