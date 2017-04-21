@@ -203,14 +203,13 @@ public final class IncrementalPLSAModel {
                 final String label = e.getKey();
                 final float[] p_zw_w = e.getValue();
 
-                pSumAll_zw_w += p_zw_w[z];
-
-                p_zw_w[z] *= _alpha; // alpha * P(w|z)
-
                 if (doc.containsKey(label)) {
+                    p_zw_w[z] *= _alpha; // alpha * P(w|z)
                     float np = doc.get(label) * p_dwz_d.get(label)[z]; // n(d,w) * P(z|d,w)
                     p_zw_w[z] += np;
                     npSumInDoc_zw_w += np;
+                } else {
+                    pSumAll_zw_w += p_zw_w[z];
                 }
             }
 
