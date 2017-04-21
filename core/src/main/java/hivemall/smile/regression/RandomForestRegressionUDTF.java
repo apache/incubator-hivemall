@@ -19,22 +19,25 @@
 package hivemall.smile.regression;
 
 import hivemall.UDTFWithOptions;
-import hivemall.smile.ModelType;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.builders.CSRMatrixBuilder;
+import hivemall.math.matrix.builders.MatrixBuilder;
+import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
+import hivemall.math.vector.Vector;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
-import hivemall.smile.vm.StackMachine;
 import hivemall.utils.codec.Base91;
-import hivemall.utils.codec.DeflateCodec;
-import hivemall.utils.collections.DoubleArrayList;
+import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.datetime.StopWatch;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -42,6 +45,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -69,7 +73,7 @@ import org.apache.hadoop.mapred.Reporter;
 
 @Description(
         name = "train_randomforest_regression",
-        value = "_FUNC_(double[] features, double target [, string options]) - "
+        value = "_FUNC_(array<double|string> features, double target [, string options]) - "
                 + "Returns a relation consists of "
                 + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests>")
 public final class RandomForestRegressionUDTF extends UDTFWithOptions {
@@ -79,7 +83,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector targetOI;
 
-    private List<double[]> featuresList;
+    private boolean denseInput;
+    private MatrixBuilder matrixBuilder;
     private DoubleArrayList targets;
     /**
      * The number of trees for each task
@@ -101,7 +106,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private int _minSamplesLeaf;
     private long _seed;
     private Attribute[] _attributes;
-    private ModelType _outputType;
 
     @Nullable
     private Reporter _progressReporter;
@@ -131,10 +135,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
-        opts.addOption("output", "output_type", true,
-            "The output type (serialization/ser or opscode/vm or javascript/js) [default: serialization]");
-        opts.addOption("disable_compression", false,
-            "Whether to disable compression of the output script [default: false]");
         return opts;
     }
 
@@ -145,8 +145,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         float numVars = -1.f;
         Attribute[] attrs = null;
         long seed = -1L;
-        String output = "serialization";
-        boolean compress = true;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -165,10 +163,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                 minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
-            output = cl.getOptionValue("output", output);
-            if (cl.hasOption("disable_compression")) {
-                compress = false;
-            }
         }
 
         this._numTrees = trees;
@@ -179,7 +173,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
         this._attributes = attrs;
-        this._outputType = ModelType.resolve(output, compress);
 
         return cl;
     }
@@ -189,19 +182,29 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         if (argOIs.length != 2 && argOIs.length != 3) {
             throw new UDFArgumentException(
                 getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: double[] features, double target [, const string options]: "
+                        + " takes 2 or 3 arguments: array<double|string> features, double target [, const string options]: "
                         + argOIs.length);
         }
 
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureListOI = listOI;
-        this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseInput = true;
+            this.matrixBuilder = new RowMajorDenseMatrixBuilder(8192);
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asStringOI(elemOI);
+            this.denseInput = false;
+            this.matrixBuilder = new CSRMatrixBuilder(8192);
+        } else {
+            throw new UDFArgumentException(
+                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+        }
         this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
 
         processOptions(argOIs);
 
-        this.featuresList = new ArrayList<double[]>(1024);
         this.targets = new DoubleArrayList(1024);
 
         ArrayList<String> fieldNames = new ArrayList<String>(5);
@@ -209,8 +212,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        fieldNames.add("model_type");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        fieldNames.add("model_err");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("pred_model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("var_importance");
@@ -228,11 +231,34 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         if (args[0] == null) {
             throw new HiveException("array<double> features was null");
         }
-        double[] features = HiveUtils.asDoubleArray(args[0], featureListOI, featureElemOI);
+        parseFeatures(args[0], matrixBuilder);
         double target = PrimitiveObjectInspectorUtils.getDouble(args[1], targetOI);
-
-        featuresList.add(features);
         targets.add(target);
+    }
+
+    private void parseFeatures(@Nonnull final Object argObj, @Nonnull final MatrixBuilder builder) {
+        if (denseInput) {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                double v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
+                builder.nextColumn(i, v);
+            }
+        } else {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                String fv = o.toString();
+                builder.nextColumn(fv);
+            }
+        }
+        builder.nextRow();
     }
 
     @Override
@@ -250,10 +276,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         reportProgress(_progressReporter);
 
-        int numExamples = featuresList.size();
-        if (numExamples > 0) {
-            double[][] x = featuresList.toArray(new double[numExamples][]);
-            this.featuresList = null;
+        if (!targets.isEmpty()) {
+            Matrix x = matrixBuilder.buildMatrix();
+            this.matrixBuilder = null;
             double[] y = targets.toArray();
             this.targets = null;
 
@@ -285,15 +310,16 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
      * @param _numVars The number of variables to pick up in each node.
      * @param _seed The seed number for Random Forest
      */
-    private void train(@Nonnull final double[][] x, @Nonnull final double[] y) throws HiveException {
-        if (x.length != y.length) {
+    private void train(@Nonnull Matrix x, @Nonnull final double[] y) throws HiveException {
+        final int numExamples = x.numRows();
+        if (numExamples != y.length) {
             throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
-                x.length, y.length));
+                numExamples, y.length));
         }
         checkOptions();
 
-        // Shuffle training samples 
-        SmileExtUtils.shuffle(x, y, _seed);
+        // Shuffle training samples
+        x = SmileExtUtils.shuffle(x, y, _seed);
 
         Attribute[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
         int numInputVars = SmileExtUtils.computeNumInputVars(_numVars, x);
@@ -305,10 +331,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                     + ", seed: " + _seed);
         }
 
-        int numExamples = x.length;
         double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
         int[] oob = new int[numExamples];
-        int[][] order = SmileExtUtils.sort(attributes, x);
+        ColumnMajorIntMatrix order = SmileExtUtils.sort(attributes, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
@@ -330,10 +355,13 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
     /**
      * Synchronized because {@link #forward(Object)} should be called from a single thread.
+     * 
+     * @param error
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
-            @Nonnull final double[] importance, final double[] y, final double[] prediction,
-            final int[] oob, final boolean lastTask) throws HiveException {
+            @Nonnull final double[] importance, @Nonnegative final double error, final double[] y,
+            final double[] prediction, final int[] oob, final boolean lastTask)
+            throws HiveException {
         double oobErrors = 0.d;
         int oobTests = 0;
         if (lastTask) {
@@ -349,7 +377,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         String modelId = RandomUtils.getUUID();
         final Object[] forwardObjs = new Object[6];
         forwardObjs[0] = new Text(modelId);
-        forwardObjs[1] = new IntWritable(_outputType.getId());
+        forwardObjs[1] = new DoubleWritable(error);
         forwardObjs[2] = model;
         forwardObjs[3] = WritableUtils.toWritableList(importance);
         forwardObjs[4] = new DoubleWritable(oobErrors);
@@ -373,16 +401,15 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         /**
          * Training instances.
          */
-        private final double[][] _x;
+        private final Matrix _x;
         /**
          * Training sample labels.
          */
         private final double[] _y;
         /**
-         * The index of training values in ascending order. Note that only numeric attributes will
-         * be sorted.
+         * The index of training values in ascending order. Note that only numeric attributes will be sorted.
          */
-        private final int[][] _order;
+        private final ColumnMajorIntMatrix _order;
         /**
          * The number of variables to pick up in each node.
          */
@@ -401,8 +428,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final long _seed;
         private final AtomicInteger _remainingTasks;
 
-        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes,
-                double[][] x, double[] y, int numVars, int[][] order, double[] prediction,
+        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes, Matrix x,
+                double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction,
                 int[] oob, long seed, AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
@@ -419,11 +446,11 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         @Override
         public Integer call() throws HiveException {
-            long s = (this._seed == -1L) ? SmileExtUtils.generateSeed() : new smile.math.Random(
-                _seed).nextLong();
-            final smile.math.Random rnd1 = new smile.math.Random(s);
-            final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
-            final int N = _x.length;
+            long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
+                    : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
+            final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
+            final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
+            final int N = _x.numRows();
 
             // Training samples draw with replacement.
             final int[] bags = new int[N];
@@ -441,82 +468,40 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             incrCounter(_udtf._treeConstuctionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             // out-of-bag prediction
+            int oob = 0;
+            double error = 0.d;
+            final Vector xProbe = _x.rowVector();
             for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
-                double pred = tree.predict(_x[i]);
-                synchronized (_x[i]) {
+                oob++;
+                _x.getRow(i, xProbe);
+                final double pred = tree.predict(xProbe);
+                synchronized (_prediction) {
                     _prediction[i] += pred;
                     _oob[i]++;
                 }
+                error += Math.abs(pred - _y[i]);
+            }
+            if (oob != 0) {
+                error /= oob;
             }
 
             stopwatch.reset().start();
-            Text model = getModel(tree, _udtf._outputType);
+            Text model = getModel(tree);
             double[] importance = tree.importance();
             tree = null; // help GC
             int remain = _remainingTasks.decrementAndGet();
             boolean lastTask = (remain == 0);
-            _udtf.forward(_taskId + 1, model, importance, _y, _prediction, _oob, lastTask);
+            _udtf.forward(_taskId + 1, model, importance, error, _y, _prediction, _oob, lastTask);
             incrCounter(_udtf._treeSerializationTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             return Integer.valueOf(remain);
         }
 
-        private static Text getModel(@Nonnull final RegressionTree tree,
-                @Nonnull final ModelType outputType) throws HiveException {
-            final Text model;
-            switch (outputType) {
-                case serialization:
-                case serialization_compressed: {
-                    byte[] b = tree.predictSerCodegen(outputType.isCompressed());
-                    b = Base91.encode(b);
-                    model = new Text(b);
-                    break;
-                }
-                case opscode:
-                case opscode_compressed: {
-                    String s = tree.predictOpCodegen(StackMachine.SEP);
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        model = new Text(b);
-                    } else {
-                        model = new Text(s);
-                    }
-                    break;
-                }
-                case javascript:
-                case javascript_compressed: {
-                    String s = tree.predictJsCodegen();
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        model = new Text(b);
-                    } else {
-                        model = new Text(s);
-                    }
-                    break;
-                }
-                default:
-                    throw new HiveException("Unexpected output type: " + outputType
-                            + ". Use javascript for the output instead");
-            }
-            return model;
+        @Nonnull
+        private static Text getModel(@Nonnull final RegressionTree tree) throws HiveException {
+            byte[] b = tree.predictSerCodegen(true);
+            b = Base91.encode(b);
+            return new Text(b);
         }
 
     }

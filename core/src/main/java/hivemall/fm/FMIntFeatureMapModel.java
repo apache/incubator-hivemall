@@ -18,8 +18,8 @@
  */
 package hivemall.fm;
 
-import hivemall.utils.collections.Int2FloatOpenHashTable;
-import hivemall.utils.collections.IntOpenHashMap;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
+import hivemall.utils.collections.maps.IntOpenHashMap;
 
 import java.util.Arrays;
 

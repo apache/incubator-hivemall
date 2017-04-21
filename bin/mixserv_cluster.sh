@@ -23,7 +23,7 @@
 
 usage="Usage: mixserv_cluster.sh (start|stop|status)"
 
-if [ "$HIVEMALL_HOME" == "" ]; then
+if [ "$HIVEMALL_HOME" = "" ]; then
   echo "env HIVEMALL_HOME not defined"
   exit 1
 fi

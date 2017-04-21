@@ -20,7 +20,8 @@
 Prerequisites
 ============
 
-* Hive v0.12 or later
+* Hadoop v2.4.0 or later
+* Hive v0.13 or later
 * Java 7 or later
 * [hivemall-core-xxx-with-dependencies.jar](https://github.com/myui/hivemall/releases)
 * [define-all.hive](https://github.com/myui/hivemall/releases)
@@ -52,3 +53,13 @@ You can also run Hivemall on the following
 * [Apache Spark](../spark/getting_started/installation.md)
 * [Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)
 * [Apache Hive on Docker](../docker/getting_started.md) for testing
+
+
+Build from Source
+==================
+
+```sh
+$ git clone https://github.com/apache/incubator-hivemall.git
+$ cd incubator-hivemall
+$ bin/build.sh
+```

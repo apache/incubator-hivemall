@@ -22,7 +22,7 @@ import hivemall.model.WeightValueWithClock.WeightValueParamsF1Clock;
 import hivemall.model.WeightValueWithClock.WeightValueParamsF2Clock;
 import hivemall.model.WeightValueWithClock.WeightValueWithCovarClock;
 import hivemall.utils.collections.IMapIterator;
-import hivemall.utils.collections.OpenHashMap;
+import hivemall.utils.collections.maps.OpenHashMap;
 
 import javax.annotation.Nonnull;
 

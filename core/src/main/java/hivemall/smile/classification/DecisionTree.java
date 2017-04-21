@@ -33,100 +33,94 @@
  */
 package hivemall.smile.classification;
 
+import hivemall.annotations.VisibleForTesting;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
+import hivemall.math.vector.DenseVector;
+import hivemall.math.vector.SparseVector;
+import hivemall.math.vector.Vector;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
-import hivemall.utils.lang.StringUtils;
+import hivemall.utils.sampling.IntReservoirSampler;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.PriorityQueue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.roaringbitmap.IntConsumer;
+import org.roaringbitmap.RoaringBitmap;
 
 import smile.classification.Classifier;
 import smile.math.Math;
-import smile.math.Random;
 
 /**
- * Decision tree for classification. A decision tree can be learned by splitting the training set
- * into subsets based on an attribute value test. This process is repeated on each derived subset in
- * a recursive manner called recursive partitioning. The recursion is completed when the subset at a
- * node all has the same value of the target variable, or when splitting no longer adds value to the
- * predictions.
+ * Decision tree for classification. A decision tree can be learned by splitting the training set into subsets based on an attribute value test. This
+ * process is repeated on each derived subset in a recursive manner called recursive partitioning. The recursion is completed when the subset at a
+ * node all has the same value of the target variable, or when splitting no longer adds value to the predictions.
  * <p>
- * The algorithms that are used for constructing decision trees usually work top-down by choosing a
- * variable at each step that is the next best variable to use in splitting the set of items. "Best"
- * is defined by how well the variable splits the set into homogeneous subsets that have the same
- * value of the target variable. Different algorithms use different formulae for measuring "best".
- * Used by the CART algorithm, Gini impurity is a measure of how often a randomly chosen element
- * from the set would be incorrectly labeled if it were randomly labeled according to the
- * distribution of labels in the subset. Gini impurity can be computed by summing the probability of
- * each item being chosen times the probability of a mistake in categorizing that item. It reaches
- * its minimum (zero) when all cases in the node fall into a single target category. Information
- * gain is another popular measure, used by the ID3, C4.5 and C5.0 algorithms. Information gain is
- * based on the concept of entropy used in information theory. For categorical variables with
- * different number of levels, however, information gain are biased in favor of those attributes
- * with more levels. Instead, one may employ the information gain ratio, which solves the drawback
- * of information gain.
+ * The algorithms that are used for constructing decision trees usually work top-down by choosing a variable at each step that is the next best
+ * variable to use in splitting the set of items. "Best" is defined by how well the variable splits the set into homogeneous subsets that have the
+ * same value of the target variable. Different algorithms use different formulae for measuring "best". Used by the CART algorithm, Gini impurity is a
+ * measure of how often a randomly chosen element from the set would be incorrectly labeled if it were randomly labeled according to the distribution
+ * of labels in the subset. Gini impurity can be computed by summing the probability of each item being chosen times the probability of a mistake in
+ * categorizing that item. It reaches its minimum (zero) when all cases in the node fall into a single target category. Information gain is another
+ * popular measure, used by the ID3, C4.5 and C5.0 algorithms. Information gain is based on the concept of entropy used in information theory. For
+ * categorical variables with different number of levels, however, information gain are biased in favor of those attributes with more levels. Instead,
+ * one may employ the information gain ratio, which solves the drawback of information gain.
  * <p>
- * Classification and Regression Tree techniques have a number of advantages over many of those
- * alternative techniques.
+ * Classification and Regression Tree techniques have a number of advantages over many of those alternative techniques.
  * <dl>
  * <dt>Simple to understand and interpret.</dt>
- * <dd>In most cases, the interpretation of results summarized in a tree is very simple. This
- * simplicity is useful not only for purposes of rapid classification of new observations, but can
- * also often yield a much simpler "model" for explaining why observations are classified or
- * predicted in a particular manner.</dd>
+ * <dd>In most cases, the interpretation of results summarized in a tree is very simple. This simplicity is useful not only for purposes of rapid
+ * classification of new observations, but can also often yield a much simpler "model" for explaining why observations are classified or predicted in
+ * a particular manner.</dd>
  * <dt>Able to handle both numerical and categorical data.</dt>
- * <dd>Other techniques are usually specialized in analyzing datasets that have only one type of
- * variable.</dd>
+ * <dd>Other techniques are usually specialized in analyzing datasets that have only one type of variable.</dd>
  * <dt>Tree methods are nonparametric and nonlinear.</dt>
- * <dd>The final results of using tree methods for classification or regression can be summarized in
- * a series of (usually few) logical if-then conditions (tree nodes). Therefore, there is no
- * implicit assumption that the underlying relationships between the predictor variables and the
- * dependent variable are linear, follow some specific non-linear link function, or that they are
- * even monotonic in nature. Thus, tree methods are particularly well suited for data mining tasks,
- * where there is often little a priori knowledge nor any coherent set of theories or predictions
- * regarding which variables are related and how. In those types of data analytics, tree methods can
- * often reveal simple relationships between just a few variables that could have easily gone
- * unnoticed using other analytic techniques.</dd>
+ * <dd>The final results of using tree methods for classification or regression can be summarized in a series of (usually few) logical if-then
+ * conditions (tree nodes). Therefore, there is no implicit assumption that the underlying relationships between the predictor variables and the
+ * dependent variable are linear, follow some specific non-linear link function, or that they are even monotonic in nature. Thus, tree methods are
+ * particularly well suited for data mining tasks, where there is often little a priori knowledge nor any coherent set of theories or predictions
+ * regarding which variables are related and how. In those types of data analytics, tree methods can often reveal simple relationships between just a
+ * few variables that could have easily gone unnoticed using other analytic techniques.</dd>
  * </dl>
- * One major problem with classification and regression trees is their high variance. Often a small
- * change in the data can result in a very different series of splits, making interpretation
- * somewhat precarious. Besides, decision-tree learners can create over-complex trees that cause
- * over-fitting. Mechanisms such as pruning are necessary to avoid this problem. Another limitation
- * of trees is the lack of smoothness of the prediction surface.
+ * One major problem with classification and regression trees is their high variance. Often a small change in the data can result in a very different
+ * series of splits, making interpretation somewhat precarious. Besides, decision-tree learners can create over-complex trees that cause over-fitting.
+ * Mechanisms such as pruning are necessary to avoid this problem. Another limitation of trees is the lack of smoothness of the prediction surface.
  * <p>
- * Some techniques such as bagging, boosting, and random forest use more than one decision tree for
- * their analysis.
+ * Some techniques such as bagging, boosting, and random forest use more than one decision tree for their analysis.
  */
-public final class DecisionTree implements Classifier<double[]> {
+public final class DecisionTree implements Classifier<Vector> {
     /**
      * The attributes of independent variable.
      */
+    @Nonnull
     private final Attribute[] _attributes;
     private final boolean _hasNumericType;
     /**
-     * Variable importance. Every time a split of a node is made on variable the (GINI, information
-     * gain, etc.) impurity criterion for the two descendant nodes is less than the parent node.
-     * Adding up the decreases for each individual variable over the tree gives a simple measure of
+     * Variable importance. Every time a split of a node is made on variable the (GINI, information gain, etc.) impurity criterion for the two
+     * descendant nodes is less than the parent node. Adding up the decreases for each individual variable over the tree gives a simple measure of
      * variable importance.
      */
-    private final double[] _importance;
+    @Nonnull
+    private final Vector _importance;
     /**
      * The root of the regression tree
      */
+    @Nonnull
     private final Node _root;
     /**
      * The maximum number of the tree depth
@@ -135,6 +129,7 @@ public final class DecisionTree implements Classifier<double[]> {
     /**
      * The splitting rule.
      */
+    @Nonnull
     private final SplitRule _rule;
     /**
      * The number of classes.
@@ -153,24 +148,23 @@ public final class DecisionTree implements Classifier<double[]> {
      */
     private final int _minLeafSize;
     /**
-     * The index of training values in ascending order. Note that only numeric attributes will be
-     * sorted.
+     * The index of training values in ascending order. Note that only numeric attributes will be sorted.
      */
-    private final int[][] _order;
+    @Nonnull
+    private final ColumnMajorIntMatrix _order;
 
-    private final Random _rnd;
+    @Nonnull
+    private final PRNG _rnd;
 
     /**
      * The criterion to choose variable to split instances.
      */
     public static enum SplitRule {
         /**
-         * Used by the CART algorithm, Gini impurity is a measure of how often a randomly chosen
-         * element from the set would be incorrectly labeled if it were randomly labeled according
-         * to the distribution of labels in the subset. Gini impurity can be computed by summing the
-         * probability of each item being chosen times the probability of a mistake in categorizing
-         * that item. It reaches its minimum (zero) when all cases in the node fall into a single
-         * target category.
+         * Used by the CART algorithm, Gini impurity is a measure of how often a randomly chosen element from the set would be incorrectly labeled if
+         * it were randomly labeled according to the distribution of labels in the subset. Gini impurity can be computed by summing the probability of
+         * each item being chosen times the probability of a mistake in categorizing that item. It reaches its minimum (zero) when all cases in the
+         * node fall into a single target category.
          */
         GINI,
         /**
@@ -192,6 +186,11 @@ public final class DecisionTree implements Classifier<double[]> {
          * Predicted class label for this node.
          */
         int output = -1;
+        /**
+         * Posteriori probability based on sample ratios in this node.
+         */
+        @Nullable
+        double[] posteriori = null;
         /**
          * The split feature for this node.
          */
@@ -227,31 +226,64 @@ public final class DecisionTree implements Classifier<double[]> {
 
         public Node() {}// for Externalizable
 
-        /**
-         * Constructor.
-         */
-        public Node(int output) {
+        public Node(int output, @Nonnull double[] posteriori) {
             this.output = output;
+            this.posteriori = posteriori;
+        }
+
+        private boolean isLeaf() {
+            return posteriori != null;
+        }
+
+        @VisibleForTesting
+        public int predict(@Nonnull final double[] x) {
+            return predict(new DenseVector(x));
         }
 
         /**
          * Evaluate the regression tree over an instance.
          */
-        public int predict(final double[] x) {
+        public int predict(@Nonnull final Vector x) {
             if (trueChild == null && falseChild == null) {
                 return output;
             } else {
                 if (splitFeatureType == AttributeType.NOMINAL) {
-                    if (x[splitFeature] == splitValue) {
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
                     }
                 } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    if (x[splitFeature] <= splitValue) {
+                    if (x.get(splitFeature, Double.NaN) <= splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
+                    }
+                } else {
+                    throw new IllegalStateException("Unsupported attribute type: "
+                            + splitFeatureType);
+                }
+            }
+        }
+
+        /**
+         * Evaluate the regression tree over an instance.
+         */
+        public void predict(@Nonnull final Vector x, @Nonnull final PredictionHandler handler) {
+            if (trueChild == null && falseChild == null) {
+                handler.handle(output, posteriori);
+            } else {
+                if (splitFeatureType == AttributeType.NOMINAL) {
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
+                        trueChild.predict(x, handler);
+                    } else {
+                        falseChild.predict(x, handler);
+                    }
+                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                    if (x.get(splitFeature, Double.NaN) <= splitValue) {
+                        trueChild.predict(x, handler);
+                    } else {
+                        falseChild.predict(x, handler);
                     }
                 } else {
                     throw new IllegalStateException("Unsupported attribute type: "
@@ -298,99 +330,71 @@ public final class DecisionTree implements Classifier<double[]> {
             }
         }
 
-        public int opCodegen(final List<String> scripts, int depth) {
-            int selfDepth = 0;
-            final StringBuilder buf = new StringBuilder();
-            if (trueChild == null && falseChild == null) {
-                buf.append("push ").append(output);
-                scripts.add(buf.toString());
-                buf.setLength(0);
-                buf.append("goto last");
-                scripts.add(buf.toString());
-                selfDepth += 2;
-            } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    buf.append("push ").append("x[").append(splitFeature).append("]");
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("push ").append(splitValue);
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("ifeq ");
-                    scripts.add(buf.toString());
-                    depth += 3;
-                    selfDepth += 3;
-                    int trueDepth = trueChild.opCodegen(scripts, depth);
-                    selfDepth += trueDepth;
-                    scripts.set(depth - 1, "ifeq " + String.valueOf(depth + trueDepth));
-                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
-                    selfDepth += falseDepth;
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    buf.append("push ").append("x[").append(splitFeature).append("]");
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("push ").append(splitValue);
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("ifle ");
-                    scripts.add(buf.toString());
-                    depth += 3;
-                    selfDepth += 3;
-                    int trueDepth = trueChild.opCodegen(scripts, depth);
-                    selfDepth += trueDepth;
-                    scripts.set(depth - 1, "ifle " + String.valueOf(depth + trueDepth));
-                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
-                    selfDepth += falseDepth;
-                } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
-                }
-            }
-            return selfDepth;
-        }
-
         @Override
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(output);
             out.writeInt(splitFeature);
             if (splitFeatureType == null) {
-                out.writeInt(-1);
+                out.writeByte(-1);
             } else {
-                out.writeInt(splitFeatureType.getTypeId());
+                out.writeByte(splitFeatureType.getTypeId());
             }
             out.writeDouble(splitValue);
-            if (trueChild == null) {
-                out.writeBoolean(false);
-            } else {
+
+            if (isLeaf()) {
                 out.writeBoolean(true);
-                trueChild.writeExternal(out);
-            }
-            if (falseChild == null) {
-                out.writeBoolean(false);
+
+                out.writeInt(output);
+                out.writeInt(posteriori.length);
+                for (int i = 0; i < posteriori.length; i++) {
+                    out.writeDouble(posteriori[i]);
+                }
             } else {
-                out.writeBoolean(true);
-                falseChild.writeExternal(out);
+                out.writeBoolean(false);
+
+                if (trueChild == null) {
+                    out.writeBoolean(false);
+                } else {
+                    out.writeBoolean(true);
+                    trueChild.writeExternal(out);
+                }
+                if (falseChild == null) {
+                    out.writeBoolean(false);
+                } else {
+                    out.writeBoolean(true);
+                    falseChild.writeExternal(out);
+                }
             }
         }
 
         @Override
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            this.output = in.readInt();
             this.splitFeature = in.readInt();
-            int typeId = in.readInt();
+            byte typeId = in.readByte();
             if (typeId == -1) {
                 this.splitFeatureType = null;
             } else {
                 this.splitFeatureType = AttributeType.resolve(typeId);
             }
             this.splitValue = in.readDouble();
-            if (in.readBoolean()) {
-                this.trueChild = new Node();
-                trueChild.readExternal(in);
-            }
-            if (in.readBoolean()) {
-                this.falseChild = new Node();
-                falseChild.readExternal(in);
+
+            if (in.readBoolean()) {//isLeaf
+                this.output = in.readInt();
+
+                final int size = in.readInt();
+                final double[] posteriori = new double[size];
+                for (int i = 0; i < size; i++) {
+                    posteriori[i] = in.readDouble();
+                }
+                this.posteriori = posteriori;
+            } else {
+                if (in.readBoolean()) {
+                    this.trueChild = new Node();
+                    trueChild.readExternal(in);
+                }
+                if (in.readBoolean()) {
+                    this.falseChild = new Node();
+                    falseChild.readExternal(in);
+                }
             }
         }
 
@@ -413,7 +417,7 @@ public final class DecisionTree implements Classifier<double[]> {
         /**
          * Training dataset.
          */
-        final double[][] x;
+        final Matrix x;
         /**
          * class labels.
          */
@@ -426,7 +430,7 @@ public final class DecisionTree implements Classifier<double[]> {
         /**
          * Constructor.
          */
-        public TrainNode(Node node, double[][] x, int[] y, int[] bags, int depth) {
+        public TrainNode(Node node, Matrix x, int[] y, int[] bags, int depth) {
             this.node = node;
             this.x = x;
             this.y = y;
@@ -466,21 +470,12 @@ public final class DecisionTree implements Classifier<double[]> {
 
             final double impurity = impurity(count, numSamples, _rule);
 
-            final int p = _attributes.length;
-            final int[] variableIndex = new int[p];
-            for (int i = 0; i < p; i++) {
-                variableIndex[i] = i;
-            }
-            if (_numVars < p) {
-                SmileExtUtils.shuffle(variableIndex, _rnd);
-            }
-
-            final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.length)
+            final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows())
                     : null;
             final int[] falseCount = new int[_k];
-            for (int j = 0; j < _numVars; j++) {
-                Node split = findBestSplit(numSamples, count, falseCount, impurity,
-                    variableIndex[j], samples);
+            for (int varJ : variableIndex(x, bags)) {
+                final Node split = findBestSplit(numSamples, count, falseCount, impurity, varJ,
+                    samples);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
                     node.splitFeatureType = split.splitFeatureType;
@@ -491,7 +486,33 @@ public final class DecisionTree implements Classifier<double[]> {
                 }
             }
 
-            return (node.splitFeature != -1);
+            return node.splitFeature != -1;
+        }
+
+        @Nonnull
+        private int[] variableIndex(@Nonnull final Matrix x, @Nonnull final int[] bags) {
+            final IntReservoirSampler sampler = new IntReservoirSampler(_numVars, _rnd.nextLong());
+            if (x.isSparse()) {
+                final RoaringBitmap cols = new RoaringBitmap();
+                final VectorProcedure proc = new VectorProcedure() {
+                    public void apply(final int col) {
+                        cols.add(col);
+                    }
+                };
+                for (final int row : bags) {
+                    x.eachColumnIndexInRow(row, proc);
+                }
+                cols.forEach(new IntConsumer() {
+                    public void accept(final int k) {
+                        sampler.add(k);
+                    }
+                });
+            } else {
+                for (int i = 0, size = _attributes.length; i < size; i++) {
+                    sampler.add(i);
+                }
+            }
+            return sampler.getSample();
         }
 
         private boolean sampleCount(@Nonnull final int[] count) {
@@ -530,7 +551,11 @@ public final class DecisionTree implements Classifier<double[]> {
 
                 for (int i = 0, size = bags.length; i < size; i++) {
                     int index = bags[i];
-                    int x_ij = (int) x[index][j];
+                    final double v = x.get(index, j, Double.NaN);
+                    if (Double.isNaN(v)) {
+                        continue;
+                    }
+                    int x_ij = (int) v;
                     trueCount[x_ij][y[index]]++;
                 }
 
@@ -563,21 +588,28 @@ public final class DecisionTree implements Classifier<double[]> {
                 }
             } else if (_attributes[j].type == AttributeType.NUMERIC) {
                 final int[] trueCount = new int[_k];
-                double prevx = Double.NaN;
-                int prevy = -1;
 
-                assert (samples != null);
-                for (final int i : _order[j]) {
-                    final int sample = samples[i];
-                    if (sample > 0) {
-                        final double x_ij = x[i][j];
+                _order.eachNonNullInColumn(j, new VectorProcedure() {
+                    double prevx = Double.NaN;
+                    int prevy = -1;
+
+                    public void apply(final int row, final int i) {
+                        final int sample = samples[i];
+                        if (sample == 0) {
+                            return;
+                        }
+
+                        final double x_ij = x.get(i, j, Double.NaN);
+                        if (Double.isNaN(x_ij)) {
+                            return;
+                        }
                         final int y_i = y[i];
 
                         if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
                             prevx = x_ij;
                             prevy = y_i;
                             trueCount[y_i] += sample;
-                            continue;
+                            return;
                         }
 
                         final int tc = Math.sum(trueCount);
@@ -588,7 +620,7 @@ public final class DecisionTree implements Classifier<double[]> {
                             prevx = x_ij;
                             prevy = y_i;
                             trueCount[y_i] += sample;
-                            continue;
+                            return;
                         }
 
                         for (int l = 0; l < _k; l++) {
@@ -612,8 +644,8 @@ public final class DecisionTree implements Classifier<double[]> {
                         prevx = x_ij;
                         prevy = y_i;
                         trueCount[y_i] += sample;
-                    }
-                }
+                    }//apply()                    
+                });
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "
                         + _attributes[j].type);
@@ -634,7 +666,9 @@ public final class DecisionTree implements Classifier<double[]> {
             int childBagSize = (int) (bags.length * 0.4);
             IntArrayList trueBags = new IntArrayList(childBagSize);
             IntArrayList falseBags = new IntArrayList(childBagSize);
-            int tc = splitSamples(trueBags, falseBags);
+            double[] trueChildPosteriori = new double[_k];
+            double[] falseChildPosteriori = new double[_k];
+            int tc = splitSamples(trueBags, falseBags, trueChildPosteriori, falseChildPosteriori);
             int fc = bags.length - tc;
             this.bags = null; // help GC for recursive call
 
@@ -647,7 +681,12 @@ public final class DecisionTree implements Classifier<double[]> {
                 return false;
             }
 
-            node.trueChild = new Node(node.trueChildOutput);
+            for (int i = 0; i < _k; i++) {
+                trueChildPosteriori[i] /= tc;
+                falseChildPosteriori[i] /= fc;
+            }
+
+            node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
             TrainNode trueChild = new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
             trueBags = null; // help GC for recursive call
             if (tc >= _minSplit && trueChild.findBestSplit()) {
@@ -658,7 +697,7 @@ public final class DecisionTree implements Classifier<double[]> {
                 }
             }
 
-            node.falseChild = new Node(node.falseChildOutput);
+            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
             TrainNode falseChild = new TrainNode(node.falseChild, x, y, falseBags.toArray(),
                 depth + 1);
             falseBags = null; // help GC for recursive call
@@ -670,27 +709,33 @@ public final class DecisionTree implements Classifier<double[]> {
                 }
             }
 
-            _importance[node.splitFeature] += node.splitScore;
+            _importance.incr(node.splitFeature, node.splitScore);
+            node.posteriori = null; // posteriori is not needed for non-leaf nodes
 
             return true;
         }
 
         /**
+         * @param falseChildPosteriori
+         * @param trueChildPosteriori
          * @return the number of true samples
          */
         private int splitSamples(@Nonnull final IntArrayList trueBags,
-                @Nonnull final IntArrayList falseBags) {
+                @Nonnull final IntArrayList falseBags, @Nonnull final double[] trueChildPosteriori,
+                @Nonnull final double[] falseChildPosteriori) {
             int tc = 0;
             if (node.splitFeatureType == AttributeType.NOMINAL) {
                 final int splitFeature = node.splitFeature;
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x[index][splitFeature] == splitValue) {
+                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
                         trueBags.add(index);
+                        trueChildPosteriori[y[index]]++;
                         tc++;
                     } else {
                         falseBags.add(index);
+                        falseChildPosteriori[y[index]]++;
                     }
                 }
             } else if (node.splitFeatureType == AttributeType.NUMERIC) {
@@ -698,11 +743,13 @@ public final class DecisionTree implements Classifier<double[]> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x[index][splitFeature] <= splitValue) {
+                    if (x.get(index, splitFeature, Double.NaN) <= splitValue) {
                         trueBags.add(index);
+                        trueChildPosteriori[y[index]]++;
                         tc++;
                     } else {
                         falseBags.add(index);
+                        falseChildPosteriori[y[index]]++;
                     }
                 }
             } else {
@@ -713,7 +760,6 @@ public final class DecisionTree implements Classifier<double[]> {
         }
 
     }
-
 
     /**
      * Returns the impurity of a node.
@@ -731,8 +777,9 @@ public final class DecisionTree implements Classifier<double[]> {
             case GINI: {
                 impurity = 1.0;
                 for (int i = 0; i < count.length; i++) {
-                    if (count[i] > 0) {
-                        double p = (double) count[i] / n;
+                    final int count_i = count[i];
+                    if (count_i > 0) {
+                        double p = (double) count_i / n;
                         impurity -= p * p;
                     }
                 }
@@ -740,8 +787,9 @@ public final class DecisionTree implements Classifier<double[]> {
             }
             case ENTROPY: {
                 for (int i = 0; i < count.length; i++) {
-                    if (count[i] > 0) {
-                        double p = (double) count[i] / n;
+                    final int count_i = count[i];
+                    if (count_i > 0) {
+                        double p = (double) count_i / n;
                         impurity -= p * Math.log2(p);
                     }
                 }
@@ -750,8 +798,9 @@ public final class DecisionTree implements Classifier<double[]> {
             case CLASSIFICATION_ERROR: {
                 impurity = 0.d;
                 for (int i = 0; i < count.length; i++) {
-                    if (count[i] > 0) {
-                        impurity = Math.max(impurity, (double) count[i] / n);
+                    final int count_i = count[i];
+                    if (count_i > 0) {
+                        impurity = Math.max(impurity, (double) count_i / n);
                     }
                 }
                 impurity = Math.abs(1.d - impurity);
@@ -762,14 +811,14 @@ public final class DecisionTree implements Classifier<double[]> {
         return impurity;
     }
 
-    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull double[][] x, @Nonnull int[] y,
+    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numLeafs) {
-        this(attributes, x, y, x[0].length, Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
+        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
     }
 
-    public DecisionTree(@Nullable Attribute[] attributes, @Nullable double[][] x,
-            @Nullable int[] y, int numLeafs, @Nullable smile.math.Random rand) {
-        this(attributes, x, y, x[0].length, Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
+    public DecisionTree(@Nullable Attribute[] attributes, @Nullable Matrix x, @Nullable int[] y,
+            int numLeafs, @Nullable PRNG rand) {
+        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
     }
 
     /**
@@ -778,21 +827,20 @@ public final class DecisionTree implements Classifier<double[]> {
      * @param attributes the attribute properties.
      * @param x the training instances.
      * @param y the response variable.
-     * @param numVars the number of input variables to pick to split on at each node. It seems that
-     *        dim/3 give generally good performance, where dim is the number of variables.
+     * @param numVars the number of input variables to pick to split on at each node. It seems that dim/3 give generally good performance, where dim
+     *        is the number of variables.
      * @param maxLeafs the maximum number of leaf nodes in the tree.
      * @param minSplits the number of minimum elements in a node to split
      * @param minLeafSize the minimum size of leaf nodes.
-     * @param order the index of training values in ascending order. Note that only numeric
-     *        attributes need be sorted.
+     * @param order the index of training values in ascending order. Note that only numeric attributes need be sorted.
      * @param bags the sample set of instances for stochastic learning.
      * @param rule the splitting rule.
      * @param seed
      */
-    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull double[][] x, @Nonnull int[] y,
+    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable int[] bags, @Nullable int[][] order, @Nonnull SplitRule rule,
-            @Nullable smile.math.Random rand) {
+            @Nullable int[] bags, @Nullable ColumnMajorIntMatrix order, @Nonnull SplitRule rule,
+            @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
         this._k = Math.max(y) + 1;
@@ -801,7 +849,7 @@ public final class DecisionTree implements Classifier<double[]> {
         }
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);
-        if (attributes.length != x[0].length) {
+        if (attributes.length != x.numColumns()) {
             throw new IllegalArgumentException("-attrs option is invliad: "
                     + Arrays.toString(attributes));
         }
@@ -813,8 +861,8 @@ public final class DecisionTree implements Classifier<double[]> {
         this._minLeafSize = minLeafSize;
         this._rule = rule;
         this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
-        this._importance = new double[_attributes.length];
-        this._rnd = (rand == null) ? new smile.math.Random() : rand;
+        this._importance = x.isSparse() ? new SparseVector() : new DenseVector(_attributes.length);
+        this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
 
         final int n = y.length;
         final int[] count = new int[_k];
@@ -825,13 +873,17 @@ public final class DecisionTree implements Classifier<double[]> {
                 count[y[i]]++;
             }
         } else {
-            for (int i = 0; i < n; i++) {
+            for (int i = 0, size = bags.length; i < size; i++) {
                 int index = bags[i];
                 count[y[index]]++;
             }
         }
 
-        this._root = new Node(Math.whichMax(count));
+        final double[] posteriori = new double[_k];
+        for (int i = 0; i < _k; i++) {
+            posteriori[i] = (double) count[i] / n;
+        }
+        this._root = new Node(Math.whichMax(count), posteriori);
 
         final TrainNode trainRoot = new TrainNode(_root, x, y, bags, 1);
         if (maxLeafs == Integer.MAX_VALUE) {
@@ -858,13 +910,13 @@ public final class DecisionTree implements Classifier<double[]> {
         }
     }
 
-    private static void checkArgument(@Nonnull double[][] x, @Nonnull int[] y, int numVars,
+    private static void checkArgument(@Nonnull Matrix x, @Nonnull int[] y, int numVars,
             int maxDepth, int maxLeafs, int minSplits, int minLeafSize) {
-        if (x.length != y.length) {
+        if (x.numRows() != y.length) {
             throw new IllegalArgumentException(String.format(
-                "The sizes of X and Y don't match: %d != %d", x.length, y.length));
+                "The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
         }
-        if (numVars <= 0 || numVars > x[0].length) {
+        if (numVars <= 0 || numVars > x.numColumns()) {
             throw new IllegalArgumentException(
                 "Invalid number of variables to split on at a node of the tree: " + numVars);
         }
@@ -885,28 +937,31 @@ public final class DecisionTree implements Classifier<double[]> {
     }
 
     /**
-     * Returns the variable importance. Every time a split of a node is made on variable the (GINI,
-     * information gain, etc.) impurity criterion for the two descendent nodes is less than the
-     * parent node. Adding up the decreases for each individual variable over the tree gives a
-     * simple measure of variable importance.
+     * Returns the variable importance. Every time a split of a node is made on variable the (GINI, information gain, etc.) impurity criterion for the
+     * two descendent nodes is less than the parent node. Adding up the decreases for each individual variable over the tree gives a simple measure of
+     * variable importance.
      *
      * @return the variable importance
      */
-    public double[] importance() {
+    @Nonnull
+    public Vector importance() {
         return _importance;
     }
 
+    @VisibleForTesting
+    public int predict(@Nonnull final double[] x) {
+        return predict(new DenseVector(x));
+    }
+
     @Override
-    public int predict(final double[] x) {
+    public int predict(@Nonnull final Vector x) {
         return _root.predict(x);
     }
 
     /**
-     * Predicts the class label of an instance and also calculate a posteriori probabilities. Not
-     * supported.
+     * Predicts the class label of an instance and also calculate a posteriori probabilities. Not supported.
      */
-    @Override
-    public int predict(double[] x, double[] posteriori) {
+    public int predict(Vector x, double[] posteriori) {
         throw new UnsupportedOperationException("Not supported.");
     }
 
@@ -914,14 +969,6 @@ public final class DecisionTree implements Classifier<double[]> {
         StringBuilder buf = new StringBuilder(1024);
         _root.jsCodegen(buf, 0);
         return buf.toString();
-    }
-
-    public String predictOpCodegen(String sep) {
-        List<String> opslist = new ArrayList<String>();
-        _root.opCodegen(opslist, 0);
-        opslist.add("call end");
-        String scripts = StringUtils.concat(opslist, sep);
-        return scripts;
     }
 
     @Nonnull

@@ -26,7 +26,7 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-if [ "$HIVEMALL_HOME" == "" ]; then
+if [ "$HIVEMALL_HOME" = "" ]; then
   if [ -e ../bin/${0##*/} ]; then
     HIVEMALL_HOME=".."
   elif [ -e ./bin/${0##*/} ]; then

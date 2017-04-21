@@ -150,7 +150,11 @@
 * [Change-Point Detection using Singular Spectrum Transformation (SST)](anomaly/sst.md)
 * [ChangeFinder: Detecting Outlier and Change-Point Simultaneously](anomaly/changefinder.md)
 
-## Part X - Hivemall on Spark
+## Part X - Clustering
+
+* [Latent Dirichlet Allocation](clustering/lda.md)
+
+## Part XI - Hivemall on Spark
 
 * [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
@@ -165,11 +169,11 @@
     * [Top-k Join processing](spark/misc/topk_join.md)
     * [Other utility functions](spark/misc/functions.md)
 
-## Part XI - Hivemall on Docker (for testing)
+## Part XII - Hivemall on Docker (for testing)
 
 * [Getting Started](docker/getting_started.md)
 
-## Part XII - External References
+## Part XIII - External References
 
 * [Hivemall on Apache Spark](https://github.com/maropu/hivemall-spark)
 * [Hivemall on Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)

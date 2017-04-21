@@ -19,7 +19,7 @@
 package hivemall.tools.mapred;
 
 import hivemall.ftvec.ExtractFeatureUDF;
-import hivemall.utils.collections.OpenHashMap;
+import hivemall.utils.collections.maps.OpenHashMap;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;

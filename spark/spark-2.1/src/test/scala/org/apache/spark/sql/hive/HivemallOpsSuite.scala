@@ -787,11 +787,11 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     val row7 = df7.groupBy($"c0").maxrow("c2", "c1").toDF("c0", "c1").select($"c1.col1").collect
     assert(row7(0).getString(0) == "id-0")
 
-    val df8 = Seq((1, 1), (1, 2), (2, 1), (1, 5)).toDF("c0", "c1")
-    val row8 = df8.groupBy($"c0").rf_ensemble("c1").toDF("c0", "c1")
-      .select("c1.probability").collect
-    assert(row8(0).getDouble(0) ~== 0.3333333333)
-    assert(row8(1).getDouble(0) ~== 1.0)
+    // val df8 = Seq((1, 1), (1, 2), (2, 1), (1, 5)).toDF("c0", "c1")
+    // val row8 = df8.groupBy($"c0").rf_ensemble("c1").toDF("c0", "c1")
+    //   .select("c1.probability").collect
+    // assert(row8(0).getDouble(0) ~== 0.3333333333)
+    // assert(row8(1).getDouble(0) ~== 1.0)
   }
 
   test("user-defined aggregators for evaluation") {

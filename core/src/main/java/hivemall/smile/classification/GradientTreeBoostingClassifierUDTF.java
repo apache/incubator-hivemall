@@ -19,24 +19,27 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
-import hivemall.smile.ModelType;
+import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.builders.CSRMatrixBuilder;
+import hivemall.math.matrix.builders.MatrixBuilder;
+import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
+import hivemall.math.vector.Vector;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
-import hivemall.smile.vm.StackMachine;
 import hivemall.utils.codec.Base91;
-import hivemall.utils.codec.DeflateCodec;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.math.MathUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -63,7 +66,7 @@ import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
 @Description(name = "train_gradient_tree_boosting_classifier",
-        value = "_FUNC_(double[] features, int label [, string options]) - "
+        value = "_FUNC_(array<double|string> features, int label [, string options]) - "
                 + "Returns a relation consists of "
                 + "<int iteration, int model_type, array<string> pred_models, double intercept, "
                 + "double shrinkage, array<double> var_importance, float oob_error_rate>")
@@ -74,7 +77,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector labelOI;
 
-    private List<double[]> featuresList;
+    private boolean denseInput;
+    private MatrixBuilder matrixBuilder;
     private IntArrayList labels;
     /**
      * The number of trees for each task
@@ -104,7 +108,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesLeaf;
     private long _seed;
     private Attribute[] _attributes;
-    private ModelType _outputType;
 
     @Nullable
     private Reporter _progressReporter;
@@ -134,10 +137,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
-        opts.addOption("output", "output_type", true,
-            "The output type (serialization/ser or opscode/vm or javascript/js) [default: serialization]");
-        opts.addOption("disable_compression", false,
-            "Whether to disable compression of the output script [default: false]");
         return opts;
     }
 
@@ -149,8 +148,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         double eta = 0.05d, subsample = 0.7d;
         Attribute[] attrs = null;
         long seed = -1L;
-        String output = "serialization";
-        boolean compress = true;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -171,10 +168,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
-            output = cl.getOptionValue("output", output);
-            if (cl.hasOption("disable_compression")) {
-                compress = false;
-            }
         }
 
         this._numTrees = trees;
@@ -187,7 +180,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
         this._attributes = attrs;
-        this._outputType = ModelType.resolve(output, compress);
 
         return cl;
     }
@@ -197,27 +189,35 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         if (argOIs.length != 2 && argOIs.length != 3) {
             throw new UDFArgumentException(
                 getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: double[] features, int label [, const string options]: "
+                        + " takes 2 or 3 arguments: array<double|string> features, int label [, const string options]: "
                         + argOIs.length);
         }
 
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureListOI = listOI;
-        this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseInput = true;
+            this.matrixBuilder = new RowMajorDenseMatrixBuilder(8192);
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asStringOI(elemOI);
+            this.denseInput = false;
+            this.matrixBuilder = new CSRMatrixBuilder(8192);
+        } else {
+            throw new UDFArgumentException(
+                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+        }
         this.labelOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
 
         processOptions(argOIs);
 
-        this.featuresList = new ArrayList<double[]>(1024);
         this.labels = new IntArrayList(1024);
 
         ArrayList<String> fieldNames = new ArrayList<String>(6);
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(6);
 
         fieldNames.add("iteration");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-        fieldNames.add("model_type");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldNames.add("pred_models");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector));
@@ -238,11 +238,34 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         if (args[0] == null) {
             throw new HiveException("array<double> features was null");
         }
-        double[] features = HiveUtils.asDoubleArray(args[0], featureListOI, featureElemOI);
+        parseFeatures(args[0], matrixBuilder);
         int label = PrimitiveObjectInspectorUtils.getInt(args[1], labelOI);
-
-        featuresList.add(features);
         labels.add(label);
+    }
+
+    private void parseFeatures(@Nonnull final Object argObj, @Nonnull final MatrixBuilder builder) {
+        if (denseInput) {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                double v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
+                builder.nextColumn(i, v);
+            }
+        } else {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                String fv = o.toString();
+                builder.nextColumn(fv);
+            }
+        }
+        builder.nextRow();
     }
 
     @Override
@@ -252,14 +275,15 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             "hivemall.smile.GradientTreeBoostingClassifier$Counter", "iteration");
         reportProgress(_progressReporter);
 
-        int numExamples = featuresList.size();
-        double[][] x = featuresList.toArray(new double[numExamples][]);
-        this.featuresList = null;
-        int[] y = labels.toArray();
-        this.labels = null;
+        if (!labels.isEmpty()) {
+            Matrix x = matrixBuilder.buildMatrix();
+            this.matrixBuilder = null;
+            int[] y = labels.toArray();
+            this.labels = null;
 
-        // run training
-        train(x, y);
+            // run training
+            train(x, y);
+        }
 
         // clean up
         this.featureListOI = null;
@@ -287,25 +311,25 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
      * @param x features
      * @param y label
      */
-    private void train(@Nonnull final double[][] x, @Nonnull final int[] y) throws HiveException {
-        if (x.length != y.length) {
+    private void train(@Nonnull Matrix x, @Nonnull final int[] y) throws HiveException {
+        final int numRows = x.numRows();
+        if (numRows != y.length) {
             throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
-                x.length, y.length));
+                numRows, y.length));
         }
         checkOptions();
         this._attributes = SmileExtUtils.attributeTypes(_attributes, x);
 
         // Shuffle training samples    
-        SmileExtUtils.shuffle(x, y, _seed);
+        x = SmileExtUtils.shuffle(x, y, _seed);
 
         final int k = smile.math.Math.max(y) + 1;
         if (k < 2) {
             throw new UDFArgumentException("Only one class or negative class labels.");
         }
         if (k == 2) {
-            int n = x.length;
-            final int[] y2 = new int[n];
-            for (int i = 0; i < n; i++) {
+            final int[] y2 = new int[numRows];
+            for (int i = 0; i < numRows; i++) {
                 if (y[i] == 1) {
                     y2[i] = 1;
                 } else {
@@ -318,7 +342,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         }
     }
 
-    private void train2(@Nonnull final double[][] x, @Nonnull final int[] y) throws HiveException {
+    private void train2(@Nonnull final Matrix x, @Nonnull final int[] y) throws HiveException {
         final int numVars = SmileExtUtils.computeNumInputVars(_numVars, x);
         if (logger.isInfoEnabled()) {
             logger.info("k: " + 2 + ", numTrees: " + _numTrees + ", shirinkage: " + _eta
@@ -327,7 +351,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     + _maxLeafNodes + ", seed: " + _seed);
         }
 
-        final int numInstances = x.length;
+        final int numInstances = x.numRows();
         final int numSamples = (int) Math.round(numInstances * _subsample);
 
         final double[] h = new double[numInstances]; // current F(x_i)
@@ -340,7 +364,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             h[i] = intercept;
         }
 
-        final int[][] order = SmileExtUtils.sort(_attributes, x);
+        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput output = new L2NodeOutput(response);
 
         final BitSet sampled = new BitSet(numInstances);
@@ -351,10 +375,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         }
 
         long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
-                : new smile.math.Random(_seed).nextLong();
-        final smile.math.Random rnd1 = new smile.math.Random(s);
-        final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
+                : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
+        final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
+        final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
 
+        final Vector xProbe = x.rowVector();
         for (int m = 0; m < _numTrees; m++) {
             reportProgress(_progressReporter);
 
@@ -373,7 +398,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag, output, rnd2);
 
             for (int i = 0; i < numInstances; i++) {
-                h[i] += _eta * tree.predict(x[i]);
+                x.getRow(i, xProbe);
+                h[i] += _eta * tree.predict(xProbe);
             }
 
             // out-of-bag error estimate
@@ -398,7 +424,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     /**
      * Train L-k tree boost.
      */
-    private void traink(final double[][] x, final int[] y, final int k) throws HiveException {
+    private void traink(final Matrix x, final int[] y, final int k) throws HiveException {
         final int numVars = SmileExtUtils.computeNumInputVars(_numVars, x);
         if (logger.isInfoEnabled()) {
             logger.info("k: " + k + ", numTrees: " + _numTrees + ", shirinkage: " + _eta
@@ -407,14 +433,14 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     + ", maxLeafs: " + _maxLeafNodes + ", seed: " + _seed);
         }
 
-        final int numInstances = x.length;
+        final int numInstances = x.numRows();
         final int numSamples = (int) Math.round(numInstances * _subsample);
 
         final double[][] h = new double[k][numInstances]; // boost tree output.
         final double[][] p = new double[k][numInstances]; // posteriori probabilities.
         final double[][] response = new double[k][numInstances]; // pseudo response.
 
-        final int[][] order = SmileExtUtils.sort(_attributes, x);
+        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput[] output = new LKNodeOutput[k];
         for (int i = 0; i < k; i++) {
             output[i] = new LKNodeOutput(response[i], k);
@@ -422,19 +448,16 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
 
         final BitSet sampled = new BitSet(numInstances);
         final int[] bag = new int[numSamples];
-        final int[] perm = new int[numSamples];
-        for (int i = 0; i < numSamples; i++) {
-            perm[i] = i;
-        }
+        final int[] perm = MathUtils.permutation(numInstances);
 
         long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
-                : new smile.math.Random(_seed).nextLong();
-        final smile.math.Random rnd1 = new smile.math.Random(s);
-        final smile.math.Random rnd2 = new smile.math.Random(rnd1.nextLong());
+                : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
+        final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
+        final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
 
         // out-of-bag prediction
         final int[] prediction = new int[numInstances];
-
+        final Vector xProbe = x.rowVector();
         for (int m = 0; m < _numTrees; m++) {
             for (int i = 0; i < numInstances; i++) {
                 double max = Double.NEGATIVE_INFINITY;
@@ -490,7 +513,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 trees[j] = tree;
 
                 for (int i = 0; i < numInstances; i++) {
-                    double h_ji = h_j[i] + _eta * tree.predict(x[i]);
+                    x.getRow(i, xProbe);
+                    double h_ji = h_j[i] + _eta * tree.predict(xProbe);
                     h_j[i] += h_ji;
                     if (h_ji > max_h) {
                         max_h = h_ji;
@@ -524,7 +548,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
      */
     private void forward(final int m, final double intercept, final double shrinkage,
             final float oobErrorRate, @Nonnull final RegressionTree... trees) throws HiveException {
-        Text[] models = getModel(trees, _outputType);
+        Text[] models = getModel(trees);
 
         double[] importance = new double[_attributes.length];
         for (RegressionTree tree : trees) {
@@ -534,14 +558,13 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             }
         }
 
-        Object[] forwardObjs = new Object[7];
+        Object[] forwardObjs = new Object[6];
         forwardObjs[0] = new IntWritable(m);
-        forwardObjs[1] = new IntWritable(_outputType.getId());
-        forwardObjs[2] = models;
-        forwardObjs[3] = new DoubleWritable(intercept);
-        forwardObjs[4] = new DoubleWritable(shrinkage);
-        forwardObjs[5] = WritableUtils.toWritableList(importance);
-        forwardObjs[6] = new FloatWritable(oobErrorRate);
+        forwardObjs[1] = models;
+        forwardObjs[2] = new DoubleWritable(intercept);
+        forwardObjs[3] = new DoubleWritable(shrinkage);
+        forwardObjs[4] = WritableUtils.toWritableList(importance);
+        forwardObjs[5] = new FloatWritable(oobErrorRate);
 
         forward(forwardObjs);
 
@@ -551,67 +574,14 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         logger.info("Forwarded the output of " + m + "-th Boosting iteration out of " + _numTrees);
     }
 
-    private static Text[] getModel(@Nonnull final RegressionTree[] trees,
-            @Nonnull final ModelType outputType) throws HiveException {
+    @Nonnull
+    private static Text[] getModel(@Nonnull final RegressionTree[] trees) throws HiveException {
         final int m = trees.length;
         final Text[] models = new Text[m];
-        switch (outputType) {
-            case serialization:
-            case serialization_compressed: {
-                for (int i = 0; i < m; i++) {
-                    byte[] b = trees[i].predictSerCodegen(outputType.isCompressed());
-                    b = Base91.encode(b);
-                    models[i] = new Text(b);
-                }
-                break;
-            }
-            case opscode:
-            case opscode_compressed: {
-                for (int i = 0; i < m; i++) {
-                    String s = trees[i].predictOpCodegen(StackMachine.SEP);
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        models[i] = new Text(b);
-                    } else {
-                        models[i] = new Text(s);
-                    }
-                }
-                break;
-            }
-            case javascript:
-            case javascript_compressed: {
-                for (int i = 0; i < m; i++) {
-                    String s = trees[i].predictJsCodegen();
-                    if (outputType.isCompressed()) {
-                        byte[] b = s.getBytes();
-                        final DeflateCodec codec = new DeflateCodec(true, false);
-                        try {
-                            b = codec.compress(b);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to compressing a model", e);
-                        } finally {
-                            IOUtils.closeQuietly(codec);
-                        }
-                        b = Base91.encode(b);
-                        models[i] = new Text(b);
-                    } else {
-                        models[i] = new Text(s);
-                    }
-                }
-                break;
-            }
-            default:
-                throw new HiveException("Unexpected output type: " + outputType
-                        + ". Use javascript for the output instead");
+        for (int i = 0; i < m; i++) {
+            byte[] b = trees[i].predictSerCodegen(true);
+            b = Base91.encode(b);
+            models[i] = new Text(b);
         }
         return models;
     }

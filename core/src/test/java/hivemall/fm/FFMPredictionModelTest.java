@@ -19,7 +19,7 @@
 package hivemall.fm;
 
 import hivemall.utils.buffer.HeapBuffer;
-import hivemall.utils.collections.Int2LongOpenHashTable;
+import hivemall.utils.collections.maps.Int2LongOpenHashTable;
 
 import java.io.IOException;
 

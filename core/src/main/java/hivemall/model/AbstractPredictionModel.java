@@ -21,8 +21,8 @@ package hivemall.model;
 import hivemall.mix.MixedWeight;
 import hivemall.mix.MixedWeight.WeightWithCovar;
 import hivemall.mix.MixedWeight.WeightWithDelta;
-import hivemall.utils.collections.IntOpenHashMap;
-import hivemall.utils.collections.OpenHashMap;
+import hivemall.utils.collections.maps.IntOpenHashMap;
+import hivemall.utils.collections.maps.OpenHashMap;
 
 import javax.annotation.Nonnull;
 

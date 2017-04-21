@@ -39,8 +39,14 @@
 		<!-- provided scope -->
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-core</artifactId>
-			<version>0.20.2-cdh3u6</version>
+			<artifactId>hadoop-common</artifactId>
+			<version>${hadoop.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-mapreduce-client-core</artifactId>
+			<version>${hadoop.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -92,9 +98,9 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.hadoop.thirdparty.guava</groupId>
+			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>r09-jarjar</version>
+			<version>${guava.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -109,7 +115,7 @@
 		<dependency>
 			<groupId>com.github.haifengl</groupId>
 			<artifactId>smile-core</artifactId>
-			<version>1.0.3</version>
+			<version>1.0.4</version>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>
@@ -130,12 +136,18 @@
 			<version>3.6.1</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.roaringbitmap</groupId>
+			<artifactId>RoaringBitmap</artifactId>
+			<version>[0.6,)</version>
+			<scope>compile</scope>
+		</dependency>
 
 		<!-- test scope -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.12</version>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -198,6 +210,8 @@
 									<include>com.github.haifengl:smile-math</include>
 									<include>com.github.haifengl:smile-data</include>
 									<include>org.tukaani:xz</include>
+									<include>org.apache.commons:commons-math3</include>
+									<include>org.roaringbitmap:RoaringBitmap</include>
 								</includes>
 							</artifactSet>
 							<transformers>

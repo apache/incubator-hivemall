@@ -19,7 +19,7 @@
 package hivemall.ftvec.ranking;
 
 import hivemall.UDTFWithOptions;
-import hivemall.utils.collections.IntArrayList;
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.BitUtils;
 import hivemall.utils.lang.Primitives;
