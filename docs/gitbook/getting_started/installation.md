@@ -48,7 +48,7 @@ source /tmp/define-all.hive;
 Other choices
 =============
 
-You can also run Hivemall on the following
+You can also run Hivemall on the following platforms:
 
 * [Apache Spark](../spark/getting_started/installation.md)
 * [Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)
