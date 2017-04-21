@@ -52,7 +52,8 @@ public class IncrementalPLSAModelTest {
         IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-4d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
+        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
+                "oranges:1"};
 
         do {
             perplexityPrev = perplexity;
@@ -69,7 +70,7 @@ public class IncrementalPLSAModelTest {
 
             it++;
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while(Math.abs(perplexityPrev - perplexity) >= 1E-5f);
+        } while (Math.abs(perplexityPrev - perplexity) >= 1E-5f);
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -107,10 +108,10 @@ public class IncrementalPLSAModelTest {
             k2 = 0;
         }
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-            + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
             model.getProbability("vegetables", k1) > model.getProbability("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
-            + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
+                + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
             model.getProbability("avocados", k2) > model.getProbability("healthy", k2));
     }
 
@@ -179,7 +180,7 @@ public class IncrementalPLSAModelTest {
             it++;
 
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while(Math.abs(perplexityPrev - perplexity) >= 1E-1f);
+        } while (Math.abs(perplexityPrev - perplexity) >= 1E-1f);
 
         Set<Integer> topics = new HashSet<Integer>();
         for (int k = 0; k < K; k++) {

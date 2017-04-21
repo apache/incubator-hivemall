@@ -221,8 +221,8 @@ public final class IncrementalPLSAModel {
         }
     }
 
-    private boolean isPzwConverged(@Nonnegative final int d, @Nonnull final Map<String, float[]> pPrev_zw,
-            @Nonnull final Map<String, float[]> p_zw) {
+    private boolean isPzwConverged(@Nonnegative final int d,
+            @Nonnull final Map<String, float[]> pPrev_zw, @Nonnull final Map<String, float[]> p_zw) {
         double diff = 0.d;
         for (final String label : _miniBatchDocs.get(d).keySet()) {
             final float[] pPrev_zw_w = pPrev_zw.get(label);
@@ -259,7 +259,8 @@ public final class IncrementalPLSAModel {
 
     @Nonnull
     public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int z) {
-        SortedMap<Float, List<String>> res = new TreeMap<Float, List<String>>(Collections.reverseOrder());
+        SortedMap<Float, List<String>> res = new TreeMap<Float, List<String>>(
+            Collections.reverseOrder());
 
         for (Map.Entry<String, float[]> e : _p_zw.entrySet()) {
             final String label = e.getKey();

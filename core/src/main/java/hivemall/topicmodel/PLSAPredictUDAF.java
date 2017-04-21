@@ -61,8 +61,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "plsa_predict",
+@Description(name = "plsa_predict",
         value = "_FUNC_(string word, float value, int label, float prob[, const string options])"
                 + " - Returns a list which consists of <int label, float prob>")
 public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
@@ -72,30 +71,34 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
     public Evaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 4 && typeInfo.length != 5) {
             throw new UDFArgumentLengthException(
-                    "Expected argument length is 4 or 5 but given argument length was " + typeInfo.length);
+                "Expected argument length is 4 or 5 but given argument length was "
+                        + typeInfo.length);
         }
 
         if (!HiveUtils.isStringTypeInfo(typeInfo[0])) {
             throw new UDFArgumentTypeException(0,
-                    "String type is expected for the first argument word: " + typeInfo[0].getTypeName());
+                "String type is expected for the first argument word: " + typeInfo[0].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[1])) {
             throw new UDFArgumentTypeException(1,
-                    "Number type is expected for the second argument value: " + typeInfo[1].getTypeName());
+                "Number type is expected for the second argument value: "
+                        + typeInfo[1].getTypeName());
         }
         if (!HiveUtils.isIntegerTypeInfo(typeInfo[2])) {
             throw new UDFArgumentTypeException(2,
-                    "Integer type is expected for the third argument label: " + typeInfo[2].getTypeName());
+                "Integer type is expected for the third argument label: "
+                        + typeInfo[2].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[3])) {
             throw new UDFArgumentTypeException(3,
-                    "Number type is expected for the forth argument prob: " + typeInfo[3].getTypeName());
+                "Number type is expected for the forth argument prob: " + typeInfo[3].getTypeName());
         }
 
         if (typeInfo.length == 5) {
             if (!HiveUtils.isStringTypeInfo(typeInfo[4])) {
                 throw new UDFArgumentTypeException(4,
-                        "String type is expected for the fifth argument prob: " + typeInfo[4].getTypeName());
+                    "String type is expected for the fifth argument prob: "
+                            + typeInfo[4].getTypeName());
             }
         }
 
@@ -135,7 +138,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             Options opts = new Options();
             opts.addOption("k", "topic", true, "The number of topics [required]");
             opts.addOption("alpha", true, "The hyperparameter for P(w|z) update [default: 0.5]");
-            opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
+            opts.addOption("delta", true,
+                "Check convergence in the expectation step [default: 1E-5]");
             return opts;
         }
 
@@ -161,7 +165,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 PrintWriter pw = new PrintWriter(sw);
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp(pw, HelpFormatter.DEFAULT_WIDTH, cmdLineSyntax, null, opts,
-                        HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
+                    HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
                 pw.flush();
                 String helpMsg = sw.toString();
                 throw new UDFArgumentException(helpMsg);
@@ -182,7 +186,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
             this.topic = Primitives.parseInt(cl.getOptionValue("topic"), 0);
             if (topic < 1) {
-                throw new UDFArgumentException("A positive integer MUST be set to an option `-topic`: " + topic);
+                throw new UDFArgumentException(
+                    "A positive integer MUST be set to an option `-topic`: " + topic);
             }
 
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 0.5f);
@@ -216,7 +221,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.probMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.probMapValueElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.probMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(probMapValueElemOI);
-                this.probMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(probMapKeyOI, probMapValueOI);
+                this.probMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(probMapKeyOI,
+                    probMapValueOI);
             }
 
             // initialize output
@@ -231,8 +237,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 fieldNames.add("probability");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
-                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(
-                        ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs));
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardStructObjectInspector(
+                    fieldNames, fieldOIs));
             }
             return outputOI;
         }
@@ -242,14 +248,12 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
             fieldNames.add("wcList");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
             fieldNames.add("probMap");
             fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    ObjectInspectorFactory.getStandardListObjectInspector(
-                            PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
 
             fieldNames.add("topic");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
@@ -271,15 +275,16 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg) throws HiveException {
+        public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
+                throws HiveException {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             myAggr.reset();
             myAggr.setOptions(topic, alpha, delta);
         }
 
         @Override
-        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg, Object[] parameters)
-                throws HiveException {
+        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
+                Object[] parameters) throws HiveException {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
 
             if (parameters[0] == null || parameters[1] == null || parameters[2] == null
@@ -299,7 +304,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
         public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
-            if(myAggr.wcList.size() == 0) {
+            if (myAggr.wcList.size() == 0) {
                 return null;
             }
 
@@ -346,8 +351,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 int probMapValueSize = probMapValueRaw.size();
                 List<Float> prob_word = new ArrayList<Float>();
                 for (int i = 0; i < probMapValueSize; i++) {
-                    prob_word.add(HiveUtils.getFloat(probMapValueRaw.get(i),
-                        probMapValueElemOI));
+                    prob_word.add(HiveUtils.getFloat(probMapValueRaw.get(i), probMapValueElemOI));
                 }
 
                 probMap.put(word, prob_word);
@@ -374,7 +378,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             float[] topicDistr = myAggr.get();
 
-            SortedMap<Float, Integer> sortedDistr = new TreeMap<Float, Integer>(Collections.reverseOrder());
+            SortedMap<Float, Integer> sortedDistr = new TreeMap<Float, Integer>(
+                Collections.reverseOrder());
             for (int i = 0; i < topicDistr.length; i++) {
                 sortedDistr.put(topicDistr[i], i);
             }
@@ -391,7 +396,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static class PLSAPredictAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
+    public static class PLSAPredictAggregationBuffer extends
+            GenericUDAFEvaluator.AbstractAggregationBuffer {
 
         private List<String> wcList;
         private Map<String, List<Float>> probMap;
@@ -420,7 +426,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
             // for an unforeseen word, initialize its probs w/ -1s
             if (!probMap.containsKey(word)) {
-                List<Float> probEmpty_word = new ArrayList<Float>(Collections.nCopies(topic,-1.f));
+                List<Float> probEmpty_word = new ArrayList<Float>(Collections.nCopies(topic, -1.f));
                 probMap.put(word, probEmpty_word);
             }
 

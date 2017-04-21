@@ -54,10 +54,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
-@Description(
-        name = "train_plsa",
-        value = "_FUNC_(array<string> words[, const string options])"
-                + " - Returns a relation consists of <int topic, string word, float score>")
+@Description(name = "train_plsa", value = "_FUNC_(array<string> words[, const string options])"
+        + " - Returns a relation consists of <int topic, string word, float score>")
 public class PLSAUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(PLSAUDTF.class);
 
@@ -287,7 +285,7 @@ public class PLSAUDTF extends UDTFWithOptions {
 
         final Reporter reporter = getReporter();
         final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-                "hivemall.plsa.IncrementalPLSA$Counter", "iteration");
+            "hivemall.plsa.IncrementalPLSA$Counter", "iteration");
 
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file

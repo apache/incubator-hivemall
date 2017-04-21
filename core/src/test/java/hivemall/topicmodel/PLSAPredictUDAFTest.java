@@ -46,40 +46,32 @@ public class PLSAPredictUDAFTest {
     int[] labels;
     float[] probs;
 
-    @Test(expected=UDFArgumentException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testWithoutOption() throws Exception {
         udaf = new PLSAPredictUDAF();
 
         inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT)};
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT)};
 
         evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
     }
 
-    @Test(expected=UDFArgumentException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testWithoutTopicOption() throws Exception {
         udaf = new PLSAPredictUDAF();
 
         inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-alpha 0.1")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-alpha 0.1")};
 
         evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
 
@@ -91,16 +83,12 @@ public class PLSAPredictUDAFTest {
         udaf = new PLSAPredictUDAF();
 
         inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 2")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topic 2")};
 
         evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
 
@@ -108,14 +96,12 @@ public class PLSAPredictUDAFTest {
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
         fieldNames.add("wcList");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
         fieldNames.add("probMap");
         fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
 
         fieldNames.add("topic");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
@@ -131,11 +117,14 @@ public class PLSAPredictUDAFTest {
 
         agg = (PLSAPredictUDAF.PLSAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
 
-        words = new String[] {"fruits", "vegetables", "healthy", "flu", "apples", "oranges", "like", "avocados", "colds",
-                "colds", "avocados", "oranges", "like", "apples", "flu", "healthy", "vegetables", "fruits"};
+        words = new String[] {"fruits", "vegetables", "healthy", "flu", "apples", "oranges",
+                "like", "avocados", "colds", "colds", "avocados", "oranges", "like", "apples",
+                "flu", "healthy", "vegetables", "fruits"};
         labels = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-        probs = new float[] {0.3339331f, 0.3324783f, 0.33209667f, 3.2804057E-4f, 3.0303953E-4f, 2.4860457E-4f, 2.41481E-4f, 2.3554532E-4f, 1.352576E-4f,
-                0.1660153f, 0.16596903f, 0.1659654f, 0.1659627f, 0.16593699f, 0.1659259f, 0.0017611005f, 0.0015791848f, 8.84464E-4f};
+        probs = new float[] {0.3339331f, 0.3324783f, 0.33209667f, 3.2804057E-4f, 3.0303953E-4f,
+                2.4860457E-4f, 2.41481E-4f, 2.3554532E-4f, 1.352576E-4f, 0.1660153f, 0.16596903f,
+                0.1659654f, 0.1659627f, 0.16593699f, 0.1659259f, 0.0017611005f, 0.0015791848f,
+                8.84464E-4f};
     }
 
     @Test
@@ -190,7 +179,7 @@ public class PLSAPredictUDAFTest {
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
         for (int i = 0; i < 6; i++) {
-            evaluator.iterate(agg, new Object[]{words[i], doc.get(words[i]), labels[i], probs[i]});
+            evaluator.iterate(agg, new Object[] {words[i], doc.get(words[i]), labels[i], probs[i]});
         }
         partials[0] = evaluator.terminatePartial(agg);
 
@@ -198,7 +187,7 @@ public class PLSAPredictUDAFTest {
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
         for (int i = 6; i < 12; i++) {
-            evaluator.iterate(agg, new Object[]{words[i], doc.get(words[i]), labels[i], probs[i]});
+            evaluator.iterate(agg, new Object[] {words[i], doc.get(words[i]), labels[i], probs[i]});
         }
         partials[1] = evaluator.terminatePartial(agg);
 
@@ -206,13 +195,13 @@ public class PLSAPredictUDAFTest {
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
         for (int i = 12; i < 18; i++) {
-            evaluator.iterate(agg, new Object[]{words[i], doc.get(words[i]), labels[i], probs[i]});
+            evaluator.iterate(agg, new Object[] {words[i], doc.get(words[i]), labels[i], probs[i]});
         }
 
         partials[2] = evaluator.terminatePartial(agg);
 
         // merge in a different order
-        final int[][] orders = new int[][] {{0, 1, 2}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}};
+        final int[][] orders = new int[][] { {0, 1, 2}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}};
         for (int i = 0; i < orders.length; i++) {
             evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL2, partialOI);
             evaluator.reset(agg);
