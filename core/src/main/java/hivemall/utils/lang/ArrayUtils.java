@@ -27,6 +27,7 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import hivemall.utils.math.MathUtils;
 import org.apache.commons.math3.distribution.GammaDistribution;
 
 public final class ArrayUtils {
@@ -733,6 +734,24 @@ public final class ArrayUtils {
             ret[i] = (float) gd.sample();
         }
         return ret;
+    }
+
+    @Nonnull
+    public static float[] newRandomFloatArray(@Nonnegative final int size,
+            @Nonnull final Random rnd) {
+        final float[] ret = new float[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = rnd.nextFloat();
+        }
+        return ret;
+    }
+
+    @Nonnull
+    public static void normalize(@Nonnull final float[] arr) {
+        final float sum = (float) MathUtils.sum(arr);
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] /= sum;
+        }
     }
 
 }

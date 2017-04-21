@@ -24,11 +24,11 @@ import hivemall.utils.lang.Primitives;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Collections;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -48,8 +48,6 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
-import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
@@ -188,7 +186,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             }
 
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 0.5f);
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
+            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-3d);
 
             return cl;
         }
@@ -284,7 +282,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 throws HiveException {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
 
-            if (parameters[0] == null || parameters[1] == null || parameters[2] == null || parameters[3] == null) {
+            if (parameters[0] == null || parameters[1] == null || parameters[2] == null
+                    || parameters[3] == null) {
                 return;
             }
 
@@ -323,10 +322,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
             Object wcListObj = internalMergeOI.getStructFieldData(partial, wcListField);
 
-            if (wcListObj instanceof LazyBinaryArray) {
-                wcListObj = ((LazyBinaryArray) wcListObj).getList();
-            }
-            List<?> wcListRaw = wcListOI.getList(wcListObj);
+            List<?> wcListRaw = wcListOI.getList(HiveUtils.castLazyBinaryObject(wcListObj));
 
             // fix list elements to Java String objects
             int wcListSize = wcListRaw.size();
@@ -336,10 +332,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             }
 
             Object probMapObj = internalMergeOI.getStructFieldData(partial, probMapField);
-            if (probMapObj instanceof LazyBinaryMap) {
-                probMapObj = ((LazyBinaryMap) probMapObj).getMap();
-            }
-            Map<?, ?> probMapRaw = probMapOI.getMap(probMapObj);
+            Map<?, ?> probMapRaw = probMapOI.getMap(HiveUtils.castLazyBinaryObject(probMapObj));
 
             Map<String, List<Float>> probMap = new HashMap<String, List<Float>>();
             for (Map.Entry<?, ?> e : probMapRaw.entrySet()) {
@@ -347,16 +340,14 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 String word = PrimitiveObjectInspectorUtils.getString(e.getKey(), probMapKeyOI);
 
                 Object probMapValueObj = e.getValue();
-                if (probMapValueObj instanceof  LazyBinaryArray) {
-                    probMapValueObj = ((LazyBinaryArray) probMapValueObj).getList();
-                }
-                List<?> probMapValueRaw = probMapValueOI.getList(probMapValueObj);
+                List<?> probMapValueRaw = probMapValueOI.getList(HiveUtils.castLazyBinaryObject(probMapValueObj));
 
                 // fix map values to lists of Java Float objects
                 int probMapValueSize = probMapValueRaw.size();
                 List<Float> prob_word = new ArrayList<Float>();
                 for (int i = 0; i < probMapValueSize; i++) {
-                    prob_word.add(HiveUtils.getFloat(probMapValueRaw.get(i), probMapValueElemOI));
+                    prob_word.add(HiveUtils.getFloat(probMapValueRaw.get(i),
+                        probMapValueElemOI));
                 }
 
                 probMap.put(word, prob_word);
@@ -474,8 +465,6 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
             String[] wcArray = wcList.toArray(new String[wcList.size()]);
             return model.getTopicDistribution(wcArray);
-
-            //return new float[] {1.f, 1.f, 1.f};
         }
     }
 

@@ -19,19 +19,25 @@
 package hivemall.topicmodel;
 
 import hivemall.UDTFWithOptions;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.SizeOf;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -48,16 +54,12 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
-
 @Description(
         name = "train_plsa",
         value = "_FUNC_(array<string> words[, const string options])"
                 + " - Returns a relation consists of <int topic, string word, float score>")
 public class PLSAUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(PLSAUDTF.class);
-    private static final int INT_BYTES = Integer.SIZE / 8;
 
     // Options
     protected int topic;
@@ -65,11 +67,15 @@ public class PLSAUDTF extends UDTFWithOptions {
     protected int iterations;
     protected double delta;
     protected double eps;
+    protected int miniBatchSize;
 
     // number of proceeded training samples
     protected long count;
 
-    protected IncrementalPLSAModel model;
+    protected String[][] miniBatch;
+    protected int miniBatchCount;
+
+    protected transient IncrementalPLSAModel model;
 
     protected ListObjectInspector wordCountsOI;
 
@@ -80,9 +86,10 @@ public class PLSAUDTF extends UDTFWithOptions {
     public PLSAUDTF() {
         this.topic = 10;
         this.alpha = 1.f / topic;
-        this.iterations = 1;
-        this.delta = 1E-5d;
+        this.iterations = 10;
+        this.delta = 1E-3d;
         this.eps = 1E-1d;
+        this.miniBatchSize = 128;
     }
 
     @Override
@@ -90,9 +97,12 @@ public class PLSAUDTF extends UDTFWithOptions {
         Options opts = new Options();
         opts.addOption("k", "topic", true, "The number of topics [default: 10]");
         opts.addOption("alpha", true, "The hyperparameter for P(w|z) update [default: 0.5]");
-        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 1]");
-        opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-5]");
-        opts.addOption("eps", "epsilon", true, "Check convergence based on the difference of perplexity [default: 1E-1]");
+        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 10]");
+        opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-3]");
+        opts.addOption("eps", "epsilon", true,
+            "Check convergence based on the difference of perplexity [default: 1E-1]");
+        opts.addOption("s", "mini_batch_size", true,
+            "Repeat model updating per mini-batch [default: 128]");
         return opts;
     }
 
@@ -105,13 +115,14 @@ public class PLSAUDTF extends UDTFWithOptions {
             cl = parseOptions(rawArgs);
             this.topic = Primitives.parseInt(cl.getOptionValue("topic"), 10);
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 0.5f);
-            this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
+            this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
             if (iterations < 1) {
                 throw new UDFArgumentException(
                     "'-iterations' must be greater than or equals to 1: " + iterations);
             }
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
+            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-3d);
             this.eps = Primitives.parseDouble(cl.getOptionValue("epsilon"), 1E-1d);
+            this.miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), 128);
         }
 
         return cl;
@@ -129,8 +140,10 @@ public class PLSAUDTF extends UDTFWithOptions {
 
         processOptions(argOIs);
 
-        this.model = new IncrementalPLSAModel(topic, alpha, delta);
+        this.model = null;
         this.count = 0L;
+        this.miniBatch = new String[miniBatchSize][];
+        this.miniBatchCount = 0;
 
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -144,27 +157,48 @@ public class PLSAUDTF extends UDTFWithOptions {
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
+    protected void initModel() {
+        this.model = new IncrementalPLSAModel(topic, alpha, delta);
+    }
+
     @Override
     public void process(Object[] args) throws HiveException {
+        if (model == null) {
+            initModel();
+        }
+
         int length = wordCountsOI.getListLength(args[0]);
         String[] wordCounts = new String[length];
         int j = 0;
         for (int i = 0; i < length; i++) {
             Object o = wordCountsOI.getListElement(args[0], i);
             if (o == null) {
-                continue;
+                throw new HiveException("Given feature vector contains invalid elements");
             }
             String s = o.toString();
             wordCounts[j] = s;
             j++;
         }
+        if (j == 0) {// avoid empty documents
+            return;
+        }
 
         count++;
+
         recordTrainSampleToTempFile(wordCounts);
-        model.train(new String[][] {wordCounts}); // mini-batch w/ single sample
+
+        miniBatch[miniBatchCount] = wordCounts;
+        miniBatchCount++;
+
+        if (miniBatchCount == miniBatchSize) {
+            model.train(miniBatch);
+            Arrays.fill(miniBatch, null); // clear
+            miniBatchCount = 0;
+        }
     }
 
-    protected void recordTrainSampleToTempFile(@Nonnull final String[] wordCounts) throws HiveException {
+    protected void recordTrainSampleToTempFile(@Nonnull final String[] wordCounts)
+            throws HiveException {
         if (iterations == 1) {
             return;
         }
@@ -193,6 +227,9 @@ public class PLSAUDTF extends UDTFWithOptions {
 
         int wcLength = 0;
         for (String wc : wordCounts) {
+            if (wc == null) {
+                continue;
+            }
             wcLength += wc.getBytes().length;
         }
         // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
@@ -205,6 +242,9 @@ public class PLSAUDTF extends UDTFWithOptions {
         buf.putInt(recordBytes);
         buf.putInt(wordCounts.length);
         for (String wc : wordCounts) {
+            if (wc == null) {
+                continue;
+            }
             buf.putInt(wc.length());
             buf.put(wc.getBytes());
         }
@@ -226,6 +266,9 @@ public class PLSAUDTF extends UDTFWithOptions {
         if (count == 0) {
             this.model = null;
             return;
+        }
+        if (miniBatchCount > 0) { // update for remaining samples
+            model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
         }
         if (iterations > 1) {
             runIterativeTraining(iterations);
@@ -254,13 +297,18 @@ public class PLSAUDTF extends UDTFWithOptions {
                 buf.flip();
 
                 int iter = 2;
-                float perplexityPrev;
-                float perplexity = Float.MAX_VALUE;
+                float perplexityPrev = Float.MAX_VALUE;
+                float perplexity;
+                int numTrain;
                 for (; iter <= iterations; iter++) {
+                    perplexity = 0.f;
+                    numTrain = 0;
+
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
 
-                    List<String[]> miniBatchList = new ArrayList<String[]>();
+                    Arrays.fill(miniBatch, null); // clear
+                    miniBatchCount = 0;
 
                     while (buf.remaining() > 0) {
                         int recordBytes = buf.getInt();
@@ -273,21 +321,38 @@ public class PLSAUDTF extends UDTFWithOptions {
                             buf.get(bytes);
                             wordCounts[j] = new String(bytes);
                         }
-                        miniBatchList.add(wordCounts);
+
+                        miniBatch[miniBatchCount] = wordCounts;
+                        miniBatchCount++;
+
+                        if (miniBatchCount == miniBatchSize) {
+                            model.train(miniBatch);
+                            perplexity += model.computePerplexity();
+                            numTrain++;
+
+                            Arrays.fill(miniBatch, null); // clear
+                            miniBatchCount = 0;
+                        }
                     }
                     buf.rewind();
 
-                    String[][] miniBatch = new String[miniBatchList.size()][];
-                    miniBatchList.toArray(miniBatch);
-                    model.train(miniBatch);
+                    // update for remaining samples
+                    if (miniBatchCount > 0) { // update for remaining samples
+                        model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
+                        perplexity += model.computePerplexity();
+                        numTrain++;
+                    }
 
-                    perplexityPrev = perplexity;
-                    perplexity = model.computePerplexity();
+                    logger.info("Perplexity: " + perplexity + ", Num train: " + numTrain);
+                    perplexity /= numTrain; // mean perplexity over `numTrain` mini-batches
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
+                    perplexityPrev = perplexity;
                 }
-                logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
+                logger.info("Performed "
+                        + Math.min(iter, iterations)
+                        + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on memory (thus "
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
@@ -314,9 +379,16 @@ public class PLSAUDTF extends UDTFWithOptions {
 
                 // run iterations
                 int iter = 2;
-                float perplexityPrev;
-                float perplexity = Float.MAX_VALUE;
+                float perplexityPrev = Float.MAX_VALUE;
+                float perplexity;
+                int numTrain;
                 for (; iter <= iterations; iter++) {
+                    perplexity = 0.f;
+                    numTrain = 0;
+
+                    Arrays.fill(miniBatch, null); // clear
+                    miniBatchCount = 0;
+
                     setCounterValue(iterCounter, iter);
 
                     buf.clear();
@@ -337,18 +409,16 @@ public class PLSAUDTF extends UDTFWithOptions {
                         }
                         assert (bytesRead > 0) : bytesRead;
 
-                        List<String[]> miniBatchList = new ArrayList<String[]>();
-
                         // reads training examples from a buffer
                         buf.flip();
                         int remain = buf.remaining();
-                        if (remain < INT_BYTES) {
+                        if (remain < SizeOf.INT) {
                             throw new HiveException("Illegal file format was detected");
                         }
-                        while (remain >= INT_BYTES) {
+                        while (remain >= SizeOf.INT) {
                             int pos = buf.position();
                             int recordBytes = buf.getInt();
-                            remain -= INT_BYTES;
+                            remain -= SizeOf.INT;
                             if (remain < recordBytes) {
                                 buf.position(pos);
                                 break;
@@ -362,24 +432,41 @@ public class PLSAUDTF extends UDTFWithOptions {
                                 buf.get(bytes);
                                 wordCounts[j] = new String(bytes);
                             }
-                            miniBatchList.add(wordCounts);
+
+                            miniBatch[miniBatchCount] = wordCounts;
+                            miniBatchCount++;
+
+                            if (miniBatchCount == miniBatchSize) {
+                                model.train(miniBatch);
+                                perplexity += model.computePerplexity();
+                                numTrain++;
+
+                                Arrays.fill(miniBatch, null); // clear
+                                miniBatchCount = 0;
+                            }
 
                             remain -= recordBytes;
                         }
                         buf.compact();
-
-                        String[][] miniBatch = new String[miniBatchList.size()][];
-                        miniBatchList.toArray(miniBatch);
-                        model.train(miniBatch);
                     }
 
-                    perplexityPrev = perplexity;
-                    perplexity = model.computePerplexity();
+                    // update for remaining samples
+                    if (miniBatchCount > 0) { // update for remaining samples
+                        model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
+                        perplexity += model.computePerplexity();
+                        numTrain++;
+                    }
+
+                    logger.info("Perplexity: " + perplexity + ", Num train: " + numTrain);
+                    perplexity /= numTrain; // mean perplexity over `numTrain` mini-batches
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
+                    perplexityPrev = perplexity;
                 }
-                logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
+                logger.info("Performed "
+                        + Math.min(iter, iterations)
+                        + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
@@ -429,15 +516,18 @@ public class PLSAUDTF extends UDTFWithOptions {
      * For testing:
      */
 
-    public double getProbability(String label, int k) {
+    @VisibleForTesting
+    double getProbability(String label, int k) {
         return model.getProbability(label, k);
     }
 
-    public SortedMap<Float, List<String>> getTopicWords(int k) {
+    @VisibleForTesting
+    SortedMap<Float, List<String>> getTopicWords(int k) {
         return model.getTopicWords(k);
     }
 
-    public float[] getTopicDistribution(@Nonnull String[] doc) {
+    @VisibleForTesting
+    float[] getTopicDistribution(@Nonnull String[] doc) {
         return model.getTopicDistribution(doc);
     }
 }
