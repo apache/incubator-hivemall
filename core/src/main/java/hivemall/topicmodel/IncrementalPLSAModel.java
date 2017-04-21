@@ -150,12 +150,11 @@ public final class IncrementalPLSAModel {
                 p_dwz_d.put(label, p_dwz_dw);
 
                 // insert new labels to P(w|z)
-                float[] p_zw_w = _p_zw.get(label);
-                if (p_zw_w == null) {
-                    p_zw_w = ArrayUtils.newRandomFloatArray(_K, _rnd);
+                if (!_p_zw.containsKey(label)) {
+                    float[] p_zw_w = ArrayUtils.newRandomFloatArray(_K, _rnd);
+                    ArrayUtils.normalize(p_zw_w);
                     _p_zw.put(label, p_zw_w);
                 }
-                ArrayUtils.normalize(p_zw_w);
             }
         }
 
@@ -167,7 +166,7 @@ public final class IncrementalPLSAModel {
         final Map<String, float[]> p_dwz_d = _p_dwz.get(d);
         final float[] p_dz_d = _p_dz.get(d);
 
-        // updating P(z|d,w)
+        // update P(z|d,w) = P(z|d) * P(w|z)
         for (final String label : _miniBatchDocs.get(d).keySet()) {
             final float[] p_dwz_dw = p_dwz_d.get(label);
             final float[] p_zw_w = _p_zw.get(label);
@@ -182,7 +181,7 @@ public final class IncrementalPLSAModel {
         final Map<String, Float> doc = _miniBatchDocs.get(d);
         final Map<String, float[]> p_dwz_d = _p_dwz.get(d);
 
-        // updating P(z|d)
+        // update P(z|d) = n(d,w) * P(z|d,w)
         final float[] p_dz_d = _p_dz.get(d);
         Arrays.fill(p_dz_d, 0.f); // zero-fill w/ keeping pointer to _p_dz.get(d)
         for (Map.Entry<String, Float> e : doc.entrySet()) {
@@ -194,7 +193,7 @@ public final class IncrementalPLSAModel {
         }
         ArrayUtils.normalize(p_dz_d);
 
-        // updating P(w|z)
+        // update P(w|z) = n(d,w) * P(z|d,w) + alpha * P(w|z)
         for (int z = 0; z < _K; z++) {
             double npSumInDoc_zw_w = 0.d; // sum over the labels in the document
             double pSumAll_zw_w = 0.d; // sum over the all existing labels
@@ -234,20 +233,21 @@ public final class IncrementalPLSAModel {
     public float computePerplexity() {
         double numer = 0.d;
         double denom = 0.d;
+
         for (int d = 0; d < _miniBatchSize; d++) {
             final float[] p_dz_d = _p_dz.get(d);
             for (Map.Entry<String, Float> e : _miniBatchDocs.get(d).entrySet()) {
                 String label = e.getKey();
                 float value = e.getValue().floatValue();
 
-                float p_dw = 0.f;
+                double p_dw = 0.d;
                 final float[] p_zw_w = _p_zw.get(label);
                 for (int z = 0; z < _K; z++) {
-                    p_dw += p_zw_w[z] * p_dz_d[z];
+                    p_dw += (double) p_zw_w[z] * p_dz_d[z];
                 }
 
-                denom += value;
                 numer += value * Math.log(p_dw);
+                denom += value;
             }
         }
 
