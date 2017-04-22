@@ -33,7 +33,7 @@ RUN set -eux && \
     mv /hivemall/resources/docker/etc/hadoop/*.xml $HADOOP_HOME/etc/hadoop && \
     hdfs namenode -format && \
     \
-    wget $BASE_URL/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz  -O - \
+    wget $BASE_URL/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz -O - \
       | tar xz && \
     mv apache-hive-$HIVE_VERSION-bin $HIVE_HOME && \
     cat $HIVE_HOME/conf/hive-default.xml.template \
