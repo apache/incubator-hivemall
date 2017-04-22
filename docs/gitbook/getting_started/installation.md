@@ -63,3 +63,5 @@ $ git clone https://github.com/apache/incubator-hivemall.git
 $ cd incubator-hivemall
 $ bin/build.sh
 ```
+
+Then, you can find hivemall jars in `./target`.
