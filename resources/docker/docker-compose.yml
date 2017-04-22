@@ -9,9 +9,11 @@ services:
     image: hivemall
     container_name: hivemall
     ports:
-      - "19888:19888"
-      - "50070:50070"
+      - "8088:8088" # ResourceManager
+      - "19888:19888" # JobHistoryServer
+      - "50070:50070" # NameNode
     volumes:
-      - "../../:/hivemall/"
-      #- "/path/to/data/:/root/data/"
-    command: sh -c "./init.sh && tail -f /dev/null"
+      - "../../:/hivemall/" # mount current hivemall dir
+      #- "/path/to/data/:/root/data/" # mount resources
+    tty: true
+    stdin_open: true
