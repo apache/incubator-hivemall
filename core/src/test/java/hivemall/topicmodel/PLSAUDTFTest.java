@@ -43,7 +43,7 @@ public class PLSAUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    "-topic 2 -alpha 0.00001 -delta 0.00001")};
+                    "-topic 2 -alpha 0.1 -delta 0.00001")};
 
         udtf.initialize(argOIs);
 

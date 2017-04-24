@@ -46,6 +46,7 @@ public class IncrementalPLSAModelTest {
     public void testOnline() {
         int K = 2;
         int it = 0;
+        int maxIter = 512;
         float perplexityPrev;
         float perplexity = Float.MAX_VALUE;
 
@@ -70,7 +71,7 @@ public class IncrementalPLSAModelTest {
 
             it++;
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while (Math.abs(perplexityPrev - perplexity) >= 1E-3f);
+        } while (it < maxIter && Math.abs(perplexityPrev - perplexity) >= 1E-3f);
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -119,6 +120,7 @@ public class IncrementalPLSAModelTest {
     public void testMiniBatch() {
         int K = 2;
         int it = 0;
+        int maxIter = 1024;
         float perplexityPrev;
         float perplexity = Float.MAX_VALUE;
 
@@ -136,7 +138,7 @@ public class IncrementalPLSAModelTest {
 
             it++;
             println("Iteration " + it + ": perplexity = " + perplexity);
-        } while (Math.abs(perplexityPrev - perplexity) >= 1E-5f);
+        } while (it < maxIter && Math.abs(perplexityPrev - perplexity) >= 1E-3f);
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -187,8 +189,9 @@ public class IncrementalPLSAModelTest {
         int miniBatchSize = 2;
 
         int cnt, it;
+        int maxIter = 64;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-6d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.8f, 1E-5d);
 
         BufferedReader news20 = readFile("news20-multiclass.gz");
 
@@ -244,9 +247,8 @@ public class IncrementalPLSAModelTest {
             perplexity /= cnt;
 
             it++;
-
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while (Math.abs(perplexityPrev - perplexity) >= 1E-3f);
+        } while (it < maxIter && Math.abs(perplexityPrev - perplexity) >= 1E-3f);
 
         Set<Integer> topics = new HashSet<Integer>();
         for (int k = 0; k < K; k++) {

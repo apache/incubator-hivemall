@@ -191,27 +191,24 @@ public final class IncrementalPLSAModel {
         }
         MathUtils.normalize(p_dz_d);
 
-        // update P(w|z) = n(d,w) * P(z|d,w) + alpha * P(w|z)
+        // update P(w|z) = n(d,w) * P(z|d,w) + alpha * P(w|z)^(n-1)
         for (int z = 0; z < _K; z++) {
-            double npSumInDoc_zw_w = 0.d; // sum over the labels in the document
-            double pSumAll_zw_w = 0.d; // sum over the all existing labels
+            float normalizer = 0.f;
 
             for (Map.Entry<String, float[]> e : _p_zw.entrySet()) {
-                final String label = e.getKey();
-                final float[] p_zw_w = e.getValue();
+                String label = e.getKey();
+                float[] p_zw_w = e.getValue();
 
                 Float label_value = doc.get(label);
-                if (label_value == null) {
-                    pSumAll_zw_w += p_zw_w[z];
-                } else {
-                    p_zw_w[z] *= _alpha; // alpha * P(w|z)
-                    float np = label_value.floatValue() * p_dwz_d.get(label)[z]; // n(d,w) * P(z|d,w)
-                    p_zw_w[z] += np;
-                    npSumInDoc_zw_w += np;
+                if (label_value != null) { // all words in the document
+                    p_zw_w[z] = _alpha * p_zw_w[z]; // alpha * P(w|z)^(n-1)
+                    p_zw_w[z] += label_value.floatValue() * p_dwz_d.get(label)[z]; // n(d,w) * P(z|d,w)
                 }
+
+                normalizer += p_zw_w[z];
             }
 
-            final float normalizer = (float) (npSumInDoc_zw_w + _alpha * pSumAll_zw_w);
+            // normalize to ensure \sum_w P(w|z) = 1
             for (float[] p_zw_w : _p_zw.values()) {
                 p_zw_w[z] /= normalizer;
             }
