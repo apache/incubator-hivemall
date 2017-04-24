@@ -21,7 +21,6 @@ package hivemall.geospatial;
 import hivemall.UDFWithOptions;
 import hivemall.utils.geospatial.GeoSpatialUtils;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.lang.Preconditions;
 
 import java.util.Arrays;
 
@@ -120,9 +119,6 @@ public final class MapURLUDF extends UDFWithOptions {
         double lon = PrimitiveObjectInspectorUtils.getDouble(arg1, lonOI);
         int zoom = PrimitiveObjectInspectorUtils.getInt(arg2, zoomOI);
 
-        Preconditions.checkArgument(zoom >= 0 && zoom <= 18, "Invalid zoom level",
-            UDFArgumentException.class);
-
         result.set(toMapURL(lat, lon, zoom, type));
         return result;
     }
@@ -130,7 +126,11 @@ public final class MapURLUDF extends UDFWithOptions {
     @Nonnull
     private static String toMapURL(double lat, double lon, int zoom, @Nonnull MapType type)
             throws UDFArgumentException {
-        if (type == MapType.openstreetmap) {// http://tile.openstreetmap.org/${zoom}/${xtile}/${ytile}.png
+        if (type == MapType.openstreetmap) {// http://tile.openstreetmap.org/${zoom}/${xtile}/${ytile}.png            
+            if (zoom < 0 || zoom > 19) {
+                throw new UDFArgumentException(
+                    "Illegal zoom level. Supported zoom level for openstreetmap is [0,19]: " + zoom);
+            }
             final int xtile, ytile;
             try {
                 xtile = GeoSpatialUtils.lon2tile(lon, zoom);
@@ -141,6 +141,10 @@ public final class MapURLUDF extends UDFWithOptions {
             return "http://tile.openstreetmap.org/" + Integer.toString(zoom) + '/'
                     + Integer.toString(xtile) + '/' + Integer.toString(ytile) + ".png";
         } else if (type == MapType.googlemaps) {// https://www.google.com/maps/@${lat},${lon},${zoom}z
+            if (zoom < 0 || zoom > 21) {
+                throw new UDFArgumentException(
+                    "Illegal zoom level. Supported zoom level for Google Maps is [0,21]: " + zoom);
+            }
             return "https://www.google.com/maps/@" + Double.toString(lat) + ','
                     + Double.toString(lon) + ',' + Integer.toString(zoom) + 'z';
         } else {
