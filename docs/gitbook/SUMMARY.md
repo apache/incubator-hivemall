@@ -158,7 +158,7 @@
 
 * [Lat/Lon functions](geospatial/latlon.md)
 
-## Part XI - Hivemall on Spark
+## Part XII - Hivemall on Spark
 
 * [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
@@ -173,7 +173,7 @@
     * [Top-k Join processing](spark/misc/topk_join.md)
     * [Other utility functions](spark/misc/functions.md)
 
-## Part XII - External References
+## Part XIII - External References
 
 * [Hivemall on Apache Spark](https://github.com/maropu/hivemall-spark)
 * [Hivemall on Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)
