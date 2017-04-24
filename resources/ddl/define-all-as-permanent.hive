@@ -626,6 +626,16 @@ CREATE FUNCTION train_lda as 'hivemall.topicmodel.LDAUDTF' USING JAR '${hivemall
 DROP FUNCTION IF EXISTS lda_predict;
 CREATE FUNCTION lda_predict as 'hivemall.topicmodel.LDAPredictUDAF' USING JAR '${hivemall_jar}';
 
+---------------------------
+-- Geo-Spatial functions --
+---------------------------
+
+DROP FUNCTION IF EXISTS tile;
+CREATE FUNCTION tile as 'hivemall.geospatial.TileUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS map_url;
+CREATE FUNCTION map_url as 'hivemall.geospatial.MapURLUDF' USING JAR '${hivemall_jar}';
+
 ----------------------------
 -- Smile related features --
 ----------------------------

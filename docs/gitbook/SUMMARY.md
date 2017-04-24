@@ -154,6 +154,10 @@
 
 * [Latent Dirichlet Allocation](clustering/lda.md)
 
+## Part XI - GeoSpatial functions
+
+* [Lat/Lon functions](geospatial/latlon.md)
+
 ## Part XI - Hivemall on Spark
 
 * [Getting Started](spark/getting_started/README.md)
