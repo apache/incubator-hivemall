@@ -32,8 +32,8 @@ public final class MapURLUDF extends UDFWithOptions {
     private PrimitiveObjectInspector latOI;
     private PrimitiveObjectInspector lonOI;
     private PrimitiveObjectInspector zoomOI;
-    private MapType type;
 
+    private MapType type = MapType.openstreetmap;
     private Text result;
 
     @Override
@@ -41,7 +41,7 @@ public final class MapURLUDF extends UDFWithOptions {
         Options opts = new Options();
         opts.addOption("t", "type", true,
             "Map type [default: openstreetmap|osm, googlemaps|google]");
-        return null;
+        return opts;
     }
 
     @Override
@@ -87,16 +87,20 @@ public final class MapURLUDF extends UDFWithOptions {
 
     @Override
     public Text evaluate(DeferredObject[] arguments) throws HiveException {
-        if (arguments[0] == null || arguments[1] == null) {
+        Object arg0 = arguments[0].get();
+        Object arg1 = arguments[1].get();
+        Object arg2 = arguments[2].get();
+
+        if (arg0 == null || arg1 == null) {
             return null;
         }
-        if (arguments[2] == null) {
+        if (arg2 == null) {
             throw new UDFArgumentException("zoom level is null");
         }
 
-        double lat = PrimitiveObjectInspectorUtils.getDouble(arguments[0], latOI);
-        double lon = PrimitiveObjectInspectorUtils.getDouble(arguments[1], lonOI);
-        int zoom = PrimitiveObjectInspectorUtils.getInt(arguments[2], zoomOI);
+        double lat = PrimitiveObjectInspectorUtils.getDouble(arg0, latOI);
+        double lon = PrimitiveObjectInspectorUtils.getDouble(arg1, lonOI);
+        int zoom = PrimitiveObjectInspectorUtils.getInt(arg2, zoomOI);
 
         Preconditions.checkArgument(zoom >= 0 && zoom <= 18, "Invalid zoom level",
             UDFArgumentException.class);
