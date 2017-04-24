@@ -607,6 +607,16 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lda_predict")
 sqlContext.sql("CREATE TEMPORARY FUNCTION lda_predict AS 'hivemall.topicmodel.LDAPredictUDAF'")
 
 /**
+ * Geo Spatial Functions
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tile")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tile AS 'hivemall.geospatial.TileUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_url")
+sqlContext.sql("CREATE TEMPORARY FUNCTION map_url AS 'hivemall.geospatial.MapURLUDF'")
+
+/**
  * Smile related features
  */
 
