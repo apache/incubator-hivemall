@@ -746,12 +746,4 @@ public final class ArrayUtils {
         return ret;
     }
 
-    @Nonnull
-    public static void normalize(@Nonnull final float[] arr) {
-        final float sum = (float) MathUtils.sum(arr);
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] /= sum;
-        }
-    }
-
 }

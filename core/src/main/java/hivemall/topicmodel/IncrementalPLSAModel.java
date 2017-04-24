@@ -20,6 +20,7 @@ package hivemall.topicmodel;
 
 import hivemall.model.FeatureValue;
 import hivemall.utils.lang.ArrayUtils;
+import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -136,8 +137,7 @@ public final class IncrementalPLSAModel {
 
         for (int d = 0; d < _miniBatchSize; d++) {
             // init P(z|d)
-            float[] p_dz_d = ArrayUtils.newRandomFloatArray(_K, _rnd);
-            ArrayUtils.normalize(p_dz_d);
+            float[] p_dz_d = MathUtils.normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
             p_dz.add(p_dz_d);
 
             final Map<String, float[]> p_dwz_d = new HashMap<String, float[]>();
@@ -145,14 +145,12 @@ public final class IncrementalPLSAModel {
 
             for (final String label : _miniBatchDocs.get(d).keySet()) {
                 // init P(z|d,w)
-                float[] p_dwz_dw = ArrayUtils.newRandomFloatArray(_K, _rnd);
-                ArrayUtils.normalize(p_dwz_dw);
+                float[] p_dwz_dw = MathUtils.normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
                 p_dwz_d.put(label, p_dwz_dw);
 
                 // insert new labels to P(w|z)
                 if (!_p_zw.containsKey(label)) {
-                    float[] p_zw_w = ArrayUtils.newRandomFloatArray(_K, _rnd);
-                    ArrayUtils.normalize(p_zw_w);
+                    float[] p_zw_w = MathUtils.normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
                     _p_zw.put(label, p_zw_w);
                 }
             }
@@ -173,7 +171,7 @@ public final class IncrementalPLSAModel {
             for (int z = 0; z < _K; z++) {
                 p_dwz_dw[z] = p_dz_d[z] * p_zw_w[z];
             }
-            ArrayUtils.normalize(p_dwz_dw);
+            MathUtils.normalize(p_dwz_dw);
         }
     }
 
@@ -191,7 +189,7 @@ public final class IncrementalPLSAModel {
                 p_dz_d[z] += n * p_dwz_dw[z];
             }
         }
-        ArrayUtils.normalize(p_dz_d);
+        MathUtils.normalize(p_dz_d);
 
         // update P(w|z) = n(d,w) * P(z|d,w) + alpha * P(w|z)
         for (int z = 0; z < _K; z++) {
@@ -295,6 +293,6 @@ public final class IncrementalPLSAModel {
 
         prob_label[z] = prob;
 
-        ArrayUtils.normalize(prob_label);
+        MathUtils.normalize(prob_label);
     }
 }
