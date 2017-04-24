@@ -137,7 +137,7 @@ public final class IncrementalPLSAModel {
 
         for (int d = 0; d < _miniBatchSize; d++) {
             // init P(z|d)
-            float[] p_dz_d = MathUtils.normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
+            float[] p_dz_d = MathUtils.l1normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
             p_dz.add(p_dz_d);
 
             final Map<String, float[]> p_dwz_d = new HashMap<String, float[]>();
@@ -145,12 +145,12 @@ public final class IncrementalPLSAModel {
 
             for (final String label : _miniBatchDocs.get(d).keySet()) {
                 // init P(z|d,w)
-                float[] p_dwz_dw = MathUtils.normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
+                float[] p_dwz_dw = MathUtils.l1normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
                 p_dwz_d.put(label, p_dwz_dw);
 
                 // insert new labels to P(w|z)
                 if (!_p_zw.containsKey(label)) {
-                    float[] p_zw_w = MathUtils.normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
+                    float[] p_zw_w = MathUtils.l1normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
                     _p_zw.put(label, p_zw_w);
                 }
             }
@@ -171,7 +171,7 @@ public final class IncrementalPLSAModel {
             for (int z = 0; z < _K; z++) {
                 p_dwz_dw[z] = p_dz_d[z] * p_zw_w[z];
             }
-            MathUtils.normalize(p_dwz_dw);
+            MathUtils.l1normalize(p_dwz_dw);
         }
     }
 
@@ -189,7 +189,7 @@ public final class IncrementalPLSAModel {
                 p_dz_d[z] += n * p_dwz_dw[z];
             }
         }
-        MathUtils.normalize(p_dz_d);
+        MathUtils.l1normalize(p_dz_d);
 
         // update P(w|z) = n(d,w) * P(z|d,w) + alpha * P(w|z)^(n-1)
         for (int z = 0; z < _K; z++) {
@@ -291,6 +291,6 @@ public final class IncrementalPLSAModel {
 
         prob_label[z] = prob;
 
-        MathUtils.normalize(prob_label);
+        MathUtils.l1normalize(prob_label);
     }
 }

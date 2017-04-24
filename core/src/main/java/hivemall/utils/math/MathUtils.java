@@ -409,8 +409,11 @@ public final class MathUtils {
     }
 
     @Nonnull
-    public static float[] normalize(@Nonnull final float[] arr) {
-        final float sum = (float) MathUtils.sum(arr);
+    public static float[] l1normalize(@Nonnull final float[] arr) {
+        float sum = 0.f;
+        for (int i = 0; i < arr.length; i++) {
+            sum += Math.abs(arr[i]);
+        }
         for (int i = 0; i < arr.length; i++) {
             arr[i] /= sum;
         }
