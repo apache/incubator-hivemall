@@ -1,0 +1,318 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package hivemall.topicmodel;
+
+import hivemall.model.FeatureValue;
+import hivemall.utils.lang.ArrayUtils;
+import hivemall.utils.math.MathUtils;
+
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
+
+public final class IncrementalPLSAModel {
+
+    // ---------------------------------
+    // HyperParameters
+
+    // number of topics
+    private final int _K;
+
+    // control how much P(w|z) update is affected by the last value
+    private final float _alpha;
+
+    // check convergence of P(w|z) for a document
+    private final double _delta;
+
+    // ---------------------------------
+
+    // random number generator
+    @Nonnull
+    private final Random _rnd;
+
+    // optimized in the E step
+    private List<Map<String, float[]>> _p_dwz; // P(z|d,w) probability of topics for each document-label pair
+
+    // optimized in the M step
+    @Nonnull
+    private List<float[]> _p_dz; // P(z|d) probability of topics for documents
+    private Map<String, float[]> _p_zw; // P(w|z) probability of labels for each topic
+
+    @Nonnull
+    private final List<Map<String, Float>> _miniBatchDocs;
+    private int _miniBatchSize;
+
+    public IncrementalPLSAModel(int K, float alpha, double delta) {
+        this._K = K;
+        this._alpha = alpha;
+        this._delta = delta;
+
+        this._rnd = new Random(1001);
+
+        this._p_zw = new HashMap<String, float[]>();
+
+        this._miniBatchDocs = new ArrayList<Map<String, Float>>();
+    }
+
+    public void train(@Nonnull final String[][] miniBatch) {
+        initMiniBatch(miniBatch, _miniBatchDocs);
+
+        this._miniBatchSize = _miniBatchDocs.size();
+
+        initParams();
+
+        final List<float[]> pPrev_dz = new ArrayList<float[]>();
+
+        for (int d = 0; d < _miniBatchSize; d++) {
+            do {
+                pPrev_dz.clear();
+                pPrev_dz.addAll(_p_dz);
+
+                // Expectation
+                eStep(d);
+
+                // Maximization
+                mStep(d);
+            } while (!isPdzConverged(d, pPrev_dz, _p_dz)); // until get stable value of P(z|d)
+        }
+    }
+
+    private static void initMiniBatch(@Nonnull final String[][] miniBatch,
+            @Nonnull final List<Map<String, Float>> docs) {
+        docs.clear();
+
+        final FeatureValue probe = new FeatureValue();
+
+        // parse document
+        for (final String[] e : miniBatch) {
+            if (e == null || e.length == 0) {
+                continue;
+            }
+
+            final Map<String, Float> doc = new HashMap<String, Float>();
+
+            // parse features
+            for (String fv : e) {
+                if (fv == null) {
+                    continue;
+                }
+                FeatureValue.parseFeatureAsString(fv, probe);
+                String label = probe.getFeatureAsString();
+                float value = probe.getValueAsFloat();
+                doc.put(label, Float.valueOf(value));
+            }
+
+            docs.add(doc);
+        }
+    }
+
+    private void initParams() {
+        final List<float[]> p_dz = new ArrayList<float[]>();
+        final List<Map<String, float[]>> p_dwz = new ArrayList<Map<String, float[]>>();
+
+        for (int d = 0; d < _miniBatchSize; d++) {
+            // init P(z|d)
+            float[] p_dz_d = MathUtils.l1normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
+            p_dz.add(p_dz_d);
+
+            final Map<String, float[]> p_dwz_d = new HashMap<String, float[]>();
+            p_dwz.add(p_dwz_d);
+
+            for (final String label : _miniBatchDocs.get(d).keySet()) {
+                // init P(z|d,w)
+                float[] p_dwz_dw = MathUtils.l1normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
+                p_dwz_d.put(label, p_dwz_dw);
+
+                // insert new labels to P(w|z)
+                if (!_p_zw.containsKey(label)) {
+                    float[] p_zw_w = ArrayUtils.newRandomFloatArray(_K, _rnd);
+                    _p_zw.put(label, p_zw_w);
+                }
+            }
+        }
+
+        // ensure \sum_w P(w|z) = 1
+        final float[] sums = new float[_K];
+        for (float[] p_zw_w : _p_zw.values()) {
+            MathUtils.add(p_zw_w, sums, _K);
+        }
+        for (float[] p_zw_w : _p_zw.values()) {
+            for (int z = 0; z < _K; z++) {
+                p_zw_w[z] /= sums[z];
+            }
+        }
+
+        this._p_dz = p_dz;
+        this._p_dwz = p_dwz;
+    }
+
+    private void eStep(@Nonnegative final int d) {
+        final Map<String, float[]> p_dwz_d = _p_dwz.get(d);
+        final float[] p_dz_d = _p_dz.get(d);
+
+        // update P(z|d,w) = P(z|d) * P(w|z)
+        for (final String label : _miniBatchDocs.get(d).keySet()) {
+            final float[] p_dwz_dw = p_dwz_d.get(label);
+            final float[] p_zw_w = _p_zw.get(label);
+            for (int z = 0; z < _K; z++) {
+                p_dwz_dw[z] = p_dz_d[z] * p_zw_w[z];
+            }
+            MathUtils.l1normalize(p_dwz_dw);
+        }
+    }
+
+    private void mStep(@Nonnegative final int d) {
+        final Map<String, Float> doc = _miniBatchDocs.get(d);
+        final Map<String, float[]> p_dwz_d = _p_dwz.get(d);
+
+        // update P(z|d) = n(d,w) * P(z|d,w)
+        final float[] p_dz_d = _p_dz.get(d);
+        Arrays.fill(p_dz_d, 0.f); // zero-fill w/ keeping pointer to _p_dz.get(d)
+        for (Map.Entry<String, Float> e : doc.entrySet()) {
+            final float[] p_dwz_dw = p_dwz_d.get(e.getKey());
+            final float n = e.getValue().floatValue();
+            for (int z = 0; z < _K; z++) {
+                p_dz_d[z] += n * p_dwz_dw[z];
+            }
+        }
+        MathUtils.l1normalize(p_dz_d);
+
+        // update P(w|z) = n(d,w) * P(z|d,w) + alpha * P(w|z)^(n-1)
+        final float[] sums = new float[_K];
+        for (Map.Entry<String, float[]> e : _p_zw.entrySet()) {
+            String label = e.getKey();
+            final float[] p_zw_w = e.getValue();
+
+            Float label_value = doc.get(label);
+            if (label_value != null) { // all words in the document
+                final float n = label_value.floatValue();
+                final float[] p_dwz_dw = p_dwz_d.get(label);
+
+                for (int z = 0; z < _K; z++) {
+                    p_zw_w[z] = n * p_dwz_dw[z] + _alpha * p_zw_w[z];
+                }
+            }
+
+            MathUtils.add(p_zw_w, sums, _K);
+        }
+        // normalize to ensure \sum_w P(w|z) = 1
+        for (float[] p_zw_w : _p_zw.values()) {
+            for (int z = 0; z < _K; z++) {
+                p_zw_w[z] /= sums[z];
+            }
+        }
+    }
+
+    private boolean isPdzConverged(@Nonnegative final int d,
+            @Nonnull final List<float[]> pPrev_dz, @Nonnull final List<float[]> p_dz) {
+        double diff = 0.d;
+        final float[] pPrev_dz_d = pPrev_dz.get(d);
+        final float[] p_dz_d = p_dz.get(d);
+        for (int z = 0; z < _K; z++) {
+            diff += Math.abs(pPrev_dz_d[z] - p_dz_d[z]);
+        }
+        return (diff / _K) < _delta;
+    }
+
+    public float computePerplexity() {
+        double numer = 0.d;
+        double denom = 0.d;
+
+        for (int d = 0; d < _miniBatchSize; d++) {
+            final float[] p_dz_d = _p_dz.get(d);
+            for (Map.Entry<String, Float> e : _miniBatchDocs.get(d).entrySet()) {
+                String label = e.getKey();
+                float value = e.getValue().floatValue();
+
+                double p_dw = 0.d;
+                final float[] p_zw_w = _p_zw.get(label);
+                for (int z = 0; z < _K; z++) {
+                    p_dw += (double) p_zw_w[z] * p_dz_d[z];
+                }
+
+                numer += value * Math.log(p_dw);
+                denom += value;
+            }
+        }
+
+        return (float) Math.exp(-1.d * (numer / denom));
+    }
+
+    @Nonnull
+    public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int z) {
+        SortedMap<Float, List<String>> res = new TreeMap<Float, List<String>>(
+            Collections.reverseOrder());
+
+        for (Map.Entry<String, float[]> e : _p_zw.entrySet()) {
+            final String label = e.getKey();
+            final float prob = e.getValue()[z];
+
+            List<String> labels = res.get(prob);
+            if (labels == null) {
+                labels = new ArrayList<String>();
+                res.put(prob, labels);
+            }
+            labels.add(label);
+        }
+
+        return res;
+    }
+
+    @Nonnull
+    public float[] getTopicDistribution(@Nonnull final String[] doc) {
+        train(new String[][] {doc});
+        return _p_dz.get(0);
+    }
+
+    public float getProbability(@Nonnull final String label, @Nonnegative final int z) {
+        return _p_zw.get(label)[z];
+    }
+
+    public void setProbability(@Nonnull final String label, @Nonnegative final int z,
+            final float prob) {
+        float[] prob_label = _p_zw.get(label);
+
+        if (prob_label == null) {
+            prob_label = ArrayUtils.newRandomFloatArray(_K, _rnd);
+            _p_zw.put(label, prob_label);
+        }
+
+        prob_label[z] = prob;
+
+        // ensure \sum_w P(w|z) = 1
+        final float[] sums = new float[_K];
+        for (float[] p_zw_w : _p_zw.values()) {
+            MathUtils.add(p_zw_w, sums, _K);
+        }
+        for (float[] p_zw_w : _p_zw.values()) {
+            for (int zi = 0; zi < _K; zi++) {
+                p_zw_w[zi] /= sums[zi];
+            }
+        }
+    }
+}

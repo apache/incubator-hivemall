@@ -153,6 +153,7 @@
 ## Part X - Clustering
 
 * [Latent Dirichlet Allocation](clustering/lda.md)
+* [Probabilistic Latent Semantic Analysis](clustering/plsa.md)
 
 ## Part XI - GeoSpatial functions
 

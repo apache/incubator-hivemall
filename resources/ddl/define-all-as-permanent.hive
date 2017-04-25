@@ -626,6 +626,12 @@ CREATE FUNCTION train_lda as 'hivemall.topicmodel.LDAUDTF' USING JAR '${hivemall
 DROP FUNCTION IF EXISTS lda_predict;
 CREATE FUNCTION lda_predict as 'hivemall.topicmodel.LDAPredictUDAF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS train_plsa;
+CREATE FUNCTION train_plsa as 'hivemall.topicmodel.PLSAUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS plsa_predict;
+CREATE FUNCTION plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF' USING JAR '${hivemall_jar}';
+
 ---------------------------
 -- Geo-Spatial functions --
 ---------------------------
