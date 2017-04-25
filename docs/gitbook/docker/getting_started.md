@@ -35,9 +35,9 @@ This page introduces how to run Hivemall on Docker.
   
   `docker-compose -f resources/docker/docker-compose.yml build`
 
-## Build using docker engine
+## Build using docker command
   
-  `docker build -f resources/docker/Dockerfile`
+  `docker build -f resources/docker/Dockerfile .`
 
 # 2. Run container
 
@@ -52,17 +52,17 @@ This page introduces how to run Hivemall on Docker.
   2. Run `docker run -it ${docker_image_id}`. 
      Refer [Docker reference](https://docs.docker.com/engine/reference/run/) for the command detail.
 
-# 3. Run Hivemall on Docker
+# 3. Build Hivemall
 
-  1. type `hive` to run (see `.hiverc` loads Hivemall functions)
+  In the container, Hivemall resource is stored in `$HIVEMALL_PATH`.
+  You can build Hivemall package by `cd $HIVEMALL_PATH && ./bin/build.sh`.
+
+# 4. Run Hivemall on Docker
+
+  1. Type `hive` to run (see `.hiverc` loads Hivemall functions)
   2. Try your Hivemall queries!
 
 ## Load data into HDFS (optional)
 
   You can find an example script to load data into HDFS in `./bin/prepare_iris.sh`.
   The script loads iris dataset into `iris` database.
-
-## Build Hivemall (optional)
-
-  In the container, Hivemall resource is stored in `$HIVEMALL_PATH`.
-  You can build Hivemall package by `cd $HIVEMALL_PATH && ./bin/build.sh`.
