@@ -150,9 +150,20 @@ public final class IncrementalPLSAModel {
 
                 // insert new labels to P(w|z)
                 if (!_p_zw.containsKey(label)) {
-                    float[] p_zw_w = MathUtils.l1normalize(ArrayUtils.newRandomFloatArray(_K, _rnd));
+                    float[] p_zw_w = ArrayUtils.newRandomFloatArray(_K, _rnd);
                     _p_zw.put(label, p_zw_w);
                 }
+            }
+        }
+
+        // ensure \sum_w P(w|z) = 1
+        final float[] sums = new float[_K];
+        for (float[] p_zw_w : _p_zw.values()) {
+            MathUtils.add(p_zw_w, sums, _K);
+        }
+        for (float[] p_zw_w : _p_zw.values()) {
+            for (int z = 0; z < _K; z++) {
+                p_zw_w[z] /= sums[z];
             }
         }
 
