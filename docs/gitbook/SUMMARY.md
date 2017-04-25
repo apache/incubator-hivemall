@@ -173,7 +173,11 @@
     * [Top-k Join processing](spark/misc/topk_join.md)
     * [Other utility functions](spark/misc/functions.md)
 
-## Part XIII - External References
+## Part XIII - Hivemall on Docker
+
+* [Getting Started](docker/getting_started.md)
+
+## Part XIV - External References
 
 * [Hivemall on Apache Spark](https://github.com/maropu/hivemall-spark)
 * [Hivemall on Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)

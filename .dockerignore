@@ -1,0 +1,6 @@
+.dockerignore
+resources/docker/Dockerfile
+resources/docker/docker-compose.yml
+.git/
+target/
+.*.swp
