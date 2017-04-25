@@ -46,11 +46,11 @@ public class IncrementalPLSAModelTest {
     public void testOnline() {
         int K = 2;
         int it = 0;
-        int maxIter = 512;
+        int maxIter = 1024;
         float perplexityPrev;
         float perplexity = Float.MAX_VALUE;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-5d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.f, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
@@ -71,7 +71,7 @@ public class IncrementalPLSAModelTest {
 
             it++;
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while (it < maxIter && Math.abs(perplexityPrev - perplexity) >= 1E-3f);
+        } while (it < maxIter && Math.abs(perplexityPrev - perplexity) >= 1E-4f);
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -120,11 +120,11 @@ public class IncrementalPLSAModelTest {
     public void testMiniBatch() {
         int K = 2;
         int it = 0;
-        int maxIter = 1024;
+        int maxIter = 2048;
         float perplexityPrev;
         float perplexity = Float.MAX_VALUE;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.1f, 1E-5d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.f, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
@@ -138,7 +138,7 @@ public class IncrementalPLSAModelTest {
 
             it++;
             println("Iteration " + it + ": perplexity = " + perplexity);
-        } while (it < maxIter && Math.abs(perplexityPrev - perplexity) >= 1E-3f);
+        } while (it < maxIter && Math.abs(perplexityPrev - perplexity) >= 1E-4f);
 
         SortedMap<Float, List<String>> topicWords;
 
