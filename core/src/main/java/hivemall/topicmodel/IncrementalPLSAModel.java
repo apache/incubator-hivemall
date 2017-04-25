@@ -203,25 +203,27 @@ public final class IncrementalPLSAModel {
         MathUtils.l1normalize(p_dz_d);
 
         // update P(w|z) = n(d,w) * P(z|d,w) + alpha * P(w|z)^(n-1)
-        for (int z = 0; z < _K; z++) {
-            float normalizer = 0.f;
+        final float[] sums = new float[_K];
+        for (Map.Entry<String, float[]> e : _p_zw.entrySet()) {
+            String label = e.getKey();
+            final float[] p_zw_w = e.getValue();
 
-            for (Map.Entry<String, float[]> e : _p_zw.entrySet()) {
-                String label = e.getKey();
-                float[] p_zw_w = e.getValue();
+            Float label_value = doc.get(label);
+            if (label_value != null) { // all words in the document
+                final float n = label_value.floatValue();
+                final float[] p_dwz_dw = p_dwz_d.get(label);
 
-                Float label_value = doc.get(label);
-                if (label_value != null) { // all words in the document
-                    p_zw_w[z] = _alpha * p_zw_w[z]; // alpha * P(w|z)^(n-1)
-                    p_zw_w[z] += label_value.floatValue() * p_dwz_d.get(label)[z]; // n(d,w) * P(z|d,w)
+                for (int z = 0; z < _K; z++) {
+                    p_zw_w[z] = n * p_dwz_dw[z] + _alpha * p_zw_w[z];
                 }
-
-                normalizer += p_zw_w[z];
             }
 
-            // normalize to ensure \sum_w P(w|z) = 1
-            for (float[] p_zw_w : _p_zw.values()) {
-                p_zw_w[z] /= normalizer;
+            MathUtils.add(p_zw_w, sums, _K);
+        }
+        // normalize to ensure \sum_w P(w|z) = 1
+        for (float[] p_zw_w : _p_zw.values()) {
+            for (int z = 0; z < _K; z++) {
+                p_zw_w[z] /= sums[z];
             }
         }
     }
@@ -302,6 +304,15 @@ public final class IncrementalPLSAModel {
 
         prob_label[z] = prob;
 
-        MathUtils.l1normalize(prob_label);
+        // ensure \sum_w P(w|z) = 1
+        final float[] sums = new float[_K];
+        for (float[] p_zw_w : _p_zw.values()) {
+            MathUtils.add(p_zw_w, sums, _K);
+        }
+        for (float[] p_zw_w : _p_zw.values()) {
+            for (int zi = 0; zi < _K; zi++) {
+                p_zw_w[zi] /= sums[zi];
+            }
+        }
     }
 }
