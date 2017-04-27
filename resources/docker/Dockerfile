@@ -20,7 +20,7 @@ COPY . ${HIVEMALL_PATH}/
 
 RUN set -eux && \
     apt update && \
-    apt install -y --no-install-recommends openssh-server maven ruby npm && \
+    apt install -y --no-install-recommends openssh-server maven g++ make ruby npm && \
     ln -s /usr/bin/nodejs /usr/bin/node && \
     npm install -g gitbook-cli && \
     \
