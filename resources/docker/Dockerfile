@@ -43,6 +43,11 @@ RUN set -eux && \
     \
     cd ${HIVEMALL_PATH} && \
     HIVEMALL_VERSION=`cat VERSION` && \
+    \
+    (if ${PREBUILD}; then \
+      cd ${HIVEMALL_PATH} && bin/build.sh; \
+    fi) && \
+    \
     mkdir -p /root/bin /root/hivemall && \
     find ${HIVEMALL_PATH}/resources/docker/home/bin -mindepth 1 -maxdepth 1 \
       -exec sh -c 'f={} && ln -s $f /root/bin/${f##*/}' \; && \
@@ -50,11 +55,6 @@ RUN set -eux && \
     ln -s ${HIVEMALL_PATH}/resources/ddl/define-all.hive /root/hivemall/define-all.hive && \
     ln -s ${HIVEMALL_PATH}/target/hivemall-core-${HIVEMALL_VERSION}-with-dependencies.jar \
       /root/hivemall/hivemall-core-with-dependencies.jar && \
-    \
-    (if ${PREBUILD}; then \
-      mvn package -Dmaven.test.skip=true -pl core; \
-    fi) && \
-    \
     rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* /root/.m2/* /root/.npm/*
 
 VOLUME ["/opt/hivemall/", "/root/data/"]
