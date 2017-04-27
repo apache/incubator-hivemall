@@ -160,6 +160,8 @@ create temporary function changefinder as 'hivemall.anomaly.ChangeFinderUDF';
 create temporary function sst as 'hivemall.anomaly.SingularSpectrumTransformUDF';
 create temporary function train_lda as 'hivemall.topicmodel.LDAUDTF';
 create temporary function lda_predict as 'hivemall.topicmodel.LDAPredictUDAF';
+create temporary function train_plsa as 'hivemall.topicmodel.PLSAUDTF';
+create temporary function plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF';
 create temporary function tile as 'hivemall.geospatial.TileUDF';
 create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
 

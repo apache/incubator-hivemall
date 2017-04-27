@@ -46,10 +46,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -57,26 +54,22 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
-@Description(name = "train_lda", value = "_FUNC_(array<string> words[, const string options])"
+@Description(name = "train_plsa", value = "_FUNC_(array<string> words[, const string options])"
         + " - Returns a relation consists of <int topic, string word, float score>")
-public class LDAUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(LDAUDTF.class);
-
+public class PLSAUDTF extends UDTFWithOptions {
+    private static final Log logger = LogFactory.getLog(PLSAUDTF.class);
+    
+    public static final int DEFAULT_TOPICS = 10;
+    public static final float DEFAULT_ALPHA = 0.5f;
+    public static final double DEFAULT_DELTA = 1E-3d;
+    
     // Options
     protected int topics;
     protected float alpha;
-    protected float eta;
-    protected long numDocs;
-    protected double tau0;
-    protected double kappa;
     protected int iterations;
     protected double delta;
     protected double eps;
     protected int miniBatchSize;
-
-    // if `num_docs` option is not given, this flag will be true
-    // in that case, UDTF automatically sets `count` value to the _D parameter in an online LDA model
-    protected boolean isAutoD;
 
     // number of proceeded training samples
     protected long count;
@@ -84,7 +77,7 @@ public class LDAUDTF extends UDTFWithOptions {
     protected String[][] miniBatch;
     protected int miniBatchCount;
 
-    protected transient OnlineLDAModel model;
+    protected transient IncrementalPLSAModel model;
 
     protected ListObjectInspector wordCountsOI;
 
@@ -92,29 +85,20 @@ public class LDAUDTF extends UDTFWithOptions {
     protected NioStatefullSegment fileIO;
     protected ByteBuffer inputBuf;
 
-    public LDAUDTF() {
-        this.topics = 10;
-        this.alpha = 1.f / topics;
-        this.eta = 1.f / topics;
-        this.numDocs = -1L;
-        this.tau0 = 64.d;
-        this.kappa = 0.7;
+    public PLSAUDTF() {
+        this.topics = DEFAULT_TOPICS;
+        this.alpha = DEFAULT_ALPHA;
         this.iterations = 10;
-        this.delta = 1E-3d;
+        this.delta = DEFAULT_DELTA;
         this.eps = 1E-1d;
-        this.miniBatchSize = 128; // if 1, truly online setting
+        this.miniBatchSize = 128;
     }
 
     @Override
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("k", "topics", true, "The number of topics [default: 10]");
-        opts.addOption("alpha", true, "The hyperparameter for theta [default: 1/k]");
-        opts.addOption("eta", true, "The hyperparameter for beta [default: 1/k]");
-        opts.addOption("d", "num_docs", true, "The total number of documents [default: auto]");
-        opts.addOption("tau", "tau0", true,
-            "The parameter which downweights early iterations [default: 64.0]");
-        opts.addOption("kappa", true, "Exponential decay rate (i.e., learning rate) [default: 0.7]");
+        opts.addOption("alpha", true, "The hyperparameter for P(w|z) update [default: 0.5]");
         opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 10]");
         opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-3]");
         opts.addOption("eps", "epsilon", true,
@@ -131,24 +115,14 @@ public class LDAUDTF extends UDTFWithOptions {
         if (argOIs.length >= 2) {
             String rawArgs = HiveUtils.getConstString(argOIs[1]);
             cl = parseOptions(rawArgs);
-            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), 10);
-            this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
-            this.eta = Primitives.parseFloat(cl.getOptionValue("eta"), 1.f / topics);
-            this.numDocs = Primitives.parseLong(cl.getOptionValue("num_docs"), -1L);
-            this.tau0 = Primitives.parseDouble(cl.getOptionValue("tau0"), 64.d);
-            if (tau0 <= 0.d) {
-                throw new UDFArgumentException("'-tau0' must be positive: " + tau0);
-            }
-            this.kappa = Primitives.parseDouble(cl.getOptionValue("kappa"), 0.7d);
-            if (kappa <= 0.5 || kappa > 1.d) {
-                throw new UDFArgumentException("'-kappa' must be in (0.5, 1.0]: " + kappa);
-            }
+            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), DEFAULT_TOPICS);
+            this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), DEFAULT_ALPHA);
             this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
             if (iterations < 1) {
                 throw new UDFArgumentException(
                     "'-iterations' must be greater than or equals to 1: " + iterations);
             }
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-3d);
+            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), DEFAULT_DELTA);
             this.eps = Primitives.parseDouble(cl.getOptionValue("epsilon"), 1E-1d);
             this.miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), 128);
         }
@@ -170,7 +144,6 @@ public class LDAUDTF extends UDTFWithOptions {
 
         this.model = null;
         this.count = 0L;
-        this.isAutoD = (numDocs < 0L);
         this.miniBatch = new String[miniBatchSize][];
         this.miniBatchCount = 0;
 
@@ -187,7 +160,7 @@ public class LDAUDTF extends UDTFWithOptions {
     }
 
     protected void initModel() {
-        this.model = new OnlineLDAModel(topics, alpha, eta, numDocs, tau0, kappa, delta);
+        this.model = new IncrementalPLSAModel(topics, alpha, delta);
     }
 
     @Override
@@ -196,8 +169,8 @@ public class LDAUDTF extends UDTFWithOptions {
             initModel();
         }
 
-        final int length = wordCountsOI.getListLength(args[0]);
-        final String[] wordCounts = new String[length];
+        int length = wordCountsOI.getListLength(args[0]);
+        String[] wordCounts = new String[length];
         int j = 0;
         for (int i = 0; i < length; i++) {
             Object o = wordCountsOI.getListElement(args[0], i);
@@ -213,9 +186,6 @@ public class LDAUDTF extends UDTFWithOptions {
         }
 
         count++;
-        if (isAutoD) {
-            model.setNumTotalDocs(count);
-        }
 
         recordTrainSampleToTempFile(wordCounts);
 
@@ -241,7 +211,7 @@ public class LDAUDTF extends UDTFWithOptions {
         if (buf == null) {
             final File file;
             try {
-                file = File.createTempFile("hivemall_lda", ".sgmt");
+                file = File.createTempFile("hivemall_plsa", ".sgmt");
                 file.deleteOnExit();
                 if (!file.canWrite()) {
                     throw new UDFArgumentException("Cannot write a temporary file: "
@@ -319,7 +289,7 @@ public class LDAUDTF extends UDTFWithOptions {
 
         final Reporter reporter = getReporter();
         final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-            "hivemall.lda.OnlineLDA$Counter", "iteration");
+            "hivemall.plsa.IncrementalPLSA$Counter", "iteration");
 
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file
@@ -549,18 +519,13 @@ public class LDAUDTF extends UDTFWithOptions {
      */
 
     @VisibleForTesting
-    double getLambda(String label, int k) {
-        return model.getLambda(label, k);
+    double getProbability(String label, int k) {
+        return model.getProbability(label, k);
     }
 
     @VisibleForTesting
     SortedMap<Float, List<String>> getTopicWords(int k) {
         return model.getTopicWords(k);
-    }
-
-    @VisibleForTesting
-    SortedMap<Float, List<String>> getTopicWords(int k, int topN) {
-        return model.getTopicWords(k, topN);
     }
 
     @VisibleForTesting

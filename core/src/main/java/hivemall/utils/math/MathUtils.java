@@ -408,4 +408,16 @@ public final class MathUtils {
         return Math.log(logsumexp) + max;
     }
 
+    @Nonnull
+    public static float[] l1normalize(@Nonnull final float[] arr) {
+        double sum = 0.d;
+        for (int i = 0; i < arr.length; i++) {
+            sum += Math.abs(arr[i]);
+        }
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] /= sum;
+        }
+        return arr;
+    }
+
 }

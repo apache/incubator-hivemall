@@ -32,25 +32,27 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.junit.Assert;
 import org.junit.Test;
 
-public class LDAUDTFTest {
+public class PLSAUDTFTest {
     private static final boolean DEBUG = false;
 
     @Test
     public void test() throws HiveException {
-        LDAUDTF udtf = new LDAUDTF();
+        PLSAUDTF udtf = new PLSAUDTF();
 
         ObjectInspector[] argOIs = new ObjectInspector[] {
-            ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-            ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topics 2 -num_docs 2 -s 1")};
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-topics 2 -alpha 0.1 -delta 0.00001")};
 
         udtf.initialize(argOIs);
 
-        String[] doc1 = new String[]{"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[]{"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
-        for (int it = 0; it < 5; it++) {
-            udtf.process(new Object[]{ Arrays.asList(doc1) });
-            udtf.process(new Object[]{ Arrays.asList(doc2) });
+        String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
+        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
+                "oranges:1"};
+        for (int it = 0; it < 10000; it++) {
+            udtf.process(new Object[] {Arrays.asList(doc1)});
+            udtf.process(new Object[] {Arrays.asList(doc2)});
         }
 
         SortedMap<Float, List<String>> topicWords;
@@ -89,11 +91,11 @@ public class LDAUDTFTest {
         }
 
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-            + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
-            udtf.getLambda("vegetables", k1) > udtf.getLambda("flu", k1));
+                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+            udtf.getProbability("vegetables", k1) > udtf.getProbability("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
-            + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
-            udtf.getLambda("avocados", k2) > udtf.getLambda("healthy", k2));
+                + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
+            udtf.getProbability("avocados", k2) > udtf.getProbability("healthy", k2));
     }
 
     private static void println(String msg) {

@@ -735,4 +735,14 @@ public final class ArrayUtils {
         return ret;
     }
 
+    @Nonnull
+    public static float[] newRandomFloatArray(@Nonnegative final int size,
+            @Nonnull final Random rnd) {
+        final float[] ret = new float[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = rnd.nextFloat();
+        }
+        return ret;
+    }
+
 }

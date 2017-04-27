@@ -33,6 +33,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -59,10 +60,10 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(name = "lda_predict",
-        value = "_FUNC_(string word, float value, int label, float lambda[, const string options])"
+@Description(name = "plsa_predict",
+        value = "_FUNC_(string word, float value, int label, float prob[, const string options])"
                 + " - Returns a list which consists of <int label, float prob>")
-public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
+public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
     @Override
     public Evaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
@@ -88,14 +89,13 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[3])) {
             throw new UDFArgumentTypeException(3,
-                "Number type is expected for the forth argument lambda: "
-                        + typeInfo[3].getTypeName());
+                "Number type is expected for the forth argument prob: " + typeInfo[3].getTypeName());
         }
 
         if (typeInfo.length == 5) {
             if (!HiveUtils.isStringTypeInfo(typeInfo[4])) {
                 throw new UDFArgumentTypeException(4,
-                    "String type is expected for the fifth argument lambda: "
+                    "String type is expected for the fifth argument prob: "
                             + typeInfo[4].getTypeName());
             }
         }
@@ -109,7 +109,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         private PrimitiveObjectInspector wordOI;
         private PrimitiveObjectInspector valueOI;
         private PrimitiveObjectInspector labelOI;
-        private PrimitiveObjectInspector lambdaOI;
+        private PrimitiveObjectInspector probOI;
 
         // Hyperparameters
         private int topics;
@@ -119,23 +119,23 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         // merge OI
         private StructObjectInspector internalMergeOI;
         private StructField wcListField;
-        private StructField lambdaMapField;
+        private StructField probMapField;
         private StructField topicOptionField;
         private StructField alphaOptionField;
         private StructField deltaOptionField;
         private PrimitiveObjectInspector wcListElemOI;
         private StandardListObjectInspector wcListOI;
-        private StandardMapObjectInspector lambdaMapOI;
-        private PrimitiveObjectInspector lambdaMapKeyOI;
-        private StandardListObjectInspector lambdaMapValueOI;
-        private PrimitiveObjectInspector lambdaMapValueElemOI;
+        private StandardMapObjectInspector probMapOI;
+        private PrimitiveObjectInspector probMapKeyOI;
+        private StandardListObjectInspector probMapValueOI;
+        private PrimitiveObjectInspector probMapValueElemOI;
 
         public Evaluator() {}
 
         protected Options getOptions() {
             Options opts = new Options();
-            opts.addOption("k", "topics", true, "The number of topics [required]");
-            opts.addOption("alpha", true, "The hyperparameter for theta [default: 1/k]");
+            opts.addOption("k", "topics", true, "The number of topics [default: 10]");
+            opts.addOption("alpha", true, "The hyperparameter for P(w|z) update [default: 0.5]");
             opts.addOption("delta", true,
                 "Check convergence in the expectation step [default: 1E-5]");
             return opts;
@@ -172,24 +172,23 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             return cl;
         }
 
+        @Nullable
         protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-            CommandLine cl = null;
-
             if (argOIs.length != 5) {
-                throw new UDFArgumentException("At least 1 option `-topics` MUST be specified");
+                return null;
             }
 
             String rawArgs = HiveUtils.getConstString(argOIs[4]);
-            cl = parseOptions(rawArgs);
+            CommandLine cl = parseOptions(rawArgs);
 
-            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), 0);
+            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), PLSAUDTF.DEFAULT_TOPICS);
             if (topics < 1) {
                 throw new UDFArgumentException(
                     "A positive integer MUST be set to an option `-topics`: " + topics);
             }
 
-            this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
+            this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), PLSAUDTF.DEFAULT_ALPHA);
+            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), PLSAUDTF.DEFAULT_DELTA);
 
             return cl;
         }
@@ -205,22 +204,22 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.wordOI = HiveUtils.asStringOI(parameters[0]);
                 this.valueOI = HiveUtils.asDoubleCompatibleOI(parameters[1]);
                 this.labelOI = HiveUtils.asIntegerOI(parameters[2]);
-                this.lambdaOI = HiveUtils.asDoubleCompatibleOI(parameters[3]);
+                this.probOI = HiveUtils.asDoubleCompatibleOI(parameters[3]);
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 this.internalMergeOI = soi;
                 this.wcListField = soi.getStructFieldRef("wcList");
-                this.lambdaMapField = soi.getStructFieldRef("lambdaMap");
+                this.probMapField = soi.getStructFieldRef("probMap");
                 this.topicOptionField = soi.getStructFieldRef("topics");
                 this.alphaOptionField = soi.getStructFieldRef("alpha");
                 this.deltaOptionField = soi.getStructFieldRef("delta");
                 this.wcListElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.wcListOI = ObjectInspectorFactory.getStandardListObjectInspector(wcListElemOI);
-                this.lambdaMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                this.lambdaMapValueElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                this.lambdaMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(lambdaMapValueElemOI);
-                this.lambdaMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                    lambdaMapKeyOI, lambdaMapValueOI);
+                this.probMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                this.probMapValueElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                this.probMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(probMapValueElemOI);
+                this.probMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(probMapKeyOI,
+                    probMapValueOI);
             }
 
             // initialize output
@@ -248,7 +247,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             fieldNames.add("wcList");
             fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
-            fieldNames.add("lambdaMap");
+            fieldNames.add("probMap");
             fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
@@ -268,7 +267,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         @SuppressWarnings("deprecation")
         @Override
         public AggregationBuffer getNewAggregationBuffer() throws HiveException {
-            AggregationBuffer myAggr = new OnlineLDAPredictAggregationBuffer();
+            AggregationBuffer myAggr = new PLSAPredictAggregationBuffer();
             reset(myAggr);
             return myAggr;
         }
@@ -276,7 +275,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         @Override
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
+            PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             myAggr.reset();
             myAggr.setOptions(topics, alpha, delta);
         }
@@ -284,7 +283,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         @Override
         public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
                 Object[] parameters) throws HiveException {
-            OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
+            PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
 
             if (parameters[0] == null || parameters[1] == null || parameters[2] == null
                     || parameters[3] == null) {
@@ -292,25 +291,25 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             }
 
             String word = PrimitiveObjectInspectorUtils.getString(parameters[0], wordOI);
-            float value = HiveUtils.getFloat(parameters[1], valueOI);
+            float value = PrimitiveObjectInspectorUtils.getFloat(parameters[1], valueOI);
             int label = PrimitiveObjectInspectorUtils.getInt(parameters[2], labelOI);
-            float lambda = HiveUtils.getFloat(parameters[3], lambdaOI);
+            float prob = PrimitiveObjectInspectorUtils.getFloat(parameters[3], probOI);
 
-            myAggr.iterate(word, value, label, lambda);
+            myAggr.iterate(word, value, label, prob);
         }
 
         @Override
         public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
+            PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             if (myAggr.wcList.size() == 0) {
                 return null;
             }
 
             Object[] partialResult = new Object[5];
             partialResult[0] = myAggr.wcList;
-            partialResult[1] = myAggr.lambdaMap;
-            partialResult[2] = new IntWritable(myAggr.topic);
+            partialResult[1] = myAggr.probMap;
+            partialResult[2] = new IntWritable(myAggr.topics);
             partialResult[3] = new FloatWritable(myAggr.alpha);
             partialResult[4] = new DoubleWritable(myAggr.delta);
 
@@ -335,26 +334,25 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 wcList.add(PrimitiveObjectInspectorUtils.getString(wcListRaw.get(i), wcListElemOI));
             }
 
-            Object lambdaMapObj = internalMergeOI.getStructFieldData(partial, lambdaMapField);
-            Map<?, ?> lambdaMapRaw = lambdaMapOI.getMap(HiveUtils.castLazyBinaryObject(lambdaMapObj));
+            Object probMapObj = internalMergeOI.getStructFieldData(partial, probMapField);
+            Map<?, ?> probMapRaw = probMapOI.getMap(HiveUtils.castLazyBinaryObject(probMapObj));
 
-            Map<String, List<Float>> lambdaMap = new HashMap<String, List<Float>>();
-            for (Map.Entry<?, ?> e : lambdaMapRaw.entrySet()) {
+            Map<String, List<Float>> probMap = new HashMap<String, List<Float>>();
+            for (Map.Entry<?, ?> e : probMapRaw.entrySet()) {
                 // fix map keys to Java String objects
-                String word = PrimitiveObjectInspectorUtils.getString(e.getKey(), lambdaMapKeyOI);
+                String word = PrimitiveObjectInspectorUtils.getString(e.getKey(), probMapKeyOI);
 
-                Object lambdaMapValueObj = e.getValue();
-                List<?> lambdaMapValueRaw = lambdaMapValueOI.getList(HiveUtils.castLazyBinaryObject(lambdaMapValueObj));
+                Object probMapValueObj = e.getValue();
+                List<?> probMapValueRaw = probMapValueOI.getList(HiveUtils.castLazyBinaryObject(probMapValueObj));
 
                 // fix map values to lists of Java Float objects
-                int lambdaMapValueSize = lambdaMapValueRaw.size();
-                List<Float> lambda_word = new ArrayList<Float>();
-                for (int i = 0; i < lambdaMapValueSize; i++) {
-                    lambda_word.add(HiveUtils.getFloat(lambdaMapValueRaw.get(i),
-                        lambdaMapValueElemOI));
+                int probMapValueSize = probMapValueRaw.size();
+                List<Float> prob_word = new ArrayList<Float>();
+                for (int i = 0; i < probMapValueSize; i++) {
+                    prob_word.add(HiveUtils.getFloat(probMapValueRaw.get(i), probMapValueElemOI));
                 }
 
-                lambdaMap.put(word, lambda_word);
+                probMap.put(word, prob_word);
             }
 
             // restore options from partial result
@@ -367,15 +365,15 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             Object deltaObj = internalMergeOI.getStructFieldData(partial, deltaOptionField);
             this.delta = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(deltaObj);
 
-            OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
+            PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             myAggr.setOptions(topics, alpha, delta);
-            myAggr.merge(wcList, lambdaMap);
+            myAggr.merge(wcList, probMap);
         }
 
         @Override
         public Object terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
+            PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             float[] topicDistr = myAggr.get();
 
             SortedMap<Float, Integer> sortedDistr = new TreeMap<Float, Integer>(
@@ -387,8 +385,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             List<Object[]> result = new ArrayList<Object[]>();
             for (Map.Entry<Float, Integer> e : sortedDistr.entrySet()) {
                 Object[] struct = new Object[2];
-                struct[0] = new IntWritable(e.getValue()); // label
-                struct[1] = new FloatWritable(e.getKey()); // probability
+                struct[0] = new IntWritable(e.getValue().intValue()); // label
+                struct[1] = new FloatWritable(e.getKey().floatValue()); // probability
                 result.add(struct);
             }
             return result;
@@ -396,75 +394,81 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static class OnlineLDAPredictAggregationBuffer extends
+    public static class PLSAPredictAggregationBuffer extends
             GenericUDAFEvaluator.AbstractAggregationBuffer {
 
         private List<String> wcList;
-        private Map<String, List<Float>> lambdaMap;
+        private Map<String, List<Float>> probMap;
 
-        private int topic;
+        private int topics;
         private float alpha;
         private double delta;
 
-        OnlineLDAPredictAggregationBuffer() {
+        PLSAPredictAggregationBuffer() {
             super();
         }
 
-        void setOptions(int topic, float alpha, double delta) {
-            this.topic = topic;
+        void setOptions(int topics, float alpha, double delta) {
+            this.topics = topics;
             this.alpha = alpha;
             this.delta = delta;
         }
 
         void reset() {
             this.wcList = new ArrayList<String>();
-            this.lambdaMap = new HashMap<String, List<Float>>();
+            this.probMap = new HashMap<String, List<Float>>();
         }
 
-        void iterate(String word, float value, int label, float lambda) {
+        void iterate(@Nonnull final String word, final float value, final int label,
+                final float prob) {
             wcList.add(word + ":" + value);
 
-            // for an unforeseen word, initialize its lambdas w/ -1s
-            if (!lambdaMap.containsKey(word)) {
-                List<Float> lambdaEmpty_word = new ArrayList<Float>(
-                    Collections.nCopies(topic, -1.f));
-                lambdaMap.put(word, lambdaEmpty_word);
+            // for an unforeseen word, initialize its probs w/ -1s
+            List<Float> prob_word = probMap.get(word);
+
+            if (prob_word == null) {
+                prob_word = new ArrayList<Float>(Collections.nCopies(topics, -1.f));
+                probMap.put(word, prob_word);
             }
 
-            // set the given lambda value
-            List<Float> lambda_word = lambdaMap.get(word);
-            lambda_word.set(label, lambda);
-            lambdaMap.put(word, lambda_word);
+            // set the given prob value
+            prob_word.set(label, Float.valueOf(prob));
         }
 
-        void merge(List<String> o_wcList, Map<String, List<Float>> o_lambdaMap) {
+        void merge(@Nonnull final List<String> o_wcList,
+                @Nonnull final Map<String, List<Float>> o_probMap) {
             wcList.addAll(o_wcList);
 
-            for (Map.Entry<String, List<Float>> e : o_lambdaMap.entrySet()) {
+            for (Map.Entry<String, List<Float>> e : o_probMap.entrySet()) {
                 String o_word = e.getKey();
-                List<Float> o_lambda_word = e.getValue();
+                List<Float> o_prob_word = e.getValue();
 
-                if (!lambdaMap.containsKey(o_word)) { // for an unforeseen word
-                    lambdaMap.put(o_word, o_lambda_word);
-                } else { // for a partially observed word
-                    List<Float> lambda_word = lambdaMap.get(o_word);
-                    for (int k = 0; k < topic; k++) {
-                        if (o_lambda_word.get(k) != -1.f) { // not default value
-                            lambda_word.set(k, o_lambda_word.get(k)); // set the partial lambda value
+                final List<Float> prob_word = probMap.get(o_word);
+                if (prob_word == null) {// for a partially observed word
+                    probMap.put(o_word, o_prob_word);
+                } else { // for an unforeseen word
+                    for (int k = 0; k < topics; k++) {
+                        final float prob_k = o_prob_word.get(k).floatValue();
+                        if (prob_k != -1.f) { // not default value
+                            prob_word.set(k, prob_k); // set the partial prob value
                         }
                     }
-                    lambdaMap.put(o_word, lambda_word);
+                    probMap.put(o_word, prob_word);
                 }
             }
         }
 
         float[] get() {
-            OnlineLDAModel model = new OnlineLDAModel(topic, alpha, delta);
+            final IncrementalPLSAModel model = new IncrementalPLSAModel(topics, alpha, delta);
 
-            for (String word : lambdaMap.keySet()) {
-                List<Float> lambda_word = lambdaMap.get(word);
-                for (int k = 0; k < topic; k++) {
-                    model.setLambda(word, k, lambda_word.get(k));
+            for (Map.Entry<String, List<Float>> e : probMap.entrySet()) {
+                final String word = e.getKey();
+                final List<Float> prob_word = e.getValue();
+                for (int k = 0; k < topics; k++) {
+                    final float prob_k = prob_word.get(k).floatValue();
+                    if (prob_k != -1.f) {
+                        model.setProbability(word, k, prob_k);
+                    }
                 }
             }
 
