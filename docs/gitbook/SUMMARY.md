@@ -55,13 +55,10 @@
 
 * [Feature Scaling](ft_engineering/scaling.md)
 * [Feature Hashing](ft_engineering/hashing.md)
-* [TF-IDF calculation](ft_engineering/tfidf.md)
-
-* [FEATURE TRANSFORMATION](ft_engineering/ft_trans.md)
-    * [Vectorize Features](ft_engineering/vectorizer.md)
-    * [Quantify non-number features](ft_engineering/quantify.md)
-
-* [Feature selection](ft_engineering/feature_selection.md)
+* [Feature Selection](ft_engineering/selection.md)
+* [Feature Vectorization](ft_engineering/vectorization.md)
+* [Quantify non-number features](ft_engineering/quantifying.md)
+* [TF-IDF Calculation](ft_engineering/tfidf.md)
 
 ## Part IV - Evaluation
 
