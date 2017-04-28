@@ -134,7 +134,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
         protected Options getOptions() {
             Options opts = new Options();
-            opts.addOption("k", "topics", true, "The number of topics [required]");
+            opts.addOption("k", "topics", true, "The number of topics [default: 10]");
             opts.addOption("alpha", true, "The hyperparameter for theta [default: 1/k]");
             opts.addOption("delta", true,
                 "Check convergence in the expectation step [default: 1E-5]");
@@ -173,23 +173,21 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         }
 
         protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-            CommandLine cl = null;
-
             if (argOIs.length != 5) {
-                throw new UDFArgumentException("At least 1 option `-topics` MUST be specified");
+                return null;
             }
 
             String rawArgs = HiveUtils.getConstString(argOIs[4]);
-            cl = parseOptions(rawArgs);
+            CommandLine cl = parseOptions(rawArgs);
 
-            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), 0);
+            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), LDAUDTF.DEFAULT_TOPICS);
             if (topics < 1) {
                 throw new UDFArgumentException(
                     "A positive integer MUST be set to an option `-topics`: " + topics);
             }
 
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
+            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), LDAUDTF.DEFAULT_DELTA);
 
             return cl;
         }
