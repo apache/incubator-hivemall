@@ -46,46 +46,6 @@ public class LDAPredictUDAFTest {
     int[] labels;
     float[] lambdas;
 
-    @Test(expected=UDFArgumentException.class)
-    public void testWithoutOption() throws Exception {
-        udaf = new LDAPredictUDAF();
-
-        inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT)};
-
-        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
-
-        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
-    }
-
-    @Test(expected=UDFArgumentException.class)
-    public void testWithoutTopicOption() throws Exception {
-        udaf = new LDAPredictUDAF();
-
-        inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-alpha 0.1")};
-
-        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
-
-        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
-    }
-
     @Before
     public void setUp() throws Exception {
         udaf = new LDAPredictUDAF();
