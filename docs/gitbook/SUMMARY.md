@@ -56,6 +56,7 @@
 * [Feature Scaling](ft_engineering/scaling.md)
 * [Feature Hashing](ft_engineering/hashing.md)
 * [Feature Selection](ft_engineering/selection.md)
+* [Feature Binning](ft_engineering/binning.md)
 * [Feature Vectorization](ft_engineering/vectorization.md)
 * [Quantify non-number features](ft_engineering/quantifying.md)
 * [TF-IDF Calculation](ft_engineering/tfidf.md)
