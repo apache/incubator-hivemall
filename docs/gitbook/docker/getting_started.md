@@ -35,9 +35,9 @@ This page introduces how to run Hivemall on Docker.
   
   `docker-compose -f resources/docker/docker-compose.yml build`
 
-## Build using docker engine
+## Build using docker command
   
-  `docker build -f resources/docker/Dockerfile`
+  `docker build -f resources/docker/Dockerfile .`
 
 # 2. Run container
 
@@ -54,7 +54,7 @@ This page introduces how to run Hivemall on Docker.
 
 # 3. Run Hivemall on Docker
 
-  1. type `hive` to run (see `.hiverc` loads Hivemall functions)
+  1. Type `hive` to run (`.hiverc` automatically loads Hivemall functions)
   2. Try your Hivemall queries!
 
 ## Load data into HDFS (optional)
