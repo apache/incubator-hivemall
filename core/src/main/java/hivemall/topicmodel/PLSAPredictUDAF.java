@@ -120,7 +120,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
         private StructObjectInspector internalMergeOI;
         private StructField wcListField;
         private StructField probMapField;
-        private StructField topicOptionField;
+        private StructField topicsOptionField;
         private StructField alphaOptionField;
         private StructField deltaOptionField;
         private PrimitiveObjectInspector wcListElemOI;
@@ -214,7 +214,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.internalMergeOI = soi;
                 this.wcListField = soi.getStructFieldRef("wcList");
                 this.probMapField = soi.getStructFieldRef("probMap");
-                this.topicOptionField = soi.getStructFieldRef("topics");
+                this.topicsOptionField = soi.getStructFieldRef("topics");
                 this.alphaOptionField = soi.getStructFieldRef("alpha");
                 this.deltaOptionField = soi.getStructFieldRef("delta");
                 this.wcListElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -360,8 +360,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             }
 
             // restore options from partial result
-            Object topicObj = internalMergeOI.getStructFieldData(partial, topicOptionField);
-            this.topics = PrimitiveObjectInspectorFactory.writableIntObjectInspector.get(topicObj);
+            Object topicsObj = internalMergeOI.getStructFieldData(partial, topicsOptionField);
+            this.topics = PrimitiveObjectInspectorFactory.writableIntObjectInspector.get(topicsObj);
 
             Object alphaObj = internalMergeOI.getStructFieldData(partial, alphaOptionField);
             this.alpha = PrimitiveObjectInspectorFactory.writableFloatObjectInspector.get(alphaObj);
