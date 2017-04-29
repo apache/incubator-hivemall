@@ -17,7 +17,7 @@
   under the License.
 -->
         
-## Feature Vectorizer
+## Feature Vectorization
 
 `array<string> vectorize_feature(array<string> featureNames, ...)` is useful to generate a feature vector for each row, from a table.
 
