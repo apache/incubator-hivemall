@@ -174,21 +174,25 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
         @Nullable
         protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-            if (argOIs.length != 5) {
-                return null;
+            CommandLine cl = null;
+
+            if (argOIs.length >= 5) {
+                String rawArgs = HiveUtils.getConstString(argOIs[4]);
+                cl = parseOptions(rawArgs);
+
+                this.topics = Primitives.parseInt(cl.getOptionValue("topics"), PLSAUDTF.DEFAULT_TOPICS);
+                if (topics < 1) {
+                    throw new UDFArgumentException(
+                            "A positive integer MUST be set to an option `-topics`: " + topics);
+                }
+
+                this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), PLSAUDTF.DEFAULT_ALPHA);
+                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), PLSAUDTF.DEFAULT_DELTA);
+            } else {
+                this.topics = PLSAUDTF.DEFAULT_TOPICS;
+                this.alpha = PLSAUDTF.DEFAULT_ALPHA;
+                this.delta = PLSAUDTF.DEFAULT_DELTA;
             }
-
-            String rawArgs = HiveUtils.getConstString(argOIs[4]);
-            CommandLine cl = parseOptions(rawArgs);
-
-            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), PLSAUDTF.DEFAULT_TOPICS);
-            if (topics < 1) {
-                throw new UDFArgumentException(
-                    "A positive integer MUST be set to an option `-topics`: " + topics);
-            }
-
-            this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), PLSAUDTF.DEFAULT_ALPHA);
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), PLSAUDTF.DEFAULT_DELTA);
 
             return cl;
         }
