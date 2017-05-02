@@ -218,6 +218,10 @@ public final class IncrementalPLSAModel {
                 for (int z = 0; z < _K; z++) {
                     p_zw_w[z] = n * p_dwz_dw[z] + _alpha * p_zw_w[z];
                 }
+            } else { // others
+                for (int z = 0; z < _K; z++) {
+                    p_zw_w[z] = _alpha * p_zw_w[z];
+                }
             }
 
             MathUtils.add(p_zw_w, sums, _K);
