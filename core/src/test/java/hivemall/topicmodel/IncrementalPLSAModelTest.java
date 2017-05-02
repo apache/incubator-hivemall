@@ -50,7 +50,7 @@ public class IncrementalPLSAModelTest {
         float perplexityPrev;
         float perplexity = Float.MAX_VALUE;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.f, 1E-5d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.5f, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
@@ -124,7 +124,7 @@ public class IncrementalPLSAModelTest {
         float perplexityPrev;
         float perplexity = Float.MAX_VALUE;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.f, 1E-5d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.5f, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
@@ -191,7 +191,7 @@ public class IncrementalPLSAModelTest {
         int cnt, it;
         int maxIter = 64;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.8f, 1E-5d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 4.f, 1E-5d);
 
         BufferedReader news20 = readFile("news20-multiclass.gz");
 
