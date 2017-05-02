@@ -92,7 +92,9 @@ public final class IncrementalPLSAModel {
         for (int d = 0; d < _miniBatchSize; d++) {
             do {
                 pPrev_dz.clear();
-                pPrev_dz.addAll(_p_dz);
+                for (float[] p_dz_d : _p_dz) { // deep copy
+                    pPrev_dz.add(p_dz_d.clone());
+                }
 
                 // Expectation
                 eStep(d);
