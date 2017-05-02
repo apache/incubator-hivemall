@@ -411,10 +411,14 @@ public final class MathUtils {
     @Nonnull
     public static float[] l1normalize(@Nonnull final float[] arr) {
         double sum = 0.d;
-        for (int i = 0; i < arr.length; i++) {
+        int size = arr.length;
+        for (int i = 0; i < size; i++) {
             sum += Math.abs(arr[i]);
         }
-        for (int i = 0; i < arr.length; i++) {
+        if (sum == 0.d) {
+            return new float[size];
+        }
+        for (int i = 0; i < size; i++) {
             arr[i] /= sum;
         }
         return arr;
