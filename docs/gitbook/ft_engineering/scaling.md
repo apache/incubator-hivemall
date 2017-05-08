@@ -16,7 +16,9 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
+
+<!-- toc -->
+
 # Min-Max Normalization
 http://en.wikipedia.org/wiki/Feature_scaling#Rescaling
 ```sql

@@ -17,7 +17,7 @@
   under the License.
 -->
         
-## Feature Vectorizer
+## Feature Vectorization
 
 `array<string> vectorize_feature(array<string> featureNames, ...)` is useful to generate a feature vector for each row, from a table.
 
@@ -55,7 +55,7 @@ select
 from
   train
 limit 2;
+```
 
 > 1       ["age:39.0","job#blue-collar","marital#married","education#secondary","default#no","balance:1756.0","housing#yes","loan#no","contact#cellular","day:3.0","month#apr","duration:939.0","campaign:1.0","pdays:-1.0","poutcome#unknown"]   1
 > 2       ["age:51.0","job#entrepreneur","marital#married","education#primary","default#no","balance:1443.0","housing#no","loan#no","contact#cellular","day:18.0","month#feb","duration:172.0","campaign:10.0","pdays:-1.0","poutcome#unknown"]   1
-```
