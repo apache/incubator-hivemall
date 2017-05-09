@@ -151,4 +151,18 @@ This value controls **how much iterative model update is affected by the old res
 
 From an algorithmic point of view, training pLSA (and LDA) iteratively repeats certain operations and updates the target value (i.e., probability obtained as a result of `train_plsa()`). This iterative procedure gradually makes the probabilities more accurate. What `alpha` does is to control the degree of the change of probabilities in each step.
 
-Normally, `alpha` is set to a small value from 0.0 to 0.5 (default is 0.5).
+Importantly, pLSA is likely to overfit single mini-batch. As a result, $$P(w|z)$$ could be particularly bad values (i.e., $$(w|z) = 0$$), and `train_plsa()` sometimes fails with an exception like:
+
+```
+Perplexity would be Infinity. Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.
+```
+
+In that case, you need to try different hyper-parameters to avoid overfitting as the exception suggests.
+
+For instance, [20 newsgroups dataset](http://qwone.com/~jason/20Newsgroups/) which consists of 10906 realistic documents empirically requires the following options:
+
+```sql
+SELECT train_plsa(features, "-topics 20 -iter 10 -s 128 -delta 0.01 -alpha 512 -eps 0.1")
+```
+
+Clearly, `alpha` is much larger than `0.01` which was used for the dummy data above. Let you keep in mind that an appropriate value of `alpha` highly depends on the number of documents and mini-batch size.

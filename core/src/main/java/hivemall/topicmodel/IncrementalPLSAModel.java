@@ -229,7 +229,7 @@ public final class IncrementalPLSAModel {
         // normalize to ensure \sum_w P(w|z) = 1
         for (float[] p_zw_w : _p_zw.values()) {
             for (int z = 0; z < _K; z++) {
-                p_zw_w[z] = (float) Math.max(p_zw_w[z] / sums[z], 1E-20f);
+                p_zw_w[z] = (float) (p_zw_w[z] / sums[z]);
             }
         }
     }
@@ -264,7 +264,7 @@ public final class IncrementalPLSAModel {
 
                 if (p_dw == 0.d) {
                     throw new RuntimeException("Perplexity would be Infinity. "
-                            + "Try to reduce the number of documents or words.");
+                            + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
                 }
                 numer += w_value * Math.log(p_dw);
                 denom += w_value;
