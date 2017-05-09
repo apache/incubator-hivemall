@@ -20,6 +20,7 @@ package hivemall.topicmodel;
 
 import static hivemall.utils.lang.ArrayUtils.newRandomFloatArray;
 import static hivemall.utils.math.MathUtils.l1normalize;
+import hivemall.math.random.SmileRandom;
 import hivemall.model.FeatureValue;
 import hivemall.utils.math.MathUtils;
 
@@ -29,7 +30,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -54,7 +54,7 @@ public final class IncrementalPLSAModel {
 
     // random number generator
     @Nonnull
-    private final Random _rnd;
+    private final SmileRandom _rnd;
 
     // optimized in the E step
     private List<Map<String, float[]>> _p_dwz; // P(z|d,w) probability of topics for each document-word (i.e., instance-feature) pair
@@ -73,7 +73,7 @@ public final class IncrementalPLSAModel {
         this._alpha = alpha;
         this._delta = delta;
 
-        this._rnd = new Random(1001);
+        this._rnd = new SmileRandom(1001);
 
         this._p_zw = new HashMap<String, float[]>();
 

@@ -191,7 +191,7 @@ public class IncrementalPLSAModelTest {
         int cnt, it;
         int maxIter = 64;
 
-        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 4.f, 1E-5d);
+        IncrementalPLSAModel model = new IncrementalPLSAModel(K, 100.f, 1E-3d);
 
         BufferedReader news20 = readFile("news20-multiclass.gz");
 

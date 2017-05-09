@@ -18,6 +18,8 @@
  */
 package hivemall.utils.lang;
 
+import hivemall.math.random.SmileRandom;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
@@ -737,10 +739,10 @@ public final class ArrayUtils {
 
     @Nonnull
     public static float[] newRandomFloatArray(@Nonnegative final int size,
-            @Nonnull final Random rnd) {
+            @Nonnull final SmileRandom rnd) {
         final float[] ret = new float[size];
         for (int i = 0; i < size; i++) {
-            ret[i] = rnd.nextFloat();
+            ret[i] = (float) rnd.nextDouble();
         }
         return ret;
     }
