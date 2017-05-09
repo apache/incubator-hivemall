@@ -263,7 +263,7 @@ public final class IncrementalPLSAModel {
                 }
 
                 if (p_dw == 0.d) {
-                    throw new RuntimeException("Perplexity would be Infinity. "
+                    throw new IllegalStateException("Perplexity would be Infinity. "
                             + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
                 }
                 numer += w_value * Math.log(p_dw);
