@@ -18,7 +18,8 @@
  */
 package hivemall.topicmodel;
 
-import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import hivemall.utils.math.MathUtils;
+
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -46,52 +47,8 @@ public class PLSAPredictUDAFTest {
     int[] labels;
     float[] probs;
 
-    @Test(expected = UDFArgumentException.class)
-    public void testWithoutOption() throws Exception {
-        udaf = new PLSAPredictUDAF();
-
-        inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT)};
-
-        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
-
-        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
-    }
-
-    @Test(expected = UDFArgumentException.class)
-    public void testWithoutTopicOption() throws Exception {
-        udaf = new PLSAPredictUDAF();
-
-        inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-alpha 0.1")};
-
-        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
-
-        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
-    }
-
     @Before
     public void setUp() throws Exception {
-        udaf = new PLSAPredictUDAF();
-
-        inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topics 2")};
-
-        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
-
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
@@ -115,8 +72,6 @@ public class PLSAPredictUDAFTest {
         partialOI = new ObjectInspector[4];
         partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
 
-        agg = (PLSAPredictUDAF.PLSAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
-
         words = new String[] {"fruits", "vegetables", "healthy", "flu", "apples", "oranges",
                 "like", "avocados", "colds", "colds", "avocados", "oranges", "like", "apples",
                 "flu", "healthy", "vegetables", "fruits"};
@@ -129,6 +84,20 @@ public class PLSAPredictUDAFTest {
 
     @Test
     public void test() throws Exception {
+        udaf = new PLSAPredictUDAF();
+
+        inputOIs = new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topics 2")};
+
+        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+
+        agg = (PLSAPredictUDAF.PLSAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
+
         final Map<String, Float> doc1 = new HashMap<String, Float>();
         doc1.put("fruits", 1.f);
         doc1.put("healthy", 1.f);
@@ -165,6 +134,20 @@ public class PLSAPredictUDAFTest {
 
     @Test
     public void testMerge() throws Exception {
+        udaf = new PLSAPredictUDAF();
+
+        inputOIs = new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topics 2")};
+
+        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+
+        agg = (PLSAPredictUDAF.PLSAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
+
         final Map<String, Float> doc = new HashMap<String, Float>();
         doc.put("apples", 1.f);
         doc.put("avocados", 1.f);
@@ -213,5 +196,57 @@ public class PLSAPredictUDAFTest {
             float[] distr = agg.get();
             Assert.assertTrue(distr[0] < distr[1]);
         }
+    }
+
+    @Test
+    public void testUnmatchedTopics() throws Exception {
+        udaf = new PLSAPredictUDAF();
+
+        // pre-defined topic model only has two topics, but prediction is launched with -topics=10 (default value)
+        inputOIs = new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.FLOAT)};
+
+        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+
+        agg = (PLSAPredictUDAF.PLSAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
+
+        final Map<String, Float> doc1 = new HashMap<String, Float>();
+        doc1.put("fruits", 1.f);
+        doc1.put("healthy", 1.f);
+        doc1.put("vegetables", 1.f);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i];
+            evaluator.iterate(agg, new Object[] {word, doc1.get(word), labels[i], probs[i]});
+        }
+        float[] doc1Distr = agg.get();
+
+        final Map<String, Float> doc2 = new HashMap<String, Float>();
+        doc2.put("apples", 1.f);
+        doc2.put("avocados", 1.f);
+        doc2.put("colds", 1.f);
+        doc2.put("flu", 1.f);
+        doc2.put("like", 2.f);
+        doc2.put("oranges", 1.f);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i];
+            evaluator.iterate(agg, new Object[] {word, doc2.get(word), labels[i], probs[i]});
+        }
+        float[] doc2Distr = agg.get();
+
+        Assert.assertEquals(PLSAUDTF.DEFAULT_TOPICS, doc1Distr.length);
+        Assert.assertEquals(1.d, MathUtils.sum(doc1Distr), 1E-5d);
+
+        Assert.assertEquals(PLSAUDTF.DEFAULT_TOPICS, doc2Distr.length);
+        Assert.assertEquals(1.d, MathUtils.sum(doc2Distr), 1E-5d);
     }
 }

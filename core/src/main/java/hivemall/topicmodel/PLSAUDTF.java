@@ -46,7 +46,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -58,11 +61,11 @@ import org.apache.hadoop.mapred.Reporter;
         + " - Returns a relation consists of <int topic, string word, float score>")
 public class PLSAUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(PLSAUDTF.class);
-    
+
     public static final int DEFAULT_TOPICS = 10;
     public static final float DEFAULT_ALPHA = 0.5f;
     public static final double DEFAULT_DELTA = 1E-3d;
-    
+
     // Options
     protected int topics;
     protected float alpha;
@@ -474,6 +477,8 @@ public class PLSAUDTF extends UDTFWithOptions {
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
                         + " training updates in total)");
             }
+        } catch (Throwable e) {
+            throw new HiveException("Exception caused in the iterative training", e);
         } finally {
             // delete the temporary file and release resources
             try {

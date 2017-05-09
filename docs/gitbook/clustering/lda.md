@@ -82,7 +82,7 @@ with word_counts as (
     docid, word
 )
 select
-  train_lda(feature, "-topic 2 -iter 20") as (label, word, lambda)
+  train_lda(feature, "-topics 2 -iter 20") as (label, word, lambda)
 from (
   select docid, collect_set(word_count) as feature
   from word_counts
@@ -92,7 +92,7 @@ from (
 ;
 ```
 
-Here, an option `-topic 2` specifies the number of topics we assume in the set of documents.
+Here, an option `-topics 2` specifies the number of topics we assume in the set of documents.
 
 Notice that `order by docid` ensures building a LDA model precisely in a single node. In case that you like to launch `train_lda` in parallel, following query hopefully returns similar (but might be slightly approximated) result:
 
@@ -104,7 +104,7 @@ select
   label, word, avg(lambda) as lambda
 from (
   select
-    train_lda(feature, "-topic 2 -iter 20") as (label, word, lambda)
+    train_lda(feature, "-topics 2 -iter 20") as (label, word, lambda)
   from (
     select docid, collect_set(f) as feature
     from word_counts
@@ -163,7 +163,7 @@ with test as (
 )
 select
   t.docid,
-  lda_predict(t.word, t.value, m.label, m.lambda, "-topic 2") as probabilities
+  lda_predict(t.word, t.value, m.label, m.lambda, "-topics 2") as probabilities
 from
   test t
   JOIN lda_model m ON (t.word = m.word)
@@ -177,7 +177,7 @@ group by
 |1  | [{"label":0,"probability":0.875},{"label":1,"probability":0.125}]|
 |2  | [{"label":1,"probability":0.9375},{"label":0,"probability":0.0625}]|
 
-Importantly, an option `-topic` should be set to the same value as you set for training.
+Importantly, an option `-topics` is expected to be the same value as you set for training.
 
 Since the probabilities are sorted in descending order, a label of the most promising topic is easily obtained as:
 

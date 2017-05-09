@@ -20,6 +20,8 @@ package hivemall.topicmodel;
 
 import static hivemall.utils.lang.ArrayUtils.newRandomFloatArray;
 import static hivemall.utils.math.MathUtils.l1normalize;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.model.FeatureValue;
 import hivemall.utils.math.MathUtils;
 
@@ -29,7 +31,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -54,7 +55,7 @@ public final class IncrementalPLSAModel {
 
     // random number generator
     @Nonnull
-    private final Random _rnd;
+    private final PRNG _rnd;
 
     // optimized in the E step
     private List<Map<String, float[]>> _p_dwz; // P(z|d,w) probability of topics for each document-word (i.e., instance-feature) pair
@@ -73,7 +74,7 @@ public final class IncrementalPLSAModel {
         this._alpha = alpha;
         this._delta = delta;
 
-        this._rnd = new Random(1001);
+        this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         this._p_zw = new HashMap<String, float[]>();
 
@@ -92,7 +93,9 @@ public final class IncrementalPLSAModel {
         for (int d = 0; d < _miniBatchSize; d++) {
             do {
                 pPrev_dz.clear();
-                pPrev_dz.addAll(_p_dz);
+                for (float[] p_dz_d : _p_dz) { // deep copy
+                    pPrev_dz.add(p_dz_d.clone());
+                }
 
                 // Expectation
                 eStep(d);
@@ -216,6 +219,10 @@ public final class IncrementalPLSAModel {
                 for (int z = 0; z < _K; z++) {
                     p_zw_w[z] = n * p_dwz_dw[z] + _alpha * p_zw_w[z];
                 }
+            } else { // others
+                for (int z = 0; z < _K; z++) {
+                    p_zw_w[z] = _alpha * p_zw_w[z];
+                }
             }
 
             MathUtils.add(p_zw_w, sums, _K);
@@ -223,7 +230,7 @@ public final class IncrementalPLSAModel {
         // normalize to ensure \sum_w P(w|z) = 1
         for (float[] p_zw_w : _p_zw.values()) {
             for (int z = 0; z < _K; z++) {
-                p_zw_w[z] /= sums[z];
+                p_zw_w[z] = (float) (p_zw_w[z] / sums[z]);
             }
         }
     }
@@ -256,6 +263,10 @@ public final class IncrementalPLSAModel {
                     p_dw += (double) p_zw_w[z] * p_dz_d[z];
                 }
 
+                if (p_dw == 0.d) {
+                    throw new IllegalStateException("Perplexity would be Infinity. "
+                            + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
+                }
                 numer += w_value * Math.log(p_dw);
                 denom += w_value;
             }

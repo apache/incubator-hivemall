@@ -62,6 +62,9 @@ import org.apache.hadoop.mapred.Reporter;
 public class LDAUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(LDAUDTF.class);
 
+    public static final int DEFAULT_TOPICS = 10;
+    public static final double DEFAULT_DELTA = 1E-3d;
+
     // Options
     protected int topics;
     protected float alpha;
@@ -93,14 +96,14 @@ public class LDAUDTF extends UDTFWithOptions {
     protected ByteBuffer inputBuf;
 
     public LDAUDTF() {
-        this.topics = 10;
+        this.topics = DEFAULT_TOPICS;
         this.alpha = 1.f / topics;
         this.eta = 1.f / topics;
         this.numDocs = -1L;
         this.tau0 = 64.d;
         this.kappa = 0.7;
         this.iterations = 10;
-        this.delta = 1E-3d;
+        this.delta = DEFAULT_DELTA;
         this.eps = 1E-1d;
         this.miniBatchSize = 128; // if 1, truly online setting
     }
@@ -131,7 +134,7 @@ public class LDAUDTF extends UDTFWithOptions {
         if (argOIs.length >= 2) {
             String rawArgs = HiveUtils.getConstString(argOIs[1]);
             cl = parseOptions(rawArgs);
-            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), 10);
+            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), DEFAULT_TOPICS);
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
             this.eta = Primitives.parseFloat(cl.getOptionValue("eta"), 1.f / topics);
             this.numDocs = Primitives.parseLong(cl.getOptionValue("num_docs"), -1L);
@@ -148,7 +151,7 @@ public class LDAUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException(
                     "'-iterations' must be greater than or equals to 1: " + iterations);
             }
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-3d);
+            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), DEFAULT_DELTA);
             this.eps = Primitives.parseDouble(cl.getOptionValue("epsilon"), 1E-1d);
             this.miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), 128);
         }
@@ -504,6 +507,8 @@ public class LDAUDTF extends UDTFWithOptions {
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
                         + " training updates in total)");
             }
+        } catch (Throwable e) {
+            throw new HiveException("Exception caused in the iterative training", e);
         } finally {
             // delete the temporary file and release resources
             try {

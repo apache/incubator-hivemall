@@ -120,7 +120,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         private StructObjectInspector internalMergeOI;
         private StructField wcListField;
         private StructField lambdaMapField;
-        private StructField topicOptionField;
+        private StructField topicsOptionField;
         private StructField alphaOptionField;
         private StructField deltaOptionField;
         private PrimitiveObjectInspector wcListElemOI;
@@ -134,7 +134,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
         protected Options getOptions() {
             Options opts = new Options();
-            opts.addOption("k", "topics", true, "The number of topics [required]");
+            opts.addOption("k", "topics", true, "The number of topics [default: 10]");
             opts.addOption("alpha", true, "The hyperparameter for theta [default: 1/k]");
             opts.addOption("delta", true,
                 "Check convergence in the expectation step [default: 1E-5]");
@@ -175,21 +175,23 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
             CommandLine cl = null;
 
-            if (argOIs.length != 5) {
-                throw new UDFArgumentException("At least 1 option `-topics` MUST be specified");
+            if (argOIs.length >= 5) {
+                String rawArgs = HiveUtils.getConstString(argOIs[4]);
+                cl = parseOptions(rawArgs);
+
+                this.topics = Primitives.parseInt(cl.getOptionValue("topics"), LDAUDTF.DEFAULT_TOPICS);
+                if (topics < 1) {
+                    throw new UDFArgumentException(
+                            "A positive integer MUST be set to an option `-topics`: " + topics);
+                }
+
+                this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
+                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), LDAUDTF.DEFAULT_DELTA);
+            } else {
+                this.topics = LDAUDTF.DEFAULT_TOPICS;
+                this.alpha = 1.f / topics;
+                this.delta = LDAUDTF.DEFAULT_DELTA;
             }
-
-            String rawArgs = HiveUtils.getConstString(argOIs[4]);
-            cl = parseOptions(rawArgs);
-
-            this.topics = Primitives.parseInt(cl.getOptionValue("topics"), 0);
-            if (topics < 1) {
-                throw new UDFArgumentException(
-                    "A positive integer MUST be set to an option `-topics`: " + topics);
-            }
-
-            this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
-            this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), 1E-5d);
 
             return cl;
         }
@@ -211,7 +213,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.internalMergeOI = soi;
                 this.wcListField = soi.getStructFieldRef("wcList");
                 this.lambdaMapField = soi.getStructFieldRef("lambdaMap");
-                this.topicOptionField = soi.getStructFieldRef("topics");
+                this.topicsOptionField = soi.getStructFieldRef("topics");
                 this.alphaOptionField = soi.getStructFieldRef("alpha");
                 this.deltaOptionField = soi.getStructFieldRef("delta");
                 this.wcListElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -310,7 +312,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             Object[] partialResult = new Object[5];
             partialResult[0] = myAggr.wcList;
             partialResult[1] = myAggr.lambdaMap;
-            partialResult[2] = new IntWritable(myAggr.topic);
+            partialResult[2] = new IntWritable(myAggr.topics);
             partialResult[3] = new FloatWritable(myAggr.alpha);
             partialResult[4] = new DoubleWritable(myAggr.delta);
 
@@ -358,8 +360,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             }
 
             // restore options from partial result
-            Object topicObj = internalMergeOI.getStructFieldData(partial, topicOptionField);
-            this.topics = PrimitiveObjectInspectorFactory.writableIntObjectInspector.get(topicObj);
+            Object topicsObj = internalMergeOI.getStructFieldData(partial, topicsOptionField);
+            this.topics = PrimitiveObjectInspectorFactory.writableIntObjectInspector.get(topicsObj);
 
             Object alphaObj = internalMergeOI.getStructFieldData(partial, alphaOptionField);
             this.alpha = PrimitiveObjectInspectorFactory.writableFloatObjectInspector.get(alphaObj);
@@ -402,7 +404,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         private List<String> wcList;
         private Map<String, List<Float>> lambdaMap;
 
-        private int topic;
+        private int topics;
         private float alpha;
         private double delta;
 
@@ -410,8 +412,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             super();
         }
 
-        void setOptions(int topic, float alpha, double delta) {
-            this.topic = topic;
+        void setOptions(int topics, float alpha, double delta) {
+            this.topics = topics;
             this.alpha = alpha;
             this.delta = delta;
         }
@@ -424,17 +426,16 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         void iterate(String word, float value, int label, float lambda) {
             wcList.add(word + ":" + value);
 
+            List<Float> lambda_word = lambdaMap.get(word);
+
             // for an unforeseen word, initialize its lambdas w/ -1s
-            if (!lambdaMap.containsKey(word)) {
-                List<Float> lambdaEmpty_word = new ArrayList<Float>(
-                    Collections.nCopies(topic, -1.f));
-                lambdaMap.put(word, lambdaEmpty_word);
+            if (lambda_word == null) {
+                lambda_word = new ArrayList<Float>(Collections.nCopies(topics, -1.f));
+                lambdaMap.put(word, lambda_word);
             }
 
             // set the given lambda value
-            List<Float> lambda_word = lambdaMap.get(word);
             lambda_word.set(label, lambda);
-            lambdaMap.put(word, lambda_word);
         }
 
         void merge(List<String> o_wcList, Map<String, List<Float>> o_lambdaMap) {
@@ -444,13 +445,14 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 String o_word = e.getKey();
                 List<Float> o_lambda_word = e.getValue();
 
-                if (!lambdaMap.containsKey(o_word)) { // for an unforeseen word
+                final List<Float> lambda_word = lambdaMap.get(o_word);
+                if (lambda_word == null) { // for an unforeseen word
                     lambdaMap.put(o_word, o_lambda_word);
                 } else { // for a partially observed word
-                    List<Float> lambda_word = lambdaMap.get(o_word);
-                    for (int k = 0; k < topic; k++) {
-                        if (o_lambda_word.get(k) != -1.f) { // not default value
-                            lambda_word.set(k, o_lambda_word.get(k)); // set the partial lambda value
+                    for (int k = 0; k < topics; k++) {
+                        final float lambda_k = o_lambda_word.get(k).floatValue();
+                        if (lambda_k != -1.f) { // not default value
+                            lambda_word.set(k, lambda_k); // set the partial lambda value
                         }
                     }
                     lambdaMap.put(o_word, lambda_word);
@@ -459,12 +461,16 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
         }
 
         float[] get() {
-            OnlineLDAModel model = new OnlineLDAModel(topic, alpha, delta);
+            OnlineLDAModel model = new OnlineLDAModel(topics, alpha, delta);
 
-            for (String word : lambdaMap.keySet()) {
-                List<Float> lambda_word = lambdaMap.get(word);
-                for (int k = 0; k < topic; k++) {
-                    model.setLambda(word, k, lambda_word.get(k));
+            for (Map.Entry<String, List<Float>> e : lambdaMap.entrySet()) {
+                final String word = e.getKey();
+                final List<Float> lambda_word = e.getValue();
+                for (int k = 0; k < topics; k++) {
+                    final float lambda_k = lambda_word.get(k).floatValue();
+                    if (lambda_k != -1.f) {
+                        model.setLambda(word, k, lambda_k);
+                    }
                 }
             }
 
