@@ -21,7 +21,7 @@ package hivemall.optimizer;
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
 import hivemall.optimizer.Optimizer.OptimizerBase;
-import hivemall.utils.collections.OpenHashMap;
+import hivemall.utils.collections.maps.OpenHashMap;
 
 import java.util.Map;
 
