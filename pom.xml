@@ -273,7 +273,7 @@
 				<module>spark/spark-common</module>
 			</modules>
 			<properties>
-				<spark.version>2.1.0</spark.version>
+				<spark.version>2.1.1</spark.version>
 				<spark.binary.version>2.1</spark.binary.version>
 			</properties>
 		</profile>
