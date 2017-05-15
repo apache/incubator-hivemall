@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.Option;
 
 public final class OptimizerOptions {
 
@@ -40,12 +41,12 @@ public final class OptimizerOptions {
     }
 
     public static void setup(@Nonnull Options opts) {
-        opts.addOption("optimizer", "opt", true,
+        opts.addOption("opt", "optimizer", true,
             "Optimizer to update weights [default: adagrad, sgd, adadelta, adam]");
-        opts.addOption("eps", true, "Denominator value of AdaDelta/AdaGrad [default 1e-6]");
+        opts.addOption("eps",  true, "Denominator value of AdaDelta/AdaGrad [default 1e-6]");
         opts.addOption("rho", "decay", true, "Decay rate of AdaDelta [default 0.95]");
         // regularization
-        opts.addOption("regularization", "reg", true, "Regularization type [default: rda, l1, l2]");
+        opts.addOption("reg", "regularization", true, "Regularization type [default: rda, l1, l2]");
         opts.addOption("lambda", true, "Regularization term [default 0.0001]");
         // learning rates
         opts.addOption("eta", true, "Learning rate scheme [default: inverse/inv, fixed, simple]");
@@ -60,8 +61,12 @@ public final class OptimizerOptions {
     public static void propcessOptions(@Nullable CommandLine cl,
             @Nonnull Map<String, String> options) {
         if (cl != null) {
-            for (String arg : cl.getArgs()) {
-                options.put(arg, cl.getOptionValue(arg));
+            for (Option opt : cl.getOptions()) {
+                String optName = opt.getLongOpt();
+                if (optName == null) {
+                    optName = opt.getOpt();
+                }
+                options.put(optName, opt.getValue());
             }
         }
     }
