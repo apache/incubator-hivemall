@@ -43,7 +43,7 @@ public final class LossFunctions {
         } else if ("EpsilonInsensitiveLoss".equalsIgnoreCase(type)) {
             return new EpsilonInsensitiveLoss();
         }
-        throw new IllegalArgumentException("Unsupported type: " + type);
+        throw new IllegalArgumentException("Unsupported loss function name: " + type);
     }
 
     public static LossFunction getLossFunction(LossType type) {
@@ -61,7 +61,7 @@ public final class LossFunctions {
             case EpsilonInsensitiveLoss:
                 return new EpsilonInsensitiveLoss();
             default:
-                throw new IllegalArgumentException("Unsupported type: " + type);
+                throw new IllegalArgumentException("Unsupported loss function name: " + type);
         }
     }
 
@@ -129,7 +129,6 @@ public final class LossFunctions {
         public boolean forRegression() {
             return true;
         }
-
     }
 
     /**
@@ -154,6 +153,11 @@ public final class LossFunctions {
         @Override
         public float dloss(float p, float y) {
             return p - y; // 2 (p - y) / 2
+        }
+
+        @Override
+        public String toString() {
+            return "SquaredLoss";
         }
     }
 
@@ -206,6 +210,11 @@ public final class LossFunctions {
             }
             return -y / ((float) Math.exp(z) + 1.f);
         }
+
+        @Override
+        public String toString() {
+            return "LogisticRegressionLoss";
+        }
     }
 
     /**
@@ -248,6 +257,11 @@ public final class LossFunctions {
             float loss = hingeLoss(p, y, threshold);
             return (loss > 0.f) ? -y : 0.f;
         }
+
+        @Override
+        public String toString() {
+            return "HingeLoss";
+        }
     }
 
     /**
@@ -273,6 +287,10 @@ public final class LossFunctions {
             return (d > 0.f) ? -2.f * d * y : 0.f;
         }
 
+        @Override
+        public String toString() {
+            return "SquaredHingeLoss";
+        }
     }
 
     /**
@@ -329,6 +347,10 @@ public final class LossFunctions {
             return (e > 0.f) ? -tau : (1.f - tau);
         }
 
+        @Override
+        public String toString() {
+            return "QuantileLoss";
+        }
     }
 
     /**
@@ -374,6 +396,10 @@ public final class LossFunctions {
             return 0.f;
         }
 
+        @Override
+        public String toString() {
+            return "EpsilonInsensitiveLoss";
+        }
     }
 
     public static float logisticLoss(final float target, final float predicted) {
