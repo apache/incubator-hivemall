@@ -45,7 +45,7 @@ import javax.annotation.Nonnull;
 public class GeneralClassifierUDTFTest {
     private static final boolean DEBUG = false;
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testUnsupportedOptimizer() throws Exception {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
@@ -57,7 +57,7 @@ public class GeneralClassifierUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testUnsupportedLossFunction() throws Exception {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
@@ -81,7 +81,7 @@ public class GeneralClassifierUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testUnsupportedRegularization() throws Exception {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;

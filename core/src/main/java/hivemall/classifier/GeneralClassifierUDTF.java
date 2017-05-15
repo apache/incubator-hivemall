@@ -73,7 +73,12 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
             throw new UDFArgumentException("_FUNC_ does not currently support `-mini_batch` option");
         }
 
-        this.optimizer = createOptimizer(optimizerOptions);
+        try {
+            this.optimizer = createOptimizer(optimizerOptions);
+        } catch (Throwable e) {
+            throw new UDFArgumentException(e.getMessage());
+        }
+
         return outputOI;
     }
 
@@ -89,10 +94,14 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = super.processOptions(argOIs);
-        if (cl.hasOption("loss_function")) {
-            this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
-        } else {
-            this.lossFunction = LossFunctions.getLossFunction("HingeLoss");
+        try {
+            if (cl.hasOption("loss_function")) {
+                this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
+            } else {
+                this.lossFunction = LossFunctions.getLossFunction("HingeLoss");
+            }
+        } catch (Throwable e) {
+            throw new UDFArgumentException(e.getMessage());
         }
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
         return cl;

@@ -73,7 +73,12 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
             throw new UDFArgumentException("_FUNC_ does not currently support `-mini_batch` option");
         }
 
-        this.optimizer = createOptimizer(optimizerOptions);
+        try {
+            this.optimizer = createOptimizer(optimizerOptions);
+        } catch (Throwable e) {
+            throw new UDFArgumentException(e.getMessage());
+        }
+
         return outputOI;
     }
 
@@ -89,10 +94,14 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = super.processOptions(argOIs);
-        if (cl.hasOption("loss_function")) {
-            this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
-        } else {
-            this.lossFunction = LossFunctions.getLossFunction("SquaredLoss");
+        try {
+            if (cl.hasOption("loss_function")) {
+                this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
+            } else {
+                this.lossFunction = LossFunctions.getLossFunction("SquaredLoss");
+            }
+        } catch (Throwable e) {
+            throw new UDFArgumentException(e.getMessage());
         }
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
         return cl;
