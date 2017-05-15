@@ -21,6 +21,7 @@ package hivemall.regression;
 import hivemall.annotations.Since;
 import hivemall.model.FeatureValue;
 import hivemall.optimizer.LossFunctions;
+import hivemall.optimizer.LossFunctions.LossFunction;
 import hivemall.optimizer.Optimizer;
 import hivemall.optimizer.OptimizerOptions;
 
@@ -48,6 +49,7 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Nonnull
     private final Map<String, String> optimizerOptions;
     private Optimizer optimizer;
+    private LossFunction lossFunction;
 
     public GeneralRegressionUDTF() {
         super(true); // This enables new model interfaces
@@ -64,6 +66,9 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
 
         StructObjectInspector outputOI = super.initialize(argOIs);
 
+        if (lossFunction.forBinaryClassification()) {
+            throw new UDFArgumentException("The loss function `" + lossFunction + "` is not for regression");
+        }
         if (is_mini_batch) {
             throw new UDFArgumentException("_FUNC_ does not currently support `-mini_batch` option");
         }
@@ -75,6 +80,8 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected Options getOptions() {
         Options opts = super.getOptions();
+        opts.addOption("loss", "loss_function", true,
+                "Loss function [default: SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss]");
         OptimizerOptions.setup(opts);
         return opts;
     }
@@ -82,6 +89,11 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = super.processOptions(argOIs);
+        if (cl.hasOption("loss_function")) {
+            this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
+        } else {
+            this.lossFunction = LossFunctions.getLossFunction("SquaredLoss");
+        }
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
         return cl;
     }
@@ -96,7 +108,7 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
-        float loss = LossFunctions.logisticLoss(target, predicted);
+        float loss = lossFunction.loss(target, predicted);
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
