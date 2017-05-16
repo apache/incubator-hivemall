@@ -108,13 +108,6 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     }
 
     @Override
-    protected final void checkTargetValue(final float target) throws UDFArgumentException {
-        if (target < 0.f || target > 1.f) {
-            throw new UDFArgumentException("target must be in range 0 to 1: " + target);
-        }
-    }
-
-    @Override
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
         float loss = lossFunction.loss(target, predicted);

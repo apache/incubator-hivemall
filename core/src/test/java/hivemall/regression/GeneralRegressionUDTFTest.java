@@ -114,7 +114,7 @@ public class GeneralRegressionUDTFTest {
         String line = news20.readLine();
         while (line != null) {
             StringTokenizer tokens = new StringTokenizer(line, " ");
-            float y = Float.parseFloat(tokens.nextToken()) / 5.f;
+            float y = Float.parseFloat(tokens.nextToken());
             while (tokens.hasMoreTokens()) {
                 features.add(tokens.nextToken());
             }
