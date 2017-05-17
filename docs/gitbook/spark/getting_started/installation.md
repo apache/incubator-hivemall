@@ -43,7 +43,7 @@ $ ./bin/spark-shell --jars hivemall-spark-xxx-with-dependencies.jar
 Then, you load scripts for Hivemall functions.
 
 ```
-scala> :load define-all.spark
-scala> :load import-packages.spark
+scala> :load resources/ddl/define-all.spark
+scala> :load resources/ddl/import-packages.spark
 ```
 

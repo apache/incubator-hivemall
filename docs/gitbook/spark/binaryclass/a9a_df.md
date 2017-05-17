@@ -50,7 +50,7 @@ val testDf = spark.read.format("libsvm").load("a9a.t")
   .select($"rowid", $"label".as("target"), $"feature", $"weight".as("value"))
   .cache
 
-scala> df.printSchema
+scala> testDf.printSchema
 root
  |-- rowid: string (nullable = true)
  |-- target: float (nullable = true)

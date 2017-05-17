@@ -39,6 +39,9 @@ This page introduces how to run Hivemall on Docker.
   
   `docker build -f resources/docker/Dockerfile .`
 
+> #### Note
+> You can [skip](./getting_started.html#running-pre-built-docker-image-in-dockerhub) building images by using existing Docker images.
+
 # 2. Run container
 
 ## Run by docker-compose
@@ -52,10 +55,26 @@ This page introduces how to run Hivemall on Docker.
   2. Run `docker run -it ${docker_image_id}`. 
      Refer [Docker reference](https://docs.docker.com/engine/reference/run/) for the command detail.
 
+## Running pre-built Docker image in Dockerhub
+
+  1. Check [the latest tag](https://hub.docker.com/r/hivemall/latest/tags/) first.
+  2. Pull pre-build docker image from Dockerhub `docker pull hivemall/latest:20170517`
+  3. `docker run -p 8088:8088 -p 50070:50070 -p 19888:19888 -it hivemall/latest:20170517`
+
+You can find pre-built Hivemall docker images in [this repository](https://hub.docker.com/r/hivemall/latest/).
+
 # 3. Run Hivemall on Docker
 
   1. Type `hive` to run (`.hiverc` automatically loads Hivemall functions)
   2. Try your Hivemall queries!
+
+## Accessing Hadoop management GUIs
+
+* YARN http://localhost:8088/
+* HDFS http://localhost:50070/
+* MR jobhistory server http://localhost:19888/
+
+Note that you need to expose local ports e.g., by `-p 8088:8088 -p 50070:50070 -p 19888:19888` on running docker image.
 
 ## Load data into HDFS (optional)
 
