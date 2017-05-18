@@ -66,9 +66,6 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
 
         StructObjectInspector outputOI = super.initialize(argOIs);
 
-        if (lossFunction.forRegression()) {
-            throw new UDFArgumentException("The loss function `" + lossFunction + "` is not for binary classification");
-        }
         if (is_mini_batch) {
             throw new UDFArgumentException("_FUNC_ does not currently support `-mini_batch` option");
         }
@@ -86,7 +83,8 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     protected Options getOptions() {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true,
-                "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss]");
+                "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss, "
+                + "SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]");
         OptimizerOptions.setup(opts);
         return opts;
     }
