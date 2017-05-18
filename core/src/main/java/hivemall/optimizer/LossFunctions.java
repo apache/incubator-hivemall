@@ -26,22 +26,27 @@ import hivemall.utils.math.MathUtils;
 public final class LossFunctions {
 
     public enum LossType {
-        SquaredLoss, LogLoss, HingeLoss, SquaredHingeLoss, QuantileLoss, EpsilonInsensitiveLoss
+        SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss,
+        HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss
     }
 
     public static LossFunction getLossFunction(String type) {
         if ("SquaredLoss".equalsIgnoreCase(type)) {
             return new SquaredLoss();
-        } else if ("LogLoss".equalsIgnoreCase(type)) {
-            return new LogLoss();
-        } else if ("HingeLoss".equalsIgnoreCase(type)) {
-            return new HingeLoss();
-        } else if ("SquaredHingeLoss".equalsIgnoreCase(type)) {
-            return new SquaredHingeLoss();
         } else if ("QuantileLoss".equalsIgnoreCase(type)) {
             return new QuantileLoss();
         } else if ("EpsilonInsensitiveLoss".equalsIgnoreCase(type)) {
             return new EpsilonInsensitiveLoss();
+        } else if ("HuberLoss".equalsIgnoreCase(type)) {
+            return new HuberLoss();
+        } else if ("HingeLoss".equalsIgnoreCase(type)) {
+            return new HingeLoss();
+        } else if ("LogLoss".equalsIgnoreCase(type)) {
+            return new LogLoss();
+        } else if ("SquaredHingeLoss".equalsIgnoreCase(type)) {
+            return new SquaredHingeLoss();
+        } else if ("ModifiedHuberLoss".equalsIgnoreCase(type)) {
+            return new ModifiedHuberLoss();
         }
         throw new IllegalArgumentException("Unsupported loss function name: " + type);
     }
@@ -50,16 +55,20 @@ public final class LossFunctions {
         switch (type) {
             case SquaredLoss:
                 return new SquaredLoss();
-            case LogLoss:
-                return new LogLoss();
-            case HingeLoss:
-                return new HingeLoss();
-            case SquaredHingeLoss:
-                return new SquaredHingeLoss();
             case QuantileLoss:
                 return new QuantileLoss();
             case EpsilonInsensitiveLoss:
                 return new EpsilonInsensitiveLoss();
+            case HuberLoss:
+                return new HuberLoss();
+            case HingeLoss:
+                return new HingeLoss();
+            case LogLoss:
+                return new LogLoss();
+            case SquaredHingeLoss:
+                return new SquaredHingeLoss();
+            case ModifiedHuberLoss:
+                return new ModifiedHuberLoss();
             default:
                 throw new IllegalArgumentException("Unsupported loss function name: " + type);
         }
@@ -93,6 +102,19 @@ public final class LossFunctions {
 
     }
 
+    public static abstract class RegressionLoss implements LossFunction {
+
+        @Override
+        public boolean forBinaryClassification() {
+            return false;
+        }
+
+        @Override
+        public boolean forRegression() {
+            return true;
+        }
+    }
+
     public static abstract class BinaryLoss implements LossFunction {
 
         protected static void checkTarget(float y) {
@@ -115,19 +137,6 @@ public final class LossFunctions {
         @Override
         public boolean forRegression() {
             return false;
-        }
-    }
-
-    public static abstract class RegressionLoss implements LossFunction {
-
-        @Override
-        public boolean forBinaryClassification() {
-            return false;
-        }
-
-        @Override
-        public boolean forRegression() {
-            return true;
         }
     }
 
@@ -158,138 +167,6 @@ public final class LossFunctions {
         @Override
         public String toString() {
             return "SquaredLoss";
-        }
-    }
-
-    /**
-     * Logistic regression loss for binary classification with y in {-1, 1}.
-     */
-    public static final class LogLoss extends BinaryLoss {
-
-        /**
-         * <code>logloss(p,y) = log(1+exp(-p*y))</code>
-         */
-        @Override
-        public float loss(float p, float y) {
-            checkTarget(y);
-
-            final float z = y * p;
-            if (z > 18.f) {
-                return (float) Math.exp(-z);
-            }
-            if (z < -18.f) {
-                return -z;
-            }
-            return (float) Math.log(1.d + Math.exp(-z));
-        }
-
-        @Override
-        public double loss(double p, double y) {
-            checkTarget(y);
-
-            final double z = y * p;
-            if (z > 18.d) {
-                return Math.exp(-z);
-            }
-            if (z < -18.d) {
-                return -z;
-            }
-            return Math.log(1.d + Math.exp(-z));
-        }
-
-        @Override
-        public float dloss(float p, float y) {
-            checkTarget(y);
-
-            float z = y * p;
-            if (z > 18.f) {
-                return (float) Math.exp(-z) * -y;
-            }
-            if (z < -18.f) {
-                return -y;
-            }
-            return -y / ((float) Math.exp(z) + 1.f);
-        }
-
-        @Override
-        public String toString() {
-            return "LogisticRegressionLoss";
-        }
-    }
-
-    /**
-     * Hinge loss for binary classification tasks with y in {-1,1}.
-     */
-    public static final class HingeLoss extends BinaryLoss {
-
-        private float threshold;
-
-        public HingeLoss() {
-            this(1.f);
-        }
-
-        /**
-         * @param threshold Margin threshold. When threshold=1.0, one gets the loss used by SVM.
-         *        When threshold=0.0, one gets the loss used by the Perceptron.
-         */
-        public HingeLoss(float threshold) {
-            this.threshold = threshold;
-        }
-
-        public void setThreshold(float threshold) {
-            this.threshold = threshold;
-        }
-
-        @Override
-        public float loss(float p, float y) {
-            float loss = hingeLoss(p, y, threshold);
-            return (loss > 0.f) ? loss : 0.f;
-        }
-
-        @Override
-        public double loss(double p, double y) {
-            double loss = hingeLoss(p, y, threshold);
-            return (loss > 0.d) ? loss : 0.d;
-        }
-
-        @Override
-        public float dloss(float p, float y) {
-            float loss = hingeLoss(p, y, threshold);
-            return (loss > 0.f) ? -y : 0.f;
-        }
-
-        @Override
-        public String toString() {
-            return "HingeLoss";
-        }
-    }
-
-    /**
-     * Squared Hinge loss for binary classification tasks with y in {-1,1}.
-     */
-    public static final class SquaredHingeLoss extends BinaryLoss {
-
-        @Override
-        public float loss(float p, float y) {
-            return squaredHingeLoss(p, y);
-        }
-
-        @Override
-        public double loss(double p, double y) {
-            return squaredHingeLoss(p, y);
-        }
-
-        @Override
-        public float dloss(float p, float y) {
-            checkTarget(y);
-
-            float d = 1 - (y * p);
-            return (d > 0.f) ? -2.f * d * y : 0.f;
-        }
-
-        @Override
-        public String toString() {
-            return "SquaredHingeLoss";
         }
     }
 
@@ -399,6 +276,245 @@ public final class LossFunctions {
         @Override
         public String toString() {
             return "EpsilonInsensitiveLoss";
+        }
+    }
+
+    /**
+     * Huber regression loss.
+     *
+     * Variant of the SquaredLoss which is robust to outliers.
+     *
+     * @link https://en.wikipedia.org/wiki/Huber_Loss_Function
+     */
+    public static final class HuberLoss extends RegressionLoss {
+
+        private float c;
+
+        public HuberLoss() {
+            this(1.f); // i.e., beyond 1 standard deviation, the loss becomes linear
+        }
+
+        public HuberLoss(float c) {
+            this.c = c;
+        }
+
+        public void setC(float c) {
+            this.c = c;
+        }
+
+        @Override
+        public float loss(float p, float y) {
+            final float r = p - y;
+            final float rAbs = Math.abs(r);
+            if (rAbs <= c) {
+                return 0.5f * r * r;
+            }
+            return c * rAbs - (0.5f * c * c);
+        }
+
+        @Override
+        public double loss(double p, double y) {
+            final double r = p - y;
+            final double rAbs = Math.abs(r);
+            if (rAbs <= c) {
+                return 0.5d * r * r;
+            }
+            return c * rAbs - (0.5d * c * c);
+        }
+
+        @Override
+        public float dloss(float p, float y) {
+            final float r = p - y;
+            final float rAbs = Math.abs(r);
+            if (rAbs <= c) {
+                return r;
+            } else if (r > 0.f) {
+                return c;
+            }
+            return -c;
+        }
+
+        @Override
+        public String toString() {
+            return "HuberLoss";
+        }
+    }
+
+    /**
+     * Hinge loss for binary classification tasks with y in {-1,1}.
+     */
+    public static final class HingeLoss extends BinaryLoss {
+
+        private float threshold;
+
+        public HingeLoss() {
+            this(1.f);
+        }
+
+        /**
+         * @param threshold Margin threshold. When threshold=1.0, one gets the loss used by SVM.
+         *        When threshold=0.0, one gets the loss used by the Perceptron.
+         */
+        public HingeLoss(float threshold) {
+            this.threshold = threshold;
+        }
+
+        public void setThreshold(float threshold) {
+            this.threshold = threshold;
+        }
+
+        @Override
+        public float loss(float p, float y) {
+            float loss = hingeLoss(p, y, threshold);
+            return (loss > 0.f) ? loss : 0.f;
+        }
+
+        @Override
+        public double loss(double p, double y) {
+            double loss = hingeLoss(p, y, threshold);
+            return (loss > 0.d) ? loss : 0.d;
+        }
+
+        @Override
+        public float dloss(float p, float y) {
+            float loss = hingeLoss(p, y, threshold);
+            return (loss > 0.f) ? -y : 0.f;
+        }
+
+        @Override
+        public String toString() {
+            return "HingeLoss";
+        }
+    }
+
+    /**
+     * Logistic regression loss for binary classification with y in {-1, 1}.
+     */
+    public static final class LogLoss extends BinaryLoss {
+
+        /**
+         * <code>logloss(p,y) = log(1+exp(-p*y))</code>
+         */
+        @Override
+        public float loss(float p, float y) {
+            checkTarget(y);
+
+            final float z = y * p;
+            if (z > 18.f) {
+                return (float) Math.exp(-z);
+            }
+            if (z < -18.f) {
+                return -z;
+            }
+            return (float) Math.log(1.d + Math.exp(-z));
+        }
+
+        @Override
+        public double loss(double p, double y) {
+            checkTarget(y);
+
+            final double z = y * p;
+            if (z > 18.d) {
+                return Math.exp(-z);
+            }
+            if (z < -18.d) {
+                return -z;
+            }
+            return Math.log(1.d + Math.exp(-z));
+        }
+
+        @Override
+        public float dloss(float p, float y) {
+            checkTarget(y);
+
+            float z = y * p;
+            if (z > 18.f) {
+                return (float) Math.exp(-z) * -y;
+            }
+            if (z < -18.f) {
+                return -y;
+            }
+            return -y / ((float) Math.exp(z) + 1.f);
+        }
+
+        @Override
+        public String toString() {
+            return "LogisticRegressionLoss";
+        }
+    }
+
+    /**
+     * Squared Hinge loss for binary classification tasks with y in {-1,1}.
+     */
+    public static final class SquaredHingeLoss extends BinaryLoss {
+
+        @Override
+        public float loss(float p, float y) {
+            return squaredHingeLoss(p, y);
+        }
+
+        @Override
+        public double loss(double p, double y) {
+            return squaredHingeLoss(p, y);
+        }
+
+        @Override
+        public float dloss(float p, float y) {
+            checkTarget(y);
+
+            float d = 1 - (y * p);
+            return (d > 0.f) ? -2.f * d * y : 0.f;
+        }
+
+        @Override
+        public String toString() {
+            return "SquaredHingeLoss";
+        }
+    }
+
+    /**
+     * Modified Huber loss for binary classification with y in {-1, 1}.
+     *
+     * Equivalent to quadratically smoothed SVM with gamma = 2.
+     */
+    public static final class ModifiedHuberLoss extends BinaryLoss {
+
+        @Override
+        public float loss(float p, float y) {
+            final float z = p * y;
+            if (z >= 1.f) {
+                return 0.f;
+            } else if (z >= -1.f) {
+                return (1.f - z) * (1.f - z);
+            }
+            return -4.f * z;
+        }
+
+        @Override
+        public double loss(double p, double y) {
+            final double z = p * y;
+            if (z >= 1.d) {
+                return 0.d;
+            } else if (z >= -1.d) {
+                return (1.d - z) * (1.d - z);
+            }
+            return -4.d * z;
+        }
+
+        @Override
+        public float dloss(float p, float y) {
+            final float z = p * y;
+            if (z >= 1.f) {
+                return 0.f;
+            } else if (z >= -1.f) {
+                return 2.f * (1.f - z) * -y;
+            }
+            return -4.f * y;
+        }
+
+        @Override
+        public String toString() {
+            return "ModifiedHuberLoss";
         }
     }
 

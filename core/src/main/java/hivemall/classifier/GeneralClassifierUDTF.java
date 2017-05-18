@@ -86,7 +86,7 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     protected Options getOptions() {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true,
-                "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss]");
+                "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss]");
         OptimizerOptions.setup(opts);
         return opts;
     }

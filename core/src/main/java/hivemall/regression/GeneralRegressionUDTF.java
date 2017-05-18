@@ -86,7 +86,7 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     protected Options getOptions() {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true,
-                "Loss function [default: SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss]");
+                "Loss function [default: SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]");
         OptimizerOptions.setup(opts);
         return opts;
     }
