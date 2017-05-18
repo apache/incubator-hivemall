@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
@@ -70,18 +72,6 @@ public class GeneralClassifierUDTFTest {
     }
 
     @Test(expected = UDFArgumentException.class)
-    public void testInvalidLossFunction() throws Exception {
-        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
-        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss SquaredLoss");
-
-        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
-    }
-
-    @Test(expected = UDFArgumentException.class)
     public void testUnsupportedRegularization() throws Exception {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
@@ -94,7 +84,76 @@ public class GeneralClassifierUDTFTest {
     }
 
     @Test
-    public void testSGDNews20() throws IOException, ParseException, HiveException {
+    public void test() throws Exception {
+        ArrayList<List<String>> samplesList = new ArrayList<List<String>>();
+        samplesList.add(Arrays.asList("1:-2", "2:-1"));
+        samplesList.add(Arrays.asList("1:-1", "2:-1"));
+        samplesList.add(Arrays.asList("1:-1", "2:-2"));
+        samplesList.add(Arrays.asList("1:1", "2:1"));
+        samplesList.add(Arrays.asList("1:1", "2:2"));
+        samplesList.add(Arrays.asList("1:2", "2:1"));
+
+        int[] labels = new int[]{0, 0, 0, 1, 1, 1};
+
+        int nIter = 10;
+
+        String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
+        String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
+        String[] lossFunctions = new String[] {"HingeLoss", "LogLoss", "SquaredHingeLoss", "ModifiedHuberLoss",
+                "SquaredLoss", "QuantileLoss", "EpsilonInsensitiveLoss", "HuberLoss"};
+
+        for (String opt: optimizers) {
+            for (String reg: regularizations) {
+                if (reg == "RDA" && opt != "AdaGrad") {
+                    continue;
+                }
+
+                for (String loss : lossFunctions) {
+                    String options = "-opt " + opt + " -reg " + reg + " -loss " + loss;
+                    println(options);
+
+                    GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+                    ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+                    ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                    ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+                    ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+                    udtf.initialize(new ObjectInspector[]{stringListOI, intOI, params});
+
+                    for (int it = 0; it < nIter; it++) {
+                        for (int i = 0, size = samplesList.size(); i < size; i++) {
+                            udtf.process(new Object[]{samplesList.get(i), labels[i]});
+                        }
+                    }
+
+                    int numTests = 0;
+                    int numCorrect = 0;
+
+                    for (int i = 0, size = samplesList.size(); i < size; i++) {
+                        int label = labels[i];
+
+                        float score = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
+                        int predicted = score > 0.f ? 1 : 0;
+
+                        println("Score: " + score + ", Predicted: " + predicted + ", Actual: " + label);
+
+                        if (predicted == label) {
+                            ++numCorrect;
+                        }
+                        ++numTests;
+                    }
+
+                    float accuracy = numCorrect / (float) numTests;
+                    println("Accuracy: " + accuracy);
+                    Assert.assertTrue(accuracy == 1.f);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testNews20() throws IOException, ParseException, HiveException {
         int nIter = 10;
 
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
@@ -102,7 +161,7 @@ public class GeneralClassifierUDTFTest {
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt SGD -loss logloss -reg L2");
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt SGD -loss logloss -reg L2 -lambda 0.1");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
@@ -147,7 +206,7 @@ public class GeneralClassifierUDTFTest {
             float score = udtf.predict(udtf.parseFeatures(words));
             int predicted = MathUtils.sign(score);
 
-            println("Predicted: " + predicted + ", Actual: " + label);
+            println("Score: " + score + ", Predicted: " + predicted + ", Actual: " + label);
 
             if (predicted == label) {
                 ++numCorrect;

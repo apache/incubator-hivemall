@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
@@ -94,8 +96,75 @@ public class GeneralRegressionUDTFTest {
     }
 
     @Test
-    public void testSGD() throws IOException, ParseException, HiveException {
-        int nIter = 10;
+    public void test() throws Exception {
+        ArrayList<List<String>> samplesList = new ArrayList<List<String>>();
+        samplesList.add(Arrays.asList("1:-2", "2:-1"));
+        samplesList.add(Arrays.asList("1:-1", "2:-1"));
+        samplesList.add(Arrays.asList("1:-1", "2:-2"));
+        samplesList.add(Arrays.asList("1:1", "2:1"));
+        samplesList.add(Arrays.asList("1:1", "2:2"));
+        samplesList.add(Arrays.asList("1:2", "2:1"));
+        // for testing
+        samplesList.add(Arrays.asList("1:-1", "2:-1"));
+        samplesList.add(Arrays.asList("1:2", "2:2"));
+        samplesList.add(Arrays.asList("1:3", "2:2"));
+
+        int[] ys = new int[]{1, 1, 1, 2, 2, 2, 1, 2, 2};
+
+        int nIter = 20;
+
+        String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
+        String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
+        String[] lossFunctions = new String[] {"SquaredLoss", "QuantileLoss", "EpsilonInsensitiveLoss", "HuberLoss"};
+
+        for (String opt: optimizers) {
+            for (String reg: regularizations) {
+                if (reg == "RDA" && opt != "AdaGrad") {
+                    continue;
+                }
+
+                for (String loss : lossFunctions) {
+                    String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
+                            + " -lambda 1e-3 -eta fixed -eta0 1e-3";
+                    println(options);
+
+                    GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+                    ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+                    ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                    ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+                    ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+                    udtf.initialize(new ObjectInspector[]{stringListOI, intOI, params});
+
+                    for (int it = 0; it < nIter; it++) {
+                        for (int i = 0; i < 6; i++) {
+                            udtf.process(new Object[]{samplesList.get(i), ys[i]});
+                        }
+                    }
+
+                    float accum = 0.f;
+
+                    for (int i = 6; i < 9; i++) {
+                        int y = ys[i];
+
+                        float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
+                        println("Predicted: " + predicted + ", Actual: " + y);
+
+                        accum += Math.abs(y - predicted);
+                    }
+
+                    float err = accum / 3;
+                    println("Mean absolute error: " + err);
+                    Assert.assertTrue(err < 2.f);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void test5107786() throws IOException, ParseException, HiveException {
+        int nIter = 64;
 
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
@@ -103,7 +172,7 @@ public class GeneralRegressionUDTFTest {
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                "-opt SGD -loss squaredloss -reg L2 -lambda 1e-3 -eta fixed -eta0 1e-6");
+                "-opt SGD -loss squaredloss -reg ElasticNet -lambda 1e-3 -eta fixed -eta0 1e-3");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 
@@ -152,7 +221,7 @@ public class GeneralRegressionUDTFTest {
 
         float err = accum / ys.size();
         println("Mean absolute error: " + err);
-        Assert.assertTrue(err < 2.5f);
+        Assert.assertTrue(err < 1.25f);
     }
 
     @Nonnull
