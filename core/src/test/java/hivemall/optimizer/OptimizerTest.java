@@ -64,7 +64,7 @@ public final class OptimizerTest {
     @Test
     public void testOptimizerFactory() {
         final Map<String, String> options = new HashMap<String, String>();
-        final String[] regTypes = new String[] {"NO", "L1", "L2"};
+        final String[] regTypes = new String[] {"NO", "L1", "L2", "ElasticNet"};
         options.put("optimizer", "SGD");
         for(final String regType : regTypes) {
             options.put("regularization", regType);
@@ -133,7 +133,7 @@ public final class OptimizerTest {
 
     private void testOptimizer(final Map<String, String> options, int numUpdates, int initSize) {
         final Map<String, String> testOptions = new HashMap<String, String>(options);
-        final String[] regTypes = new String[] {"NO", "L1", "L2", "RDA"};
+        final String[] regTypes = new String[] {"NO", "L1", "L2", "RDA", "ElasticNet"};
         for(final String regType : regTypes) {
             options.put("regularization", regType);
             testUpdateWeights(DenseOptimizerFactory.create(1024, testOptions), 65536, 1024);

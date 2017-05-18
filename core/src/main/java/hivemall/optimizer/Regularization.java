@@ -58,7 +58,7 @@ public abstract class Regularization {
 
         @Override
         public float regularize(float weight, float gradient) {
-            return gradient + lambda * (weight > 0.f? 1.f : -1.f);
+            return gradient + lambda * (weight > 0.f ? 1.f : -1.f);
         }
 
     }
@@ -76,6 +76,17 @@ public abstract class Regularization {
 
     }
 
+    public static final class ElasticNet extends Regularization {
+        public ElasticNet(Map<String, String> options) {
+            super(options);
+        }
+
+        @Override
+        public float regularize(float weight, float gradient) {
+            return gradient + lambda * (weight > 0.f ? 1.f : -1.f) + lambda * weight;
+        }
+    }
+
     @Nonnull
     public static Regularization get(@Nonnull final Map<String, String> options)
             throws IllegalArgumentException {
@@ -84,13 +95,15 @@ public abstract class Regularization {
             return new PassThrough(options);
         }
         
-        if(regName.toLowerCase().equals("no")) {
+        if (regName.toLowerCase().equals("no")) {
             return new PassThrough(options);
-        } else if(regName.toLowerCase().equals("l1")) {
+        } else if (regName.toLowerCase().equals("l1")) {
             return new L1(options);
-        } else if(regName.toLowerCase().equals("l2")) {
+        } else if (regName.toLowerCase().equals("l2")) {
             return new L2(options);
-        } else if(regName.toLowerCase().equals("rda")) {
+        } else if (regName.toLowerCase().equals("elasticnet")) {
+            return new ElasticNet(options);
+        } else if (regName.toLowerCase().equals("rda")) {
             // Return `PassThrough` because we need special handling for RDA.
             // See an implementation of `Optimizer#RDA`.
             return new PassThrough(options);
