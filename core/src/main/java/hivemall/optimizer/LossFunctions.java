@@ -100,6 +100,8 @@ public final class LossFunctions {
 
         public boolean forRegression();
 
+        public LossType getType();
+
     }
 
     public static abstract class RegressionLoss implements LossFunction {
@@ -165,8 +167,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "SquaredLoss";
+        public LossType getType() {
+            return LossType.SquaredLoss;
         }
     }
 
@@ -225,8 +227,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "QuantileLoss";
+        public LossType getType() {
+            return LossType.QuantileLoss;
         }
     }
 
@@ -274,8 +276,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "EpsilonInsensitiveLoss";
+        public LossType getType() {
+            return LossType.EpsilonInsensitiveLoss;
         }
     }
 
@@ -335,8 +337,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "HuberLoss";
+        public LossType getType() {
+            return LossType.HuberLoss;
         }
     }
 
@@ -382,8 +384,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "HingeLoss";
+        public LossType getType() {
+            return LossType.HingeLoss;
         }
     }
 
@@ -438,8 +440,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "LogisticRegressionLoss";
+        public LossType getType() {
+            return LossType.LogLoss;
         }
     }
 
@@ -467,8 +469,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "SquaredHingeLoss";
+        public LossType getType() {
+            return LossType.SquaredHingeLoss;
         }
     }
 
@@ -513,8 +515,8 @@ public final class LossFunctions {
         }
 
         @Override
-        public String toString() {
-            return "ModifiedHuberLoss";
+        public LossType getType() {
+            return LossType.ModifiedHuberLoss;
         }
     }
 

@@ -67,7 +67,9 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
         StructObjectInspector outputOI = super.initialize(argOIs);
 
         if (lossFunction.forBinaryClassification()) {
-            throw new UDFArgumentException("The loss function `" + lossFunction + "` is not for regression");
+            throw new UDFArgumentException("The loss function `" + lossFunction.getType()
+                    + "` is not designed for regression");
+
         }
         if (is_mini_batch) {
             throw new UDFArgumentException("_FUNC_ does not currently support `-mini_batch` option");
