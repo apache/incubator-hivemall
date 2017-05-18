@@ -65,43 +65,29 @@ public final class OptimizerTest {
     public void testOptimizerFactory() {
         final Map<String, String> options = new HashMap<String, String>();
         final String[] regTypes = new String[] {"NO", "L1", "L2"};
-        final String[] lossFunctions = new String[] {"SquaredLoss", "LogLoss", "HingeLoss", "SquaredHingeLoss",
-                "QuantileLoss", "EpsilonInsensitiveLoss"};
         options.put("optimizer", "SGD");
         for(final String regType : regTypes) {
             options.put("regularization", regType);
-            for (final String lossFunction : lossFunctions) {
-                options.put("loss_function", lossFunction);
-                Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof Optimizer.SGD);
-                Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof Optimizer.SGD);
-            }
+            Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof Optimizer.SGD);
+            Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof Optimizer.SGD);
         }
         options.put("optimizer", "AdaDelta");
         for(final String regType : regTypes) {
             options.put("regularization", regType);
-            for (final String lossFunction : lossFunctions) {
-                options.put("loss_function", lossFunction);
-                Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaDelta);
-                Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaDelta);
-            }
+            Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaDelta);
+            Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaDelta);
         }
         options.put("optimizer", "AdaGrad");
         for(final String regType : regTypes) {
             options.put("regularization", regType);
-            for (final String lossFunction : lossFunctions) {
-                options.put("loss_function", lossFunction);
-                Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaGrad);
-                Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaGrad);
-            }
+            Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaGrad);
+            Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaGrad);
         }
         options.put("optimizer", "Adam");
         for(final String regType : regTypes) {
             options.put("regularization", regType);
-            for (final String lossFunction : lossFunctions) {
-                options.put("loss_function", lossFunction);
-                Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.Adam);
-                Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.Adam);
-            }
+            Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.Adam);
+            Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.Adam);
         }
 
         // We need special handling for `Optimizer#RDA`
@@ -148,15 +134,10 @@ public final class OptimizerTest {
     private void testOptimizer(final Map<String, String> options, int numUpdates, int initSize) {
         final Map<String, String> testOptions = new HashMap<String, String>(options);
         final String[] regTypes = new String[] {"NO", "L1", "L2", "RDA"};
-        final String[] lossFunctions = new String[] {"SquaredLoss", "LogLoss", "HingeLoss", "SquaredHingeLoss",
-                "QuantileLoss", "EpsilonInsensitiveLoss"};
         for(final String regType : regTypes) {
             options.put("regularization", regType);
-            for (final String lossFunction : lossFunctions) {
-                options.put("loss_function", lossFunction);
-                testUpdateWeights(DenseOptimizerFactory.create(1024, testOptions), 65536, 1024);
-                testUpdateWeights(SparseOptimizerFactory.create(1024, testOptions), 65536, 1024);
-            }
+            testUpdateWeights(DenseOptimizerFactory.create(1024, testOptions), 65536, 1024);
+            testUpdateWeights(SparseOptimizerFactory.create(1024, testOptions), 65536, 1024);
         }
     }
 
