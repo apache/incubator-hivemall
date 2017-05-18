@@ -110,12 +110,12 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
-        float loss = lossFunction.loss(target, predicted);
+        float dloss = lossFunction.dloss(predicted, target);
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
             float weight = model.getWeight(feature);
-            float new_weight = optimizer.update(feature, weight, -loss * xi);
+            float new_weight = optimizer.update(feature, weight, dloss * xi);
             model.setWeight(feature, new_weight);
         }
         optimizer.proceedStep();

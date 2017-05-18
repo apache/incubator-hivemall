@@ -117,15 +117,12 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float label,
             final float predicted) {
-        float loss = lossFunction.loss(predicted, label);
-        if (loss <= 0.f) {
-            return;
-        }
+        float dloss = lossFunction.dloss(predicted, label);
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
             float weight = model.getWeight(feature);
-            float new_weight = optimizer.update(feature, weight, -label * xi);
+            float new_weight = optimizer.update(feature, weight, dloss * xi);
             model.setWeight(feature, new_weight);
         }
         optimizer.proceedStep();
