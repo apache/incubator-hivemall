@@ -18,21 +18,11 @@
  */
 package hivemall.regression;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.StringTokenizer;
-import java.util.zip.GZIPInputStream;
-
-import hivemall.fm.FactorizationMachineUDTFTest;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -50,76 +40,84 @@ public class GeneralRegressionUDTFTest {
     @Test(expected = UDFArgumentException.class)
     public void testUnsupportedOptimizer() throws Exception {
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt UnsupportedOpt");
 
-        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+        udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
     }
 
     @Test(expected = UDFArgumentException.class)
     public void testUnsupportedLossFunction() throws Exception {
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss UnsupportedLoss");
 
-        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+        udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
     }
 
     @Test(expected = UDFArgumentException.class)
     public void testInvalidLossFunction() throws Exception {
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss HingeLoss");
 
-        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+        udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
     }
 
     @Test(expected = UDFArgumentException.class)
     public void testUnsupportedRegularization() throws Exception {
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reg UnsupportedReg");
 
-        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+        udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
     }
 
     private void run(@Nonnull String options) throws Exception {
-        ArrayList<List<String>> samplesList = new ArrayList<List<String>>();
-        samplesList.add(Arrays.asList("1:-2", "2:-1"));
-        samplesList.add(Arrays.asList("1:-1", "2:-1"));
-        samplesList.add(Arrays.asList("1:-1", "2:-2"));
-        samplesList.add(Arrays.asList("1:1", "2:1"));
-        samplesList.add(Arrays.asList("1:1", "2:2"));
-        samplesList.add(Arrays.asList("1:2", "2:1"));
-        // for testing
-        samplesList.add(Arrays.asList("1:-1", "2:-1"));
-        samplesList.add(Arrays.asList("1:2", "2:2"));
-        samplesList.add(Arrays.asList("1:3", "2:2"));
+        int numSamples = 100;
 
-        int[] ys = new int[] {1, 1, 1, 2, 2, 2, 1, 2, 2};
+        float x1Min = -5.f, x1Max = 5.f;
+        float x1Step = (x1Max - x1Min) / numSamples;
 
-        int maxIter = 20;
+        float x2Min = -3.f, x2Max = 3.f;
+        float x2Step = (x2Max - x2Min) / numSamples;
+
+        ArrayList<List<String>> samplesList = new ArrayList<List<String>>(numSamples);
+        ArrayList<Float> ys = new ArrayList<Float>(numSamples);
+        float x1 = x1Min, x2 = x2Min;
+
+        for (int i = 0; i < numSamples; i++) {
+            samplesList.add(Arrays.asList("1:" + String.valueOf(x1), "2:" + String.valueOf(x2)));
+
+            ys.add(x1 * 0.5f);
+
+            x1 += x1Step;
+            x2 += x2Step;
+        }
+
+        int numTrain = (int) (numSamples * 0.8);
+        int maxIter = 256;
 
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
 
-        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+        udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 
         float lossAvgPrev = Float.MAX_VALUE;
         float lossAvg = 0.f;
@@ -127,19 +125,19 @@ public class GeneralRegressionUDTFTest {
         while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
             lossAvgPrev = lossAvg;
             lossAvg = 0.f;
-            for (int i = 0; i < 6; i++) {
-                udtf.process(new Object[] {samplesList.get(i), ys[i]});
+            for (int i = 0; i < numTrain; i++) {
+                udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
                 lossAvg += udtf.getLoss();
             }
-            lossAvg /= 6.f;
+            lossAvg /= numTrain;
             println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
         }
-        Assert.assertTrue(lossAvg < 1.5f);
+        Assert.assertTrue(lossAvg < 0.1f);
 
         float accum = 0.f;
 
-        for (int i = 6; i < 9; i++) {
-            int y = ys[i];
+        for (int i = numTrain; i < numSamples; i++) {
+            float y = ys.get(i).floatValue();
 
             float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
             println("Predicted: " + predicted + ", Actual: " + y);
@@ -147,9 +145,9 @@ public class GeneralRegressionUDTFTest {
             accum += Math.abs(y - predicted);
         }
 
-        float err = accum / 3;
+        float err = accum / (numSamples - numTrain);
         println("Mean absolute error: " + err);
-        Assert.assertTrue(err < 2.f);
+        Assert.assertTrue(err < 0.2f);
     }
 
     @Test
@@ -167,7 +165,7 @@ public class GeneralRegressionUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -lambda 1e-6 -eta fixed -eta0 1e-3";
+                            + " -lambda 1e-6 -eta0 1e-1";
                     println(options);
 
                     // sparse
@@ -179,78 +177,6 @@ public class GeneralRegressionUDTFTest {
                 }
             }
         }
-    }
-
-    @Test
-    public void test5107786() throws IOException, ParseException, HiveException {
-        int nIter = 64;
-
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
-        ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
-        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
-        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-            "-opt SGD -loss squaredloss -reg ElasticNet -lambda 1e-3 -eta fixed -eta0 1e-3");
-
-        udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
-
-        BufferedReader news20 = readFile("5107786.txt.gz");
-        ArrayList<String> features = new ArrayList<String>();
-        ArrayList<ArrayList<String>> featuresList = new ArrayList<ArrayList<String>>();
-        ArrayList<Float> ys = new ArrayList<Float>();
-        String line = news20.readLine();
-        while (line != null) {
-            StringTokenizer tokens = new StringTokenizer(line, " ");
-            float y = Float.parseFloat(tokens.nextToken());
-            while (tokens.hasMoreTokens()) {
-                features.add(tokens.nextToken());
-            }
-            Assert.assertFalse(features.isEmpty());
-            udtf.process(new Object[] {features, y});
-
-            ys.add(y);
-            featuresList.add((ArrayList) features.clone());
-
-            features.clear();
-            line = news20.readLine();
-        }
-        news20.close();
-
-        // perform SGD iterations
-        for (int it = 1; it < nIter; it++) {
-            for (int i = 0, size = featuresList.size(); i < size; i++) {
-                features = featuresList.get(i);
-                float y = ys.get(i);
-                udtf.process(new Object[] {features, y});
-            }
-        }
-
-        float accum = 0.f;
-
-        for (int i = 0, size = featuresList.size(); i < size; i++) {
-            features = featuresList.get(i);
-            float y = ys.get(i);
-
-            float predicted = udtf.predict(udtf.parseFeatures(features));
-            println("Predicted: " + predicted + ", Actual: " + y);
-
-            accum += Math.abs(y - predicted);
-        }
-
-        float err = accum / ys.size();
-        println("Mean absolute error: " + err);
-        Assert.assertTrue(err < 1.25f);
-    }
-
-    @Nonnull
-    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
-        // use testing resource of FMs
-        InputStream is = FactorizationMachineUDTFTest.class.getResourceAsStream(fileName);
-        if (fileName.endsWith(".gz")) {
-            is = new GZIPInputStream(is);
-        }
-        return new BufferedReader(new InputStreamReader(is));
     }
 
     private static void println(String msg) {
