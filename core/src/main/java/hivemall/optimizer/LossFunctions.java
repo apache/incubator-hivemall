@@ -26,8 +26,8 @@ import hivemall.utils.math.MathUtils;
 public final class LossFunctions {
 
     public enum LossType {
-        SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss,
-        HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss
+        SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss, HingeLoss, LogLoss,
+        SquaredHingeLoss, ModifiedHuberLoss
     }
 
     public static LossFunction getLossFunction(String type) {
@@ -173,8 +173,7 @@ public final class LossFunctions {
     }
 
     /**
-     * Quantile loss is useful to predict rank/order and you do not mind the mean error to increase
-     * as long as you get the relative order correct.
+     * Quantile loss is useful to predict rank/order and you do not mind the mean error to increase as long as you get the relative order correct.
      *
      * @link http://en.wikipedia.org/wiki/Quantile_regression
      */
@@ -233,8 +232,7 @@ public final class LossFunctions {
     }
 
     /**
-     * Epsilon-Insensitive loss used by Support Vector Regression (SVR).
-     * <code>loss = max(0, |y - p| - epsilon)</code>
+     * Epsilon-Insensitive loss used by Support Vector Regression (SVR). <code>loss = max(0, |y - p| - epsilon)</code>
      */
     public static final class EpsilonInsensitiveLoss extends RegressionLoss {
 
@@ -354,8 +352,8 @@ public final class LossFunctions {
         }
 
         /**
-         * @param threshold Margin threshold. When threshold=1.0, one gets the loss used by SVM.
-         *        When threshold=0.0, one gets the loss used by the Perceptron.
+         * @param threshold Margin threshold. When threshold=1.0, one gets the loss used by SVM. When threshold=0.0, one gets the loss used by the
+         *        Perceptron.
          */
         public HingeLoss(float threshold) {
             this.threshold = threshold;

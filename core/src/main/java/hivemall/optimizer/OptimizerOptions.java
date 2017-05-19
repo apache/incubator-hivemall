@@ -43,10 +43,11 @@ public final class OptimizerOptions {
     public static void setup(@Nonnull Options opts) {
         opts.addOption("opt", "optimizer", true,
             "Optimizer to update weights [default: adagrad, sgd, adadelta, adam]");
-        opts.addOption("eps",  true, "Denominator value of AdaDelta/AdaGrad [default 1e-6]");
+        opts.addOption("eps", true, "Denominator value of AdaDelta/AdaGrad [default 1e-6]");
         opts.addOption("rho", "decay", true, "Decay rate of AdaDelta [default 0.95]");
         // regularization
-        opts.addOption("reg", "regularization", true, "Regularization type [default: rda, l1, l2, elasticnet]");
+        opts.addOption("reg", "regularization", true,
+            "Regularization type [default: rda, l1, l2, elasticnet]");
         opts.addOption("lambda", true, "Regularization term [default 0.0001]");
         // learning rates
         opts.addOption("eta", true, "Learning rate scheme [default: inverse/inv, fixed, simple]");

@@ -29,7 +29,7 @@ public abstract class Regularization {
 
     public Regularization(@Nonnull Map<String, String> options) {
         float lambda = DEFAULT_LAMBDA;
-        if(options.containsKey("lambda")) {
+        if (options.containsKey("lambda")) {
             lambda = Float.parseFloat(options.get("lambda"));
         }
         this.lambda = lambda;
@@ -94,7 +94,7 @@ public abstract class Regularization {
         if (regName == null) {
             return new PassThrough(options);
         }
-        
+
         if (regName.toLowerCase().equals("no")) {
             return new PassThrough(options);
         } else if (regName.toLowerCase().equals("l1")) {

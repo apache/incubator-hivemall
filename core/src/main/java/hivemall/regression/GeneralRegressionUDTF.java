@@ -22,6 +22,7 @@ import hivemall.annotations.Since;
 import hivemall.model.FeatureValue;
 import hivemall.optimizer.LossFunctions;
 import hivemall.optimizer.LossFunctions.LossFunction;
+import hivemall.optimizer.LossFunctions.LossType;
 import hivemall.optimizer.Optimizer;
 import hivemall.optimizer.OptimizerOptions;
 
@@ -88,7 +89,7 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     protected Options getOptions() {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true,
-                "Loss function [default: SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]");
+            "Loss function [default: SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]");
         OptimizerOptions.setup(opts);
         return opts;
     }
@@ -96,14 +97,14 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = super.processOptions(argOIs);
-        try {
-            if (cl.hasOption("loss_function")) {
+        if (cl.hasOption("loss_function")) {
+            try {
                 this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
-            } else {
-                this.lossFunction = LossFunctions.getLossFunction("SquaredLoss");
+            } catch (Throwable e) {
+                throw new UDFArgumentException(e.getMessage());
             }
-        } catch (Throwable e) {
-            throw new UDFArgumentException(e.getMessage());
+        } else {
+            this.lossFunction = LossFunctions.getLossFunction(LossType.SquaredLoss);
         }
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
         return cl;

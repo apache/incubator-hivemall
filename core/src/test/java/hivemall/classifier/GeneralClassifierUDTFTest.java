@@ -54,7 +54,7 @@ public class GeneralClassifierUDTFTest {
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt UnsupportedOpt");
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt UnsupportedOpt");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
@@ -66,7 +66,7 @@ public class GeneralClassifierUDTFTest {
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss UnsupportedLoss");
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss UnsupportedLoss");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
@@ -78,7 +78,7 @@ public class GeneralClassifierUDTFTest {
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reg UnsupportedReg");
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reg UnsupportedReg");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
@@ -93,17 +93,18 @@ public class GeneralClassifierUDTFTest {
         samplesList.add(Arrays.asList("1:1", "2:2"));
         samplesList.add(Arrays.asList("1:2", "2:1"));
 
-        int[] labels = new int[]{0, 0, 0, 1, 1, 1};
+        int[] labels = new int[] {0, 0, 0, 1, 1, 1};
 
         int nIter = 10;
 
         String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
         String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
-        String[] lossFunctions = new String[] {"HingeLoss", "LogLoss", "SquaredHingeLoss", "ModifiedHuberLoss",
-                "SquaredLoss", "QuantileLoss", "EpsilonInsensitiveLoss", "HuberLoss"};
+        String[] lossFunctions = new String[] {"HingeLoss", "LogLoss", "SquaredHingeLoss",
+                "ModifiedHuberLoss", "SquaredLoss", "QuantileLoss", "EpsilonInsensitiveLoss",
+                "HuberLoss"};
 
-        for (String opt: optimizers) {
-            for (String reg: regularizations) {
+        for (String opt : optimizers) {
+            for (String reg : regularizations) {
                 if (reg == "RDA" && opt != "AdaGrad") {
                     continue;
                 }
@@ -117,13 +118,13 @@ public class GeneralClassifierUDTFTest {
                     ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                     ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
                     ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
 
-                    udtf.initialize(new ObjectInspector[]{stringListOI, intOI, params});
+                    udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
                     for (int it = 0; it < nIter; it++) {
                         for (int i = 0, size = samplesList.size(); i < size; i++) {
-                            udtf.process(new Object[]{samplesList.get(i), labels[i]});
+                            udtf.process(new Object[] {samplesList.get(i), labels[i]});
                         }
                     }
 
@@ -136,7 +137,8 @@ public class GeneralClassifierUDTFTest {
                         float score = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
                         int predicted = score > 0.f ? 1 : 0;
 
-                        println("Score: " + score + ", Predicted: " + predicted + ", Actual: " + label);
+                        println("Score: " + score + ", Predicted: " + predicted + ", Actual: "
+                                + label);
 
                         if (predicted == label) {
                             ++numCorrect;
@@ -161,12 +163,13 @@ public class GeneralClassifierUDTFTest {
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt SGD -loss logloss -reg L2 -lambda 0.1");
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-opt SGD -loss logloss -reg L2 -lambda 0.1");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
         BufferedReader news20 = readFile("news20-small.binary.gz");
-        ArrayList<Integer> labels =  new ArrayList<Integer>();
+        ArrayList<Integer> labels = new ArrayList<Integer>();
         ArrayList<String> words = new ArrayList<String>();
         ArrayList<ArrayList<String>> wordsList = new ArrayList<ArrayList<String>>();
         String line = news20.readLine();

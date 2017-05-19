@@ -66,25 +66,25 @@ public final class OptimizerTest {
         final Map<String, String> options = new HashMap<String, String>();
         final String[] regTypes = new String[] {"NO", "L1", "L2", "ElasticNet"};
         options.put("optimizer", "SGD");
-        for(final String regType : regTypes) {
+        for (final String regType : regTypes) {
             options.put("regularization", regType);
             Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof Optimizer.SGD);
             Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof Optimizer.SGD);
         }
         options.put("optimizer", "AdaDelta");
-        for(final String regType : regTypes) {
+        for (final String regType : regTypes) {
             options.put("regularization", regType);
             Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaDelta);
             Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaDelta);
         }
         options.put("optimizer", "AdaGrad");
-        for(final String regType : regTypes) {
+        for (final String regType : regTypes) {
             options.put("regularization", regType);
             Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaGrad);
             Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaGrad);
         }
         options.put("optimizer", "Adam");
-        for(final String regType : regTypes) {
+        for (final String regType : regTypes) {
             options.put("regularization", regType);
             Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.Adam);
             Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.Adam);
@@ -97,7 +97,7 @@ public final class OptimizerTest {
         Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdagradRDA);
 
         // `SGD`, `AdaDelta`, and `Adam` currently does not support `RDA`
-        for(final String optimizerType : new String[] {"SGD", "AdaDelta", "Adam"}) {
+        for (final String optimizerType : new String[] {"SGD", "AdaDelta", "Adam"}) {
             options.put("optimizer", optimizerType);
             try {
                 DenseOptimizerFactory.create(8, options);
@@ -118,15 +118,15 @@ public final class OptimizerTest {
         final float[] weights = new float[initSize * 2];
         final Random rnd = new Random();
         try {
-            for(int i = 0; i < numUpdates; i++) {
+            for (int i = 0; i < numUpdates; i++) {
                 int index = rnd.nextInt(initSize);
                 weights[index] = optimizer.update(index, weights[index], 0.1f);
             }
-            for(int i = 0; i < numUpdates; i++) {
+            for (int i = 0; i < numUpdates; i++) {
                 int index = rnd.nextInt(initSize * 2);
                 weights[index] = optimizer.update(index, weights[index], 0.1f);
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             Assert.fail("failed to update weights: " + e.getMessage());
         }
     }
@@ -134,7 +134,7 @@ public final class OptimizerTest {
     private void testOptimizer(final Map<String, String> options, int numUpdates, int initSize) {
         final Map<String, String> testOptions = new HashMap<String, String>(options);
         final String[] regTypes = new String[] {"NO", "L1", "L2", "RDA", "ElasticNet"};
-        for(final String regType : regTypes) {
+        for (final String regType : regTypes) {
             options.put("regularization", regType);
             testUpdateWeights(DenseOptimizerFactory.create(1024, testOptions), 65536, 1024);
             testUpdateWeights(SparseOptimizerFactory.create(1024, testOptions), 65536, 1024);

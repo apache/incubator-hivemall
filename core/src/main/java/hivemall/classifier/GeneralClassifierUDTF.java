@@ -22,6 +22,7 @@ import hivemall.annotations.Since;
 import hivemall.model.FeatureValue;
 import hivemall.optimizer.LossFunctions;
 import hivemall.optimizer.LossFunctions.LossFunction;
+import hivemall.optimizer.LossFunctions.LossType;
 import hivemall.optimizer.Optimizer;
 import hivemall.optimizer.OptimizerOptions;
 
@@ -83,8 +84,8 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     protected Options getOptions() {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true,
-                "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss, "
-                + "SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]");
+            "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss, "
+                    + "SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]");
         OptimizerOptions.setup(opts);
         return opts;
     }
@@ -92,14 +93,14 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = super.processOptions(argOIs);
-        try {
-            if (cl.hasOption("loss_function")) {
+        if (cl.hasOption("loss_function")) {
+            try {
                 this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
-            } else {
-                this.lossFunction = LossFunctions.getLossFunction("HingeLoss");
+            } catch (Throwable e) {
+                throw new UDFArgumentException(e.getMessage());
             }
-        } catch (Throwable e) {
-            throw new UDFArgumentException(e.getMessage());
+        } else {
+            this.lossFunction = LossFunctions.getLossFunction(LossType.HingeLoss);
         }
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
         return cl;

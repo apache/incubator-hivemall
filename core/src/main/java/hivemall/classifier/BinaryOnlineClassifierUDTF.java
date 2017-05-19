@@ -62,7 +62,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     public BinaryOnlineClassifierUDTF() {
         this(false);
     }
-    
+
     public BinaryOnlineClassifierUDTF(boolean enableNewModel) {
         super(enableNewModel);
     }
