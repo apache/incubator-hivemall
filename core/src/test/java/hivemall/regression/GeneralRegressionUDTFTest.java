@@ -95,8 +95,7 @@ public class GeneralRegressionUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
 
-    @Test
-    public void test() throws Exception {
+    private void run(@Nonnull String options) throws Exception {
         ArrayList<List<String>> samplesList = new ArrayList<List<String>>();
         samplesList.add(Arrays.asList("1:-2", "2:-1"));
         samplesList.add(Arrays.asList("1:-1", "2:-1"));
@@ -113,6 +112,48 @@ public class GeneralRegressionUDTFTest {
 
         int maxIter = 20;
 
+        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+
+        float lossAvgPrev = Float.MAX_VALUE;
+        float lossAvg = 0.f;
+        int it = 0;
+        while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
+            lossAvgPrev = lossAvg;
+            lossAvg = 0.f;
+            for (int i = 0; i < 6; i++) {
+                udtf.process(new Object[] {samplesList.get(i), ys[i]});
+                lossAvg += udtf.getLoss();
+            }
+            lossAvg /= 6.f;
+            println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
+        }
+        Assert.assertTrue(lossAvg < 1.5f);
+
+        float accum = 0.f;
+
+        for (int i = 6; i < 9; i++) {
+            int y = ys[i];
+
+            float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
+            println("Predicted: " + predicted + ", Actual: " + y);
+
+            accum += Math.abs(y - predicted);
+        }
+
+        float err = accum / 3;
+        println("Mean absolute error: " + err);
+        Assert.assertTrue(err < 2.f);
+    }
+
+    @Test
+    public void test() throws Exception {
         String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
         String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
         String[] lossFunctions = new String[] {"SquaredLoss", "QuantileLoss",
@@ -129,44 +170,12 @@ public class GeneralRegressionUDTFTest {
                             + " -lambda 1e-6 -eta fixed -eta0 1e-3";
                     println(options);
 
-                    GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
-                    ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-                    ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                    ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
-                    ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+                    // sparse
+                    run(options);
 
-                    udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
-
-                    float lossAvgPrev = Float.MAX_VALUE;
-                    float lossAvg = 0.f;
-                    int it = 0;
-                    while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
-                        lossAvgPrev = lossAvg;
-                        lossAvg = 0.f;
-                        for (int i = 0; i < 6; i++) {
-                            udtf.process(new Object[] {samplesList.get(i), ys[i]});
-                            lossAvg += udtf.getLoss();
-                        }
-                        lossAvg /= 6.f;
-                        println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
-                    }
-                    Assert.assertTrue(lossAvg < 1.5f);
-
-                    float accum = 0.f;
-
-                    for (int i = 6; i < 9; i++) {
-                        int y = ys[i];
-
-                        float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
-                        println("Predicted: " + predicted + ", Actual: " + y);
-
-                        accum += Math.abs(y - predicted);
-                    }
-
-                    float err = accum / 3;
-                    println("Mean absolute error: " + err);
-                    Assert.assertTrue(err < 2.f);
+                    // dense
+                    options += " -dense";
+                    run(options);
                 }
             }
         }

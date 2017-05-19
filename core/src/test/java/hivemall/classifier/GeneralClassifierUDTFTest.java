@@ -83,8 +83,7 @@ public class GeneralClassifierUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
 
-    @Test
-    public void test() throws Exception {
+    private void run(@Nonnull String options) throws Exception {
         ArrayList<List<String>> samplesList = new ArrayList<List<String>>();
         samplesList.add(Arrays.asList("1:-2", "2:-1"));
         samplesList.add(Arrays.asList("1:-1", "2:-1"));
@@ -97,6 +96,55 @@ public class GeneralClassifierUDTFTest {
 
         int maxIter = 512;
 
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+
+        float lossAvgPrev = Float.MAX_VALUE;
+        float lossAvg = 0.f;
+        int it = 0;
+        while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
+            lossAvgPrev = lossAvg;
+            lossAvg = 0.f;
+            for (int i = 0, size = samplesList.size(); i < size; i++) {
+                udtf.process(new Object[] {samplesList.get(i), labels[i]});
+                lossAvg += udtf.getLoss();
+            }
+            lossAvg /= samplesList.size();
+            println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
+        }
+        Assert.assertTrue(lossAvg < 0.5f);
+
+        int numTests = 0;
+        int numCorrect = 0;
+
+        for (int i = 0, size = samplesList.size(); i < size; i++) {
+            int label = labels[i];
+
+            float score = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
+            int predicted = score > 0.f ? 1 : 0;
+
+            println("Score: " + score + ", Predicted: " + predicted + ", Actual: "
+                    + label);
+
+            if (predicted == label) {
+                ++numCorrect;
+            }
+            ++numTests;
+        }
+
+        float accuracy = numCorrect / (float) numTests;
+        println("Accuracy: " + accuracy);
+        Assert.assertTrue(accuracy == 1.f);
+    }
+
+    @Test
+    public void test() throws Exception {
         String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
         String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
         String[] lossFunctions = new String[] {"HingeLoss", "LogLoss", "SquaredHingeLoss",
@@ -113,51 +161,12 @@ public class GeneralClassifierUDTFTest {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss;
                     println(options);
 
-                    GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
-                    ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-                    ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                    ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
-                    ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+                    // sparse
+                    run(options);
 
-                    udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
-
-                    float lossAvgPrev = Float.MAX_VALUE;
-                    float lossAvg = 0.f;
-                    int it = 0;
-                    while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
-                        lossAvgPrev = lossAvg;
-                        lossAvg = 0.f;
-                        for (int i = 0, size = samplesList.size(); i < size; i++) {
-                            udtf.process(new Object[] {samplesList.get(i), labels[i]});
-                            lossAvg += udtf.getLoss();
-                        }
-                        lossAvg /= samplesList.size();
-                        println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
-                    }
-                    Assert.assertTrue(lossAvg < 0.5f);
-
-                    int numTests = 0;
-                    int numCorrect = 0;
-
-                    for (int i = 0, size = samplesList.size(); i < size; i++) {
-                        int label = labels[i];
-
-                        float score = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
-                        int predicted = score > 0.f ? 1 : 0;
-
-                        println("Score: " + score + ", Predicted: " + predicted + ", Actual: "
-                                + label);
-
-                        if (predicted == label) {
-                            ++numCorrect;
-                        }
-                        ++numTests;
-                    }
-
-                    float accuracy = numCorrect / (float) numTests;
-                    println("Accuracy: " + accuracy);
-                    Assert.assertTrue(accuracy == 1.f);
+                    // dense
+                    options += " -dense";
+                    run(options);
                 }
             }
         }
