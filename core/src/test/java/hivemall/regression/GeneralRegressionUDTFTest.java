@@ -111,7 +111,7 @@ public class GeneralRegressionUDTFTest {
 
         int[] ys = new int[] {1, 1, 1, 2, 2, 2, 1, 2, 2};
 
-        int nIter = 20;
+        int maxIter = 20;
 
         String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
         String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
@@ -126,7 +126,7 @@ public class GeneralRegressionUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -lambda 1e-3 -eta fixed -eta0 1e-3";
+                            + " -lambda 1e-6 -eta fixed -eta0 1e-3";
                     println(options);
 
                     GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
@@ -138,11 +138,20 @@ public class GeneralRegressionUDTFTest {
 
                     udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
-                    for (int it = 0; it < nIter; it++) {
+                    float lossAvgPrev = Float.MAX_VALUE;
+                    float lossAvg = 0.f;
+                    int it = 0;
+                    while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
+                        lossAvgPrev = lossAvg;
+                        lossAvg = 0.f;
                         for (int i = 0; i < 6; i++) {
                             udtf.process(new Object[] {samplesList.get(i), ys[i]});
+                            lossAvg += udtf.getLoss();
                         }
+                        lossAvg /= 6.f;
+                        println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
                     }
+                    Assert.assertTrue(lossAvg < 1.5f);
 
                     float accum = 0.f;
 

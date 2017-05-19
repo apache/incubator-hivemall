@@ -19,6 +19,7 @@
 package hivemall.classifier;
 
 import hivemall.annotations.Since;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
 import hivemall.optimizer.LossFunctions;
 import hivemall.optimizer.LossFunctions.LossFunction;
@@ -51,6 +52,8 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     @Nonnull
     private final Map<String, String> optimizerOptions;
     private LossFunction lossFunction;
+
+    private float loss;
 
     public GeneralClassifierUDTF() {
         super(true);
@@ -116,6 +119,8 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float label,
             final float predicted) {
+        this.loss = lossFunction.loss(predicted, label);
+
         float dloss = lossFunction.dloss(predicted, label);
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
@@ -125,6 +130,11 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
             model.setWeight(feature, new_weight);
         }
         optimizer.proceedStep();
+    }
+
+    @VisibleForTesting
+    float getLoss() {
+        return loss;
     }
 
 }

@@ -95,7 +95,7 @@ public class GeneralClassifierUDTFTest {
 
         int[] labels = new int[] {0, 0, 0, 1, 1, 1};
 
-        int nIter = 10;
+        int maxIter = 512;
 
         String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
         String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
@@ -122,11 +122,20 @@ public class GeneralClassifierUDTFTest {
 
                     udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
-                    for (int it = 0; it < nIter; it++) {
+                    float lossAvgPrev = Float.MAX_VALUE;
+                    float lossAvg = 0.f;
+                    int it = 0;
+                    while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
+                        lossAvgPrev = lossAvg;
+                        lossAvg = 0.f;
                         for (int i = 0, size = samplesList.size(); i < size; i++) {
                             udtf.process(new Object[] {samplesList.get(i), labels[i]});
+                            lossAvg += udtf.getLoss();
                         }
+                        lossAvg /= samplesList.size();
+                        println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
                     }
+                    Assert.assertTrue(lossAvg < 0.5f);
 
                     int numTests = 0;
                     int numCorrect = 0;

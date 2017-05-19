@@ -19,6 +19,7 @@
 package hivemall.regression;
 
 import hivemall.annotations.Since;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
 import hivemall.optimizer.LossFunctions;
 import hivemall.optimizer.LossFunctions.LossFunction;
@@ -51,6 +52,8 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     private final Map<String, String> optimizerOptions;
     private Optimizer optimizer;
     private LossFunction lossFunction;
+
+    private float loss;
 
     public GeneralRegressionUDTF() {
         super(true); // This enables new model interfaces
@@ -113,6 +116,8 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
+        this.loss = lossFunction.loss(predicted, target);
+
         float dloss = lossFunction.dloss(predicted, target);
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
@@ -122,6 +127,11 @@ public final class GeneralRegressionUDTF extends RegressionBaseUDTF {
             model.setWeight(feature, new_weight);
         }
         optimizer.proceedStep();
+    }
+
+    @VisibleForTesting
+    float getLoss() {
+        return loss;
     }
 
 }
