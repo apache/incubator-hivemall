@@ -46,7 +46,7 @@ $ docker build -f resources/docker/Dockerfile .
 ```
 
 > #### Note
-> You can [skip](./getting_started.html#running-pre-built-docker-image-in-dockerhub) building images by using a pre-build docker image from Docker Hub.
+> You can [skip](./getting_started.html#running-pre-built-docker-image-in-docker-hub) building images by using a pre-build docker image from Docker Hub.
 
 # 2. Run container
 
@@ -78,10 +78,10 @@ $ docker run -p 8088:8088 -p 50070:50070 -p 19888:19888 -it ${docker_image_id}
 
 Refer [Docker reference](https://docs.docker.com/engine/reference/run/) for the command detail.
 
-Similarly to the `volumes` option in the `docker-compose` file, `docker run` has `--volumes` option: 
+Similarly to the `volumes` option in the `docker-compose` file, `docker run` has `--volume` (`-v`) option: 
 
 ```
-$ docker run ... --volume /path/to/local/hivemall:/opt/hivemall
+$ docker run ... -v /path/to/local/hivemall:/opt/hivemall
 ```
 
 ## Running pre-built Docker image in Docker Hub
