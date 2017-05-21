@@ -303,7 +303,10 @@
 									<goal>exec</goal>
 								</goals>
 								<configuration>
-									<executable>./bin/build_xgboost.sh</executable>
+									<executable>make</executable>
+									<arguments>
+										<argument>xgboost-linux-x64</argument>
+									</arguments>
 								</configuration>
 							</execution>
 						</executions>
