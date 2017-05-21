@@ -27,14 +27,14 @@ HIVEMALL_LIB_DIR := "${HIVEMALL_HOME}/xgboost/src/main/resources/lib"
 CANDIDATES := 'linux-arm64' 'linux-armv6' 'linux-armv7' 'linux-ppc64le' 'linux-x64' 'linux-x86' 'windows-x64' 'windows-x86'
 
 
-.PHONY:	phony
+.PHONY: phony
 phony: ;
 
-.PHONY:	clean-xgboost
+.PHONY: clean-xgboost
 clean-xgboost:
 	rm -rf ${XGBOOST_OUT} ${HIVEMALL_LIB_DIR}
 
-.PHONY:	fetch-xgboost
+.PHONY: fetch-xgboost
 fetch-xgboost: clean-xgboost
 	set -eux && \
 	mkdir -p ${XGBOOST_OUT} && \
@@ -43,18 +43,18 @@ fetch-xgboost: clean-xgboost
 	git submodule init && \
 	git submodule update
 
-.PHONY:	xgboost-native
+.PHONY: xgboost-native
 xgboost-native: fetch-xgboost
 	set -eux && \
-	for arch in ${CANDIDATES}; do make xgboost-$${arch}; done
+	for os_arch in ${CANDIDATES}; do make xgboost-$${os_arch}; done
 
-.PHONY:	xgboost-native-%
+.PHONY: xgboost-native-%
 xgboost-native-%:
 	set -eux && \
-	ARCH=$(subst xgboost-native-,,$@) && \
-	echo ${CANDIDATES} | grep -q $${ARCH} && \
+	OS_ARCH=$(subst xgboost-native-,,$@) && \
+	echo ${CANDIDATES} | grep -q $${OS_ARCH} && \
 	cd ${HIVEMALL_HOME} && \
-	docker run --rm dockcross/$${ARCH} > ${DOCKCROSS_SCRIPT} && \
+	docker run --rm dockcross/$${OS_ARCH} > ${DOCKCROSS_SCRIPT} && \
 	chmod +x ${DOCKCROSS_SCRIPT} && \
 	./${DOCKCROSS_SCRIPT} sh -c ' \
 		sudo apt-get update && \
@@ -63,7 +63,7 @@ xgboost-native-%:
 		export ENABLE_STATIC_LINKS=1 && \
 		export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 && \
 		./create_jni.sh' && \
-	mkdir -p ${HIVEMALL_LIB_DIR}/$${ARCH} && \
-	cp ${XGBOOST_OUT}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR}/$${ARCH} && \
+	mkdir -p ${HIVEMALL_LIB_DIR}/$${OS_ARCH} && \
+	cp ${XGBOOST_OUT}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR}/$${OS_ARCH} && \
 	rm -rf ${DOCKCROSS_SCRIPT} \
 	|| echo Candidates: ${CANDIDATES}
