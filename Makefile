@@ -17,29 +17,42 @@
 # under the License.
 #
 
-all: ;
-
-DOCKCROSS_SCRIPT := 'dockcross'
+DOCKCROSS_SCRIPT := 'dockcross.bash'
 XGBOOST_REPO := 'https://github.com/maropu/xgboost.git'
 XGBOOST_BRANCH := 'xgboost_v0.60_with_portable_binaries'
 HIVEMALL_HOME := "$(shell pwd)"
 HIVEMALL_OUT := "${HIVEMALL_HOME}/target"
 XGBOOST_OUT := "${HIVEMALL_OUT}/xgboost"
 HIVEMALL_LIB_DIR := "${HIVEMALL_HOME}/xgboost/src/main/resources/lib"
-CANDIDATES := 'linux-arm64 linux-armv6 linux-armv7 linux-ppc64le linux-x64 linux-x86 windows-x64 windows-x86'
+CANDIDATES := 'linux-arm64' 'linux-armv6' 'linux-armv7' 'linux-ppc64le' 'linux-x64' 'linux-x86' 'windows-x64' 'windows-x86'
 
+
+.PHONY:	phony
+phony: ;
+
+.PHONY:	clean-xgboost
 clean-xgboost:
 	rm -rf ${XGBOOST_OUT} ${HIVEMALL_LIB_DIR}
 
-xgboost-%: clean-xgboost
+.PHONY:	fetch-xgboost
+fetch-xgboost: clean-xgboost
 	set -eux && \
-	ARCH=$(subst xgboost-,,$@) && \
-	echo ${CANDIDATES} | grep -q $${ARCH} && \
-	mkdir -p ${XGBOOST_OUT} ${HIVEMALL_LIB_DIR} && \
+	mkdir -p ${XGBOOST_OUT} && \
 	git clone --depth 1 --single-branch -b ${XGBOOST_BRANCH} ${XGBOOST_REPO} ${XGBOOST_OUT} && \
 	cd ${XGBOOST_OUT} && \
 	git submodule init && \
-	git submodule update && \
+	git submodule update
+
+.PHONY:	xgboost-native
+xgboost-native: fetch-xgboost
+	set -eux && \
+	for arch in ${CANDIDATES}; do make xgboost-$${arch}; done
+
+.PHONY:	xgboost-native-%
+xgboost-native-%:
+	set -eux && \
+	ARCH=$(subst xgboost-native-,,$@) && \
+	echo ${CANDIDATES} | grep -q $${ARCH} && \
 	cd ${HIVEMALL_HOME} && \
 	docker run --rm dockcross/$${ARCH} > ${DOCKCROSS_SCRIPT} && \
 	chmod +x ${DOCKCROSS_SCRIPT} && \
@@ -50,6 +63,7 @@ xgboost-%: clean-xgboost
 		export ENABLE_STATIC_LINKS=1 && \
 		export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 && \
 		./create_jni.sh' && \
-	cp ${XGBOOST_OUT}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR} && \
+	mkdir -p ${HIVEMALL_LIB_DIR}/$${ARCH} && \
+	cp ${XGBOOST_OUT}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR}/$${ARCH} && \
 	rm -rf ${DOCKCROSS_SCRIPT} \
 	|| echo Candidates: ${CANDIDATES}

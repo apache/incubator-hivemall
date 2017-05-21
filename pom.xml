@@ -305,7 +305,7 @@
 								<configuration>
 									<executable>make</executable>
 									<arguments>
-										<argument>xgboost-linux-x64</argument>
+										<argument>xgboost-native</argument>
 									</arguments>
 								</configuration>
 							</execution>
