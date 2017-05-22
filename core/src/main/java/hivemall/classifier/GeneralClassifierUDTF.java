@@ -26,6 +26,7 @@ import hivemall.optimizer.LossFunctions.LossFunction;
 import hivemall.optimizer.LossFunctions.LossType;
 import hivemall.optimizer.Optimizer;
 import hivemall.optimizer.OptimizerOptions;
+import hivemall.utils.lang.FloatAccumulator;
 
 import java.util.Map;
 
@@ -70,15 +71,17 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
 
         StructObjectInspector outputOI = super.initialize(argOIs);
 
-        if (is_mini_batch) {
-            throw new UDFArgumentException("_FUNC_ does not currently support `-mini_batch` option");
-        }
-
         try {
             this.optimizer = createOptimizer(optimizerOptions);
         } catch (Throwable e) {
             throw new UDFArgumentException(e.getMessage());
         }
+
+        if ((optimizer instanceof Optimizer.OptimizerBase.AdagradRDA) && is_mini_batch) {
+            throw new UDFArgumentException("Currently `-mini_batch` option is NOT available for AdaGradRDA");
+        }
+
+        this.loss = 0.f;
 
         return outputOI;
     }
@@ -119,9 +122,67 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float label,
             final float predicted) {
-        this.loss = lossFunction.loss(predicted, label);
-
         float dloss = lossFunction.dloss(predicted, label);
+        if (is_mini_batch) {
+            // for mini-batch, consider mean of accumulated loss
+            this.loss += lossFunction.loss(predicted, label);
+
+            accumulateUpdate(features, dloss);
+
+            if (sampled >= mini_batch_size) {
+                batchUpdate();
+                this.loss = 0.f;
+            }
+        } else {
+            this.loss = lossFunction.loss(predicted, label);
+            onlineUpdate(features, dloss);
+        }
+    }
+
+    @Override
+    protected void accumulateUpdate(@Nonnull final FeatureValue[] features, final float dloss) {
+        for (FeatureValue f : features) {
+            Object feature = f.getFeature();
+            float xi = f.getValueAsFloat();
+            float weight = model.getWeight(feature);
+
+            // compute new weight, but still not set to the model
+            float new_weight = optimizer.update(feature, weight, dloss * xi);
+
+            // (w_i - eta * delta_1) + (w_i - eta * delta_2) + ... + (w_i - eta * delta_M)
+            FloatAccumulator acc = accumulated.get(feature);
+            if (acc == null) {
+                acc = new FloatAccumulator(new_weight);
+                accumulated.put(feature, acc);
+            } else {
+                acc.add(new_weight);
+            }
+        }
+        sampled++;
+    }
+
+    @Override
+    protected void batchUpdate() {
+        if (accumulated.isEmpty()) {
+            this.sampled = 0;
+            return;
+        }
+
+        for (Map.Entry<Object, FloatAccumulator> e : accumulated.entrySet()) {
+            Object feature = e.getKey();
+            FloatAccumulator v = e.getValue();
+            float new_weight = v.get(); // w_i - (eta / M) * (delta_1 + delta_2 + ... + delta_M)
+            model.setWeight(feature, new_weight);
+        }
+
+        optimizer.proceedStep();
+
+        accumulated.clear();
+        this.sampled = 0;
+    }
+
+    @Override
+    protected void onlineUpdate(@Nonnull final FeatureValue[] features, float dloss) {
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
@@ -134,6 +195,13 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
 
     @VisibleForTesting
     float getLoss() {
+        if (is_mini_batch) {
+            if (sampled == 0) {
+                return 0.f;
+            } else {
+                return loss / sampled;
+            }
+        }
         return loss;
     }
 

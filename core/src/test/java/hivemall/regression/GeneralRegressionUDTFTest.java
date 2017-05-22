@@ -86,6 +86,8 @@ public class GeneralRegressionUDTFTest {
     }
 
     private void run(@Nonnull String options) throws Exception {
+        println(options);
+
         int numSamples = 100;
 
         float x1Min = -5.f, x1Max = 5.f;
@@ -108,7 +110,7 @@ public class GeneralRegressionUDTFTest {
         }
 
         int numTrain = (int) (numSamples * 0.8);
-        int maxIter = 256;
+        int maxIter = 512;
 
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
@@ -122,7 +124,7 @@ public class GeneralRegressionUDTFTest {
         float lossAvgPrev = Float.MAX_VALUE;
         float lossAvg = 0.f;
         int it = 0;
-        while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
+        while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-6f)) {
             lossAvgPrev = lossAvg;
             lossAvg = 0.f;
             for (int i = 0; i < numTrain; i++) {
@@ -166,10 +168,15 @@ public class GeneralRegressionUDTFTest {
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
                             + " -lambda 1e-6 -eta0 1e-1";
-                    println(options);
 
                     // sparse
                     run(options);
+
+                    // mini-batch
+                    if (opt != "AdaGrad") {
+                        options += " -mini_batch 10";
+                        run(options);
+                    }
 
                     // dense
                     options += " -dense";

@@ -261,7 +261,7 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
         throw new UnsupportedOperationException();
     }
 
-    protected final void accumulateUpdate(@Nonnull final FeatureValue[] features, final float coeff) {
+    protected void accumulateUpdate(@Nonnull final FeatureValue[] features, final float coeff) {
         for (int i = 0; i < features.length; i++) {
             if (features[i] == null) {
                 continue;
@@ -281,7 +281,7 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
         sampled++;
     }
 
-    protected final void batchUpdate() {
+    protected void batchUpdate() {
         if (accumulated.isEmpty()) {
             this.sampled = 0;
             return;

@@ -84,6 +84,8 @@ public class GeneralClassifierUDTFTest {
     }
 
     private void run(@Nonnull String options) throws Exception {
+        println(options);
+
         ArrayList<List<String>> samplesList = new ArrayList<List<String>>();
         samplesList.add(Arrays.asList("1:-2", "2:-1"));
         samplesList.add(Arrays.asList("1:-1", "2:-1"));
@@ -159,10 +161,14 @@ public class GeneralClassifierUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss;
-                    println(options);
 
                     // sparse
                     run(options);
+
+                    if (opt != "AdaGrad") {
+                        options += " -mini_batch 2";
+                        run(options);
+                    }
 
                     // dense
                     options += " -dense";
