@@ -90,6 +90,7 @@ public interface Optimizer {
 
         @Override
         public float update(@Nonnull Object feature, float weight, float gradient) {
+            weightValueReused.set(weight);
             update(weightValueReused, gradient);
             return weightValueReused.get();
         }
