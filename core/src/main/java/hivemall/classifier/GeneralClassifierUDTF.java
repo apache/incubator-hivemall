@@ -137,6 +137,7 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
             this.loss = lossFunction.loss(predicted, label);
             onlineUpdate(features, dloss);
         }
+        optimizer.proceedStep();
     }
 
     @Override
@@ -175,8 +176,6 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
             model.setWeight(feature, new_weight);
         }
 
-        optimizer.proceedStep();
-
         accumulated.clear();
         this.sampled = 0;
     }
@@ -190,7 +189,6 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
             float new_weight = optimizer.update(feature, weight, dloss * xi);
             model.setWeight(feature, new_weight);
         }
-        optimizer.proceedStep();
     }
 
     @VisibleForTesting
