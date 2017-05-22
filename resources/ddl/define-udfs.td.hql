@@ -166,6 +166,8 @@ create temporary function tile as 'hivemall.geospatial.TileUDF';
 create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
 create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
 create temporary function dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF';
+create temporary function train_classifier as 'hivemall.classifier.GeneralClassifierUDTF';
+create temporary function train_regression as 'hivemall.regression.GeneralRegressionUDTF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

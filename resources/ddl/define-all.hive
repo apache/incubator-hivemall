@@ -10,7 +10,7 @@ create temporary function hivemall_version as 'hivemall.HivemallVersionUDF';
 ---------------------------
 
 drop temporary function if exists train_classifier;
-create temporary function train_classifier as 'hivemall.regression.GeneralClassifierUDTF';
+create temporary function train_classifier as 'hivemall.classifier.GeneralClassifierUDTF';
 
 drop temporary function if exists train_perceptron;
 create temporary function train_perceptron as 'hivemall.classifier.PerceptronUDTF';
