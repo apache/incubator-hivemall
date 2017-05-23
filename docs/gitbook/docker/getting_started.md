@@ -46,7 +46,7 @@ $ docker build -f resources/docker/Dockerfile .
 ```
 
 > #### Note
-> You can [skip](./getting_started.html#running-pre-built-docker-image-in-docker-hub) building images by using a pre-build docker image from Docker Hub.
+> You can [skip](./getting_started.html#running-pre-built-docker-image-in-docker-hub) building images if you try to use a pre-build docker image from Docker Hub. However, since the Docker Hub repository is experimental one, the distributed image is NOT built on the "latest" commit in [our master branch](https://github.com/apache/incubator-hivemall).
 
 # 2. Run container
 
@@ -85,6 +85,9 @@ $ docker run ... -v /path/to/local/hivemall:/opt/hivemall
 ```
 
 ## Running pre-built Docker image in Docker Hub
+
+> #### Caution
+> This part is experimental. Hivemall in the pre-built image might be out-of-date compared to the latest version in [our master branch](https://github.com/apache/incubator-hivemall).
 
 You can find pre-built Hivemall docker images in [this repository](https://hub.docker.com/r/hivemall/latest/).
 
