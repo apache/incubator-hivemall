@@ -48,6 +48,8 @@ public final class OptimizerOptions {
         // regularization
         opts.addOption("reg", "regularization", true,
             "Regularization type [default: rda, l1, l2, elasticnet]");
+        opts.addOption("l1_ratio", true,
+            "Ratio of L1 regularizer as a part of Elastic Net regularization [default: 0.5]");
         opts.addOption("lambda", true, "Regularization term [default 0.0001]");
         // learning rates
         opts.addOption("eta", true, "Learning rate scheme [default: inverse/inv, fixed, simple]");

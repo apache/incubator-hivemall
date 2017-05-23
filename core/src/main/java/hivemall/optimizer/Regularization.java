@@ -35,7 +35,11 @@ public abstract class Regularization {
         this.lambda = lambda;
     }
 
-    abstract float regularize(float weight, float gradient);
+    public float regularize(float weight, float gradient) {
+        return gradient + lambda * getRegularizer(weight);
+    }
+
+    abstract float getRegularizer(float weight);
 
     public static final class PassThrough extends Regularization {
 
@@ -44,8 +48,8 @@ public abstract class Regularization {
         }
 
         @Override
-        public float regularize(float weight, float gradient) {
-            return gradient;
+        public float getRegularizer(float weight) {
+            return 0.f;
         }
 
     }
@@ -57,8 +61,8 @@ public abstract class Regularization {
         }
 
         @Override
-        public float regularize(float weight, float gradient) {
-            return gradient + lambda * (weight > 0.f ? 1.f : -1.f);
+        public float getRegularizer(float weight) {
+            return (weight > 0.f ? 1.f : -1.f);
         }
 
     }
@@ -70,20 +74,39 @@ public abstract class Regularization {
         }
 
         @Override
-        public float regularize(float weight, float gradient) {
-            return gradient + lambda * weight;
+        public float getRegularizer(float weight) {
+            return weight;
         }
 
     }
 
     public static final class ElasticNet extends Regularization {
+        public static final float DEFAULT_L1_RATIO = 0.5f;
+
+        protected final L1 l1;
+        protected final L2 l2;
+
+        protected final float l1Ratio;
+
         public ElasticNet(Map<String, String> options) {
             super(options);
+
+            this.l1 = new L1(options);
+            this.l2 = new L2(options);
+
+            float l1Ratio = DEFAULT_L1_RATIO;
+            if (options.containsKey("l1_ratio")) {
+                l1Ratio = Float.parseFloat(options.get("l1_ratio"));
+                if (l1Ratio < 0.f || l1Ratio > 1.f) {
+                    throw new IllegalArgumentException("L1 ratio should be in [0.0, 1.0], but got " + l1Ratio);
+                }
+            }
+            this.l1Ratio = l1Ratio;
         }
 
         @Override
-        public float regularize(float weight, float gradient) {
-            return gradient + lambda * (weight > 0.f ? 1.f : -1.f) + lambda * weight;
+        public float getRegularizer(float weight) {
+            return l1Ratio * l1.getRegularizer(weight) + (1.f - l1Ratio) * l2.getRegularizer(weight);
         }
     }
 
