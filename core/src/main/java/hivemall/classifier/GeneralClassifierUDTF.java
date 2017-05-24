@@ -18,26 +18,16 @@
  */
 package hivemall.classifier;
 
+import hivemall.GeneralLearnerBaseUDTF;
 import hivemall.annotations.Since;
-import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
-import hivemall.optimizer.LossFunctions;
 import hivemall.optimizer.LossFunctions.LossFunction;
 import hivemall.optimizer.LossFunctions.LossType;
-import hivemall.optimizer.Optimizer;
-import hivemall.optimizer.OptimizerOptions;
-import hivemall.utils.lang.FloatAccumulator;
-
-import java.util.Map;
 
 import javax.annotation.Nonnull;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
 /**
  * A general classifier class that can select a loss function and an optimization function.
@@ -47,155 +37,32 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
                 + " - Returns a relation consists of <string|int|bigint feature, float weight>",
         extended = "Build a prediction model by a generic classifier")
 @Since(version = "0.5-rc.1")
-public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
+public final class GeneralClassifierUDTF extends GeneralLearnerBaseUDTF {
 
-    private Optimizer optimizer;
-    @Nonnull
-    private final Map<String, String> optimizerOptions;
-    private LossFunction lossFunction;
-
-    private float cumLoss;
-
-    public GeneralClassifierUDTF() {
-        super(true);
-        this.optimizerOptions = OptimizerOptions.create();
+    @Override
+    protected String getLossOptionDescription() {
+        return "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss, "
+                + "SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]";
     }
 
     @Override
-    public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(
-                "_FUNC_ takes 2 or 3 arguments: List<Text|Int|BitInt> features, int label "
-                        + "[, constant string options]");
-        }
-
-        StructObjectInspector outputOI = super.initialize(argOIs);
-
-        try {
-            this.optimizer = createOptimizer(optimizerOptions);
-        } catch (Throwable e) {
-            throw new UDFArgumentException(e.getMessage());
-        }
-
-        if ((optimizer instanceof Optimizer.OptimizerBase.AdagradRDA) && is_mini_batch) {
-            throw new UDFArgumentException("Currently `-mini_batch` option is NOT available for AdaGradRDA");
-        }
-
-        this.cumLoss = 0.f;
-
-        return outputOI;
+    protected LossType getDefaultLossType() {
+        return LossType.HingeLoss;
     }
 
     @Override
-    protected Options getOptions() {
-        Options opts = super.getOptions();
-        opts.addOption("loss", "loss_function", true,
-            "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss, "
-                    + "SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]");
-        OptimizerOptions.setup(opts);
-        return opts;
+    protected void checkLossFunction(LossFunction lossFunction) throws UDFArgumentException {};
+
+    @Override
+    protected void checkTargetValue(float label) throws UDFArgumentException {
+        assert (label == -1.f || label == 0.f || label == 1.f) : label;
     }
 
     @Override
-    protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-        CommandLine cl = super.processOptions(argOIs);
-        if (cl.hasOption("loss_function")) {
-            try {
-                this.lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
-            } catch (Throwable e) {
-                throw new UDFArgumentException(e.getMessage());
-            }
-        } else {
-            this.lossFunction = LossFunctions.getLossFunction(LossType.HingeLoss);
-        }
-        OptimizerOptions.propcessOptions(cl, optimizerOptions);
-        return cl;
-    }
-
-    @Override
-    protected void train(@Nonnull final FeatureValue[] features, final int label) {
+    protected void train(@Nonnull final FeatureValue[] features, final float label) {
         float predicted = predict(features);
-        float y = label > 0 ? 1.f : -1.f;
+        float y = label > 0.f ? 1.f : -1.f;
         update(features, y, predicted);
-    }
-
-    @Override
-    protected void update(@Nonnull final FeatureValue[] features, final float label,
-            final float predicted) {
-        this.cumLoss += lossFunction.loss(predicted, label);
-
-        float dloss = lossFunction.dloss(predicted, label);
-        if (is_mini_batch) {
-            accumulateUpdate(features, dloss);
-
-            if (sampled >= mini_batch_size) {
-                batchUpdate();
-            }
-        } else {
-            onlineUpdate(features, dloss);
-        }
-        optimizer.proceedStep();
-    }
-
-    @Override
-    protected void accumulateUpdate(@Nonnull final FeatureValue[] features, final float dloss) {
-        for (FeatureValue f : features) {
-            Object feature = f.getFeature();
-            float xi = f.getValueAsFloat();
-            float weight = model.getWeight(feature);
-
-            // compute new weight, but still not set to the model
-            float new_weight = optimizer.update(feature, weight, dloss * xi);
-
-            // (w_i - eta * delta_1) + (w_i - eta * delta_2) + ... + (w_i - eta * delta_M)
-            FloatAccumulator acc = accumulated.get(feature);
-            if (acc == null) {
-                acc = new FloatAccumulator(new_weight);
-                accumulated.put(feature, acc);
-            } else {
-                acc.add(new_weight);
-            }
-        }
-        sampled++;
-    }
-
-    @Override
-    protected void batchUpdate() {
-        if (accumulated.isEmpty()) {
-            this.sampled = 0;
-            return;
-        }
-
-        for (Map.Entry<Object, FloatAccumulator> e : accumulated.entrySet()) {
-            Object feature = e.getKey();
-            FloatAccumulator v = e.getValue();
-            float new_weight = v.get(); // w_i - (eta / M) * (delta_1 + delta_2 + ... + delta_M)
-            model.setWeight(feature, new_weight);
-        }
-
-        accumulated.clear();
-        this.sampled = 0;
-    }
-
-    @Override
-    protected void onlineUpdate(@Nonnull final FeatureValue[] features, float dloss) {
-        for (FeatureValue f : features) {
-            Object feature = f.getFeature();
-            float xi = f.getValueAsFloat();
-            float weight = model.getWeight(feature);
-            float new_weight = optimizer.update(feature, weight, dloss * xi);
-            model.setWeight(feature, new_weight);
-        }
-    }
-
-    @VisibleForTesting
-    float getCumulativeLoss() {
-        return cumLoss;
-    }
-
-    @VisibleForTesting
-    void resetCumulativeLoss() {
-        this.cumLoss = 0.f;
     }
 
 }
