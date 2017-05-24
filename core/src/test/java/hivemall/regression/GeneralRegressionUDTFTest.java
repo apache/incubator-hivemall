@@ -117,7 +117,7 @@ public class GeneralRegressionUDTFTest {
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
 
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 

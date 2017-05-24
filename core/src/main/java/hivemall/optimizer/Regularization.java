@@ -98,7 +98,8 @@ public abstract class Regularization {
             if (options.containsKey("l1_ratio")) {
                 l1Ratio = Float.parseFloat(options.get("l1_ratio"));
                 if (l1Ratio < 0.f || l1Ratio > 1.f) {
-                    throw new IllegalArgumentException("L1 ratio should be in [0.0, 1.0], but got " + l1Ratio);
+                    throw new IllegalArgumentException("L1 ratio should be in [0.0, 1.0], but got "
+                            + l1Ratio);
                 }
             }
             this.l1Ratio = l1Ratio;
@@ -106,7 +107,8 @@ public abstract class Regularization {
 
         @Override
         public float getRegularizer(float weight) {
-            return l1Ratio * l1.getRegularizer(weight) + (1.f - l1Ratio) * l2.getRegularizer(weight);
+            return l1Ratio * l1.getRegularizer(weight) + (1.f - l1Ratio)
+                    * l2.getRegularizer(weight);
         }
     }
 

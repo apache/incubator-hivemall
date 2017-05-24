@@ -84,7 +84,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
     abstract protected LossType getDefaultLossType();
 
-    abstract protected void checkLossFunction(LossFunction lossFunction) throws UDFArgumentException;
+    abstract protected void checkLossFunction(LossFunction lossFunction)
+            throws UDFArgumentException;
 
     abstract protected void checkTargetValue(float target) throws UDFArgumentException;
 

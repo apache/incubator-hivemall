@@ -103,7 +103,7 @@ public class GeneralClassifierUDTFTest {
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
@@ -130,8 +130,7 @@ public class GeneralClassifierUDTFTest {
             float score = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
             int predicted = score > 0.f ? 1 : 0;
 
-            println("Score: " + score + ", Predicted: " + predicted + ", Actual: "
-                    + label);
+            println("Score: " + score + ", Predicted: " + predicted + ", Actual: " + label);
 
             if (predicted == label) {
                 ++numCorrect;

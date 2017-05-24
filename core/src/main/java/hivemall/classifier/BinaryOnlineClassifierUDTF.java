@@ -279,7 +279,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         throw new UnsupportedOperationException();
     }
 
-        @Override
+    @Override
     public void close() throws HiveException {
         super.close();
         if (model != null) {
