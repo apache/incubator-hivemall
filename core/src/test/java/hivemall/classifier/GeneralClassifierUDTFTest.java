@@ -107,20 +107,19 @@ public class GeneralClassifierUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
-        float lossAvgPrev = Float.MAX_VALUE;
-        float lossAvg = 0.f;
+        float cumLossPrev = Float.MAX_VALUE;
+        float cumLoss = 0.f;
         int it = 0;
-        while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-3f)) {
-            lossAvgPrev = lossAvg;
-            lossAvg = 0.f;
+        while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
+            cumLossPrev = cumLoss;
+            udtf.resetCumulativeLoss();
             for (int i = 0, size = samplesList.size(); i < size; i++) {
                 udtf.process(new Object[] {samplesList.get(i), labels[i]});
-                lossAvg += udtf.getLoss();
             }
-            lossAvg /= samplesList.size();
-            println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
+            cumLoss = udtf.getCumulativeLoss();
+            println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
         }
-        Assert.assertTrue(lossAvg < 0.5f);
+        Assert.assertTrue(cumLoss / samplesList.size() < 0.5f);
 
         int numTests = 0;
         int numCorrect = 0;

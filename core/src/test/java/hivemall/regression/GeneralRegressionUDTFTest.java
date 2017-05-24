@@ -121,20 +121,19 @@ public class GeneralRegressionUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 
-        float lossAvgPrev = Float.MAX_VALUE;
-        float lossAvg = 0.f;
+        float cumLossPrev = Float.MAX_VALUE;
+        float cumLoss = 0.f;
         int it = 0;
-        while ((it < maxIter) && (Math.abs(lossAvg - lossAvgPrev) > 1e-6f)) {
-            lossAvgPrev = lossAvg;
-            lossAvg = 0.f;
+        while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
+            cumLossPrev = cumLoss;
+            udtf.resetCumulativeLoss();
             for (int i = 0; i < numTrain; i++) {
                 udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
-                lossAvg += udtf.getLoss();
             }
-            lossAvg /= numTrain;
-            println("Iter: " + ++it + ", Avg. loss: " + lossAvg);
+            cumLoss = udtf.getCumulativeLoss();
+            println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
         }
-        Assert.assertTrue(lossAvg < 0.1f);
+        Assert.assertTrue(cumLoss / numTrain < 0.1f);
 
         float accum = 0.f;
 

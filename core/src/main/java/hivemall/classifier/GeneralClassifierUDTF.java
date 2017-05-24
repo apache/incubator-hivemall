@@ -54,7 +54,7 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     private final Map<String, String> optimizerOptions;
     private LossFunction lossFunction;
 
-    private float loss;
+    private float cumLoss;
 
     public GeneralClassifierUDTF() {
         super(true);
@@ -81,7 +81,7 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
             throw new UDFArgumentException("Currently `-mini_batch` option is NOT available for AdaGradRDA");
         }
 
-        this.loss = 0.f;
+        this.cumLoss = 0.f;
 
         return outputOI;
     }
@@ -122,19 +122,16 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     @Override
     protected void update(@Nonnull final FeatureValue[] features, final float label,
             final float predicted) {
+        this.cumLoss += lossFunction.loss(predicted, label);
+
         float dloss = lossFunction.dloss(predicted, label);
         if (is_mini_batch) {
-            // for mini-batch, consider mean of accumulated loss
-            this.loss += lossFunction.loss(predicted, label);
-
             accumulateUpdate(features, dloss);
 
             if (sampled >= mini_batch_size) {
                 batchUpdate();
-                this.loss = 0.f;
             }
         } else {
-            this.loss = lossFunction.loss(predicted, label);
             onlineUpdate(features, dloss);
         }
         optimizer.proceedStep();
@@ -192,15 +189,13 @@ public final class GeneralClassifierUDTF extends BinaryOnlineClassifierUDTF {
     }
 
     @VisibleForTesting
-    float getLoss() {
-        if (is_mini_batch) {
-            if (sampled == 0) {
-                return 0.f;
-            } else {
-                return loss / sampled;
-            }
-        }
-        return loss;
+    float getCumulativeLoss() {
+        return cumLoss;
+    }
+
+    @VisibleForTesting
+    void resetCumulativeLoss() {
+        this.cumLoss = 0.f;
     }
 
 }
