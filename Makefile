@@ -43,6 +43,16 @@ fetch-xgboost: clean-xgboost
 	git submodule init && \
 	git submodule update
 
+.PHONY: xgboost-native-local
+xgboost-native-local: fetch-xgboost
+	set -eux && \
+	: $${JAVA_HOME} && \
+	cd target/xgboost/jvm-packages && \
+	export ENABLE_STATIC_LINKS=1 && \
+	./create_jni.sh && \
+	mkdir -p ${HIVEMALL_LIB_DIR} && \
+	cp ${XGBOOST_OUT}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR} # TODO: output dir
+
 .PHONY: xgboost-native
 xgboost-native: fetch-xgboost
 	set -eux && \
