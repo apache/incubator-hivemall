@@ -18,6 +18,7 @@
  */
 package hivemall.xgboost;
 
+import java.io.File;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +27,7 @@ import java.util.Locale;
 
 // This class is based on https://raw.githubusercontent.com/xerial/snappy-java/master/src/main/java/org/xerial/snappy/OSInfo.java
 public class OSInfo {
+    private static final String sp = File.separator;
     private static HashMap<String, String> archMapping = new HashMap<String, String>();
 
     public static final String X86 = "x86";
@@ -101,7 +103,7 @@ public class OSInfo {
     }
 
     public static String getNativeLibFolderPathForCurrentOS() {
-        return getOSName() + "/" + getArchName();
+        return getOSName() + sp + getArchName();
     }
 
     public static String getOSName() {
