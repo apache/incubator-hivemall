@@ -47,11 +47,16 @@ fetch-xgboost: clean-xgboost
 xgboost-native-local: fetch-xgboost
 	set -eux && \
 	: $${JAVA_HOME} && \
+	OUT='xgboost/target/classes' && \
+	$${JAVA_HOME}/bin/javac -d $${OUT} xgboost/src/main/java/hivemall/xgboost/OSInfo.java && \
+	OS=`$${JAVA_HOME}/bin/java -cp $${OUT} hivemall.xgboost.OSInfo --os` && \
+	ARCH=`$${JAVA_HOME}/bin/java -cp $${OUT} hivemall.xgboost.OSInfo --arch` && \
+	OS_ARCH=$${OS}-$${ARCH} && \
 	cd target/xgboost/jvm-packages && \
 	export ENABLE_STATIC_LINKS=1 && \
 	./create_jni.sh && \
-	mkdir -p ${HIVEMALL_LIB_DIR} && \
-	cp ${XGBOOST_OUT}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR} # TODO: output dir
+	mkdir -p ${HIVEMALL_LIB_DIR}/$${OS_ARCH} && \
+	cp ${XGBOOST_OUT}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR}/$${OS_ARCH}
 
 .PHONY: xgboost-native
 xgboost-native: fetch-xgboost
