@@ -59,6 +59,9 @@ final class HivemallOps(df: DataFrame) extends Logging {
   private[this] val _sparkSession = df.sparkSession
   private[this] val _analyzer = _sparkSession.sessionState.analyzer
 
+  private[this] val _sparkSession = df.sparkSession
+  private[this] val _analyzer = _sparkSession.sessionState.analyzer
+
   /**
    * @see [[hivemall.regression.AdaDeltaUDTF]]
    * @group regression
