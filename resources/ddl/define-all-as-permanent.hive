@@ -99,6 +99,9 @@ CREATE FUNCTION euclid_similarity as 'hivemall.knn.similarity.EuclidSimilarity' 
 DROP FUNCTION IF EXISTS distance2similarity;
 CREATE FUNCTION distance2similarity as 'hivemall.knn.similarity.Distance2SimilarityUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS dimsum_mapper;
+CREATE FUNCTION dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF' USING JAR '${hivemall_jar}';
+
 ------------------------
 -- distance functions --
 ------------------------

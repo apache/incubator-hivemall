@@ -46,6 +46,7 @@ import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.io.ShortWritable;
+import org.apache.hadoop.hive.serde2.lazy.LazyDouble;
 import org.apache.hadoop.hive.serde2.lazy.LazyInteger;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazyString;
@@ -144,6 +145,24 @@ public final class HiveUtils {
         }
         String s = o.toString();
         return Integer.parseInt(s);
+    }
+
+    public static double asJavaDouble(@Nullable final Object o) {
+        if (o == null) {
+            throw new IllegalArgumentException();
+        }
+        if (o instanceof Double) {
+            return ((Double) o).doubleValue();
+        }
+        if (o instanceof LazyDouble) {
+            DoubleWritable d = ((LazyDouble) o).getWritableObject();
+            return d.get();
+        }
+        if (o instanceof DoubleWritable) {
+            return ((DoubleWritable) o).get();
+        }
+        String s = o.toString();
+        return Double.parseDouble(s);
     }
 
     @Nullable

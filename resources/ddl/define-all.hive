@@ -95,6 +95,9 @@ create temporary function euclid_similarity as 'hivemall.knn.similarity.EuclidSi
 drop temporary function if exists distance2similarity;
 create temporary function distance2similarity as 'hivemall.knn.similarity.Distance2SimilarityUDF';
 
+drop temporary function if exists dimsum_mapper;
+create temporary function dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF';
+
 ------------------------
 -- distance functions --
 ------------------------

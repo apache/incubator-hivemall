@@ -97,6 +97,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION euclid_similarity AS 'hivemall.knn.sim
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS distance2similarity")
 sqlContext.sql("CREATE TEMPORARY FUNCTION distance2similarity AS 'hivemall.knn.similarity.Distance2SimilarityUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS dimsum_mapper")
+sqlContext.sql("CREATE TEMPORARY FUNCTION dimsum_mapper AS 'hivemall.knn.similarity.DIMSUMMapperUDTF'")
+
 /**
  * Distance functions
  */
