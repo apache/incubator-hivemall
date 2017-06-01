@@ -47,7 +47,7 @@ create temporary function kpa_predict as 'hivemall.classifier.KPAPredictUDAF';
 
 --------------------------------
 --  Multiclass classification --
--------------------------------- 
+--------------------------------
 
 drop temporary function if exists train_multiclass_perceptron;
 create temporary function train_multiclass_perceptron as 'hivemall.classifier.multiclass.MulticlassPerceptronUDTF';
@@ -452,6 +452,9 @@ create temporary function to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap
 
 drop temporary function if exists sigmoid;
 create temporary function sigmoid as 'hivemall.tools.math.SigmoidGenericUDF';
+
+drop temporary function if exists l2_norm;
+create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
 
 ----------------------
 -- Matrix functions --

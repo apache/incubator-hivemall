@@ -164,6 +164,7 @@ create temporary function train_plsa as 'hivemall.topicmodel.PLSAUDTF';
 create temporary function plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF';
 create temporary function tile as 'hivemall.geospatial.TileUDF';
 create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
+create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

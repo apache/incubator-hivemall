@@ -51,7 +51,7 @@ CREATE FUNCTION kpa_predict as 'hivemall.classifier.KPAPredictUDAF' USING JAR '$
 
 --------------------------------
 --  Multiclass classification --
--------------------------------- 
+--------------------------------
 
 DROP FUNCTION IF EXISTS train_multiclass_perceptron;
 CREATE FUNCTION train_multiclass_perceptron as 'hivemall.classifier.multiclass.MulticlassPerceptronUDTF' USING JAR '${hivemall_jar}';
@@ -456,6 +456,9 @@ CREATE FUNCTION to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap' USING JA
 
 DROP FUNCTION IF EXISTS sigmoid;
 CREATE FUNCTION sigmoid as 'hivemall.tools.math.SigmoidGenericUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS l2_norm;
+CREATE FUNCTION l2_norm as 'hivemall.tools.math.L2NormUDAF' USING JAR '${hivemall_jar}';
 
 ----------------------
 -- Matrix functions --

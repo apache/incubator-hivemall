@@ -452,6 +452,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION to_ordered_map AS 'hivemall.tools.map.
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sigmoid")
 sqlContext.sql("CREATE TEMPORARY FUNCTION sigmoid AS 'hivemall.tools.math.SigmoidGenericUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS l2_norm")
+sqlContext.sql("CREATE TEMPORARY FUNCTION l2_norm AS 'hivemall.tools.math.L2NormUDAF'")
+
 /**
  * Matrix functions
  */
