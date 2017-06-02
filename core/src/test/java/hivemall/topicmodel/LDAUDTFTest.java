@@ -46,13 +46,21 @@ public class LDAUDTFTest {
 
         udtf.initialize(argOIs);
 
-        String[] doc1 = new String[]{"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[]{"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
+        String[] doc1 = new String[]{"xž:1", "healthy:1", "vegetables:1"};
+        String[] doc2 = new String[]{"apples:1", "na‹ve:1", "colds:1", "flu:1", "like:2", "oranges:1"};
         for (int it = 0; it < 5; it++) {
             udtf.process(new Object[]{ Arrays.asList(doc1) });
             udtf.process(new Object[]{ Arrays.asList(doc2) });
         }
-
+        
+        // LDA FAILS IN REAL LIFE BIG TIME!!!!
+        // Test could not possibly pick that up as udf.close() call is missing
+        // The errors are in runIterativeTraining of LDAUDTF
+        // the cause is encoding of characters, xž:1, for exapmple, then this bit is chopped into wrong size of bytes chunks and
+        // nio library goes cucumbers.
+        // Please, fix.
+        udtf.close();
+        
         SortedMap<Float, List<String>> topicWords;
 
         println("Topic 0:");
