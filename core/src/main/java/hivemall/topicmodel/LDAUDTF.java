@@ -280,8 +280,9 @@ public class LDAUDTF extends UDTFWithOptions {
             if (wc == null) {
                 continue;
             }
-            buf.putInt(wc.length());
-            buf.put(wc.getBytes());
+            byte[] bytes = wc.getBytes();
+            buf.putInt(bytes.length);
+            buf.put(bytes);
         }
     }
 
@@ -552,6 +553,21 @@ public class LDAUDTF extends UDTFWithOptions {
     /*
      * For testing:
      */
+
+    @VisibleForTesting
+    public void closeWithoutModelReset() throws HiveException {
+        // launch close(), but not forward & clear model
+        if (count == 0) {
+            this.model = null;
+            return;
+        }
+        if (miniBatchCount > 0) { // update for remaining samples
+            model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
+        }
+        if (iterations > 1) {
+            runIterativeTraining(iterations);
+        }
+    }
 
     @VisibleForTesting
     double getLambda(String label, int k) {
