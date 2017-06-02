@@ -231,6 +231,7 @@ public class PLSAUDTF extends UDTFWithOptions {
             this.fileIO = dst = new NioStatefullSegment(file, false);
         }
 
+        // requiredRecordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
         int wcLengthTotal = 0;
         for (String wc : wordCounts) {
             if (wc == null) {
@@ -238,22 +239,17 @@ public class PLSAUDTF extends UDTFWithOptions {
             }
             wcLengthTotal += wc.length();
         }
-        // wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
-        int recordBytes = SizeOf.INT + SizeOf.INT * wordCounts.length + wcLengthTotal * SizeOf.CHAR;
-        buf.putInt(recordBytes);
+        int requiredRecordBytes = SizeOf.INT * 2 + SizeOf.INT * wordCounts.length + wcLengthTotal * SizeOf.CHAR;
 
         int remain = buf.remaining();
-        if (remain < recordBytes) {
+        if (remain < requiredRecordBytes) {
             writeBuffer(buf, dst);
         }
 
+        buf.putInt(requiredRecordBytes);
         buf.putInt(wordCounts.length);
         for (String wc : wordCounts) {
-            if (wc == null) {
-                buf.putInt(-1);
-            } else {
-                NIOUtils.putString(wc, buf);
-            }
+            NIOUtils.putString(wc, buf);
         }
     }
 
@@ -421,7 +417,7 @@ public class PLSAUDTF extends UDTFWithOptions {
                         }
                         while (remain >= SizeOf.INT) {
                             int pos = buf.position();
-                            int recordBytes = buf.getInt();
+                            int recordBytes = buf.getInt() - SizeOf.INT;
                             remain -= SizeOf.INT;
                             if (remain < recordBytes) {
                                 buf.position(pos);
