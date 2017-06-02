@@ -268,14 +268,15 @@ public class LDAUDTF extends UDTFWithOptions {
             }
             wcLengthTotal += wc.length();
         }
-        // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
-        int recordBytes = SizeOf.INT * 2 + SizeOf.INT * wordCounts.length + wcLengthTotal * 2; // 1 char = 2 bytes
+        // wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
+        int recordBytes = SizeOf.INT + SizeOf.INT * wordCounts.length + wcLengthTotal * SizeOf.CHAR;
+        buf.putInt(recordBytes);
+
         int remain = buf.remaining();
         if (remain < recordBytes) {
             writeBuffer(buf, dst);
         }
 
-        buf.putInt(recordBytes);
         buf.putInt(wordCounts.length);
         for (String wc : wordCounts) {
             if (wc == null) {
@@ -474,7 +475,7 @@ public class LDAUDTF extends UDTFWithOptions {
                                 miniBatchCount = 0;
                             }
 
-                            remain -= (recordBytes - SizeOf.INT);
+                            remain -= recordBytes;
                         }
                         buf.compact();
                     }

@@ -43,17 +43,15 @@ public class LDAUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    "-topics 2 -num_docs 2 -s 1")};
+                    "-topics 2 -num_docs 2 -s 1 -iter 5")};
 
         udtf.initialize(argOIs);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
                 "oranges:1"};
-        for (int it = 0; it < 5; it++) {
-            udtf.process(new Object[] {Arrays.asList(doc1)});
-            udtf.process(new Object[] {Arrays.asList(doc2)});
-        }
+        udtf.process(new Object[] {Arrays.asList(doc1)});
+        udtf.process(new Object[] {Arrays.asList(doc2)});
 
         udtf.closeWithoutModelReset();
 
@@ -108,16 +106,15 @@ public class LDAUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    "-topics 2 -num_docs 2 -s 1")};
+                    "-topics 2 -num_docs 2 -s 1 -iter 5")};
 
         udtf.initialize(argOIs);
 
         String[] doc1 = new String[] {"果物:1", "健康:1", "野菜:1"};
         String[] doc2 = new String[] {"りんご:1", "アボカド:1", "風邪:1", "インフルエンザ:1", "好き:2", "みかん:1"};
-        for (int it = 0; it < 5; it++) {
-            udtf.process(new Object[] {Arrays.asList(doc1)});
-            udtf.process(new Object[] {Arrays.asList(doc2)});
-        }
+
+        udtf.process(new Object[] {Arrays.asList(doc1)});
+        udtf.process(new Object[] {Arrays.asList(doc2)});
 
         udtf.closeWithoutModelReset();
 
