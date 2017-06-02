@@ -91,7 +91,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
     protected CommandLine processOptions(@Nonnull ObjectInspector[] argOIs)
             throws UDFArgumentException {
         double threshold = 0.5d;
-        double gamma = Double.MAX_VALUE;
+        double gamma = Double.POSITIVE_INFINITY;
         boolean symmetricOutput = true;
         boolean parseFeatureAsInt = false;
 
@@ -171,7 +171,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         if (colNorms == null || colProbs == null) {
             final int numCols = colNormsOI.getMapSize(args[1]);
 
-            if (sqrtGamma == Double.MAX_VALUE) { // set default value to `gamma` based on `threshold`
+            if (sqrtGamma == Double.POSITIVE_INFINITY) { // set default value to `gamma` based on `threshold`
                 this.sqrtGamma = Math.sqrt(10 * Math.log(numCols) / threshold);
             }
 
