@@ -235,7 +235,7 @@ public class PLSAUDTF extends UDTFWithOptions {
             if (wc == null) {
                 continue;
             }
-            wcLength += wc.getBytes().length;
+            wcLength += wc.length();
         }
         // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
         int recordBytes = (Integer.SIZE * 2 + Integer.SIZE * wcLength) / 8 + wcLength;
@@ -250,9 +250,12 @@ public class PLSAUDTF extends UDTFWithOptions {
             if (wc == null) {
                 continue;
             }
-            byte[] bytes = wc.getBytes();
-            buf.putInt(bytes.length);
-            buf.put(bytes);
+
+            int len = wc.length();
+            buf.putInt(len);
+            for (int i = 0; i < len; i++) {
+                buf.putChar(wc.charAt(i));
+            }
         }
     }
 
@@ -323,9 +326,11 @@ public class PLSAUDTF extends UDTFWithOptions {
                         final String[] wordCounts = new String[wcLength];
                         for (int j = 0; j < wcLength; j++) {
                             int len = buf.getInt();
-                            byte[] bytes = new byte[len];
-                            buf.get(bytes);
-                            wordCounts[j] = new String(bytes);
+                            final char[] chars = new char[len];
+                            for (int i = 0; i < len; i++) {
+                                chars[i] = buf.getChar();
+                            }
+                            wordCounts[j] = new String(chars);
                         }
 
                         miniBatch[miniBatchCount] = wordCounts;
@@ -434,9 +439,11 @@ public class PLSAUDTF extends UDTFWithOptions {
                             final String[] wordCounts = new String[wcLength];
                             for (int j = 0; j < wcLength; j++) {
                                 int len = buf.getInt();
-                                byte[] bytes = new byte[len];
-                                buf.get(bytes);
-                                wordCounts[j] = new String(bytes);
+                                final char[] chars = new char[len];
+                                for (int i = 0; i < len; i++) {
+                                    chars[i] = buf.getChar();
+                                }
+                                wordCounts[j] = new String(chars);
                             }
 
                             miniBatch[miniBatchCount] = wordCounts;
