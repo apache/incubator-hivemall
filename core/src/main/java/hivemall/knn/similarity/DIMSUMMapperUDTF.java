@@ -20,6 +20,8 @@ package hivemall.knn.similarity;
 
 import hivemall.UDTFWithOptions;
 import hivemall.fm.Feature;
+import hivemall.fm.IntFeature;
+import hivemall.fm.StringFeature;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.utils.hadoop.HiveUtils;
@@ -36,6 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -64,9 +67,10 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
     protected double threshold;
     protected double sqrtGamma;
     protected boolean symmetricOutput;
+    protected boolean parseFeatureAsInt;
 
-    protected Map<Integer, Double> colNorms;
-    protected Map<Integer, Double> colProbs;
+    protected Map<Object, Double> colNorms;
+    protected Map<Object, Double> colProbs;
 
     @Override
     protected Options getOptions() {
@@ -78,7 +82,8 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                 + " [default: 10 * log(numCols) / threshold]");
         opts.addOption("disable_symmetric", "disable_symmetric_output", false,
             "Output only contains (col j, col k) pair; symmetric (col k, col j) pair is omitted");
-
+        opts.addOption("int_feature", "feature_as_integer", false,
+            "Parse a feature (i.e. column ID) as integer");
         return opts;
     }
 
@@ -88,6 +93,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         double threshold = 0.5d;
         double gamma = Double.MAX_VALUE;
         boolean symmetricOutput = true;
+        boolean parseFeatureAsInt = false;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -102,11 +108,13 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException("`gamma` MUST be greater than 1: " + gamma);
             }
             symmetricOutput = !cl.hasOption("disable_symmetric_output");
+            parseFeatureAsInt = cl.hasOption("feature_as_integer");
         }
 
         this.threshold = threshold;
         this.sqrtGamma = Math.sqrt(gamma);
         this.symmetricOutput = symmetricOutput;
+        this.parseFeatureAsInt = parseFeatureAsInt;
 
         return cl;
     }
@@ -133,12 +141,18 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         this.colProbs = null;
 
         ArrayList<String> fieldNames = new ArrayList<String>();
-        ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
         fieldNames.add("j");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldNames.add("k");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldNames.add("b_jk");
+
+        ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
+        if (parseFeatureAsInt) {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        } else {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        }
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
@@ -161,11 +175,16 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                 this.sqrtGamma = Math.sqrt(10 * Math.log(numCols) / threshold);
             }
 
-            this.colNorms = new HashMap<Integer, Double>(numCols);
-            this.colProbs = new HashMap<Integer, Double>(numCols);
-            Map<Object, Object> m = (Map<Object, Object>) colNormsOI.getMap(args[1]);
+            this.colNorms = new HashMap<Object, Double>(numCols);
+            this.colProbs = new HashMap<Object, Double>(numCols);
+            final Map<Object, Object> m = (Map<Object, Object>) colNormsOI.getMap(args[1]);
             for (Map.Entry<Object, Object> e : m.entrySet()) {
-                int j = HiveUtils.asJavaInt(e.getKey());
+                Object j = e.getKey();
+                if (parseFeatureAsInt) {
+                    j = HiveUtils.asJavaInt(j);
+                } else {
+                    j = j.toString();
+                }
                 double norm = HiveUtils.asJavaDouble(e.getValue());
 
                 colNorms.put(j, norm);
@@ -173,6 +192,25 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                 double p = Math.min(1.d, sqrtGamma * norm);
                 colProbs.put(j, p);
             }
+        }
+
+        if (parseFeatureAsInt) {
+            forwardAsIntFeature(row);
+        } else {
+            forwardAsStringFeature(row);
+        }
+    }
+
+    private void forwardAsIntFeature(@Nonnull Feature[] row) throws HiveException {
+        final int length = row.length;
+
+        Feature[] rowScaled = new Feature[length];
+        for (int i = 0; i < length; i++) {
+            int j = row[i].getFeatureIndex();
+            double norm = colNorms.get(j).doubleValue();
+            double scaled = row[i].getValue() / Math.min(sqrtGamma, norm);
+
+            rowScaled[i] = new IntFeature(j, scaled);
         }
 
         final IntWritable jWritable = new IntWritable();
@@ -184,23 +222,65 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         forwardObjs[1] = kWritable;
         forwardObjs[2] = bWritable;
 
-        final int length = row.length;
-
-        double[] rowScaledValues = new double[length];
-        for (int i = 0; i < length; i++) {
-            int j = row[i].getFeatureIndex();
-            double norm = colNorms.get(j).doubleValue();
-            rowScaledValues[i] = row[i].getValue() / Math.min(sqrtGamma, norm);
-        }
-
         for (int ij = 0; ij < length; ij++) {
-            int j = row[ij].getFeatureIndex();
-            double jVal = rowScaledValues[ij];
+            int j = rowScaled[ij].getFeatureIndex();
+            double jVal = rowScaled[ij].getValue();
 
             if (jVal != 0.d && rnd.nextDouble() < colProbs.get(j)) {
                 for (int ik = ij + 1; ik < length; ik++) {
-                    int k = row[ik].getFeatureIndex();
-                    double kVal = rowScaledValues[ik];
+                    int k = rowScaled[ik].getFeatureIndex();
+                    double kVal = rowScaled[ik].getValue();
+
+                    if (kVal != 0.d && rnd.nextDouble() < colProbs.get(k)) {
+                        // compute b_jk
+                        bWritable.set((float) (jVal * kVal));
+
+                        // (j, k); similarity matrix is symmetric
+                        jWritable.set(j);
+                        kWritable.set(k);
+                        forward(forwardObjs);
+
+                        if (symmetricOutput) {
+                            // (k, j)
+                            jWritable.set(k);
+                            kWritable.set(j);
+                            forward(forwardObjs);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void forwardAsStringFeature(@Nonnull Feature[] row) throws HiveException {
+        final int length = row.length;
+
+        Feature[] rowScaled = new Feature[length];
+        for (int i = 0; i < length; i++) {
+            String j = row[i].getFeature();
+            double norm = colNorms.get(j).doubleValue();
+            double scaled = row[i].getValue() / Math.min(sqrtGamma, norm);
+
+            rowScaled[i] = new StringFeature(j, scaled);
+        }
+
+        final Text jWritable = new Text();
+        final Text kWritable = new Text();
+        final FloatWritable bWritable = new FloatWritable();
+
+        final Object[] forwardObjs = new Object[3];
+        forwardObjs[0] = jWritable;
+        forwardObjs[1] = kWritable;
+        forwardObjs[2] = bWritable;
+
+        for (int ij = 0; ij < length; ij++) {
+            String j = rowScaled[ij].getFeature();
+            double jVal = rowScaled[ij].getValue();
+
+            if (jVal != 0.d && rnd.nextDouble() < colProbs.get(j)) {
+                for (int ik = ij + 1; ik < length; ik++) {
+                    String k = rowScaled[ik].getFeature();
+                    double kVal = rowScaled[ik].getValue();
 
                     if (kVal != 0.d && rnd.nextDouble() < colProbs.get(k)) {
                         // compute b_jk
@@ -225,7 +305,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
 
     @Nullable
     protected Feature[] parseFeatures(@Nonnull final Object arg) throws HiveException {
-        return Feature.parseFeatures(arg, rowOI, probes, true);
+        return Feature.parseFeatures(arg, rowOI, probes, parseFeatureAsInt);
     }
 
     @Override
