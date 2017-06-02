@@ -63,6 +63,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
 
     protected double threshold;
     protected double sqrtGamma;
+    protected boolean symmetricOutput;
 
     protected Map<Integer, Double> colNorms;
     protected Map<Integer, Double> colProbs;
@@ -75,6 +76,9 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         opts.addOption("g", "gamma", true,
             "Oversampling parameter; if `gamma` is given, `threshold` will be ignored"
                 + " [default: 10 * log(numCols) / threshold]");
+        opts.addOption("disable_symmetric", "disable_symmetric_output", false,
+            "Output only contains (col j, col k) pair; symmetric (col k, col j) pair is omitted");
+
         return opts;
     }
 
@@ -83,6 +87,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
             throws UDFArgumentException {
         double threshold = 0.5d;
         double gamma = Double.MAX_VALUE;
+        boolean symmetricOutput = true;
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
@@ -96,10 +101,12 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
             if (gamma <= 1.d) {
                 throw new UDFArgumentException("`gamma` MUST be greater than 1: " + gamma);
             }
+            symmetricOutput = !cl.hasOption("disable_symmetric_output");
         }
 
         this.threshold = threshold;
         this.sqrtGamma = Math.sqrt(gamma);
+        this.symmetricOutput = symmetricOutput;
 
         return cl;
     }
@@ -204,10 +211,12 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                         kWritable.set(k);
                         forward(forwardObjs);
 
-                        // (k, j)
-                        jWritable.set(k);
-                        kWritable.set(j);
-                        forward(forwardObjs);
+                        if (symmetricOutput) {
+                            // (k, j)
+                            jWritable.set(k);
+                            kWritable.set(j);
+                            forward(forwardObjs);
+                        }
                     }
                 }
             }
