@@ -230,15 +230,15 @@ public class PLSAUDTF extends UDTFWithOptions {
             this.fileIO = dst = new NioStatefullSegment(file, false);
         }
 
-        int wcLength = 0;
+        int wcLengthTotal = 0;
         for (String wc : wordCounts) {
             if (wc == null) {
                 continue;
             }
-            wcLength += wc.length();
+            wcLengthTotal += wc.length();
         }
         // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
-        int recordBytes = (Integer.SIZE * 2 + Integer.SIZE * wcLength) / 8 + wcLength;
+        int recordBytes = SizeOf.INT * 2 + SizeOf.INT * wordCounts.length + wcLengthTotal * 2; // 1 char = 2 bytes
         int remain = buf.remaining();
         if (remain < recordBytes) {
             writeBuffer(buf, dst);
@@ -458,7 +458,7 @@ public class PLSAUDTF extends UDTFWithOptions {
                                 miniBatchCount = 0;
                             }
 
-                            remain -= recordBytes;
+                            remain -= (recordBytes - SizeOf.INT);
                         }
                         buf.compact();
                     }
