@@ -22,6 +22,7 @@ import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NIOUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
@@ -278,13 +279,9 @@ public class LDAUDTF extends UDTFWithOptions {
         buf.putInt(wordCounts.length);
         for (String wc : wordCounts) {
             if (wc == null) {
-                continue;
-            }
-
-            int len = wc.length();
-            buf.putInt(len);
-            for (int i = 0; i < len; i++) {
-                buf.putChar(wc.charAt(i));
+                buf.putInt(-1);
+            } else {
+                NIOUtils.putString(wc, buf);
             }
         }
     }
@@ -355,12 +352,7 @@ public class LDAUDTF extends UDTFWithOptions {
                         int wcLength = buf.getInt();
                         final String[] wordCounts = new String[wcLength];
                         for (int j = 0; j < wcLength; j++) {
-                            int len = buf.getInt();
-                            final char[] chars = new char[len];
-                            for (int i = 0; i < len; i++) {
-                                chars[i] = buf.getChar();
-                            }
-                            wordCounts[j] = new String(chars);
+                            wordCounts[j] = NIOUtils.getString(buf);
                         }
 
                         miniBatch[miniBatchCount] = wordCounts;
@@ -399,7 +391,6 @@ public class LDAUDTF extends UDTFWithOptions {
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
                         + " training updates in total) ");
             } else {// read training examples in the temporary file and invoke train for each example
-
                 // write training examples in buffer to a temporary file
                 if (buf.remaining() > 0) {
                     writeBuffer(buf, dst);
@@ -468,12 +459,7 @@ public class LDAUDTF extends UDTFWithOptions {
                             int wcLength = buf.getInt();
                             final String[] wordCounts = new String[wcLength];
                             for (int j = 0; j < wcLength; j++) {
-                                int len = buf.getInt();
-                                final char[] chars = new char[len];
-                                for (int i = 0; i < len; i++) {
-                                    chars[i] = buf.getChar();
-                                }
-                                wordCounts[j] = new String(chars);
+                                wordCounts[j] = NIOUtils.getString(buf);
                             }
 
                             miniBatch[miniBatchCount] = wordCounts;
