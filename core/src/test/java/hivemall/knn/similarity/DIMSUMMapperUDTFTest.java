@@ -18,7 +18,9 @@
  */
 package hivemall.knn.similarity;
 
+import hivemall.mf.BPRMatrixFactorizationUDTFTest;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -28,10 +30,15 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 
@@ -209,6 +216,124 @@ public class DIMSUMMapperUDTFTest {
             }
             dst.put(itemIDs[j], Math.sqrt(norm));
         }
+    }
+
+    @Test
+    public void testML100k() throws HiveException, IOException {
+        final Map<String, List<String>> users = new HashMap<String, List<String>>();
+        final Map<String, Double> norms = new HashMap<String, Double>();
+
+        BufferedReader buf = readFile("ml1k.train.gz");
+        String line;
+        while ((line = buf.readLine()) != null) {
+            String[] cols = StringUtils.split(line, ' ');
+
+            // find this user's list of ratings
+            String userID = cols[0];
+            List<String> ratings = users.get(userID);
+            if (ratings == null) {
+                ratings = new ArrayList<String>();
+                users.put(userID, ratings);
+            }
+
+            // store observed item-rate pairs to the list
+            String itemID = cols[1];
+            double rate = Double.valueOf(cols[2]).doubleValue();
+            ratings.add(itemID + ":" + rate);
+
+            // accumulate to compute L2 norm of each column
+            Double norm = norms.get(itemID);
+            if (norm == null) {
+                norm = 0.d;
+            }
+            norm += rate * rate;
+            norms.put(itemID, norm);
+        }
+
+        // compute L2 norm of each column
+        for (Map.Entry<String, Double> e : norms.entrySet()) {
+            norms.put(e.getKey(), Math.sqrt(e.getValue().doubleValue()));
+        }
+
+        final MutableInt count = new MutableInt(0);
+        final Map<String, Map<String, Double>> sims = new HashMap<String, Map<String, Double>>();
+
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                Object[] row = (Object[]) input;
+
+                Assert.assertTrue(row.length == 3);
+
+                String j = row[0].toString();
+                String k = row[1].toString();
+
+                Map<String, Double> sims_j = sims.get(j);
+                if (sims_j == null) {
+                    sims_j = new HashMap<String, Double>();
+                    sims.put(j, sims_j);
+                }
+                Double sims_jk = sims_j.get(k);
+                if (sims_jk == null) {
+                    sims_jk = 0.d;
+                    count.addValue(1);
+                }
+                sims_j.put(k, sims_jk + HiveUtils.asJavaDouble(row[2]));
+            }
+        };
+        udtf.setCollector(collector);
+
+        // Case I: Set zero to `threshold`
+        // this computes exact cosine similarity
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-threshold 0 -disable_symmetric_output")};
+
+        udtf.initialize(argOIs);
+        for (List<String> user : users.values()) {
+            udtf.process(new Object[] {user, norms});
+        }
+        udtf.close();
+
+        int maxCount = count.getValue();
+
+        // reset counter and similarities
+        count.setValue(0);
+        sims.clear();
+
+        // Case II: Set (almost) max value to `threshold`
+        // this skips a bunch of operations with high probability
+        argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-threshold 0.999999 -disable_symmetric_output")};
+
+        udtf.initialize(argOIs);
+        for (List<String> user : users.values()) {
+            udtf.process(new Object[] {user, norms});
+        }
+        udtf.close();
+
+        Assert.assertTrue("Approximated one MUST reduce the number of operations",
+            count.getValue() < maxCount);
+    }
+
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        // use MF's resource file
+        InputStream is = BPRMatrixFactorizationUDTFTest.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
     }
 
     private static void println(String msg) {
