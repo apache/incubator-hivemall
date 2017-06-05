@@ -18,6 +18,7 @@
  */
 package hivemall.knn.similarity;
 
+import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.mutable.MutableInt;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -32,130 +33,182 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
+
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DIMSUMMapperUDTFTest {
     private static final boolean DEBUG = false;
 
+    DIMSUMMapperUDTF udtf;
+
+    double[][] R;
+    int numUsers, numItems;
+
+    @Before
+    public void setUp() throws HiveException {
+        this.udtf = new DIMSUMMapperUDTF();
+
+        this.R = new double[][] { {1, 2, 3}, {1, 2, 3}};
+        this.numUsers = R.length;
+        this.numItems = R[0].length;
+    }
+
     @Test
     public void testIntFeature() throws HiveException {
-        DIMSUMMapperUDTF udtf = new DIMSUMMapperUDTF();
-
-        ObjectInspector[] argOIs = new ObjectInspector[] {
-            ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-            ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-            ObjectInspectorUtils.getConstantObjectInspector(
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                "-threshold 0.5 -disable_symmetric_output -int_feature")};
-
         final MutableInt count = new MutableInt(0);
+        final Map<Integer, Map<Integer, Double>> sims = new HashMap<Integer, Map<Integer, Double>>();
         Collector collector = new Collector() {
             public void collect(Object input) throws HiveException {
-                count.addValue(1);
+                Object[] row = (Object[]) input;
+
+                Assert.assertTrue(row.length == 3);
+
+                int j = HiveUtils.asJavaInt(row[0]);
+                int k = HiveUtils.asJavaInt(row[1]);
+
+                Map<Integer, Double> sims_j = sims.get(j);
+                if (sims_j == null) {
+                    sims_j = new HashMap<Integer, Double>();
+                    sims.put(j, sims_j);
+                }
+                Double sims_jk = sims_j.get(k);
+                if (sims_jk == null) {
+                    sims_jk = 0.d;
+                    count.addValue(1);
+                }
+                sims_j.put(k, sims_jk + HiveUtils.asJavaDouble(row[2]));
             }
         };
         udtf.setCollector(collector);
+
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-threshold 0 -disable_symmetric_output -int_feature")};
+        // if threshold = 0, output is exact cosine similarity
+
         udtf.initialize(argOIs);
 
-        final int[] itemIDs = new int[] {1, 2, 3};
-        final double[][] R = new double[][] {{1, 2, 3}, {1, 2, 3}};
+        final Integer[] itemIDs = new Integer[] {1, 2, 3};
 
-        int numUsers = R.length;
-        int numItems = itemIDs.length;
+        final List<String> user1 = new ArrayList<String>();
+        convertRowToFeatures(0, user1, itemIDs);
 
-        List<String> user1 = new ArrayList<String>();
-        for (int j = 0; j < numItems; j++) {
-            double r = R[0][j];
-            if (r != 0.d) {
-                user1.add(itemIDs[j] + ":" + r);
+        final List<String> user2 = new ArrayList<String>();
+        convertRowToFeatures(1, user2, itemIDs);
+
+        final Map<Integer, Double> norms = new HashMap<Integer, Double>();
+        computeColumnNorms(norms, itemIDs);
+
+        udtf.process(new Object[] {user1, norms});
+        udtf.process(new Object[] {user2, norms});
+
+        udtf.close();
+
+        for (Integer j : sims.keySet()) {
+            Map<Integer, Double> e = sims.get(j);
+            for (Integer k : e.keySet()) {
+                double s = e.get(k).doubleValue();
+                println("(" + j + ", " + k + ") = " + s);
+                Assert.assertEquals(1.d, s, 1e-6);
             }
         }
 
-        List<String> user2 = new ArrayList<String>();
-        for (int j = 0; j < numItems; j++) {
-            double r = R[1][j];
-            if (r != 0.d) {
-                user2.add(itemIDs[j] + ":" + r);
-            }
-        }
-
-        Map<Integer, Double> norms = new HashMap<Integer, Double>();
-        for (int j = 0; j < numItems; j++) {
-            double sim = 0.d;
-            for (int i = 0; i < numUsers; i++) {
-                sim += R[i][j] * R[i][j];
-            }
-            norms.put(itemIDs[j], Math.sqrt(sim));
-        }
-
-        // at most 3 emits (<1, 2>, <1, 3>, <2, 3>) per row
-        udtf.process(new Object[]{ user1, norms });
-        udtf.process(new Object[]{ user2, norms });
-        Assert.assertTrue(count.getValue() <= 3 * 2);
+        // <1, 2>, <1, 3>, <2, 3>
+        Assert.assertTrue(count.getValue() == 3);
     }
 
     @Test
     public void testStringFeature() throws HiveException {
-        DIMSUMMapperUDTF udtf = new DIMSUMMapperUDTF();
-
-        ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                ObjectInspectorFactory.getStandardMapObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-threshold 0.5")};
-
         final MutableInt count = new MutableInt(0);
+        final Map<String, Map<String, Double>> sims = new HashMap<String, Map<String, Double>>();
         Collector collector = new Collector() {
             public void collect(Object input) throws HiveException {
-                count.addValue(1);
+                Object[] row = (Object[]) input;
+
+                Assert.assertTrue(row.length == 3);
+
+                String j = row[0].toString();
+                String k = row[1].toString();
+
+                Map<String, Double> sims_j = sims.get(j);
+                if (sims_j == null) {
+                    sims_j = new HashMap<String, Double>();
+                    sims.put(j, sims_j);
+                }
+                Double sims_jk = sims_j.get(k);
+                if (sims_jk == null) {
+                    sims_jk = 0.d;
+                    count.addValue(1);
+                }
+                sims_j.put(k, sims_jk + HiveUtils.asJavaDouble(row[2]));
             }
         };
         udtf.setCollector(collector);
+
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-threshold 0")};
+
         udtf.initialize(argOIs);
 
         final String[] itemIDs = new String[] {"i1", "i2", "i3"};
-        final double[][] R = new double[][] {{1, 2, 3}, {1, 2, 3}};
 
-        int numUsers = R.length;
-        int numItems = itemIDs.length;
+        final List<String> user1 = new ArrayList<String>();
+        convertRowToFeatures(0, user1, itemIDs);
 
-        List<String> user1 = new ArrayList<String>();
-        for (int j = 0; j < numItems; j++) {
-            double r = R[0][j];
-            if (r != 0.d) {
-                user1.add(itemIDs[j] + ":" + r);
+        final List<String> user2 = new ArrayList<String>();
+        convertRowToFeatures(1, user2, itemIDs);
+
+        final Map<String, Double> norms = new HashMap<String, Double>();
+        computeColumnNorms(norms, itemIDs);
+
+        udtf.process(new Object[] {user1, norms});
+        udtf.process(new Object[] {user2, norms});
+
+        udtf.close();
+
+        for (String j : sims.keySet()) {
+            Map<String, Double> e = sims.get(j);
+            for (String k : e.keySet()) {
+                double s = e.get(k).doubleValue();
+                println("(" + j + ", " + k + ") = " + s);
+                Assert.assertEquals(1.d, s, 1e-6);
             }
         }
 
-        List<String> user2 = new ArrayList<String>();
+        // <i1, i2>, <i2, i1>, <i1, i3>, <i3, i2>, <i2, i3>, <i3, i2>
+        Assert.assertTrue(count.getValue() == 6);
+    }
+
+    private void convertRowToFeatures(int i, @Nonnull List<String> dst, @Nonnull Object[] itemIDs) {
         for (int j = 0; j < numItems; j++) {
-            double r = R[1][j];
+            double r = R[i][j];
             if (r != 0.d) {
-                user2.add(itemIDs[j] + ":" + r);
+                dst.add(itemIDs[j] + ":" + r);
             }
         }
+    }
 
-        Map<String, Double> norms = new HashMap<String, Double>();
+    private <T> void computeColumnNorms(@Nonnull Map<T, Double> dst, @Nonnull T[] itemIDs) {
         for (int j = 0; j < numItems; j++) {
-            double sim = 0.d;
+            double norm = 0.d;
             for (int i = 0; i < numUsers; i++) {
-                sim += R[i][j] * R[i][j];
+                norm += R[i][j] * R[i][j];
             }
-            norms.put(itemIDs[j], Math.sqrt(sim));
+            dst.put(itemIDs[j], Math.sqrt(norm));
         }
-
-        // at most 6 emits (<i1, i2>, <i2, i1>, <i1, i3>, <i3, i2>, <i2, i3>, <i3, i2>) per row
-        udtf.process(new Object[]{ user1, norms });
-        udtf.process(new Object[]{ user2, norms });
-        Assert.assertTrue(count.getValue() <= 6 * 2);
     }
 
     private static void println(String msg) {
