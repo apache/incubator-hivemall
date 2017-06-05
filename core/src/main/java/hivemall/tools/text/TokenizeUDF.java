@@ -38,6 +38,9 @@ public final class TokenizeUDF extends UDF {
     }
 
     public List<Text> evaluate(Text input, boolean toLowerCase) {
+        if (input == null) {
+            return null;
+        }
         final List<Text> tokens = new ArrayList<Text>();
         final StringTokenizer tokenizer = new StringTokenizer(input.toString(), DELIM);
         while (tokenizer.hasMoreElements()) {
