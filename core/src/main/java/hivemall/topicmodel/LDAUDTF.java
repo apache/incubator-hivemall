@@ -269,7 +269,8 @@ public class LDAUDTF extends UDTFWithOptions {
             }
             wcLengthTotal += wc.length();
         }
-        int requiredRecordBytes = SizeOf.INT * 2 + SizeOf.INT * wordCounts.length + wcLengthTotal * SizeOf.CHAR;
+        int requiredRecordBytes = SizeOf.INT * 2 + SizeOf.INT * wordCounts.length + wcLengthTotal
+                * SizeOf.CHAR;
 
         int remain = buf.remaining();
         if (remain < requiredRecordBytes) {
