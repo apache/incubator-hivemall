@@ -189,7 +189,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
 
                 colNorms.put(j, norm);
 
-                double p = Math.min(1.d, sqrtGamma * norm);
+                double p = Math.min(1.d, sqrtGamma / norm);
                 colProbs.put(j, p);
             }
         }
