@@ -172,7 +172,9 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
             final int numCols = colNormsOI.getMapSize(args[1]);
 
             if (sqrtGamma == Double.POSITIVE_INFINITY) { // set default value to `gamma` based on `threshold`
-                this.sqrtGamma = Math.sqrt(10 * Math.log(numCols) / threshold);
+                if (threshold > 0.d) { // if `threshold` = 0, `gamma` is INFINITY i.e. always accept <j, k> pairs
+                    this.sqrtGamma = Math.sqrt(10 * Math.log(numCols) / threshold);
+                }
             }
 
             this.colNorms = new HashMap<Object, Double>(numCols);
@@ -185,7 +187,11 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                 } else {
                     j = j.toString();
                 }
+
                 double norm = HiveUtils.asJavaDouble(e.getValue());
+                if (norm == 0.d) { // avoid zero-division
+                    norm = 1.d;
+                }
 
                 colNorms.put(j, norm);
 
@@ -207,7 +213,11 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         Feature[] rowScaled = new Feature[length];
         for (int i = 0; i < length; i++) {
             int j = row[i].getFeatureIndex();
+
             double norm = colNorms.get(j).doubleValue();
+            if (norm == 0.d) { // avoid zero-division
+                norm = 1.d;
+            }
             double scaled = row[i].getValue() / Math.min(sqrtGamma, norm);
 
             rowScaled[i] = new IntFeature(j, scaled);
@@ -258,7 +268,11 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         Feature[] rowScaled = new Feature[length];
         for (int i = 0; i < length; i++) {
             String j = row[i].getFeature();
+
             double norm = colNorms.get(j).doubleValue();
+            if (norm == 0.d) { // avoid zero-division
+                norm = 1.d;
+            }
             double scaled = row[i].getValue() / Math.min(sqrtGamma, norm);
 
             rowScaled[i] = new StringFeature(j, scaled);
