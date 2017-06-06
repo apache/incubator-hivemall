@@ -65,7 +65,6 @@ public class DIMSUMMapperUDTFTest {
 
     @Test
     public void testIntFeature() throws HiveException {
-        final MutableInt count = new MutableInt(0);
         final Map<Integer, Map<Integer, Double>> sims = new HashMap<Integer, Map<Integer, Double>>();
         Collector collector = new Collector() {
             public void collect(Object input) throws HiveException {
@@ -84,7 +83,6 @@ public class DIMSUMMapperUDTFTest {
                 Double sims_jk = sims_j.get(k);
                 if (sims_jk == null) {
                     sims_jk = 0.d;
-                    count.addValue(1);
                 }
                 sims_j.put(k, sims_jk + HiveUtils.asJavaDouble(row[2]));
             }
@@ -119,22 +117,24 @@ public class DIMSUMMapperUDTFTest {
 
         udtf.close();
 
+        int numSims = 0;
+
         for (Integer j : sims.keySet()) {
             Map<Integer, Double> e = sims.get(j);
             for (Integer k : e.keySet()) {
                 double s = e.get(k).doubleValue();
                 println("(" + j + ", " + k + ") = " + s);
                 Assert.assertEquals(1.d, s, 1e-6);
+                numSims += 1;
             }
         }
 
-        // <1, 2>, <1, 3>, <2, 3>
-        Assert.assertTrue(count.getValue() == 3);
+        // Upper triangular: <1, 2>, <1, 3>, <2, 3>
+        Assert.assertTrue(numSims == 3);
     }
 
     @Test
     public void testStringFeature() throws HiveException {
-        final MutableInt count = new MutableInt(0);
         final Map<String, Map<String, Double>> sims = new HashMap<String, Map<String, Double>>();
         Collector collector = new Collector() {
             public void collect(Object input) throws HiveException {
@@ -153,7 +153,6 @@ public class DIMSUMMapperUDTFTest {
                 Double sims_jk = sims_j.get(k);
                 if (sims_jk == null) {
                     sims_jk = 0.d;
-                    count.addValue(1);
                 }
                 sims_j.put(k, sims_jk + HiveUtils.asJavaDouble(row[2]));
             }
@@ -186,17 +185,20 @@ public class DIMSUMMapperUDTFTest {
 
         udtf.close();
 
+        int numSims = 0;
+
         for (String j : sims.keySet()) {
             Map<String, Double> e = sims.get(j);
             for (String k : e.keySet()) {
                 double s = e.get(k).doubleValue();
                 println("(" + j + ", " + k + ") = " + s);
                 Assert.assertEquals(1.d, s, 1e-6);
+                numSims += 1;
             }
         }
 
-        // <i1, i2>, <i2, i1>, <i1, i3>, <i3, i2>, <i2, i3>, <i3, i2>
-        Assert.assertTrue(count.getValue() == 6);
+        // Symmetric: <i1, i2>, <i2, i1>, <i1, i3>, <i3, i2>, <i2, i3>, <i3, i2>
+        Assert.assertTrue(numSims == 6);
     }
 
     private void convertRowToFeatures(int i, @Nonnull List<String> dst, @Nonnull Object[] itemIDs) {
@@ -220,7 +222,11 @@ public class DIMSUMMapperUDTFTest {
 
     @Test
     public void testML100k() throws HiveException, IOException {
+        // rows of a user-item matrix; used by DIMSUM
         final Map<String, List<String>> users = new HashMap<String, List<String>>();
+        // columns of a user-item matrix; compute exact item-item cosine similarity
+        final Map<String, List<String>> items = new HashMap<String, List<String>>();
+
         final Map<String, Double> norms = new HashMap<String, Double>();
 
         BufferedReader buf = readFile("ml1k.train.gz");
@@ -228,18 +234,27 @@ public class DIMSUMMapperUDTFTest {
         while ((line = buf.readLine()) != null) {
             String[] cols = StringUtils.split(line, ' ');
 
-            // find this user's list of ratings
             String userID = cols[0];
-            List<String> ratings = users.get(userID);
-            if (ratings == null) {
-                ratings = new ArrayList<String>();
-                users.put(userID, ratings);
-            }
-
-            // store observed item-rate pairs to the list
             String itemID = cols[1];
             double rate = Double.valueOf(cols[2]).doubleValue();
-            ratings.add(itemID + ":" + rate);
+
+            // find this user's list of ratings
+            List<String> userRatings = users.get(userID);
+            if (userRatings == null) {
+                userRatings = new ArrayList<String>();
+                users.put(userID, userRatings);
+            }
+            // store observed item-rate pairs to the list
+            userRatings.add(itemID + ":" + rate);
+
+            // find this item's list of ratings
+            List<String> itemRatings = items.get(itemID);
+            if (itemRatings == null) {
+                itemRatings = new ArrayList<String>();
+                items.put(itemID, itemRatings);
+            }
+            // store observed user-rate pairs to the list
+            itemRatings.add(userID + ":" + rate);
 
             // accumulate to compute L2 norm of each column
             Double norm = norms.get(itemID);
@@ -255,11 +270,12 @@ public class DIMSUMMapperUDTFTest {
             norms.put(e.getKey(), Math.sqrt(e.getValue().doubleValue()));
         }
 
-        final MutableInt count = new MutableInt(0);
+        final MutableInt emitCounter = new MutableInt(0);
         final Map<String, Map<String, Double>> sims = new HashMap<String, Map<String, Double>>();
-
         Collector collector = new Collector() {
             public void collect(Object input) throws HiveException {
+                emitCounter.addValue(1);
+
                 Object[] row = (Object[]) input;
 
                 Assert.assertTrue(row.length == 3);
@@ -275,7 +291,6 @@ public class DIMSUMMapperUDTFTest {
                 Double sims_jk = sims_j.get(k);
                 if (sims_jk == null) {
                     sims_jk = 0.d;
-                    count.addValue(1);
                 }
                 sims_j.put(k, sims_jk + HiveUtils.asJavaDouble(row[2]));
             }
@@ -299,10 +314,25 @@ public class DIMSUMMapperUDTFTest {
         }
         udtf.close();
 
-        int maxCount = count.getValue();
+        int numMaxEmits = emitCounter.getValue();
+
+        // compare DIMSUM's exact similarity (i.e. threshold = 0) with exact column-wise cosine similarity
+        for (String j : items.keySet()) {
+            final Map<String, Double> sims_j = sims.get(j);
+            if (sims_j != null) {
+                final List<String> item_j = items.get(j);
+                for (String k : items.keySet()) {
+                    final Double sims_jk = sims_j.get(k);
+                    if (sims_jk != null) {
+                        float simsExact_jk = CosineSimilarityUDF.cosineSimilarity(item_j, items.get(k));
+                        Assert.assertEquals(simsExact_jk, sims_jk.floatValue(), 1e-6);
+                    }
+                }
+            }
+        }
 
         // reset counter and similarities
-        count.setValue(0);
+        emitCounter.setValue(0);
         sims.clear();
 
         // Case II: Set (almost) max value to `threshold`
@@ -323,7 +353,7 @@ public class DIMSUMMapperUDTFTest {
         udtf.close();
 
         Assert.assertTrue("Approximated one MUST reduce the number of operations",
-            count.getValue() < maxCount);
+            emitCounter.getValue() < numMaxEmits);
     }
 
     @Nonnull
