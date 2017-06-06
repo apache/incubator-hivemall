@@ -245,15 +245,24 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                         // compute b_jk
                         bWritable.set((float) (jVal * kVal));
 
-                        // (j, k); similarity matrix is symmetric
-                        jWritable.set(j);
-                        kWritable.set(k);
-                        forward(forwardObjs);
-
                         if (symmetricOutput) {
+                            // (j, k); similarity matrix is symmetric
+                            jWritable.set(j);
+                            kWritable.set(k);
+                            forward(forwardObjs);
+
                             // (k, j)
                             jWritable.set(k);
                             kWritable.set(j);
+                            forward(forwardObjs);
+                        } else {
+                            if (j < k) {
+                                jWritable.set(j);
+                                kWritable.set(k);
+                            } else {
+                                jWritable.set(k);
+                                kWritable.set(j);
+                            }
                             forward(forwardObjs);
                         }
                     }
@@ -300,15 +309,24 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
                         // compute b_jk
                         bWritable.set((float) (jVal * kVal));
 
-                        // (j, k); similarity matrix is symmetric
-                        jWritable.set(j);
-                        kWritable.set(k);
-                        forward(forwardObjs);
-
                         if (symmetricOutput) {
+                            // (j, k); similarity matrix is symmetric
+                            jWritable.set(j);
+                            kWritable.set(k);
+                            forward(forwardObjs);
+
                             // (k, j)
                             jWritable.set(k);
                             kWritable.set(j);
+                            forward(forwardObjs);
+                        } else {
+                            if (j.compareTo(k) < 0) {
+                                jWritable.set(j);
+                                kWritable.set(k);
+                            } else {
+                                jWritable.set(k);
+                                kWritable.set(j);
+                            }
                             forward(forwardObjs);
                         }
                     }
