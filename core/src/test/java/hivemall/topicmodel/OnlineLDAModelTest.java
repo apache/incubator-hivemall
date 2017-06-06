@@ -52,7 +52,8 @@ public class OnlineLDAModelTest {
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
+        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
+                "oranges:1"};
 
         do {
             perplexityPrev = perplexity;
@@ -69,7 +70,7 @@ public class OnlineLDAModelTest {
 
             it++;
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while(Math.abs(perplexityPrev - perplexity) >= 1E-6f);
+        } while (Math.abs(perplexityPrev - perplexity) >= 1E-6f);
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -106,10 +107,10 @@ public class OnlineLDAModelTest {
             k2 = 0;
         }
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-            + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
             model.getLambda("vegetables", k1) > model.getLambda("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
-            + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
+                + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
             model.getLambda("avocados", k2) > model.getLambda("healthy", k2));
     }
 
@@ -123,7 +124,8 @@ public class OnlineLDAModelTest {
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
+        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
+                "oranges:1"};
 
         do {
             perplexityPrev = perplexity;
@@ -132,7 +134,7 @@ public class OnlineLDAModelTest {
             perplexity = model.computePerplexity();
 
             it++;
-        } while(Math.abs(perplexityPrev - perplexity) >= 1E-6f);
+        } while (Math.abs(perplexityPrev - perplexity) >= 1E-6f);
 
         println("Iterated " + it + " times, perplexity = " + perplexity);
 
@@ -141,7 +143,8 @@ public class OnlineLDAModelTest {
         // returns perplexity=15 in a batch setting and perplexity=22 in an online setting.
         // Hivemall needs to converge to the similar perplexity.
         Assert.assertTrue("Perplexity SHOULD be in [12, 25]; "
-            + "converged perplexity is too small or large for some reasons",12.f <= perplexity && perplexity <= 25.f);
+                + "converged perplexity is too small or large for some reasons", 12.f <= perplexity
+                && perplexity <= 25.f);
     }
 
     @Test
@@ -210,7 +213,7 @@ public class OnlineLDAModelTest {
             it++;
 
             println("Iteration " + it + ": mean perplexity = " + perplexity);
-        } while(Math.abs(perplexityPrev - perplexity) >= 1E-1f);
+        } while (Math.abs(perplexityPrev - perplexity) >= 1E-1f);
 
         Set<Integer> topics = new HashSet<Integer>();
         for (int k = 0; k < K; k++) {

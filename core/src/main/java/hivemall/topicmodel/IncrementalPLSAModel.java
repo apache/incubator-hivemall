@@ -264,8 +264,9 @@ public final class IncrementalPLSAModel {
                 }
 
                 if (p_dw == 0.d) {
-                    throw new IllegalStateException("Perplexity would be Infinity. "
-                            + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
+                    throw new IllegalStateException(
+                        "Perplexity would be Infinity. "
+                                + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
                 }
                 numer += w_value * Math.log(p_dw);
                 denom += w_value;

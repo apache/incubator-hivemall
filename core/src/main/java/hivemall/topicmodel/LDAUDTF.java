@@ -22,6 +22,7 @@ import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NIOUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
@@ -260,28 +261,26 @@ public class LDAUDTF extends UDTFWithOptions {
             this.fileIO = dst = new NioStatefullSegment(file, false);
         }
 
-        int wcLength = 0;
+        // requiredRecordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
+        int wcLengthTotal = 0;
         for (String wc : wordCounts) {
             if (wc == null) {
                 continue;
             }
-            wcLength += wc.getBytes().length;
+            wcLengthTotal += wc.length();
         }
-        // recordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
-        int recordBytes = (Integer.SIZE * 2 + Integer.SIZE * wcLength) / 8 + wcLength;
+        int requiredRecordBytes = SizeOf.INT * 2 + SizeOf.INT * wordCounts.length + wcLengthTotal
+                * SizeOf.CHAR;
+
         int remain = buf.remaining();
-        if (remain < recordBytes) {
+        if (remain < requiredRecordBytes) {
             writeBuffer(buf, dst);
         }
 
-        buf.putInt(recordBytes);
+        buf.putInt(requiredRecordBytes);
         buf.putInt(wordCounts.length);
         for (String wc : wordCounts) {
-            if (wc == null) {
-                continue;
-            }
-            buf.putInt(wc.length());
-            buf.put(wc.getBytes());
+            NIOUtils.putString(wc, buf);
         }
     }
 
@@ -351,10 +350,7 @@ public class LDAUDTF extends UDTFWithOptions {
                         int wcLength = buf.getInt();
                         final String[] wordCounts = new String[wcLength];
                         for (int j = 0; j < wcLength; j++) {
-                            int len = buf.getInt();
-                            byte[] bytes = new byte[len];
-                            buf.get(bytes);
-                            wordCounts[j] = new String(bytes);
+                            wordCounts[j] = NIOUtils.getString(buf);
                         }
 
                         miniBatch[miniBatchCount] = wordCounts;
@@ -393,7 +389,6 @@ public class LDAUDTF extends UDTFWithOptions {
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
                         + " training updates in total) ");
             } else {// read training examples in the temporary file and invoke train for each example
-
                 // write training examples in buffer to a temporary file
                 if (buf.remaining() > 0) {
                     writeBuffer(buf, dst);
@@ -452,7 +447,7 @@ public class LDAUDTF extends UDTFWithOptions {
                         }
                         while (remain >= SizeOf.INT) {
                             int pos = buf.position();
-                            int recordBytes = buf.getInt();
+                            int recordBytes = buf.getInt() - SizeOf.INT;
                             remain -= SizeOf.INT;
                             if (remain < recordBytes) {
                                 buf.position(pos);
@@ -462,10 +457,7 @@ public class LDAUDTF extends UDTFWithOptions {
                             int wcLength = buf.getInt();
                             final String[] wordCounts = new String[wcLength];
                             for (int j = 0; j < wcLength; j++) {
-                                int len = buf.getInt();
-                                byte[] bytes = new byte[len];
-                                buf.get(bytes);
-                                wordCounts[j] = new String(bytes);
+                                wordCounts[j] = NIOUtils.getString(buf);
                             }
 
                             miniBatch[miniBatchCount] = wordCounts;
@@ -552,6 +544,21 @@ public class LDAUDTF extends UDTFWithOptions {
     /*
      * For testing:
      */
+
+    @VisibleForTesting
+    public void closeWithoutModelReset() throws HiveException {
+        // launch close(), but not forward & clear model
+        if (count == 0) {
+            this.model = null;
+            return;
+        }
+        if (miniBatchCount > 0) { // update for remaining samples
+            model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
+        }
+        if (iterations > 1) {
+            runIterativeTraining(iterations);
+        }
+    }
 
     @VisibleForTesting
     double getLambda(String label, int k) {
