@@ -30,6 +30,7 @@ import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.lang.SizeOf;
 import hivemall.utils.math.MathUtils;
 
 import java.io.File;
@@ -67,7 +68,6 @@ import org.apache.hadoop.mapred.Reporter;
         value = "_FUNC_(array<string> x, double y [, const string options]) - Returns a prediction model")
 public class FactorizationMachineUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(FactorizationMachineUDTF.class);
-    private static final int INT_BYTES = Integer.SIZE / 8;
 
     protected ListObjectInspector _xOI;
     protected PrimitiveObjectInspector _yOI;
@@ -318,8 +318,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
 
         int xBytes = Feature.requiredBytes(x);
-        int recordBytes = (Integer.SIZE + Double.SIZE) / 8 + xBytes;
-        int requiredBytes = (Integer.SIZE / 8) + recordBytes;
+        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes;
+        int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
         if (remain < requiredBytes) {
             writeBuffer(inputBuf, dst);
@@ -612,13 +612,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         // reads training examples from a buffer
                         inputBuf.flip();
                         int remain = inputBuf.remaining();
-                        if (remain < INT_BYTES) {
+                        if (remain < SizeOf.INT) {
                             throw new HiveException("Illegal file format was detected");
                         }
-                        while (remain >= INT_BYTES) {
+                        while (remain >= SizeOf.INT) {
                             int pos = inputBuf.position();
                             int recordBytes = inputBuf.getInt();
-                            remain -= INT_BYTES;
+                            remain -= SizeOf.INT;
                             if (remain < recordBytes) {
                                 inputBuf.position(pos);
                                 break;

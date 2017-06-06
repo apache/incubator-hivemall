@@ -546,7 +546,7 @@ public class LDAUDTF extends UDTFWithOptions {
      */
 
     @VisibleForTesting
-    public void closeWithoutModelReset() throws HiveException {
+    void closeWithoutModelReset() throws HiveException {
         // launch close(), but not forward & clear model
         if (count == 0) {
             this.model = null;
