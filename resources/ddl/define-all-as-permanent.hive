@@ -51,7 +51,7 @@ CREATE FUNCTION kpa_predict as 'hivemall.classifier.KPAPredictUDAF' USING JAR '$
 
 --------------------------------
 --  Multiclass classification --
--------------------------------- 
+--------------------------------
 
 DROP FUNCTION IF EXISTS train_multiclass_perceptron;
 CREATE FUNCTION train_multiclass_perceptron as 'hivemall.classifier.multiclass.MulticlassPerceptronUDTF' USING JAR '${hivemall_jar}';
@@ -98,6 +98,9 @@ CREATE FUNCTION euclid_similarity as 'hivemall.knn.similarity.EuclidSimilarity' 
 
 DROP FUNCTION IF EXISTS distance2similarity;
 CREATE FUNCTION distance2similarity as 'hivemall.knn.similarity.Distance2SimilarityUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS dimsum_mapper;
+CREATE FUNCTION dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF' USING JAR '${hivemall_jar}';
 
 ------------------------
 -- distance functions --
@@ -456,6 +459,9 @@ CREATE FUNCTION to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap' USING JA
 
 DROP FUNCTION IF EXISTS sigmoid;
 CREATE FUNCTION sigmoid as 'hivemall.tools.math.SigmoidGenericUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS l2_norm;
+CREATE FUNCTION l2_norm as 'hivemall.tools.math.L2NormUDAF' USING JAR '${hivemall_jar}';
 
 ----------------------
 -- Matrix functions --
