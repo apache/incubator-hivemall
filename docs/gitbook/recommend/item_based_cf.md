@@ -517,7 +517,7 @@ group by
 
 # Efficient similarity computation
 
-Since naive similarity computation takes `O(n^2)` computational complexity, utilizing a certain approximation scheme is practically important to improve efficiency and feasibility. In particular, Hivemall enables you to use one of two sophisticated approximation schemes, [MinHash](https://en.wikipedia.org/wiki/MinHash#Jaccard_similarity_and_minimum_hash_values) and [DIMSUM](https://blog.twitter.com/engineering/en_us/a/2014/all-pairs-similarity-via-dimsum.html).
+Since naive similarity computation takes `O(n^2)` computational complexity, utilizing a certain approximation scheme is practically important to improve efficiency and feasibility. In particular, Hivemall enables you to use one of two sophisticated approximation schemes, [MinHash](##minhash-compute-pseudo-jaccard-similarity) and [DIMSUM](#dimsum-approximated-all-pairs-cosine-similarity-computation).
 
 ## MinHash: Compute "pseudo" Jaccard similarity
 
@@ -604,12 +604,12 @@ from
   topk;
 ```
 
-## DIMSUM: Approximated all-pairs similarity computation
+## DIMSUM: Approximated all-pairs "Cosine" similarity computation
 
 > #### Note
 > This feature is supported from Hivemall v0.5-rc.1 or later.
 
-DIMSUM is a technique to efficiently and approximately compute similarities for all-pairs of items. You can refer to [an article in Twitter's Engineering blog](https://blog.twitter.com/engineering/en_us/a/2014/all-pairs-similarity-via-dimsum.html) to learn how DIMSUM reduces running time.
+DIMSUM is a technique to efficiently and approximately compute [Cosine similarities](https://en.wikipedia.org/wiki/Cosine_similarity) for all-pairs of items. You can refer to [an article in Twitter's Engineering blog](https://blog.twitter.com/engineering/en_us/a/2014/all-pairs-similarity-via-dimsum.html) to learn how DIMSUM reduces running time.
 
 Here, let us begin with the `user_purchased` table. `item_similarity` table can be obtained as follows:
 

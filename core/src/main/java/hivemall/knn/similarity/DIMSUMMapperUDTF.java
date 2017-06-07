@@ -29,8 +29,6 @@ import hivemall.utils.lang.Primitives;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -52,25 +50,24 @@ import java.util.Map;
         name = "dimsum_mapper",
         value = "_FUNC_(array<string> row, map<int col_id, double norm> colNorms [, const string options]) "
                 + "- Returns column-wise partial similarities")
-public class DIMSUMMapperUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(DIMSUMMapperUDTF.class);
+public final class DIMSUMMapperUDTF extends UDTFWithOptions {
 
-    protected ListObjectInspector rowOI;
-    protected MapObjectInspector colNormsOI;
+    private ListObjectInspector rowOI;
+    private MapObjectInspector colNormsOI;
 
     @Nullable
-    protected Feature[] probes;
+    private Feature[] probes;
 
     @Nonnull
-    protected PRNG rnd;
+    private PRNG rnd;
 
-    protected double threshold;
-    protected double sqrtGamma;
-    protected boolean symmetricOutput;
-    protected boolean parseFeatureAsInt;
+    private double threshold;
+    private double sqrtGamma;
+    private boolean symmetricOutput;
+    private boolean parseFeatureAsInt;
 
-    protected Map<Object, Double> colNorms;
-    protected Map<Object, Double> colProbs;
+    private Map<Object, Double> colNorms;
+    private Map<Object, Double> colProbs;
 
     @Override
     protected Options getOptions() {
@@ -158,6 +155,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void process(Object[] args) throws HiveException {
         Feature[] row = parseFeatures(args[0]);
