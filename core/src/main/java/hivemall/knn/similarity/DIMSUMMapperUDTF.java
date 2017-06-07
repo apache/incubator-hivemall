@@ -36,7 +36,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
@@ -153,7 +153,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         }
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -225,7 +225,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
 
         final IntWritable jWritable = new IntWritable();
         final IntWritable kWritable = new IntWritable();
-        final FloatWritable bWritable = new FloatWritable();
+        final DoubleWritable bWritable = new DoubleWritable();
 
         final Object[] forwardObjs = new Object[3];
         forwardObjs[0] = jWritable;
@@ -245,7 +245,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
 
                     if (kVal != 0.d && rnd.nextDouble() < kProb) {
                         // compute b_jk
-                        bWritable.set((float) (jVal * kVal));
+                        bWritable.set(jVal * kVal);
 
                         if (symmetricOutput) {
                             // (j, k); similarity matrix is symmetric
@@ -291,7 +291,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
 
         final Text jWritable = new Text();
         final Text kWritable = new Text();
-        final FloatWritable bWritable = new FloatWritable();
+        final DoubleWritable bWritable = new DoubleWritable();
 
         final Object[] forwardObjs = new Object[3];
         forwardObjs[0] = jWritable;
@@ -311,7 +311,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
 
                     if (kVal != 0.d && rnd.nextDouble() < kProb) {
                         // compute b_jk
-                        bWritable.set((float) (jVal * kVal));
+                        bWritable.set(jVal * kVal);
 
                         if (symmetricOutput) {
                             // (j, k); similarity matrix is symmetric
