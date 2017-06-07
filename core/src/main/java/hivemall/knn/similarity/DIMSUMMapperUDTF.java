@@ -214,7 +214,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         for (int i = 0; i < length; i++) {
             int j = row[i].getFeatureIndex();
 
-            double norm = colNorms.get(j).doubleValue();
+            double norm = Primitives.doubleValue(colNorms.get(j), 0.d);
             if (norm == 0.d) { // avoid zero-division
                 norm = 1.d;
             }
@@ -235,13 +235,15 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         for (int ij = 0; ij < length; ij++) {
             int j = rowScaled[ij].getFeatureIndex();
             double jVal = rowScaled[ij].getValue();
+            double jProb = Primitives.doubleValue(colProbs.get(j), 0.d);
 
-            if (jVal != 0.d && rnd.nextDouble() < colProbs.get(j)) {
+            if (jVal != 0.d && rnd.nextDouble() < jProb) {
                 for (int ik = ij + 1; ik < length; ik++) {
                     int k = rowScaled[ik].getFeatureIndex();
                     double kVal = rowScaled[ik].getValue();
+                    double kProb = Primitives.doubleValue(colProbs.get(k), 0.d);
 
-                    if (kVal != 0.d && rnd.nextDouble() < colProbs.get(k)) {
+                    if (kVal != 0.d && rnd.nextDouble() < kProb) {
                         // compute b_jk
                         bWritable.set((float) (jVal * kVal));
 
@@ -278,7 +280,7 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         for (int i = 0; i < length; i++) {
             String j = row[i].getFeature();
 
-            double norm = colNorms.get(j).doubleValue();
+            double norm = Primitives.doubleValue(colNorms.get(j), 0.d);
             if (norm == 0.d) { // avoid zero-division
                 norm = 1.d;
             }
@@ -299,13 +301,15 @@ public class DIMSUMMapperUDTF extends UDTFWithOptions {
         for (int ij = 0; ij < length; ij++) {
             String j = rowScaled[ij].getFeature();
             double jVal = rowScaled[ij].getValue();
+            double jProb = Primitives.doubleValue(colProbs.get(j), 0.d);
 
-            if (jVal != 0.d && rnd.nextDouble() < colProbs.get(j)) {
+            if (jVal != 0.d && rnd.nextDouble() < jProb) {
                 for (int ik = ij + 1; ik < length; ik++) {
                     String k = rowScaled[ik].getFeature();
                     double kVal = rowScaled[ik].getValue();
+                    double kProb = Primitives.doubleValue(colProbs.get(j), 0.d);
 
-                    if (kVal != 0.d && rnd.nextDouble() < colProbs.get(k)) {
+                    if (kVal != 0.d && rnd.nextDouble() < kProb) {
                         // compute b_jk
                         bWritable.set((float) (jVal * kVal));
 
