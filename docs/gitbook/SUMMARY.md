@@ -139,6 +139,7 @@
 
 * [MovieLens movie recommendation Tutorial](recommend/movielens.md)
     * [Data preparation](recommend/movielens_dataset.md)
+    * [Item-based Collaborative Filtering](recommend/movielens_cf.md)
     * [Matrix Factorization](recommend/movielens_mf.md)
     * [Factorization Machine](recommend/movielens_fm.md)
     * [10-fold Cross Validation (Matrix Factorization)](recommend/movielens_cv.md)
