@@ -19,6 +19,7 @@
 package hivemall.anomaly;
 
 import hivemall.UDFWithOptions;
+import hivemall.annotations.Since;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
@@ -58,6 +59,7 @@ import org.apache.hadoop.io.BooleanWritable;
                 + " - Returns change-point scores and decisions using Singular Spectrum Transformation (SST)."
                 + " It will return a tuple <double changepoint_score [, boolean is_changepoint]>")
 @UDFType(deterministic = false, stateful = true)
+@Since(version="0.5-rc.1")
 public final class SingularSpectrumTransformUDF extends UDFWithOptions {
 
     private transient Parameters _params;

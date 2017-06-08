@@ -22,23 +22,32 @@ import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveO
 import hivemall.mix.MixMessage.MixEventName;
 import hivemall.mix.client.MixClient;
 import hivemall.model.DenseModel;
+import hivemall.model.NewDenseModel;
+import hivemall.model.NewSpaceEfficientDenseModel;
+import hivemall.model.NewSparseModel;
 import hivemall.model.PredictionModel;
 import hivemall.model.SpaceEfficientDenseModel;
 import hivemall.model.SparseModel;
 import hivemall.model.SynchronizedModelWrapper;
 import hivemall.model.WeightValue;
 import hivemall.model.WeightValue.WeightValueWithCovar;
+import hivemall.optimizer.DenseOptimizerFactory;
+import hivemall.optimizer.Optimizer;
+import hivemall.optimizer.SparseOptimizerFactory;
 import hivemall.utils.datetime.StopWatch;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
+import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -61,6 +70,7 @@ import org.apache.hadoop.io.Text;
 public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(LearnerBaseUDTF.class);
 
+    protected final boolean enableNewModel;
     protected String preloadedModelFile;
     protected boolean dense_model;
     protected int model_dims;
@@ -73,9 +83,12 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     protected boolean mixCancel;
     protected boolean ssl;
 
+    @Nullable
     protected MixClient mixClient;
 
-    public LearnerBaseUDTF() {}
+    public LearnerBaseUDTF(boolean enableNewModel) {
+        this.enableNewModel = enableNewModel;
+    }
 
     protected boolean useCovariance() {
         return false;
@@ -163,11 +176,15 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
 
     @Nullable
     protected PredictionModel createModel() {
-        return createModel(null);
+        if (enableNewModel) {
+            return createNewModel(null);
+        } else {
+            return createOldModel(null);
+        }
     }
 
     @Nonnull
-    protected PredictionModel createModel(@Nullable String label) {
+    private final PredictionModel createOldModel(@Nullable String label) {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {
@@ -195,6 +212,47 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         }
         assert (model != null);
         return model;
+    }
+
+    @Nonnull
+    private final PredictionModel createNewModel(@Nullable String label) {
+        PredictionModel model;
+        final boolean useCovar = useCovariance();
+        if (dense_model) {
+            if (disable_halffloat == false && model_dims > 16777216) {
+                logger.info("Build a space efficient dense model with " + model_dims
+                        + " initial dimensions" + (useCovar ? " w/ covariances" : ""));
+                model = new NewSpaceEfficientDenseModel(model_dims, useCovar);
+            } else {
+                logger.info("Build a dense model with initial with " + model_dims
+                        + " initial dimensions" + (useCovar ? " w/ covariances" : ""));
+                model = new NewDenseModel(model_dims, useCovar);
+            }
+        } else {
+            int initModelSize = getInitialModelSize();
+            logger.info("Build a sparse model with initial with " + initModelSize
+                    + " initial dimensions");
+            model = new NewSparseModel(initModelSize, useCovar);
+        }
+        if (mixConnectInfo != null) {
+            model.configureClock();
+            model = new SynchronizedModelWrapper(model);
+            MixClient client = configureMixClient(mixConnectInfo, label, model);
+            model.configureMix(client, mixCancel);
+            this.mixClient = client;
+        }
+        assert (model != null);
+        return model;
+    }
+
+    @Nonnull
+    protected final Optimizer createOptimizer(@CheckForNull Map<String, String> options) {
+        Preconditions.checkNotNull(options);
+        if (dense_model) {
+            return DenseOptimizerFactory.create(model_dims, options);
+        } else {
+            return SparseOptimizerFactory.create(model_dims, options);
+        }
     }
 
     protected MixClient configureMixClient(String connectURIs, String label, PredictionModel model) {

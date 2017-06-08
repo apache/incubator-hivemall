@@ -22,10 +22,12 @@ import java.util.Random
 import java.util.concurrent.{Executors, ExecutorService, TimeUnit}
 import java.util.logging.Logger
 
-import hivemall.mix.MixMessage.MixEventName
 import hivemall.mix.client.MixClient
+import hivemall.mix.MixMessage.MixEventName
 import hivemall.mix.server.MixServer.ServerState
-import hivemall.model.{DenseModel, PredictionModel, WeightValue}
+import hivemall.model.{DenseModel, PredictionModel}
+import hivemall.model.{NewDenseModel, PredictionModel}
+import hivemall.model.WeightValue
 import hivemall.utils.io.IOUtils
 import hivemall.utils.lang.CommandLineUtils
 import hivemall.utils.net.NetUtils
@@ -96,7 +98,7 @@ class MixServerSuite extends FunSuite with BeforeAndAfter {
         ignore(testName) {
           val clients = Executors.newCachedThreadPool()
           val numClients = nclient
-          val models = (0 until numClients).map(i => new DenseModel(ndims, false))
+          val models = (0 until numClients).map(i => new NewDenseModel(ndims, false))
           (0 until numClients).map { i =>
             clients.submit(new Runnable() {
               override def run(): Unit = {
