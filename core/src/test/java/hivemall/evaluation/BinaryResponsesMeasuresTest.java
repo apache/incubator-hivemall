@@ -102,6 +102,16 @@ public class BinaryResponsesMeasuresTest {
 
         actual = BinaryResponsesMeasures.AUC(rankedList, groundTruth, 2);
         Assert.assertEquals(1.0d, actual, 0.0001d);
+
+        // meaningless case I: all TPs
+        List<Integer> groundTruthAllTruePositive = Arrays.asList(1, 3, 2, 6);
+        actual = BinaryResponsesMeasures.AUC(rankedList, groundTruthAllTruePositive, rankedList.size());
+        Assert.assertEquals(0.5d, actual, 0.0001d);
+
+        // meaningless case II: all FPs
+        List<Integer> groundTruthAllFalsePositive = Arrays.asList(7, 8, 9, 10);
+        actual = BinaryResponsesMeasures.AUC(rankedList, groundTruthAllFalsePositive, rankedList.size());
+        Assert.assertEquals(0.5d, actual, 0.0001d);
     }
 
 }
