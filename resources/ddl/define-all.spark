@@ -11,6 +11,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION hivemall_version AS 'hivemall.Hivemall
  * Binary classification
  */
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_classifier")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_classifier AS 'hivemall.classifier.GeneralClassifierUDTF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_perceptron")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_perceptron AS 'hivemall.classifier.PerceptronUDTF'")
 
@@ -332,6 +335,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tf AS 'hivemall.ftvec.text.TermFrequen
 /**
  * Regression functions
  */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_regression")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_regression AS 'hivemall.regression.GeneralRegressionUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS logress")
 sqlContext.sql("CREATE TEMPORARY FUNCTION logress AS 'hivemall.regression.LogressUDTF'")

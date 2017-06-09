@@ -30,14 +30,18 @@ import javax.annotation.Nonnull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public final class SparseModel extends AbstractPredictionModel {
-    private static final Log logger = LogFactory.getLog(SparseModel.class);
+public final class NewSparseModel extends AbstractPredictionModel {
+    private static final Log logger = LogFactory.getLog(NewSparseModel.class);
 
     private final OpenHashMap<Object, IWeightValue> weights;
     private final boolean hasCovar;
     private boolean clockEnabled;
 
-    public SparseModel(int size, boolean hasCovar) {
+    public NewSparseModel(int size) {
+        this(size, false);
+    }
+
+    public NewSparseModel(int size, boolean hasCovar) {
         super();
         this.weights = new OpenHashMap<Object, IWeightValue>(size);
         this.hasCovar = hasCovar;
@@ -96,7 +100,7 @@ public final class SparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public void delete(@Nonnull Object feature) {
+    public void delete(@Nonnull final Object feature) {
         weights.remove(feature);
     }
 
@@ -136,8 +140,15 @@ public final class SparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public void setWeight(@Nonnull Object feature, float value) {
-        throw new UnsupportedOperationException();
+    public void setWeight(@Nonnull final Object feature, final float value) {
+        if (weights.containsKey(feature)) {
+            IWeightValue weight = weights.get(feature);
+            weight.set(value);
+        } else {
+            IWeightValue weight = new WeightValue(value);
+            weight.set(value);
+            weights.put(feature, weight);
+        }
     }
 
     @Override

@@ -26,9 +26,10 @@ import javax.annotation.Nullable;
 
 public interface PredictionModel extends MixedModel {
 
+    @Nullable
     ModelUpdateHandler getUpdateHandler();
 
-    void configureMix(ModelUpdateHandler handler, boolean cancelMixRequest);
+    void configureMix(@Nonnull ModelUpdateHandler handler, boolean cancelMixRequest);
 
     long getNumMixed();
 
@@ -55,6 +56,8 @@ public interface PredictionModel extends MixedModel {
     <T extends IWeightValue> void set(@Nonnull Object feature, @Nonnull T value);
 
     float getWeight(@Nonnull Object feature);
+
+    void setWeight(@Nonnull Object feature, float value);
 
     float getCovariance(@Nonnull Object feature);
 

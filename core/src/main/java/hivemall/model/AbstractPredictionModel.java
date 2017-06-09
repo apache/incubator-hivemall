@@ -18,6 +18,7 @@
  */
 package hivemall.model;
 
+import hivemall.annotations.InternalAPI;
 import hivemall.mix.MixedWeight;
 import hivemall.mix.MixedWeight.WeightWithCovar;
 import hivemall.mix.MixedWeight.WeightWithDelta;
@@ -25,10 +26,12 @@ import hivemall.utils.collections.maps.IntOpenHashMap;
 import hivemall.utils.collections.maps.OpenHashMap;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public abstract class AbstractPredictionModel implements PredictionModel {
     public static final byte BYTE0 = 0;
 
+    @Nullable
     protected ModelUpdateHandler handler;
 
     private long numMixed;
@@ -50,7 +53,7 @@ public abstract class AbstractPredictionModel implements PredictionModel {
     }
 
     @Override
-    public void configureMix(ModelUpdateHandler handler, boolean cancelMixRequest) {
+    public void configureMix(@Nonnull ModelUpdateHandler handler, boolean cancelMixRequest) {
         this.handler = handler;
         this.cancelMixRequest = cancelMixRequest;
         if (cancelMixRequest) {
@@ -184,9 +187,6 @@ public abstract class AbstractPredictionModel implements PredictionModel {
         }
     }
 
-    /**
-     * 
-     */
     @Override
     public void set(@Nonnull Object feature, float weight, float covar, short clock) {
         if (hasCovariance()) {
@@ -197,8 +197,10 @@ public abstract class AbstractPredictionModel implements PredictionModel {
         numMixed++;
     }
 
+    @InternalAPI
     protected abstract void _set(@Nonnull Object feature, float weight, short clock);
 
+    @InternalAPI
     protected abstract void _set(@Nonnull Object feature, float weight, float covar, short clock);
 
 }
