@@ -61,7 +61,7 @@ xgboost-native-local: fetch-xgboost
 .PHONY: xgboost-native
 xgboost-native: fetch-xgboost
 	set -eux && \
-	for os_arch in ${CANDIDATES}; do make xgboost-$${os_arch}; done
+	for os_arch in ${CANDIDATES}; do make xgboost-native-$${os_arch}; done
 
 .PHONY: xgboost-native-%
 xgboost-native-%:
