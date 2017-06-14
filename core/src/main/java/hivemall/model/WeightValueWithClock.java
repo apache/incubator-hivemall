@@ -276,6 +276,7 @@ public class WeightValueWithClock implements IWeightValue {
         public void setSumOfGradients(float value) {
             this.f2 = value;
         }
+
         @Override
         public float getM() {
             return f1;
@@ -324,11 +325,11 @@ public class WeightValueWithClock implements IWeightValue {
 
         @Override
         public float getFloatParams(@Nonnegative final int i) {
-            if(i == 1) {
+            if (i == 1) {
                 return f1;
-            } else if(i == 2) {
+            } else if (i == 2) {
                 return f2;
-            } else if(i == 3) {
+            } else if (i == 3) {
                 return f3;
             }
             throw new IllegalArgumentException("getFloatParams(" + i + ") should not be called");
@@ -363,6 +364,7 @@ public class WeightValueWithClock implements IWeightValue {
         public void setSumOfGradients(float value) {
             this.f3 = value;
         }
+
         @Override
         public float getM() {
             return f1;

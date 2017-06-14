@@ -33,6 +33,7 @@ import org.apache.commons.logging.LogFactory;
 public final class SparseModel extends AbstractPredictionModel {
     private static final Log logger = LogFactory.getLog(SparseModel.class);
 
+    @Nonnull
     private final OpenHashMap<Object, IWeightValue> weights;
     private final boolean hasCovar;
     private boolean clockEnabled;
@@ -76,9 +77,6 @@ public final class SparseModel extends AbstractPredictionModel {
 
     @Override
     public <T extends IWeightValue> void set(@Nonnull final Object feature, @Nonnull final T value) {
-        assert (feature != null);
-        assert (value != null);
-
         final IWeightValue wrapperValue = wrapIfRequired(value);
 
         if (clockEnabled && value.isTouched()) {

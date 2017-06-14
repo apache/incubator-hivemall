@@ -20,7 +20,6 @@ package hivemall.optimizer;
 
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
-import hivemall.optimizer.Optimizer.OptimizerBase;
 import hivemall.utils.collections.maps.OpenHashMap;
 
 import java.util.Map;
@@ -37,34 +36,35 @@ public final class SparseOptimizerFactory {
     @Nonnull
     public static Optimizer create(int ndims, @Nonnull Map<String, String> options) {
         final String optimizerName = options.get("optimizer");
-        if (optimizerName != null) {
-            OptimizerBase optimizerImpl;
-            if (optimizerName.toLowerCase().equals("sgd")) {
-                optimizerImpl = new Optimizer.SGD(options);
-            } else if (optimizerName.toLowerCase().equals("adadelta")) {
-                optimizerImpl = new AdaDelta(ndims, options);
-            } else if (optimizerName.toLowerCase().equals("adagrad")) {
-                optimizerImpl = new AdaGrad(ndims, options);
-            } else if (optimizerName.toLowerCase().equals("adam")) {
-                optimizerImpl = new Adam(ndims, options);
-            } else {
-                throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
-            }
-
-            // If a regularization type is "RDA", wrap the optimizer with `Optimizer#RDA`.
-            if (options.get("regularization") != null
-                    && options.get("regularization").toLowerCase().equals("rda")) {
-                optimizerImpl = new AdagradRDA(ndims, optimizerImpl, options);
-            }
-
-            if (LOG.isInfoEnabled()) {
-                LOG.info("set " + optimizerImpl.getClass().getSimpleName() + " as an optimizer: "
-                        + options);
-            }
-
-            return optimizerImpl;
+        if (optimizerName == null) {
+            throw new IllegalArgumentException("`optimizer` not defined");
         }
-        throw new IllegalArgumentException("`optimizer` not defined");
+
+        final Optimizer optimizerImpl;
+        if ("sgd".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new Optimizer.SGD(options);
+        } else if ("adadelta".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new AdaDelta(ndims, options);
+        } else if ("adagrad".equalsIgnoreCase(optimizerName)) {
+            // If a regularization type is "RDA", wrap the optimizer with `Optimizer#RDA`.
+            if ("rda".equalsIgnoreCase(options.get("regularization"))) {
+                AdaGrad adagrad = new AdaGrad(ndims, options);
+                optimizerImpl = new AdagradRDA(ndims, adagrad, options);
+            } else {
+                optimizerImpl = new AdaGrad(ndims, options);
+            }
+        } else if ("adam".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new Adam(ndims, options);
+        } else {
+            throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
+        }
+
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: "
+                    + options);
+        }
+
+        return optimizerImpl;
     }
 
     @NotThreadSafe
@@ -79,17 +79,15 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
-            IWeightValue auxWeight;
-            if (auxWeights.containsKey(feature)) {
-                auxWeight = auxWeights.get(feature);
-                auxWeight.set(weight);
-            } else {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+            IWeightValue auxWeight = auxWeights.get(feature);
+            if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
+            } else {
+                auxWeight.set(weight);
             }
-            update(auxWeight, gradient);
-            return auxWeight.get();
+            return update(auxWeight, gradient);
         }
 
     }
@@ -106,17 +104,15 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
-            IWeightValue auxWeight;
-            if (auxWeights.containsKey(feature)) {
-                auxWeight = auxWeights.get(feature);
-                auxWeight.set(weight);
-            } else {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+            IWeightValue auxWeight = auxWeights.get(feature);
+            if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
+            } else {
+                auxWeight.set(weight);
             }
-            update(auxWeight, gradient);
-            return auxWeight.get();
+            return update(auxWeight, gradient);
         }
 
     }
@@ -133,17 +129,15 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
-            IWeightValue auxWeight;
-            if (auxWeights.containsKey(feature)) {
-                auxWeight = auxWeights.get(feature);
-                auxWeight.set(weight);
-            } else {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+            IWeightValue auxWeight = auxWeights.get(feature);
+            if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
+            } else {
+                auxWeight.set(weight);
             }
-            update(auxWeight, gradient);
-            return auxWeight.get();
+            return update(auxWeight, gradient);
         }
 
     }
@@ -154,23 +148,22 @@ public final class SparseOptimizerFactory {
         @Nonnull
         private final OpenHashMap<Object, IWeightValue> auxWeights;
 
-        public AdagradRDA(int size, OptimizerBase optimizerImpl, Map<String, String> options) {
+        public AdagradRDA(int size, @Nonnull Optimizer.AdaGrad optimizerImpl,
+                @Nonnull Map<String, String> options) {
             super(optimizerImpl, options);
             this.auxWeights = new OpenHashMap<Object, IWeightValue>(size);
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
-            IWeightValue auxWeight;
-            if (auxWeights.containsKey(feature)) {
-                auxWeight = auxWeights.get(feature);
-                auxWeight.set(weight);
-            } else {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+            IWeightValue auxWeight = auxWeights.get(feature);
+            if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
                 auxWeights.put(feature, auxWeight);
+            } else {
+                auxWeight.set(weight);
             }
-            update(auxWeight, gradient);
-            return auxWeight.get();
+            return update(auxWeight, gradient);
         }
 
     }

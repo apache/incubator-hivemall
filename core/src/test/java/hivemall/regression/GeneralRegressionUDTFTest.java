@@ -121,8 +121,8 @@ public class GeneralRegressionUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 
-        float cumLossPrev = Float.MAX_VALUE;
-        float cumLoss = 0.f;
+        double cumLossPrev = Double.MAX_VALUE;
+        double cumLoss = 0.d;
         int it = 0;
         while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
             cumLossPrev = cumLoss;
@@ -133,7 +133,7 @@ public class GeneralRegressionUDTFTest {
             cumLoss = udtf.getCumulativeLoss();
             println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
         }
-        Assert.assertTrue(cumLoss / numTrain < 0.1f);
+        Assert.assertTrue(cumLoss / numTrain < 0.1d);
 
         float accum = 0.f;
 

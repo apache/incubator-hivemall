@@ -255,9 +255,9 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         }
     }
 
-    protected MixClient configureMixClient(String connectURIs, String label, PredictionModel model) {
-        assert (connectURIs != null);
-        assert (model != null);
+    @Nonnull
+    protected MixClient configureMixClient(@Nonnull String connectURIs, @Nullable String label,
+            @Nonnull PredictionModel model) {
         String jobId = (mixSessionName == null) ? MixClient.DUMMY_JOB_ID : mixSessionName;
         if (label != null) {
             jobId = jobId + '-' + label;

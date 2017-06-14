@@ -25,8 +25,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 public final class OptimizerOptions {
 
@@ -63,14 +63,15 @@ public final class OptimizerOptions {
 
     public static void propcessOptions(@Nullable CommandLine cl,
             @Nonnull Map<String, String> options) {
-        if (cl != null) {
-            for (Option opt : cl.getOptions()) {
-                String optName = opt.getLongOpt();
-                if (optName == null) {
-                    optName = opt.getOpt();
-                }
-                options.put(optName, opt.getValue());
+        if (cl == null) {
+            return;
+        }
+        for (Option opt : cl.getOptions()) {
+            String optName = opt.getLongOpt();
+            if (optName == null) {
+                optName = opt.getOpt();
             }
+            options.put(optName, opt.getValue());
         }
     }
 

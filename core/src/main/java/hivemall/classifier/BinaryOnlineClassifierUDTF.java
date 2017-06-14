@@ -167,8 +167,10 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         return featureVector;
     }
 
-    protected void checkLabelValue(int label) throws UDFArgumentException {
-        assert (label == -1 || label == 0 || label == 1) : label;
+    protected void checkLabelValue(final int label) throws UDFArgumentException {
+        if (label != -1 && label != 0 && label != 1) {
+            throw new UDFArgumentException("Invalid label value for classification:  + label");
+        }
     }
 
     @VisibleForTesting

@@ -50,8 +50,9 @@ public final class GeneralRegressionUDTF extends GeneralLearnerBaseUDTF {
     }
 
     @Override
-    protected void checkLossFunction(@Nonnull LossFunction lossFunction) throws UDFArgumentException {
-        if (lossFunction.forBinaryClassification()) {
+    protected void checkLossFunction(@Nonnull LossFunction lossFunction)
+            throws UDFArgumentException {
+        if (!lossFunction.forRegression()) {
             throw new UDFArgumentException("The loss function `" + lossFunction.getType()
                     + "` is not designed for regression");
         }

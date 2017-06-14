@@ -70,14 +70,15 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private Optimizer optimizer;
     private LossFunction lossFunction;
 
-    protected PredictionModel model;
-    protected int count;
+    private PredictionModel model;
+    private long count;
 
     // The accumulated delta of each weight values.
-    protected transient Map<Object, FloatAccumulator> accumulated;
-    protected int sampled;
+    @Nullable
+    private transient Map<Object, FloatAccumulator> accumulated;
+    private int sampled;
 
-    private float cumLoss;
+    private double cumLoss;
 
     public GeneralLearnerBaseUDTF() {
         this(true);
@@ -122,12 +123,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         try {
             this.optimizer = createOptimizer(optimizerOptions);
         } catch (Throwable e) {
-            throw new UDFArgumentException(e.getMessage());
+            throw new UDFArgumentException(e);
         }
 
-        this.count = 0;
+        this.count = 0L;
         this.sampled = 0;
-        this.cumLoss = 0.f;
+        this.cumLoss = 0.d;
 
         return getReturnOI(featureOutputOI);
     }
@@ -160,7 +161,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         return cl;
     }
 
-    protected PrimitiveObjectInspector processFeaturesOI(ObjectInspector arg)
+    @Nonnull
+    protected PrimitiveObjectInspector processFeaturesOI(@Nonnull ObjectInspector arg)
             throws UDFArgumentException {
         this.featureListOI = (ListObjectInspector) arg;
         ObjectInspector featureRawOI = featureListOI.getListElementObjectInspector();
@@ -169,7 +171,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         return HiveUtils.asPrimitiveObjectInspector(featureRawOI);
     }
 
-    protected StructObjectInspector getReturnOI(ObjectInspector featureOutputOI) {
+    @Nonnull
+    protected StructObjectInspector getReturnOI(@Nonnull ObjectInspector featureOutputOI) {
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
@@ -241,7 +244,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             final float v = f.getValueAsFloat();
 
             float old_w = model.getWeight(k);
-            if (old_w != 0f) {
+            if (old_w != 0.f) {
                 score += (old_w * v);
             }
         }
@@ -302,7 +305,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         this.sampled = 0;
     }
 
-    protected void onlineUpdate(@Nonnull final FeatureValue[] features, float dloss) {
+    protected void onlineUpdate(@Nonnull final FeatureValue[] features, final float dloss) {
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
@@ -368,13 +371,13 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     }
 
     @VisibleForTesting
-    public float getCumulativeLoss() {
+    public double getCumulativeLoss() {
         return cumLoss;
     }
 
     @VisibleForTesting
     public void resetCumulativeLoss() {
-        this.cumLoss = 0.f;
+        this.cumLoss = 0.d;
     }
 
 }

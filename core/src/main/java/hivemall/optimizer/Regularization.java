@@ -18,24 +18,23 @@
  */
 package hivemall.optimizer;
 
-import javax.annotation.Nonnull;
+import hivemall.utils.lang.Primitives;
+
 import java.util.Map;
+
+import javax.annotation.Nonnull;
 
 public abstract class Regularization {
     /** the default regularization term 0.0001 */
-    public static final float DEFAULT_LAMBDA = 0.0001f;
+    private static final float DEFAULT_LAMBDA = 0.0001f;
 
     protected final float lambda;
 
     public Regularization(@Nonnull Map<String, String> options) {
-        float lambda = DEFAULT_LAMBDA;
-        if (options.containsKey("lambda")) {
-            lambda = Float.parseFloat(options.get("lambda"));
-        }
-        this.lambda = lambda;
+        this.lambda = Primitives.parseFloat(options.get("lambda"), DEFAULT_LAMBDA);
     }
 
-    public float regularize(float weight, float gradient) {
+    public float regularize(final float weight, final float gradient) {
         return gradient + lambda * getRegularizer(weight);
     }
 
@@ -61,8 +60,8 @@ public abstract class Regularization {
         }
 
         @Override
-        public float getRegularizer(float weight) {
-            return (weight > 0.f ? 1.f : -1.f);
+        public float getRegularizer(final float weight) {
+            return weight > 0.f ? 1.f : -1.f;
         }
 
     }
@@ -81,32 +80,30 @@ public abstract class Regularization {
     }
 
     public static final class ElasticNet extends Regularization {
-        public static final float DEFAULT_L1_RATIO = 0.5f;
+        private static final float DEFAULT_L1_RATIO = 0.5f;
 
-        protected final L1 l1;
-        protected final L2 l2;
+        @Nonnull
+        private final L1 l1;
+        @Nonnull
+        private final L2 l2;
 
-        protected final float l1Ratio;
+        private final float l1Ratio;
 
-        public ElasticNet(Map<String, String> options) {
+        public ElasticNet(@Nonnull Map<String, String> options) {
             super(options);
 
             this.l1 = new L1(options);
             this.l2 = new L2(options);
 
-            float l1Ratio = DEFAULT_L1_RATIO;
-            if (options.containsKey("l1_ratio")) {
-                l1Ratio = Float.parseFloat(options.get("l1_ratio"));
-                if (l1Ratio < 0.f || l1Ratio > 1.f) {
-                    throw new IllegalArgumentException("L1 ratio should be in [0.0, 1.0], but got "
-                            + l1Ratio);
-                }
+            this.l1Ratio = Primitives.parseFloat(options.get("l1_ratio"), DEFAULT_L1_RATIO);
+            if (l1Ratio < 0.f || l1Ratio > 1.f) {
+                throw new IllegalArgumentException("L1 ratio should be in [0.0, 1.0], but got "
+                        + l1Ratio);
             }
-            this.l1Ratio = l1Ratio;
         }
 
         @Override
-        public float getRegularizer(float weight) {
+        public float getRegularizer(final float weight) {
             return l1Ratio * l1.getRegularizer(weight) + (1.f - l1Ratio)
                     * l2.getRegularizer(weight);
         }
@@ -120,15 +117,15 @@ public abstract class Regularization {
             return new PassThrough(options);
         }
 
-        if (regName.toLowerCase().equals("no")) {
+        if ("no".equalsIgnoreCase(regName)) {
             return new PassThrough(options);
-        } else if (regName.toLowerCase().equals("l1")) {
+        } else if ("l1".equalsIgnoreCase(regName)) {
             return new L1(options);
-        } else if (regName.toLowerCase().equals("l2")) {
+        } else if ("l2".equalsIgnoreCase(regName)) {
             return new L2(options);
-        } else if (regName.toLowerCase().equals("elasticnet")) {
+        } else if ("elasticnet".equalsIgnoreCase(regName)) {
             return new ElasticNet(options);
-        } else if (regName.toLowerCase().equals("rda")) {
+        } else if ("rda".equalsIgnoreCase(regName)) {
             // Return `PassThrough` because we need special handling for RDA.
             // See an implementation of `Optimizer#RDA`.
             return new PassThrough(options);

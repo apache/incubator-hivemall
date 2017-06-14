@@ -18,7 +18,6 @@
  */
 package hivemall.model;
 
-import hivemall.annotations.InternalAPI;
 import hivemall.model.WeightValue.WeightValueWithCovar;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
@@ -105,12 +104,8 @@ public final class NewSpaceEfficientDenseModel extends AbstractPredictionModel {
         return HalfFloat.halfFloatToFloat(covars[i]);
     }
 
-    @InternalAPI
-    private void _setWeight(final int i, final float v) {
-        if (Math.abs(v) >= HalfFloat.MAX_FLOAT) {
-            throw new IllegalArgumentException("Acceptable maximum weight is "
-                    + HalfFloat.MAX_FLOAT + ": " + v);
-        }
+    private void setWeight(final int i, final float v) {
+        HalfFloat.checkRange(v);
         weights[i] = HalfFloat.floatToHalfFloat(v);
     }
 
@@ -159,7 +154,7 @@ public final class NewSpaceEfficientDenseModel extends AbstractPredictionModel {
         int i = HiveUtils.parseInt(feature);
         ensureCapacity(i);
         float weight = value.get();
-        _setWeight(i, weight);
+        setWeight(i, weight);
         float covar = 1.f;
         boolean hasCovar = value.hasCovariance();
         if (hasCovar) {
@@ -185,7 +180,7 @@ public final class NewSpaceEfficientDenseModel extends AbstractPredictionModel {
         if (i >= size) {
             return;
         }
-        _setWeight(i, 0.f);
+        setWeight(i, 0.f);
         if (covars != null) {
             setCovar(i, 1.f);
         }
@@ -205,7 +200,7 @@ public final class NewSpaceEfficientDenseModel extends AbstractPredictionModel {
     public void setWeight(@Nonnull final Object feature, final float value) {
         int i = HiveUtils.parseInt(feature);
         ensureCapacity(i);
-        _setWeight(i, value);
+        setWeight(i, value);
     }
 
     @Override
@@ -221,7 +216,7 @@ public final class NewSpaceEfficientDenseModel extends AbstractPredictionModel {
     protected void _set(@Nonnull final Object feature, final float weight, final short clock) {
         int i = ((Integer) feature).intValue();
         ensureCapacity(i);
-        _setWeight(i, weight);
+        setWeight(i, weight);
         clocks[i] = clock;
         deltaUpdates[i] = 0;
     }
@@ -231,7 +226,7 @@ public final class NewSpaceEfficientDenseModel extends AbstractPredictionModel {
             final short clock) {
         int i = ((Integer) feature).intValue();
         ensureCapacity(i);
-        _setWeight(i, weight);
+        setWeight(i, weight);
         setCovar(i, covar);
         clocks[i] = clock;
         deltaUpdates[i] = 0;

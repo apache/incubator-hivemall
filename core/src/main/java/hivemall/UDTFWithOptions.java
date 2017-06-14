@@ -123,8 +123,9 @@ public abstract class UDTFWithOptions extends GenericUDTF {
     protected abstract CommandLine processOptions(ObjectInspector[] argOIs)
             throws UDFArgumentException;
 
-    protected final List<FeatureValue> parseFeatures(final List<?> features,
-            final ObjectInspector featureInspector, final boolean parseFeature) {
+    @Nonnull
+    protected final List<FeatureValue> parseFeatures(@Nonnull final List<?> features,
+            @Nonnull final ObjectInspector featureInspector, final boolean parseFeature) {
         final int numFeatures = features.size();
         if (numFeatures == 0) {
             return Collections.emptyList();

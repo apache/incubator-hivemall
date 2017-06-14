@@ -53,7 +53,7 @@ public final class NewDenseModel extends AbstractPredictionModel {
         this.weights = new float[size];
         if (withCovar) {
             float[] covars = new float[size];
-            Arrays.fill(covars, 1f);
+            Arrays.fill(covars, 1.f);
             this.covars = covars;
         } else {
             this.covars = null;
@@ -99,8 +99,10 @@ public final class NewDenseModel extends AbstractPredictionModel {
             int bits = MathUtils.bitsRequired(index);
             int newSize = (1 << bits) + 1;
             int oldSize = size;
-            logger.info("Expands internal array size from " + oldSize + " to " + newSize + " ("
-                    + bits + " bits)");
+            if (logger.isInfoEnabled()) {
+                logger.info("Expands internal array size from " + oldSize + " to " + newSize + " ("
+                        + bits + " bits)");
+            }
             this.size = newSize;
             this.weights = Arrays.copyOf(weights, newSize);
             if (covars != null) {

@@ -38,7 +38,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -107,8 +106,8 @@ public class GeneralClassifierUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
-        float cumLossPrev = Float.MAX_VALUE;
-        float cumLoss = 0.f;
+        double cumLossPrev = Double.MAX_VALUE;
+        double cumLoss = 0.d;
         int it = 0;
         while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
             cumLossPrev = cumLoss;
@@ -119,7 +118,7 @@ public class GeneralClassifierUDTFTest {
             cumLoss = udtf.getCumulativeLoss();
             println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
         }
-        Assert.assertTrue(cumLoss / samplesList.size() < 0.5f);
+        Assert.assertTrue(cumLoss / samplesList.size() < 0.5d);
 
         int numTests = 0;
         int numCorrect = 0;
@@ -176,6 +175,7 @@ public class GeneralClassifierUDTFTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testNews20() throws IOException, ParseException, HiveException {
         int nIter = 10;
@@ -205,7 +205,7 @@ public class GeneralClassifierUDTFTest {
             udtf.process(new Object[] {words, label});
 
             labels.add(label);
-            wordsList.add((ArrayList) words.clone());
+            wordsList.add((ArrayList<String>) words.clone());
 
             words.clear();
             line = news20.readLine();

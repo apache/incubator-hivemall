@@ -161,14 +161,12 @@ public abstract class EtaEstimator {
     @Nonnull
     public static EtaEstimator get(@Nonnull final Map<String, String> options)
             throws IllegalArgumentException {
+        final float eta0 = Primitives.parseFloat(options.get("eta0"), 0.1f);
+        final double power_t = Primitives.parseDouble(options.get("power_t"), 0.1d);
+
         final String etaScheme = options.get("eta");
         if (etaScheme == null) {
-            return new InvscalingEtaEstimator(0.1f, 0.1d);
-        }
-
-        float eta0 = 0.1f;
-        if (options.containsKey("eta0")) {
-            eta0 = Float.parseFloat(options.get("eta0"));
+            return new InvscalingEtaEstimator(eta0, power_t);
         }
 
         if ("fixed".equalsIgnoreCase(etaScheme)) {
@@ -183,10 +181,6 @@ public abstract class EtaEstimator {
             }
             return new SimpleEtaEstimator(eta0, t);
         } else if ("inv".equalsIgnoreCase(etaScheme) || "inverse".equalsIgnoreCase(etaScheme)) {
-            double power_t = 0.1;
-            if (options.containsKey("power_t")) {
-                power_t = Double.parseDouble(options.get("power_t"));
-            }
             return new InvscalingEtaEstimator(eta0, power_t);
         } else {
             throw new IllegalArgumentException("Unsupported ETA name: " + etaScheme);

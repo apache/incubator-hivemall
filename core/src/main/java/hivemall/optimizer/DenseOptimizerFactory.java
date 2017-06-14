@@ -20,7 +20,6 @@ package hivemall.optimizer;
 
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
-import hivemall.optimizer.Optimizer.OptimizerBase;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.math.MathUtils;
 
@@ -34,37 +33,40 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 public final class DenseOptimizerFactory {
-    private static final Log logger = LogFactory.getLog(DenseOptimizerFactory.class);
+    private static final Log LOG = LogFactory.getLog(DenseOptimizerFactory.class);
 
     @Nonnull
     public static Optimizer create(int ndims, @Nonnull Map<String, String> options) {
         final String optimizerName = options.get("optimizer");
-        if (optimizerName != null) {
-            OptimizerBase optimizerImpl;
-            if (optimizerName.toLowerCase().equals("sgd")) {
-                optimizerImpl = new Optimizer.SGD(options);
-            } else if (optimizerName.toLowerCase().equals("adadelta")) {
-                optimizerImpl = new AdaDelta(ndims, options);
-            } else if (optimizerName.toLowerCase().equals("adagrad")) {
-                optimizerImpl = new AdaGrad(ndims, options);
-            } else if (optimizerName.toLowerCase().equals("adam")) {
-                optimizerImpl = new Adam(ndims, options);
-            } else {
-                throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
-            }
-
-            logger.info("set " + optimizerImpl.getClass().getSimpleName() + " as an optimizer: "
-                    + options);
-
-            // If a regularization type is "RDA", wrap the optimizer with `Optimizer#RDA`.
-            if (options.get("regularization") != null
-                    && options.get("regularization").toLowerCase().equals("rda")) {
-                optimizerImpl = new AdagradRDA(ndims, optimizerImpl, options);
-            }
-
-            return optimizerImpl;
+        if (optimizerName == null) {
+            throw new IllegalArgumentException("`optimizer` not defined");
         }
-        throw new IllegalArgumentException("`optimizer` not defined");
+
+        final Optimizer optimizerImpl;
+        if ("sgd".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new Optimizer.SGD(options);
+        } else if ("adadelta".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new AdaDelta(ndims, options);
+        } else if ("adagrad".equalsIgnoreCase(optimizerName)) {
+            // If a regularization type is "RDA", wrap the optimizer with `Optimizer#RDA`.
+            if ("rda".equalsIgnoreCase(options.get("regularization"))) {
+                AdaGrad adagrad = new AdaGrad(ndims, options);
+                optimizerImpl = new AdagradRDA(ndims, adagrad, options);
+            } else {
+                optimizerImpl = new AdaGrad(ndims, options);
+            }
+        } else if ("adam".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new Adam(ndims, options);
+        } else {
+            throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
+        }
+
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: "
+                    + options);
+        }
+
+        return optimizerImpl;
     }
 
     @NotThreadSafe
@@ -86,7 +88,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -112,8 +114,9 @@ public final class DenseOptimizerFactory {
     @NotThreadSafe
     static final class AdaGrad extends Optimizer.AdaGrad {
 
+        @Nonnull
         private final IWeightValue weightValueReused;
-
+        @Nonnull
         private float[] sum_of_squared_gradients;
 
         public AdaGrad(int ndims, Map<String, String> options) {
@@ -123,7 +126,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -162,7 +165,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -194,14 +197,15 @@ public final class DenseOptimizerFactory {
         @Nonnull
         private float[] sum_of_gradients;
 
-        public AdagradRDA(int ndims, final OptimizerBase optimizerImpl, Map<String, String> options) {
+        public AdagradRDA(int ndims, @Nonnull Optimizer.AdaGrad optimizerImpl,
+                @Nonnull Map<String, String> options) {
             super(optimizerImpl, options);
             this.weightValueReused = new WeightValue.WeightValueParamsF3(0.f, 0.f, 0.f, 0.f);
             this.sum_of_gradients = new float[ndims];
         }
 
         @Override
-        public float update(@Nonnull Object feature, float weight, float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);

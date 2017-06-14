@@ -51,11 +51,18 @@ public final class GeneralClassifierUDTF extends GeneralLearnerBaseUDTF {
     }
 
     @Override
-    protected void checkLossFunction(LossFunction lossFunction) throws UDFArgumentException {};
+    protected void checkLossFunction(LossFunction lossFunction) throws UDFArgumentException {
+        if(!lossFunction.forBinaryClassification()) {
+            throw new UDFArgumentException("The loss function `" + lossFunction.getType()
+                + "` is not designed for binary classification");
+        }
+    }
 
     @Override
-    protected void checkTargetValue(float label) throws UDFArgumentException {
-        assert (label == -1.f || label == 0.f || label == 1.f) : label;
+    protected void checkTargetValue(final float label) throws UDFArgumentException {
+        if (label != -1 && label != 0 && label != 1) {
+            throw new UDFArgumentException("Invalid label value for classification:  + label");
+        }
     }
 
     @Override
