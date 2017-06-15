@@ -22,17 +22,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.annotation.Nonnull;
 
 public class GeneralRegressionUDTFTest {
     private static final boolean DEBUG = false;
@@ -156,7 +155,7 @@ public class GeneralRegressionUDTFTest {
         String[] optimizers = new String[] {"SGD", "AdaDelta", "AdaGrad", "Adam"};
         String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
         String[] lossFunctions = new String[] {"SquaredLoss", "QuantileLoss",
-                "EpsilonInsensitiveLoss", "HuberLoss"};
+                "EpsilonInsensitiveLoss", "SquaredEpsilonInsensitiveLoss", "HuberLoss"};
 
         for (String opt : optimizers) {
             for (String reg : regularizations) {

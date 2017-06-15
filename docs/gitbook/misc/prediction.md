@@ -110,6 +110,7 @@ Below we list possible options for `train_regression` and `train_classifier`, an
 		- SquaredLoss
 		- QuantileLoss
 		- EpsilonInsensitiveLoss
+		- SquaredEpsilonInsensitiveLoss
 		- HuberLoss
 	- For `train_classifier`
 		- HingeLoss
@@ -119,6 +120,7 @@ Below we list possible options for `train_regression` and `train_classifier`, an
 		- SquaredLoss
 		- QuantileLoss
 		- EpsilonInsensitiveLoss
+		- SquaredEpsilonInsensitiveLoss
 		- HuberLoss
 - Regularization function: `-reg`, `-regularization`
 	- L1

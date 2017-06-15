@@ -18,6 +18,8 @@
  */
 package hivemall.classifier;
 
+import hivemall.utils.math.MathUtils;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +31,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
-import hivemall.utils.math.MathUtils;
+import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -40,8 +42,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
-
-import javax.annotation.Nonnull;
 
 public class GeneralClassifierUDTFTest {
     private static final boolean DEBUG = false;
@@ -148,7 +148,7 @@ public class GeneralClassifierUDTFTest {
         String[] regularizations = new String[] {"NO", "L1", "L2", "ElasticNet", "RDA"};
         String[] lossFunctions = new String[] {"HingeLoss", "LogLoss", "SquaredHingeLoss",
                 "ModifiedHuberLoss", "SquaredLoss", "QuantileLoss", "EpsilonInsensitiveLoss",
-                "HuberLoss"};
+                "SquaredEpsilonInsensitiveLoss", "HuberLoss"};
 
         for (String opt : optimizers) {
             for (String reg : regularizations) {

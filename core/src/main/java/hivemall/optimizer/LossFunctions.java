@@ -29,27 +29,34 @@ import javax.annotation.Nullable;
 public final class LossFunctions {
 
     public enum LossType {
-        SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss, HingeLoss, LogLoss,
-        SquaredHingeLoss, ModifiedHuberLoss
+        SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, SquaredEpsilonInsensitiveLoss,
+        HuberLoss, HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss
     }
 
     @Nonnull
     public static LossFunction getLossFunction(@Nullable final String type) {
-        if ("SquaredLoss".equalsIgnoreCase(type)) {
+        if ("SquaredLoss".equalsIgnoreCase(type) || "squared".equalsIgnoreCase(type)) {
             return new SquaredLoss();
-        } else if ("QuantileLoss".equalsIgnoreCase(type)) {
+        } else if ("QuantileLoss".equalsIgnoreCase(type) || "quantile".equalsIgnoreCase(type)) {
             return new QuantileLoss();
-        } else if ("EpsilonInsensitiveLoss".equalsIgnoreCase(type)) {
+        } else if ("EpsilonInsensitiveLoss".equalsIgnoreCase(type)
+                || "epsilon_insensitive".equalsIgnoreCase(type)) {
             return new EpsilonInsensitiveLoss();
-        } else if ("HuberLoss".equalsIgnoreCase(type)) {
+        } else if ("SquaredEpsilonInsensitiveLoss".equalsIgnoreCase(type)
+                || "squared_epsilon_insensitive".equalsIgnoreCase(type)) {
+            return new SquaredEpsilonInsensitiveLoss();
+        } else if ("HuberLoss".equalsIgnoreCase(type) || "huber".equalsIgnoreCase(type)) {
             return new HuberLoss();
-        } else if ("HingeLoss".equalsIgnoreCase(type)) {
+        } else if ("HingeLoss".equalsIgnoreCase(type) || "hinge".equalsIgnoreCase(type)) {
             return new HingeLoss();
-        } else if ("LogLoss".equalsIgnoreCase(type) || "LogisticLoss".equalsIgnoreCase(type)) {
+        } else if ("LogLoss".equalsIgnoreCase(type) || "log".equalsIgnoreCase(type)
+                || "LogisticLoss".equalsIgnoreCase(type) || "logistic".equalsIgnoreCase(type)) {
             return new LogLoss();
-        } else if ("SquaredHingeLoss".equalsIgnoreCase(type)) {
+        } else if ("SquaredHingeLoss".equalsIgnoreCase(type)
+                || "squared_hinge".equalsIgnoreCase(type)) {
             return new SquaredHingeLoss();
-        } else if ("ModifiedHuberLoss".equalsIgnoreCase(type)) {
+        } else if ("ModifiedHuberLoss".equalsIgnoreCase(type)
+                || "modified_huber".equalsIgnoreCase(type)) {
             return new ModifiedHuberLoss();
         }
         throw new IllegalArgumentException("Unsupported loss function name: " + type);
@@ -64,6 +71,8 @@ public final class LossFunctions {
                 return new QuantileLoss();
             case EpsilonInsensitiveLoss:
                 return new EpsilonInsensitiveLoss();
+            case SquaredEpsilonInsensitiveLoss:
+                return new SquaredEpsilonInsensitiveLoss();
             case HuberLoss:
                 return new HuberLoss();
             case HingeLoss:
@@ -272,16 +281,65 @@ public final class LossFunctions {
         public float dloss(final float p, final float y) {
             if ((y - p) > epsilon) {// real value > predicted value - epsilon
                 return -1.f;
-            }
-            if ((p - y) > epsilon) {// real value < predicted value - epsilon
+            } else if ((p - y) > epsilon) {// real value < predicted value - epsilon
                 return 1.f;
+            } else {
+                return 0.f;
             }
-            return 0.f;
         }
 
         @Override
         public LossType getType() {
             return LossType.EpsilonInsensitiveLoss;
+        }
+    }
+
+    /**
+     * Squared Epsilon-Insensitive loss. <code>loss = max(0, |y - p| - epsilon)^2</code>
+     */
+    public static final class SquaredEpsilonInsensitiveLoss extends RegressionLoss {
+
+        private float epsilon;
+
+        public SquaredEpsilonInsensitiveLoss() {
+            this(0.1f);
+        }
+
+        public SquaredEpsilonInsensitiveLoss(float epsilon) {
+            this.epsilon = epsilon;
+        }
+
+        public void setEpsilon(float epsilon) {
+            this.epsilon = epsilon;
+        }
+
+        @Override
+        public float loss(final float p, final float y) {
+            float d = Math.abs(y - p) - epsilon;
+            return (d > 0.f) ? (d * d) : 0.f;
+        }
+
+        @Override
+        public double loss(final double p, final double y) {
+            double d = Math.abs(y - p) - epsilon;
+            return (d > 0.d) ? (d * d) : 0.d;
+        }
+
+        @Override
+        public float dloss(final float p, final float y) {
+            final float z = y - p;
+            if (z > epsilon) {
+                return -2 * (z - epsilon);
+            } else if (-z > epsilon) {
+                return 2 * (-z - epsilon);
+            } else {
+                return 0.f;
+            }
+        }
+
+        @Override
+        public LossType getType() {
+            return LossType.SquaredEpsilonInsensitiveLoss;
         }
     }
 

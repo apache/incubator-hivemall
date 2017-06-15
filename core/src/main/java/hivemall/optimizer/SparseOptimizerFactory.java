@@ -40,6 +40,13 @@ public final class SparseOptimizerFactory {
             throw new IllegalArgumentException("`optimizer` not defined");
         }
 
+        if ("rda".equalsIgnoreCase(options.get("regularization"))
+                && "adagrad".equalsIgnoreCase(optimizerName) == false) {
+            throw new IllegalArgumentException(
+                "`-regularization rda` is only supported for AdaGrad but `-optimizer "
+                        + optimizerName);
+        }
+
         final Optimizer optimizerImpl;
         if ("sgd".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new Optimizer.SGD(options);

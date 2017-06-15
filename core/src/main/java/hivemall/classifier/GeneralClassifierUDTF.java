@@ -41,8 +41,8 @@ public final class GeneralClassifierUDTF extends GeneralLearnerBaseUDTF {
 
     @Override
     protected String getLossOptionDescription() {
-        return "Loss function [default: HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss, "
-                + "SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]";
+        return "Loss function [HingeLoss (default), LogLoss, SquaredHingeLoss, ModifiedHuberLoss, \n"
+                + ", or a regression loss: SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, HuberLoss]";
     }
 
     @Override
@@ -51,11 +51,9 @@ public final class GeneralClassifierUDTF extends GeneralLearnerBaseUDTF {
     }
 
     @Override
-    protected void checkLossFunction(LossFunction lossFunction) throws UDFArgumentException {
-        if(!lossFunction.forBinaryClassification()) {
-            throw new UDFArgumentException("The loss function `" + lossFunction.getType()
-                + "` is not designed for binary classification");
-        }
+    protected void checkLossFunction(@Nonnull LossFunction lossFunction)
+            throws UDFArgumentException {
+        // will accepts both binary loss and 
     }
 
     @Override
