@@ -191,6 +191,11 @@ public final class BinaryResponsesMeasures {
         // # of all possible <TP, FP> pairs
         int nPairs = nTruePositive * (recommendSize - nTruePositive);
 
+        // if there is no TP or no FP, it's meaningless for this metric (i.e., AUC=0.5)
+        if (nPairs == 0) {
+            return 0.5d;
+        }
+
         // AUC can equivalently be calculated by counting the portion of correctly ordered pairs
         return (double) nCorrectPairs / nPairs;
     }
