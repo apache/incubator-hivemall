@@ -261,7 +261,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             } catch (Throwable e) {
                 throw new UDFArgumentException(e);
             }
-            this.inputBuf = buf = ByteBuffer.allocateDirect(1024 * 1024 * 10); // 10 MB
+            this.inputBuf = buf = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB
             this.fileIO = dst = new NioStatefullSegment(file, false);
         }
 
