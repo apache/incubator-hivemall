@@ -109,7 +109,6 @@ public class GeneralRegressionUDTFTest {
         }
 
         int numTrain = (int) (numSamples * 0.8);
-        int maxIter = 512;
 
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
@@ -120,18 +119,14 @@ public class GeneralRegressionUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 
-        double cumLossPrev = Double.MAX_VALUE;
-        double cumLoss = 0.d;
-        int it = 0;
-        while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
-            cumLossPrev = cumLoss;
-            udtf.resetCumulativeLoss();
-            for (int i = 0; i < numTrain; i++) {
-                udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
-            }
-            cumLoss = udtf.getCumulativeLoss();
-            println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
+        for (int i = 0; i < numTrain; i++) {
+            udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
         }
+
+        udtf.closeWithoutModelReset();
+
+        double cumLoss = udtf.getCumulativeLoss();
+        println("Cumulative loss: " + cumLoss);
         Assert.assertTrue(cumLoss / numTrain < 0.1d);
 
         float accum = 0.f;
@@ -165,7 +160,7 @@ public class GeneralRegressionUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -lambda 1e-6 -eta0 1e-1";
+                            + " -lambda 1e-6 -tol 1e-3f -iter 512";
 
                     // sparse
                     run(options);

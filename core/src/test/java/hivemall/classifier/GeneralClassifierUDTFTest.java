@@ -95,8 +95,6 @@ public class GeneralClassifierUDTFTest {
 
         int[] labels = new int[] {0, 0, 0, 1, 1, 1};
 
-        int maxIter = 512;
-
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -106,18 +104,14 @@ public class GeneralClassifierUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
-        double cumLossPrev = Double.MAX_VALUE;
-        double cumLoss = 0.d;
-        int it = 0;
-        while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
-            cumLossPrev = cumLoss;
-            udtf.resetCumulativeLoss();
-            for (int i = 0, size = samplesList.size(); i < size; i++) {
-                udtf.process(new Object[] {samplesList.get(i), labels[i]});
-            }
-            cumLoss = udtf.getCumulativeLoss();
-            println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
+        for (int i = 0, size = samplesList.size(); i < size; i++) {
+            udtf.process(new Object[] {samplesList.get(i), labels[i]});
         }
+
+        udtf.closeWithoutModelReset();
+
+        double cumLoss = udtf.getCumulativeLoss();
+        println("Cumulative loss: " + cumLoss);
         Assert.assertTrue(cumLoss / samplesList.size() < 0.5d);
 
         int numTests = 0;
@@ -157,7 +151,8 @@ public class GeneralClassifierUDTFTest {
                 }
 
                 for (String loss : lossFunctions) {
-                    String options = "-opt " + opt + " -reg " + reg + " -loss " + loss;
+                    String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
+                            + " -tol 1e-3f -iter 512";
 
                     // sparse
                     run(options);
@@ -178,15 +173,13 @@ public class GeneralClassifierUDTFTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testNews20() throws IOException, ParseException, HiveException {
-        int nIter = 10;
-
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-            "-opt SGD -loss logloss -reg L2 -lambda 0.1");
+            "-opt SGD -loss logloss -reg L2 -lambda 0.1 -tol 1e-3");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
@@ -213,13 +206,7 @@ public class GeneralClassifierUDTFTest {
         news20.close();
 
         // perform SGD iterations
-        for (int it = 1; it < nIter; it++) {
-            for (int i = 0, size = wordsList.size(); i < size; i++) {
-                words = wordsList.get(i);
-                int label = labels.get(i);
-                udtf.process(new Object[] {words, label});
-            }
-        }
+        udtf.closeWithoutModelReset();
 
         int numTests = 0;
         int numCorrect = 0;

@@ -31,13 +31,22 @@ import hivemall.optimizer.Optimizer;
 import hivemall.optimizer.OptimizerOptions;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.FloatAccumulator;
+import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.SizeOf;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -56,6 +65,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.mapred.Counters;
+import org.apache.hadoop.mapred.Reporter;
 
 public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(GeneralLearnerBaseUDTF.class);
@@ -78,7 +89,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private transient Map<Object, FloatAccumulator> accumulated;
     private int sampled;
 
+    // for iterations
+    protected NioStatefullSegment fileIO;
+    protected ByteBuffer inputBuf;
+    private int iterations;
     private double cumLoss;
+    private double tol;
 
     public GeneralLearnerBaseUDTF() {
         this(true);
@@ -137,6 +153,9 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     protected Options getOptions() {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true, getLossOptionDescription());
+        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 10]");
+        opts.addOption("tol", "tolerance", true,
+            "Check convergence based on the difference of cumulative loss [default: 1E-1]");
         OptimizerOptions.setup(opts);
         return opts;
     }
@@ -155,6 +174,14 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         }
         checkLossFunction(lossFunction);
         this.lossFunction = lossFunction;
+
+        this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
+        if (iterations < 1) {
+            throw new UDFArgumentException(
+                "'-iterations' must be greater than or equals to 1: " + iterations);
+        }
+
+        this.tol = Primitives.parseDouble(cl.getOptionValue("tolerance"), 1E-1d);
 
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
 
@@ -206,6 +233,54 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         count++;
 
         train(featureVector, target);
+
+        recordTrainSampleToTempFile(featureVector, target);
+    }
+
+    protected void recordTrainSampleToTempFile(@Nonnull final FeatureValue[] featureVector, final float target)
+            throws HiveException {
+        if (iterations == 1) {
+            return;
+        }
+
+        ByteBuffer buf = inputBuf;
+        NioStatefullSegment dst = fileIO;
+
+        if (buf == null) {
+            final File file;
+            try {
+                file = File.createTempFile("hivemall_general_learner", ".sgmt");
+                file.deleteOnExit();
+                if (!file.canWrite()) {
+                    throw new UDFArgumentException("Cannot write a temporary file: "
+                            + file.getAbsolutePath());
+                }
+                logger.info("Record training samples to a file: " + file.getAbsolutePath());
+            } catch (IOException ioe) {
+                throw new UDFArgumentException(ioe);
+            } catch (Throwable e) {
+                throw new UDFArgumentException(e);
+            }
+            this.inputBuf = buf = ByteBuffer.allocateDirect(1024 * 1024 * 10); // 10 MB
+            this.fileIO = dst = new NioStatefullSegment(file, false);
+        }
+
+        // feature length, feature 1, feature 2, ..., feature n, target
+        int featureVectorBytes = FeatureValue.requiredBytes(featureVector);
+        int recordBytes = SizeOf.INT + featureVectorBytes + SizeOf.FLOAT;
+        int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
+
+        int remain = buf.remaining();
+        if (remain < requiredBytes) {
+            writeBuffer(buf, dst);
+        }
+
+        buf.putInt(recordBytes);
+        buf.putInt(featureVector.length);
+        for (FeatureValue f : featureVector) {
+            f.writeTo(buf);
+        }
+        buf.putFloat(target);
     }
 
     @Nullable
@@ -232,6 +307,17 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             featureVector[i] = fv;
         }
         return featureVector;
+    }
+
+    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
+            throws HiveException {
+        srcBuf.flip();
+        try {
+            dst.write(srcBuf);
+        } catch (IOException e) {
+            throw new HiveException("Exception causes while writing a buffer to file", e);
+        }
+        srcBuf.clear();
     }
 
     public float predict(@Nonnull final FeatureValue[] features) {
@@ -319,54 +405,241 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     public final void close() throws HiveException {
         super.close();
         if (model != null) {
-            if (accumulated != null) { // Update model with accumulated delta
+            if (is_mini_batch) { // Update model with accumulated delta
                 batchUpdate();
-                this.accumulated = null;
             }
-            int numForwarded = 0;
-            if (useCovariance()) {
-                final WeightValueWithCovar probe = new WeightValueWithCovar();
-                final Object[] forwardMapObj = new Object[3];
-                final FloatWritable fv = new FloatWritable();
-                final FloatWritable cov = new FloatWritable();
-                final IMapIterator<Object, IWeightValue> itor = model.entries();
-                while (itor.next() != -1) {
-                    itor.getValue(probe);
-                    if (!probe.isTouched()) {
-                        continue; // skip outputting untouched weights
-                    }
-                    Object k = itor.getKey();
-                    fv.set(probe.get());
-                    cov.set(probe.getCovariance());
-                    forwardMapObj[0] = k;
-                    forwardMapObj[1] = fv;
-                    forwardMapObj[2] = cov;
-                    forward(forwardMapObj);
-                    numForwarded++;
-                }
-            } else {
-                final WeightValue probe = new WeightValue();
-                final Object[] forwardMapObj = new Object[2];
-                final FloatWritable fv = new FloatWritable();
-                final IMapIterator<Object, IWeightValue> itor = model.entries();
-                while (itor.next() != -1) {
-                    itor.getValue(probe);
-                    if (!probe.isTouched()) {
-                        continue; // skip outputting untouched weights
-                    }
-                    Object k = itor.getKey();
-                    fv.set(probe.get());
-                    forwardMapObj[0] = k;
-                    forwardMapObj[1] = fv;
-                    forward(forwardMapObj);
-                    numForwarded++;
-                }
+            if (iterations > 1) {
+                runIterativeTraining(iterations);
             }
-            long numMixed = model.getNumMixed();
+            forwardModel();
+            this.accumulated = null;
             this.model = null;
-            logger.info("Trained a prediction model using " + count + " training examples"
-                    + (numMixed > 0 ? "( numMixed: " + numMixed + " )" : ""));
-            logger.info("Forwarded the prediction model of " + numForwarded + " rows");
+        }
+    }
+
+    protected final void runIterativeTraining(@Nonnegative final int iterations)
+            throws HiveException {
+        final ByteBuffer buf = this.inputBuf;
+        final NioStatefullSegment dst = this.fileIO;
+        assert (buf != null);
+        assert (dst != null);
+        final long numTrainingExamples = count;
+
+        final Reporter reporter = getReporter();
+        final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
+                "hivemall.GeneralLearnerBase$Counter", "iteration");
+
+        try {
+            if (dst.getPosition() == 0L) {// run iterations w/o temporary file
+                if (buf.position() == 0) {
+                    return; // no training example
+                }
+                buf.flip();
+
+                int iter = 2;
+                double cumLossPrev;
+                for (; iter <= iterations; iter++) {
+                    cumLossPrev = cumLoss;
+                    this.cumLoss = 0.d;
+
+                    reportProgress(reporter);
+                    setCounterValue(iterCounter, iter);
+
+                    while (buf.remaining() > 0) {
+                        int recordBytes = buf.getInt();
+                        assert (recordBytes > 0) : recordBytes;
+                        int featureVectorLength = buf.getInt();
+                        final FeatureValue[] featureVector = new FeatureValue[featureVectorLength];
+                        for (int j = 0; j < featureVectorLength; j++) {
+                            featureVector[j] = new FeatureValue(buf);
+                        }
+                        float target = buf.getFloat();
+                        train(featureVector, target);
+                    }
+                    buf.rewind();
+
+                    if (is_mini_batch) { // Update model with accumulated delta
+                        batchUpdate();
+                    }
+
+                    logger.info("[iter " + iter + "] cumulative loss: " + cumLoss);
+
+                    if (Math.abs(cumLossPrev - cumLoss) < tol) {
+                        break;
+                    }
+                }
+                logger.info("Performed "
+                        + Math.min(iter, iterations)
+                        + " iterations of "
+                        + NumberUtils.formatNumber(numTrainingExamples)
+                        + " training examples on memory (thus "
+                        + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
+                        + " training updates in total) ");
+            } else {// read training examples in the temporary file and invoke train for each example
+                // write training examples in buffer to a temporary file
+                if (buf.remaining() > 0) {
+                    writeBuffer(buf, dst);
+                }
+                try {
+                    dst.flush();
+                } catch (IOException e) {
+                    throw new HiveException("Failed to flush a file: "
+                            + dst.getFile().getAbsolutePath(), e);
+                }
+                if (logger.isInfoEnabled()) {
+                    File tmpFile = dst.getFile();
+                    logger.info("Wrote " + numTrainingExamples
+                            + " records to a temporary file for iterative training: "
+                            + tmpFile.getAbsolutePath() + " (" + FileUtils.prettyFileSize(tmpFile)
+                            + ")");
+                }
+
+                // run iterations
+                int iter = 2;
+                double cumLossPrev;
+                for (; iter <= iterations; iter++) {
+                    cumLossPrev = cumLoss;
+                    cumLoss = 0.d;
+
+                    setCounterValue(iterCounter, iter);
+
+                    buf.clear();
+                    dst.resetPosition();
+                    while (true) {
+                        reportProgress(reporter);
+                        // TODO prefetch
+                        // writes training examples to a buffer in the temporary file
+                        final int bytesRead;
+                        try {
+                            bytesRead = dst.read(buf);
+                        } catch (IOException e) {
+                            throw new HiveException("Failed to read a file: "
+                                    + dst.getFile().getAbsolutePath(), e);
+                        }
+                        if (bytesRead == 0) { // reached file EOF
+                            break;
+                        }
+                        assert (bytesRead > 0) : bytesRead;
+
+                        // reads training examples from a buffer
+                        buf.flip();
+                        int remain = buf.remaining();
+                        if (remain < SizeOf.INT) {
+                            throw new HiveException("Illegal file format was detected");
+                        }
+                        while (remain >= SizeOf.INT) {
+                            int pos = buf.position();
+                            int recordBytes = buf.getInt();
+                            remain -= SizeOf.INT;
+
+                            if (remain < recordBytes) {
+                                buf.position(pos);
+                                break;
+                            }
+
+                            int featureVectorLength = buf.getInt();
+                            final FeatureValue[] featureVector = new FeatureValue[featureVectorLength];
+                            for (int j = 0; j < featureVectorLength; j++) {
+                                featureVector[j] = new FeatureValue(buf);
+                            }
+                            float target = buf.getFloat();
+                            train(featureVector, target);
+
+                            remain -= recordBytes;
+                        }
+                        buf.compact();
+                    }
+
+                    if (is_mini_batch) { // Update model with accumulated delta
+                        batchUpdate();
+                    }
+
+                    logger.info("[iter " + iter + "] cumulative loss: " + cumLoss);
+
+                    if (Math.abs(cumLossPrev - cumLoss) < tol) {
+                        break;
+                    }
+                }
+                logger.info("Performed "
+                        + Math.min(iter, iterations)
+                        + " iterations of "
+                        + NumberUtils.formatNumber(numTrainingExamples)
+                        + " training examples on a secondary storage (thus "
+                        + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
+                        + " training updates in total)");
+            }
+        } catch (Throwable e) {
+            throw new HiveException("Exception caused in the iterative training", e);
+        } finally {
+            // delete the temporary file and release resources
+            try {
+                dst.close(true);
+            } catch (IOException e) {
+                throw new HiveException("Failed to close a file: "
+                        + dst.getFile().getAbsolutePath(), e);
+            }
+            this.inputBuf = null;
+            this.fileIO = null;
+        }
+    }
+
+    protected void forwardModel() throws HiveException {
+        int numForwarded = 0;
+        if (useCovariance()) {
+            final WeightValueWithCovar probe = new WeightValueWithCovar();
+            final Object[] forwardMapObj = new Object[3];
+            final FloatWritable fv = new FloatWritable();
+            final FloatWritable cov = new FloatWritable();
+            final IMapIterator<Object, IWeightValue> itor = model.entries();
+            while (itor.next() != -1) {
+                itor.getValue(probe);
+                if (!probe.isTouched()) {
+                    continue; // skip outputting untouched weights
+                }
+                Object k = itor.getKey();
+                fv.set(probe.get());
+                cov.set(probe.getCovariance());
+                forwardMapObj[0] = k;
+                forwardMapObj[1] = fv;
+                forwardMapObj[2] = cov;
+                forward(forwardMapObj);
+                numForwarded++;
+            }
+        } else {
+            final WeightValue probe = new WeightValue();
+            final Object[] forwardMapObj = new Object[2];
+            final FloatWritable fv = new FloatWritable();
+            final IMapIterator<Object, IWeightValue> itor = model.entries();
+            while (itor.next() != -1) {
+                itor.getValue(probe);
+                if (!probe.isTouched()) {
+                    continue; // skip outputting untouched weights
+                }
+                Object k = itor.getKey();
+                fv.set(probe.get());
+                forwardMapObj[0] = k;
+                forwardMapObj[1] = fv;
+                forward(forwardMapObj);
+                numForwarded++;
+            }
+        }
+        long numMixed = model.getNumMixed();
+        logger.info("Trained a prediction model using " + count + " training examples"
+                + (numMixed > 0 ? "( numMixed: " + numMixed + " )" : ""));
+        logger.info("Forwarded the prediction model of " + numForwarded + " rows");
+    }
+
+    @VisibleForTesting
+    public void closeWithoutModelReset() throws HiveException {
+        // launch close(), but not forward & clear model
+        super.close();
+        if (model != null) {
+            if (is_mini_batch) { // Update model with accumulated delta
+                batchUpdate();
+            }
+            if (iterations > 1) {
+                runIterativeTraining(iterations);
+            }
         }
     }
 
@@ -374,10 +647,4 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     public double getCumulativeLoss() {
         return cumLoss;
     }
-
-    @VisibleForTesting
-    public void resetCumulativeLoss() {
-        this.cumLoss = 0.d;
-    }
-
 }

@@ -19,12 +19,16 @@
 package hivemall.model;
 
 import hivemall.utils.hashing.MurmurHash3;
+import hivemall.utils.io.NIOUtils;
 import hivemall.utils.lang.Preconditions;
+import hivemall.utils.lang.SizeOf;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.io.Text;
+
+import java.nio.ByteBuffer;
 
 public final class FeatureValue {
 
@@ -41,6 +45,11 @@ public final class FeatureValue {
     public FeatureValue(Object f, double v) {
         this.feature = f;
         this.value = v;
+    }
+
+    public FeatureValue(@Nonnull ByteBuffer src) {
+        super();
+        readFrom(src);
     }
 
     @SuppressWarnings("unchecked")
@@ -72,6 +81,16 @@ public final class FeatureValue {
 
     public void setValue(double value) {
         this.value = value;
+    }
+
+    public void writeTo(@Nonnull final ByteBuffer dst) {
+        NIOUtils.putString(getFeatureAsString(), dst);
+        dst.putDouble(value);
+    }
+
+    public void readFrom(@Nonnull final ByteBuffer src) {
+        this.feature = new Text(NIOUtils.getString(src));
+        this.value = src.getDouble();
     }
 
     @Nullable
@@ -162,6 +181,18 @@ public final class FeatureValue {
             probe.feature = s;
             probe.value = 1.d;
         }
+    }
+
+    public static int requiredBytes(@Nonnull final FeatureValue[] x) {
+        int ret = 0;
+        for (FeatureValue f : x) {
+            assert (f != null);
+            String feature = f.getFeatureAsString();
+            ret += SizeOf.CHAR * feature.length(); // feature as String (even if it's Integer)
+            ret += SizeOf.INT; // NIOUtils.putString() first puts the length of string before string itself
+            ret += SizeOf.DOUBLE; // value
+        }
+        return ret;
     }
 
 }
