@@ -177,8 +177,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
         this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
         if (iterations < 1) {
-            throw new UDFArgumentException(
-                "'-iterations' must be greater than or equals to 1: " + iterations);
+            throw new UDFArgumentException("'-iterations' must be greater than or equals to 1: "
+                    + iterations);
         }
 
         this.tol = Primitives.parseDouble(cl.getOptionValue("tolerance"), 1E-1d);
@@ -237,8 +237,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         recordTrainSampleToTempFile(featureVector, target);
     }
 
-    protected void recordTrainSampleToTempFile(@Nonnull final FeatureValue[] featureVector, final float target)
-            throws HiveException {
+    protected void recordTrainSampleToTempFile(@Nonnull final FeatureValue[] featureVector,
+            final float target) throws HiveException {
         if (iterations == 1) {
             return;
         }
@@ -427,7 +427,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
         final Reporter reporter = getReporter();
         final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-                "hivemall.GeneralLearnerBase$Counter", "iteration");
+            "hivemall.GeneralLearnerBase$Counter", "iteration");
 
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file
