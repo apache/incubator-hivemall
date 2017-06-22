@@ -202,7 +202,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             this.fileIO = dst = new NioStatefullSegment(file, false);
         }
 
-        // requiredRecordBytes, wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
+        // wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
         int wcLengthTotal = 0;
         for (String wc : wordCounts) {
             if (wc == null) {
@@ -210,15 +210,15 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             }
             wcLengthTotal += wc.length();
         }
-        int requiredRecordBytes = SizeOf.INT * 2 + SizeOf.INT * wordCounts.length + wcLengthTotal
-                * SizeOf.CHAR;
+        int recordBytes = SizeOf.INT + SizeOf.INT * wordCounts.length + wcLengthTotal * SizeOf.CHAR;
+        int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
 
         int remain = buf.remaining();
-        if (remain < requiredRecordBytes) {
+        if (remain < requiredBytes) {
             writeBuffer(buf, dst);
         }
 
-        buf.putInt(requiredRecordBytes);
+        buf.putInt(recordBytes);
         buf.putInt(wordCounts.length);
         for (String wc : wordCounts) {
             NIOUtils.putString(wc, buf);
@@ -391,7 +391,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                         }
                         while (remain >= SizeOf.INT) {
                             int pos = buf.position();
-                            int recordBytes = buf.getInt() - SizeOf.INT;
+                            int recordBytes = buf.getInt();
                             remain -= SizeOf.INT;
                             if (remain < recordBytes) {
                                 buf.position(pos);
