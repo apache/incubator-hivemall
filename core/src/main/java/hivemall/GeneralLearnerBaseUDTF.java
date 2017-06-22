@@ -165,23 +165,31 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         CommandLine cl = super.processOptions(argOIs);
 
         LossFunction lossFunction = LossFunctions.getLossFunction(getDefaultLossType());
-        if (cl.hasOption("loss_function")) {
-            try {
-                lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
-            } catch (Throwable e) {
-                throw new UDFArgumentException(e.getMessage());
+        int iterations = 10;
+        double tol = 1E-1d;
+
+        if (cl != null) {
+            if (cl.hasOption("loss_function")) {
+                try {
+                    lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
+                } catch (Throwable e) {
+                    throw new UDFArgumentException(e.getMessage());
+                }
             }
+            checkLossFunction(lossFunction);
+
+            iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
+            if (iterations < 1) {
+                throw new UDFArgumentException("'-iterations' must be greater than or equals to 1: "
+                        + iterations);
+            }
+
+            tol = Primitives.parseDouble(cl.getOptionValue("tolerance"), 1E-1d);
         }
-        checkLossFunction(lossFunction);
+
         this.lossFunction = lossFunction;
-
-        this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
-        if (iterations < 1) {
-            throw new UDFArgumentException("'-iterations' must be greater than or equals to 1: "
-                    + iterations);
-        }
-
-        this.tol = Primitives.parseDouble(cl.getOptionValue("tolerance"), 1E-1d);
+        this.iterations = iterations;
+        this.tol = tol;
 
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
 

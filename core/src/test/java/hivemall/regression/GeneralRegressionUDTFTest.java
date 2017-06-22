@@ -84,6 +84,26 @@ public class GeneralRegressionUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
     }
 
+    @Test
+    public void testNoOptions() throws Exception {
+        List<String> x = Arrays.asList("1:-2", "2:-1");
+        float y = 0.f;
+
+        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
+        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
+
+        udtf.process(new Object[] {x, y});
+
+        udtf.closeWithoutModelReset();
+
+        float predicted = udtf.predict(udtf.parseFeatures(x));
+        Assert.assertEquals(y, predicted, 1E-5);
+    }
+
     private void run(@Nonnull String options) throws Exception {
         println(options);
 

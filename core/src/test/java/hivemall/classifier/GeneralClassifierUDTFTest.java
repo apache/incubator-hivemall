@@ -82,6 +82,27 @@ public class GeneralClassifierUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
 
+    @Test
+    public void testNoOptions() throws Exception {
+        List<String> x = Arrays.asList("1:-2", "2:-1");
+        int y = 0;
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
+
+        udtf.process(new Object[] {x, y});
+
+        udtf.closeWithoutModelReset();
+
+        float score = udtf.predict(udtf.parseFeatures(x));
+        int predicted = score > 0.f ? 1 : 0;
+        Assert.assertTrue(y == predicted);
+    }
+
     private void run(@Nonnull String options) throws Exception {
         println(options);
 
