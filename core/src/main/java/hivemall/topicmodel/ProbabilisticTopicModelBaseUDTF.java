@@ -304,8 +304,10 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                 buf.flip();
 
                 int iter = 2;
-                float perplexityPrev = Float.MAX_VALUE;
+                float perplexity = cumPerplexity / numTrain;
+                float perplexityPrev;
                 for (; iter <= iterations; iter++) {
+                    perplexityPrev = perplexity;
                     cumPerplexity = 0.f;
 
                     reportProgress(reporter);
@@ -324,12 +326,11 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                     buf.rewind();
 
                     // mean perplexity over `numTrain` mini-batches
-                    float perplexity = cumPerplexity / numTrain;
+                    perplexity = cumPerplexity / numTrain;
                     logger.info("Mean perplexity over mini-batches: " + perplexity);
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
-                    perplexityPrev = perplexity;
                 }
                 logger.info("Performed "
                         + Math.min(iter, iterations)
@@ -359,8 +360,10 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
 
                 // run iterations
                 int iter = 2;
-                float perplexityPrev = Float.MAX_VALUE;
+                float perplexity = cumPerplexity / numTrain;
+                float perplexityPrev;
                 for (; iter <= iterations; iter++) {
+                    perplexityPrev = perplexity;
                     cumPerplexity = 0.f;
 
                     setCounterValue(iterCounter, iter);
@@ -411,12 +414,11 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                     }
 
                     // mean perplexity over `numTrain` mini-batches
-                    float perplexity = cumPerplexity / numTrain;
+                    perplexity = cumPerplexity / numTrain;
                     logger.info("Mean perplexity over mini-batches: " + perplexity);
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
-                    perplexityPrev = perplexity;
                 }
                 logger.info("Performed "
                         + Math.min(iter, iterations)
