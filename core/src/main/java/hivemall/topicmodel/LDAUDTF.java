@@ -96,6 +96,8 @@ public class LDAUDTF extends UDTFWithOptions {
     protected NioStatefullSegment fileIO;
     protected ByteBuffer inputBuf;
 
+    private float cumPerplexity;
+
     public LDAUDTF() {
         this.topics = DEFAULT_TOPICS;
         this.alpha = 1.f / topics;
@@ -177,6 +179,7 @@ public class LDAUDTF extends UDTFWithOptions {
         this.isAutoD = (numDocs < 0L);
         this.miniBatch = new String[miniBatchSize][];
         this.miniBatchCount = 0;
+        this.cumPerplexity = 0.f;
 
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -221,16 +224,9 @@ public class LDAUDTF extends UDTFWithOptions {
             model.setNumTotalDocs(count);
         }
 
+        update(wordCounts);
+
         recordTrainSampleToTempFile(wordCounts);
-
-        miniBatch[miniBatchCount] = wordCounts;
-        miniBatchCount++;
-
-        if (miniBatchCount == miniBatchSize) {
-            model.train(miniBatch);
-            Arrays.fill(miniBatch, null); // clear
-            miniBatchCount = 0;
-        }
     }
 
     protected void recordTrainSampleToTempFile(@Nonnull final String[] wordCounts)
@@ -284,6 +280,28 @@ public class LDAUDTF extends UDTFWithOptions {
         }
     }
 
+    private void update(@Nonnull final String[] wordCounts) {
+        miniBatch[miniBatchCount] = wordCounts;
+        miniBatchCount++;
+
+        if (miniBatchCount == miniBatchSize) {
+            train();
+        }
+    }
+
+    private void train() {
+        if (miniBatchCount == 0) {
+            return;
+        }
+
+        model.train(miniBatch);
+
+        this.cumPerplexity += model.computePerplexity();
+
+        Arrays.fill(miniBatch, null); // clear
+        miniBatchCount = 0;
+    }
+
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
             throws HiveException {
         srcBuf.flip();
@@ -319,6 +337,11 @@ public class LDAUDTF extends UDTFWithOptions {
         assert (dst != null);
         final long numTrainingExamples = count;
 
+        long numTrain = numTrainingExamples / miniBatchSize;
+        if (numTrainingExamples % miniBatchSize != 0L) {
+            numTrain++;
+        }
+
         final Reporter reporter = getReporter();
         final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
             "hivemall.lda.OnlineLDA$Counter", "iteration");
@@ -332,17 +355,11 @@ public class LDAUDTF extends UDTFWithOptions {
 
                 int iter = 2;
                 float perplexityPrev = Float.MAX_VALUE;
-                float perplexity;
-                int numTrain;
                 for (; iter <= iterations; iter++) {
-                    perplexity = 0.f;
-                    numTrain = 0;
+                    cumPerplexity = 0.f;
 
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
-
-                    Arrays.fill(miniBatch, null); // clear
-                    miniBatchCount = 0;
 
                     while (buf.remaining() > 0) {
                         int recordBytes = buf.getInt();
@@ -352,30 +369,13 @@ public class LDAUDTF extends UDTFWithOptions {
                         for (int j = 0; j < wcLength; j++) {
                             wordCounts[j] = NIOUtils.getString(buf);
                         }
-
-                        miniBatch[miniBatchCount] = wordCounts;
-                        miniBatchCount++;
-
-                        if (miniBatchCount == miniBatchSize) {
-                            model.train(miniBatch);
-                            perplexity += model.computePerplexity();
-                            numTrain++;
-
-                            Arrays.fill(miniBatch, null); // clear
-                            miniBatchCount = 0;
-                        }
+                        update(wordCounts);
                     }
                     buf.rewind();
 
-                    // update for remaining samples
-                    if (miniBatchCount > 0) { // update for remaining samples
-                        model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
-                        perplexity += model.computePerplexity();
-                        numTrain++;
-                    }
-
-                    logger.info("Perplexity: " + perplexity + ", Num train: " + numTrain);
-                    perplexity /= numTrain; // mean perplexity over `numTrain` mini-batches
+                    // mean perplexity over `numTrain` mini-batches
+                    float perplexity = cumPerplexity / numTrain;
+                    logger.info("Mean perplexity over mini-batches: " + perplexity);
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
@@ -410,14 +410,8 @@ public class LDAUDTF extends UDTFWithOptions {
                 // run iterations
                 int iter = 2;
                 float perplexityPrev = Float.MAX_VALUE;
-                float perplexity;
-                int numTrain;
                 for (; iter <= iterations; iter++) {
-                    perplexity = 0.f;
-                    numTrain = 0;
-
-                    Arrays.fill(miniBatch, null); // clear
-                    miniBatchCount = 0;
+                    cumPerplexity = 0.f;
 
                     setCounterValue(iterCounter, iter);
 
@@ -459,33 +453,16 @@ public class LDAUDTF extends UDTFWithOptions {
                             for (int j = 0; j < wcLength; j++) {
                                 wordCounts[j] = NIOUtils.getString(buf);
                             }
-
-                            miniBatch[miniBatchCount] = wordCounts;
-                            miniBatchCount++;
-
-                            if (miniBatchCount == miniBatchSize) {
-                                model.train(miniBatch);
-                                perplexity += model.computePerplexity();
-                                numTrain++;
-
-                                Arrays.fill(miniBatch, null); // clear
-                                miniBatchCount = 0;
-                            }
+                            update(wordCounts);
 
                             remain -= recordBytes;
                         }
                         buf.compact();
                     }
 
-                    // update for remaining samples
-                    if (miniBatchCount > 0) { // update for remaining samples
-                        model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
-                        perplexity += model.computePerplexity();
-                        numTrain++;
-                    }
-
-                    logger.info("Perplexity: " + perplexity + ", Num train: " + numTrain);
-                    perplexity /= numTrain; // mean perplexity over `numTrain` mini-batches
+                    // mean perplexity over `numTrain` mini-batches
+                    float perplexity = cumPerplexity / numTrain;
+                    logger.info("Mean perplexity over mini-batches: " + perplexity);
                     if (Math.abs(perplexityPrev - perplexity) < eps) {
                         break;
                     }
