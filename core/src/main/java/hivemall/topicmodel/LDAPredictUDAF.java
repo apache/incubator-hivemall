@@ -471,7 +471,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 for (int k = 0; k < topics; k++) {
                     final float lambda_k = lambda_word.get(k).floatValue();
                     if (lambda_k != -1.f) {
-                        model.setLambda(word, k, lambda_k);
+                        model.setWordScore(word, k, lambda_k);
                     }
                 }
             }

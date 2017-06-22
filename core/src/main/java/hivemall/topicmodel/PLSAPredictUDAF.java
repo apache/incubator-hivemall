@@ -474,7 +474,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 for (int k = 0; k < topics; k++) {
                     final float prob_k = prob_word.get(k).floatValue();
                     if (prob_k != -1.f) {
-                        model.setProbability(word, k, prob_k);
+                        model.setWordScore(word, k, prob_k);
                     }
                 }
             }
