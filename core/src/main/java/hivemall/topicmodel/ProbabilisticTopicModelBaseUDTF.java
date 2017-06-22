@@ -260,6 +260,13 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
+        finalizeTraining();
+        forwardModel();
+        this.model = null;
+    }
+
+    @VisibleForTesting
+    void finalizeTraining() throws HiveException {
         if (model.getDocCount() == 0L) {
             this.model = null;
             return;
@@ -270,8 +277,6 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
         if (iterations > 1) {
             runIterativeTraining(iterations);
         }
-        forwardModel();
-        this.model = null;
     }
 
     protected final void runIterativeTraining(@Nonnegative final int iterations)
@@ -461,25 +466,6 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
         }
 
         logger.info("Forwarded topic words each of " + topics + " topics");
-    }
-
-    /*
-     * For testing:
-     */
-
-    @VisibleForTesting
-    void closeWithoutModelReset() throws HiveException {
-        // launch close(), but not forward & clear model
-        if (model.getDocCount() == 0L) {
-            this.model = null;
-            return;
-        }
-        if (miniBatchCount > 0) { // update for remaining samples
-            model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
-        }
-        if (iterations > 1) {
-            runIterativeTraining(iterations);
-        }
     }
 
     @VisibleForTesting
