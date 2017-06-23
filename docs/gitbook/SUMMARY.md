@@ -57,10 +57,12 @@
 * [Feature Hashing](ft_engineering/hashing.md)
 * [Feature Selection](ft_engineering/selection.md)
 * [Feature Binning](ft_engineering/binning.md)
-* [TF-IDF Calculation](ft_engineering/tfidf.md)
+* [FEATURE PAIRING](ft_engineering/pairing.md)
+    * [Polynomial Features](ft_engineering/polynomial.md)
 * [FEATURE TRANSFORMATION](ft_engineering/ft_trans.md)
     * [Feature Vectorization](ft_engineering/vectorization.md)
     * [Quantify non-number features](ft_engineering/quantify.md)
+* [TF-IDF Calculation](ft_engineering/tfidf.md)
 
 ## Part IV - Evaluation
 
@@ -72,43 +74,43 @@
 * [Data Generation](eval/datagen.md)
     * [Logistic Regression data generation](eval/lr_datagen.md)
     
-## Part V - Prediction
+## Part V - Supervised Learning
 
 * [How Prediction Works](misc/prediction.md)
-* [Regression](regression/general.md)
-* [Binary Classification](binaryclass/general.md)
     
-## Part VI - Binary classification tutorials
+## Part VI - Binary classification
 
-* [a9a](binaryclass/a9a.md)
+* [Binary Classification](binaryclass/general.md)
+
+* [a9a tutorial](binaryclass/a9a.md)
     * [Data preparation](binaryclass/a9a_dataset.md)
     * [Logistic Regression](binaryclass/a9a_lr.md)
     * [Mini-batch Gradient Descent](binaryclass/a9a_minibatch.md)
 
-* [News20](binaryclass/news20.md)
+* [News20 tutorial](binaryclass/news20.md)
     * [Data preparation](binaryclass/news20_dataset.md)
     * [Perceptron, Passive Aggressive](binaryclass/news20_pa.md)
     * [CW, AROW, SCW](binaryclass/news20_scw.md)
     * [AdaGradRDA, AdaGrad, AdaDelta](binaryclass/news20_adagrad.md)
 
-* [KDD2010a](binaryclass/kdd2010a.md)
+* [KDD2010a tutorial](binaryclass/kdd2010a.md)
     * [Data preparation](binaryclass/kdd2010a_dataset.md)
     * [PA, CW, AROW, SCW](binaryclass/kdd2010a_scw.md)
 
-* [KDD2010b](binaryclass/kdd2010b.md)
+* [KDD2010b tutorial](binaryclass/kdd2010b.md)
     * [Data preparation](binaryclass/kdd2010b_dataset.md)
     * [AROW](binaryclass/kdd2010b_arow.md)
 
-* [Webspam](binaryclass/webspam.md)
+* [Webspam tutorial](binaryclass/webspam.md)
     * [Data pareparation](binaryclass/webspam_dataset.md)
     * [PA1, AROW, SCW](binaryclass/webspam_scw.md)
 
-* [Kaggle Titanic](binaryclass/titanic_rf.md)
+* [Kaggle Titanic tutorial](binaryclass/titanic_rf.md)
 
 
-## Part VII - Multiclass classification tutorials
+## Part VII - Multiclass classification
 
-* [News20 Multiclass](multiclass/news20.md)
+* [News20 Multiclass tutorial](multiclass/news20.md)
     * [Data preparation](multiclass/news20_dataset.md)
     * [Data preparation for one-vs-the-rest classifiers](multiclass/news20_one-vs-the-rest_dataset.md)
     * [PA](multiclass/news20_pa.md)
@@ -116,18 +118,20 @@
     * [Ensemble learning](multiclass/news20_ensemble.md)
     * [one-vs-the-rest classifier](multiclass/news20_one-vs-the-rest.md)
 
-* [Iris](multiclass/iris.md)
+* [Iris tutorial](multiclass/iris.md)
     * [Data preparation](multiclass/iris_dataset.md)
     * [SCW](multiclass/iris_scw.md)
     * [RandomForest](multiclass/iris_randomforest.md)
 
-## Part VIII - Regression tutorials
+## Part VIII - Regression
 
-* [E2006-tfidf regression](regression/e2006.md)
+* [Regression](regression/general.md)
+
+* [E2006-tfidf regression tutorial](regression/e2006.md)
     * [Data preparation](regression/e2006_dataset.md)
     * [Passive Aggressive, AROW](regression/e2006_arow.md)
 
-* [KDDCup 2012 track 2 CTR prediction](regression/kddcup12tr2.md)
+* [KDDCup 2012 track 2 CTR prediction tutorial](regression/kddcup12tr2.md)
     * [Data preparation](regression/kddcup12tr2_dataset.md)
     * [Logistic Regression, Passive Aggressive](regression/kddcup12tr2_lr.md)
     * [Logistic Regression with Amplifier](regression/kddcup12tr2_lr_amplify.md)
