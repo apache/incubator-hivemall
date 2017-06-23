@@ -56,6 +56,10 @@ from
 group by feature;
 ```
 
+> #### Note
+>
+> `-total_steps` option is an optional parameter and training works without it.
+
 # Prediction & evaluation
 
 ```sql
@@ -72,7 +76,7 @@ predict as (
   select
     t.rowid,
     sigmoid(sum(m.weight * t.value)) as prob,
-    CAST((case when sigmoid(sum(m.weight * t.value)) >= 0.5 then 1.0 else 0.0 end) as FLOAT) as label
+    (case when sigmoid(sum(m.weight * t.value)) >= 0.5 then 1.0 else 0.0 end)as label
   from
     test_exploded t LEFT OUTER JOIN
     classification_model m ON (t.feature = m.feature)
