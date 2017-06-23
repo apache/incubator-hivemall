@@ -46,19 +46,21 @@ with word_counts as (
   select
     docid,
     feature(word, count(word)) as word_count
-  from docs t1 LATERAL VIEW explode(tokenize(doc, true)) t2 as word
+  from 
+    docs t1 
+    LATERAL VIEW explode(tokenize(doc, true)) t2 as word
   where
     not is_stopword(word)
   group by
     docid, word
 )
-select docid, collect_set(word_count) as feature
+select docid, collect_list(word_count) as features
 from word_counts
 group by docid
 ;
 ```
 
-| docid | feature |
+| docid | features |
 |:---:|:---|
 |1  | ["fruits:1","healthy:1","vegetables:1"] |
 |2  | ["apples:1","avocados:1","colds:1","flu:1","like:2","oranges:1"] |
@@ -80,15 +82,16 @@ with word_counts as (
     not is_stopword(word)
   group by
     docid, word
-)
-select
-  train_lda(feature, "-topics 2 -iter 20") as (label, word, lambda)
-from (
-  select docid, collect_set(word_count) as feature
+),
+input as (
+  select docid, collect_list(word_count) as features
   from word_counts
   group by docid
-  order by docid
-) t
+)
+select
+  train_lda(features, '-topics 2 -iter 20') as (label, word, lambda)
+from
+  input
 ;
 ```
 
@@ -99,20 +102,22 @@ Notice that `order by docid` ensures building a LDA model precisely in a single 
 ```sql
 with word_counts as (
   -- same as above
+),
+input as (
+  select docid, collect_list(f) as features
+  from word_counts
+  group by docid
 )
 select
   label, word, avg(lambda) as lambda
 from (
   select
-    train_lda(feature, "-topics 2 -iter 20") as (label, word, lambda)
-  from (
-    select docid, collect_set(f) as feature
-    from word_counts
-    group by docid
-  ) t1
+    train_lda(features, '-topics 2 -iter 20') as (label, word, lambda)
+  from 
+    input
 ) t2
 group by label, word
-order by lambda desc
+-- order by lambda desc -- ordering is optional
 ;
 ```
 
@@ -155,7 +160,9 @@ with test as (
     docid,
     word,
     count(word) as value
-  from docs t1 LATERAL VIEW explode(tokenize(doc, true)) t2 as word
+  from
+    docs t1
+    LATERAL VIEW explode(tokenize(doc, true)) t2 as word
   where
     not is_stopword(word)
   group by
@@ -163,7 +170,7 @@ with test as (
 )
 select
   t.docid,
-  lda_predict(t.word, t.value, m.label, m.lambda, "-topics 2") as probabilities
+  lda_predict(t.word, t.value, m.label, m.lambda, '-topics 2') as probabilities
 from
   test t
   JOIN lda_model m ON (t.word = m.word)
@@ -183,8 +190,7 @@ Since the probabilities are sorted in descending order, a label of the most prom
 
 ```sql
 select docid, probabilities[0].label
-from topic
-;
+from topic;
 ```
 
 | docid | label |

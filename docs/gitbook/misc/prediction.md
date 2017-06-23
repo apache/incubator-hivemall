@@ -107,21 +107,23 @@ Below we list possible options for `train_regression` and `train_classifier`, an
 
 - Loss function: `-loss`, `-loss_function`
 	- For `train_regression`
-		- SquaredLoss
-		- QuantileLoss
-		- EpsilonInsensitiveLoss
-		- SquaredEpsilonInsensitiveLoss
-		- HuberLoss
+		- SquaredLoss (synonym: squared)
+		- QuantileLoss (synonym: quantile)
+		- EpsilonInsensitiveLoss (synonym: epsilon_intensitive)
+		- SquaredEpsilonInsensitiveLoss (synonym: squared_epsilon_intensitive)
+		- HuberLoss (synonym: huber)
 	- For `train_classifier`
-		- HingeLoss
-		- LogLoss
-		- SquaredHingeLoss
-		- ModifiedHuberLoss
-		- SquaredLoss
-		- QuantileLoss
-		- EpsilonInsensitiveLoss
-		- SquaredEpsilonInsensitiveLoss
-		- HuberLoss
+		- HingeLoss (synonym: hinge)
+		- LogLoss (synonym: log, logistic)
+		- SquaredHingeLoss (synonym: squared_hinge)
+		- ModifiedHuberLoss (synonym: modified_huber)
+		- The following losses are mainly designed for regression but can sometimes be useful in classification as well:
+		  - SquaredLoss (synonym: squared)
+		  - QuantileLoss (synonym: quantile)
+		  - EpsilonInsensitiveLoss (synonym: epsilon_intensitive)
+		  - SquaredEpsilonInsensitiveLoss (synonym: squared_epsilon_intensitive)
+		  - HuberLoss (synonym: huber)
+
 - Regularization function: `-reg`, `-regularization`
 	- L1
 	- L2
@@ -135,5 +137,9 @@ Additionally, there are several variants of the SGD technique, and it is also co
 	- AdaGrad
 	- AdaDelta
 	- Adam
-	
+
+> #### Note
+>
+> Option values are case insensitive and you can use `sgd` or `rda`, or `huberloss`.
+
 In practice, you can try different combinations of the options in order to achieve higher prediction accuracy.
