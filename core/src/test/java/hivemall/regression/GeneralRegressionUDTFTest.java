@@ -98,7 +98,7 @@ public class GeneralRegressionUDTFTest {
 
         udtf.process(new Object[] {x, y});
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         float predicted = udtf.predict(udtf.parseFeatures(x));
         Assert.assertEquals(y, predicted, 1E-5);
@@ -143,7 +143,7 @@ public class GeneralRegressionUDTFTest {
             udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
         }
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         double cumLoss = udtf.getCumulativeLoss();
         println("Cumulative loss: " + cumLoss);

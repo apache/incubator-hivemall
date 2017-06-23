@@ -412,16 +412,23 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     @Override
     public final void close() throws HiveException {
         super.close();
-        if (model != null) {
-            if (is_mini_batch) { // Update model with accumulated delta
-                batchUpdate();
-            }
-            if (iterations > 1) {
-                runIterativeTraining(iterations);
-            }
-            forwardModel();
-            this.accumulated = null;
+        finalizeTraining();
+        forwardModel();
+        this.accumulated = null;
+        this.model = null;
+    }
+
+    @VisibleForTesting
+    public void finalizeTraining() throws HiveException {
+        if (count == 0L) {
             this.model = null;
+            return;
+        }
+        if (is_mini_batch) { // Update model with accumulated delta
+            batchUpdate();
+        }
+        if (iterations > 1) {
+            runIterativeTraining(iterations);
         }
     }
 
@@ -635,20 +642,6 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         logger.info("Trained a prediction model using " + count + " training examples"
                 + (numMixed > 0 ? "( numMixed: " + numMixed + " )" : ""));
         logger.info("Forwarded the prediction model of " + numForwarded + " rows");
-    }
-
-    @VisibleForTesting
-    public void closeWithoutModelReset() throws HiveException {
-        // launch close(), but not forward & clear model
-        super.close();
-        if (model != null) {
-            if (is_mini_batch) { // Update model with accumulated delta
-                batchUpdate();
-            }
-            if (iterations > 1) {
-                runIterativeTraining(iterations);
-            }
-        }
     }
 
     @VisibleForTesting

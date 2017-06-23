@@ -96,7 +96,7 @@ public class GeneralClassifierUDTFTest {
 
         udtf.process(new Object[] {x, y});
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         float score = udtf.predict(udtf.parseFeatures(x));
         int predicted = score > 0.f ? 1 : 0;
@@ -129,7 +129,7 @@ public class GeneralClassifierUDTFTest {
             udtf.process(new Object[] {samplesList.get(i), labels[i]});
         }
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         double cumLoss = udtf.getCumulativeLoss();
         println("Cumulative loss: " + cumLoss);
@@ -227,7 +227,7 @@ public class GeneralClassifierUDTFTest {
         news20.close();
 
         // perform SGD iterations
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         int numTests = 0;
         int numCorrect = 0;
