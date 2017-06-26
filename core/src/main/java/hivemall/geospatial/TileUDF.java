@@ -33,15 +33,15 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 
 /**
  * @link http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
  */
 @Description(
         name = "tile",
-        value = "_FUNC_(double lat, double lon, int zoom)::INT - Returns a tile number 2^2n where n is zoom level.\n"
-                + "_FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^n",
+        value = "_FUNC_(double lat, double lon, int zoom)::bigint - Returns a tile number 2^2n where n is zoom level.\n"
+                + "_FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom",
         extended = "refer http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail")
 @UDFType(deterministic = true, stateful = false)
 public final class TileUDF extends GenericUDF {
@@ -50,7 +50,7 @@ public final class TileUDF extends GenericUDF {
     private PrimitiveObjectInspector lonOI;
     private PrimitiveObjectInspector zoomOI;
 
-    private IntWritable result;
+    private LongWritable result;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -61,12 +61,12 @@ public final class TileUDF extends GenericUDF {
         this.lonOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
         this.zoomOI = HiveUtils.asIntegerOI(argOIs[2]);
 
-        this.result = new IntWritable();
-        return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+        this.result = new LongWritable();
+        return PrimitiveObjectInspectorFactory.writableLongObjectInspector;
     }
 
     @Override
-    public IntWritable evaluate(DeferredObject[] arguments) throws HiveException {
+    public LongWritable evaluate(DeferredObject[] arguments) throws HiveException {
         Object arg0 = arguments[0].get();
         Object arg1 = arguments[1].get();
         Object arg2 = arguments[2].get();
@@ -83,7 +83,7 @@ public final class TileUDF extends GenericUDF {
         int zoom = PrimitiveObjectInspectorUtils.getInt(arg2, zoomOI);
         Preconditions.checkArgument(zoom >= 0, "Invalid zoom level", UDFArgumentException.class);
 
-        final int tile;
+        final long tile;
         try {
             tile = GeoSpatialUtils.tile(lat, lon, zoom);
         } catch (IllegalArgumentException ex) {
