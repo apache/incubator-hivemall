@@ -33,70 +33,64 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.IntWritable;
 
 /**
  * @link http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
  */
 @Description(
-        name = "tile",
-        value = "_FUNC_(double lat, double lon, int zoom)::bigint - Returns a tile number 2^2n where n is zoom level.\n"
-                + "_FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom",
-        extended = "refer http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail")
+        name = "lat2tiley",
+        value = "_FUNC_(double lat, int zoom)::int - Returns the tile number of the given latitude and zoom level")
 @UDFType(deterministic = true, stateful = false)
-public final class TileUDF extends GenericUDF {
+public final class Lat2TileYUDF extends GenericUDF {
 
     private PrimitiveObjectInspector latOI;
-    private PrimitiveObjectInspector lonOI;
     private PrimitiveObjectInspector zoomOI;
 
-    private LongWritable result;
+    private IntWritable result;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length != 3) {
-            throw new UDFArgumentException("_FUNC_ takes exactly 3 arguments: " + argOIs.length);
+        if (argOIs.length != 2) {
+            throw new UDFArgumentException("_FUNC_ takes exactly 2 arguments: " + argOIs.length);
         }
         this.latOI = HiveUtils.asDoubleCompatibleOI(argOIs[0]);
-        this.lonOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
-        this.zoomOI = HiveUtils.asIntegerOI(argOIs[2]);
+        this.zoomOI = HiveUtils.asIntegerOI(argOIs[1]);
 
-        this.result = new LongWritable();
-        return PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+        this.result = new IntWritable();
+        return PrimitiveObjectInspectorFactory.writableIntObjectInspector;
     }
 
     @Override
-    public LongWritable evaluate(DeferredObject[] arguments) throws HiveException {
+    public IntWritable evaluate(DeferredObject[] arguments) throws HiveException {
         Object arg0 = arguments[0].get();
         Object arg1 = arguments[1].get();
-        Object arg2 = arguments[2].get();
 
-        if (arg0 == null || arg1 == null) {
+        if (arg0 == null) {
             return null;
         }
-        if (arg2 == null) {
-            throw new UDFArgumentException("zoom level is null");
+        if (arg1 == null) {
+            throw new UDFArgumentException("zoom level should not be null");
         }
 
         double lat = PrimitiveObjectInspectorUtils.getDouble(arg0, latOI);
-        double lon = PrimitiveObjectInspectorUtils.getDouble(arg1, lonOI);
-        int zoom = PrimitiveObjectInspectorUtils.getInt(arg2, zoomOI);
+        int zoom = PrimitiveObjectInspectorUtils.getInt(arg1, zoomOI);
         Preconditions.checkArgument(zoom >= 0, "Invalid zoom level", UDFArgumentException.class);
 
-        final long tile;
+        final int y;
         try {
-            tile = GeoSpatialUtils.tile(lat, lon, zoom);
+            y = GeoSpatialUtils.lat2tiley(lat, zoom);
         } catch (IllegalArgumentException ex) {
             throw new UDFArgumentException(ex);
         }
 
-        result.set(tile);
+        result.set(y);
         return result;
     }
 
     @Override
     public String getDisplayString(String[] children) {
-        return "tile(" + Arrays.toString(children) + ")";
+        return "lat2tiley(" + Arrays.toString(children) + ")";
     }
 
 }

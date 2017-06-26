@@ -29,74 +29,68 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.io.LongWritable;
 
 /**
  * @link http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
  */
 @Description(
-        name = "tile",
-        value = "_FUNC_(double lat, double lon, int zoom)::bigint - Returns a tile number 2^2n where n is zoom level.\n"
-                + "_FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom",
-        extended = "refer http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail")
+        name = "tiley2lat",
+        value = "_FUNC_(int y, int zoom)::double - Returns latitude of the given tile y and zoom level")
 @UDFType(deterministic = true, stateful = false)
-public final class TileUDF extends GenericUDF {
+public final class TileY2LatUDF extends GenericUDF {
 
-    private PrimitiveObjectInspector latOI;
-    private PrimitiveObjectInspector lonOI;
+    private PrimitiveObjectInspector yOI;
     private PrimitiveObjectInspector zoomOI;
 
-    private LongWritable result;
+    private DoubleWritable result;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length != 3) {
-            throw new UDFArgumentException("_FUNC_ takes exactly 3 arguments: " + argOIs.length);
+        if (argOIs.length != 2) {
+            throw new UDFArgumentException("_FUNC_ takes exactly 2 arguments: " + argOIs.length);
         }
-        this.latOI = HiveUtils.asDoubleCompatibleOI(argOIs[0]);
-        this.lonOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
-        this.zoomOI = HiveUtils.asIntegerOI(argOIs[2]);
+        this.yOI = HiveUtils.asIntegerOI(argOIs[0]);
+        this.zoomOI = HiveUtils.asIntegerOI(argOIs[1]);
 
-        this.result = new LongWritable();
-        return PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+        this.result = new DoubleWritable();
+        return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
     }
 
     @Override
-    public LongWritable evaluate(DeferredObject[] arguments) throws HiveException {
+    public DoubleWritable evaluate(DeferredObject[] arguments) throws HiveException {
         Object arg0 = arguments[0].get();
         Object arg1 = arguments[1].get();
-        Object arg2 = arguments[2].get();
 
-        if (arg0 == null || arg1 == null) {
+        if (arg0 == null) {
             return null;
         }
-        if (arg2 == null) {
-            throw new UDFArgumentException("zoom level is null");
+        if (arg1 == null) {
+            throw new UDFArgumentException("zoom level should not be null");
         }
 
-        double lat = PrimitiveObjectInspectorUtils.getDouble(arg0, latOI);
-        double lon = PrimitiveObjectInspectorUtils.getDouble(arg1, lonOI);
-        int zoom = PrimitiveObjectInspectorUtils.getInt(arg2, zoomOI);
+        int y = PrimitiveObjectInspectorUtils.getInt(arg0, yOI);
+        int zoom = PrimitiveObjectInspectorUtils.getInt(arg1, zoomOI);
         Preconditions.checkArgument(zoom >= 0, "Invalid zoom level", UDFArgumentException.class);
 
-        final long tile;
+        final double lat;
         try {
-            tile = GeoSpatialUtils.tile(lat, lon, zoom);
+            lat = GeoSpatialUtils.tiley2lat(y, zoom);
         } catch (IllegalArgumentException ex) {
             throw new UDFArgumentException(ex);
         }
 
-        result.set(tile);
+        result.set(lat);
         return result;
     }
 
     @Override
     public String getDisplayString(String[] children) {
-        return "tile(" + Arrays.toString(children) + ")";
+        return "tiley2lat(" + Arrays.toString(children) + ")";
     }
 
 }

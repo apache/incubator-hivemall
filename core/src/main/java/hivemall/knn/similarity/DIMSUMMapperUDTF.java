@@ -27,24 +27,28 @@ import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 @Description(
         name = "dimsum_mapper",
@@ -76,7 +80,7 @@ public final class DIMSUMMapperUDTF extends UDTFWithOptions {
             "Theoretically, similarities above this threshold are estimated [default: 0.5]");
         opts.addOption("g", "gamma", true,
             "Oversampling parameter; if `gamma` is given, `threshold` will be ignored"
-                + " [default: 10 * log(numCols) / threshold]");
+                    + " [default: 10 * log(numCols) / threshold]");
         opts.addOption("disable_symmetric", "disable_symmetric_output", false,
             "Output only contains (col j, col k) pair; symmetric (col k, col j) pair is omitted");
         opts.addOption("int_feature", "feature_as_integer", false,
@@ -119,11 +123,9 @@ public final class DIMSUMMapperUDTF extends UDTFWithOptions {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(
-                getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: array<string> x, map<long, double> colNorms "
-                        + "[, CONSTANT STRING options]: "
-                        + Arrays.toString(argOIs));
+            throw new UDFArgumentException(getClass().getSimpleName()
+                    + " takes 2 or 3 arguments: array<string> x, map<long, double> colNorms "
+                    + "[, CONSTANT STRING options]: " + Arrays.toString(argOIs));
         }
 
         this.rowOI = HiveUtils.asListOI(argOIs[0]);
