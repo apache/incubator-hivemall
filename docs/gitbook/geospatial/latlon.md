@@ -61,16 +61,38 @@ WITH data as (
   select null as lat, 0.02435 as lon, 17 as zoom
 )
 select 
-   tile(lat, lon, zoom) as tile
+   lat, lon, zoom,
+   tile(lat, lon, zoom) as tile,
+   (lon2tilex(lon,zoom) + lat2tiley(lat,zoom) * cast(pow(2, zoom) as bigint)) as tile2, 
+   lon2tilex(lon, zoom) as xtile,
+   lat2tiley(lat, zoom) as ytile,
+   tiley2lat(lat2tiley(lat, zoom), zoom) as lat2,  -- tiley2lat returns center of the tile
+   tilex2lon(lon2tilex(lon, zoom), zoom) as lon2 -- tilex2lon returns center of the tile
 from 
    data;
 ```
 
-| tile |
-|:--:|
-|1417478152|
-|88|
-|NULL|
+| lat | lon | zoom | tile | tile2 | xtile | ytile | lat2 | lon2 |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| 51.51202 | 0.02435 | 17 | 5712445448 | 5712445448 | 65544 | 43582 | 51.512161249555156 | 0.02197265625 |
+| 51.51202 | 0.02435 | 4 | 88 | 88 | 8 |  5 | 55.77657301866768 | 0.0 |
+| NULL | 0.02435 | 17 | NULL | NULL | 65544 | NULL | NULL | 0.02197265625 |
+
+# Distance function
+
+`haversine_distance(double lat1, double lon1, double lat2, double lon2, [const boolean mile=false])` returns [Haversine distance](http://www.movable-type.co.uk/scripts/latlong.html) between given two Geo locations.
+
+```sql
+-- Tokyo (lat: 35.6833, lon: 139.7667)
+-- Osaka (lat: 34.6603, lon: 135.5232)
+select 
+  haversine_distance(35.6833, 139.7667, 34.6603, 135.5232) as km,
+  haversine_distance(35.6833, 139.7667, 34.6603, 135.5232, true) as mile;
+```
+
+| km | mile |
+|:-:|:-:|
+| 402.09212137829684 | 249.8484608500711 |
 
 # Map URL function
 

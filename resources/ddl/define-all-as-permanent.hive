@@ -658,6 +658,21 @@ CREATE FUNCTION tile as 'hivemall.geospatial.TileUDF' USING JAR '${hivemall_jar}
 DROP FUNCTION IF EXISTS map_url;
 CREATE FUNCTION map_url as 'hivemall.geospatial.MapURLUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS lat2tiley;
+CREATE FUNCTION lat2tiley as 'hivemall.geospatial.Lat2TileYUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS lon2tilex;
+CREATE FUNCTION lon2tilex as 'hivemall.geospatial.Lon2TileXUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS tilex2lon;
+CREATE FUNCTION tilex2lon as 'hivemall.geospatial.TileX2LonUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS tiley2lat;
+CREATE FUNCTION tiley2lat as 'hivemall.geospatial.TileY2LatUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS haversine_distance;
+CREATE FUNCTION haversine_distance as 'hivemall.geospatial.HaversineDistanceUDF' USING JAR '${hivemall_jar}';
+
 ----------------------------
 -- Smile related features --
 ----------------------------
