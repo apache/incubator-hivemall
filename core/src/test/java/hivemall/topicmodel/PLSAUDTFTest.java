@@ -54,7 +54,7 @@ public class PLSAUDTFTest {
         udtf.process(new Object[] {Arrays.asList(doc1)});
         udtf.process(new Object[] {Arrays.asList(doc2)});
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -93,10 +93,10 @@ public class PLSAUDTFTest {
 
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
                 + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
-            udtf.getProbability("vegetables", k1) > udtf.getProbability("flu", k1));
+            udtf.getWordScore("vegetables", k1) > udtf.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
-            udtf.getProbability("avocados", k2) > udtf.getProbability("healthy", k2));
+            udtf.getWordScore("avocados", k2) > udtf.getWordScore("healthy", k2));
     }
 
     @Test
@@ -107,7 +107,7 @@ public class PLSAUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    "-topics 2 -alpha 0.1 -delta 0.00001 -iter 10000")};
+                    "-topics 2 -alpha 0.1 -delta 0.00001 -iter 10000 -mini_batch_size 1")};
 
         udtf.initialize(argOIs);
 
@@ -117,7 +117,7 @@ public class PLSAUDTFTest {
         udtf.process(new Object[] {Arrays.asList(doc1)});
         udtf.process(new Object[] {Arrays.asList(doc2)});
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -156,10 +156,10 @@ public class PLSAUDTFTest {
 
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
                 + "and `野菜` SHOULD be more suitable topic word than `インフルエンザ` in the topic",
-            udtf.getProbability("野菜", k1) > udtf.getProbability("インフルエンザ", k1));
+            udtf.getWordScore("野菜", k1) > udtf.getWordScore("インフルエンザ", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `アボカド` SHOULD be more suitable topic word than `健康` in the topic",
-            udtf.getProbability("アボカド", k2) > udtf.getProbability("健康", k2));
+            udtf.getWordScore("アボカド", k2) > udtf.getWordScore("健康", k2));
     }
 
     private static void println(String msg) {

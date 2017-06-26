@@ -19,7 +19,6 @@
 package hivemall.topicmodel;
 
 import hivemall.annotations.VisibleForTesting;
-import hivemall.model.FeatureValue;
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.math.MathUtils;
 
@@ -37,23 +36,16 @@ import javax.annotation.Nonnull;
 import org.apache.commons.math3.distribution.GammaDistribution;
 import org.apache.commons.math3.special.Gamma;
 
-public final class OnlineLDAModel {
+public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
 
     // ---------------------------------
     // HyperParameters
-
-    // number of topics
-    private final int _K;
 
     // prior on weight vectors "theta ~ Dir(alpha_)"
     private final float _alpha;
 
     // prior on topics "beta"
     private final float _eta;
-
-    // total number of documents
-    // in the truly online setting, this can be an estimate of the maximum number of documents that could ever seen
-    private long _D = -1L;
 
     // positive value which downweights early iterations
     @Nonnegative
@@ -75,6 +67,10 @@ public final class OnlineLDAModel {
     // controls how much old lambda is forgotten
     private double _rhot;
 
+    // if `num_docs` option is not given, this flag will be true
+    // in that case, UDTF automatically sets `count` value to the _D parameter in an online LDA model
+    private final boolean _isAutoD;
+
     // parameters
     @Nonnull
     private List<Map<String, float[]>> _phi;
@@ -88,11 +84,6 @@ public final class OnlineLDAModel {
     private static final double SHAPE = 100.d;
     private static final double SCALE = 1.d / SHAPE;
 
-    // for mini-batch
-    @Nonnull
-    private final List<Map<String, Float>> _miniBatchDocs;
-    private int _miniBatchSize;
-
     // for computing perplexity
     private float _docRatio = 1.f;
     private double _valueSum = 0.d;
@@ -103,6 +94,8 @@ public final class OnlineLDAModel {
 
     public OnlineLDAModel(int K, float alpha, float eta, long D, double tau0, double kappa,
             double delta) {
+        super(K);
+
         if (tau0 < 0.d) {
             throw new IllegalArgumentException("tau0 MUST be positive: " + tau0);
         }
@@ -110,7 +103,6 @@ public final class OnlineLDAModel {
             throw new IllegalArgumentException("kappa MUST be in (0.5, 1.0]: " + kappa);
         }
 
-        this._K = K;
         this._alpha = alpha;
         this._eta = eta;
         this._D = D;
@@ -118,31 +110,30 @@ public final class OnlineLDAModel {
         this._kappa = kappa;
         this._delta = delta;
 
+        this._isAutoD = (_D < 0L);
+
         // initialize a random number generator
         this._gd = new GammaDistribution(SHAPE, SCALE);
         _gd.reseedRandomGenerator(1001);
 
         // initialize the parameters
         this._lambda = new HashMap<String, float[]>(100);
-
-        this._miniBatchDocs = new ArrayList<Map<String, Float>>();
     }
 
-    /**
-     * In a truly online setting, total number of documents corresponds to the number of documents that have ever seen. In that case, users need to
-     * manually set the current max number of documents via this method. Note that, since the same set of documents could be repeatedly passed to
-     * `train()`, simply accumulating `_miniBatchSize`s as estimated `_D` is not sufficient.
-     */
-    public void setNumTotalDocs(@Nonnegative long D) {
-        this._D = D;
+    @Override
+    public void accumulateDocCount() {
+        /*
+         * In a truly online setting, total number of documents equals to the number of documents that have ever seen.
+         * In that case, users need to manually set the current max number of documents via this method.
+         * Note that, since the same set of documents could be repeatedly passed to `train()`,
+         * simply accumulating `_miniBatchSize`s as estimated `_D` is not sufficient.
+         */
+        if (_isAutoD) {
+            this._D += 1;
+        }
     }
 
     public void train(@Nonnull final String[][] miniBatch) {
-        if (_D <= 0L) {
-            throw new IllegalStateException(
-                "Total number of documents MUST be set via `setNumTotalDocs()`");
-        }
-
         preprocessMiniBatch(miniBatch);
 
         initParams(true);
@@ -173,35 +164,6 @@ public final class OnlineLDAModel {
         this._valueSum = valueSum;
 
         this._docRatio = (float) ((double) _D / _miniBatchSize);
-    }
-
-    private static void initMiniBatch(@Nonnull final String[][] miniBatch,
-            @Nonnull final List<Map<String, Float>> docs) {
-        docs.clear();
-
-        final FeatureValue probe = new FeatureValue();
-
-        // parse document
-        for (final String[] e : miniBatch) {
-            if (e == null || e.length == 0) {
-                continue;
-            }
-
-            final Map<String, Float> doc = new HashMap<String, Float>();
-
-            // parse features
-            for (String fv : e) {
-                if (fv == null) {
-                    continue;
-                }
-                FeatureValue.parseFeatureAsString(fv, probe);
-                String label = probe.getFeatureAsString();
-                float value = probe.getValueAsFloat();
-                doc.put(label, Float.valueOf(value));
-            }
-
-            docs.add(doc);
-        }
     }
 
     private void initParams(final boolean gammaWithRandom) {
@@ -475,7 +437,7 @@ public final class OnlineLDAModel {
     }
 
     @VisibleForTesting
-    double getLambda(@Nonnull final String label, @Nonnegative final int k) {
+    float getWordScore(@Nonnull final String label, @Nonnegative final int k) {
         final float[] lambda_label = _lambda.get(label);
         if (lambda_label == null) {
             throw new IllegalArgumentException("Word `" + label + "` is not in the corpus.");
@@ -487,7 +449,7 @@ public final class OnlineLDAModel {
         return lambda_label[k];
     }
 
-    public void setLambda(@Nonnull final String label, @Nonnegative final int k,
+    public void setWordScore(@Nonnull final String label, @Nonnegative final int k,
             final float lambda_k) {
         float[] lambda_label = _lambda.get(label);
         if (lambda_label == null) {

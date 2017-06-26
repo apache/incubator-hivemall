@@ -20,9 +20,10 @@ package hivemall.topicmodel;
 
 import static hivemall.utils.lang.ArrayUtils.newRandomFloatArray;
 import static hivemall.utils.math.MathUtils.l1normalize;
+
+import hivemall.annotations.VisibleForTesting;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.model.FeatureValue;
 import hivemall.utils.math.MathUtils;
 
 import java.util.ArrayList;
@@ -37,13 +38,10 @@ import java.util.TreeMap;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public final class IncrementalPLSAModel {
+public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel {
 
     // ---------------------------------
     // HyperParameters
-
-    // number of topics
-    private final int _K;
 
     // control how much P(w|z) update is affected by the last value
     private final float _alpha;
@@ -65,20 +63,15 @@ public final class IncrementalPLSAModel {
     private List<float[]> _p_dz; // P(z|d) probability of topics for documents
     private Map<String, float[]> _p_zw; // P(w|z) probability of words for each topic
 
-    @Nonnull
-    private final List<Map<String, Float>> _miniBatchDocs;
-    private int _miniBatchSize;
-
     public IncrementalPLSAModel(int K, float alpha, double delta) {
-        this._K = K;
+        super(K);
+
         this._alpha = alpha;
         this._delta = delta;
 
         this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         this._p_zw = new HashMap<String, float[]>();
-
-        this._miniBatchDocs = new ArrayList<Map<String, Float>>();
     }
 
     public void train(@Nonnull final String[][] miniBatch) {
@@ -103,35 +96,6 @@ public final class IncrementalPLSAModel {
                 // Maximization
                 mStep(d);
             } while (!isPdzConverged(d, pPrev_dz, _p_dz)); // until get stable value of P(z|d)
-        }
-    }
-
-    private static void initMiniBatch(@Nonnull final String[][] miniBatch,
-            @Nonnull final List<Map<String, Float>> docs) {
-        docs.clear();
-
-        final FeatureValue probe = new FeatureValue();
-
-        // parse document
-        for (final String[] e : miniBatch) {
-            if (e == null || e.length == 0) {
-                continue;
-            }
-
-            final Map<String, Float> doc = new HashMap<String, Float>();
-
-            // parse features
-            for (String fv : e) {
-                if (fv == null) {
-                    continue;
-                }
-                FeatureValue.parseFeatureAsString(fv, probe);
-                String word = probe.getFeatureAsString();
-                float value = probe.getValueAsFloat();
-                doc.put(word, Float.valueOf(value));
-            }
-
-            docs.add(doc);
         }
     }
 
@@ -302,11 +266,12 @@ public final class IncrementalPLSAModel {
         return _p_dz.get(0);
     }
 
-    public float getProbability(@Nonnull final String w, @Nonnegative final int z) {
+    @VisibleForTesting
+    float getWordScore(@Nonnull final String w, @Nonnegative final int z) {
         return _p_zw.get(w)[z];
     }
 
-    public void setProbability(@Nonnull final String w, @Nonnegative final int z, final float prob) {
+    public void setWordScore(@Nonnull final String w, @Nonnegative final int z, final float prob) {
         float[] prob_label = _p_zw.get(w);
         if (prob_label == null) {
             prob_label = newRandomFloatArray(_K, _rnd);
