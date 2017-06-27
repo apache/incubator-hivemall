@@ -38,6 +38,9 @@ import org.apache.commons.math3.special.Gamma;
 
 public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
 
+    private static final double SHAPE = 100.d;
+    private static final double SCALE = 1.d / SHAPE;
+
     // ---------------------------------
     // HyperParameters
 
@@ -72,7 +75,6 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     private final boolean _isAutoD;
 
     // parameters
-    @Nonnull
     private List<Map<String, float[]>> _phi;
     private float[][] _gamma;
     @Nonnull
@@ -81,8 +83,6 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     // random number generator
     @Nonnull
     private final GammaDistribution _gd;
-    private static final double SHAPE = 100.d;
-    private static final double SCALE = 1.d / SHAPE;
 
     // for computing perplexity
     private float _docRatio = 1.f;
@@ -121,7 +121,7 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     }
 
     @Override
-    public void accumulateDocCount() {
+    protected void accumulateDocCount() {
         /*
          * In a truly online setting, total number of documents equals to the number of documents that have ever seen.
          * In that case, users need to manually set the current max number of documents via this method.
@@ -133,7 +133,7 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
         }
     }
 
-    public void train(@Nonnull final String[][] miniBatch) {
+    protected void train(@Nonnull final String[][] miniBatch) {
         preprocessMiniBatch(miniBatch);
 
         initParams(true);
@@ -341,7 +341,7 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     /**
      * Calculate approximate perplexity for the current mini-batch.
      */
-    public float computePerplexity() {
+    protected float computePerplexity() {
         double bound = computeApproxBound();
         double perWordBound = bound / (_docRatio * _valueSum);
         return (float) Math.exp(-1.d * perWordBound);
@@ -449,7 +449,7 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
         return lambda_label[k];
     }
 
-    public void setWordScore(@Nonnull final String label, @Nonnegative final int k,
+    protected void setWordScore(@Nonnull final String label, @Nonnegative final int k,
             final float lambda_k) {
         float[] lambda_label = _lambda.get(label);
         if (lambda_label == null) {
@@ -460,7 +460,7 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     }
 
     @Nonnull
-    public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int k) {
+    protected SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int k) {
         return getTopicWords(k, _lambda.keySet().size());
     }
 
@@ -501,7 +501,7 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     }
 
     @Nonnull
-    public float[] getTopicDistribution(@Nonnull final String[] doc) {
+    protected float[] getTopicDistribution(@Nonnull final String[] doc) {
         preprocessMiniBatch(new String[][] {doc});
 
         initParams(false);

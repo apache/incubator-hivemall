@@ -27,6 +27,19 @@ import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
@@ -43,13 +56,6 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
-
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
 
 public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(ProbabilisticTopicModelBaseUDTF.class);
@@ -143,6 +149,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
+    @Nonnull
     protected abstract AbstractProbabilisticTopicModel createModel();
 
     @Override
@@ -157,7 +164,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
         for (int i = 0; i < length; i++) {
             Object o = wordCountsOI.getListElement(args[0], i);
             if (o == null) {
-                throw new HiveException("Given feature vector contains invalid elements");
+                throw new HiveException("Given feature vector contains invalid null elements");
             }
             String s = o.toString();
             wordCounts[j] = s;
@@ -167,7 +174,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             return;
         }
 
-        model.accumulateDocCount();;
+        model.accumulateDocCount();
 
         update(wordCounts);
 

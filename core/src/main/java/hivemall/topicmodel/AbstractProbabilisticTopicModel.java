@@ -21,9 +21,14 @@ package hivemall.topicmodel;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
-import java.util.*;
 
 public abstract class AbstractProbabilisticTopicModel {
 
@@ -31,6 +36,7 @@ public abstract class AbstractProbabilisticTopicModel {
     protected final int _K;
 
     // total number of documents
+    @Nonnegative
     protected long _D;
 
     // for mini-batch
@@ -38,7 +44,7 @@ public abstract class AbstractProbabilisticTopicModel {
     protected final List<Map<String, Float>> _miniBatchDocs;
     protected int _miniBatchSize;
 
-    public AbstractProbabilisticTopicModel(int K) {
+    public AbstractProbabilisticTopicModel(@Nonnegative int K) {
         this._K = K;
         this._D = 0L;
         this._miniBatchDocs = new ArrayList<Map<String, Float>>();
@@ -73,26 +79,28 @@ public abstract class AbstractProbabilisticTopicModel {
         }
     }
 
-    public void accumulateDocCount() {
+    protected void accumulateDocCount() {
         this._D += 1;
     }
 
-    public long getDocCount() {
+    @Nonnegative
+    protected long getDocCount() {
         return _D;
     }
 
-    public abstract void train(@Nonnull final String[][] miniBatch);
+    protected abstract void train(@Nonnull final String[][] miniBatch);
 
-    public abstract float computePerplexity();
-
-    @Nonnull
-    public abstract SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int k);
+    protected abstract float computePerplexity();
 
     @Nonnull
-    public abstract float[] getTopicDistribution(@Nonnull final String[] doc);
+    protected abstract SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int k);
+
+    @Nonnull
+    protected abstract float[] getTopicDistribution(@Nonnull final String[] doc);
 
     @VisibleForTesting
     abstract float getWordScore(@Nonnull final String word, @Nonnegative final int topic);
 
-    public abstract void setWordScore(@Nonnull final String word, @Nonnegative final int topic, final float score);
+    protected abstract void setWordScore(@Nonnull final String word, @Nonnegative final int topic,
+            final float score);
 }

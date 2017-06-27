@@ -22,16 +22,13 @@ import hivemall.utils.lang.Primitives;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 
 @Description(name = "train_plsa", value = "_FUNC_(array<string> words[, const string options])"
         + " - Returns a relation consists of <int topic, string word, float score>")
-public class PLSAUDTF extends ProbabilisticTopicModelBaseUDTF {
-    private static final Log logger = LogFactory.getLog(PLSAUDTF.class);
+public final class PLSAUDTF extends ProbabilisticTopicModelBaseUDTF {
 
     public static final float DEFAULT_ALPHA = 0.5f;
     public static final double DEFAULT_DELTA = 1E-3d;

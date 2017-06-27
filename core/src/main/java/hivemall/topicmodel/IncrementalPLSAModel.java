@@ -20,7 +20,6 @@ package hivemall.topicmodel;
 
 import static hivemall.utils.lang.ArrayUtils.newRandomFloatArray;
 import static hivemall.utils.math.MathUtils.l1normalize;
-
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
@@ -59,9 +58,10 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
     private List<Map<String, float[]>> _p_dwz; // P(z|d,w) probability of topics for each document-word (i.e., instance-feature) pair
 
     // optimized in the M step
-    @Nonnull
     private List<float[]> _p_dz; // P(z|d) probability of topics for documents
-    private Map<String, float[]> _p_zw; // P(w|z) probability of words for each topic
+
+    @Nonnull
+    private final Map<String, float[]> _p_zw; // P(w|z) probability of words for each topic
 
     public IncrementalPLSAModel(int K, float alpha, double delta) {
         super(K);
@@ -74,7 +74,7 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
         this._p_zw = new HashMap<String, float[]>();
     }
 
-    public void train(@Nonnull final String[][] miniBatch) {
+    protected void train(@Nonnull final String[][] miniBatch) {
         initMiniBatch(miniBatch, _miniBatchDocs);
 
         this._miniBatchSize = _miniBatchDocs.size();
@@ -211,7 +211,7 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
         return (diff / _K) < _delta;
     }
 
-    public float computePerplexity() {
+    protected float computePerplexity() {
         double numer = 0.d;
         double denom = 0.d;
 
@@ -241,7 +241,7 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
     }
 
     @Nonnull
-    public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int z) {
+    protected SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int z) {
         final SortedMap<Float, List<String>> res = new TreeMap<Float, List<String>>(
             Collections.reverseOrder());
 
@@ -261,7 +261,7 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
     }
 
     @Nonnull
-    public float[] getTopicDistribution(@Nonnull final String[] doc) {
+    protected float[] getTopicDistribution(@Nonnull final String[] doc) {
         train(new String[][] {doc});
         return _p_dz.get(0);
     }
@@ -271,7 +271,7 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
         return _p_zw.get(w)[z];
     }
 
-    public void setWordScore(@Nonnull final String w, @Nonnegative final int z, final float prob) {
+    protected void setWordScore(@Nonnull final String w, @Nonnegative final int z, final float prob) {
         float[] prob_label = _p_zw.get(w);
         if (prob_label == null) {
             prob_label = newRandomFloatArray(_K, _rnd);
