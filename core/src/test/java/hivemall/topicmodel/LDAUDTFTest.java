@@ -53,7 +53,7 @@ public class LDAUDTFTest {
         udtf.process(new Object[] {Arrays.asList(doc1)});
         udtf.process(new Object[] {Arrays.asList(doc2)});
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -92,10 +92,10 @@ public class LDAUDTFTest {
 
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
                 + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
-            udtf.getLambda("vegetables", k1) > udtf.getLambda("flu", k1));
+            udtf.getWordScore("vegetables", k1) > udtf.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
-            udtf.getLambda("avocados", k2) > udtf.getLambda("healthy", k2));
+            udtf.getWordScore("avocados", k2) > udtf.getWordScore("healthy", k2));
     }
 
     @Test
@@ -106,7 +106,7 @@ public class LDAUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    "-topics 2 -num_docs 2 -s 1 -iter 32 -eps 1e-3")};
+                    "-topics 2 -num_docs 2 -s 1 -iter 32 -eps 1e-3  -mini_batch_size 1")};
 
         udtf.initialize(argOIs);
 
@@ -116,7 +116,7 @@ public class LDAUDTFTest {
         udtf.process(new Object[] {Arrays.asList(doc1)});
         udtf.process(new Object[] {Arrays.asList(doc2)});
 
-        udtf.closeWithoutModelReset();
+        udtf.finalizeTraining();
 
         SortedMap<Float, List<String>> topicWords;
 
@@ -155,10 +155,10 @@ public class LDAUDTFTest {
 
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
                 + "and `野菜` SHOULD be more suitable topic word than `インフルエンザ` in the topic",
-            udtf.getLambda("野菜", k1) > udtf.getLambda("インフルエンザ", k1));
+            udtf.getWordScore("野菜", k1) > udtf.getWordScore("インフルエンザ", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `アボカド` SHOULD be more suitable topic word than `健康` in the topic",
-            udtf.getLambda("アボカド", k2) > udtf.getLambda("健康", k2));
+            udtf.getWordScore("アボカド", k2) > udtf.getWordScore("健康", k2));
     }
 
     private static void println(String msg) {
