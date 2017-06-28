@@ -469,8 +469,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 }
                 buf.flip();
 
-                int iter = 2;
-                for (; iter <= iterations; iter++) {
+                for (int iter = 2; iter <= iterations; iter++) {
+                    cvState.next();
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
 
@@ -491,17 +491,17 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         batchUpdate();
                     }
 
-                    if (cvState.isConverged(iter, numTrainingExamples)) {
+                    if (cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
                 }
                 logger.info("Performed "
-                        + Math.min(iter, iterations)
+                        + cvState.getCurrentIteration()
                         + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on memory (thus "
-                        + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
-                        + " training updates in total) ");
+                        + NumberUtils.formatNumber(numTrainingExamples
+                                * cvState.getCurrentIteration()) + " training updates in total) ");
             } else {// read training examples in the temporary file and invoke train for each example
                 // write training examples in buffer to a temporary file
                 if (buf.remaining() > 0) {
@@ -522,8 +522,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 }
 
                 // run iterations
-                int iter = 2;
-                for (; iter <= iterations; iter++) {
+                for (int iter = 2; iter <= iterations; iter++) {
+                    cvState.next();
                     setCounterValue(iterCounter, iter);
 
                     buf.clear();
@@ -577,17 +577,17 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         batchUpdate();
                     }
 
-                    if (cvState.isConverged(iter, numTrainingExamples)) {
+                    if (cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
                 }
                 logger.info("Performed "
-                        + Math.min(iter, iterations)
+                        + cvState.getCurrentIteration()
                         + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
-                        + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
-                        + " training updates in total)");
+                        + NumberUtils.formatNumber(numTrainingExamples
+                                * cvState.getCurrentIteration()) + " training updates in total)");
             }
         } catch (Throwable e) {
             throw new HiveException("Exception caused in the iterative training", e);
