@@ -23,16 +23,16 @@ import hivemall.utils.io.NIOUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.SizeOf;
 
+import java.nio.ByteBuffer;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.io.Text;
 
-import java.nio.ByteBuffer;
-
 public final class FeatureValue {
 
-    private/* final */Object feature;
+    private/* final */Object feature; // possible types: String, Text, IntWritable, LongWritable
     private/* final */double value;
 
     public FeatureValue() {}// used for Probe
@@ -89,7 +89,7 @@ public final class FeatureValue {
     }
 
     public void readFrom(@Nonnull final ByteBuffer src) {
-        this.feature = new Text(NIOUtils.getString(src));
+        this.feature = NIOUtils.getString(src);
         this.value = src.getDouble();
     }
 
