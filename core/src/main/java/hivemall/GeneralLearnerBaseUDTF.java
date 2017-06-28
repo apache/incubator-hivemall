@@ -19,6 +19,7 @@
 package hivemall;
 
 import hivemall.annotations.VisibleForTesting;
+import hivemall.common.ConversionState;
 import hivemall.model.FeatureValue;
 import hivemall.model.IWeightValue;
 import hivemall.model.PredictionModel;
@@ -76,25 +77,38 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private PrimitiveObjectInspector targetOI;
     private boolean parseFeature;
 
+    // -----------------------------------------
+    // hyperparameters
+
     @Nonnull
     private final Map<String, String> optimizerOptions;
     private Optimizer optimizer;
     private LossFunction lossFunction;
 
+    // -----------------------------------------
+
     private PredictionModel model;
     private long count;
 
-    // The accumulated delta of each weight values.
+    // -----------------------------------------
+    // for mini-batch
+
+    /** The accumulated delta of each weight values. */
     @Nullable
     private transient Map<Object, FloatAccumulator> accumulated;
     private int sampled;
 
+    // -----------------------------------------
     // for iterations
-    protected NioStatefullSegment fileIO;
-    protected ByteBuffer inputBuf;
+
+    @Nullable
+    protected transient NioStatefullSegment fileIO;
+    @Nullable
+    protected transient ByteBuffer inputBuf;
     private int iterations;
-    private double cumLoss;
-    private double tol;
+    protected ConversionState cvState;
+
+    // -----------------------------------------
 
     public GeneralLearnerBaseUDTF() {
         this(true);
@@ -144,7 +158,6 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
         this.count = 0L;
         this.sampled = 0;
-        this.cumLoss = 0.d;
 
         return getReturnOI(featureOutputOI);
     }
@@ -154,8 +167,11 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true, getLossOptionDescription());
         opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 10]");
-        opts.addOption("tol", "tolerance", true,
-            "Check convergence based on the difference of cumulative loss [default: 1E-1]");
+        // conversion check
+        opts.addOption("disable_cv", "disable_cvtest", false,
+            "Whether to disable convergence check [default: OFF]");
+        opts.addOption("cv_rate", "convergence_rate", true,
+            "Threshold to determine convergence [default: 0.005]");
         OptimizerOptions.setup(opts);
         return opts;
     }
@@ -166,7 +182,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
         LossFunction lossFunction = LossFunctions.getLossFunction(getDefaultLossType());
         int iterations = 10;
-        double tol = 1E-1d;
+        boolean conversionCheck = true;
+        double convergenceRate = 0.005d;
 
         if (cl != null) {
             if (cl.hasOption("loss_function")) {
@@ -178,18 +195,19 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             }
             checkLossFunction(lossFunction);
 
-            iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 10);
+            iterations = Primitives.parseInt(cl.getOptionValue("iterations"), iterations);
             if (iterations < 1) {
-                throw new UDFArgumentException("'-iterations' must be greater than or equals to 1: "
-                        + iterations);
+                throw new UDFArgumentException(
+                    "'-iterations' must be greater than or equals to 1: " + iterations);
             }
 
-            tol = Primitives.parseDouble(cl.getOptionValue("tolerance"), 1E-1d);
+            conversionCheck = !cl.hasOption("disable_cvtest");
+            convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
         }
 
         this.lossFunction = lossFunction;
         this.iterations = iterations;
-        this.tol = tol;
+        this.cvState = new ConversionState(conversionCheck, convergenceRate);
 
         OptimizerOptions.propcessOptions(cl, optimizerOptions);
 
@@ -239,7 +257,6 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         checkTargetValue(target);
 
         count++;
-
         train(featureVector, target);
 
         recordTrainSampleToTempFile(featureVector, target);
@@ -274,8 +291,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         }
 
         // feature length, feature 1, feature 2, ..., feature n, target
-        int featureVectorBytes = FeatureValue.requiredBytes(featureVector);
-        int recordBytes = SizeOf.INT + featureVectorBytes + SizeOf.FLOAT;
+        int recordBytes = SizeOf.INT + FeatureValue.requiredBytes(featureVector) + SizeOf.FLOAT;
         int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
 
         int remain = buf.remaining();
@@ -347,8 +363,10 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
-        this.cumLoss += lossFunction.loss(predicted, target); // retain cumulative loss to check convergence
-        float dloss = lossFunction.dloss(predicted, target);
+        float loss = lossFunction.loss(predicted, target);
+        cvState.incrLoss(loss); // retain cumulative loss to check convergence      
+
+        final float dloss = lossFunction.dloss(predicted, target);
         if (is_mini_batch) {
             accumulateUpdate(features, dloss);
 
@@ -452,11 +470,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 buf.flip();
 
                 int iter = 2;
-                double cumLossPrev;
                 for (; iter <= iterations; iter++) {
-                    cumLossPrev = cumLoss;
-                    this.cumLoss = 0.d;
-
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
 
@@ -477,9 +491,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         batchUpdate();
                     }
 
-                    logger.info("[iter " + iter + "] cumulative loss: " + cumLoss);
-
-                    if (Math.abs(cumLossPrev - cumLoss) < tol) {
+                    if (cvState.isConverged(iter, numTrainingExamples)) {
                         break;
                     }
                 }
@@ -511,11 +523,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
                 // run iterations
                 int iter = 2;
-                double cumLossPrev;
                 for (; iter <= iterations; iter++) {
-                    cumLossPrev = cumLoss;
-                    cumLoss = 0.d;
-
                     setCounterValue(iterCounter, iter);
 
                     buf.clear();
@@ -569,9 +577,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         batchUpdate();
                     }
 
-                    logger.info("[iter " + iter + "] cumulative loss: " + cumLoss);
-
-                    if (Math.abs(cumLossPrev - cumLoss) < tol) {
+                    if (cvState.isConverged(iter, numTrainingExamples)) {
                         break;
                     }
                 }
@@ -646,6 +652,6 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
     @VisibleForTesting
     public double getCumulativeLoss() {
-        return cumLoss;
+        return (cvState == null) ? Double.NaN : cvState.getCumulativeLoss();
     }
 }

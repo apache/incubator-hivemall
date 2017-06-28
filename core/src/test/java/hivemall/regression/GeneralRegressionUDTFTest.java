@@ -160,9 +160,9 @@ public class GeneralRegressionUDTFTest {
             accum += Math.abs(y - predicted);
         }
 
-        float err = accum / (numSamples - numTrain);
-        println("Mean absolute error: " + err);
-        Assert.assertTrue(err < 0.2f);
+        float mae = accum / (numSamples - numTrain);
+        println("Mean absolute error: " + mae);
+        Assert.assertTrue("accum: " + accum + ", mae:" + mae + "\noptions: " + options, mae < 0.2f);
     }
 
     @Test
@@ -180,7 +180,7 @@ public class GeneralRegressionUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -lambda 1e-6 -tol 1e-3f -iter 512";
+                            + " -lambda 1e-6 -cv_rate 0.005 -iter 512";
 
                     // sparse
                     run(options);

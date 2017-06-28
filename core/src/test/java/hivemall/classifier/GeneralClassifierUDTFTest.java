@@ -133,7 +133,9 @@ public class GeneralClassifierUDTFTest {
 
         double cumLoss = udtf.getCumulativeLoss();
         println("Cumulative loss: " + cumLoss);
-        Assert.assertTrue(cumLoss / samplesList.size() < 0.5d);
+        double normalizedLoss = cumLoss / samplesList.size();
+        Assert.assertTrue("cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss
+                + "\noptions: " + options, normalizedLoss < 0.5d);
 
         int numTests = 0;
         int numCorrect = 0;
@@ -173,7 +175,7 @@ public class GeneralClassifierUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -tol 1e-3f -iter 512";
+                            + " -cv_rate 0.005 -iter 512";
 
                     // sparse
                     run(options);
@@ -200,7 +202,7 @@ public class GeneralClassifierUDTFTest {
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-            "-opt SGD -loss logloss -reg L2 -lambda 0.1 -tol 1e-3");
+            "-opt SGD -loss logloss -reg L2 -lambda 0.1 -cv_rate 0.005");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
