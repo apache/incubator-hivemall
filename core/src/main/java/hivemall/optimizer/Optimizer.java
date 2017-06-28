@@ -51,7 +51,7 @@ public interface Optimizer {
         @Nonnull
         protected final Regularization _reg;
         @Nonnegative
-        protected int _numStep = 1;
+        protected long _numStep = 1L;
 
         public OptimizerBase(@Nonnull Map<String, String> options) {
             this._eta = EtaEstimator.get(options);
