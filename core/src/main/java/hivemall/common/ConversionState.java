@@ -25,20 +25,20 @@ public final class ConversionState {
     private static final Log logger = LogFactory.getLog(ConversionState.class);
 
     /** Whether to check conversion */
-    protected final boolean conversionCheck;
+    private final boolean conversionCheck;
     /** Threshold to determine convergence */
-    protected final double convergenceRate;
+    private final double convergenceRate;
 
     /** being ready to end iteration */
-    protected boolean readyToFinishIterations;
+    private boolean readyToFinishIterations;
 
     /** The cumulative errors in the training */
-    protected double totalErrors;
+    private double totalErrors;
     /** The cumulative losses in an iteration */
-    protected double currLosses, prevLosses;
+    private double currLosses, prevLosses;
 
-    protected int curIter;
-    protected float curEta;
+    private int curIter;
+    private float curEta;
 
     public ConversionState() {
         this(true, 0.005d);
