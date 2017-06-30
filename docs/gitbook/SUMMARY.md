@@ -92,6 +92,7 @@
     * [Perceptron, Passive Aggressive](binaryclass/news20_pa.md)
     * [CW, AROW, SCW](binaryclass/news20_scw.md)
     * [AdaGradRDA, AdaGrad, AdaDelta](binaryclass/news20_adagrad.md)
+    * [Random Forest](binaryclass/news20_rf.md)
 
 * [KDD2010a tutorial](binaryclass/kdd2010a.md)
     * [Data preparation](binaryclass/kdd2010a_dataset.md)
@@ -121,7 +122,7 @@
 * [Iris tutorial](multiclass/iris.md)
     * [Data preparation](multiclass/iris_dataset.md)
     * [SCW](multiclass/iris_scw.md)
-    * [RandomForest](multiclass/iris_randomforest.md)
+    * [Random Forest](multiclass/iris_randomforest.md)
 
 ## Part VIII - Regression
 

@@ -25,7 +25,10 @@ import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.smile.classification.DecisionTree.Node;
 import hivemall.smile.data.Attribute;
+import hivemall.smile.tools.TreeExportUDF.Evaluator;
+import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.smile.utils.SmileExtUtils;
+import hivemall.utils.codec.Base91;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -36,6 +39,7 @@ import java.text.ParseException;
 import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -104,6 +108,71 @@ public class DecisionTreeTest {
             "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff",
             responseIndex, numLeafs, false);
         assertEquals(7, error);
+    }
+
+    @Test
+    public void testGraphvisOutputIris() throws IOException, ParseException, HiveException {
+        String datasetUrl = "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff";
+        int responseIndex = 4;
+        int numLeafs = 4;
+        boolean dense = true;
+        String outputName = "class";
+        String[] featureNames = new String[] {"sepallength", "sepalwidth", "petallength",
+                "petalwidth"};
+        String[] classNames = new String[] {"setosa", "versicolor", "virginica"};
+
+        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+            classNames, outputName));
+
+        featureNames = null;
+        classNames = null;
+        outputName = null;
+        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+            classNames, outputName));
+    }
+
+    @Test
+    public void testGraphvisOutputWeather() throws IOException, ParseException, HiveException {
+        String datasetUrl = "https://gist.githubusercontent.com/myui/2c9df50db3de93a71b92/raw/3f6b4ecfd4045008059e1a2d1c4064fb8a3d372a/weather.nominal.arff";
+        int responseIndex = 4;
+        int numLeafs = 3;
+        boolean dense = true;
+        String[] featureNames = new String[] {"outlook", "temperature", "humidity", "windy"};
+        String[] classNames = new String[] {"yes", "no"};
+        String outputName = "play";
+
+        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+            classNames, outputName));
+
+        featureNames = null;
+        classNames = null;
+        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+            classNames, outputName));
+    }
+
+    private static String graphvisOutput(String datasetUrl, int responseIndex, int numLeafs,
+            boolean dense, String[] featureNames, String[] classNames, String outputName)
+            throws IOException, HiveException, ParseException {
+        URL url = new URL(datasetUrl);
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(responseIndex);
+
+        AttributeDataset ds = arffParser.parse(is);
+        double[][] x = ds.toArray(new double[ds.size()][]);
+        int[] y = ds.toArray(new int[ds.size()]);
+
+        Attribute[] attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
+        DecisionTree tree = new DecisionTree(attrs, matrix(x, dense), y, numLeafs,
+            RandomNumberGeneratorFactory.createPRNG(31));
+
+        Text model = new Text(Base91.encode(tree.serialize(true)));
+
+        Evaluator eval = new Evaluator(OutputType.graphvis, outputName, false);
+        Text exported = eval.export(model, featureNames, classNames);
+
+        return exported.toString();
     }
 
     private static int run(String datasetUrl, int responseIndex, int numLeafs, boolean dense)
@@ -185,8 +254,8 @@ public class DecisionTreeTest {
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
             DecisionTree tree = new DecisionTree(attrs, matrix(trainx, true), trainy, 4);
 
-            byte[] b = tree.predictSerCodegen(false);
-            Node node = DecisionTree.deserializeNode(b, b.length, false);
+            byte[] b = tree.serialize(false);
+            Node node = DecisionTree.deserialize(b, b.length, false);
             assertEquals(tree.predict(x[loocv.test[i]]), node.predict(x[loocv.test[i]]));
         }
     }
@@ -212,11 +281,11 @@ public class DecisionTreeTest {
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
             DecisionTree tree = new DecisionTree(attrs, matrix(trainx, true), trainy, 4);
 
-            byte[] b1 = tree.predictSerCodegen(true);
-            byte[] b2 = tree.predictSerCodegen(false);
+            byte[] b1 = tree.serialize(true);
+            byte[] b2 = tree.serialize(false);
             Assert.assertTrue("b1.length = " + b1.length + ", b2.length = " + b2.length,
                 b1.length < b2.length);
-            Node node = DecisionTree.deserializeNode(b1, b1.length, true);
+            Node node = DecisionTree.deserialize(b1, b1.length, true);
             assertEquals(tree.predict(x[loocv.test[i]]), node.predict(x[loocv.test[i]]));
         }
     }

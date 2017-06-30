@@ -187,6 +187,25 @@ public final class HiveUtils {
         return Arrays.asList(ary);
     }
 
+    @Nullable
+    public static String[] asStringArray(@Nonnull final DeferredObject arg,
+            @Nonnull final ListObjectInspector listOI) throws HiveException {
+        Object argObj = arg.get();
+        if (argObj == null) {
+            return null;
+        }
+        List<?> data = listOI.getList(argObj);
+        final int size = data.size();
+        final String[] arr = new String[size];
+        for (int i = 0; i < size; i++) {
+            Object o = data.get(i);
+            if (o != null) {
+                arr[i] = o.toString();
+            }
+        }
+        return arr;
+    }
+
     @Nonnull
     public static StructObjectInspector asStructOI(@Nonnull final ObjectInspector oi)
             throws UDFArgumentException {

@@ -249,7 +249,7 @@ public final class TreePredictUDF extends GenericUDF {
                 int length = script.getLength();
                 byte[] b = script.getBytes();
                 b = Base91.decode(b, 0, length);
-                this.cNode = DecisionTree.deserializeNode(b, b.length, true);
+                this.cNode = DecisionTree.deserialize(b, b.length, true);
             }
 
             Arrays.fill(result, null);
@@ -287,7 +287,7 @@ public final class TreePredictUDF extends GenericUDF {
                 int length = script.getLength();
                 byte[] b = script.getBytes();
                 b = Base91.decode(b, 0, length);
-                this.rNode = RegressionTree.deserializeNode(b, b.length, true);
+                this.rNode = RegressionTree.deserialize(b, b.length, true);
             }
             Preconditions.checkNotNull(rNode);
 

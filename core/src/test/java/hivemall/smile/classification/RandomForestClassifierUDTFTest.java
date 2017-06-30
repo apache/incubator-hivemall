@@ -208,7 +208,7 @@ public class RandomForestClassifierUDTFTest {
         Assert.assertNotNull(modelTxt);
 
         byte[] b = Base91.decode(modelTxt.getBytes(), 0, modelTxt.getLength());
-        DecisionTree.Node node = DecisionTree.deserializeNode(b, b.length, true);
+        DecisionTree.Node node = DecisionTree.deserialize(b, b.length, true);
         return node;
     }
 
@@ -257,7 +257,7 @@ public class RandomForestClassifierUDTFTest {
         Assert.assertNotNull(modelTxt);
 
         byte[] b = Base91.decode(modelTxt.getBytes(), 0, modelTxt.getLength());
-        DecisionTree.Node node = DecisionTree.deserializeNode(b, b.length, true);
+        DecisionTree.Node node = DecisionTree.deserialize(b, b.length, true);
         return node;
     }
 
