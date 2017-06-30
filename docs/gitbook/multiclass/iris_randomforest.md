@@ -89,7 +89,7 @@ from
 
 ```sql
 CREATE TABLE model 
-STORED AS SEQUENCEFILE 
+  STORED AS SEQUENCEFILE 
 AS
 select 
   train_randomforest_classifier(features, label) 
@@ -100,60 +100,72 @@ select
 from
   training;
 ```
-*Note: The default TEXTFILE should not be used for model table when using Javascript output through "-output javascript" option.*
 
+> #### Caution
+> The default `TEXTFILE` should not be used for model table when using Javascript output through `-output javascript` option.
+
+```sql
+hive> desc extended model;
 ```
-hive> desc model;
-model_id                int                                         
-model_type              int                                         
-pred_model              string                                      
-var_importance          array<double>                               
-oob_errors              int                                         
-oob_tests               int  
-```
+
+| col_name | data_type 
+|:-:|:-:|
+| model_id               | string | 
+| model_weight           | double |
+| model                  | string |
+| var_importance         | array<double> |                               
+| oob_errors             | int    |    
+| oob_tests              | int    |
+
 
 ## Training options
 
-"-help" option shows usage of the function.
+`-help` option shows usage of the function.
 
-```
+```sql
 select train_randomforest_classifier(features, label, "-help") from training;
 
 > FAILED: UDFArgumentException 
-usage: train_randomforest_classifier(double[] features, int label [,
-       string options]) - Returns a relation consists of <int model_id,
-       int model_type, string pred_model, array<double> var_importance,
-       int oob_errors, int oob_tests> [-attrs <arg>] [-depth <arg>]
-       [-disable_compression] [-help] [-leafs <arg>] [-output <arg>]
-       [-rule <arg>] [-seed <arg>] [-splits <arg>] [-trees <arg>] [-vars
-       <arg>]
- -attrs,--attribute_types <arg>   Comma separated attribute types (Q for
-                                  quantitative variable and C for
-                                  categorical variable. e.g., [Q,C,Q,C])
- -depth,--max_depth <arg>         The maximum number of the tree depth
-                                  [default: Integer.MAX_VALUE]
- -disable_compression             Whether to disable compression of the
-                                  output script [default: false]
- -help                            Show function help
- -leafs,--max_leaf_nodes <arg>    The maximum number of leaf nodes
-                                  [default: Integer.MAX_VALUE]
- -output,--output_type <arg>      The output type (serialization/ser or
-                                  opscode/vm or javascript/js) [default:
-                                  serialization]
- -rule,--split_rule <arg>         Split algorithm [default: GINI, ENTROPY]
- -seed <arg>                      seed value in long [default: -1
-                                  (random)]
- -splits,--min_split <arg>        A node that has greater than or equals
-                                  to `min_split` examples will split
-                                  [default: 2]
- -trees,--num_trees <arg>         The number of trees for each task
-                                  [default: 50]
- -vars,--num_variables <arg>      The number of random selected features
-                                  [default: ceil(sqrt(x[0].length))].
-                                  int(num_variables * x[0].length) is
-                                  considered if num_variable is (0,1]
+usage: train_randomforest_classifier(array<double|string> features, int
+       label [, const array<double> classWeights, const string options]) -
+       Returns a relation consists of <int model_id, int model_type,
+       string pred_model, array<double> var_importance, int oob_errors,
+       int oob_tests, double weight> [-attrs <arg>] [-depth <arg>] [-help]
+       [-leafs <arg>] [-min_samples_leaf <arg>] [-rule <arg>] [-seed
+       <arg>] [-splits <arg>] [-stratified] [-subsample <arg>] [-trees
+       <arg>] [-vars <arg>]
+ -attrs,--attribute_types <arg>      Comma separated attribute types (Q
+                                     for quantitative variable and C for
+                                     categorical variable. e.g.,
+                                     [Q,C,Q,C])
+ -depth,--max_depth <arg>            The maximum number of the tree depth
+                                     [default: Integer.MAX_VALUE]
+ -help                               Show function help
+ -leafs,--max_leaf_nodes <arg>       The maximum number of leaf nodes
+                                     [default: Integer.MAX_VALUE]
+ -min_samples_leaf <arg>             The minimum number of samples in a
+                                     leaf node [default: 1]
+ -rule,--split_rule <arg>            Split algorithm [default: GINI,
+                                     ENTROPY]
+ -seed <arg>                         seed value in long [default: -1
+                                     (random)]
+ -splits,--min_split <arg>           A node that has greater than or
+                                     equals to `min_split` examples will
+                                     split [default: 2]
+ -stratified,--stratified_sampling   Enable Stratified sampling for
+                                     unbalanced data
+ -subsample <arg>                    Sampling rate in range (0.0,1.0]
+ -trees,--num_trees <arg>            The number of trees for each task
+                                     [default: 50]
+ -vars,--num_variables <arg>         The number of random selected
+                                     features [default:
+                                     ceil(sqrt(x[0].length))].
+                                     int(num_variables * x[0].length) is
+                                     considered if num_variable is (0,1
 ```
-*Caution: "-num_trees" controls the number of trees for each task, not the total number of trees.*
+
+> #### Caution
+> `-num_trees` controls the number of trees for each task, not the total number of trees.
 
 ### Parallelize Training
 
@@ -161,7 +173,8 @@ To parallelize RandomForest training, you can use UNION ALL as follows:
 
 ```sql
 CREATE TABLE model 
-STORED AS SEQUENCEFILE 
+  STORED AS ORC tblproperties("orc.compress"="SNAPPY")
+  -- STORED AS SEQUENCEFILE 
 AS
 select 
   train_randomforest_classifier(features, label, '-trees 25') 
@@ -186,51 +199,7 @@ select
 from
   model;
 ```
-> [2.81010338879605,0.4970357753626371,23.790369091407698,14.315316390235273]     0.05333333333333334
-
-### Output prediction model by Javascipt
-
-```sql
-CREATE TABLE model_javascript
-STORED AS SEQUENCEFILE 
-AS
-select train_randomforest_classifier(features, label, "-output_type js -disable_compression")
-from training;
-
-select model from model_javascript limit 1;
-```
-
-```js
-if(x[3] <= 0.5) {
-  0;
-} else  {
-  if(x[2] <= 4.5) {
-    if(x[3] <= 1.5) {
-      if(x[0] <= 4.5) {
-        1;
-      } else  {
-        if(x[0] <= 5.5) {
-          1;
-        } else  {
-          if(x[1] <= 2.5) {
-            1;
-          } else  {
-            1;
-          }
-        }
-      }
-    } else  {
-      2;
-    }
-  } else  {
-    if(x[3] <= 1.5) {
-      2;
-    } else  {
-      2;
-    }
-  }
-}
-```
+> [6.837674865013268,4.1317115752776665,24.331571871930226,25.677497925673062]    0.056666666666666664
 
 # Prediction
 
@@ -239,18 +208,24 @@ set hivevar:classification=true;
 set hive.auto.convert.join=true;
 set hive.mapjoin.optimized.hashtable=false;
 
-create table predicted_vm
+create table predicted
 as
 SELECT
   rowid,
-  rf_ensemble(predicted) as predicted
+  -- rf_ensemble(predicted) as predicted
+  -- hivemall v0.5-rc.1 or later
+  rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
+  -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
 FROM (
   SELECT
     rowid, 
     -- hivemall v0.4.1-alpha.2 and before
     -- tree_predict(p.model, t.features, ${classification}) as predicted
     -- hivemall v0.4.1 and later
-    tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+    -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+    -- hivemall v0.5-rc.1 or later
+    p.model_weight,
+    tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
   FROM
     model p
     LEFT OUTER JOIN -- CROSS JOIN
@@ -260,7 +235,6 @@ group by
   rowid
 ;
 ```
-_Note: Javascript outputs can be evaluated by `js_tree_predict`._
 
 ### Parallelize Prediction
 
@@ -272,20 +246,29 @@ set hive.auto.convert.join=true;
 SET hive.mapjoin.optimized.hashtable=false;
 SET mapred.reduce.tasks=8;
 
-create table predicted_vm
+create table predicted
 as
 SELECT
   rowid,
-  rf_ensemble(predicted) as predicted
+  -- rf_ensemble(predicted) as predicted
+  -- hivemall v0.5-rc.1 or later
+  rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
+  -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
 FROM (
   SELECT
     t.rowid, 
     -- hivemall v0.4.1-alpha.2 and before
     -- tree_predict(p.pred_model, t.features, ${classification}) as predicted
     -- hivemall v0.4.1 and later
-    tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+    -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+    -- hivemall v0.5-rc.1 or later
+    p.model_weight,
+    tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
   FROM (
-    SELECT model_id, model_type, pred_model
+    SELECT 
+      -- model_id, model_type, pred_model
+      -- hivemall v0.5-rc.1 or later
+      model_id, model_weight, model
     FROM model
     DISTRIBUTE BY rand(1)
   ) p 
@@ -300,8 +283,10 @@ group by
 
 ```sql
 select count(1) from training;
+```
 > 150
 
+```sql
 set hivevar:total_cnt=150;
 
 WITH t1 as (
@@ -310,7 +295,7 @@ SELECT
   t.label as actual,
   p.predicted.label as predicted
 FROM
-  predicted_vm p
+  predicted p
   LEFT OUTER JOIN training t ON (t.rowid = p.rowid)
 )
 SELECT
@@ -321,4 +306,76 @@ WHERE
   actual = predicted
 ;
 ```
-> 0.9533333333333334
+> 0.98
+
+# Graphvis export
+
+> #### Note
+> `tree_export` feature is supported from Hivemall v0.5-rc.1 or later.
+> Better to limit tree depth on training by `-depth` option to plot a Decision Tree.
+
+Hivemall provide `tree_export` to export a decision tree into [Graphviz](http://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
+
+```
+> select tree_export("","-help");
+
+usage: tree_export(string model, const string options, optional
+       array<string> featureNames=null, optional array<string>
+       classNames=null) - exports a Decision Tree model as javascript/dot]
+       [-help] [-output_name <arg>] [-r] [-t <arg>]
+ -help                             Show function help
+ -output_name,--outputName <arg>   output name [default: predicted]
+ -r,--regression                   Is regression tree or not
+ -t,--type <arg>                   Type of output [default: js,
+                                   javascript/js, graphvis/dot
+```
+
+```sql
+CREATE TABLE model_exported 
+  STORED AS ORC tblproperties("orc.compress"="SNAPPY")
+AS
+select
+  model_id,
+  tree_export(model, "-type javascript", array('sepal_length','sepal_width','petal_length','petak_width'), array('Setosa','Versicolour','Virginica')) as js,
+  tree_export(model, "-type graphvis", array('sepal_length','sepal_width','petal_length','petak_width'), array('Setosa','Versicolour','Virginica')) as dot
+from
+  model
+-- limit 1
+;
+```
+
+```
+digraph Tree {
+ node [shape=box, style="filled, rounded", color="black", fontname=helvetica];
+ edge [fontname=helvetica];
+ 0 [label=<petal_length &le; 2.599999964237213>, fillcolor="#00000000"];
+ 1 [label=<predicted = Setosa>, fillcolor="0.0000,1.000,1.000", shape=ellipse];
+ 0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"];
+ 2 [label=<petal_length &le; 4.950000047683716>, fillcolor="#00000000"];
+ 0 -> 2 [labeldistance=2.5, labelangle=-45, headlabel="False"];
+ 3 [label=<petak_width &le; 1.6500000357627869>, fillcolor="#00000000"];
+ 2 -> 3;
+ 4 [label=<predicted = Versicolour>, fillcolor="0.3333,1.000,1.000", shape=ellipse];
+ 3 -> 4;
+ 5 [label=<sepal_width &le; 3.100000023841858>, fillcolor="#00000000"];
+ 3 -> 5;
+ 6 [label=<predicted = Virginica>, fillcolor="0.6667,1.000,1.000", shape=ellipse];
+ 5 -> 6;
+ 7 [label=<predicted = Versicolour>, fillcolor="0.3333,1.000,1.000", shape=ellipse];
+ 5 -> 7;
+ 8 [label=<petak_width &le; 1.75>, fillcolor="#00000000"];
+ 2 -> 8;
+ 9 [label=<petal_length &le; 5.299999952316284>, fillcolor="#00000000"];
+ 8 -> 9;
+ 10 [label=<predicted = Versicolour>, fillcolor="0.3333,1.000,1.000", shape=ellipse];
+ 9 -> 10;
+ 11 [label=<predicted = Virginica>, fillcolor="0.6667,1.000,1.000", shape=ellipse];
+ 9 -> 11;
+ 12 [label=<predicted = Virginica>, fillcolor="0.6667,1.000,1.000", shape=ellipse];
+ 8 -> 12;
+}
+```
+
+<img src="../resources/images/iris.png" alt="Iris Graphvis output"/>
+
+You can draw a graph by `dot -Tpng iris.dot -o iris.png` or using [Viz.js](http://viz-js.com/).
