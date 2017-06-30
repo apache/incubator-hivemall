@@ -164,7 +164,7 @@ public class TreePredictUDFTest {
     }
 
     private static int evalPredict(DecisionTree tree, double[] x) throws HiveException, IOException {
-        byte[] b = tree.predictSerCodegen(true);
+        byte[] b = tree.serialize(true);
         byte[] encoded = Base91.encode(b);
         Text model = new Text(encoded);
 
@@ -186,7 +186,7 @@ public class TreePredictUDFTest {
 
     private static double evalPredict(RegressionTree tree, double[] x) throws HiveException,
             IOException {
-        byte[] b = tree.predictSerCodegen(true);
+        byte[] b = tree.serialize(true);
         byte[] encoded = Base91.encode(b);
         Text model = new Text(encoded);
 

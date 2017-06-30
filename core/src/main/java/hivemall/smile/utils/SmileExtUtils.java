@@ -397,11 +397,21 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
+    public static String resolveFeatureName(final int index, @Nullable final String[] names) {
+        if (names == null) {
+            return "feature#" + index;
+        }
+        if (index >= names.length) {
+            return "feature#" + index;
+        }
+        return names[index];
+    }
+
+    @Nonnull
     public static String resolveName(final int index, @Nullable final String[] names) {
         if (names == null) {
             return String.valueOf(index);
         }
-
         if (index >= names.length) {
             return String.valueOf(index);
         }
@@ -411,7 +421,7 @@ public final class SmileExtUtils {
     /**
      * Generates an evenly distributed range of hue values in the HSV color scale.
      * 
-     * @return
+     * @return colors
      */
     public static double[] getColorBrew(@Nonnegative int n) {
         Preconditions.checkArgument(n >= 1);

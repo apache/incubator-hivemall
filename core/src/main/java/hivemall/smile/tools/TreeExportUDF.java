@@ -24,6 +24,7 @@ import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.mutable.MutableInt;
 
 import java.util.Arrays;
 
@@ -44,16 +45,18 @@ import org.apache.hadoop.io.Text;
 
 @Description(
         name = "tree_export",
-        value = "_FUNC_(string model, array<string> featureNames=null, array<string> classNames=null [, const string options])"
+        value = "_FUNC_(string model, const string options, optional array<string> featureNames=null, optional array<string> classNames=null)"
                 + " - exports a Decision Tree model as javascript/dot]")
 @UDFType(deterministic = true, stateful = false)
 public final class TreeExportUDF extends UDFWithOptions {
 
     private transient Evaluator evaluator;
 
-    private transient ListObjectInspector featureNamesOI;
-    private transient ListObjectInspector classNamesOI;
     private transient StringObjectInspector modelOI;
+    @Nullable
+    private transient ListObjectInspector featureNamesOI;
+    @Nullable
+    private transient ListObjectInspector classNamesOI;
 
     @Override
     protected Options getOptions() {
@@ -61,6 +64,7 @@ public final class TreeExportUDF extends UDFWithOptions {
         opts.addOption("t", "type", true,
             "Type of output [default: js, javascript/js, graphvis/dot");
         opts.addOption("r", "regression", false, "Is regression tree or not");
+        opts.addOption("output_name", "outputName", true, "output name [default: predicted]");
         return opts;
     }
 
@@ -68,9 +72,10 @@ public final class TreeExportUDF extends UDFWithOptions {
     protected CommandLine processOptions(@Nonnull String opts) throws UDFArgumentException {
         CommandLine cl = parseOptions(opts);
 
-        OutputType outputType = OutputType.resolve(cl.getOptionValue("type", "javascript"));
+        OutputType outputType = OutputType.resolve(cl.getOptionValue("type"));
         boolean regression = cl.hasOption("regression");
-        this.evaluator = new Evaluator(outputType, regression);
+        String outputName = cl.getOptionValue("output_name", "predicted");
+        this.evaluator = new Evaluator(outputType, outputName, regression);
 
         return cl;
     }
@@ -78,26 +83,28 @@ public final class TreeExportUDF extends UDFWithOptions {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int argLen = argOIs.length;
-        if (argLen != 3 && argLen != 4) {
-            throw new UDFArgumentException("_FUNC_ takes 1 or 2 arguments");
+        if (argLen < 2 || argLen > 4) {
+            throw new UDFArgumentException("_FUNC_ takes 2~4 arguments: " + argLen);
         }
 
         this.modelOI = HiveUtils.asStringOI(argOIs[0]);
 
-        this.featureNamesOI = HiveUtils.asListOI(argOIs[1]);
-        if (!HiveUtils.isStringOI(featureNamesOI.getListElementObjectInspector())) {
-            throw new UDFArgumentException("_FUNC_ expected array<string> for featureNames: "
-                    + featureNamesOI.getTypeName());
-        }
-        this.classNamesOI = HiveUtils.asListOI(argOIs[2]);
-        if (!HiveUtils.isStringOI(classNamesOI.getListElementObjectInspector())) {
-            throw new UDFArgumentException("_FUNC_ expected array<string> for classNames: "
-                    + classNamesOI.getTypeName());
-        }
+        String options = HiveUtils.getConstString(argOIs[1]);
+        processOptions(options);
 
-        if (argLen == 4) {
-            String options = HiveUtils.getConstString(argOIs[3]);
-            processOptions(options);
+        if (argLen >= 3) {
+            this.featureNamesOI = HiveUtils.asListOI(argOIs[2]);
+            if (!HiveUtils.isStringOI(featureNamesOI.getListElementObjectInspector())) {
+                throw new UDFArgumentException("_FUNC_ expected array<string> for featureNames: "
+                        + featureNamesOI.getTypeName());
+            }
+            if (argLen == 4) {
+                this.classNamesOI = HiveUtils.asListOI(argOIs[3]);
+                if (!HiveUtils.isStringOI(classNamesOI.getListElementObjectInspector())) {
+                    throw new UDFArgumentException("_FUNC_ expected array<string> for classNames: "
+                            + classNamesOI.getTypeName());
+                }
+            }
         }
 
         return PrimitiveObjectInspectorFactory.writableStringObjectInspector;
@@ -111,10 +118,21 @@ public final class TreeExportUDF extends UDFWithOptions {
         }
         Text model = modelOI.getPrimitiveWritableObject(arg0);
 
-        String[] featureNames = HiveUtils.asStringArray(arguments[1], featureNamesOI);
-        String[] classNames = HiveUtils.asStringArray(arguments[2], classNamesOI);
+        String[] featureNames = null, classNames = null;
+        if (arguments.length >= 3) {
+            featureNames = HiveUtils.asStringArray(arguments[2], featureNamesOI);
+            if (arguments.length >= 4) {
+                classNames = HiveUtils.asStringArray(arguments[3], classNamesOI);
+            }
+        }
 
-        return evaluator.export(model, featureNames, classNames);
+        try {
+            return evaluator.export(model, featureNames, classNames);
+        } catch (HiveException he) {
+            throw he;
+        } catch (Throwable e) {
+            throw new HiveException(e);
+        }
     }
 
     @Override
@@ -126,25 +144,30 @@ public final class TreeExportUDF extends UDFWithOptions {
         javascript, graphvis;
 
         @Nonnull
-        public static OutputType resolve(@Nonnull String name) {
+        public static OutputType resolve(@Nonnull String name) throws UDFArgumentException {
             if ("js".equalsIgnoreCase(name) || "javascript".equalsIgnoreCase(name)) {
                 return javascript;
             } else if ("dot".equalsIgnoreCase(name) || "graphvis".equalsIgnoreCase(name)) {
                 return graphvis;
             } else {
-                throw new IllegalArgumentException("Unsupported output type: " + name);
+                throw new UDFArgumentException(
+                    "Please provide a valid `-type` option from [javascript, graphvis]: " + name);
             }
         }
     }
 
-    public class Evaluator {
+    public static class Evaluator {
 
         @Nonnull
         private final OutputType outputType;
+        @Nonnull
+        private final String outputName;
         private final boolean regression;
 
-        Evaluator(@Nonnull OutputType outputType, boolean regression) {
+        public Evaluator(@Nonnull OutputType outputType, @Nonnull String outputName,
+                boolean regression) {
             this.outputType = outputType;
+            this.outputName = outputName;
             this.regression = regression;
         }
 
@@ -157,7 +180,7 @@ public final class TreeExportUDF extends UDFWithOptions {
 
             final String exported;
             if (regression) {
-                exported = exportRegressor(b, featureNames, classNames);
+                exported = exportRegressor(b, featureNames);
             } else {
                 exported = exportClassifier(b, featureNames, classNames);
             }
@@ -167,19 +190,20 @@ public final class TreeExportUDF extends UDFWithOptions {
         @Nonnull
         private String exportClassifier(@Nonnull byte[] b, @Nullable String[] featureNames,
                 @Nullable String[] classNames) throws HiveException {
-            final DecisionTree.Node node = DecisionTree.deserializeNode(b, b.length, true);
+            final DecisionTree.Node node = DecisionTree.deserialize(b, b.length, true);
 
-            final StringBuilder buf = new StringBuilder(4096);
+            final StringBuilder buf = new StringBuilder(8192);
             switch (outputType) {
                 case javascript: {
                     node.exportJavascript(buf, featureNames, classNames, 0);
                     break;
                 }
                 case graphvis: {
-                    buf.append("digraph Tree {\nnode [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica] ;\nedge [fontname=helvetica] ;\n");
+                    buf.append("digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
                     double[] colorBrew = (classNames == null) ? null
                             : SmileExtUtils.getColorBrew(classNames.length);
-                    node.exportGraphviz(buf, featureNames, classNames, colorBrew, 0);
+                    node.exportGraphviz(buf, featureNames, classNames, outputName, colorBrew,
+                        new MutableInt(0), 0);
                     buf.append("}");
                     break;
                 }
@@ -190,14 +214,20 @@ public final class TreeExportUDF extends UDFWithOptions {
         }
 
         @Nonnull
-        private String exportRegressor(@Nonnull byte[] b, @Nullable String[] featureNames,
-                @Nullable String[] classNames) throws HiveException {
-            final RegressionTree.Node node = RegressionTree.deserializeNode(b, b.length, true);
+        private String exportRegressor(@Nonnull byte[] b, @Nullable String[] featureNames)
+                throws HiveException {
+            final RegressionTree.Node node = RegressionTree.deserialize(b, b.length, true);
 
-            final StringBuilder buf = new StringBuilder(4096);
+            final StringBuilder buf = new StringBuilder(8192);
             switch (outputType) {
                 case javascript: {
-                    node.jsCodegen(buf, 0);
+                    node.exportJavascript(buf, featureNames, 0);
+                    break;
+                }
+                case graphvis: {
+                    buf.append("digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
+                    node.exportGraphviz(buf, featureNames, outputName, new MutableInt(0), 0);
+                    buf.append("}");
                     break;
                 }
                 default:

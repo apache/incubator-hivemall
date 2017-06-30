@@ -579,7 +579,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final int m = trees.length;
         final Text[] models = new Text[m];
         for (int i = 0; i < m; i++) {
-            byte[] b = trees[i].predictSerCodegen(true);
+            byte[] b = trees[i].serialize(true);
             b = Base91.encode(b);
             models[i] = new Text(b);
         }
