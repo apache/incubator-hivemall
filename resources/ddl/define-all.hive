@@ -681,6 +681,9 @@ create temporary function train_randomforest_regr as 'hivemall.smile.regression.
 drop temporary function if exists tree_predict;
 create temporary function tree_predict as 'hivemall.smile.tools.TreePredictUDF';
 
+drop temporary function if exists tree_export;
+create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
+
 drop temporary function if exists rf_ensemble;
 create temporary function rf_ensemble as 'hivemall.smile.tools.RandomForestEnsembleUDAF';
 

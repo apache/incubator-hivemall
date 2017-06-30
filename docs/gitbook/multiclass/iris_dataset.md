@@ -126,13 +126,13 @@ select rand(${rand_seed}) as rnd, * from iris_scaled;
 
 -- 80% for training
 create table train80p as
-select * from  iris_shuffled 
+select * from iris_shuffled 
 order by rnd DESC
 limit 120;
 
 -- 20% for testing
 create table test20p as
-select * from  iris_shuffled 
+select * from iris_shuffled 
 order by rnd ASC
 limit 30;
 
@@ -159,64 +159,3 @@ select
 from  
    train80p;
 ```
-
-# Training (multiclass classification)
-
-```sql
-create table model_scw1 as
-select 
- label, 
- feature,
- argmin_kld(weight, covar) as weight
-from 
- (select 
-     train_multiclass_scw(features, label) as (label, feature, weight, covar)
-  from 
-     training_x10
- ) t 
-group by label, feature;
-```
-
-# Predict
-
-```sql
-create or replace view predict_scw1
-as
-select 
-  rowid, 
-  m.col0 as score, 
-  m.col1 as label
-from (
-select
-   rowid, 
-   maxrow(score, label) as m
-from (
-  select
-    t.rowid,
-    m.label,
-    sum(m.weight * t.value) as score
-  from 
-    test20p_exploded t LEFT OUTER JOIN
-    model_scw1 m ON (t.feature = m.feature)
-  group by
-    t.rowid, m.label
-) t1
-group by rowid
-) t2;
-```
-
-# Evaluation
-
-```sql
-create or replace view eval_scw1 as
-select 
-  t.label as actual, 
-  p.label as predicted
-from 
-  test20p t JOIN predict_scw1 p 
-    on (t.rowid = p.rowid);
-
-select count(1)/30 from eval_scw1 
-where actual = predicted;
-```
-> 0.9666666666666667

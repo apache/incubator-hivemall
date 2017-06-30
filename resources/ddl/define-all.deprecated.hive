@@ -55,12 +55,6 @@ create temporary function adadelta as 'hivemall.regression.AdaDeltaUDTF';
 drop temporary function if exists collect_all;
 create temporary function collect_all as 'hivemall.tools.array.CollectAllUDAF';
 
-drop temporary function if exists vm_tree_predict;
-create temporary function vm_tree_predict as 'hivemall.smile.tools.TreePredictByStackMachineUDF';
-
-drop temporary function if exists js_tree_predict;
-create temporary function js_tree_predict as 'hivemall.smile.tools.TreePredictByJavascriptUDF';
-
 drop temporary function if exists train_gbt_classifier;
 create temporary function train_gbt_classifier as 'hivemall.smile.classification.GradientTreeBoostingClassifierUDTF';
 

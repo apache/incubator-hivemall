@@ -499,7 +499,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         @Nonnull
         private static Text getModel(@Nonnull final RegressionTree tree) throws HiveException {
-            byte[] b = tree.predictSerCodegen(true);
+            byte[] b = tree.serialize(true);
             b = Base91.encode(b);
             return new Text(b);
         }
