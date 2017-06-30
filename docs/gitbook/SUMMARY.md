@@ -49,7 +49,7 @@
 
 * [List of generic Hivemall functions](misc/generic_funcs.md)
 * [Efficient Top-K query processing](misc/topk.md)
-* [English/Japanese Text Tokenizer](misc/tokenizer.md)
+* [Text Tokenizer](misc/tokenizer.md)
 
 ## Part III - Feature Engineering
 
