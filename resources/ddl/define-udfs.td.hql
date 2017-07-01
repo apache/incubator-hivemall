@@ -177,6 +177,7 @@ create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
+create temporary function tokenize_cn as 'hivemall.nlp.tokenizer.SmartcnUDF';
 
 -- Backward compatibilities
 create temporary function concat_array as 'hivemall.tools.array.ArrayConcatUDF';
