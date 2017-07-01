@@ -35,7 +35,7 @@ import org.junit.Test;
 public class SmartcnUDFTest {
 
 	@Test
-	public void testOneArgment() throws UDFArgumentException, IOException {
+	public void testOneArgument() throws UDFArgumentException, IOException {
 		GenericUDF udf = new SmartcnUDF();
 		ObjectInspector[] argOIs = new ObjectInspector[1];
 		// line
@@ -45,7 +45,7 @@ public class SmartcnUDFTest {
 	}
 
 	@Test
-	public void testTwoArgment() throws UDFArgumentException, IOException {
+	public void testTwoArgument() throws UDFArgumentException, IOException {
 		GenericUDF udf = new SmartcnUDF();
 		ObjectInspector[] argOIs = new ObjectInspector[2];
 		// line
@@ -60,7 +60,7 @@ public class SmartcnUDFTest {
 	}
 
 	@Test
-	public void testEvalauteOneRow() throws IOException, HiveException {
+	public void testEvaluateOneRow() throws IOException, HiveException {
 		SmartcnUDF udf = new SmartcnUDF();
 		ObjectInspector[] argOIs = new ObjectInspector[1];
 		// line

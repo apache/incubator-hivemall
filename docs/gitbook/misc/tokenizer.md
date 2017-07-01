@@ -24,15 +24,19 @@ Hivemall provides simple English text tokenizer UDF that has following syntax:
 tokenize(text input, optional boolean toLowerCase = false)
 ```
 
-# Tokenizer for Japanese Texts
+# Tokenizer for Non-English Texts
 
-Hivemall-NLP module provides a Japanese text tokenizer UDF using [Kuromoji](https://github.com/atilika/kuromoji). 
+Hivemall-NLP module provides some Non-English Text tokenizer UDFs as follows.
 
 First of all, you need to issue the following DDLs to use the NLP module. Note NLP module is not included in [hivemall-with-dependencies.jar](https://github.com/myui/hivemall/releases).
 
 > add jar /tmp/[hivemall-nlp-xxx-with-dependencies.jar](https://github.com/myui/hivemall/releases);
 
 > source /tmp/[define-additional.hive](https://github.com/myui/hivemall/releases);
+
+## Japanese Tokenizer
+
+Japanese text tokenizer UDF uses [Kuromoji](https://github.com/atilika/kuromoji). 
 
 The signature of the UDF is as follows:
 ```sql
@@ -48,13 +52,9 @@ select tokenize_ja("kuromojiを使った分かち書きのテストです。第�
 
 For detailed APIs, please refer Javadoc of [JapaneseAnalyzer](https://lucene.apache.org/core/5_3_1/analyzers-kuromoji/org/apache/lucene/analysis/ja/JapaneseAnalyzer.html) as well.
 
-# Tokenizer for Chinese Texts
+## Chinese Tokenizer
 
-Hivemall-NLP module provides a Chinese text tokenizer UDF using [SmartChineseAnalyzer](http://lucene.apache.org/core/5_3_1/analyzers-smartcn/org/apache/lucene/analysis/cn/smart/SmartChineseAnalyzer.html). 
-
-> add jar /tmp/[hivemall-nlp-xxx-with-dependencies.jar](https://github.com/myui/hivemall/releases);
-
-> source /tmp/[define-additional.hive](https://github.com/myui/hivemall/releases);
+Chinese text tokenizer UDF uses [SmartChineseAnalyzer](http://lucene.apache.org/core/5_3_1/analyzers-smartcn/org/apache/lucene/analysis/cn/smart/SmartChineseAnalyzer.html). 
 
 The signature of the UDF is as follows:
 ```sql

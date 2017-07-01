@@ -42,96 +42,97 @@ import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 
-@Description(
-        name = "tokenize_cn",
-        value = "_FUNC_(String line [, const list<string> stopWords])"
-                + " - returns tokenized strings in array<string>")
+@Description(name = "tokenize_cn", value = "_FUNC_(String line [, const list<string> stopWords])"
+		+ " - returns tokenized strings in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class SmartcnUDF extends GenericUDF {
 
-    private String[] _stopWordsArray;
+	private String[] _stopWordsArray;
 
-    private transient SmartChineseAnalyzer _analyzer;
+	private transient SmartChineseAnalyzer _analyzer;
 
-    @Override
-    public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-        final int arglen = arguments.length;
-        if (arglen < 1 || arglen > 2) {
-            throw new UDFArgumentException("Invalid number of arguments for `tokenize_cn`: "
-                    + arglen);
-        }
+	@Override
+	public ObjectInspector initialize(ObjectInspector[] arguments)
+			throws UDFArgumentException {
+		final int arglen = arguments.length;
+		if (arglen < 1 || arglen > 2) {
+			throw new UDFArgumentException(
+					"Invalid number of arguments for `tokenize_cn`: " + arglen);
+		}
 
-        this._stopWordsArray = (arglen >= 2) ? HiveUtils.getConstStringArray(arguments[1]) : null;
-        this._analyzer = null;
+		this._stopWordsArray = (arglen >= 2) ? HiveUtils
+				.getConstStringArray(arguments[1]) : null;
+		this._analyzer = null;
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-    }
+		return ObjectInspectorFactory
+				.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+	}
 
-    @Override
-    public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
-        SmartChineseAnalyzer analyzer = _analyzer;
-        if (analyzer == null) {
+	@Override
+	public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
+		SmartChineseAnalyzer analyzer = _analyzer;
+		if (analyzer == null) {
 			CharArraySet stopwords = stopWords(_stopWordsArray);
-            analyzer= new SmartChineseAnalyzer(stopwords);
-            this._analyzer = analyzer;
-        }
+			analyzer = new SmartChineseAnalyzer(stopwords);
+			this._analyzer = analyzer;
+		}
 
-        Object arg0 = arguments[0].get();
-        if (arg0 == null) {
-            return null;
-        }
-        String line = arg0.toString();
+		Object arg0 = arguments[0].get();
+		if (arg0 == null) {
+			return null;
+		}
+		String line = arg0.toString();
 
-        final List<Text> results = new ArrayList<Text>(32);
-        TokenStream stream = null;
-        try {
-            stream = analyzer.tokenStream("", line);
-            if (stream != null) {
-                analyzeTokens(stream, results);
-            }
-        } catch (IOException e) {
-            IOUtils.closeQuietly(analyzer);
-            throw new HiveException(e);
-        } finally {
-            IOUtils.closeQuietly(stream);
-        }
-        return results;
-    }
+		final List<Text> results = new ArrayList<Text>(32);
+		TokenStream stream = null;
+		try {
+			stream = analyzer.tokenStream("", line);
+			if (stream != null) {
+				analyzeTokens(stream, results);
+			}
+		} catch (IOException e) {
+			IOUtils.closeQuietly(analyzer);
+			throw new HiveException(e);
+		} finally {
+			IOUtils.closeQuietly(stream);
+		}
+		return results;
+	}
 
-    @Override
-    public void close() throws IOException {
-        IOUtils.closeQuietly(_analyzer);
-    }
+	@Override
+	public void close() throws IOException {
+		IOUtils.closeQuietly(_analyzer);
+	}
 
+	@Nonnull
+	private static CharArraySet stopWords(@Nonnull final String[] array)
+			throws UDFArgumentException {
+		if (array == null) {
+			return SmartChineseAnalyzer.getDefaultStopSet();
+		}
+		if (array.length == 0) {
+			return CharArraySet.EMPTY_SET;
+		}
+		CharArraySet results = new CharArraySet(Arrays.asList(array), /* ignoreCase */
+				true);
+		return results;
+	}
 
-    @Nonnull
-    private static CharArraySet stopWords(@Nonnull final String[] array)
-            throws UDFArgumentException {
-        if (array == null) {
-            return SmartChineseAnalyzer.getDefaultStopSet();
-        }
-        if (array.length == 0) {
-            return CharArraySet.EMPTY_SET;
-        }
-        CharArraySet results = new CharArraySet(Arrays.asList(array), /* ignoreCase */true);
-        return results;
-    }
+	private static void analyzeTokens(@Nonnull TokenStream stream,
+			@Nonnull List<Text> results) throws IOException {
+		// instantiate an attribute placeholder once
+		CharTermAttribute termAttr = stream
+				.getAttribute(CharTermAttribute.class);
+		stream.reset();
 
-    private static void analyzeTokens(@Nonnull TokenStream stream, @Nonnull List<Text> results)
-            throws IOException {
-        // instantiate an attribute placeholder once
-        CharTermAttribute termAttr = stream.getAttribute(CharTermAttribute.class);
-        stream.reset();
+		while (stream.incrementToken()) {
+			String term = termAttr.toString();
+			results.add(new Text(term));
+		}
+	}
 
-        while (stream.incrementToken()) {
-            String term = termAttr.toString();
-            results.add(new Text(term));
-        }
-    }
-
-    @Override
-    public String getDisplayString(String[] children) {
-        return "tokenize_cn(" + Arrays.toString(children) + ')';
-    }
-
+	@Override
+	public String getDisplayString(String[] children) {
+		return "tokenize_cn(" + Arrays.toString(children) + ')';
+	}
 }
