@@ -79,6 +79,16 @@ create temporary function train_multiclass_scw as 'hivemall.classifier.multiclas
 drop temporary function if exists train_multiclass_scw2;
 create temporary function train_multiclass_scw2 as 'hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF$SCW2';
 
+--------------------------------
+--  MaxEnt classification --
+--------------------------------
+
+drop temporary function if exists train_maxent_classifier;
+create temporary function train_maxent_classifier as 'hivemall.smile.classification.MaxEntUDTF';
+
+drop temporary function if exists predict_maxent_classifier;
+create temporary function predict_maxent_classifier as 'hivemall.smile.tools.MaxEntPredictUDF';
+
 --------------------------
 -- similarity functions --
 --------------------------
