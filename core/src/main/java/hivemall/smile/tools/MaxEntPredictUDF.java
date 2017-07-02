@@ -174,6 +174,6 @@ public class MaxEntPredictUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "tree_predict(" + Arrays.toString(children) + ")";
+        return "maxent_predict(" + Arrays.toString(children) + ")";
     }
 }
