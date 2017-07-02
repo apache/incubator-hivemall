@@ -45,6 +45,11 @@ import opennlp.model.GenericModelReader;
 import opennlp.model.MaxentModel;
 import opennlp.model.RealValueFileEventStream;
 
+@Description(
+        name = "train_maxent_classifier",
+        value = "_FUNC_(array<double> features, int label [, const boolean classification])"
+                + " - Returns a maximum entropy model per subset of data.")
+@UDFType(deterministic = true, stateful = false)
 public class MaxEntPredictUDF extends GenericUDF {
 
     private StringObjectInspector modelOI;
