@@ -48,7 +48,7 @@ import opennlp.model.RealValueFileEventStream;
 @Description(
         name = "predict_maxent_classifier",
         value = "_FUNC_(string model, string attributes, array<double> features)"
-                + " - Returns a maximum entropy model per subset of data.")
+                + " - Returns best class and probability distribution among all the classes per instance.")
 @UDFType(deterministic = true, stateful = false)
 public class MaxEntPredictUDF extends GenericUDF {
 
