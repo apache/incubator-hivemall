@@ -61,9 +61,9 @@ public class MatrixEventStream extends AbstractEventStream {
 	  
 	  private Event createEvent(double[] obs, int y) {
 		    rowNum++;
-		    if (obs == null) 
+		    if (obs == null){ 
 		      return null;
-		    else{
+		    }else{
 		    	  String[] names = new String[obs.length];
 		    	  float[] values = new float[obs.length];
 			      for (int i = 0; i < obs.length; i++){
