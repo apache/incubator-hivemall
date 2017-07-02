@@ -46,7 +46,7 @@ import opennlp.model.MaxentModel;
 import opennlp.model.RealValueFileEventStream;
 
 @Description(
-        name = "train_maxent_predict",
+        name = "predict_maxent_classifier",
         value = "_FUNC_(string model, string attributes, array<double> features)"
                 + " - Returns a maximum entropy model per subset of data.")
 @UDFType(deterministic = true, stateful = false)
