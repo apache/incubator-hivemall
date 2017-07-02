@@ -72,6 +72,11 @@ import opennlp.model.Event;
 import opennlp.model.EventStream;
 import opennlp.model.OnePassRealValueDataIndexer;
 
+@Description(
+        name = "train_maxent_classifier",
+        value = "_FUNC_(array<double> features, int label [, const boolean classification])"
+                + " - Returns a maximum entropy model per subset of data.")
+@UDFType(deterministic = true, stateful = false)
 public class MaxEntUDTF extends UDTFWithOptions{
 	private static final Log logger = LogFactory.getLog(MaxEntUDTF.class);
 	
