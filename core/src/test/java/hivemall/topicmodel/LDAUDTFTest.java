@@ -53,13 +53,7 @@ public class LDAUDTFTest {
             udtf.process(new Object[]{ Arrays.asList(doc2) });
         }
         
-        // LDA FAILS IN REAL LIFE BIG TIME!!!!
-        // Test could not possibly pick that up as udf.close() call is missing
-        // The errors are in runIterativeTraining of LDAUDTF
-        // the cause is encoding of characters, xž:1, for exapmple, then this bit is chopped into wrong size of bytes chunks and
-        // nio library goes cucumbers.
-        // Please, fix.
-        udtf.close();
+        //udtf.close();
         
         SortedMap<Float, List<String>> topicWords;
 
