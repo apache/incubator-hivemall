@@ -18,8 +18,8 @@
  */
 package hivemall.regression;
 
-import hivemall.common.EtaEstimator;
-import hivemall.common.LossFunctions;
+import hivemall.optimizer.EtaEstimator;
+import hivemall.optimizer.LossFunctions;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -28,6 +28,12 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
+/**
+ * Logistic regression using SGD.
+ * 
+ * @deprecated Use {@link hivemall.regression.GeneralRegressionUDTF} instead
+ */
+@Deprecated
 @Description(
         name = "logress",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
@@ -50,7 +56,8 @@ public final class LogressUDTF extends RegressionBaseUDTF {
     @Override
     protected Options getOptions() {
         Options opts = super.getOptions();
-        opts.addOption("t", "total_steps", true, "a total of n_samples * epochs time steps");
+        opts.addOption("t", "total_steps", true,
+            "a total of n_samples * epochs time steps [default: 10000]");
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
         opts.addOption("eta0", true, "The initial learning rate [default 0.1]");
@@ -73,7 +80,7 @@ public final class LogressUDTF extends RegressionBaseUDTF {
     }
 
     @Override
-    protected float computeUpdate(final float target, final float predicted) {
+    protected float computeGradient(final float target, final float predicted) {
         float eta = etaEstimator.eta(count);
         float gradient = LossFunctions.logisticLoss(target, predicted);
         return eta * gradient;

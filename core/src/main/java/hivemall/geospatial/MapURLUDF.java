@@ -133,8 +133,8 @@ public final class MapURLUDF extends UDFWithOptions {
             }
             final int xtile, ytile;
             try {
-                xtile = GeoSpatialUtils.lon2tile(lon, zoom);
-                ytile = GeoSpatialUtils.lat2tile(lat, zoom);
+                xtile = GeoSpatialUtils.lon2tilex(lon, zoom);
+                ytile = GeoSpatialUtils.lat2tiley(lat, zoom);
             } catch (IllegalArgumentException ex) {
                 throw new UDFArgumentException(ex);
             }

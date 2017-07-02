@@ -77,6 +77,14 @@ public abstract class MulticlassOnlineClassifierUDTF extends LearnerBaseUDTF {
     protected Map<Object, PredictionModel> label2model;
     protected int count;
 
+    public MulticlassOnlineClassifierUDTF() {
+        this(false);
+    }
+
+    public MulticlassOnlineClassifierUDTF(boolean enableNewModel) {
+        super(enableNewModel);
+    }
+
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 2) {

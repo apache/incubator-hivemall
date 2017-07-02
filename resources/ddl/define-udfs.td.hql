@@ -164,9 +164,20 @@ create temporary function train_plsa as 'hivemall.topicmodel.PLSAUDTF';
 create temporary function plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF';
 create temporary function tile as 'hivemall.geospatial.TileUDF';
 create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
+create temporary function lat2tiley as 'hivemall.geospatial.Lat2TileYUDF';
+create temporary function lon2tilex as 'hivemall.geospatial.Lon2TileXUDF';
+create temporary function tilex2lon as 'hivemall.geospatial.TileX2LonUDF';
+create temporary function tiley2lat as 'hivemall.geospatial.TileY2LatUDF';
+create temporary function haversine_distance as 'hivemall.geospatial.HaversineDistanceUDF';
+create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
+create temporary function dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF';
+create temporary function train_classifier as 'hivemall.classifier.GeneralClassifierUDTF';
+create temporary function train_regression as 'hivemall.regression.GeneralRegressionUDTF';
+create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
+create temporary function tokenize_cn as 'hivemall.nlp.tokenizer.SmartcnUDF';
 
 -- Backward compatibilities
 create temporary function concat_array as 'hivemall.tools.array.ArrayConcatUDF';

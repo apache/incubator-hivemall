@@ -2,12 +2,15 @@
 -- Hivemall: Hive scalable Machine Learning Library
 -----------------------------------------------------------------------------
 
-drop temporary function if exists  hivemall_version;
+drop temporary function if exists hivemall_version;
 create temporary function hivemall_version as 'hivemall.HivemallVersionUDF';
 
 ---------------------------
 -- binary classification --
 ---------------------------
+
+drop temporary function if exists train_classifier;
+create temporary function train_classifier as 'hivemall.classifier.GeneralClassifierUDTF';
 
 drop temporary function if exists train_perceptron;
 create temporary function train_perceptron as 'hivemall.classifier.PerceptronUDTF';
@@ -47,7 +50,7 @@ create temporary function kpa_predict as 'hivemall.classifier.KPAPredictUDAF';
 
 --------------------------------
 --  Multiclass classification --
--------------------------------- 
+--------------------------------
 
 drop temporary function if exists train_multiclass_perceptron;
 create temporary function train_multiclass_perceptron as 'hivemall.classifier.multiclass.MulticlassPerceptronUDTF';
@@ -94,6 +97,9 @@ create temporary function euclid_similarity as 'hivemall.knn.similarity.EuclidSi
 
 drop temporary function if exists distance2similarity;
 create temporary function distance2similarity as 'hivemall.knn.similarity.Distance2SimilarityUDF';
+
+drop temporary function if exists dimsum_mapper;
+create temporary function dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF';
 
 ------------------------
 -- distance functions --
@@ -327,6 +333,9 @@ create temporary function tf as 'hivemall.ftvec.text.TermFrequencyUDAF';
 -- Regression functions --
 --------------------------
 
+drop temporary function if exists train_regression;
+create temporary function train_regression as 'hivemall.regression.GeneralRegressionUDTF';
+
 drop temporary function if exists logress;
 create temporary function logress as 'hivemall.regression.LogressUDTF';
 
@@ -452,6 +461,9 @@ create temporary function to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap
 
 drop temporary function if exists sigmoid;
 create temporary function sigmoid as 'hivemall.tools.math.SigmoidGenericUDF';
+
+drop temporary function if exists l2_norm;
+create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
 
 ----------------------
 -- Matrix functions --
@@ -638,6 +650,21 @@ create temporary function tile as 'hivemall.geospatial.TileUDF';
 drop temporary function if exists map_url;
 create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
 
+drop temporary function if exists lat2tiley;
+create temporary function lat2tiley as 'hivemall.geospatial.Lat2TileYUDF';
+
+drop temporary function if exists lon2tilex;
+create temporary function lon2tilex as 'hivemall.geospatial.Lon2TileXUDF';
+
+drop temporary function if exists tilex2lon;
+create temporary function tilex2lon as 'hivemall.geospatial.TileX2LonUDF';
+
+drop temporary function if exists tiley2lat;
+create temporary function tiley2lat as 'hivemall.geospatial.TileY2LatUDF';
+
+drop temporary function if exists haversine_distance;
+create temporary function haversine_distance as 'hivemall.geospatial.HaversineDistanceUDF';
+
 ----------------------------
 -- Smile related features --
 ----------------------------
@@ -653,6 +680,9 @@ create temporary function train_randomforest_regr as 'hivemall.smile.regression.
 
 drop temporary function if exists tree_predict;
 create temporary function tree_predict as 'hivemall.smile.tools.TreePredictUDF';
+
+drop temporary function if exists tree_export;
+create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
 
 drop temporary function if exists rf_ensemble;
 create temporary function rf_ensemble as 'hivemall.smile.tools.RandomForestEnsembleUDAF';
@@ -692,5 +722,3 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
-
-

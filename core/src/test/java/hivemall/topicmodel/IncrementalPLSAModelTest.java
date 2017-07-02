@@ -110,10 +110,10 @@ public class IncrementalPLSAModelTest {
         }
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
                 + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
-            model.getProbability("vegetables", k1) > model.getProbability("flu", k1));
+            model.getWordScore("vegetables", k1) > model.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
-            model.getProbability("avocados", k2) > model.getProbability("healthy", k2));
+            model.getWordScore("avocados", k2) > model.getWordScore("healthy", k2));
     }
 
     @Test
@@ -177,10 +177,10 @@ public class IncrementalPLSAModelTest {
         }
         Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
                 + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
-            model.getProbability("vegetables", k1) > model.getProbability("flu", k1));
+            model.getWordScore("vegetables", k1) > model.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
-            model.getProbability("avocados", k2) > model.getProbability("healthy", k2));
+            model.getWordScore("avocados", k2) > model.getWordScore("healthy", k2));
     }
 
     @Test

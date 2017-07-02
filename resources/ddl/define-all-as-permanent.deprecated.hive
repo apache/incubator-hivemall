@@ -55,12 +55,6 @@ CREATE FUNCTION adadelta as 'hivemall.regression.AdaDeltaUDTF' USING JAR '${hive
 DROP FUNCTION IF EXISTS collect_all;
 CREATE FUNCTION collect_all as 'hivemall.tools.array.CollectAllUDAF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION IF EXISTS vm_tree_predict;
-CREATE FUNCTION vm_tree_predict as 'hivemall.smile.tools.TreePredictByStackMachineUDF' USING JAR '${hivemall_jar}';
-
-DROP FUNCTION IF EXISTS js_tree_predict;
-CREATE FUNCTION js_tree_predict as 'hivemall.smile.tools.TreePredictByJavascriptUDF' USING JAR '${hivemall_jar}';
-
 DROP FUNCTION IF EXISTS train_gbt_classifier;
 CREATE FUNCTION train_gbt_classifier as 'hivemall.smile.classification.GradientTreeBoostingClassifierUDTF' USING JAR '${hivemall_jar}';
 

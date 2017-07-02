@@ -13,6 +13,9 @@ CREATE FUNCTION hivemall_version as 'hivemall.HivemallVersionUDF' USING JAR '${h
 -- binary classification --
 ---------------------------
 
+DROP FUNCTION IF EXISTS train_classifier;
+CREATE FUNCTION train_classifier as 'hivemall.classifier.GeneralClassifierUDTF' USING JAR '${hivemall_jar}';
+
 DROP FUNCTION IF EXISTS train_perceptron;
 CREATE FUNCTION train_perceptron as 'hivemall.classifier.PerceptronUDTF' USING JAR '${hivemall_jar}';
 
@@ -51,7 +54,7 @@ CREATE FUNCTION kpa_predict as 'hivemall.classifier.KPAPredictUDAF' USING JAR '$
 
 --------------------------------
 --  Multiclass classification --
--------------------------------- 
+--------------------------------
 
 DROP FUNCTION IF EXISTS train_multiclass_perceptron;
 CREATE FUNCTION train_multiclass_perceptron as 'hivemall.classifier.multiclass.MulticlassPerceptronUDTF' USING JAR '${hivemall_jar}';
@@ -98,6 +101,9 @@ CREATE FUNCTION euclid_similarity as 'hivemall.knn.similarity.EuclidSimilarity' 
 
 DROP FUNCTION IF EXISTS distance2similarity;
 CREATE FUNCTION distance2similarity as 'hivemall.knn.similarity.Distance2SimilarityUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS dimsum_mapper;
+CREATE FUNCTION dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF' USING JAR '${hivemall_jar}';
 
 ------------------------
 -- distance functions --
@@ -331,6 +337,13 @@ CREATE FUNCTION tf as 'hivemall.ftvec.text.TermFrequencyUDAF' USING JAR '${hivem
 -- Regression functions --
 --------------------------
 
+DROP FUNCTION IF EXISTS train_regression;
+CREATE FUNCTION train_regression as 'hivemall.regression.GeneralRegressionUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS train_logregr;
+CREATE FUNCTION train_logregr as 'hivemall.regression.LogressUDTF' USING JAR '${hivemall_jar}';
+
+-- alias for backward compatibility
 DROP FUNCTION IF EXISTS logress;
 CREATE FUNCTION logress as 'hivemall.regression.LogressUDTF' USING JAR '${hivemall_jar}';
 
@@ -456,6 +469,9 @@ CREATE FUNCTION to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap' USING JA
 
 DROP FUNCTION IF EXISTS sigmoid;
 CREATE FUNCTION sigmoid as 'hivemall.tools.math.SigmoidGenericUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS l2_norm;
+CREATE FUNCTION l2_norm as 'hivemall.tools.math.L2NormUDAF' USING JAR '${hivemall_jar}';
 
 ----------------------
 -- Matrix functions --
@@ -642,6 +658,21 @@ CREATE FUNCTION tile as 'hivemall.geospatial.TileUDF' USING JAR '${hivemall_jar}
 DROP FUNCTION IF EXISTS map_url;
 CREATE FUNCTION map_url as 'hivemall.geospatial.MapURLUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS lat2tiley;
+CREATE FUNCTION lat2tiley as 'hivemall.geospatial.Lat2TileYUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS lon2tilex;
+CREATE FUNCTION lon2tilex as 'hivemall.geospatial.Lon2TileXUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS tilex2lon;
+CREATE FUNCTION tilex2lon as 'hivemall.geospatial.TileX2LonUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS tiley2lat;
+CREATE FUNCTION tiley2lat as 'hivemall.geospatial.TileY2LatUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS haversine_distance;
+CREATE FUNCTION haversine_distance as 'hivemall.geospatial.HaversineDistanceUDF' USING JAR '${hivemall_jar}';
+
 ----------------------------
 -- Smile related features --
 ----------------------------
@@ -657,6 +688,9 @@ CREATE FUNCTION train_randomforest_regr as 'hivemall.smile.regression.RandomFore
 
 DROP FUNCTION IF EXISTS tree_predict;
 CREATE FUNCTION tree_predict as 'hivemall.smile.tools.TreePredictUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS tree_export;
+CREATE FUNCTION tree_export as 'hivemall.smile.tools.TreeExportUDF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS rf_ensemble;
 CREATE FUNCTION rf_ensemble as 'hivemall.smile.tools.RandomForestEnsembleUDAF' USING JAR '${hivemall_jar}';
@@ -682,3 +716,4 @@ CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.tools.XGBoostPredictUDTF' U
 
 DROP FUNCTION xgboost_multiclass_predict;
 CREATE FUNCTION xgboost_multiclass_predict AS 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF' USING JAR '${hivemall_jar}';
+=======

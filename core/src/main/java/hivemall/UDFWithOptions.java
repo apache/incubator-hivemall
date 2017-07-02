@@ -77,9 +77,12 @@ public abstract class UDFWithOptions extends GenericUDF {
         }
     }
 
+    @Nonnull
     protected abstract Options getOptions();
 
-    protected final CommandLine parseOptions(String optionValue) throws UDFArgumentException {
+    @Nonnull
+    protected final CommandLine parseOptions(@Nonnull String optionValue)
+            throws UDFArgumentException {
         String[] args = optionValue.split("\\s+");
         Options opts = getOptions();
         opts.addOption("help", false, "Show function help");
@@ -109,6 +112,7 @@ public abstract class UDFWithOptions extends GenericUDF {
         return cl;
     }
 
+    @Nonnull
     protected abstract CommandLine processOptions(@Nonnull String optionValue)
             throws UDFArgumentException;
 

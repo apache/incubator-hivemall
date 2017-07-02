@@ -179,14 +179,16 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 String rawArgs = HiveUtils.getConstString(argOIs[4]);
                 cl = parseOptions(rawArgs);
 
-                this.topics = Primitives.parseInt(cl.getOptionValue("topics"), LDAUDTF.DEFAULT_TOPICS);
+                this.topics = Primitives.parseInt(cl.getOptionValue("topics"),
+                    LDAUDTF.DEFAULT_TOPICS);
                 if (topics < 1) {
                     throw new UDFArgumentException(
-                            "A positive integer MUST be set to an option `-topics`: " + topics);
+                        "A positive integer MUST be set to an option `-topics`: " + topics);
                 }
 
                 this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
-                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), LDAUDTF.DEFAULT_DELTA);
+                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"),
+                    LDAUDTF.DEFAULT_DELTA);
             } else {
                 this.topics = LDAUDTF.DEFAULT_TOPICS;
                 this.alpha = 1.f / topics;
@@ -469,7 +471,7 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 for (int k = 0; k < topics; k++) {
                     final float lambda_k = lambda_word.get(k).floatValue();
                     if (lambda_k != -1.f) {
-                        model.setLambda(word, k, lambda_k);
+                        model.setWordScore(word, k, lambda_k);
                     }
                 }
             }

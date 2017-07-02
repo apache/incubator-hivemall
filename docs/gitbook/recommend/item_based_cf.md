@@ -17,13 +17,16 @@
   under the License.
 -->
         
-This document describe how to do Item-based Collaborative Filtering using Hivemall.
+This document describes how to do Item-based Collaborative Filtering using Hivemall.
 
-_Caution: naive similarity computation is `O(n^2)` to compute all item-item pair similarity. [MinHash](https://en.wikipedia.org/wiki/MinHash#Jaccard_similarity_and_minimum_hash_values) is an efficient scheme for computing jaccard similarity. Section 6 show how to use MinHash in Hivemall._
+<!-- toc -->
 
-## 1. Prepare transaction table
+> #### Caution
+> Naive similarity computation is `O(n^2)` to compute all item-item pair similarity. In order to accelerate the procedure, Hivemall has an efficient scheme for computing Jaccard and/or cosine similarity [as mentioned later](#efficient-similarity-computation).
 
-Prepare following transaction table. We are generating `feature_vector` for each `item_id` based on cooccurrence of purchased items, a sort of bucket analysis.
+# Prepare `transaction` table
+
+Prepare following `transaction` table. We will generate `feature_vector` for each `itemid` based on cooccurrence of purchased items, a sort of bucket analysis.
 
 | userid | itemid | purchase_at `timestamp` |
 |:-:|:-:|:-:| 
@@ -33,7 +36,7 @@ Prepare following transaction table. We are generating `feature_vector` for each
 | 3 | 2313 | 2016-06-04 19:29:02 |
 | .. | .. | .. |
 
-## 2. Create item_features table
+# Create `item_features` table
 
 What we want for creating a feature vector for each item is the following `cooccurrence` relation.
 
@@ -49,7 +52,7 @@ What we want for creating a feature vector for each item is the following `coocc
 Feature vectors of each item will be as follows:
 
 | itemid | feature_vector `array<string>` |
-|:-:|:-:|
+|:-:|:-|
 | 583266 | 621056:9999, 583266:18 |
 | 31231 | 13212:129, 31231:3, 9833:953 |
 | ... | ... |
@@ -57,16 +60,16 @@ Feature vectors of each item will be as follows:
 Note that value of feature vector should be scaled for k-NN similarity computation e.g., as follows:
 
 | itemid | feature_vector `array<string>` |
-|:-:|:-:|
+|:-:|:-|
 | 583266 | 621056:`ln(9999+1)`, 583266:`ln(18+1)` |
 | 31231 | 13212:`ln(129+1)`, 31231:`ln(3+1)`, 9833:`ln(953+1)` |
 | ... | ... |
 
 The following queries results in creating the above table.
 
-### 2.1. Creating Item purchased table
+## Step 1: Creating `user_purchased` table
 
-The following query creates a table that contains userid, itemid, and purchased_at. The table represents the last user-item contact (purchase) while the `transaction` table holds all contacts.
+The following query creates a table that contains `userid`, `itemid`, and `purchased_at`. The table represents the last user-item contact (purchase) while the `transaction` table holds all contacts.
 
 ```sql
 CREATE TABLE user_purchased as
@@ -84,15 +87,15 @@ group by
 ;
 ```
 
-**Note:** _Better to avoid too old transactions because those information would be outdated though an enough number of transactions is required for recommendation._
+> #### Note
+> Better to avoid too old transactions because those information would be outdated though an enough number of transactions is required for recommendation.
 
-### 2.2. Creating cooccurrence table
+## Step 2: Creating `cooccurrence` table
 
-**Caution:** _Item-Item cooccurrence matrix is a symmetric matrix that has the number of total occurrence for each diagonal element . If the size of items are `k`, then the size of expected matrix is `k * (k - 1) / 2`, usually a very large one._
+> #### Caution
+> Item-item cooccurrence matrix is a symmetric matrix that has the number of total occurrence for each diagonal element. If the size of items is `k`, then the size of expected matrix is `k * (k - 1) / 2`, usually a very large one. Hence, it is better to use [step 2-2](#step-2-2-create-cooccurrence-table-from-upper-triangular-matrix-of-cooccurrence) instead of [step 2-1](#step-2-1-create-cooccurrence-table-directly) for creating a `cooccurrence` table where dataset is large.
 
-_Better to use [2.2.2.](#222-create-cooccurrence-table-from-upper-triangular-matrix-of-cooccurrence) instead of [2.2.1.](#221-create-cooccurrence-table-directly) for creating a `cooccurrence` table where dataset is large._
-
-### 2.2.1. Create cooccurrence table directly
+### Step 2-1: Create `cooccurrence` table directly
 
 ```sql
 create table cooccurrence as 
@@ -114,11 +117,15 @@ group by
 ;
 ```
 
-**Caution:** Note that specifying `having cnt >= 2` has a drawback that item cooccurrence is not calculated where `cnt` is less than 2. It could result no recommended items for certain items. Please ignore `having cnt >= 2` if the following computations finish in an acceptable/reasonable time.
+> #### Note 
+> Note that specifying `having cnt >= 2` has a drawback that item cooccurrence is not calculated where `cnt` is less than 2. It could result no recommended items for certain items. Please ignore `having cnt >= 2` if the following computations finish in an acceptable/reasonable time.
 
-**Caution:** _We ignore a purchase order in the following example. It means that the occurrence counts of `ItemA -> ItemB` and `ItemB -> ItemA` are assumed to be same. It is sometimes not a good idea e.g., for `Camera -> SD card` and `SD card -> Camera`._
+<br/>
 
-### 2.2.2. Create cooccurrence table from Upper Triangular Matrix of cooccurrence
+> #### Caution
+> We ignore a purchase order in the following example. It means that the occurrence counts of `ItemA -> ItemB` and `ItemB -> ItemA` are assumed to be same. It is sometimes not a good idea in terms of reasoning; for example, `Camera -> SD card` and `SD card -> Camera` need to be considered separately.
+
+### Step 2-2: Create `cooccurrence` table from Upper Triangular Matrix of cooccurrence
 
 Better to create [Upper Triangular Matrix](https://en.wikipedia.org/wiki/Triangular_matrix#Description) that has `itemid > other` if resulting table is very large. No need to create Upper Triangular Matrix if your Hadoop cluster can handle the following instructions without considering it.
 
@@ -149,9 +156,12 @@ select * from (
 ) t; 
 ```
 
-_Note: `UNION ALL` [required to be embedded](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+Union#LanguageManualUnion-UNIONwithinaFROMClause) in Hive._
+> #### Note
+> `UNION ALL` [required to be embedded](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+Union#LanguageManualUnion-UNIONwithinaFROMClause) in Hive.
 
-### Limiting size of elements in cooccurrence_upper_triangular
+#### Limiting size of elements in `cooccurrence_upper_triangular`
+
+Using only top-N frequently co-occurred item pairs allows you to reduce the size of `cooccurrence` table:
 
 ```sql
 create table cooccurrence_upper_triangular as
@@ -207,7 +217,7 @@ select itemid, other, cnt
 from t2;
 ```
 
-### 2.2.3. Computing cooccurrence ratio (optional step)
+### Computing cooccurrence ratio (optional step)
 
 You can optionally compute cooccurrence ratio as follows:
 
@@ -236,7 +246,7 @@ group by
 
 `l.cnt / r.totalcnt` represents a cooccurrence ratio of range `[0,1]`.
 
-### 2.3. creating a feature vector for each item
+## Step 3: Creating a feature vector for each item
 
 ```sql
 INSERT OVERWRITE TABLE item_features
@@ -252,14 +262,14 @@ GROUP BY
 ;
 ```
 
-## 3. Computing Item similarity scores
+# Compute item similarity scores
 
-Item-Item similarity computation is known to be computation complexity `O(n^2)` where `n` is the number of items.
-Depending on your cluster size and your dataset, the optimal solution differs.
+Item-item similarity computation is known to be computational complexity `O(n^2)` where `n` is the number of items. We have two options to compute the similarities, and, depending on your cluster size and your dataset, the optimal solution differs. 
 
-**Note:** _Better to use [3.1.1.](#311-similarity-computation-using-the-symmetric-property-of-item-similarity-matrix) scheme where dataset is large._
+> #### Note 
+> If your dataset is large enough, better to choose [modified version of option 1](#taking-advantage-of-the-symmetric-property-of-item-similarity-matrix), which utilizes the symmetric property of similarity matrix.
 
-### 3.1. Shuffle heavy similarity computation
+## Option 1: Parallel computation with computationally heavy shuffling
 
 This version involves 3-way joins w/ large data shuffle; However, this version works in parallel where a cluster has enough task slots.
 
@@ -293,9 +303,9 @@ from
   topk;
 ```
 
-### 3.1.1. Similarity computation using the symmetric property of Item similarity matrix
+### Taking advantage of the symmetric property of item similarity matrix
 
-Note `item_similarity` is a similarity matrix. So, you can compute it from an upper triangular matrix as follows.
+Notice that `item_similarity` is a symmetric matrix. So, you can compute it from an upper triangular matrix as follows.
 
 ```sql
 WITH cooccurrence_top100 as (
@@ -348,9 +358,9 @@ select * from (
 ) t;
 ```
 
-### 3.2. Computation heavy similarity computation 
+## Option 2: Sequential computation
 
-Alternatively, you can compute cosine similarity as follows. This version involves cross join and thus runs sequentially in a single task. However, it involves less shuffle when compared to 3.1.
+Alternatively, you can compute cosine similarity as follows. This version involves cross join and thus runs sequentially in a single task. However, it involves less shuffle compared to option 1.
 
 ```sql
 WITH similarity as (
@@ -393,13 +403,14 @@ from
 | 31231	| 9833 | 0.953 |
 | ... | ... | ... |
 
-## 4. Item-based Recommendation
+# Item-based recommendation
 
 This section introduces item-based recommendation based on recently purchased items by each user.
 
-**Caution:** _It would better to ignore recommending some of items that user already purchased (only 1 time) while items that are purchased twice or more would be okey to be included in the recommendation list (e.g., repeatedly purchased daily necessities). So, you would need an item property table showing that each item is repeatedly purchased items or not._
+> #### Caution
+> It would better to ignore recommending some of items that user already purchased (only 1 time) while items that are purchased twice or more would be okey to be included in the recommendation list (e.g., repeatedly purchased daily necessities). So, you would need an item property table showing that each item is repeatedly purchased items or not.
 
-### 4.1. Computes top-k recently purchaed items for each user
+## Step 1: Computes top-k recently purchased items for each user
 
 First, prepare `recently_purchased_items` table as follows:
 
@@ -422,7 +433,11 @@ from (
 ) t;
 ```
 
-### 4.2. Recommend top-k items based on the cooccurrence for each user's recently purchased item
+## Step 2: Recommend top-k items based on users' recently purchased items
+
+In order to generate a list of recommended items, you can use either cooccurrence count or similarity as a relevance score.
+
+### Cooccurrence-based
 
 ```sql
 WITH topk as (
@@ -461,7 +476,7 @@ group by
 ;
 ```
 
-### 4.3. Recommend top-k items based on the (cooccurrence) similarity for each user's recently purchased item
+### Similarity-based
 
 ```sql
 WITH topk as (
@@ -500,7 +515,11 @@ group by
 ;
 ```
 
-## 5. Pseudo Jaccard Similarity computation using MinHash
+# Efficient similarity computation
+
+Since naive similarity computation takes `O(n^2)` computational complexity, utilizing a certain approximation scheme is practically important to improve efficiency and feasibility. In particular, Hivemall enables you to use one of two sophisticated approximation schemes, [MinHash](##minhash-compute-pseudo-jaccard-similarity) and [DIMSUM](#dimsum-approximated-all-pairs-cosine-similarity-computation).
+
+## MinHash: Compute "pseudo" Jaccard similarity
 
 Refer [this article](https://en.wikipedia.org/wiki/MinHash#Jaccard_similarity_and_minimum_hash_values
 ) to get details about MinHash and Jarccard similarity. [This blog article](https://blog.treasuredata.com/blog/2016/02/16/minhash-in-hivemall/) also explains about Hivemall's minhash.
@@ -547,11 +566,13 @@ from
   top100
 ;
 ```
-_Caution: Note that there might be no similar item for certain items._
 
-### 5.1. Cosine similarity computation following minhash-based similarity items filtering
+> #### Note
+> There might be no similar item for certain items.
 
-You can compute `top-k` similar items based on cosine similarity, following rough `top-N` similar items listing using minhash, where `k << N` (e.g., k=10 and N=100).
+### Compute approximated cosine similarity by using the MinHash-based Jaccard similarity
+
+Once the MinHash-based approach found rough `top-N` similar items, you can efficiently find `top-k` similar items in terms of cosine similarity, where `k << N` (e.g., k=10 and N=100).
 
 ```sql
 WITH similarity as (
@@ -581,4 +602,116 @@ select
   itemid, other, similarity
 from 
   topk;
+```
+
+## DIMSUM: Approximated all-pairs "Cosine" similarity computation
+
+> #### Note
+> This feature is supported from Hivemall v0.5-rc.1 or later.
+
+DIMSUM is a technique to efficiently and approximately compute [Cosine similarities](https://en.wikipedia.org/wiki/Cosine_similarity) for all-pairs of items. You can refer to [an article in Twitter's Engineering blog](https://blog.twitter.com/engineering/en_us/a/2014/all-pairs-similarity-via-dimsum.html) to learn how DIMSUM reduces running time.
+
+Here, let us begin with the `user_purchased` table. `item_similarity` table can be obtained as follows:
+
+```sql
+create table item_similarity as
+with item_magnitude as ( -- compute magnitude of each item vector
+  select
+    to_map(j, mag) as mags
+  from (
+    select 
+      itemid as j,
+      l2_norm(ln(purchase_count+1)) as mag -- use scaled value
+    from 
+      user_purchased
+    group by
+      itemid
+  ) t0
+),
+item_features as (
+  select
+    userid as i,
+    collect_list(
+      feature(itemid, ln(purchase_count+1)) -- use scaled value
+    ) as feature_vector
+  from
+    user_purchased
+  group by
+    userid
+),
+partial_result as ( -- launch DIMSUM in a MapReduce fashion
+  select
+    dimsum_mapper(f.feature_vector, m.mags, '-threshold 0.5')
+      as (itemid, other, s)
+  from
+    item_features f
+  left outer join item_magnitude m
+),
+similarity as ( -- reduce (i.e., sum up) mappers' partial results
+  select
+    itemid, 
+    other,
+    sum(s) as similarity
+  from 
+    partial_result
+  group by
+    itemid, other
+),
+topk as (
+  select
+    each_top_k( -- get top-10 items based on similarity score
+      10, itemid, similarity,
+      itemid, other -- output items
+    ) as (rank, similarity, itemid, other)
+  from (
+    select * from similarity
+    CLUSTER BY itemid
+  ) t
+)
+-- insert overwrite table item_similarity
+select 
+  itemid, other, similarity
+from 
+  topk
+;
+```
+
+Ultimately, using `item_similarity` for [item-based recommendation](#item-based-recommendation) is straightforward in a similar way to what we explained above.
+
+In the above query, an important part is obviously `dimsum_mapper(f.feature_vector, m.mags, '-threshold 0.5')`. An option `-threshold` is a real value in `[0, 1)` range, and intuitively it illustrates *"similarities above this threshold are approximated by the DIMSUM algorithm"*.
+
+### Create `item_similarity` from Upper Triangular Matrix
+
+Thanks to the symmetric property of similarity matrix, DIMSUM enables you to utilize space-efficient Upper-Triangular-Matrix-style output by just adding an option `-disable_symmetric_output`:
+
+```sql
+create table item_similarity as
+with item_magnitude as (
+  ...
+),
+partial_result as (
+  select
+    dimsum_mapper(f.feature_vector, m.mags, '-threshold 0.5 -disable_symmetric_output')
+      as (itemid, other, s)
+  from
+    item_features f
+  left outer join item_magnitude m
+),
+similarity_upper_triangular as ( -- if similarity of (i1, i2) pair is in this table, (i2, i1)'s similarity is omitted
+  select
+    itemid, 
+    other,
+    sum(s) as similarity
+  from 
+    partial_result
+  group by
+    itemid, other
+),
+similarity as ( -- copy (i1, i2)'s similarity as (i2, i1)'s one
+  select itemid, other, similarity from similarity_upper_triangular
+  union all
+  select other as itemid, itemid as other, similarity from similarity_upper_triangular
+),
+topk as (
+  ...
 ```

@@ -262,7 +262,7 @@ public abstract class Feature {
             if (asIntFeature) {
                 int index = parseFeatureIndex(indexStr);
                 probe.setFeatureIndex(index);
-                probe.value = parseFeatureValue(valueStr);;
+                probe.value = parseFeatureValue(valueStr);
             } else {
                 probe.setFeature(indexStr);
                 probe.value = parseFeatureValue(valueStr);

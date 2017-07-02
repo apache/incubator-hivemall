@@ -11,6 +11,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION hivemall_version AS 'hivemall.Hivemall
  * Binary classification
  */
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_classifier")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_classifier AS 'hivemall.classifier.GeneralClassifierUDTF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_perceptron")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_perceptron AS 'hivemall.classifier.PerceptronUDTF'")
 
@@ -96,6 +99,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION euclid_similarity AS 'hivemall.knn.sim
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS distance2similarity")
 sqlContext.sql("CREATE TEMPORARY FUNCTION distance2similarity AS 'hivemall.knn.similarity.Distance2SimilarityUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS dimsum_mapper")
+sqlContext.sql("CREATE TEMPORARY FUNCTION dimsum_mapper AS 'hivemall.knn.similarity.DIMSUMMapperUDTF'")
 
 /**
  * Distance functions
@@ -330,6 +336,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tf AS 'hivemall.ftvec.text.TermFrequen
  * Regression functions
  */
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_regression")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_regression AS 'hivemall.regression.GeneralRegressionUDTF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS logress")
 sqlContext.sql("CREATE TEMPORARY FUNCTION logress AS 'hivemall.regression.LogressUDTF'")
 
@@ -451,6 +460,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION to_ordered_map AS 'hivemall.tools.map.
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sigmoid")
 sqlContext.sql("CREATE TEMPORARY FUNCTION sigmoid AS 'hivemall.tools.math.SigmoidGenericUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS l2_norm")
+sqlContext.sql("CREATE TEMPORARY FUNCTION l2_norm AS 'hivemall.tools.math.L2NormUDAF'")
 
 /**
  * Matrix functions
@@ -622,6 +634,21 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tile AS 'hivemall.geospatial.TileUDF'"
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_url")
 sqlContext.sql("CREATE TEMPORARY FUNCTION map_url AS 'hivemall.geospatial.MapURLUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lat2tiley")
+sqlContext.sql("CREATE TEMPORARY FUNCTION lat2tiley AS 'hivemall.geospatial.Lat2TileYUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lon2tilex")
+sqlContext.sql("CREATE TEMPORARY FUNCTION lon2tilex AS 'hivemall.geospatial.Lon2TileXUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tilex2lon")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tilex2lon AS 'hivemall.geospatial.TileX2LonUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tiley2lat")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tiley2lat AS 'hivemall.geospatial.TileY2LatUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS haversine_distance")
+sqlContext.sql("CREATE TEMPORARY FUNCTION haversine_distance AS 'hivemall.geospatial.HaversineDistanceUDF'")
+
 /**
  * Smile related features
  */
@@ -637,6 +664,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION train_randomforest_regr AS 'hivemall.s
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tree_predict")
 sqlContext.sql("CREATE TEMPORARY FUNCTION tree_predict AS 'hivemall.smile.tools.TreePredictUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tree_export")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tree_export AS 'hivemall.smile.tools.TreeExportUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS rf_ensemble")
 sqlContext.sql("CREATE TEMPORARY FUNCTION rf_ensemble AS 'hivemall.smile.tools.RandomForestEnsembleUDAF'")

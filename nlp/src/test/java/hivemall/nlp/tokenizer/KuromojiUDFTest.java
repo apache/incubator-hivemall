@@ -40,7 +40,7 @@ import com.esotericsoftware.kryo.io.Output;
 public class KuromojiUDFTest {
 
     @Test
-    public void testOneArgment() throws UDFArgumentException, IOException {
+    public void testOneArgument() throws UDFArgumentException, IOException {
         GenericUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];
         // line
@@ -50,7 +50,7 @@ public class KuromojiUDFTest {
     }
 
     @Test
-    public void testTwoArgment() throws UDFArgumentException, IOException {
+    public void testTwoArgument() throws UDFArgumentException, IOException {
         GenericUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[2];
         // line
@@ -94,7 +94,7 @@ public class KuromojiUDFTest {
     }
 
     @Test
-    public void testThreeArgment() throws UDFArgumentException, IOException {
+    public void testThreeArgument() throws UDFArgumentException, IOException {
         GenericUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[3];
         // line
@@ -112,7 +112,7 @@ public class KuromojiUDFTest {
     }
 
     @Test
-    public void testFourArgment() throws UDFArgumentException, IOException {
+    public void testFourArgument() throws UDFArgumentException, IOException {
         GenericUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[4];
         // line
@@ -133,7 +133,7 @@ public class KuromojiUDFTest {
     }
 
     @Test
-    public void testEvalauteOneRow() throws IOException, HiveException {
+    public void testEvaluateOneRow() throws IOException, HiveException {
         KuromojiUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];
         // line
@@ -156,7 +156,7 @@ public class KuromojiUDFTest {
     }
 
     @Test
-    public void testEvalauteTwoRows() throws IOException, HiveException {
+    public void testEvaluateTwoRows() throws IOException, HiveException {
         KuromojiUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];
         // line

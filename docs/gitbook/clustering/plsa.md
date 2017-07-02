@@ -52,19 +52,23 @@ with word_counts as (
   select
     docid,
     feature(word, count(word)) as f
-  from docs t1 lateral view explode(tokenize(doc, true)) t2 as word
+  from 
+    docs t1
+	lateral view explode(tokenize(doc, true)) t2 as word
   where
     not is_stopword(word)
   group by
     docid, word
-)
-select
-	train_plsa(feature, "-topics 2 -eps 0.00001 -iter 2048 -alpha 0.01") as (label, word, prob)
-from (
-  select docid, collect_set(f) as feature
+),
+input as (
+  select docid, collect_list(f) as features
   from word_counts
   group by docid
-) t
+)
+select
+  train_plsa(features, '-topics 2 -eps 0.00001 -iter 2048 -alpha 0.01') as (label, word, prob)
+from 
+  input
 ;
 ```
 
@@ -90,7 +94,6 @@ from (
 |1|       colds  | 0.001978546|
 
 
-
 And prediction can be done as:
 
 ```sql
@@ -99,7 +102,9 @@ test as (
     docid,
     word,
     count(word) as value
-  from docs t1 LATERAL VIEW explode(tokenize(doc, true)) t2 as word
+  from 
+    docs t1
+	LATERAL VIEW explode(tokenize(doc, true)) t2 as word
   where
     not is_stopword(word)
   group by
@@ -108,20 +113,25 @@ test as (
 topic as (
   select
     t.docid,
-    plsa_predict(t.word, t.value, m.label, m.prob, "-topics 2") as probabilities
+    plsa_predict(t.word, t.value, m.label, m.prob, '-topics 2') as probabilities
   from
     test t
     JOIN plsa_model m ON (t.word = m.word)
   group by
     t.docid
 )
-select docid, probabilities, probabilities[0].label, m.words -- topic each document should be assigned
-from topic t
-join (
-  select label, collect_set(feature(word, prob)) as words
-  from plsa_model
-  group by label
-) m on t.probabilities[0].label = m.label
+select 
+  docid, 
+  probabilities, 
+  probabilities[0].label, 
+  m.words -- topic each document should be assigned
+from
+  topic t 
+  JOIN (
+    select label, collect_list(feature(word, prob)) as words
+    from plsa_model
+    group by label
+  ) m on t.probabilities[0].label = m.label
 ;
 ```
 
@@ -144,7 +154,7 @@ For the reasons that we mentioned above, we recommend you to first use LDA. Afte
 For training pLSA, we set a hyper-parameter `alpha` in the above example:
 
 ```sql
-SELECT train_plsa(feature, "-topics 2 -eps 0.00001 -iter 2048 -alpha 0.01") 
+SELECT train_plsa(feature, '-topics 2 -eps 0.00001 -iter 2048 -alpha 0.01') 
 ```
 
 This value controls **how much iterative model update is affected by the old results**.
@@ -162,7 +172,7 @@ In that case, you need to try different hyper-parameters to avoid overfitting as
 For instance, [20 newsgroups dataset](http://qwone.com/~jason/20Newsgroups/) which consists of 10906 realistic documents empirically requires the following options:
 
 ```sql
-SELECT train_plsa(features, "-topics 20 -iter 10 -s 128 -delta 0.01 -alpha 512 -eps 0.1")
+SELECT train_plsa(features, '-topics 20 -iter 10 -s 128 -delta 0.01 -alpha 512 -eps 0.1')
 ```
 
 Clearly, `alpha` is much larger than `0.01` which was used for the dummy data above. Let you keep in mind that an appropriate value of `alpha` highly depends on the number of documents and mini-batch size.

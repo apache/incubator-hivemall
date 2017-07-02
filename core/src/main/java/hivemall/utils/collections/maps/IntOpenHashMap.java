@@ -354,9 +354,9 @@ public class IntOpenHashMap<V> implements Externalizable {
         return key & 0x7fffffff;
     }
 
-    protected void recordAccess(int idx) {};
+    protected void recordAccess(int idx) {}
 
-    protected void recordRemoval(int idx) {};
+    protected void recordRemoval(int idx) {}
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(_threshold);
