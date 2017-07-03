@@ -59,7 +59,7 @@ import org.apache.hadoop.io.BooleanWritable;
                 + " - Returns change-point scores and decisions using Singular Spectrum Transformation (SST)."
                 + " It will return a tuple <double changepoint_score [, boolean is_changepoint]>")
 @UDFType(deterministic = false, stateful = true)
-@Since(version="0.5-rc.1")
+@Since(version = "0.5-rc.1")
 public final class SingularSpectrumTransformUDF extends UDFWithOptions {
 
     private transient Parameters _params;

@@ -55,9 +55,8 @@ import java.util.Set;
  * This Hashmap does not allow nulls to be used as keys or values.
  * <p/>
  * <p>
- * It uses single open hashing arrays sized to binary powers (256, 512 etc) rather than those
- * divisable by prime numbers. This allows the hash offset calculation to be a simple binary masking
- * operation.
+ * It uses single open hashing arrays sized to binary powers (256, 512 etc) rather than those divisable by prime numbers. This allows the hash offset
+ * calculation to be a simple binary masking operation.
  */
 public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
     private K[] keys;

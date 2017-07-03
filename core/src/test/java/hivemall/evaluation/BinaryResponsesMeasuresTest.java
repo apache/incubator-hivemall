@@ -56,7 +56,8 @@ public class BinaryResponsesMeasuresTest {
         List<Integer> rankedList = Arrays.asList(1, 3, 2, 6);
         List<Integer> groundTruth = Arrays.asList(1, 2, 4);
 
-        double actual = BinaryResponsesMeasures.Precision(rankedList, groundTruth, rankedList.size());
+        double actual = BinaryResponsesMeasures.Precision(rankedList, groundTruth,
+            rankedList.size());
         Assert.assertEquals(0.5d, actual, 0.0001d);
 
         actual = BinaryResponsesMeasures.Precision(rankedList, groundTruth, 2);
@@ -105,12 +106,14 @@ public class BinaryResponsesMeasuresTest {
 
         // meaningless case I: all TPs
         List<Integer> groundTruthAllTruePositive = Arrays.asList(1, 3, 2, 6);
-        actual = BinaryResponsesMeasures.AUC(rankedList, groundTruthAllTruePositive, rankedList.size());
+        actual = BinaryResponsesMeasures.AUC(rankedList, groundTruthAllTruePositive,
+            rankedList.size());
         Assert.assertEquals(0.5d, actual, 0.0001d);
 
         // meaningless case II: all FPs
         List<Integer> groundTruthAllFalsePositive = Arrays.asList(7, 8, 9, 10);
-        actual = BinaryResponsesMeasures.AUC(rankedList, groundTruthAllFalsePositive, rankedList.size());
+        actual = BinaryResponsesMeasures.AUC(rankedList, groundTruthAllFalsePositive,
+            rankedList.size());
         Assert.assertEquals(0.5d, actual, 0.0001d);
     }
 

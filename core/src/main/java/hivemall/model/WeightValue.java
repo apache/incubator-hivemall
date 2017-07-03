@@ -303,9 +303,9 @@ public class WeightValue implements IWeightValue {
 
         @Override
         public float getFloatParams(@Nonnegative final int i) {
-            if(i == 1) {
+            if (i == 1) {
                 return f1;
-            } else if(i == 2) {
+            } else if (i == 2) {
                 return f2;
             } else if (i == 3) {
                 return f3;

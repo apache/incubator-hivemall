@@ -19,8 +19,8 @@
 package hivemall.utils.lang;
 
 /**
- * A utility class to deal with half-precision floating-point. The conversion is very fast because
- * there is no conditional branch instruction in the conversion.
+ * A utility class to deal with half-precision floating-point. The conversion is very fast because there is no conditional branch instruction in the
+ * conversion.
  * 
  * <pre>
  * |sign|       exponent          |                   mantissa                                 |

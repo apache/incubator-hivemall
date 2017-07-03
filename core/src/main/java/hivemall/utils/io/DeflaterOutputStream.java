@@ -23,9 +23,8 @@ import java.io.OutputStream;
 import java.util.zip.Deflater;
 
 /**
- * {@link java.util.zip.DeflaterOutputStream} does not call {@link Deflater#end()} on
- * {@link #close()} when Deflater is specified on the constructor. This causes memory leaking in
- * non-heap.
+ * {@link java.util.zip.DeflaterOutputStream} does not call {@link Deflater#end()} on {@link #close()} when Deflater is specified on the constructor.
+ * This causes memory leaking in non-heap.
  */
 public final class DeflaterOutputStream extends java.util.zip.DeflaterOutputStream {
 

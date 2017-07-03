@@ -165,8 +165,8 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
     /**
      * Implicit Krylov Approximation (IKA) based naive scoring.
      *
-     * Number of iterations for the Power method and QR method is fixed to 1 for efficiency. This
-     * may cause failure (i.e. meaningless scores) depending on datasets and initial values.
+     * Number of iterations for the Power method and QR method is fixed to 1 for efficiency. This may cause failure (i.e. meaningless scores)
+     * depending on datasets and initial values.
      *
      */
     private double computeScoreIKA(@Nonnull final RealMatrix H, @Nonnull final RealMatrix G) {
@@ -190,7 +190,7 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
 
         double s = 0.d;
         for (int i = 0; i < r; i++) {
-            if(!indicies.hasNext()) {
+            if (!indicies.hasNext()) {
                 throw new IllegalStateException("Should not happen");
             }
             double v = eigvecs.getEntry(0, indicies.next().intValue());

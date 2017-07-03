@@ -32,8 +32,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.Text;
 
 /**
- * Maps a vector `(x, y, z, ...)` into a polynomial feature space `(x, y, z, x^2, xy, xz, y^2, yz,
- * z^2, x^3, x^2y, x^2z, xyz, ...)^T`.
+ * Maps a vector `(x, y, z, ...)` into a polynomial feature space `(x, y, z, x^2, xy, xz, y^2, yz, z^2, x^3, x^2y, x^2z, xyz, ...)^T`.
  */
 @Description(name = "polynomial_features",
         value = "_FUNC_(feature_vector in array<string>) - Returns a feature vector"

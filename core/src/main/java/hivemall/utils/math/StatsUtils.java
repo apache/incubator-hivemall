@@ -255,8 +255,7 @@ public final class StatsUtils {
     }
 
     /**
-     * This method offers effective calculation for multiple entries rather than calculation
-     * individually
+     * This method offers effective calculation for multiple entries rather than calculation individually
      * 
      * @param observeds means non-negative matrix
      * @param expecteds means positive matrix
