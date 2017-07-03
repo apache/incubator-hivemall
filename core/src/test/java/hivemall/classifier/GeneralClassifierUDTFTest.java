@@ -175,7 +175,7 @@ public class GeneralClassifierUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -cv_rate 0.005 -iter 512";
+                            + " -cv_rate 0.001 -iter 512";
 
                     // sparse
                     run(options);
