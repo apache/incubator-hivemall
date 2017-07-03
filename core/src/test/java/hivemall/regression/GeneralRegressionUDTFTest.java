@@ -128,8 +128,6 @@ public class GeneralRegressionUDTFTest {
             x2 += x2Step;
         }
 
-        int numTrain = (int) (numSamples * 0.8);
-
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -139,7 +137,16 @@ public class GeneralRegressionUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 
-        for (int i = 0; i < numTrain; i++) {
+        float accum = 0.f;
+        for (int i = 0; i < numSamples; i++) {
+            float y = ys.get(i).floatValue();
+            float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
+            accum += Math.abs(y - predicted);
+        }
+        float maeInit = accum / numSamples;
+        println("Mean absolute error before training: " + maeInit);
+
+        for (int i = 0; i < numSamples; i++) {
             udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
         }
 
@@ -147,24 +154,23 @@ public class GeneralRegressionUDTFTest {
 
         double cumLoss = udtf.getCumulativeLoss();
         println("Cumulative loss: " + cumLoss);
-        double normalizedLoss = cumLoss / numTrain;
+        double normalizedLoss = cumLoss / numSamples;
         Assert.assertTrue("cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss
                 + "\noptions: " + options, normalizedLoss < 0.1d);
 
-        float accum = 0.f;
-
-        for (int i = numTrain; i < numSamples; i++) {
-            float y = ys.get(i).floatValue();
+        accum = 0.f;
+        for (int i = 0; i < numSamples; i++) {
+                float y = ys.get(i).floatValue();
 
             float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
             println("Predicted: " + predicted + ", Actual: " + y);
 
             accum += Math.abs(y - predicted);
         }
-
-        float mae = accum / (numSamples - numTrain);
-        println("Mean absolute error: " + mae);
-        Assert.assertTrue("accum: " + accum + ", mae:" + mae + "\noptions: " + options, mae < 0.2f);
+        float mae = accum / numSamples;
+        println("Mean absolute error after training: " + mae);
+        Assert.assertTrue("accum: " + accum + ", mae (init):" + maeInit + ", mae:" + mae
+                + "\noptions: " + options, mae < maeInit);
     }
 
     @Test
@@ -182,7 +188,7 @@ public class GeneralRegressionUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -lambda 1e-6 -cv_rate 0.005 -iter 512";
+                            + " -iter 512";
 
                     // sparse
                     run(options);
