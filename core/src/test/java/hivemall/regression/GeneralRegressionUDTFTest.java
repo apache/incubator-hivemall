@@ -147,7 +147,9 @@ public class GeneralRegressionUDTFTest {
 
         double cumLoss = udtf.getCumulativeLoss();
         println("Cumulative loss: " + cumLoss);
-        Assert.assertTrue(cumLoss / numTrain < 0.1d);
+        double normalizedLoss = cumLoss / numTrain;
+        Assert.assertTrue("cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss
+                + "\noptions: " + options, normalizedLoss < 0.1d);
 
         float accum = 0.f;
 
