@@ -147,7 +147,7 @@ public final class DenseModel extends AbstractPredictionModel {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends IWeightValue> T get(Object feature) {
+    public <T extends IWeightValue> T get(@Nonnull final Object feature) {
         final int i = HiveUtils.parseInt(feature);
         if (i >= size) {
             return null;
@@ -170,7 +170,7 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public <T extends IWeightValue> void set(Object feature, T value) {
+    public <T extends IWeightValue> void set(@Nonnull final Object feature, @Nonnull final T value) {
         int i = HiveUtils.parseInt(feature);
         ensureCapacity(i);
         float weight = value.get();
@@ -204,7 +204,7 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public void delete(@Nonnull Object feature) {
+    public void delete(@Nonnull final Object feature) {
         final int i = HiveUtils.parseInt(feature);
         if (i >= size) {
             return;
@@ -226,7 +226,7 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public float getWeight(Object feature) {
+    public float getWeight(@Nonnull final Object feature) {
         int i = HiveUtils.parseInt(feature);
         if (i >= size) {
             return 0f;
@@ -235,7 +235,12 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public float getCovariance(Object feature) {
+    public void setWeight(@Nonnull final Object feature, final float value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public float getCovariance(@Nonnull final Object feature) {
         int i = HiveUtils.parseInt(feature);
         if (i >= size) {
             return 1f;
@@ -244,7 +249,7 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    protected void _set(Object feature, float weight, short clock) {
+    protected void _set(@Nonnull final Object feature, final float weight, final short clock) {
         int i = ((Integer) feature).intValue();
         ensureCapacity(i);
         weights[i] = weight;
@@ -253,7 +258,8 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    protected void _set(Object feature, float weight, float covar, short clock) {
+    protected void _set(@Nonnull final Object feature, final float weight, final float covar,
+            final short clock) {
         int i = ((Integer) feature).intValue();
         ensureCapacity(i);
         weights[i] = weight;
@@ -268,7 +274,7 @@ public final class DenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public boolean contains(Object feature) {
+    public boolean contains(@Nonnull final Object feature) {
         int i = HiveUtils.parseInt(feature);
         if (i >= size) {
             return false;
@@ -329,7 +335,7 @@ public final class DenseModel extends AbstractPredictionModel {
         }
 
         @Override
-        public <T extends Copyable<IWeightValue>> void getValue(T probe) {
+        public <T extends Copyable<IWeightValue>> void getValue(@Nonnull final T probe) {
             float w = weights[cursor];
             tmpWeight.value = w;
             float cov = 1.f;

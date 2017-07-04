@@ -33,6 +33,8 @@
  */
 package hivemall.smile.classification;
 
+import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
+import static hivemall.smile.utils.SmileExtUtils.resolveName;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
@@ -47,6 +49,7 @@ import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
+import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.sampling.IntReservoirSampler;
 
 import java.io.Externalizable;
@@ -292,41 +295,114 @@ public final class DecisionTree implements Classifier<Vector> {
             }
         }
 
-        public void jsCodegen(@Nonnull final StringBuilder builder, final int depth) {
+        public void exportJavascript(@Nonnull final StringBuilder builder,
+                @Nullable final String[] featureNames, @Nullable final String[] classNames,
+                final int depth) {
             if (trueChild == null && falseChild == null) {
                 indent(builder, depth);
-                builder.append("").append(output).append(";\n");
+                builder.append("").append(resolveName(output, classNames)).append(";\n");
             } else {
+                indent(builder, depth);
                 if (splitFeatureType == AttributeType.NOMINAL) {
-                    indent(builder, depth);
-                    builder.append("if(x[")
-                           .append(splitFeature)
-                           .append("] == ")
-                           .append(splitValue)
-                           .append(") {\n");
-                    trueChild.jsCodegen(builder, depth + 1);
-                    indent(builder, depth);
-                    builder.append("} else {\n");
-                    falseChild.jsCodegen(builder, depth + 1);
-                    indent(builder, depth);
-                    builder.append("}\n");
+                    if (featureNames == null) {
+                        builder.append("if( x[")
+                               .append(splitFeature)
+                               .append("] == ")
+                               .append(splitValue)
+                               .append(" ) {\n");
+                    } else {
+                        builder.append("if( ")
+                               .append(resolveFeatureName(splitFeature, featureNames))
+                               .append(" == ")
+                               .append(splitValue)
+                               .append(" ) {\n");
+                    }
                 } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    indent(builder, depth);
-                    builder.append("if(x[")
-                           .append(splitFeature)
-                           .append("] <= ")
-                           .append(splitValue)
-                           .append(") {\n");
-                    trueChild.jsCodegen(builder, depth + 1);
-                    indent(builder, depth);
-                    builder.append("} else  {\n");
-                    falseChild.jsCodegen(builder, depth + 1);
-                    indent(builder, depth);
-                    builder.append("}\n");
+                    if (featureNames == null) {
+                        builder.append("if( x[")
+                               .append(splitFeature)
+                               .append("] <= ")
+                               .append(splitValue)
+                               .append(" ) {\n");
+                    } else {
+                        builder.append("if( ")
+                               .append(resolveFeatureName(splitFeature, featureNames))
+                               .append(" <= ")
+                               .append(splitValue)
+                               .append(" ) {\n");
+                    }
                 } else {
                     throw new IllegalStateException("Unsupported attribute type: "
                             + splitFeatureType);
                 }
+                trueChild.exportJavascript(builder, featureNames, classNames, depth + 1);
+                indent(builder, depth);
+                builder.append("} else  {\n");
+                falseChild.exportJavascript(builder, featureNames, classNames, depth + 1);
+                indent(builder, depth);
+                builder.append("}\n");
+            }
+        }
+
+        public void exportGraphviz(@Nonnull final StringBuilder builder,
+                @Nullable final String[] featureNames, @Nullable final String[] classNames,
+                @Nonnull final String outputName, @Nullable double[] colorBrew,
+                final @Nonnull MutableInt nodeIdGenerator, final int parentNodeId) {
+            final int myNodeId = nodeIdGenerator.getValue();
+
+            if (trueChild == null && falseChild == null) {
+                // fillcolor=h,s,v 
+                // https://en.wikipedia.org/wiki/HSL_and_HSV
+                // http://www.graphviz.org/doc/info/attrs.html#k:colorList
+                String hsvColor = (colorBrew == null || output >= colorBrew.length) ? "#00000000"
+                        : String.format("%.4f,1.000,1.000", colorBrew[output]);
+                builder.append(String.format(
+                    " %d [label=<%s = %s>, fillcolor=\"%s\", shape=ellipse];\n", myNodeId,
+                    outputName, resolveName(output, classNames), hsvColor));
+
+                if (myNodeId != parentNodeId) {
+                    builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
+                    if (parentNodeId == 0) {
+                        if (myNodeId == 1) {
+                            builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
+                        } else {
+                            builder.append(" [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
+                        }
+                    }
+                    builder.append(";\n");
+                }
+            } else {
+                if (splitFeatureType == AttributeType.NOMINAL) {
+                    builder.append(String.format(
+                        " %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
+                        resolveFeatureName(splitFeature, featureNames), Double.toString(splitValue)));
+                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                    builder.append(String.format(
+                        " %d [label=<%s &le; %s>, fillcolor=\"#00000000\"];\n", myNodeId,
+                        resolveFeatureName(splitFeature, featureNames), Double.toString(splitValue)));
+                } else {
+                    throw new IllegalStateException("Unsupported attribute type: "
+                            + splitFeatureType);
+                }
+
+                if (myNodeId != parentNodeId) {
+                    builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
+                    if (parentNodeId == 0) {//only draw edge label on top 
+                        if (myNodeId == 1) {
+                            builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
+                        } else {
+                            builder.append(" [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
+                        }
+                    }
+                    builder.append(";\n");
+                }
+
+                nodeIdGenerator.addValue(1);
+                trueChild.exportGraphviz(builder, featureNames, classNames, outputName, colorBrew,
+                    nodeIdGenerator, myNodeId);
+                nodeIdGenerator.addValue(1);
+                falseChild.exportGraphviz(builder, featureNames, classNames, outputName, colorBrew,
+                    nodeIdGenerator, myNodeId);
             }
         }
 
@@ -910,6 +986,11 @@ public final class DecisionTree implements Classifier<Vector> {
         }
     }
 
+    @VisibleForTesting
+    Node getRootNode() {
+        return _root;
+    }
+
     private static void checkArgument(@Nonnull Matrix x, @Nonnull int[] y, int numVars,
             int maxDepth, int maxLeafs, int minSplits, int minLeafSize) {
         if (x.numRows() != y.length) {
@@ -965,14 +1046,15 @@ public final class DecisionTree implements Classifier<Vector> {
         throw new UnsupportedOperationException("Not supported.");
     }
 
-    public String predictJsCodegen() {
+    public String predictJsCodegen(@Nonnull final String[] featureNames,
+            @Nonnull final String[] classNames) {
         StringBuilder buf = new StringBuilder(1024);
-        _root.jsCodegen(buf, 0);
+        _root.exportJavascript(buf, featureNames, classNames, 0);
         return buf.toString();
     }
 
     @Nonnull
-    public byte[] predictSerCodegen(boolean compress) throws HiveException {
+    public byte[] serialize(boolean compress) throws HiveException {
         try {
             if (compress) {
                 return ObjectUtils.toCompressedBytes(_root);
@@ -986,7 +1068,8 @@ public final class DecisionTree implements Classifier<Vector> {
         }
     }
 
-    public static Node deserializeNode(final byte[] serializedObj, final int length,
+    @Nonnull
+    public static Node deserialize(@Nonnull final byte[] serializedObj, final int length,
             final boolean compressed) throws HiveException {
         final Node root = new Node();
         try {
@@ -1006,7 +1089,7 @@ public final class DecisionTree implements Classifier<Vector> {
 
     @Override
     public String toString() {
-        return _root == null ? "" : predictJsCodegen();
+        return _root == null ? "" : predictJsCodegen(null, null);
     }
 
 }

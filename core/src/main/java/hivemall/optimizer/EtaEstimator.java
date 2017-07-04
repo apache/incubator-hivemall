@@ -16,10 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.common;
+package hivemall.optimizer;
 
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
+
+import java.util.Map;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -95,8 +97,7 @@ public abstract class EtaEstimator {
     }
 
     /**
-     * bold driver: Gemulla et al., Large-scale matrix factorization with distributed stochastic
-     * gradient descent, KDD 2011.
+     * bold driver: Gemulla et al., Large-scale matrix factorization with distributed stochastic gradient descent, KDD 2011.
      */
     public static final class AdjustingEtaEstimator extends EtaEstimator {
 
@@ -155,6 +156,35 @@ public abstract class EtaEstimator {
 
         double power_t = Primitives.parseDouble(cl.getOptionValue("power_t"), 0.1d);
         return new InvscalingEtaEstimator(eta0, power_t);
+    }
+
+    @Nonnull
+    public static EtaEstimator get(@Nonnull final Map<String, String> options)
+            throws IllegalArgumentException {
+        final float eta0 = Primitives.parseFloat(options.get("eta0"), 0.1f);
+        final double power_t = Primitives.parseDouble(options.get("power_t"), 0.1d);
+
+        final String etaScheme = options.get("eta");
+        if (etaScheme == null) {
+            return new InvscalingEtaEstimator(eta0, power_t);
+        }
+
+        if ("fixed".equalsIgnoreCase(etaScheme)) {
+            return new FixedEtaEstimator(eta0);
+        } else if ("simple".equalsIgnoreCase(etaScheme)) {
+            final long t;
+            if (options.containsKey("total_steps")) {
+                t = Long.parseLong(options.get("total_steps"));
+            } else {
+                throw new IllegalArgumentException(
+                    "-total_steps MUST be provided when `-eta simple` is specified");
+            }
+            return new SimpleEtaEstimator(eta0, t);
+        } else if ("inv".equalsIgnoreCase(etaScheme) || "inverse".equalsIgnoreCase(etaScheme)) {
+            return new InvscalingEtaEstimator(eta0, power_t);
+        } else {
+            throw new IllegalArgumentException("Unsupported ETA name: " + etaScheme);
+        }
     }
 
 }

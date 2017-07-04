@@ -5,15 +5,15 @@ services:
       context: ../../
       dockerfile: resources/docker/Dockerfile
       args:
-        - PREBUILD=false
+        - PREBUILD=true
     image: hivemall
     container_name: hivemall
     ports:
       - "8088:8088" # ResourceManager
       - "19888:19888" # JobHistoryServer
       - "50070:50070" # NameNode
-    volumes:
-      - "../../:/opt/hivemall/" # mount current hivemall dir
+    #volumes:
+      #- "../../:/opt/hivemall/" # mount current hivemall dir
       #- "/path/to/data/:/root/data/" # mount resources
     tty: true
     stdin_open: true

@@ -45,6 +45,11 @@ import opennlp.model.GenericModelReader;
 import opennlp.model.MaxentModel;
 import opennlp.model.RealValueFileEventStream;
 
+@Description(
+        name = "predict_maxent_classifier",
+        value = "_FUNC_(string model, string attributes, array<double> features)"
+                + " - Returns best class and probability distribution among all the classes per instance.")
+@UDFType(deterministic = true, stateful = false)
 public class MaxEntPredictUDF extends GenericUDF {
 
     private StringObjectInspector modelOI;
@@ -169,6 +174,6 @@ public class MaxEntPredictUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "tree_predict(" + Arrays.toString(children) + ")";
+        return "maxent_predict(" + Arrays.toString(children) + ")";
     }
 }

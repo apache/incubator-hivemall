@@ -107,7 +107,7 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public boolean contains(Object feature) {
+    public boolean contains(@Nonnull final Object feature) {
         try {
             lock.lock();
             return model.contains(feature);
@@ -117,7 +117,7 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public <T extends IWeightValue> T get(Object feature) {
+    public <T extends IWeightValue> T get(@Nonnull final Object feature) {
         try {
             lock.lock();
             return model.get(feature);
@@ -127,7 +127,7 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public <T extends IWeightValue> void set(Object feature, T value) {
+    public <T extends IWeightValue> void set(@Nonnull final Object feature, @Nonnull final T value) {
         try {
             lock.lock();
             model.set(feature, value);
@@ -137,7 +137,7 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public void delete(@Nonnull Object feature) {
+    public void delete(@Nonnull final Object feature) {
         try {
             lock.lock();
             model.delete(feature);
@@ -147,7 +147,7 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public float getWeight(Object feature) {
+    public float getWeight(@Nonnull final Object feature) {
         try {
             lock.lock();
             return model.getWeight(feature);
@@ -157,7 +157,17 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public float getCovariance(Object feature) {
+    public void setWeight(@Nonnull final Object feature, final float value) {
+        try {
+            lock.lock();
+            model.setWeight(feature, value);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public float getCovariance(@Nonnull final Object feature) {
         try {
             lock.lock();
             return model.getCovariance(feature);
@@ -167,7 +177,8 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public void set(@Nonnull Object feature, float weight, float covar, short clock) {
+    public void set(@Nonnull final Object feature, final float weight, final float covar,
+            final short clock) {
         try {
             lock.lock();
             model.set(feature, weight, covar, clock);

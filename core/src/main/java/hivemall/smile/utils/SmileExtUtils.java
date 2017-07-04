@@ -33,11 +33,13 @@ import hivemall.smile.data.Attribute.NominalAttribute;
 import hivemall.smile.data.Attribute.NumericAttribute;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -428,6 +430,45 @@ public final class SmileExtUtils {
             }
         }
         return false;
+    }
+
+    @Nonnull
+    public static String resolveFeatureName(final int index, @Nullable final String[] names) {
+        if (names == null) {
+            return "feature#" + index;
+        }
+        if (index >= names.length) {
+            return "feature#" + index;
+        }
+        return names[index];
+    }
+
+    @Nonnull
+    public static String resolveName(final int index, @Nullable final String[] names) {
+        if (names == null) {
+            return String.valueOf(index);
+        }
+        if (index >= names.length) {
+            return String.valueOf(index);
+        }
+        return names[index];
+    }
+
+    /**
+     * Generates an evenly distributed range of hue values in the HSV color scale.
+     * 
+     * @return colors
+     */
+    public static double[] getColorBrew(@Nonnegative int n) {
+        Preconditions.checkArgument(n >= 1);
+
+        final double hue_step = 360.d / n;
+
+        final double[] colors = new double[n];
+        for (int i = 0; i < n; i++) {
+            colors[i] = i * hue_step / 360.d;
+        }
+        return colors;
     }
 
 }

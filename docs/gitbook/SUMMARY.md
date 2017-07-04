@@ -49,7 +49,7 @@
 
 * [List of generic Hivemall functions](misc/generic_funcs.md)
 * [Efficient Top-K query processing](misc/topk.md)
-* [English/Japanese Text Tokenizer](misc/tokenizer.md)
+* [Text Tokenizer](misc/tokenizer.md)
 
 ## Part III - Feature Engineering
 
@@ -57,10 +57,12 @@
 * [Feature Hashing](ft_engineering/hashing.md)
 * [Feature Selection](ft_engineering/selection.md)
 * [Feature Binning](ft_engineering/binning.md)
-* [TF-IDF Calculation](ft_engineering/tfidf.md)
+* [FEATURE PAIRING](ft_engineering/pairing.md)
+    * [Polynomial Features](ft_engineering/polynomial.md)
 * [FEATURE TRANSFORMATION](ft_engineering/ft_trans.md)
     * [Feature Vectorization](ft_engineering/vectorization.md)
     * [Quantify non-number features](ft_engineering/quantify.md)
+* [TF-IDF Calculation](ft_engineering/tfidf.md)
 
 ## Part IV - Evaluation
 
@@ -71,37 +73,45 @@
 
 * [Data Generation](eval/datagen.md)
     * [Logistic Regression data generation](eval/lr_datagen.md)
+    
+## Part V - Supervised Learning
 
-## Part V - Binary classification
+* [How Prediction Works](misc/prediction.md)
+    
+## Part VI - Binary classification
 
-* [a9a Tutorial](binaryclass/a9a.md)
+* [Binary Classification](binaryclass/general.md)
+
+* [a9a tutorial](binaryclass/a9a.md)
     * [Data preparation](binaryclass/a9a_dataset.md)
     * [Logistic Regression](binaryclass/a9a_lr.md)
     * [Mini-batch Gradient Descent](binaryclass/a9a_minibatch.md)
 
-* [News20 Tutorial](binaryclass/news20.md)
+* [News20 tutorial](binaryclass/news20.md)
     * [Data preparation](binaryclass/news20_dataset.md)
     * [Perceptron, Passive Aggressive](binaryclass/news20_pa.md)
     * [CW, AROW, SCW](binaryclass/news20_scw.md)
     * [AdaGradRDA, AdaGrad, AdaDelta](binaryclass/news20_adagrad.md)
+    * [Random Forest](binaryclass/news20_rf.md)
 
-* [KDD2010a Tutorial](binaryclass/kdd2010a.md)
+* [KDD2010a tutorial](binaryclass/kdd2010a.md)
     * [Data preparation](binaryclass/kdd2010a_dataset.md)
     * [PA, CW, AROW, SCW](binaryclass/kdd2010a_scw.md)
 
-* [KDD2010b Tutorial](binaryclass/kdd2010b.md)
+* [KDD2010b tutorial](binaryclass/kdd2010b.md)
     * [Data preparation](binaryclass/kdd2010b_dataset.md)
     * [AROW](binaryclass/kdd2010b_arow.md)
 
-* [Webspam Tutorial](binaryclass/webspam.md)
+* [Webspam tutorial](binaryclass/webspam.md)
     * [Data pareparation](binaryclass/webspam_dataset.md)
     * [PA1, AROW, SCW](binaryclass/webspam_scw.md)
 
-* [Kaggle Titanic Tutorial](binaryclass/titanic_rf.md)
+* [Kaggle Titanic tutorial](binaryclass/titanic_rf.md)
 
-## Part VI - Multiclass classification
 
-* [News20 Multiclass Tutorial](multiclass/news20.md)
+## Part VII - Multiclass classification
+
+* [News20 Multiclass tutorial](multiclass/news20.md)
     * [Data preparation](multiclass/news20_dataset.md)
     * [Data preparation for one-vs-the-rest classifiers](multiclass/news20_one-vs-the-rest_dataset.md)
     * [PA](multiclass/news20_pa.md)
@@ -109,24 +119,26 @@
     * [Ensemble learning](multiclass/news20_ensemble.md)
     * [one-vs-the-rest classifier](multiclass/news20_one-vs-the-rest.md)
 
-* [Iris Tutorial](multiclass/iris.md)
+* [Iris tutorial](multiclass/iris.md)
     * [Data preparation](multiclass/iris_dataset.md)
     * [SCW](multiclass/iris_scw.md)
-    * [RandomForest](multiclass/iris_randomforest.md)
+    * [Random Forest](multiclass/iris_randomforest.md)
 
-## Part VII - Regression
+## Part VIII - Regression
 
-* [E2006-tfidf regression Tutorial](regression/e2006.md)
+* [Regression](regression/general.md)
+
+* [E2006-tfidf regression tutorial](regression/e2006.md)
     * [Data preparation](regression/e2006_dataset.md)
     * [Passive Aggressive, AROW](regression/e2006_arow.md)
 
-* [KDDCup 2012 track 2 CTR prediction Tutorial](regression/kddcup12tr2.md)
+* [KDDCup 2012 track 2 CTR prediction tutorial](regression/kddcup12tr2.md)
     * [Data preparation](regression/kddcup12tr2_dataset.md)
     * [Logistic Regression, Passive Aggressive](regression/kddcup12tr2_lr.md)
     * [Logistic Regression with Amplifier](regression/kddcup12tr2_lr_amplify.md)
     * [AdaGrad, AdaDelta](regression/kddcup12tr2_adagrad.md)
 
-## Part VIII - Recommendation
+## Part IX - Recommendation
 
 * [Collaborative Filtering](recommend/cf.md)
     * [Item-based Collaborative Filtering](recommend/item_based_cf.md)
@@ -139,26 +151,27 @@
 
 * [MovieLens movie recommendation Tutorial](recommend/movielens.md)
     * [Data preparation](recommend/movielens_dataset.md)
+    * [Item-based Collaborative Filtering](recommend/movielens_cf.md)
     * [Matrix Factorization](recommend/movielens_mf.md)
     * [Factorization Machine](recommend/movielens_fm.md)
     * [10-fold Cross Validation (Matrix Factorization)](recommend/movielens_cv.md)
 
-## Part IX - Anomaly Detection
+## Part X - Anomaly Detection
 
 * [Outlier Detection using Local Outlier Factor (LOF)](anomaly/lof.md)
 * [Change-Point Detection using Singular Spectrum Transformation (SST)](anomaly/sst.md)
 * [ChangeFinder: Detecting Outlier and Change-Point Simultaneously](anomaly/changefinder.md)
 
-## Part X - Clustering
+## Part XI - Clustering
 
 * [Latent Dirichlet Allocation](clustering/lda.md)
 * [Probabilistic Latent Semantic Analysis](clustering/plsa.md)
 
-## Part XI - GeoSpatial functions
+## Part XII - GeoSpatial functions
 
 * [Lat/Lon functions](geospatial/latlon.md)
 
-## Part XII - Hivemall on Spark
+## Part XIII - Hivemall on Spark
 
 * [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
@@ -173,7 +186,7 @@
     * [Top-k Join processing](spark/misc/topk_join.md)
     * [Other utility functions](spark/misc/functions.md)
 
-## Part XIII - Hivemall on Docker
+## Part XIV - Hivemall on Docker
 
 * [Getting Started](docker/getting_started.md)
 

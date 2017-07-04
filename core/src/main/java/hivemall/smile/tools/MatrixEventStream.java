@@ -33,8 +33,9 @@ public class MatrixEventStream extends AbstractEventStream {
 	   * @return the Event object which is next in this EventStream
 	   */
 	  public Event next () {
-	    while (next == null && (rowNum < ds.numRows()))
+	    while (next == null && (rowNum < ds.numRows())){
 	      next = createEvent(ds.getRow(rowNum), y[rowNum]);
+	    }
 	    
 	    Event current = next;
 	    if (rowNum < ds.numRows()) {
@@ -52,16 +53,17 @@ public class MatrixEventStream extends AbstractEventStream {
 	   * @return true if this EventStream has more Events
 	   */
 	  public boolean hasNext () {
-	    while (next == null && rowNum < ds.numRows())
+	    while (next == null && rowNum < ds.numRows()){
 	      next = createEvent(ds.getRow(rowNum), y[rowNum]);
+	    }
 	    return next != null;
 	  }
 	  
 	  private Event createEvent(double[] obs, int y) {
 		    rowNum++;
-		    if (obs == null) 
+		    if (obs == null){ 
 		      return null;
-		    else{
+		    }else{
 		    	  String[] names = new String[obs.length];
 		    	  float[] values = new float[obs.length];
 			      for (int i = 0; i < obs.length; i++){

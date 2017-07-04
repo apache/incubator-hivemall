@@ -20,9 +20,9 @@ package hivemall.topicmodel;
 
 import static hivemall.utils.lang.ArrayUtils.newRandomFloatArray;
 import static hivemall.utils.math.MathUtils.l1normalize;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.model.FeatureValue;
 import hivemall.utils.math.MathUtils;
 
 import java.util.ArrayList;
@@ -37,13 +37,10 @@ import java.util.TreeMap;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public final class IncrementalPLSAModel {
+public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel {
 
     // ---------------------------------
     // HyperParameters
-
-    // number of topics
-    private final int _K;
 
     // control how much P(w|z) update is affected by the last value
     private final float _alpha;
@@ -61,27 +58,23 @@ public final class IncrementalPLSAModel {
     private List<Map<String, float[]>> _p_dwz; // P(z|d,w) probability of topics for each document-word (i.e., instance-feature) pair
 
     // optimized in the M step
-    @Nonnull
     private List<float[]> _p_dz; // P(z|d) probability of topics for documents
-    private Map<String, float[]> _p_zw; // P(w|z) probability of words for each topic
 
     @Nonnull
-    private final List<Map<String, Float>> _miniBatchDocs;
-    private int _miniBatchSize;
+    private final Map<String, float[]> _p_zw; // P(w|z) probability of words for each topic
 
     public IncrementalPLSAModel(int K, float alpha, double delta) {
-        this._K = K;
+        super(K);
+
         this._alpha = alpha;
         this._delta = delta;
 
         this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         this._p_zw = new HashMap<String, float[]>();
-
-        this._miniBatchDocs = new ArrayList<Map<String, Float>>();
     }
 
-    public void train(@Nonnull final String[][] miniBatch) {
+    protected void train(@Nonnull final String[][] miniBatch) {
         initMiniBatch(miniBatch, _miniBatchDocs);
 
         this._miniBatchSize = _miniBatchDocs.size();
@@ -103,35 +96,6 @@ public final class IncrementalPLSAModel {
                 // Maximization
                 mStep(d);
             } while (!isPdzConverged(d, pPrev_dz, _p_dz)); // until get stable value of P(z|d)
-        }
-    }
-
-    private static void initMiniBatch(@Nonnull final String[][] miniBatch,
-            @Nonnull final List<Map<String, Float>> docs) {
-        docs.clear();
-
-        final FeatureValue probe = new FeatureValue();
-
-        // parse document
-        for (final String[] e : miniBatch) {
-            if (e == null || e.length == 0) {
-                continue;
-            }
-
-            final Map<String, Float> doc = new HashMap<String, Float>();
-
-            // parse features
-            for (String fv : e) {
-                if (fv == null) {
-                    continue;
-                }
-                FeatureValue.parseFeatureAsString(fv, probe);
-                String word = probe.getFeatureAsString();
-                float value = probe.getValueAsFloat();
-                doc.put(word, Float.valueOf(value));
-            }
-
-            docs.add(doc);
         }
     }
 
@@ -247,7 +211,7 @@ public final class IncrementalPLSAModel {
         return (diff / _K) < _delta;
     }
 
-    public float computePerplexity() {
+    protected float computePerplexity() {
         double numer = 0.d;
         double denom = 0.d;
 
@@ -264,8 +228,9 @@ public final class IncrementalPLSAModel {
                 }
 
                 if (p_dw == 0.d) {
-                    throw new IllegalStateException("Perplexity would be Infinity. "
-                            + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
+                    throw new IllegalStateException(
+                        "Perplexity would be Infinity. "
+                                + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
                 }
                 numer += w_value * Math.log(p_dw);
                 denom += w_value;
@@ -276,7 +241,7 @@ public final class IncrementalPLSAModel {
     }
 
     @Nonnull
-    public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int z) {
+    protected SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int z) {
         final SortedMap<Float, List<String>> res = new TreeMap<Float, List<String>>(
             Collections.reverseOrder());
 
@@ -296,16 +261,17 @@ public final class IncrementalPLSAModel {
     }
 
     @Nonnull
-    public float[] getTopicDistribution(@Nonnull final String[] doc) {
+    protected float[] getTopicDistribution(@Nonnull final String[] doc) {
         train(new String[][] {doc});
         return _p_dz.get(0);
     }
 
-    public float getProbability(@Nonnull final String w, @Nonnegative final int z) {
+    @VisibleForTesting
+    float getWordScore(@Nonnull final String w, @Nonnegative final int z) {
         return _p_zw.get(w)[z];
     }
 
-    public void setProbability(@Nonnull final String w, @Nonnegative final int z, final float prob) {
+    protected void setWordScore(@Nonnull final String w, @Nonnegative final int z, final float prob) {
         float[] prob_label = _p_zw.get(w);
         if (prob_label == null) {
             prob_label = newRandomFloatArray(_K, _rnd);

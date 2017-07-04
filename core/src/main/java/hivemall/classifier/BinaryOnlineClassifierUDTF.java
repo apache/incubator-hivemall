@@ -19,6 +19,7 @@
 package hivemall.classifier;
 
 import hivemall.LearnerBaseUDTF;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
 import hivemall.model.IWeightValue;
 import hivemall.model.PredictionModel;
@@ -27,9 +28,12 @@ import hivemall.model.WeightValue;
 import hivemall.model.WeightValue.WeightValueWithCovar;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.FloatAccumulator;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -58,6 +62,17 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     protected PredictionModel model;
     protected int count;
 
+    protected transient Map<Object, FloatAccumulator> accumulated;
+    protected int sampled;
+
+    public BinaryOnlineClassifierUDTF() {
+        this(false);
+    }
+
+    public BinaryOnlineClassifierUDTF(boolean enableNewModel) {
+        super(enableNewModel);
+    }
+
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 2) {
@@ -78,6 +93,7 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         }
 
         this.count = 0;
+        this.sampled = 0;
         return getReturnOI(featureOutputOI);
     }
 
@@ -109,6 +125,10 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
 
     @Override
     public void process(Object[] args) throws HiveException {
+        if (is_mini_batch && accumulated == null) {
+            this.accumulated = new HashMap<Object, FloatAccumulator>(1024);
+        }
+
         List<?> features = (List<?>) featureListOI.getList(args[0]);
         FeatureValue[] featureVector = parseFeatures(features);
         if (featureVector == null) {
@@ -147,11 +167,13 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         return featureVector;
     }
 
-    protected void checkLabelValue(int label) throws UDFArgumentException {
-        assert (label == -1 || label == 0 || label == 1) : label;
+    protected void checkLabelValue(final int label) throws UDFArgumentException {
+        if (label != -1 && label != 0 && label != 1) {
+            throw new UDFArgumentException("Invalid label value for classification:  + label");
+        }
     }
 
-    //@VisibleForTesting
+    @VisibleForTesting
     void train(List<?> features, int label) {
         FeatureValue[] featureVector = parseFeatures(features);
         train(featureVector, label);
@@ -247,10 +269,26 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
         }
     }
 
+    protected void accumulateUpdate(@Nonnull final FeatureValue[] features, final float coeff) {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void batchUpdate() {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void onlineUpdate(@Nonnull final FeatureValue[] features, float coeff) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public void close() throws HiveException {
         super.close();
         if (model != null) {
+            if (accumulated != null) { // Update model with accumulated delta
+                batchUpdate();
+                this.accumulated = null;
+            }
             int numForwarded = 0;
             if (useCovariance()) {
                 final WeightValueWithCovar probe = new WeightValueWithCovar();

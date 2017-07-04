@@ -76,6 +76,13 @@ public final class Primitives {
         return Boolean.parseBoolean(s);
     }
 
+    public static double doubleValue(final Double v, final double defaultValue) {
+        if (v == null) {
+            return defaultValue;
+        }
+        return v.doubleValue();
+    }
+
     public static int compare(final int x, final int y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }

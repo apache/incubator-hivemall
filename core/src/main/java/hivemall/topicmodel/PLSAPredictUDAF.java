@@ -180,14 +180,17 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 String rawArgs = HiveUtils.getConstString(argOIs[4]);
                 cl = parseOptions(rawArgs);
 
-                this.topics = Primitives.parseInt(cl.getOptionValue("topics"), PLSAUDTF.DEFAULT_TOPICS);
+                this.topics = Primitives.parseInt(cl.getOptionValue("topics"),
+                    PLSAUDTF.DEFAULT_TOPICS);
                 if (topics < 1) {
                     throw new UDFArgumentException(
-                            "A positive integer MUST be set to an option `-topics`: " + topics);
+                        "A positive integer MUST be set to an option `-topics`: " + topics);
                 }
 
-                this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), PLSAUDTF.DEFAULT_ALPHA);
-                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), PLSAUDTF.DEFAULT_DELTA);
+                this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"),
+                    PLSAUDTF.DEFAULT_ALPHA);
+                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"),
+                    PLSAUDTF.DEFAULT_DELTA);
             } else {
                 this.topics = PLSAUDTF.DEFAULT_TOPICS;
                 this.alpha = PLSAUDTF.DEFAULT_ALPHA;
@@ -471,7 +474,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 for (int k = 0; k < topics; k++) {
                     final float prob_k = prob_word.get(k).floatValue();
                     if (prob_k != -1.f) {
-                        model.setProbability(word, k, prob_k);
+                        model.setWordScore(word, k, prob_k);
                     }
                 }
             }

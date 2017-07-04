@@ -41,7 +41,9 @@ Once the rows are sorted by the probabilities in a descending order, AUC gives a
 
 In Hivemall, a function `auc(double score, int label)` provides a way to compute AUC for pairs of probability and truth label.
 
-For instance, following query computes AUC of the table which was shown above:
+## Sequential AUC computation on a single node
+
+For instance, the following query computes AUC of the table which was shown above:
 
 ```sql
 with data as (
@@ -68,6 +70,8 @@ This query returns `0.83333` as AUC.
 
 Since AUC is a metric based on ranked probability-label pairs as mentioned above, input data (rows) needs to be ordered by scores in a descending order.
 
+## Parallel approximate AUC computation
+
 Meanwhile, Hive's `distribute by` clause allows you to compute AUC in parallel: 
 
 ```sql
@@ -82,7 +86,8 @@ with data as (
   union all
   select 0.7 as prob, 1 as label
 )
-select auc(prob, label) as auc
+select 
+  auc(prob, label) as auc
 from (
   select prob, label
   from data

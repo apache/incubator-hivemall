@@ -47,10 +47,14 @@ ROW FORMAT DELIMITED
    FIELDS TERMINATED BY '|'
    LINES TERMINATED BY '\n'
 STORED AS TEXTFILE LOCATION '/dataset/titanic/train';
+```
 
+```sh
 hadoop fs -rm /dataset/titanic/train/train.csv
 awk '{ FPAT="([^,]*)|(\"[^\"]+\")";OFS="|"; } NR >1 {$1=$1;$4=substr($4,2,length($4)-2);print $0}' train.csv | hadoop fs -put - /dataset/titanic/train/train.csv
+```
 
+```sql
 drop table test_raw;
 create external table test_raw (
   passengerid int,
@@ -69,7 +73,9 @@ ROW FORMAT DELIMITED
    FIELDS TERMINATED BY '|'
    LINES TERMINATED BY '\n'
 STORED AS TEXTFILE LOCATION '/dataset/titanic/test_raw';
+```
 
+```sh
 hadoop fs -rm /dataset/titanic/test_raw/test.csv
 awk '{ FPAT="([^,]*)|(\"[^\"]+\")";OFS="|"; } NR >1 {$1=$1;$3=substr($3,2,length($3)-2);print $0}' test.csv | hadoop fs -put - /dataset/titanic/test_raw/test.csv
 ```
@@ -163,9 +169,8 @@ select
   sum(oob_errors) / sum(oob_tests) as oob_err_rate
 from
   model_rf;
-
-> [137.00242639169272,1194.2140119834373,328.78017188176966,628.2568660509628,200.31275032394072,160.12876797647078,1083.5987543408116,664.1234312561456,422.89449844090393,130.72019667694784]     0.18742985409652077
 ```
+> [137.00242639169272,1194.2140119834373,328.78017188176966,628.2568660509628,200.31275032394072,160.12876797647078,1083.5987543408116,664.1234312561456,422.89449844090393,130.72019667694784]     0.18742985409652077
 
 # Prediction
 
@@ -186,16 +191,27 @@ SELECT
 FROM (
   SELECT
     passengerid,
-    rf_ensemble(predicted) as predicted
+    -- rf_ensemble(predicted) as predicted
+    -- hivemall v0.5-rc.1 or later
+    rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
+    -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
   FROM (
     SELECT
       t.passengerid, 
       -- hivemall v0.4.1-alpha.2 or before
       -- tree_predict(p.model, t.features, ${classification}) as predicted
-　　   -- hivemall v0.4.1-alpha.3 or later
-      tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+      -- hivemall v0.4.1-alpha.3 or later
+      -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+      -- hivemall v0.5-rc.1 or later
+      p.model_weight,
+      tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
     FROM (
-      SELECT model_id, model_type, pred_model FROM model_rf 
+      SELECT 
+        -- model_id, pred_model
+        -- hivemall v0.5-rc.1 or later
+        model_id, model_weight, model
+      FROM 
+        model_rf 
       DISTRIBUTE BY rand(1)
     ) p
     LEFT OUTER JOIN test_rf t
@@ -223,11 +239,48 @@ ORDER BY passengerid ASC;
 
 ```sh
 hadoop fs -getmerge /user/hive/warehouse/titanic.db/predicted_rf_submit predicted_rf_submit.csv
-
 sed -i -e "1i PassengerId,Survived" predicted_rf_submit.csv
 ```
 
 Accuracy would gives `0.76555` for a Kaggle submission.
+
+# Graphvis export
+
+> #### Note
+> `tree_export` feature is supported from Hivemall v0.5-rc.1 or later.
+> Better to limit tree depth on training by `-depth` option to plot a Decision Tree.
+
+Hivemall provide `tree_export` to export a decision tree into [Graphviz](http://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
+
+```
+> select tree_export("","-help");
+
+usage: tree_export(string model, const string options, optional
+       array<string> featureNames=null, optional array<string>
+       classNames=null) - exports a Decision Tree model as javascript/dot]
+       [-help] [-output_name <arg>] [-r] [-t <arg>]
+ -help                             Show function help
+ -output_name,--outputName <arg>   output name [default: predicted]
+ -r,--regression                   Is regression tree or not
+ -t,--type <arg>                   Type of output [default: js,
+                                   javascript/js, graphvis/dot
+```
+
+```sql
+CREATE TABLE model_exported 
+  STORED AS ORC tblproperties("orc.compress"="SNAPPY")
+AS
+select
+  model_id,
+  tree_export(model, "-type javascript -output_name survived", array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked'), array('no','yes')) as js,
+  tree_export(model, "-type graphvis -output_name survived", array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked'), array('no','yes')) as dot
+from
+  model_rf
+-- limit 1
+;
+```
+
+[Here is an example](https://gist.github.com/myui/a83ba3795bad9b278cf8bcc59f946e2c#file-titanic-dot) plotting a decision tree using Graphvis or [Vis.js](http://viz-js.com/).
 
 ---
 
@@ -259,8 +312,10 @@ select
   sum(oob_errors) / sum(oob_tests) as oob_err_rate
 from
   model_rf_07;
+```
 > [116.12055542977338,960.8569891444097,291.08765260103837,469.74671636586226,163.721292772701,120.784769882858,847.9769298113661,554.4617571355476,346.3500941757221,97.42593940113392]    0.1838351822503962
 
+```sql
 SET hivevar:classification=true;
 SET hive.mapjoin.optimized.hashtable=false;
 SET mapred.reduce.tasks=16;
@@ -276,16 +331,27 @@ SELECT
 FROM (
   SELECT
     passengerid,
-    rf_ensemble(predicted) as predicted
+    -- rf_ensemble(predicted) as predicted
+    -- hivemall v0.5-rc.1 or later
+    rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
+    -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
   FROM (
     SELECT
       t.passengerid, 
       -- hivemall v0.4.1-alpha.2 or before
       -- tree_predict(p.model, t.features, ${classification}) as predicted
       -- hivemall v0.4.1-alpha.3 or later
-      tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+      -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+      -- hivemall v0.5-rc.1 or later
+      p.model_weight,
+      tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
     FROM (
-      SELECT model_id, model_type, pred_model FROM model_rf_07
+      SELECT 
+        -- model_id, model_type, pred_model
+        -- hivemall v0.5-rc.1 or later
+        model_id, model_weight, model
+      FROM 
+        model_rf_07
       DISTRIBUTE BY rand(1)
     ) p
     LEFT OUTER JOIN test_rf_03 t
@@ -306,13 +372,16 @@ from
 ;
 
 select count(1) from test_rf_03;
+```
 > 260
 
+
+```sql
 set hivevar:testcnt=260;
 
 select count(1)/${testcnt} as accuracy 
 from rf_submit_03 
 where actual = predicted;
-
-> 0.8
 ```
+> 0.8153846153846154
+
