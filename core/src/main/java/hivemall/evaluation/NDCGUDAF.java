@@ -64,7 +64,8 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
         }
 
         ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
-        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())) {
+        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo()) 
+            && !HiveUtils.isStructTypeInfo(arg1type.getListElementTypeInfo())) {
             throw new UDFArgumentTypeException(0,
                     "The first argument `array rankItems` is invalid form: " + typeInfo[0]);
         }
