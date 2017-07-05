@@ -269,10 +269,14 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     public void process(Object[] args) throws HiveException {
         if (args[0] != null) {
             // TODO: Need to support dense inputs
-            final List<String> features = (List<String>) featureListOI.getList(args[0]);
+            final List<?> features = (List<?>) featureListOI.getList(args[0]);
+            final String[] fv = new String[features.size()];
+            for (int i = 0; i < features.size(); i++) {
+                fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
+            }
             double target = PrimitiveObjectInspectorUtils.getDouble(args[1], this.targetOI);
             checkTargetValue(target);
-            final LabeledPoint point = XGBoostUtils.parseFeatures(target, features);
+            final LabeledPoint point = XGBoostUtils.parseFeatures(target, fv);
             if (point != null) {
                 this.featuresList.add(point);
             }

@@ -160,14 +160,18 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
     public void process(Object[] args) throws HiveException {
         if (args[1] != null) {
             final String rowId = PrimitiveObjectInspectorUtils.getString(args[0], rowIdOI);
-            final List<String> features = (List<String>) featureListOI.getList(args[1]);
+            final List<?> features = (List<?>) featureListOI.getList(args[1]);
+            final String[] fv = new String[features.size()];
+            for (int i = 0; i < features.size(); i++) {
+                fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
+            }
             final String modelId = PrimitiveObjectInspectorUtils.getString(args[2], modelIdOI);
             if (!mapToModel.containsKey(modelId)) {
                 final byte[] predModel = PrimitiveObjectInspectorUtils.getBinary(args[3], modelOI)
                                                                       .getBytes();
                 mapToModel.put(modelId, initXgBooster(predModel));
             }
-            final LabeledPoint point = XGBoostUtils.parseFeatures(0.f, features);
+            final LabeledPoint point = XGBoostUtils.parseFeatures(0.f, fv);
             if (point != null) {
                 if (!rowBuffer.containsKey(modelId)) {
                     rowBuffer.put(modelId, new ArrayList());
