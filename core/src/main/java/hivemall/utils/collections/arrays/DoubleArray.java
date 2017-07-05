@@ -39,7 +39,7 @@ public interface DoubleArray extends Serializable {
 
     @Nonnull
     public double[] toArray(boolean copy);
-    
+
     public void clear();
 
 }

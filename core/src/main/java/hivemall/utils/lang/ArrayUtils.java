@@ -738,8 +738,7 @@ public final class ArrayUtils {
     }
 
     @Nonnull
-    public static float[] newRandomFloatArray(@Nonnegative final int size,
-            @Nonnull final PRNG rnd) {
+    public static float[] newRandomFloatArray(@Nonnegative final int size, @Nonnull final PRNG rnd) {
         final float[] ret = new float[size];
         for (int i = 0; i < size; i++) {
             ret[i] = (float) rnd.nextDouble();

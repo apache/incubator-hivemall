@@ -34,52 +34,48 @@ import org.junit.Test;
 
 public class SmartcnUDFTest {
 
-	@Test
-	public void testOneArgument() throws UDFArgumentException, IOException {
-		GenericUDF udf = new SmartcnUDF();
-		ObjectInspector[] argOIs = new ObjectInspector[1];
-		// line
-		argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-		udf.initialize(argOIs);
-		udf.close();
-	}
+    @Test
+    public void testOneArgument() throws UDFArgumentException, IOException {
+        GenericUDF udf = new SmartcnUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[1];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        udf.initialize(argOIs);
+        udf.close();
+    }
 
-	@Test
-	public void testTwoArgument() throws UDFArgumentException, IOException {
-		GenericUDF udf = new SmartcnUDF();
-		ObjectInspector[] argOIs = new ObjectInspector[2];
-		// line
-		argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-		// stopWords
-		argOIs[1] = ObjectInspectorFactory
-				.getStandardConstantListObjectInspector(
-						PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-						null);
-		udf.initialize(argOIs);
-		udf.close();
-	}
+    @Test
+    public void testTwoArgument() throws UDFArgumentException, IOException {
+        GenericUDF udf = new SmartcnUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[2];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        // stopWords
+        argOIs[1] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, null);
+        udf.initialize(argOIs);
+        udf.close();
+    }
 
-	@Test
-	public void testEvaluateOneRow() throws IOException, HiveException {
-		SmartcnUDF udf = new SmartcnUDF();
-		ObjectInspector[] argOIs = new ObjectInspector[1];
-		// line
-		argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
-		udf.initialize(argOIs);
+    @Test
+    public void testEvaluateOneRow() throws IOException, HiveException {
+        SmartcnUDF udf = new SmartcnUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[1];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        udf.initialize(argOIs);
 
-		DeferredObject[] args = new DeferredObject[1];
-		args[0] = new DeferredObject() {
-			public Text get() throws HiveException {
-				return new Text(
-						"Smartcn为Apache2.0协议的开源中文分词系统，Java语言编写，修改的中科院计算所ICTCLAS分词系统。");
-			}
+        DeferredObject[] args = new DeferredObject[1];
+        args[0] = new DeferredObject() {
+            public Text get() throws HiveException {
+                return new Text("Smartcn为Apache2.0协议的开源中文分词系统，Java语言编写，修改的中科院计算所ICTCLAS分词系统。");
+            }
 
-			@Override
-			public void prepare(int arg) throws HiveException {
-			}
-		};
-		List<Text> tokens = udf.evaluate(args);
-		Assert.assertNotNull(tokens);
-		udf.close();
-	}
+            @Override
+            public void prepare(int arg) throws HiveException {}
+        };
+        List<Text> tokens = udf.evaluate(args);
+        Assert.assertNotNull(tokens);
+        udf.close();
+    }
 }

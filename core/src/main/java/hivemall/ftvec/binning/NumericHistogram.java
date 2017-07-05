@@ -30,11 +30,9 @@ import java.util.Random;
 /**
  * **THIS CLASS IS IMPORTED FROM HIVE 2.1.0 FOR COMPATIBILITY**
  *
- * A generic, re-usable histogram class that supports partial aggregations. The algorithm is a
- * heuristic adapted from the following paper: Yael Ben-Haim and Elad Tom-Tov,
- * "A streaming parallel decision tree algorithm", J. Machine Learning Research 11 (2010), pp.
- * 849--872. Although there are no approximation guarantees, it appears to work well with adequate
- * data and a large (e.g., 20-80) number of histogram bins.
+ * A generic, re-usable histogram class that supports partial aggregations. The algorithm is a heuristic adapted from the following paper: Yael
+ * Ben-Haim and Elad Tom-Tov, "A streaming parallel decision tree algorithm", J. Machine Learning Research 11 (2010), pp. 849--872. Although there are
+ * no approximation guarantees, it appears to work well with adequate data and a large (e.g., 20-80) number of histogram bins.
  */
 public final class NumericHistogram {
     /**
@@ -58,8 +56,7 @@ public final class NumericHistogram {
     private Random prng;
 
     /**
-     * Creates a new histogram object. Note that the allocate() or merge() method must be called
-     * before the histogram can be used.
+     * Creates a new histogram object. Note that the allocate() or merge() method must be called before the histogram can be used.
      */
     public NumericHistogram() {
         nbins = 0;
@@ -73,8 +70,7 @@ public final class NumericHistogram {
     }
 
     /**
-     * Resets a histogram object to its initial state. allocate() or merge() must be called again
-     * before use.
+     * Resets a histogram object to its initial state. allocate() or merge() must be called again before use.
      */
     public void reset() {
         bins = null;
@@ -114,8 +110,7 @@ public final class NumericHistogram {
     }
 
     /**
-     * Takes a serialized histogram created by the serialize() method and merges it with the current
-     * histogram object.
+     * Takes a serialized histogram created by the serialize() method and merges it with the current histogram object.
      *
      * @param other A serialized histogram created by the serialize() method
      * @see #merge
@@ -165,9 +160,8 @@ public final class NumericHistogram {
     }
 
     /**
-     * Adds a new data point to the histogram approximation. Make sure you have called either
-     * allocate() or merge() first. This method implements Algorithm #1 from Ben-Haim and Tom-Tov,
-     * "A Streaming Parallel Decision Tree Algorithm", JMLR 2010.
+     * Adds a new data point to the histogram approximation. Make sure you have called either allocate() or merge() first. This method implements
+     * Algorithm #1 from Ben-Haim and Tom-Tov, "A Streaming Parallel Decision Tree Algorithm", JMLR 2010.
      *
      * @param v The data point to add to the histogram approximation.
      */
@@ -214,9 +208,8 @@ public final class NumericHistogram {
     }
 
     /**
-     * Trims a histogram down to 'nbins' bins by iteratively merging the closest bins. If two pairs
-     * of bins are equally close to each other, decide uniformly at random which pair to merge,
-     * based on a PRNG.
+     * Trims a histogram down to 'nbins' bins by iteratively merging the closest bins. If two pairs of bins are equally close to each other, decide
+     * uniformly at random which pair to merge, based on a PRNG.
      */
     private void trim() {
         while (nusedbins > nbins) {
@@ -251,8 +244,7 @@ public final class NumericHistogram {
     }
 
     /**
-     * Gets an approximate quantile value from the current histogram. Some popular quantiles are 0.5
-     * (median), 0.95, and 0.98.
+     * Gets an approximate quantile value from the current histogram. Some popular quantiles are 0.5 (median), 0.95, and 0.98.
      *
      * @param q The requested quantile, must be strictly within the range (0,1).
      * @return The quantile value.
@@ -281,9 +273,8 @@ public final class NumericHistogram {
     }
 
     /**
-     * In preparation for a Hive merge() call, serializes the current histogram object into an
-     * ArrayList of DoubleWritable objects. This list is deserialized and merged by the merge
-     * method.
+     * In preparation for a Hive merge() call, serializes the current histogram object into an ArrayList of DoubleWritable objects. This list is
+     * deserialized and merged by the merge method.
      *
      * @return An ArrayList of Hadoop DoubleWritable objects that represents the current histogram.
      * @see #merge

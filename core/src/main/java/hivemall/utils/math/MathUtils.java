@@ -46,13 +46,13 @@ public final class MathUtils {
 
     private MathUtils() {}
 
-    /**    
+    /**
      * @return secant 1 / cos(d)
      */
     public static double sec(final double d) {
         return 1.d / Math.cos(d);
     }
-    
+
     /**
      * Returns a bit mask for the specified number of bits.
      */

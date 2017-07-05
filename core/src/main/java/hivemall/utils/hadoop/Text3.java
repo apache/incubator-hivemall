@@ -24,8 +24,7 @@ import org.apache.hadoop.hive.ql.udf.generic.UDTFCollector;
 import org.apache.hadoop.io.Text;
 
 /**
- * {@link Text} passed to {@link UDTFCollector#collect(Object)}. It releases a given byte array
- * after copying the byte array.
+ * {@link Text} passed to {@link UDTFCollector#collect(Object)}. It releases a given byte array after copying the byte array.
  */
 public final class Text3 extends Text {
 

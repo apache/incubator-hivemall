@@ -324,7 +324,8 @@ public class DIMSUMMapperUDTFTest {
                 for (String k : items.keySet()) {
                     final Double sims_jk = sims_j.get(k);
                     if (sims_jk != null) {
-                        float simsExact_jk = CosineSimilarityUDF.cosineSimilarity(item_j, items.get(k));
+                        float simsExact_jk = CosineSimilarityUDF.cosineSimilarity(item_j,
+                            items.get(k));
                         Assert.assertEquals(simsExact_jk, sims_jk.floatValue(), 1e-6);
                     }
                 }

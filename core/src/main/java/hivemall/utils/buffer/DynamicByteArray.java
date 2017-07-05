@@ -27,8 +27,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A class that is a growable array of bytes. Growth is managed in terms of chunks that are
- * allocated when needed.
+ * A class that is a growable array of bytes. Growth is managed in terms of chunks that are allocated when needed.
  * 
  * This class is based on <code>org.apache.orc.impl.DynamicByteArray</code>.
  */

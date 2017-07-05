@@ -189,8 +189,7 @@ public final class PrivilegedAccessor {
     }
 
     /**
-     * Calls a static method with the given class and the given arguments. use this method when the
-     * specified arguments includes null object.
+     * Calls a static method with the given class and the given arguments. use this method when the specified arguments includes null object.
      */
     public static Object invokeStaticMethod(String className, String methodName,
             Class<?>[] classTypes, Object... objects) throws ClassNotFoundException,

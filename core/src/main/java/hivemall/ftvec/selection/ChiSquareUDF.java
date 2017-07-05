@@ -61,7 +61,7 @@ public final class ChiSquareUDF extends GenericUDF {
     private double[] expectedRow = null; // to reuse
     private double[][] observed = null; // shape = (#features, #classes)
     private double[][] expected = null; // shape = (#features, #classes)
-    
+
     private List<DoubleWritable>[] result;
 
     @SuppressWarnings("unchecked")
@@ -86,13 +86,13 @@ public final class ChiSquareUDF extends GenericUDF {
         this.observedElOI = HiveUtils.asDoubleCompatibleOI(observedRowOI.getListElementObjectInspector());
         this.expectedOI = HiveUtils.asListOI(OIs[0]);
         this.expectedRowOI = HiveUtils.asListOI(expectedOI.getListElementObjectInspector());
-        this.expectedElOI = HiveUtils.asDoubleCompatibleOI(expectedRowOI.getListElementObjectInspector());        
+        this.expectedElOI = HiveUtils.asDoubleCompatibleOI(expectedRowOI.getListElementObjectInspector());
         this.result = new List[2];
-        
+
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
-        
+
         return ObjectInspectorFactory.getStandardStructObjectInspector(
             Arrays.asList("chi2", "pvalue"), fieldOIs);
     }
@@ -139,7 +139,7 @@ public final class ChiSquareUDF extends GenericUDF {
         }
 
         Map.Entry<double[], double[]> chi2 = StatsUtils.chiSquare(observed, expected);
-        
+
         result[0] = WritableUtils.toWritableList(chi2.getKey(), result[0]);
         result[1] = WritableUtils.toWritableList(chi2.getValue(), result[1]);
         return result;

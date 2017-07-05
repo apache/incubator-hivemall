@@ -31,7 +31,7 @@ public interface IntSet {
     public int size();
 
     public void clear();
-    
+
     @Nonnull
     public int[] toArray(boolean copy);
 

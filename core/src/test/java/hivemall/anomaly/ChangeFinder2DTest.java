@@ -94,7 +94,7 @@ public class ChangeFinder2DTest {
         params.r1 = 0.01d;
         params.k = 6;
         params.T1 = 10;
-        params.T2 = 5;        
+        params.T2 = 5;
         PrimitiveObjectInspector oi = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
         ListObjectInspector listOI = ObjectInspectorFactory.getStandardListObjectInspector(oi);
         ChangeFinder2D cf = new ChangeFinder2D(params, listOI);

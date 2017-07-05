@@ -257,8 +257,7 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
     /**
      * Sampling pairs uniform for each user without replacement. Sample a user. Then, sample a pair.
      * 
-     * Caution: This is not a perfect 'without sampling' but it does 'without sampling' for positive
-     * feedbacks.
+     * Caution: This is not a perfect 'without sampling' but it does 'without sampling' for positive feedbacks.
      */
     private void uniformUserSamplingWithoutReplacement(
             @Nonnull final PositiveOnlyFeedback feedback, final int numSamples)
@@ -347,8 +346,7 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
     /**
      * Sampling pairs uniform from feedbacks without replacement.
      * 
-     * Caution: This is not a perfect 'without sampling' but it does 'without sampling' for positive
-     * feedbacks.
+     * Caution: This is not a perfect 'without sampling' but it does 'without sampling' for positive feedbacks.
      */
     private void uniformPairSamplingWithoutReplacement(
             @Nonnull final PerEventPositiveOnlyFeedback feedback, final int numSamples)

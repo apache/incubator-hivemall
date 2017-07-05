@@ -59,9 +59,8 @@ import javax.annotation.Nonnull;
 /**
  * BASE91 is an advanced method for encoding binary data as ASCII, i.e., UTF-8 1 byte, characters.
  * 
- * It uses ACSII printable characters expect Backslash (0x5C), Single Quote (0x27), and Double Quote
- * (0x22) while the original version of basE91 use Double Quote (0x22) instead of Dash (0x2D) for
- * the encoded string.
+ * It uses ACSII printable characters expect Backslash (0x5C), Single Quote (0x27), and Double Quote (0x22) while the original version of basE91 use
+ * Double Quote (0x22) instead of Dash (0x2D) for the encoded string.
  */
 public final class Base91 {
 

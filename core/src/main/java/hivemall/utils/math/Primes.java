@@ -64,8 +64,7 @@ public final class Primes {
     private Primes() {}
 
     /**
-     * Returns from a static prime table the least prime that is greater than or equal to a
-     * specified value.
+     * Returns from a static prime table the least prime that is greater than or equal to a specified value.
      */
     public static int findLeastPrimeNumber(final int n) {
         assert (n >= 0) : n;

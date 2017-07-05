@@ -54,8 +54,7 @@ public final class StringUtils {
     /**
      * Checks whether the String a valid Java number. this code is ported from jakarta commons lang.
      * 
-     * @link http://jakarta.apache.org/commons/lang/apidocs/org/apache/commons/lang
-     *       /math/NumberUtils.html
+     * @link http://jakarta.apache.org/commons/lang/apidocs/org/apache/commons/lang /math/NumberUtils.html
      */
     public static boolean isNumber(final String str) {
         if (str == null || str.length() == 0) {
