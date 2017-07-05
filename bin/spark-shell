@@ -113,7 +113,7 @@ compile_hivemall() {
 
   HIVEMALL_BIN="${_DIR}/../target/hivemall-spark-${SPARK_VERSION}_${SCALA_VERSION}-${HIVEMALL_VERSION}-with-dependencies.jar"
   if [ ! -f "${HIVEMALL_BIN}" ]; then
-    install_mvn && ${MVN_BIN} -f "${_DIR}/../pom.xml" clean package -P"spark-${SPARK_VERSION}" -DskipTests
+    install_mvn && ${MVN_BIN} validate && ${MVN_BIN} -f "${_DIR}/../pom.xml" clean package -P"spark-${SPARK_VERSION}" -DskipTests
     if [ $? = 127 ]; then
       echo "Failed to compile hivemall for spark-${SPARK_VERSION}"
       exit 1
