@@ -190,7 +190,7 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
 
         double s = 0.d;
         for (int i = 0; i < r; i++) {
-            if(!indicies.hasNext()) {
+            if (!indicies.hasNext()) {
                 throw new IllegalStateException("Should not happen");
             }
             double v = eigvecs.getEntry(0, indicies.next().intValue());

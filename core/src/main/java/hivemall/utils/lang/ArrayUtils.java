@@ -34,8 +34,9 @@ import org.apache.commons.math3.distribution.GammaDistribution;
 public final class ArrayUtils {
 
     /**
-     * The index value when an element is not found in a list or array: <code>-1</code>. This value is returned by methods in this class and can also
-     * be used in comparisons with values returned by various method from {@link java.util.List}.
+     * The index value when an element is not found in a list or array: <code>-1</code>. This value
+     * is returned by methods in this class and can also be used in comparisons with values returned
+     * by various method from {@link java.util.List}.
      */
     public static final int INDEX_NOT_FOUND = -1;
 
@@ -738,8 +739,7 @@ public final class ArrayUtils {
     }
 
     @Nonnull
-    public static float[] newRandomFloatArray(@Nonnegative final int size,
-            @Nonnull final PRNG rnd) {
+    public static float[] newRandomFloatArray(@Nonnegative final int size, @Nonnull final PRNG rnd) {
         final float[] ret = new float[size];
         for (int i = 0; i < size; i++) {
             ret[i] = (float) rnd.nextDouble();

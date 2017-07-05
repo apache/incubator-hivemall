@@ -25,7 +25,8 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
 @SuppressWarnings("deprecation")
-@Description(name = "l2_norm",
+@Description(
+        name = "l2_norm",
         value = "_FUNC_(double xi) - Return L2 norm of a vector which has the given values in each dimension")
 public final class L2NormUDAF extends UDAF {
 

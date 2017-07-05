@@ -33,7 +33,8 @@ public class DeflateCodecTest {
 
     @Test
     public void testOpscript() throws IOException {
-        URL url = new URL("https://raw.githubusercontent.com/apache/incubator-hivemall/master/core/pom.xml");
+        URL url = new URL(
+            "https://raw.githubusercontent.com/apache/incubator-hivemall/master/core/pom.xml");
         InputStream is = new BufferedInputStream(url.openStream());
         String opScript = IOUtils.toString(is);
         byte[] original1 = opScript.getBytes();

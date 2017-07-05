@@ -52,7 +52,7 @@ import org.apache.hadoop.io.BooleanWritable;
                 + " - Returns outlier/change-point scores and decisions using ChangeFinder."
                 + " It will return a tuple <double outlier_score, double changepoint_score [, boolean is_anomaly [, boolean is_changepoint]]")
 @UDFType(deterministic = false, stateful = true)
-@Since(version="0.5-rc.1")
+@Since(version = "0.5-rc.1")
 public final class ChangeFinderUDF extends UDFWithOptions {
 
     private transient Parameters _params;

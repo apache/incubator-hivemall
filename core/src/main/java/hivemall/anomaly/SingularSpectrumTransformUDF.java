@@ -49,7 +49,9 @@ import org.apache.hadoop.io.BooleanWritable;
  *
  * References:
  * <ul>
- * <li>T. Ide and K. Inoue, "Knowledge Discovery from Heterogeneous Dynamic Systems using Change-Point Correlations", SDM'05.</li>
+ * <li>T. Ide and K. Inoue,
+ * "Knowledge Discovery from Heterogeneous Dynamic Systems using Change-Point Correlations", SDM'05.
+ * </li>
  * <li>T. Ide and K. Tsuda, "Change-point detection using Krylov subspace learning", SDM'07.</li>
  * </ul>
  */
@@ -59,7 +61,7 @@ import org.apache.hadoop.io.BooleanWritable;
                 + " - Returns change-point scores and decisions using Singular Spectrum Transformation (SST)."
                 + " It will return a tuple <double changepoint_score [, boolean is_changepoint]>")
 @UDFType(deterministic = false, stateful = true)
-@Since(version="0.5-rc.1")
+@Since(version = "0.5-rc.1")
 public final class SingularSpectrumTransformUDF extends UDFWithOptions {
 
     private transient Parameters _params;

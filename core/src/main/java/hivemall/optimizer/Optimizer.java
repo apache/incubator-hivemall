@@ -172,10 +172,11 @@ public interface Optimizer {
     }
 
     /**
-     * Adam, an algorithm for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order
-     * moments.
+     * Adam, an algorithm for first-order gradient-based optimization of stochastic objective
+     * functions, based on adaptive estimates of lower-order moments.
      *
-     * - D. P. Kingma and J. L. Ba: "ADAM: A Method for Stochastic Optimization." arXiv preprint arXiv:1412.6980v8, 2014.
+     * - D. P. Kingma and J. L. Ba: "ADAM: A Method for Stochastic Optimization." arXiv preprint
+     * arXiv:1412.6980v8, 2014.
      */
     static abstract class Adam extends OptimizerBase {
 

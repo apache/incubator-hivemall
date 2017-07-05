@@ -71,30 +71,40 @@ import smile.regression.RandomForest;
 import smile.regression.Regression;
 
 /**
- * Decision tree for regression. A decision tree can be learned by splitting the training set into subsets based on an attribute value test. This
- * process is repeated on each derived subset in a recursive manner called recursive partitioning.
+ * Decision tree for regression. A decision tree can be learned by splitting the training set into
+ * subsets based on an attribute value test. This process is repeated on each derived subset in a
+ * recursive manner called recursive partitioning.
  * <p>
- * Classification and Regression Tree techniques have a number of advantages over many of those alternative techniques.
+ * Classification and Regression Tree techniques have a number of advantages over many of those
+ * alternative techniques.
  * <dl>
  * <dt>Simple to understand and interpret.</dt>
- * <dd>In most cases, the interpretation of results summarized in a tree is very simple. This simplicity is useful not only for purposes of rapid
- * classification of new observations, but can also often yield a much simpler "model" for explaining why observations are classified or predicted in
- * a particular manner.</dd>
+ * <dd>In most cases, the interpretation of results summarized in a tree is very simple. This
+ * simplicity is useful not only for purposes of rapid classification of new observations, but can
+ * also often yield a much simpler "model" for explaining why observations are classified or
+ * predicted in a particular manner.</dd>
  * <dt>Able to handle both numerical and categorical data.</dt>
- * <dd>Other techniques are usually specialized in analyzing datasets that have only one type of variable.</dd>
+ * <dd>Other techniques are usually specialized in analyzing datasets that have only one type of
+ * variable.</dd>
  * <dt>Tree methods are nonparametric and nonlinear.</dt>
- * <dd>The final results of using tree methods for classification or regression can be summarized in a series of (usually few) logical if-then
- * conditions (tree nodes). Therefore, there is no implicit assumption that the underlying relationships between the predictor variables and the
- * dependent variable are linear, follow some specific non-linear link function, or that they are even monotonic in nature. Thus, tree methods are
- * particularly well suited for data mining tasks, where there is often little a priori knowledge nor any coherent set of theories or predictions
- * regarding which variables are related and how. In those types of data analytics, tree methods can often reveal simple relationships between just a
- * few variables that could have easily gone unnoticed using other analytic techniques.</dd>
+ * <dd>The final results of using tree methods for classification or regression can be summarized in
+ * a series of (usually few) logical if-then conditions (tree nodes). Therefore, there is no
+ * implicit assumption that the underlying relationships between the predictor variables and the
+ * dependent variable are linear, follow some specific non-linear link function, or that they are
+ * even monotonic in nature. Thus, tree methods are particularly well suited for data mining tasks,
+ * where there is often little a priori knowledge nor any coherent set of theories or predictions
+ * regarding which variables are related and how. In those types of data analytics, tree methods can
+ * often reveal simple relationships between just a few variables that could have easily gone
+ * unnoticed using other analytic techniques.</dd>
  * </dl>
- * One major problem with classification and regression trees is their high variance. Often a small change in the data can result in a very different
- * series of splits, making interpretation somewhat precarious. Besides, decision-tree learners can create over-complex trees that cause over-fitting.
- * Mechanisms such as pruning are necessary to avoid this problem. Another limitation of trees is the lack of smoothness of the prediction surface.
+ * One major problem with classification and regression trees is their high variance. Often a small
+ * change in the data can result in a very different series of splits, making interpretation
+ * somewhat precarious. Besides, decision-tree learners can create over-complex trees that cause
+ * over-fitting. Mechanisms such as pruning are necessary to avoid this problem. Another limitation
+ * of trees is the lack of smoothness of the prediction surface.
  * <p>
- * Some techniques such as bagging, boosting, and random forest use more than one decision tree for their analysis.
+ * Some techniques such as bagging, boosting, and random forest use more than one decision tree for
+ * their analysis.
  * 
  * @see GradientTreeBoost
  * @see RandomForest
@@ -106,8 +116,9 @@ public final class RegressionTree implements Regression<Vector> {
     private final Attribute[] _attributes;
     private final boolean _hasNumericType;
     /**
-     * Variable importance. Every time a split of a node is made on variable the impurity criterion for the two descendant nodes is less than the
-     * parent node. Adding up the decreases for each individual variable over the tree gives a simple measure of variable importance.
+     * Variable importance. Every time a split of a node is made on variable the impurity criterion
+     * for the two descendant nodes is less than the parent node. Adding up the decreases for each
+     * individual variable over the tree gives a simple measure of variable importance.
      */
     private final double[] _importance;
     /**
@@ -119,7 +130,8 @@ public final class RegressionTree implements Regression<Vector> {
      */
     private final int _maxDepth;
     /**
-     * The number of instances in a node below which the tree will not split, setting S = 5 generally gives good results.
+     * The number of instances in a node below which the tree will not split, setting S = 5
+     * generally gives good results.
      */
     private final int _minSplit;
     /**
@@ -131,7 +143,8 @@ public final class RegressionTree implements Regression<Vector> {
      */
     private final int _numVars;
     /**
-     * The index of training values in ascending order. Note that only numeric attributes will be sorted.
+     * The index of training values in ascending order. Note that only numeric attributes will be
+     * sorted.
      */
     private final ColumnMajorIntMatrix _order;
 
@@ -140,8 +153,9 @@ public final class RegressionTree implements Regression<Vector> {
     private final NodeOutput _nodeOutput;
 
     /**
-     * An interface to calculate node output. Note that samples[i] is the number of sampling of dataset[i]. 0 means that the datum is not included and
-     * values of greater than 1 are possible because of sampling with replacement.
+     * An interface to calculate node output. Note that samples[i] is the number of sampling of
+     * dataset[i]. 0 means that the datum is not included and values of greater than 1 are possible
+     * because of sampling with replacement.
      */
     public interface NodeOutput {
         /**
@@ -489,7 +503,8 @@ public final class RegressionTree implements Regression<Vector> {
         }
 
         /**
-         * Finds the best attribute to split on at the current node. Returns true if a split exists to reduce squared error, false otherwise.
+         * Finds the best attribute to split on at the current node. Returns true if a split exists
+         * to reduce squared error, false otherwise.
          */
         public boolean findBestSplit() {
             // avoid split if tree depth is larger than threshold
@@ -790,11 +805,13 @@ public final class RegressionTree implements Regression<Vector> {
      * @param attributes the attribute properties.
      * @param x the training instances.
      * @param y the response variable.
-     * @param numVars the number of input variables to pick to split on at each node. It seems that dim/3 give generally good performance, where dim
-     *        is the number of variables.
+     * @param numVars the number of input variables to pick to split on at each node. It seems that
+     *        dim/3 give generally good performance, where dim is the number of variables.
      * @param maxLeafs the maximum number of leaf nodes in the tree.
-     * @param minSplits number of instances in a node below which the tree will not split, setting S = 5 generally gives good results.
-     * @param order the index of training values in ascending order. Note that only numeric attributes need be sorted.
+     * @param minSplits number of instances in a node below which the tree will not split, setting S
+     *        = 5 generally gives good results.
+     * @param order the index of training values in ascending order. Note that only numeric
+     *        attributes need be sorted.
      * @param bags the sample set of instances for stochastic learning.
      * @param output An interface to calculate node output.
      */
@@ -895,8 +912,10 @@ public final class RegressionTree implements Regression<Vector> {
     }
 
     /**
-     * Returns the variable importance. Every time a split of a node is made on variable the impurity criterion for the two descendent nodes is less
-     * than the parent node. Adding up the decreases for each individual variable over the tree gives a simple measure of variable importance.
+     * Returns the variable importance. Every time a split of a node is made on variable the
+     * impurity criterion for the two descendent nodes is less than the parent node. Adding up the
+     * decreases for each individual variable over the tree gives a simple measure of variable
+     * importance.
      *
      * @return the variable importance
      */

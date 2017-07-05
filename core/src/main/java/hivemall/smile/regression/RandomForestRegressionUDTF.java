@@ -407,7 +407,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
          */
         private final double[] _y;
         /**
-         * The index of training values in ascending order. Note that only numeric attributes will be sorted.
+         * The index of training values in ascending order. Note that only numeric attributes will
+         * be sorted.
          */
         private final ColumnMajorIntMatrix _order;
         /**

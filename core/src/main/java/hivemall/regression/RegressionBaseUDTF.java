@@ -52,7 +52,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.FloatWritable;
 
 /**
- * The base class for regression algorithms. RegressionBaseUDTF provides general implementation for online training and batch training.
+ * The base class for regression algorithms. RegressionBaseUDTF provides general implementation for
+ * online training and batch training.
  */
 public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(RegressionBaseUDTF.class);

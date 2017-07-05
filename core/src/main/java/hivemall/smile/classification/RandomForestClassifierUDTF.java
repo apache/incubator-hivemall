@@ -465,7 +465,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         @Nonnull
         private final int[] _y;
         /**
-         * The index of training values in ascending order. Note that only numeric attributes will be sorted.
+         * The index of training values in ascending order. Note that only numeric attributes will
+         * be sorted.
          */
         @Nonnull
         private final ColumnMajorIntMatrix _order;

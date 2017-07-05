@@ -48,7 +48,9 @@ public final class MatrixUtils {
      * R_j = ∑_{i=1}^{k} A_i R_{j-i} where j = 1..k, R_{-i} = R'_i
      * </pre>
      * 
-     * @see http://www.emptyloop.com/technotes/a%20tutorial%20on%20linear%20prediction%20and%20levinson-durbin.pdf
+     * @see <a
+     *      href="http://www.emptyloop.com/technotes/a%20tutorial%20on%20linear%20prediction%20and%20levinson-durbin.pdf">Cedrick
+     *      Collomb: A tutorial on linear prediction and Levinson-Durbin</a>
      * @param R autocovariance where |R| >= order
      * @param A coefficient to be solved where |A| >= order + 1
      * @return E variance of prediction error
@@ -510,7 +512,8 @@ public final class MatrixUtils {
     /**
      * Find the first singular vector/value of a matrix A based on the Power method.
      * 
-     * @see http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
+     * @see http 
+     *      ://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
      * @param A target matrix
      * @param x0 initial vector
      * @param nIter number of iterations for the Power method
@@ -650,7 +653,8 @@ public final class MatrixUtils {
      * Find eigenvalues and eigenvectors of given tridiagonal matrix T.
      *
      * @see http://web.csulb.edu/~tgao/math423/s94.pdf
-     * @see http://stats.stackexchange.com/questions/20643/finding-matrix-eigenvectors-using-qr-decomposition
+     * @see http://stats.stackexchange.com/questions/20643/finding-matrix-eigenvectors-using-qr-
+     *      decomposition
      * @param T target tridiagonal matrix
      * @param nIter number of iterations for the QR method
      * @param eigvals eigenvalues are stored here

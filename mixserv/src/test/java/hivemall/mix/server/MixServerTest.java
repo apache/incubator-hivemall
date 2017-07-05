@@ -296,8 +296,8 @@ public class MixServerTest extends HivemallTestBase {
         serverExec.shutdown();
     }
 
-    private static void invokeClient01(String groupId, int serverPort, boolean denseModel, boolean cancelMix)
-            throws InterruptedException {
+    private static void invokeClient01(String groupId, int serverPort, boolean denseModel,
+            boolean cancelMix) throws InterruptedException {
         PredictionModel model = denseModel ? new NewDenseModel(100)
                 : new NewSparseModel(100, false);
         model.configureClock();

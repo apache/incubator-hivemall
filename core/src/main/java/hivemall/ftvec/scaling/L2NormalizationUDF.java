@@ -27,9 +27,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.Text;
 
 /**
- * @see <a href=
- *      "http://mathworld.wolfram.com/NormalizedVector.html>http://mathworld.wolfram.com/NormalizedVector.html
- *      < / a >
+ * @see http://mathworld.wolfram.com/NormalizedVector.html
  */
 @Description(name = "l2_normalize", value = "_FUNC_(ftvec string) - Returned a L2 normalized value")
 @UDFType(deterministic = true, stateful = false)

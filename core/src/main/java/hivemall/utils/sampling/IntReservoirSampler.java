@@ -24,7 +24,8 @@ import java.util.Random;
 import javax.annotation.Nonnull;
 
 /**
- * Vitter's reservoir sampling implementation that randomly chooses k items from a list containing n items.
+ * Vitter's reservoir sampling implementation that randomly chooses k items from a list containing n
+ * items.
  * 
  * @link http://en.wikipedia.org/wiki/Reservoir_sampling
  * @link http://portal.acm.org/citation.cfm?id=3165

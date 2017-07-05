@@ -97,7 +97,8 @@ public abstract class EtaEstimator {
     }
 
     /**
-     * bold driver: Gemulla et al., Large-scale matrix factorization with distributed stochastic gradient descent, KDD 2011.
+     * bold driver: Gemulla et al., Large-scale matrix factorization with distributed stochastic
+     * gradient descent, KDD 2011.
      */
     public static final class AdjustingEtaEstimator extends EtaEstimator {
 

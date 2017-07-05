@@ -348,7 +348,8 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     }
 
     /**
-     * Estimates the variational bound over all documents using only the documents passed as mini-batch.
+     * Estimates the variational bound over all documents using only the documents passed as
+     * mini-batch.
      */
     private double computeApproxBound() {
         // prepare
