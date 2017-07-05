@@ -103,14 +103,11 @@ public final class SmileExtUtils {
             }
         }
         
-        String opts_str = "";
-        for (int i = 0; i < size; i++) {
-        	if (!opts_str.isEmpty()){
-        		opts_str += ",";
-        	}
-        	opts_str += opts[i];
+        StringBuilder strBuilder = new StringBuilder();
+        for (int i = 0; i < opts.length; i++) {
+           strBuilder.append(opts[i]);
         }
-        
+        String opts_str = strBuilder.toString(); 
         return opts_str;
     }
 
