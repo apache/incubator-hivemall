@@ -69,7 +69,7 @@ public class MatrixEventStream extends AbstractEventStream {
 			      for (int i = 0; i < obs.length; i++){
 			    	  if (attrs[i].type == AttributeType.NOMINAL){
 			    		  names[i] = i + "_" + String.valueOf(obs[i]).toString();
-			    		  values[i] = Double.valueOf(1.0).floatValue();
+			    		  values[i] = 1.0f;
 			    	  }else{
 			    		  names[i] = String.valueOf(i);
 			    		  values[i] = Double.valueOf(obs[i]).floatValue();
