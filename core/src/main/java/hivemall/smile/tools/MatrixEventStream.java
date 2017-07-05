@@ -24,7 +24,7 @@ public class MatrixEventStream extends AbstractEventStream {
 	    
 	    if (rowNum < ds.numRows()){
 	      next = createEvent(ds.getRow(rowNum), y[rowNum]);
-	    };
+	    }
 	  }
 	  	  
 	  /**
