@@ -125,7 +125,7 @@ public class MaxEntPredictUDF extends GenericUDF {
   	    float[] values = new float[obs.length];
 	    for (int i = 0; i < obs.length; i++){
 	    	  if (attributes[i].type == AttributeType.NOMINAL){
-	    		  names[i] = i + "_" + String.valueOf(obs[i]).toString();
+	    		  names[i] = i + "_" + String.valueOf(obs[i]);
 	    		  values[i] = Double.valueOf(1.0).floatValue();
 	    	  }else{
 	    		  names[i] = String.valueOf(i);
