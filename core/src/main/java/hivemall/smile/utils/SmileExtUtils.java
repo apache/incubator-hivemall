@@ -105,6 +105,10 @@ public final class SmileExtUtils {
         
         StringBuilder strBuilder = new StringBuilder();
         for (int i = 0; i < opts.length; i++) {
+           if (!strBuilder.toString().isEmpty()){
+        	   strBuilder.append(",");
+           }
+ 
            strBuilder.append(opts[i]);
         }
         String opts_str = strBuilder.toString(); 
