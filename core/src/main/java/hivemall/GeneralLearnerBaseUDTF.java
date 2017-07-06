@@ -33,6 +33,7 @@ import hivemall.optimizer.OptimizerOptions;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NIOUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.FloatAccumulator;
 import hivemall.utils.lang.NumberUtils;
@@ -65,17 +66,31 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaStringObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableStringObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaIntObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaLongObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableLongObjectInspector;
 import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
 public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(GeneralLearnerBaseUDTF.class);
 
+    public enum FeatureType {
+        String, Text, Integer, WritableInt, Long, WritableLong
+    }
+
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureInputOI;
     private PrimitiveObjectInspector targetOI;
     private boolean parseFeature;
+    private FeatureType featureType;
 
     // -----------------------------------------
     // hyperparameters
@@ -220,6 +235,23 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         this.featureListOI = (ListObjectInspector) arg;
         ObjectInspector featureRawOI = featureListOI.getListElementObjectInspector();
         HiveUtils.validateFeatureOI(featureRawOI);
+        if (featureRawOI instanceof JavaStringObjectInspector) {
+            this.featureType = FeatureType.String;
+        } else if (featureRawOI instanceof WritableStringObjectInspector) {
+            this.featureType = FeatureType.Text;
+        } else if (featureRawOI instanceof JavaIntObjectInspector) {
+            this.featureType = FeatureType.Integer;
+        } else if (featureRawOI instanceof WritableIntObjectInspector) {
+            this.featureType = FeatureType.WritableInt;
+        } else if (featureRawOI instanceof JavaLongObjectInspector) {
+            this.featureType = FeatureType.Long;
+        } else if (featureRawOI instanceof WritableLongObjectInspector) {
+            this.featureType = FeatureType.WritableLong;
+        } else {
+            throw new UDFArgumentException("Feature object inspector must be one of "
+                + "[JavaString, WritableString, JavaInt, WritableInt, Long, WritableLong]: "
+                + featureRawOI.toString());
+        }
         this.parseFeature = HiveUtils.isStringOI(featureRawOI);
         return HiveUtils.asPrimitiveObjectInspector(featureRawOI);
     }
@@ -290,8 +322,25 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             this.fileIO = dst = new NioStatefullSegment(file, false);
         }
 
+        int featureVectorBytes = 0;
+        for (FeatureValue f : featureVector) {
+            if (f == null) {
+                continue;
+            }
+            String feature = f.getFeatureAsString();
+
+            // feature as String (even if it is Text or Integer)
+            featureVectorBytes += SizeOf.CHAR * feature.length();
+
+            // NIOUtils.putString() first puts the length of string before string itself
+            featureVectorBytes += SizeOf.INT;
+
+            // value
+            featureVectorBytes += SizeOf.DOUBLE;
+        }
+
         // feature length, feature 1, feature 2, ..., feature n, target
-        int recordBytes = SizeOf.INT + FeatureValue.requiredBytes(featureVector) + SizeOf.FLOAT;
+        int recordBytes = SizeOf.INT + featureVectorBytes + SizeOf.FLOAT;
         int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
 
         int remain = buf.remaining();
@@ -302,9 +351,37 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         buf.putInt(recordBytes);
         buf.putInt(featureVector.length);
         for (FeatureValue f : featureVector) {
-            f.writeTo(buf);
+            writeFeatureValue(buf, f);
         }
         buf.putFloat(target);
+    }
+
+    private void writeFeatureValue(@Nonnull ByteBuffer buf, @Nonnull FeatureValue f) {
+        NIOUtils.putString(f.getFeatureAsString(), buf);
+        buf.putDouble(f.getValue());
+    }
+
+    private FeatureValue readFeatureValue(@Nonnull ByteBuffer buf) {
+        Object feature = NIOUtils.getString(buf);
+        switch (featureType) {
+            case Text:
+                feature = new Text((String) feature);
+                break;
+            case Integer:
+                feature = Integer.parseInt((String) feature);
+                break;
+            case WritableInt:
+                feature = new IntWritable(Integer.parseInt((String) feature));
+                break;
+            case Long:
+                feature = Long.parseLong((String) feature);
+                break;
+            case WritableLong:
+                feature = new LongWritable(Long.parseLong((String) feature));
+                break;
+        }
+        double value = buf.getDouble();
+        return new FeatureValue(feature, value);
     }
 
     @Nullable
@@ -323,7 +400,11 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             }
             final FeatureValue fv;
             if (parseFeature) {
-                fv = FeatureValue.parse(f);
+                if (featureType == FeatureType.String) {
+                    fv = FeatureValue.parseFeatureAsString((String) f);
+                } else {
+                    fv = FeatureValue.parse(f); // = parse feature as Text
+                }
             } else {
                 Object k = ObjectInspectorUtils.copyToStandardObject(f, featureInspector);
                 fv = new FeatureValue(k, 1.f);
@@ -480,7 +561,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         int featureVectorLength = buf.getInt();
                         final FeatureValue[] featureVector = new FeatureValue[featureVectorLength];
                         for (int j = 0; j < featureVectorLength; j++) {
-                            featureVector[j] = new FeatureValue(buf);
+                            featureVector[j] = readFeatureValue(buf);
                         }
                         float target = buf.getFloat();
                         train(featureVector, target);
@@ -563,7 +644,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                             int featureVectorLength = buf.getInt();
                             final FeatureValue[] featureVector = new FeatureValue[featureVectorLength];
                             for (int j = 0; j < featureVectorLength; j++) {
-                                featureVector[j] = new FeatureValue(buf);
+                                featureVector[j] = readFeatureValue(buf);
                             }
                             float target = buf.getFloat();
                             train(featureVector, target);
