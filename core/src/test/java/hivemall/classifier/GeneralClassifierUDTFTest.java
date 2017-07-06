@@ -109,7 +109,8 @@ public class GeneralClassifierUDTFTest {
         Assert.assertTrue(y == predicted);
     }
 
-    private void testFeature(List<?> x, ObjectInspector featureOI, Class featureClass) throws Exception {
+    private void testFeature(List<?> x, ObjectInspector featureOI, Class featureClass)
+            throws Exception {
         int y = 0;
 
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
@@ -133,10 +134,13 @@ public class GeneralClassifierUDTFTest {
 
         Class modelFeatureClass = modelFeatures.get(0).getClass();
         for (Object modelFeature : modelFeatures) {
-            Assert.assertEquals("All model features must have same type", modelFeatureClass, modelFeature.getClass());
+            Assert.assertEquals("All model features must have same type", modelFeatureClass,
+                modelFeature.getClass());
         }
 
-        Assert.assertEquals("Model feature must correspond to UDTF output feature's object inspector", featureClass, modelFeatureClass);
+        Assert.assertEquals(
+            "Model feature must correspond to UDTF output feature's object inspector",
+            featureClass, modelFeatureClass);
     }
 
     @Test

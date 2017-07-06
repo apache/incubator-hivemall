@@ -249,8 +249,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             this.featureType = FeatureType.WritableLong;
         } else {
             throw new UDFArgumentException("Feature object inspector must be one of "
-                + "[JavaString, WritableString, JavaInt, WritableInt, Long, WritableLong]: "
-                + featureRawOI.toString());
+                    + "[JavaString, WritableString, JavaInt, WritableInt, Long, WritableLong]: "
+                    + featureRawOI.toString());
         }
         this.parseFeature = HiveUtils.isStringOI(featureRawOI);
         return HiveUtils.asPrimitiveObjectInspector(featureRawOI);
@@ -445,7 +445,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
         float loss = lossFunction.loss(predicted, target);
-        cvState.incrLoss(loss); // retain cumulative loss to check convergence      
+        cvState.incrLoss(loss); // retain cumulative loss to check convergence
 
         final float dloss = lossFunction.dloss(predicted, target);
         if (is_mini_batch) {
