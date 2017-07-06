@@ -140,7 +140,7 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         try {
             return XGBoost.loadModel(new ByteArrayInputStream(input));
         } catch (Exception e) {
-            throw new HiveException(e.getMessage());
+            throw new HiveException(e);
         }
     }
 
@@ -151,7 +151,7 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
             final float[][] predicted = model.predict(testData);
             forwardPredicted(buf, predicted);
         } catch (Exception e) {
-            throw new HiveException(e.getMessage());
+            throw new HiveException(e);
         }
         buf.clear();
     }

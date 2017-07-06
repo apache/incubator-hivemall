@@ -19,13 +19,12 @@
 package hivemall.xgboost;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import javax.annotation.Nonnull;
 
 import ml.dmlc.xgboost4j.LabeledPoint;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
@@ -37,8 +36,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 import hivemall.UDTFWithOptions;
-import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.RandomUtils;
 
 /**
  * This is a base class to handle the options for XGBoost and provide common functions among various
@@ -57,6 +56,10 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector targetOI;
+
+    // For generating model IDs
+    private long sequence;
+    private long taskId;
 
     // Settings for the XGBoost native library
     static {
@@ -97,6 +100,8 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
 
     public XGBoostUDTF() {
         this.featuresList = new ArrayList(1024);
+        this.sequence = 0L;
+        this.taskId = Thread.currentThread().getId();
     }
 
     @Override
@@ -232,8 +237,8 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
             // Try to create a `Booster` instance to check if given XGBoost options
             // are valid, or not.
             createXGBooster(params, featuresList);
-        } catch (XGBoostError e) {
-            throw new UDFArgumentException(e.getMessage());
+        } catch (Exception e) {
+            throw new UDFArgumentException(e);
         }
 
         return cl;
@@ -283,34 +288,19 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
         }
     }
 
-    /**
-     * Need to override this for a Spark wrapper because `MapredContext` does not work in there.
-     */
-    protected String generateUniqueModelId() {
-        return "xgbmodel-" + String.valueOf(HadoopUtils.getTaskId());
+    private String generateUniqueModelId() {
+        return "xgbmodel-" + taskId + "-" + RandomUtils.getUUID() + "-" + sequence++;
     }
 
+    @Nonnull
     private static Booster createXGBooster(final Map<String, Object> params,
-            final List<LabeledPoint> input) throws XGBoostError {
-        try {
-            Class<?>[] args = {Map.class, DMatrix[].class};
-            Constructor<Booster> ctor;
-            ctor = Booster.class.getDeclaredConstructor(args);
-            ctor.setAccessible(true);
-            return ctor.newInstance(new Object[] {params,
-                    new DMatrix[] {new DMatrix(input.iterator(), "")}});
-        } catch (InstantiationException e) {
-            // Catch java reflection error as fast as possible
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        }
-        // No one reach here
-        return null;
+            final List<LabeledPoint> input) throws Exception {
+        Class<?>[] args = {Map.class, DMatrix[].class};
+        Constructor<Booster> ctor;
+        ctor = Booster.class.getDeclaredConstructor(args);
+        ctor.setAccessible(true);
+        return ctor.newInstance(new Object[] {params,
+                new DMatrix[] {new DMatrix(input.iterator(), "")}});
     }
 
     @Override
@@ -330,7 +320,7 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
             logger.info("model_id:" + modelId.toString() + " size:" + predModel.length);
             forward(new Object[] {modelId, predModel});
         } catch (Exception e) {
-            throw new HiveException(e.getMessage());
+            throw new HiveException(e);
         }
     }
 
