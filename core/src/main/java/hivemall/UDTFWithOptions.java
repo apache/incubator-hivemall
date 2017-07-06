@@ -63,7 +63,7 @@ public abstract class UDTFWithOptions extends GenericUDTF {
         return mapredContext.getReporter();
     }
 
-    protected static void reportProgress(@Nonnull Reporter reporter) {
+    protected static void reportProgress(@Nullable Reporter reporter) {
         if (reporter != null) {
             synchronized (reporter) {
                 reporter.progress();
