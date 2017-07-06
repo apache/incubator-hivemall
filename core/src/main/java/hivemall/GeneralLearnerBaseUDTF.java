@@ -83,7 +83,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(GeneralLearnerBaseUDTF.class);
 
     public enum FeatureType {
-        String, Text, Integer, WritableInt, Long, WritableLong
+        JavaString, Text, JavaInteger, WritableInt, JavaLong, WritableLong
     }
 
     private ListObjectInspector featureListOI;
@@ -236,15 +236,15 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         ObjectInspector featureRawOI = featureListOI.getListElementObjectInspector();
         HiveUtils.validateFeatureOI(featureRawOI);
         if (featureRawOI instanceof JavaStringObjectInspector) {
-            this.featureType = FeatureType.String;
+            this.featureType = FeatureType.JavaString;
         } else if (featureRawOI instanceof WritableStringObjectInspector) {
             this.featureType = FeatureType.Text;
         } else if (featureRawOI instanceof JavaIntObjectInspector) {
-            this.featureType = FeatureType.Integer;
+            this.featureType = FeatureType.JavaInteger;
         } else if (featureRawOI instanceof WritableIntObjectInspector) {
             this.featureType = FeatureType.WritableInt;
         } else if (featureRawOI instanceof JavaLongObjectInspector) {
-            this.featureType = FeatureType.Long;
+            this.featureType = FeatureType.JavaLong;
         } else if (featureRawOI instanceof WritableLongObjectInspector) {
             this.featureType = FeatureType.WritableLong;
         } else {
@@ -367,13 +367,13 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             case Text:
                 feature = new Text((String) feature);
                 break;
-            case Integer:
+            case JavaInteger:
                 feature = Integer.parseInt((String) feature);
                 break;
             case WritableInt:
                 feature = new IntWritable(Integer.parseInt((String) feature));
                 break;
-            case Long:
+            case JavaLong:
                 feature = Long.parseLong((String) feature);
                 break;
             case WritableLong:
@@ -400,7 +400,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             }
             final FeatureValue fv;
             if (parseFeature) {
-                if (featureType == FeatureType.String) {
+                if (featureType == FeatureType.JavaString) {
                     fv = FeatureValue.parseFeatureAsString((String) f);
                 } else {
                     fv = FeatureValue.parse(f); // = parse feature as Text
