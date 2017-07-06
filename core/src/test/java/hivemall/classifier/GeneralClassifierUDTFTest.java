@@ -18,7 +18,6 @@
  */
 package hivemall.classifier;
 
-import hivemall.regression.GeneralRegressionUDTF;
 import hivemall.utils.math.MathUtils;
 
 import java.io.BufferedReader;
@@ -113,7 +112,7 @@ public class GeneralClassifierUDTFTest {
             throws Exception {
         int y = 0;
 
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ListObjectInspector featureListOI = ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
 
