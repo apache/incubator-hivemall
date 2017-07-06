@@ -48,7 +48,6 @@ public final class FeatureValue {
     }
 
     public FeatureValue(@Nonnull ByteBuffer src) {
-        super();
         readFrom(src);
     }
 
