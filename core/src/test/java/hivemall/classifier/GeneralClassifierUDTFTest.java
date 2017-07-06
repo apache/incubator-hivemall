@@ -18,6 +18,7 @@
  */
 package hivemall.classifier;
 
+import hivemall.regression.GeneralRegressionUDTF;
 import hivemall.utils.math.MathUtils;
 
 import java.io.BufferedReader;
@@ -35,11 +36,16 @@ import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.generic.Collector;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -101,6 +107,78 @@ public class GeneralClassifierUDTFTest {
         float score = udtf.predict(udtf.parseFeatures(x));
         int predicted = score > 0.f ? 1 : 0;
         Assert.assertTrue(y == predicted);
+    }
+
+    private void testFeature(List<?> x, ObjectInspector featureOI, Class featureClass) throws Exception {
+        int y = 0;
+
+        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ListObjectInspector featureListOI = ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
+
+        udtf.initialize(new ObjectInspector[] {featureListOI, valueOI});
+
+        final List<Object> modelFeatures = new ArrayList<Object>();
+        udtf.setCollector(new Collector() {
+            @Override
+            public void collect(Object input) throws HiveException {
+                Object[] forwardMapObj = (Object[]) input;
+                modelFeatures.add(forwardMapObj[0]);
+            }
+        });
+
+        udtf.process(new Object[] {x, y});
+
+        udtf.close();
+
+        Class modelFeatureClass = modelFeatures.get(0).getClass();
+        for (Object modelFeature : modelFeatures) {
+            Assert.assertEquals("All model features must have same type", modelFeatureClass, modelFeature.getClass());
+        }
+
+        Assert.assertEquals("Model feature must correspond to UDTF output feature's object inspector", featureClass, modelFeatureClass);
+    }
+
+    @Test
+    public void testStringFeature() throws Exception {
+        List<String> x = Arrays.asList("1:-2", "2:-1");
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        testFeature(x, featureOI, String.class);
+    }
+
+    @Test
+    public void testTextFeature() throws Exception {
+        List<Text> x = Arrays.asList(new Text("1:-2"), new Text("2:-1"));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        testFeature(x, featureOI, Text.class);
+    }
+
+    @Test
+    public void testIntegerFeature() throws Exception {
+        List<Integer> x = Arrays.asList(111, 222);
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        testFeature(x, featureOI, Integer.class);
+    }
+
+    @Test
+    public void testWritableIntFeature() throws Exception {
+        List<IntWritable> x = Arrays.asList(new IntWritable(111), new IntWritable(222));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+        testFeature(x, featureOI, IntWritable.class);
+    }
+
+    @Test
+    public void testLongFeature() throws Exception {
+        List<Long> x = Arrays.asList(111L, 222L);
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
+        testFeature(x, featureOI, Long.class);
+    }
+
+    @Test
+    public void testWritableLongFeature() throws Exception {
+        List<LongWritable> x = Arrays.asList(new LongWritable(111L), new LongWritable(222L));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+        testFeature(x, featureOI, LongWritable.class);
     }
 
     private void run(@Nonnull String options) throws Exception {
