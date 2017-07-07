@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -137,7 +138,7 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static CharArraySet stopWords(@Nonnull final String[] array)
+    private static CharArraySet stopWords(@Nullable final String[] array)
             throws UDFArgumentException {
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopSet();
