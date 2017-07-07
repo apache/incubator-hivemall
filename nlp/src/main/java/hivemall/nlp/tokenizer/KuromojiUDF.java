@@ -21,7 +21,9 @@ package hivemall.nlp.tokenizer;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
 
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,12 +47,15 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
+import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 
+import sun.net.www.content.text.PlainTextInputStream;
+
 @Description(
         name = "tokenize_ja",
-        value = "_FUNC_(String line [, const string mode = \"normal\", const list<string> stopWords, const list<string> stopTags])"
+        value = "_FUNC_(String line [, const string mode = \"normal\", const list<string> stopWords, const list<string> stopTags, const string userDictURL])"
                 + " - returns tokenized strings in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class KuromojiUDF extends GenericUDF {
@@ -58,6 +63,7 @@ public final class KuromojiUDF extends GenericUDF {
     private Mode _mode;
     private String[] _stopWordsArray;
     private Set<String> _stoptags;
+    private String _userDictURL;
 
     // workaround to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.util.ConcurrentModificationException
     private transient JapaneseAnalyzer _analyzer;
@@ -65,7 +71,7 @@ public final class KuromojiUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         final int arglen = arguments.length;
-        if (arglen < 1 || arglen > 4) {
+        if (arglen < 1 || arglen > 5) {
             throw new UDFArgumentException("Invalid number of arguments for `tokenize_ja`: "
                     + arglen);
         }
@@ -74,6 +80,7 @@ public final class KuromojiUDF extends GenericUDF {
         this._stopWordsArray = (arglen >= 3) ? HiveUtils.getConstStringArray(arguments[2]) : null;
         this._stoptags = (arglen >= 4) ? stopTags(arguments[3])
                 : JapaneseAnalyzer.getDefaultStopTags();
+        this._userDictURL = (arglen >= 5) ? HiveUtils.getConstString(arguments[4]) : null;
         this._analyzer = null;
 
         return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
@@ -83,8 +90,9 @@ public final class KuromojiUDF extends GenericUDF {
     public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
         JapaneseAnalyzer analyzer = _analyzer;
         if (analyzer == null) {
+            UserDictionary userDict = userDictionary(_userDictURL);
             CharArraySet stopwords = stopWords(_stopWordsArray);
-            analyzer = new JapaneseAnalyzer(null, _mode, stopwords, _stoptags);
+            analyzer = new JapaneseAnalyzer(userDict, _mode, stopwords, _stoptags);
             this._analyzer = analyzer;
         }
 
@@ -169,6 +177,24 @@ public final class KuromojiUDF extends GenericUDF {
             }
         }
         return results;
+    }
+
+    @Nullable
+    private static UserDictionary userDictionary(@Nullable final String userDictURL)
+            throws UDFArgumentException {
+        if (userDictURL == null) {
+            return null;
+        }
+
+        try {
+            URL url = new URL(userDictURL);
+            if (url.getContent(new Class[] {PlainTextInputStream.class}) == null) {
+                throw new UDFArgumentException("User dictionary URL MUST points plain text");
+            }
+            return UserDictionary.open(new InputStreamReader(url.openStream()));
+        } catch (Throwable e) {
+            throw new UDFArgumentException("Failed to parse given file (URL) as CSV: " + e);
+        }
     }
 
     private static void analyzeTokens(@Nonnull TokenStream stream, @Nonnull List<Text> results)
