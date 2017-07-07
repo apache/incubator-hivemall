@@ -21,8 +21,11 @@ package hivemall.nlp.tokenizer;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
 
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.Reader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +33,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -188,10 +192,23 @@ public final class KuromojiUDF extends GenericUDF {
 
         try {
             URL url = new URL(userDictURL);
-            if (url.getContent(new Class[] {PlainTextInputStream.class}) == null) {
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("Accept-Encoding", "gzip");
+
+            if (conn.getContent(new Class[] {PlainTextInputStream.class}) == null) {
                 throw new UDFArgumentException("User dictionary URL MUST points plain text");
             }
-            return UserDictionary.open(new InputStreamReader(url.openStream()));
+
+            final InputStream stream;
+            if ("gzip".equals(conn.getContentEncoding())) {
+                stream = new GZIPInputStream(conn.getInputStream());
+            } else {
+                stream = conn.getInputStream();
+            }
+
+            Reader reader = new InputStreamReader(stream);
+
+            return UserDictionary.open(reader);
         } catch (Throwable e) {
             throw new UDFArgumentException("Failed to parse given file (URL) as CSV: " + e);
         }
