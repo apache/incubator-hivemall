@@ -20,13 +20,13 @@ package hivemall.nlp.tokenizer;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
+import hivemall.utils.io.HttpUtils;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -195,9 +195,7 @@ public final class KuromojiUDF extends GenericUDF {
         }
 
         try {
-            URL url = new URL(userDictURL);
-
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = HttpUtils.getHttpURLConnection(userDictURL);
             conn.setRequestProperty("Accept-Encoding", "gzip");
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS); // throw exception from connect()
             conn.setReadTimeout(READ_TIMEOUT_MS); // throw exception from getXXX() methods
