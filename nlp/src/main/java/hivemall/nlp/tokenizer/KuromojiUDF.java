@@ -199,11 +199,9 @@ public final class KuromojiUDF extends GenericUDF {
                 throw new UDFArgumentException("User dictionary URL MUST points plain text");
             }
 
-            final InputStream stream;
+            InputStream stream = conn.getInputStream();
             if ("gzip".equals(conn.getContentEncoding())) {
-                stream = new GZIPInputStream(conn.getInputStream());
-            } else {
-                stream = conn.getInputStream();
+                stream = new GZIPInputStream(stream);
             }
 
             Reader reader = new InputStreamReader(stream);
