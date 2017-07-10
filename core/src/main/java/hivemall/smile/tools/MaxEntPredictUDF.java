@@ -1,6 +1,7 @@
 package hivemall.smile.tools;
 
 import java.io.File;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,11 +46,6 @@ import opennlp.model.GenericModelReader;
 import opennlp.model.MaxentModel;
 import opennlp.model.RealValueFileEventStream;
 
-@Description(
-        name = "predict_maxent_classifier",
-        value = "_FUNC_(string model, string attributes, array<double> features)"
-                + " - Returns best class and probability distribution among all the classes per instance.")
-@UDFType(deterministic = true, stateful = false)
 public class MaxEntPredictUDF extends GenericUDF {
 
     private StringObjectInspector modelOI;
@@ -125,7 +121,7 @@ public class MaxEntPredictUDF extends GenericUDF {
   	    float[] values = new float[obs.length];
 	    for (int i = 0; i < obs.length; i++){
 	    	  if (attributes[i].type == AttributeType.NOMINAL){
-	    		  names[i] = i + "_" + String.valueOf(obs[i]);
+	    		  names[i] = i + "_" + String.valueOf(obs[i]).toString();
 	    		  values[i] = Double.valueOf(1.0).floatValue();
 	    	  }else{
 	    		  names[i] = String.valueOf(i);
@@ -174,6 +170,6 @@ public class MaxEntPredictUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "maxent_predict(" + Arrays.toString(children) + ")";
+        return "tree_predict(" + Arrays.toString(children) + ")";
     }
 }
