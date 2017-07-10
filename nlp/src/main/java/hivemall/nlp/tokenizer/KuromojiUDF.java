@@ -63,6 +63,8 @@ import sun.net.www.content.text.PlainTextInputStream;
                 + " - returns tokenized strings in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class KuromojiUDF extends GenericUDF {
+    private static final int CONNECT_TIMEOUT_MS = 10000;
+    private static final int READ_TIMEOUT_MS = 30000;
 
     private Mode _mode;
     private String[] _stopWordsArray;
@@ -192,8 +194,11 @@ public final class KuromojiUDF extends GenericUDF {
 
         try {
             URL url = new URL(userDictURL);
+
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Accept-Encoding", "gzip");
+            conn.setConnectTimeout(CONNECT_TIMEOUT_MS); // throw exception from connect()
+            conn.setReadTimeout(READ_TIMEOUT_MS); // throw exception from getXXX() methods
 
             if (conn.getContent(new Class[] {PlainTextInputStream.class}) == null) {
                 throw new UDFArgumentException("User dictionary URL MUST points plain text");
