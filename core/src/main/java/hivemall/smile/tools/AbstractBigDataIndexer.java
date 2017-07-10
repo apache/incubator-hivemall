@@ -19,36 +19,13 @@ import opennlp.model.EventStream;
 public abstract class AbstractBigDataIndexer implements BigDataIndexer {
 
 	  private int numEvents;
-	  /** The integer contexts associated with each unique event. */ 
-	  protected Matrix contexts;
-	  /** The double values associated with each unique event. */ 
-	  protected Matrix values;
-	  /** The integer outcome associated with each unique event. */ 
-	  protected Matrix outcomeList;
-	  /** The number of times an event occured in the training data. */
-	  protected Matrix numTimesEventsSeen;
+
 	  /** The predicate/context names. */
 	  protected String[] predLabels;
 	  /** The names of the outcomes. */
 	  protected String[] outcomeLabels;
 	  /** The number of times each predicate occured. */
 	  protected int[] predCounts;
-
-	  public Matrix getContexts() {
-	    return contexts;
-	  }
-	  
-	  public Matrix getValues() {
-		    return values;
-	  }
-
-	  public Matrix getNumTimesEventsSeen() {
-	    return numTimesEventsSeen;
-	  }
-
-	  public Matrix getOutcomeList() {
-	    return outcomeList;
-	  }
 
 	  public String[] getPredLabels() {
 	    return predLabels;
@@ -63,102 +40,6 @@ public abstract class AbstractBigDataIndexer implements BigDataIndexer {
 	  public int[] getPredCounts() {
 	    return predCounts;
 	  }
-
-	  /**
-	   * Sorts and uniques the array of comparable events and return the number of unique events.
-	   * This method will alter the eventsToCompare array -- it does an in place
-	   * sort, followed by an in place edit to remove duplicates.
-	   *
-	   * @param eventsToCompare a <code>ComparableEvent[]</code> value
-	   * @return The number of unique events in the specified list.
-	   * @since maxent 1.2.6
-	   */
-	  protected int sortAndMerge(EventStream eventStream, Map<String,Integer> predicateIndex) throws IOException {
-	    int numUniqueEvents = numEvents;
-
-	    ((MatrixEventStream)eventStream).reset();
-	    
-	    MatrixBuilder contextsMatrixBuilder = new CSRMatrixBuilder(8192);
-	    MatrixBuilder outcomesMatrixBuilder = new CSRMatrixBuilder(8192);
-	    MatrixBuilder valuesMatrixBuilder = new CSRMatrixBuilder(8192);
-	    MatrixBuilder numTimesMatrixBuilder = new CSRMatrixBuilder(8192);
-
-	    Map<String,Integer> omap = new HashMap<String,Integer>();
-	    int outcomeCount = 0;
-	    
-	    
-	    while (eventStream.hasNext()) {
-	         Event ev = eventStream.next();
-	         String[] econtext = ev.getContext();
-	         ComparableEvent evt = null;
-		    
-	         int ocID;
-	         String oc = ev.getOutcome();
-		    
-	         if (omap.containsKey(oc)) {
-	            ocID = omap.get(oc);
-	         } else {
-	            ocID = outcomeCount++;
-	            omap.put(oc, ocID);
-	         }
-	         
-	         List<Integer> indexedContext = new ArrayList<Integer>();
-	         for (int i=0; i<econtext.length; i++) {
-	             String pred = econtext[i];
-	             if (predicateIndex.containsKey(pred)) {
-	                indexedContext.add(predicateIndex.get(pred));
-	             }
-	         }
-
-	            // drop events with no active features
-	            if (indexedContext.size() > 0) {
-	                int[] cons = new int[indexedContext.size()];
-	                for (int ci=0;ci<cons.length;ci++) {
-	                  cons[ci] = indexedContext.get(ci);
-	                }
-	                evt = new ComparableEvent(ocID, cons, ev.getValues());
-	            }
-	            else {
-	              System.err.println("Dropped event "+ev.getOutcome()+":"+Arrays.asList(ev.getContext()));
-	            }	
-	    	
-	    	
-	    	
-	      if (null == evt) {
-	        continue; // this was a dupe, skip over it.
-	      }
-	      
-	      outcomesMatrixBuilder.nextColumn(0, evt.outcome);
-	      numTimesMatrixBuilder.nextColumn(0, evt.seen);
-	      
-	      int jj = 0;
-	      for (int pIndex : evt.predIndexes){
-	    	  contextsMatrixBuilder.nextColumn(jj, pIndex);
-	    	  jj++;
-      	  }
-	      
-	      jj = 0;
-	      for (float pIndex : evt.values){
-	    	  valuesMatrixBuilder.nextColumn(jj, pIndex);
-	    	  jj++;
-      	  }
-	      
-	      contextsMatrixBuilder.nextRow();
-	      valuesMatrixBuilder.nextRow();
-	      outcomesMatrixBuilder.nextRow();
-	      numTimesMatrixBuilder.nextRow();
-	    }
-	    contexts = contextsMatrixBuilder.buildMatrix();
-	    values = valuesMatrixBuilder.buildMatrix();
-	    outcomeList = outcomesMatrixBuilder.buildMatrix();
-	    numTimesEventsSeen = numTimesMatrixBuilder.buildMatrix();
-	    
-	    outcomeLabels = toIndexedStringArray(omap);
-	    predLabels = toIndexedStringArray(predicateIndex);
-	    
-	    return numUniqueEvents;
-	  }
-	  
 	  
 	  public int getNumEvents() {
 	    return numEvents;
