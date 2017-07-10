@@ -200,13 +200,17 @@ public final class KuromojiUDF extends GenericUDF {
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS); // throw exception from connect()
             conn.setReadTimeout(READ_TIMEOUT_MS); // throw exception from getXXX() methods
 
-            if (conn.getContent(new Class[] {PlainTextInputStream.class}) == null) {
-                throw new UDFArgumentException("User dictionary URL MUST points plain text");
+            String contentType = conn.getContentType();
+            boolean textContent = contentType.startsWith("text/plain") && conn.getContent(new Class[] {PlainTextInputStream.class}) != null;
+            boolean gzipContent = contentType.startsWith("application/octet-stream") && userDictURL.endsWith(".gz");
+
+            if (!textContent && !gzipContent) {
+                throw new UDFArgumentException("User dictionary URL indicates unexpected content type: " + contentType);
             }
 
             InputStream stream = conn.getInputStream();
             stream = new BoundedInputStream(stream, MAX_INPUT_STREAM_SIZE);
-            if ("gzip".equals(conn.getContentEncoding())) {
+            if ((textContent && "gzip".equals(conn.getContentEncoding())) || gzipContent) {
                 stream = new GZIPInputStream(stream);
             }
 
