@@ -38,6 +38,7 @@ import java.util.zip.GZIPInputStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -65,6 +66,7 @@ import sun.net.www.content.text.PlainTextInputStream;
 public final class KuromojiUDF extends GenericUDF {
     private static final int CONNECT_TIMEOUT_MS = 10000;
     private static final int READ_TIMEOUT_MS = 30000;
+    private static final long MAX_INPUT_STREAM_SIZE = 1000000L; // ~1MB
 
     private Mode _mode;
     private String[] _stopWordsArray;
@@ -205,6 +207,7 @@ public final class KuromojiUDF extends GenericUDF {
             }
 
             InputStream stream = conn.getInputStream();
+            stream = new BoundedInputStream(stream, MAX_INPUT_STREAM_SIZE);
             if ("gzip".equals(conn.getContentEncoding())) {
                 stream = new GZIPInputStream(stream);
             }
