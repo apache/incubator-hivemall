@@ -3,9 +3,6 @@ package hivemall.smile.classification;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -23,7 +20,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.MapredContext;
 import org.apache.hadoop.hive.ql.exec.MapredContextAccessor;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -43,40 +39,28 @@ import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.MatrixUtils;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.MatrixBuilder;
-import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.matrix.ints.DoKIntMatrix;
 import hivemall.math.matrix.ints.IntMatrix;
-import hivemall.math.random.PRNG;
-import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.math.vector.Vector;
-import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.data.Attribute;
+import hivemall.smile.data.Attribute.AttributeType;
+import hivemall.smile.tools.BigGIS;
 import hivemall.smile.tools.MatrixEventStream;
+import hivemall.smile.tools.MatrixForTraining;
+import hivemall.smile.tools.OnePassBigDataIndexer;
 import hivemall.smile.tools.SepDelimitedTextGISModelWriter;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
-import hivemall.utils.codec.Base91;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.hadoop.WritableUtils;
-import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
 
-import opennlp.maxent.GIS;
 import opennlp.maxent.io.GISModelWriter;
 import opennlp.model.AbstractModel;
+import opennlp.model.ComparableEvent;
 import opennlp.model.Event;
 import opennlp.model.EventStream;
-import opennlp.model.OnePassRealValueDataIndexer;
 
-@Description(
-        name = "train_maxent_classifier",
-        value = "_FUNC_(array<double> features, int label [, const boolean classification])"
-                + " - Returns a maximum entropy model per subset of data.")
-@UDFType(deterministic = true, stateful = false)
 public class MaxEntUDTF extends UDTFWithOptions{
 	private static final Log logger = LogFactory.getLog(MaxEntUDTF.class);
 	
@@ -264,7 +248,7 @@ public class MaxEntUDTF extends UDTFWithOptions{
         for (int i = 0; i < _numTrees; i++) {
             tasks.add(new TrainingTask(this, i, attributes, x, y, prediction, remainingTasks));
         }
-
+        
         MapredContext mapredContext = MapredContextAccessor.get();
         final SmileTaskExecutor executor = new SmileTaskExecutor(mapredContext);
         try {
@@ -274,7 +258,10 @@ public class MaxEntUDTF extends UDTFWithOptions{
         } finally {
             executor.shotdown();
         }
+        
     }
+    
+
     
     /**
      * Synchronized because {@link #forward(Object)} should be called from a single thread.
@@ -300,8 +287,6 @@ public class MaxEntUDTF extends UDTFWithOptions{
             }
         }
         
-        String attributesString = SmileExtUtils.resolveAttributes(attributes);
-
         final Object[] forwardObjs = new Object[6];
         String modelId = RandomUtils.getUUID();
         forwardObjs[0] = new Text(modelId);
@@ -373,7 +358,8 @@ public class MaxEntUDTF extends UDTFWithOptions{
             EventStream es = new MatrixEventStream(_x, _y, _attributes);
             AbstractModel model;
 			try {
-				model = GIS.trainModel(1000, new OnePassRealValueDataIndexer(es,0), _USE_SMOOTHING);
+				MatrixForTraining mx = new MatrixForTraining(_x, _y, _attributes);
+				model = BigGIS.trainModel(100, new OnePassBigDataIndexer(es,0), mx);
 			} catch (IOException e) {
 				throw new HiveException(e.getMessage());
 			}

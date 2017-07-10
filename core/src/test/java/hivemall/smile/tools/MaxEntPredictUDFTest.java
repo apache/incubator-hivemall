@@ -52,8 +52,8 @@ public class MaxEntPredictUDFTest {
      * Test of learn method, of class DecisionTree.
      */
     @Test
-    public void testIris() throws IOException, ParseException, HiveException {
-    //public static void main(String[] args) throws Exception{
+    //public void testIris() throws IOException, ParseException, HiveException {
+    public static void main(String[] args) throws Exception{
         String types = "C,Q,Q";
     	String[] lines = {
     			"away 0.6875 0.5 lose",
@@ -177,7 +177,8 @@ public class MaxEntPredictUDFTest {
         EventStream es = new MatrixEventStream(x, y, SmileExtUtils.resolveAttributes(types));
         AbstractModel model;
 		try {
-			model = GIS.trainModel(100, new OnePassRealValueDataIndexer(es,0), false);
+			MatrixForTraining m = new MatrixForTraining(x,y,SmileExtUtils.resolveAttributes(types));
+			model = BigGIS.trainModel(100, new OnePassBigDataIndexer(es,0), m);
 		} catch (IOException e) {
 			throw new HiveException(e.getMessage());
 		}
@@ -209,6 +210,7 @@ public class MaxEntPredictUDFTest {
         	Double[] doubleArray = ArrayUtils.toObject(x.getRow(i));
         	params[2] = new DeferredJavaObject(Arrays.asList(doubleArray));
             Object[] outcome = (Object[])udf.evaluate(params);
+            
             if (Integer.valueOf(String.valueOf(outcome[0])) == y[i]){
             	correct++;
             }
@@ -219,10 +221,10 @@ public class MaxEntPredictUDFTest {
     public static int outcome(String outcome){
     	if (outcome.equals("lose")){
     		return 0;
-    	}else if (outcome.equals("tie")){
-    		return 1;
+    	}else if (outcome.equals("win")){
+    		return 2;
     	}
-    	return 2;	
+    	return 1;	
     }
     
     public static double place(String outcome){
