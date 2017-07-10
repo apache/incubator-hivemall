@@ -34,11 +34,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -55,8 +55,6 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-
-import sun.net.www.content.text.PlainTextInputStream;
 
 @Description(
         name = "tokenize_ja",
@@ -194,31 +192,43 @@ public final class KuromojiUDF extends GenericUDF {
             return null;
         }
 
+        final HttpURLConnection conn;
         try {
-            HttpURLConnection conn = HttpUtils.getHttpURLConnection(userDictURL);
-            conn.setRequestProperty("Accept-Encoding", "gzip");
-            conn.setConnectTimeout(CONNECT_TIMEOUT_MS); // throw exception from connect()
-            conn.setReadTimeout(READ_TIMEOUT_MS); // throw exception from getXXX() methods
+            conn = HttpUtils.getHttpURLConnection(userDictURL);
+        } catch (Throwable e) {
+            throw new UDFArgumentException("Failed to create HTTP connection to the URL: " + e);
+        }
 
-            String contentType = conn.getContentType();
-            boolean textContent = contentType.startsWith("text/plain") && conn.getContent(new Class[] {PlainTextInputStream.class}) != null;
-            boolean gzipContent = contentType.startsWith("application/octet-stream") && userDictURL.endsWith(".gz");
+        // allow to read as a compressed GZIP file for efficiency
+        conn.setRequestProperty("Accept-Encoding", "gzip");
 
-            if (!textContent && !gzipContent) {
-                throw new UDFArgumentException("User dictionary URL indicates unexpected content type: " + contentType);
+        conn.setConnectTimeout(CONNECT_TIMEOUT_MS); // throw exception from connect()
+        conn.setReadTimeout(READ_TIMEOUT_MS); // throw exception from getXXX() methods
+
+        final String contentType = conn.getContentType();
+        boolean textContent = contentType.startsWith("text/plain");
+        boolean binaryContent = contentType.startsWith("application/octet-stream");
+        if (!textContent && !binaryContent) {
+            throw new UDFArgumentException("User dictionary URL indicates unexpected content type: " + contentType);
+        }
+
+        InputStream is;
+        try {
+            is = HttpUtils.getBoundedInputStream(conn, MAX_INPUT_STREAM_SIZE);
+            if ((textContent && "gzip".equals(conn.getContentEncoding())) || binaryContent) {
+                is = new GZIPInputStream(is);
             }
+        } catch (ZipException e) { // HTTP connection indicates a non-GZIP binary file
+            throw new UDFArgumentException("User dictionary URL MUST indicate plain text or GZIP file: " + e);
+        } catch (Throwable e) {
+            throw new UDFArgumentException("Failed to get input stream from the connection: " + e);
+        }
 
-            InputStream stream = conn.getInputStream();
-            stream = new BoundedInputStream(stream, MAX_INPUT_STREAM_SIZE);
-            if ((textContent && "gzip".equals(conn.getContentEncoding())) || gzipContent) {
-                stream = new GZIPInputStream(stream);
-            }
-
-            Reader reader = new InputStreamReader(stream);
-
+        final Reader reader = new InputStreamReader(is);
+        try {
             return UserDictionary.open(reader);
         } catch (Throwable e) {
-            throw new UDFArgumentException("Failed to parse given file (URL) as CSV: " + e);
+            throw new UDFArgumentException("Failed to parse the file in CSV format: " + e);
         }
     }
 

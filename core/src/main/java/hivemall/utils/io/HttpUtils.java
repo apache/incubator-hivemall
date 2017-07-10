@@ -18,8 +18,12 @@
  */
 package hivemall.utils.io;
 
+import org.apache.commons.io.input.BoundedInputStream;
+
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -34,5 +38,12 @@ public final class HttpUtils {
         }
         URL url = new URL(urlStr);
         return (HttpURLConnection) url.openConnection();
+    }
+
+    @Nonnull
+    public static InputStream getBoundedInputStream(@Nonnull HttpURLConnection conn, @Nonnegative long size) throws IOException {
+        InputStream is = conn.getInputStream();
+        is = new BoundedInputStream(is, size);
+        return is;
     }
 }
