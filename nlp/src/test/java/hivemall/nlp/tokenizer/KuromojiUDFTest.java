@@ -337,7 +337,9 @@ public class KuromojiUDFTest {
         // userDictUrl (Kuromoji official sample user defined dict on GitHub)
         // e.g., "日本経済新聞" will be "日本", "経済", and "新聞"
         argOIs[4] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
-            stringType, new Text("https://raw.githubusercontent.com/atilika/kuromoji/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt"));
+            stringType,
+            new Text(
+                "https://raw.githubusercontent.com/atilika/kuromoji/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt"));
         udf.initialize(argOIs);
 
         DeferredObject[] args = new DeferredObject[1];

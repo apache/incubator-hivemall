@@ -194,7 +194,8 @@ public final class KuromojiUDF extends GenericUDF {
         } else if (HiveUtils.isConstString(oi)) {
             return userDictionary(HiveUtils.getConstString(oi));
         } else {
-            throw new UDFArgumentException("User dictionary MUST be given as an array of constant string or constant string (URL)");
+            throw new UDFArgumentException(
+                "User dictionary MUST be given as an array of constant string or constant string (URL)");
         }
     }
 
@@ -215,7 +216,8 @@ public final class KuromojiUDF extends GenericUDF {
         try {
             return UserDictionary.open(reader); // return null if empty
         } catch (Throwable e) {
-            throw new UDFArgumentException("Failed to create user dictionary based on the given array<string>: " + e);
+            throw new UDFArgumentException(
+                "Failed to create user dictionary based on the given array<string>: " + e);
         }
     }
 
@@ -253,7 +255,8 @@ public final class KuromojiUDF extends GenericUDF {
         boolean textContent = contentType.startsWith("text/plain");
         boolean binaryContent = contentType.startsWith("application/octet-stream");
         if (!textContent && !binaryContent) {
-            throw new UDFArgumentException("User dictionary URL indicates unexpected content type: " + contentType);
+            throw new UDFArgumentException(
+                "User dictionary URL indicates unexpected content type: " + contentType);
         }
 
         InputStream is;
@@ -263,7 +266,8 @@ public final class KuromojiUDF extends GenericUDF {
                 is = new GZIPInputStream(is);
             }
         } catch (ZipException e) { // HTTP connection indicates a non-GZIP binary file
-            throw new UDFArgumentException("User dictionary URL MUST indicate plain text or GZIP file: " + e);
+            throw new UDFArgumentException(
+                "User dictionary URL MUST indicate plain text or GZIP file: " + e);
         } catch (Throwable e) {
             throw new UDFArgumentException("Failed to get input stream from the connection: " + e);
         }

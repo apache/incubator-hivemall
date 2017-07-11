@@ -41,7 +41,8 @@ public final class HttpUtils {
     }
 
     @Nonnull
-    public static InputStream getBoundedInputStream(@Nonnull HttpURLConnection conn, @Nonnegative long size) throws IOException {
+    public static InputStream getBoundedInputStream(@Nonnull HttpURLConnection conn,
+            @Nonnegative long size) throws IOException {
         InputStream is = conn.getInputStream();
         is = new BoundedInputStream(is, size);
         return is;
