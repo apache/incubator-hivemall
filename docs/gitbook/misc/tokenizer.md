@@ -28,23 +28,28 @@ tokenize(text input, optional boolean toLowerCase = false)
 
 Hivemall-NLP module provides some Non-English Text tokenizer UDFs as follows.
 
-First of all, you need to issue the following DDLs to use the NLP module. Note NLP module is not included in [hivemall-with-dependencies.jar](https://github.com/myui/hivemall/releases).
+First of all, you need to issue the following DDLs to use the NLP module. Note NLP module is not included in `hivemall-with-dependencies.jar`.
 
-> add jar /tmp/[hivemall-nlp-xxx-with-dependencies.jar](https://github.com/myui/hivemall/releases);
+> add jar /path/to/hivemall-nlp-xxx-with-dependencies.jar;
 
-> source /tmp/[define-additional.hive](https://github.com/myui/hivemall/releases);
+> source /path/to/define-additional.hive;
 
 ## Japanese Tokenizer
 
 Japanese text tokenizer UDF uses [Kuromoji](https://github.com/atilika/kuromoji). 
 
 The signature of the UDF is as follows:
-```sql
-tokenize_ja(text input, optional const text mode = "normal", optional const array<string> stopWords, optional const array<string> stopTags)
-```
-_Caution: `tokenize_ja` is supported since Hivemall v0.4.1 and later._
 
-It's basic usage is as follows:
+```sql
+tokenize_ja(text input, optional const text mode = "normal", optional const array<string> stopWords, const array<string> stopTags, const array<string> userDict)
+```
+
+Note that the fifth argument `userDict` enables you to register user-defined dictionary in [Kuromoji official format](https://github.com/atilika/kuromoji/blob/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt). If you have a large custom dictionary as an external file, the argument can also be `const string userDictURL` which indicates URL of the external file on somewhere like Amazon S3. 
+
+> #### Caution
+> `tokenize_ja` is supported since Hivemall v0.4.1, and the fifth argument is supported since v0.5-rc.1 and later.
+
+Its basic usage is as follows:
 ```sql
 select tokenize_ja("kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。");
 ```
@@ -61,7 +66,7 @@ The signature of the UDF is as follows:
 tokenize_cn(string line, optional const array<string> stopWords)
 ```
 
-It's basic usage is as follows:
+Its basic usage is as follows:
 ```sql
 select tokenize_cn("Smartcn为Apache2.0协议的开源中文分词系统，Java语言编写，修改的中科院计算所ICTCLAS分词系统。");
 ```
