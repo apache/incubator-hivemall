@@ -254,7 +254,7 @@ public final class KuromojiUDF extends GenericUDF {
             throw new UDFArgumentException("Failed to get response code: " + e);
         }
         if (responseCode != 200) {
-            throw new UDFArgumentException("God invalid response code: " + responseCode);
+            throw new UDFArgumentException("Got invalid response code: " + responseCode);
         }
 
         final String contentType = conn.getContentType();
