@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,7 +59,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 
 @Description(
         name = "tokenize_ja",
-        value = "_FUNC_(String line [, const string mode = \"normal\", const list<string> stopWords, const list<string> stopTags, const string userDictURL])"
+        value = "_FUNC_(String line [, const string mode = \"normal\", const list<string> stopWords, const list<string> stopTags, const list<string> userDict (or string userDictURL)])"
                 + " - returns tokenized strings in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class KuromojiUDF extends GenericUDF {
@@ -69,7 +70,7 @@ public final class KuromojiUDF extends GenericUDF {
     private Mode _mode;
     private String[] _stopWordsArray;
     private Set<String> _stoptags;
-    private String _userDictURL;
+    private Object _userDict;
 
     // workaround to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.util.ConcurrentModificationException
     private transient JapaneseAnalyzer _analyzer;
@@ -86,7 +87,19 @@ public final class KuromojiUDF extends GenericUDF {
         this._stopWordsArray = (arglen >= 3) ? HiveUtils.getConstStringArray(arguments[2]) : null;
         this._stoptags = (arglen >= 4) ? stopTags(arguments[3])
                 : JapaneseAnalyzer.getDefaultStopTags();
-        this._userDictURL = (arglen >= 5) ? HiveUtils.getConstString(arguments[4]) : null;
+
+        Object userDict = null;
+        if (arglen >= 5) {
+            if (HiveUtils.isConstListOI(arguments[4])) {
+                userDict = HiveUtils.getConstStringArray(arguments[4]);
+            } else if (HiveUtils.isConstString(arguments[4])) {
+                userDict = HiveUtils.getConstString(arguments[4]);
+            } else {
+                throw new UDFArgumentException("User dictionary MUST be given as an array of constant string or constant string (URL)");
+            }
+        }
+        this._userDict = userDict;
+
         this._analyzer = null;
 
         return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
@@ -96,7 +109,7 @@ public final class KuromojiUDF extends GenericUDF {
     public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
         JapaneseAnalyzer analyzer = _analyzer;
         if (analyzer == null) {
-            UserDictionary userDict = userDictionary(_userDictURL);
+            UserDictionary userDict = userDictionary(_userDict);
             CharArraySet stopwords = stopWords(_stopWordsArray);
             analyzer = new JapaneseAnalyzer(userDict, _mode, stopwords, _stoptags);
             this._analyzer = analyzer;
@@ -186,12 +199,36 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nullable
-    private static UserDictionary userDictionary(@Nullable final String userDictURL)
+    private static UserDictionary userDictionary(@Nullable final Object userDict)
             throws UDFArgumentException {
-        if (userDictURL == null) {
-            return null;
+        if (userDict instanceof String[]) {
+            return userDictionary((String[]) userDict);
+        } else if (userDict instanceof String) {
+            return userDictionary((String) userDict);
         }
+        return null;
+    }
 
+    @Nullable
+    private static UserDictionary userDictionary(@Nonnull final String[] userDictArray)
+            throws UDFArgumentException {
+        StringBuilder builder = new StringBuilder();
+        for (String row : userDictArray) {
+            builder.append(row);
+            builder.append("\r\n");
+        }
+        InputStream is = new ByteArrayInputStream(builder.toString().getBytes());
+        final Reader reader = new InputStreamReader(is);
+        try {
+            return UserDictionary.open(reader); // return null if empty
+        } catch (Throwable e) {
+            throw new UDFArgumentException("Failed to create user dictionary based on the given array<string>: " + e);
+        }
+    }
+
+    @Nullable
+    private static UserDictionary userDictionary(@Nonnull final String userDictURL)
+            throws UDFArgumentException {
         final HttpURLConnection conn;
         try {
             conn = HttpUtils.getHttpURLConnection(userDictURL);
@@ -226,7 +263,7 @@ public final class KuromojiUDF extends GenericUDF {
 
         final Reader reader = new InputStreamReader(is);
         try {
-            return UserDictionary.open(reader);
+            return UserDictionary.open(reader); // return null if empty
         } catch (Throwable e) {
             throw new UDFArgumentException("Failed to parse the file in CSV format: " + e);
         }

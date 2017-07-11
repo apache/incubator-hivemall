@@ -298,6 +298,10 @@ public final class HiveUtils {
                 && isNumberListOI(((ListObjectInspector) oi).getListElementObjectInspector());
     }
 
+    public static boolean isConstListOI(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isListOI(oi);
+    }
+
     public static boolean isConstString(@Nonnull final ObjectInspector oi) {
         return ObjectInspectorUtils.isConstantObjectInspector(oi) && isStringOI(oi);
     }
