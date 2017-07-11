@@ -59,7 +59,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 
 @Description(
         name = "tokenize_ja",
-        value = "_FUNC_(String line [, const string mode = \"normal\", const list<string> stopWords, const list<string> stopTags, const list<string> userDict (or string userDictURL)])"
+        value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
                 + " - returns tokenized strings in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class KuromojiUDF extends GenericUDF {
@@ -68,9 +68,9 @@ public final class KuromojiUDF extends GenericUDF {
     private static final long MAX_INPUT_STREAM_SIZE = 1000000L; // ~1MB
 
     private Mode _mode;
-    private String[] _stopWordsArray;
-    private Set<String> _stoptags;
-    private Object _userDict;
+    private CharArraySet _stopWords;
+    private Set<String> _stopTags;
+    private UserDictionary _userDict;
 
     // workaround to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.util.ConcurrentModificationException
     private transient JapaneseAnalyzer _analyzer;
@@ -84,21 +84,11 @@ public final class KuromojiUDF extends GenericUDF {
         }
 
         this._mode = (arglen >= 2) ? tokenizationMode(arguments[1]) : Mode.NORMAL;
-        this._stopWordsArray = (arglen >= 3) ? HiveUtils.getConstStringArray(arguments[2]) : null;
-        this._stoptags = (arglen >= 4) ? stopTags(arguments[3])
+        this._stopWords = (arglen >= 3) ? stopWords(arguments[2])
+                : JapaneseAnalyzer.getDefaultStopSet();
+        this._stopTags = (arglen >= 4) ? stopTags(arguments[3])
                 : JapaneseAnalyzer.getDefaultStopTags();
-
-        Object userDict = null;
-        if (arglen >= 5) {
-            if (HiveUtils.isConstListOI(arguments[4])) {
-                userDict = HiveUtils.getConstStringArray(arguments[4]);
-            } else if (HiveUtils.isConstString(arguments[4])) {
-                userDict = HiveUtils.getConstString(arguments[4]);
-            } else {
-                throw new UDFArgumentException("User dictionary MUST be given as an array of constant string or constant string (URL)");
-            }
-        }
-        this._userDict = userDict;
+        this._userDict = (arglen >= 5) ? userDictionary(arguments[4]) : null;
 
         this._analyzer = null;
 
@@ -107,12 +97,8 @@ public final class KuromojiUDF extends GenericUDF {
 
     @Override
     public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
-        JapaneseAnalyzer analyzer = _analyzer;
-        if (analyzer == null) {
-            UserDictionary userDict = userDictionary(_userDict);
-            CharArraySet stopwords = stopWords(_stopWordsArray);
-            analyzer = new JapaneseAnalyzer(userDict, _mode, stopwords, _stoptags);
-            this._analyzer = analyzer;
+        if (_analyzer == null) {
+            this._analyzer = new JapaneseAnalyzer(_userDict, _mode, _stopWords, _stopTags);
         }
 
         Object arg0 = arguments[0].get();
@@ -124,12 +110,12 @@ public final class KuromojiUDF extends GenericUDF {
         final List<Text> results = new ArrayList<Text>(32);
         TokenStream stream = null;
         try {
-            stream = analyzer.tokenStream("", line);
+            stream = _analyzer.tokenStream("", line);
             if (stream != null) {
                 analyzeTokens(stream, results);
             }
         } catch (IOException e) {
-            IOUtils.closeQuietly(analyzer);
+            IOUtils.closeQuietly(_analyzer);
             throw new HiveException(e);
         } finally {
             IOUtils.closeQuietly(stream);
@@ -143,7 +129,8 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static Mode tokenizationMode(@Nonnull ObjectInspector oi) throws UDFArgumentException {
+    private static Mode tokenizationMode(@Nonnull final ObjectInspector oi)
+            throws UDFArgumentException {
         final String arg = HiveUtils.getConstString(oi);
         if (arg == null) {
             return Mode.NORMAL;
@@ -165,8 +152,9 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static CharArraySet stopWords(@Nullable final String[] array)
+    private static CharArraySet stopWords(@Nonnull final ObjectInspector oi)
             throws UDFArgumentException {
+        final String[] array = HiveUtils.getConstStringArray(oi);
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopSet();
         }
@@ -199,19 +187,24 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nullable
-    private static UserDictionary userDictionary(@Nullable final Object userDict)
+    private static UserDictionary userDictionary(@Nonnull final ObjectInspector oi)
             throws UDFArgumentException {
-        if (userDict instanceof String[]) {
-            return userDictionary((String[]) userDict);
-        } else if (userDict instanceof String) {
-            return userDictionary((String) userDict);
+        if (HiveUtils.isConstListOI(oi)) {
+            return userDictionary(HiveUtils.getConstStringArray(oi));
+        } else if (HiveUtils.isConstString(oi)) {
+            return userDictionary(HiveUtils.getConstString(oi));
+        } else {
+            throw new UDFArgumentException("User dictionary MUST be given as an array of constant string or constant string (URL)");
         }
-        return null;
     }
 
     @Nullable
-    private static UserDictionary userDictionary(@Nonnull final String[] userDictArray)
+    private static UserDictionary userDictionary(@Nullable final String[] userDictArray)
             throws UDFArgumentException {
+        if (userDictArray == null) {
+            return null;
+        }
+
         StringBuilder builder = new StringBuilder();
         for (String row : userDictArray) {
             builder.append(row);
@@ -227,8 +220,12 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nullable
-    private static UserDictionary userDictionary(@Nonnull final String userDictURL)
+    private static UserDictionary userDictionary(@Nullable final String userDictURL)
             throws UDFArgumentException {
+        if (userDictURL == null) {
+            return null;
+        }
+
         final HttpURLConnection conn;
         try {
             conn = HttpUtils.getHttpURLConnection(userDictURL);
