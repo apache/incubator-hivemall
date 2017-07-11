@@ -64,14 +64,14 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaIntObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaLongObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaStringObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaStringObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableStringObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaIntObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaLongObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableLongObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableStringObjectInspector;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -356,29 +356,38 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         buf.putFloat(target);
     }
 
-    private void writeFeatureValue(@Nonnull ByteBuffer buf, @Nonnull FeatureValue f) {
+    private static void writeFeatureValue(@Nonnull final ByteBuffer buf,
+            @Nonnull final FeatureValue f) {
         NIOUtils.putString(f.getFeatureAsString(), buf);
         buf.putDouble(f.getValue());
     }
 
-    private FeatureValue readFeatureValue(@Nonnull ByteBuffer buf) {
-        Object feature = NIOUtils.getString(buf);
+    @Nonnull
+    private static FeatureValue readFeatureValue(@Nonnull final ByteBuffer buf,
+            @Nonnull final FeatureType featureType) {
+        final String featureStr = NIOUtils.getString(buf);
+        final Object feature;
         switch (featureType) {
+            case JavaString:
+                feature = featureStr;
+                break;
             case Text:
-                feature = new Text((String) feature);
+                feature = new Text(featureStr);
                 break;
             case JavaInteger:
-                feature = Integer.parseInt((String) feature);
+                feature = Integer.valueOf(featureStr);
                 break;
             case WritableInt:
-                feature = new IntWritable(Integer.parseInt((String) feature));
+                feature = new IntWritable(Integer.parseInt(featureStr));
                 break;
             case JavaLong:
-                feature = Long.parseLong((String) feature);
+                feature = Long.valueOf(featureStr);
                 break;
             case WritableLong:
-                feature = new LongWritable(Long.parseLong((String) feature));
+                feature = new LongWritable(Long.parseLong(featureStr));
                 break;
+            default:
+                throw new IllegalStateException("Unexpected feature type: " + featureType);
         }
         double value = buf.getDouble();
         return new FeatureValue(feature, value);
@@ -561,7 +570,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         int featureVectorLength = buf.getInt();
                         final FeatureValue[] featureVector = new FeatureValue[featureVectorLength];
                         for (int j = 0; j < featureVectorLength; j++) {
-                            featureVector[j] = readFeatureValue(buf);
+                            featureVector[j] = readFeatureValue(buf, featureType);
                         }
                         float target = buf.getFloat();
                         train(featureVector, target);
@@ -644,7 +653,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                             int featureVectorLength = buf.getInt();
                             final FeatureValue[] featureVector = new FeatureValue[featureVectorLength];
                             for (int j = 0; j < featureVectorLength; j++) {
-                                featureVector[j] = readFeatureValue(buf);
+                                featureVector[j] = readFeatureValue(buf, featureType);
                             }
                             float target = buf.getFloat();
                             train(featureVector, target);
