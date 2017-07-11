@@ -35,10 +35,14 @@ park.read.format("libsvm").load("a9a")
   .select($"label", to_hivemall_features($"features").as("features"))
   .createOrReplaceTempView("rawTrainTable")
 
+val (max, min) = sql("SELECT MAX(label), MIN(label) FROM rawTrainTable").collect.map {
+  case Row(max: Double, min: Double) => (max, min)
+}.head
+
 // `label` must be [0.0, 1.0]
-sql("""
+sql(s"""
   CREATE OR REPLACE TEMPORARY VIEW trainTable AS
-    SELECT rescale(label, -1.0, 1.0) AS label, features
+    SELECT rescale(label, $min, $max) AS label, features
       FROM rawTrainTable
 """)
 
@@ -52,11 +56,11 @@ spark.read.format("libsvm").load("a9a.t")
   .select($"label", to_hivemall_features($"features").as("features"))
   .createOrReplaceTempView("rawTestTable")
 
-sql("""
+sql(s"""
   CREATE OR REPLACE TEMPORARY VIEW testTable AS
     SELECT
         rowid() AS rowid,
-        rescale(label, -1.0, 1.0) AS target,
+        rescale(label, $min, $max) AS target,
         features
       FROM
         rawTestTable
