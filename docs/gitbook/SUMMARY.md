@@ -178,9 +178,11 @@
 
 * [Binary Classification](spark/binaryclass/index.md)
     * [a9a Tutorial for DataFrame](spark/binaryclass/a9a_df.md)
+    * [a9a Tutorial for SQL](spark/binaryclass/a9a_sql.md)
 
 * [Regression](spark/binaryclass/index.md)
     * [E2006-tfidf regression Tutorial for DataFrame](spark/regression/e2006_df.md)
+    * [E2006-tfidf regression Tutorial for SQL](spark/regression/e2006_sql.md)
 
 * [Generic features](spark/misc/misc.md)
     * [Top-k Join processing](spark/misc/topk_join.md)
