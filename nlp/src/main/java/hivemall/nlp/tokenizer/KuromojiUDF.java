@@ -239,6 +239,16 @@ public final class KuromojiUDF extends GenericUDF {
         conn.setConnectTimeout(CONNECT_TIMEOUT_MS); // throw exception from connect()
         conn.setReadTimeout(READ_TIMEOUT_MS); // throw exception from getXXX() methods
 
+        final int responseCode;
+        try {
+            responseCode = conn.getResponseCode();
+        } catch (Throwable e) {
+            throw new UDFArgumentException("Failed to get response code: " + e);
+        }
+        if (responseCode != 200) {
+            throw new UDFArgumentException("God invalid response code: " + responseCode);
+        }
+
         final String contentType = conn.getContentType();
         boolean textContent = contentType.startsWith("text/plain");
         boolean binaryContent = contentType.startsWith("application/octet-stream");
