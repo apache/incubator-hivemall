@@ -154,6 +154,9 @@ public final class KuromojiUDF extends GenericUDF {
     @Nonnull
     private static CharArraySet stopWords(@Nonnull final ObjectInspector oi)
             throws UDFArgumentException {
+        if (HiveUtils.isVoidOI(oi)) {
+            return JapaneseAnalyzer.getDefaultStopSet();
+        }
         final String[] array = HiveUtils.getConstStringArray(oi);
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopSet();
@@ -168,6 +171,9 @@ public final class KuromojiUDF extends GenericUDF {
     @Nonnull
     private static Set<String> stopTags(@Nonnull final ObjectInspector oi)
             throws UDFArgumentException {
+        if (HiveUtils.isVoidOI(oi)) {
+            return JapaneseAnalyzer.getDefaultStopTags();
+        }
         final String[] array = HiveUtils.getConstStringArray(oi);
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopTags();

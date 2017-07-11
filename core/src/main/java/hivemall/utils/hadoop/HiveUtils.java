@@ -27,6 +27,7 @@ import static hivemall.HivemallConstants.INT_TYPE_NAME;
 import static hivemall.HivemallConstants.SMALLINT_TYPE_NAME;
 import static hivemall.HivemallConstants.STRING_TYPE_NAME;
 import static hivemall.HivemallConstants.TINYINT_TYPE_NAME;
+import static hivemall.HivemallConstants.VOID_TYPE_NAME;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -221,6 +222,11 @@ public final class HiveUtils {
 
     public static boolean isStructOI(@Nonnull final ObjectInspector oi) {
         return oi.getCategory() == Category.STRUCT;
+    }
+
+    public static boolean isVoidOI(@Nonnull final ObjectInspector oi) {
+        String typeName = oi.getTypeName();
+        return VOID_TYPE_NAME.equals(typeName);
     }
 
     public static boolean isStringOI(@Nonnull final ObjectInspector oi) {
