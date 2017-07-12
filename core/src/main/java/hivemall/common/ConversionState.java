@@ -25,20 +25,19 @@ public final class ConversionState {
     private static final Log logger = LogFactory.getLog(ConversionState.class);
 
     /** Whether to check conversion */
-    protected final boolean conversionCheck;
+    private final boolean conversionCheck;
     /** Threshold to determine convergence */
-    protected final double convergenceRate;
+    private final double convergenceRate;
 
     /** being ready to end iteration */
-    protected boolean readyToFinishIterations;
+    private boolean readyToFinishIterations;
 
     /** The cumulative errors in the training */
-    protected double totalErrors;
+    private double totalErrors;
     /** The cumulative losses in an iteration */
-    protected double currLosses, prevLosses;
+    private double currLosses, prevLosses;
 
-    protected int curIter;
-    protected float curEta;
+    private int curIter;
 
     public ConversionState() {
         this(true, 0.005d);
@@ -51,8 +50,7 @@ public final class ConversionState {
         this.totalErrors = 0.d;
         this.currLosses = 0.d;
         this.prevLosses = Double.POSITIVE_INFINITY;
-        this.curIter = 0;
-        this.curEta = Float.NaN;
+        this.curIter = 1;
     }
 
     public double getTotalErrors() {
@@ -83,20 +81,16 @@ public final class ConversionState {
         return currLosses > prevLosses;
     }
 
-    public boolean isConverged(final int iter, final long obserbedTrainingExamples) {
+    public boolean isConverged(final long obserbedTrainingExamples) {
         if (conversionCheck == false) {
-            this.prevLosses = currLosses;
-            this.currLosses = 0.d;
             return false;
         }
 
         if (currLosses > prevLosses) {
             if (logger.isInfoEnabled()) {
-                logger.info("Iteration #" + iter + " currLoss `" + currLosses + "` > prevLosses `"
-                        + prevLosses + '`');
+                logger.info("Iteration #" + curIter + " currLoss `" + currLosses
+                        + "` > prevLosses `" + prevLosses + '`');
             }
-            this.prevLosses = currLosses;
-            this.currLosses = 0.d;
             this.readyToFinishIterations = false;
             return false;
         }
@@ -105,7 +99,7 @@ public final class ConversionState {
         if (changeRate < convergenceRate) {
             if (readyToFinishIterations) {
                 // NOTE: never be true at the first iteration where prevLosses == Double.POSITIVE_INFINITY
-                logger.info("Training converged at " + iter + "-th iteration. [curLosses="
+                logger.info("Training converged at " + curIter + "-th iteration. [curLosses="
                         + currLosses + ", prevLosses=" + prevLosses + ", changeRate=" + changeRate
                         + ']');
                 return true;
@@ -114,33 +108,24 @@ public final class ConversionState {
             }
         } else {
             if (logger.isDebugEnabled()) {
-                logger.debug("Iteration #" + iter + " [curLosses=" + currLosses + ", prevLosses="
-                        + prevLosses + ", changeRate=" + changeRate + ", #trainingExamples="
-                        + obserbedTrainingExamples + ']');
+                logger.debug("Iteration #" + curIter + " [curLosses=" + currLosses
+                        + ", prevLosses=" + prevLosses + ", changeRate=" + changeRate
+                        + ", #trainingExamples=" + obserbedTrainingExamples + ']');
             }
             this.readyToFinishIterations = false;
         }
 
-        this.prevLosses = currLosses;
-        this.currLosses = 0.d;
         return false;
     }
 
-    public void logState(int iter, float eta) {
-        if (logger.isInfoEnabled()) {
-            logger.info("Iteration #" + iter + " [curLoss=" + currLosses + ", prevLoss="
-                    + prevLosses + ", eta=" + eta + ']');
-        }
-        this.curIter = iter;
-        this.curEta = eta;
+    public void next() {
+        this.prevLosses = currLosses;
+        this.currLosses = 0.d;
+        this.curIter++;
     }
 
     public int getCurrentIteration() {
         return curIter;
-    }
-
-    public float getCurrentEta() {
-        return curEta;
     }
 
 }

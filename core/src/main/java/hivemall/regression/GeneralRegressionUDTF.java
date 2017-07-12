@@ -41,8 +41,8 @@ public final class GeneralRegressionUDTF extends GeneralLearnerBaseUDTF {
 
     @Override
     protected String getLossOptionDescription() {
-        return "Loss function [default: SquaredLoss/squared, QuantileLoss/quantile, "
-                + "EpsilonInsensitiveLoss/epsilon_insensitive, HuberLoss/huber]";
+        return "Loss function [SquaredLoss (default), QuantileLoss, EpsilonInsensitiveLoss, "
+                + "SquaredEpsilonInsensitiveLoss, HuberLoss]";
     }
 
     @Override

@@ -28,7 +28,7 @@ import org.apache.hadoop.io.Text;
 
 public final class FeatureValue {
 
-    private/* final */Object feature;
+    private/* final */Object feature; // possible types: String, Text, Integer, Long
     private/* final */double value;
 
     public FeatureValue() {}// used for Probe
@@ -163,5 +163,4 @@ public final class FeatureValue {
             probe.value = 1.d;
         }
     }
-
 }
