@@ -260,6 +260,7 @@ public class KuromojiUDFTest {
         // userDictArray (from https://raw.githubusercontent.com/atilika/kuromoji/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt)
         List<String> userDict = new ArrayList<String>();
         userDict.add("日本経済新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞");
+        userDict.add("関西国際空港,関西 国際 空港,カンサイ コクサイ クウコウ,テスト名詞");
         argOIs[4] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
             PrimitiveObjectInspectorFactory.writableStringObjectInspector, userDict);
         udf.initialize(argOIs);
