@@ -18,8 +18,6 @@
  */
 package hivemall.utils.io;
 
-import org.apache.commons.io.input.BoundedInputStream;
-
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import java.io.IOException;
