@@ -64,8 +64,8 @@ import org.apache.lucene.analysis.util.CharArraySet;
 @UDFType(deterministic = true, stateful = false)
 public final class KuromojiUDF extends GenericUDF {
     private static final int CONNECT_TIMEOUT_MS = 10000;
-    private static final int READ_TIMEOUT_MS = 30000;
-    private static final long MAX_INPUT_STREAM_SIZE = 1000000L; // ~1MB
+    private static final int READ_TIMEOUT_MS = 60000;
+    private static final long MAX_INPUT_STREAM_SIZE = 32L * 1024L * 1024L; // ~32MB
 
     private Mode _mode;
     private CharArraySet _stopWords;
