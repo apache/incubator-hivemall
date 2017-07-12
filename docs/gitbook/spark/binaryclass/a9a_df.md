@@ -31,10 +31,15 @@ $ wget http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a9a.t
 
 ```scala
 scala> :paste
-val trainDf = spark.read.format("libsvm").load("a9a")
-  .select(
+val rawTrainDf = spark.read.format("libsvm").load("a9a")
+
+val (max, min) = rawTrainDf.select(max($"label"), min($"label")).collect.map {
+  case Row(max: Double, min: Double) => (max, min)
+}
+
+val trainDf = rawTrainDf.select(
     // `label` must be [0.0, 1.0]
-    rescale($"label", lit(-1.0f), lit(1.0f)).as("label"),
+    rescale($"label", lit(min), lit(max)).as("label"),
     $"features"
   )
 
@@ -45,7 +50,7 @@ root
 
 scala> :paste
 val testDf = spark.read.format("libsvm").load("a9a.t")
-  .select(rowid(), rescale($"label", lit(-1.0f), lit(1.0f)).as("label"), $"features")
+  .select(rowid(), rescale($"label", lit(min), lit(max)).as("label"), $"features")
   .explode_vector($"features")
   .select($"rowid", $"label".as("target"), $"feature", $"weight".as("value"))
   .cache
