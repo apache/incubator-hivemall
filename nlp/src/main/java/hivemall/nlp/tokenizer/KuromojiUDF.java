@@ -215,7 +215,7 @@ public final class KuromojiUDF extends GenericUDF {
         StringBuilder builder = new StringBuilder();
         for (String row : userDictArray) {
             builder.append(row);
-            builder.append("\r\n");
+            builder.append(System.getProperty("line.separator"));
         }
         InputStream is = new FastByteArrayInputStream(builder.toString().getBytes());
         final Reader reader = new InputStreamReader(is);
