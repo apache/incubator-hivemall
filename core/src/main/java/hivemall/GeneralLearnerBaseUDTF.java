@@ -71,8 +71,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
@@ -80,7 +78,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(GeneralLearnerBaseUDTF.class);
 
     public enum FeatureType {
-        JavaString, WritableInt, WritableLong
+        STRING, INT, LONG
     }
 
     private ListObjectInspector featureListOI;
@@ -230,17 +228,16 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             throws UDFArgumentException {
         this.featureListOI = (ListObjectInspector) arg;
         ObjectInspector featureRawOI = featureListOI.getListElementObjectInspector();
-        HiveUtils.validateFeatureOI(featureRawOI);
         if (featureRawOI instanceof StringObjectInspector) {
-            this.featureType = FeatureType.JavaString;
+            this.featureType = FeatureType.STRING;
         } else if (featureRawOI instanceof IntObjectInspector) {
-            this.featureType = FeatureType.WritableInt;
+            this.featureType = FeatureType.INT;
         } else if (featureRawOI instanceof LongObjectInspector) {
-            this.featureType = FeatureType.WritableLong;
+            this.featureType = FeatureType.LONG;
         } else {
-            throw new UDFArgumentException(
-                "Feature object inspector must be one of [Text, Int, BitInt]: "
-                        + featureRawOI.toString());
+            throw new UDFArgumentException("Feature object inspector must be one of "
+                    + "[StringObjectInspector, IntObjectInspector, LongObjectInspector]: "
+                    + featureRawOI.toString());
         }
         return HiveUtils.asPrimitiveObjectInspector(featureRawOI);
     }
@@ -357,17 +354,17 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         final String featureStr = NIOUtils.getString(buf);
         final Object feature;
         switch (featureType) {
-            case JavaString:
+            case STRING:
                 feature = featureStr;
                 break;
-            case WritableInt:
-                feature = new IntWritable(Integer.parseInt(featureStr));
+            case INT:
+                feature = Integer.valueOf(featureStr);
                 break;
-            case WritableLong:
-                feature = new LongWritable(Long.parseLong(featureStr));
+            case LONG:
+                feature = Long.valueOf(featureStr);
                 break;
             default:
-                throw new IllegalStateException("Unexpected feature type: " + featureType);
+                throw new IllegalStateException("Unexpected feature type " + featureType + " for feature: " + featureStr);
         }
         double value = buf.getDouble();
         return new FeatureValue(feature, value);
@@ -388,12 +385,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 continue;
             }
             final FeatureValue fv;
-            if (featureType == FeatureType.JavaString) {
+            if (featureType == FeatureType.STRING) {
                 String s = f.toString();
-                fv = FeatureValue.parse(s);
+                fv = FeatureValue.parseFeatureAsString(s);
             } else {
                 Object k = ObjectInspectorUtils.copyToStandardObject(f, featureInspector,
-                    ObjectInspectorCopyOption.WRITABLE); // should be IntWritable or LongWritable
+                    ObjectInspectorCopyOption.JAVA); // should be Integer or Long
                 fv = new FeatureValue(k, 1.f);
             }
             featureVector[i] = fv;
