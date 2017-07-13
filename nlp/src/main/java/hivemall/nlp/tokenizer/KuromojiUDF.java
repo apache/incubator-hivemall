@@ -257,23 +257,9 @@ public final class KuromojiUDF extends GenericUDF {
             throw new UDFArgumentException("Got invalid response code: " + responseCode);
         }
 
-        final String contentType = conn.getContentType();
-        boolean textContent = contentType.startsWith("text/plain");
-        boolean binaryContent = contentType.startsWith("application/octet-stream");
-        if (!textContent && !binaryContent) {
-            throw new UDFArgumentException(
-                "User dictionary URL indicates unexpected content type: " + contentType);
-        }
-
-        InputStream is;
+        final InputStream is;
         try {
-            is = HttpUtils.getLimitedInputStream(conn, MAX_INPUT_STREAM_SIZE);
-            if ((textContent && "gzip".equals(conn.getContentEncoding())) || binaryContent) {
-                is = new GZIPInputStream(is);
-            }
-        } catch (ZipException e) { // HTTP connection indicates a non-GZIP binary file
-            throw new UDFArgumentException(
-                "User dictionary URL MUST indicate plain text or GZIP file: " + e);
+            is = IOUtils.decompressStream(HttpUtils.getLimitedInputStream(conn, MAX_INPUT_STREAM_SIZE));
         } catch (Throwable e) {
             throw new UDFArgumentException("Failed to get input stream from the connection: " + e);
         }
