@@ -62,20 +62,17 @@ import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaIntObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaLongObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.JavaStringObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.LongObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableLongObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableStringObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
@@ -83,13 +80,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(GeneralLearnerBaseUDTF.class);
 
     public enum FeatureType {
-        JavaString, Text, JavaInteger, WritableInt, JavaLong, WritableLong
+        JavaString, WritableInt, WritableLong
     }
 
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureInputOI;
     private PrimitiveObjectInspector targetOI;
-    private boolean parseFeature;
     private FeatureType featureType;
 
     // -----------------------------------------
@@ -235,24 +231,17 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         this.featureListOI = (ListObjectInspector) arg;
         ObjectInspector featureRawOI = featureListOI.getListElementObjectInspector();
         HiveUtils.validateFeatureOI(featureRawOI);
-        if (featureRawOI instanceof JavaStringObjectInspector) {
+        if (featureRawOI instanceof StringObjectInspector) {
             this.featureType = FeatureType.JavaString;
-        } else if (featureRawOI instanceof WritableStringObjectInspector) {
-            this.featureType = FeatureType.Text;
-        } else if (featureRawOI instanceof JavaIntObjectInspector) {
-            this.featureType = FeatureType.JavaInteger;
-        } else if (featureRawOI instanceof WritableIntObjectInspector) {
+        } else if (featureRawOI instanceof IntObjectInspector) {
             this.featureType = FeatureType.WritableInt;
-        } else if (featureRawOI instanceof JavaLongObjectInspector) {
-            this.featureType = FeatureType.JavaLong;
-        } else if (featureRawOI instanceof WritableLongObjectInspector) {
+        } else if (featureRawOI instanceof LongObjectInspector) {
             this.featureType = FeatureType.WritableLong;
         } else {
-            throw new UDFArgumentException("Feature object inspector must be one of "
-                    + "[JavaString, WritableString, JavaInt, WritableInt, Long, WritableLong]: "
-                    + featureRawOI.toString());
+            throw new UDFArgumentException(
+                "Feature object inspector must be one of [Text, Int, BitInt]: "
+                        + featureRawOI.toString());
         }
-        this.parseFeature = HiveUtils.isStringOI(featureRawOI);
         return HiveUtils.asPrimitiveObjectInspector(featureRawOI);
     }
 
@@ -327,10 +316,10 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             if (f == null) {
                 continue;
             }
-            String feature = f.getFeatureAsString();
+            int featureLength = f.getFeatureAsString().length();
 
             // feature as String (even if it is Text or Integer)
-            featureVectorBytes += SizeOf.CHAR * feature.length();
+            featureVectorBytes += SizeOf.CHAR * featureLength;
 
             // NIOUtils.putString() first puts the length of string before string itself
             featureVectorBytes += SizeOf.INT;
@@ -371,17 +360,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             case JavaString:
                 feature = featureStr;
                 break;
-            case Text:
-                feature = new Text(featureStr);
-                break;
-            case JavaInteger:
-                feature = Integer.valueOf(featureStr);
-                break;
             case WritableInt:
                 feature = new IntWritable(Integer.parseInt(featureStr));
-                break;
-            case JavaLong:
-                feature = Long.valueOf(featureStr);
                 break;
             case WritableLong:
                 feature = new LongWritable(Long.parseLong(featureStr));
@@ -408,14 +388,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 continue;
             }
             final FeatureValue fv;
-            if (parseFeature) {
-                if (featureType == FeatureType.JavaString) {
-                    fv = FeatureValue.parseFeatureAsString((String) f);
-                } else {
-                    fv = FeatureValue.parse(f); // = parse feature as Text
-                }
+            if (featureType == FeatureType.JavaString) {
+                String s = f.toString();
+                fv = FeatureValue.parse(s);
             } else {
-                Object k = ObjectInspectorUtils.copyToStandardObject(f, featureInspector);
+                Object k = ObjectInspectorUtils.copyToStandardObject(f, featureInspector,
+                    ObjectInspectorCopyOption.WRITABLE); // should be IntWritable or LongWritable
                 fv = new FeatureValue(k, 1.f);
             }
             featureVector[i] = fv;
