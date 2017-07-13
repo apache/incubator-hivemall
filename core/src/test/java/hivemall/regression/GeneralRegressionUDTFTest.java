@@ -18,6 +18,10 @@
  */
 package hivemall.regression;
 
+import static hivemall.utils.hadoop.HiveUtils.lazyInteger;
+import static hivemall.utils.hadoop.HiveUtils.lazyLong;
+import static hivemall.utils.hadoop.HiveUtils.lazyString;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +31,11 @@ import javax.annotation.Nonnull;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
+import org.apache.hadoop.hive.serde2.lazy.LazyInteger;
+import org.apache.hadoop.hive.serde2.lazy.LazyLong;
+import org.apache.hadoop.hive.serde2.lazy.LazyString;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyPrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyStringObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -35,7 +44,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -110,8 +118,8 @@ public class GeneralRegressionUDTFTest {
         Assert.assertEquals(y, predicted, 1E-5);
     }
 
-    private void testFeature(List<?> x, ObjectInspector featureOI, Class featureClass)
-            throws Exception {
+    private <T> void testFeature(@Nonnull List<T> x, @Nonnull ObjectInspector featureOI,
+            @Nonnull Class<T> featureClass, @Nonnull Class<?> modelFeatureClass) throws Exception {
         float y = 0.f;
 
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
@@ -133,57 +141,83 @@ public class GeneralRegressionUDTFTest {
 
         udtf.close();
 
-        Class modelFeatureClass = modelFeatures.get(0).getClass();
+        Assert.assertFalse(modelFeatures.isEmpty());
         for (Object modelFeature : modelFeatures) {
             Assert.assertEquals("All model features must have same type", modelFeatureClass,
                 modelFeature.getClass());
         }
+    }
 
-        Assert.assertEquals(
-            "Model feature must correspond to UDTF output feature's object inspector",
-            featureClass, modelFeatureClass);
+    @Test
+    public void testLazyStringFeature() throws Exception {
+        LazyStringObjectInspector oi = LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(
+            false, (byte) 0);
+        List<LazyString> x = Arrays.asList(lazyString("テスト:-2", oi), lazyString("漢字:-333.0", oi),
+            lazyString("test:-1"));
+        testFeature(x, oi, LazyString.class, String.class);
     }
 
     @Test
     public void testStringFeature() throws Exception {
         List<String> x = Arrays.asList("1:-2", "2:-1");
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        testFeature(x, featureOI, String.class);
+        testFeature(x, featureOI, String.class, String.class);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIlleagalStringFeature() throws Exception {
+        List<String> x = Arrays.asList("1:-2jjjj", "2:-1");
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        testFeature(x, featureOI, String.class, String.class);
     }
 
     @Test
     public void testTextFeature() throws Exception {
         List<Text> x = Arrays.asList(new Text("1:-2"), new Text("2:-1"));
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
-        testFeature(x, featureOI, Text.class);
+        testFeature(x, featureOI, Text.class, String.class);
     }
 
     @Test
     public void testIntegerFeature() throws Exception {
         List<Integer> x = Arrays.asList(111, 222);
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        testFeature(x, featureOI, Integer.class);
+        testFeature(x, featureOI, Integer.class, Integer.class);
+    }
+
+    @Test
+    public void testLazyIntegerFeature() throws Exception {
+        List<LazyInteger> x = Arrays.asList(lazyInteger(111), lazyInteger(222));
+        ObjectInspector featureOI = LazyPrimitiveObjectInspectorFactory.LAZY_INT_OBJECT_INSPECTOR;
+        testFeature(x, featureOI, LazyInteger.class, Integer.class);
     }
 
     @Test
     public void testWritableIntFeature() throws Exception {
         List<IntWritable> x = Arrays.asList(new IntWritable(111), new IntWritable(222));
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
-        testFeature(x, featureOI, IntWritable.class);
+        testFeature(x, featureOI, IntWritable.class, Integer.class);
     }
 
     @Test
     public void testLongFeature() throws Exception {
         List<Long> x = Arrays.asList(111L, 222L);
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
-        testFeature(x, featureOI, Long.class);
+        testFeature(x, featureOI, Long.class, Long.class);
+    }
+
+    @Test
+    public void testLazyLongFeature() throws Exception {
+        List<LazyLong> x = Arrays.asList(lazyLong(111), lazyLong(222));
+        ObjectInspector featureOI = LazyPrimitiveObjectInspectorFactory.LAZY_LONG_OBJECT_INSPECTOR;
+        testFeature(x, featureOI, LazyLong.class, Long.class);
     }
 
     @Test
     public void testWritableLongFeature() throws Exception {
         List<LongWritable> x = Arrays.asList(new LongWritable(111L), new LongWritable(222L));
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
-        testFeature(x, featureOI, LongWritable.class);
+        testFeature(x, featureOI, LongWritable.class, Long.class);
     }
 
     private void run(@Nonnull String options) throws Exception {
