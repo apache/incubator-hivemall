@@ -234,7 +234,7 @@ public final class KuromojiUDF extends GenericUDF {
         final HttpURLConnection conn;
         try {
             conn = HttpUtils.getHttpURLConnection(userDictURL);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw new UDFArgumentException("Failed to create HTTP connection to the URL: " + e);
         }
 
@@ -247,7 +247,7 @@ public final class KuromojiUDF extends GenericUDF {
         final int responseCode;
         try {
             responseCode = conn.getResponseCode();
-        } catch (Throwable e) {
+        } catch (IOException e) {
             throw new UDFArgumentException("Failed to get response code: " + e);
         }
         if (responseCode != 200) {
@@ -257,7 +257,7 @@ public final class KuromojiUDF extends GenericUDF {
         final InputStream is;
         try {
             is = IOUtils.decompressStream(HttpUtils.getLimitedInputStream(conn, MAX_INPUT_STREAM_SIZE));
-        } catch (Throwable e) {
+        } catch (IOException e) {
             throw new UDFArgumentException("Failed to get input stream from the connection: " + e);
         }
 
