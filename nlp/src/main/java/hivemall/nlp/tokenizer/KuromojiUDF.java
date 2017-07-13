@@ -19,7 +19,6 @@
 package hivemall.nlp.tokenizer;
 
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.FastByteArrayInputStream;
 import hivemall.utils.io.IOUtils;
 import hivemall.utils.io.HttpUtils;
 
@@ -27,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -217,8 +217,7 @@ public final class KuromojiUDF extends GenericUDF {
             builder.append(row);
             builder.append("\n");
         }
-        InputStream is = new FastByteArrayInputStream(builder.toString().getBytes());
-        final Reader reader = new InputStreamReader(is);
+        final Reader reader = new StringReader(builder.toString());
         try {
             return UserDictionary.open(reader); // return null if empty
         } catch (Throwable e) {
