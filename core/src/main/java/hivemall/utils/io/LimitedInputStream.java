@@ -18,40 +18,39 @@
  */
 package hivemall.utils.io;
 
+import javax.annotation.Nonnegative;
 import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Input stream which only supplies bytes up to a certain length
- * Implementation is based on BoundedInputStream in Apache Commons IO
- * https://commons.apache.org/proper/commons-io/javadocs/api-2.5/org/apache/commons/io/input/BoundedInputStream.html
+ * Input stream which is limited to a certain length
+ * Implementation is based on BoundedInputStream in Apache Commons IO and LimitedInputStream in Apache Commons FileUpload
+ *
+ * @link https://commons.apache.org/proper/commons-io/javadocs/api-2.5/org/apache/commons/io/input/BoundedInputStream.html
+ * @link https://commons.apache.org/proper/commons-fileupload/apidocs/org/apache/commons/fileupload/util/LimitedInputStream.html
  */
-public final class BoundedInputStream extends InputStream {
-    private static final int EOF = -1;
+public final class LimitedInputStream extends InputStream {
 
     private final InputStream is;
     private final long max;
     private long pos = 0L;
-    private long mark = EOF;
 
-    public BoundedInputStream(final InputStream is) {
-        this(is, EOF); // wrapped, but unlimited input stream
-    }
-
-    public BoundedInputStream(final InputStream is, final long size) {
+    public LimitedInputStream(final InputStream is, @Nonnegative final long size) {
         this.is = is;
         this.max = size;
     }
 
+    private void proceed(@Nonnegative long bytes) throws IOException {
+        this.pos += bytes;
+        if (pos > max) {
+            throw new IOException("Exceeded maximum size of input stream [" + max + " bytes]");
+        }
+    }
+
     @Override
     public int read() throws IOException {
-        if (max >= 0 && pos >= max) {
-            return EOF;
-        }
-
         int result = is.read();
-        this.pos += 1;
-
+        proceed(1L);
         return result;
     }
 
@@ -62,31 +61,23 @@ public final class BoundedInputStream extends InputStream {
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        if (max >= 0 && pos >= max) {
-            return EOF;
+        int bytesRead = is.read(b, off, len);
+        if (bytesRead > 0) {
+            proceed(bytesRead);
         }
-
-        long maxRead = max >= 0 ? Math.min(len, max - pos) : len;
-        int bytesRead = is.read(b, off, (int) maxRead);
-        if (bytesRead == EOF) {
-            return EOF;
-        }
-        this.pos += bytesRead;
-
         return bytesRead;
     }
 
     @Override
     public long skip(long n) throws IOException {
-        long toSkip = max >= 0 ? Math.min(n, max - pos) : n;
-        long skippedBytes = is.skip(toSkip);
-        this.pos += skippedBytes;
+        long skippedBytes = is.skip(n);
+        proceed(skippedBytes);
         return skippedBytes;
     }
 
     @Override
     public int available() throws IOException {
-        if (max >= 0 && pos >= max) {
+        if (pos == max) {
             return 0;
         }
         return is.available();
@@ -100,13 +91,11 @@ public final class BoundedInputStream extends InputStream {
     @Override
     public synchronized void reset() throws IOException {
         is.reset();
-        this.pos = mark;
     }
 
     @Override
     public synchronized void mark(int readlimit) {
         is.mark(readlimit);
-        this.mark = pos;
     }
 
     @Override

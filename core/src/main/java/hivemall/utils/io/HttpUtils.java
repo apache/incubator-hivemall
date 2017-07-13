@@ -39,10 +39,10 @@ public final class HttpUtils {
     }
 
     @Nonnull
-    public static InputStream getBoundedInputStream(@Nonnull HttpURLConnection conn,
+    public static InputStream getLimitedInputStream(@Nonnull HttpURLConnection conn,
             @Nonnegative long size) throws IOException {
         InputStream is = conn.getInputStream();
-        is = new BoundedInputStream(is, size);
+        is = new LimitedInputStream(is, size);
         return is;
     }
 }

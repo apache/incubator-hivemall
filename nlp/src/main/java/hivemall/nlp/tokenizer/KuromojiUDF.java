@@ -267,7 +267,7 @@ public final class KuromojiUDF extends GenericUDF {
 
         InputStream is;
         try {
-            is = HttpUtils.getBoundedInputStream(conn, MAX_INPUT_STREAM_SIZE);
+            is = HttpUtils.getLimitedInputStream(conn, MAX_INPUT_STREAM_SIZE);
             if ((textContent && "gzip".equals(conn.getContentEncoding())) || binaryContent) {
                 is = new GZIPInputStream(is);
             }
