@@ -18,20 +18,23 @@
  */
 package hivemall.xgboost;
 
-import ml.dmlc.xgboost4j.LabeledPoint;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-import java.util.List;
+import ml.dmlc.xgboost4j.LabeledPoint;
 
 public final class XGBoostUtils {
 
     private XGBoostUtils() {}
 
     /** Transform List<String> inputs into a XGBoost input format */
-    public static LabeledPoint parseFeatures(double target, String[] features) {
+    @Nullable
+    public static LabeledPoint parseFeatures(final double target, @Nonnull final String[] features) {
         final int size = features.length;
         if (size == 0) {
             return null;
         }
+
         final int[] indices = new int[size];
         final float[] values = new float[size];
         for (int i = 0; i < size; i++) {

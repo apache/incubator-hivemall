@@ -18,13 +18,13 @@
  */
 package hivemall.xgboost.classification;
 
+import hivemall.xgboost.XGBoostUDTF;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-
-import hivemall.xgboost.XGBoostUDTF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 
 /**
@@ -34,9 +34,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 @Description(
         name = "train_multiclass_xgboost_classifier",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
-public class XGBoostMulticlassClassifierUDTF extends XGBoostUDTF {
+public final class XGBoostMulticlassClassifierUDTF extends XGBoostUDTF {
 
-    public XGBoostMulticlassClassifierUDTF() {}
+    public XGBoostMulticlassClassifierUDTF() {
+        super();
+    }
 
     {
         // Settings for multiclass classification
@@ -47,7 +49,7 @@ public class XGBoostMulticlassClassifierUDTF extends XGBoostUDTF {
 
     @Override
     protected Options getOptions() {
-        final Options opts = super.getOptions();
+        Options opts = super.getOptions();
         opts.addOption("num_class", true, "Number of classes to classify");
         return opts;
     }
@@ -69,7 +71,7 @@ public class XGBoostMulticlassClassifierUDTF extends XGBoostUDTF {
     }
 
     @Override
-    public void checkTargetValue(double target) throws HiveException {
+    protected void checkTargetValue(final double target) throws HiveException {
         double num_class = ((Integer) params.get("num_class")).doubleValue();
         if (target < 0.0 || target > num_class
                 || Double.compare(target - Math.floor(target), 0.0) != 0) {

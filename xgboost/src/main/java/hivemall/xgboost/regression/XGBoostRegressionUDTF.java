@@ -30,9 +30,11 @@ import hivemall.xgboost.XGBoostUDTF;
 @Description(
         name = "train_xgboost_regr",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
-public class XGBoostRegressionUDTF extends XGBoostUDTF {
+public final class XGBoostRegressionUDTF extends XGBoostUDTF {
 
-    public XGBoostRegressionUDTF() {}
+    public XGBoostRegressionUDTF() {
+        super();
+    }
 
     {
         // Settings for logistic regression
@@ -41,7 +43,7 @@ public class XGBoostRegressionUDTF extends XGBoostUDTF {
     }
 
     @Override
-    public void checkTargetValue(double target) throws HiveException {
+    protected void checkTargetValue(final double target) throws HiveException {
         if (target < 0.0 || target > 1.0) {
             throw new HiveException("target must be in range 0 to 1: " + target);
         }

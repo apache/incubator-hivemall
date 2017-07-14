@@ -18,28 +18,37 @@
  */
 package hivemall.xgboost;
 
+import hivemall.UDTFWithOptions;
+import hivemall.utils.hadoop.HadoopUtils;
+import hivemall.utils.hadoop.HiveUtils;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.annotation.Nonnull;
 
 import ml.dmlc.xgboost4j.LabeledPoint;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-
-import hivemall.UDTFWithOptions;
-import hivemall.utils.hadoop.HadoopUtils;
-import hivemall.utils.hadoop.HiveUtils;
 
 /**
  * This is a base class to handle the options for XGBoost and provide common functions among various
@@ -48,8 +57,10 @@ import hivemall.utils.hadoop.HiveUtils;
 public abstract class XGBoostUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(XGBoostUDTF.class);
 
-    // For XGBoost options
-    protected final Map<String, Object> params = new HashMap<String, Object>();
+    // Settings for the XGBoost native library
+    static {
+        NativeLibLoader.initXGBoost();
+    }
 
     // For input buffer
     private final List<LabeledPoint> featuresList;
@@ -59,10 +70,9 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector targetOI;
 
-    // Settings for the XGBoost native library
-    static {
-        NativeLibLoader.initXGBoost();
-    }
+    // For XGBoost options
+    @Nonnull
+    protected final Map<String, Object> params = new HashMap<String, Object>();
 
     // XGBoost options can be found in https://github.com/dmlc/xgboost/blob/master/doc/parameter.md
     // Most of default parameters are set along with the official one.
@@ -97,7 +107,7 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     }
 
     public XGBoostUDTF() {
-        this.featuresList = new ArrayList(1024);
+        this.featuresList = new ArrayList<>(1024);
     }
 
     @Override
@@ -241,9 +251,10 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     }
 
     /** All the functions return (string model_id, byte[] pred_model) as built models */
+    @Nonnull
     private static StructObjectInspector getReturnOIs() {
-        final ArrayList fieldNames = new ArrayList(2);
-        final ArrayList fieldOIs = new ArrayList(2);
+        final List<String> fieldNames = new ArrayList<>(2);
+        final List<ObjectInspector> fieldOIs = new ArrayList<>(2);
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("pred_model");
@@ -252,7 +263,8 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     }
 
     @Override
-    public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
+    public StructObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
+            throws UDFArgumentException {
         processOptions(argOIs);
         final ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
         final ObjectInspector elemOI = listOI.getListElementObjectInspector();
@@ -263,35 +275,37 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     }
 
     /** It `target` has valid input range, it overrides this */
-    public void checkTargetValue(double target) throws HiveException {}
+    protected abstract void checkTargetValue(double target) throws HiveException;
 
     @Override
-    public void process(Object[] args) throws HiveException {
-        if (args[0] != null) {
-            // TODO: Need to support dense inputs
-            final List<?> features = (List<?>) featureListOI.getList(args[0]);
-            final String[] fv = new String[features.size()];
-            for (int i = 0; i < features.size(); i++) {
-                fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
-            }
-            double target = PrimitiveObjectInspectorUtils.getDouble(args[1], this.targetOI);
-            checkTargetValue(target);
-            final LabeledPoint point = XGBoostUtils.parseFeatures(target, fv);
-            if (point != null) {
-                this.featuresList.add(point);
-            }
+    public void process(@Nonnull Object[] args) throws HiveException {
+        if (args[0] == null) {
+            return;
+        }
+
+        // TODO: Need to support dense inputs
+        final List<?> features = (List<?>) featureListOI.getList(args[0]);
+        final String[] fv = new String[features.size()];
+        for (int i = 0; i < features.size(); i++) {
+            fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
+        }
+        double target = PrimitiveObjectInspectorUtils.getDouble(args[1], this.targetOI);
+        checkTargetValue(target);
+        final LabeledPoint point = XGBoostUtils.parseFeatures(target, fv);
+        if (point != null) {
+            this.featuresList.add(point);
         }
     }
 
-    private String generateUniqueModelId() {
+    @Nonnull
+    private static String generateUniqueModelId() {
         return "xgbmodel-" + HadoopUtils.getUniqueTaskIdString();
     }
 
     @Nonnull
-    private static Booster createXGBooster(
-            final Map<String, Object> params, final List<LabeledPoint> input)
-            throws NoSuchMethodException, XGBoostError, IllegalAccessException,
-                InvocationTargetException, InstantiationException {
+    private static Booster createXGBooster(final Map<String, Object> params,
+            final List<LabeledPoint> input) throws NoSuchMethodException, XGBoostError,
+            IllegalAccessException, InvocationTargetException, InstantiationException {
         Class<?>[] args = {Map.class, DMatrix[].class};
         Constructor<Booster> ctor = Booster.class.getDeclaredConstructor(args);
         ctor.setAccessible(true);
@@ -305,7 +319,7 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
             // Kick off training with XGBoost
             final DMatrix trainData = new DMatrix(featuresList.iterator(), "");
             final Booster booster = createXGBooster(params, featuresList);
-            int num_round = (Integer) params.get("num_round");
+            final int num_round = (Integer) params.get("num_round");
             for (int i = 0; i < num_round; i++) {
                 booster.update(trainData, i);
             }

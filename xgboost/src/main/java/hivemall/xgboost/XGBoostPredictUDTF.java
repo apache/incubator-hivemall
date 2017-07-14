@@ -18,26 +18,34 @@
  */
 package hivemall.xgboost;
 
+import hivemall.UDTFWithOptions;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.Primitives;
+
 import java.io.ByteArrayInputStream;
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.annotation.Nonnull;
 
 import ml.dmlc.xgboost4j.LabeledPoint;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-
-import hivemall.UDTFWithOptions;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.lang.Primitives;
 
 public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
 
@@ -59,21 +67,8 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         NativeLibLoader.initXGBoost();
     }
 
-    public XGBoostPredictUDTF() {}
-
-    protected final class LabeledPointWithRowId {
-        public String rowId;
-        public LabeledPoint point;
-
-        // Prevent other classes from instantiating this
-        LabeledPointWithRowId() {}
-    }
-
-    private LabeledPointWithRowId createLabeledPoint(String rowId, LabeledPoint point) {
-        final LabeledPointWithRowId p = new LabeledPointWithRowId();
-        p.rowId = rowId;
-        p.point = point;
-        return p;
+    public XGBoostPredictUDTF() {
+        super();
     }
 
     @Override
@@ -100,14 +95,16 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         return cl;
     }
 
-    /** Override this to output predicted results depending on a taks type */
-    abstract public StructObjectInspector getReturnOI();
+    /** Override this to output predicted results depending on a task type */
+    @Nonnull
+    protected abstract StructObjectInspector getReturnOI();
 
-    abstract public void forwardPredicted(final List<LabeledPointWithRowId> testData,
-            final float[][] predicted) throws HiveException;
+    protected abstract void forwardPredicted(@Nonnull final List<LabeledPointWithRowId> testData,
+            @Nonnull final float[][] predicted) throws HiveException;
 
     @Override
-    public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
+    public StructObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
+            throws UDFArgumentException {
         if (argOIs.length != 4 && argOIs.length != 5) {
             throw new UDFArgumentException(this.getClass().getSimpleName()
                     + " takes 4 or 5 arguments: string rowid, string[] features, string model_id,"
@@ -127,16 +124,18 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         }
     }
 
-    private static DMatrix createDMatrix(final List<LabeledPointWithRowId> data)
+    @Nonnull
+    private static DMatrix createDMatrix(@Nonnull final List<LabeledPointWithRowId> data)
             throws XGBoostError {
-        final List<LabeledPoint> points = new ArrayList(data.size());
+        final List<LabeledPoint> points = new ArrayList<>(data.size());
         for (LabeledPointWithRowId d : data) {
             points.add(d.point);
         }
         return new DMatrix(points.iterator(), "");
     }
 
-    private static Booster initXgBooster(final byte[] input) throws HiveException {
+    @Nonnull
+    private static Booster initXgBooster(@Nonnull final byte[] input) throws HiveException {
         try {
             return XGBoost.loadModel(new ByteArrayInputStream(input));
         } catch (Exception e) {
@@ -146,42 +145,73 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
 
     private void predictAndFlush(final Booster model, final List<LabeledPointWithRowId> buf)
             throws HiveException {
+        final DMatrix testData;
+        final float[][] predicted;
         try {
-            final DMatrix testData = createDMatrix(buf);
-            final float[][] predicted = model.predict(testData);
-            forwardPredicted(buf, predicted);
-        } catch (Exception e) {
+            testData = createDMatrix(buf);
+            predicted = model.predict(testData);
+        } catch (XGBoostError e) {
             throw new HiveException(e);
         }
+        forwardPredicted(buf, predicted);
         buf.clear();
     }
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (args[1] != null) {
-            final String rowId = PrimitiveObjectInspectorUtils.getString(args[0], rowIdOI);
-            final List<?> features = (List<?>) featureListOI.getList(args[1]);
-            final String[] fv = new String[features.size()];
-            for (int i = 0; i < features.size(); i++) {
-                fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
-            }
-            final String modelId = PrimitiveObjectInspectorUtils.getString(args[2], modelIdOI);
-            if (!mapToModel.containsKey(modelId)) {
-                final byte[] predModel = PrimitiveObjectInspectorUtils.getBinary(args[3], modelOI)
-                                                                      .getBytes();
-                mapToModel.put(modelId, initXgBooster(predModel));
-            }
-            final LabeledPoint point = XGBoostUtils.parseFeatures(0.f, fv);
-            if (point != null) {
-                if (!rowBuffer.containsKey(modelId)) {
-                    rowBuffer.put(modelId, new ArrayList());
-                }
-                final List<LabeledPointWithRowId> buf = rowBuffer.get(modelId);
-                buf.add(createLabeledPoint(rowId, point));
-                if (buf.size() >= batch_size) {
-                    predictAndFlush(mapToModel.get(modelId), buf);
-                }
-            }
+        if (args[1] == null) {
+            return;
+        }
+
+        final String rowId = PrimitiveObjectInspectorUtils.getString(args[0], rowIdOI);
+        final List<?> features = (List<?>) featureListOI.getList(args[1]);
+        final String[] fv = new String[features.size()];
+        for (int i = 0; i < features.size(); i++) {
+            fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
+        }
+        final String modelId = PrimitiveObjectInspectorUtils.getString(args[2], modelIdOI);
+        if (!mapToModel.containsKey(modelId)) {
+            final byte[] predModel = PrimitiveObjectInspectorUtils.getBinary(args[3], modelOI)
+                                                                  .getBytes();
+            mapToModel.put(modelId, initXgBooster(predModel));
+        }
+
+        final LabeledPoint point = XGBoostUtils.parseFeatures(0.f, fv);
+        if (point == null) {
+            return;
+        }
+
+        List<LabeledPointWithRowId> buf = rowBuffer.get(modelId);
+        if (buf == null) {
+            buf = new ArrayList<LabeledPointWithRowId>();
+            rowBuffer.put(modelId, buf);
+        }
+        buf.add(new LabeledPointWithRowId(rowId, point));
+        if (buf.size() >= batch_size) {
+            predictAndFlush(mapToModel.get(modelId), buf);
+        }
+    }
+
+    public static final class LabeledPointWithRowId {
+
+        @Nonnull
+        final String rowId;
+        @Nonnull
+        final LabeledPoint point;
+
+        LabeledPointWithRowId(@Nonnull String rowId, @Nonnull LabeledPoint point) {
+            this.rowId = rowId;
+            this.point = point;
+        }
+
+        @Nonnull
+        public String getRowId() {
+            return rowId;
+        }
+
+        @Nonnull
+        public LabeledPoint getPoint() {
+            return point;
         }
     }
 

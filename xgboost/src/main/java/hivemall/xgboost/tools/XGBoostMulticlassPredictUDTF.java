@@ -18,14 +18,19 @@
  */
 package hivemall.xgboost.tools;
 
-import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import hivemall.utils.lang.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 @Description(
         name = "xgboost_multiclass_predict",
@@ -33,32 +38,42 @@ import java.util.List;
                 + "- Returns a prediction result as (string rowid, int label, float probability)")
 public final class XGBoostMulticlassPredictUDTF extends hivemall.xgboost.XGBoostPredictUDTF {
 
-    public XGBoostMulticlassPredictUDTF() {}
+    public XGBoostMulticlassPredictUDTF() {
+        super();
+    }
 
     /** Return (string rowid, int label, float probability) as a result */
     @Override
-    public StructObjectInspector getReturnOI() {
-        final ArrayList fieldNames = new ArrayList(3);
-        final ArrayList fieldOIs = new ArrayList(3);
+    protected StructObjectInspector getReturnOI() {
+        final List<String> fieldNames = new ArrayList<>(3);
+        final List<ObjectInspector> fieldOIs = new ArrayList<>(3);
         fieldNames.add("rowid");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("label");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("probability");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
+
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
     @Override
-    public void forwardPredicted(final List<LabeledPointWithRowId> testData,
-            final float[][] predicted) throws HiveException {
-        assert (predicted.length == testData.size());
-        for (int i = 0; i < testData.size(); i++) {
-            assert (predicted[i].length > 1);
-            final String rowId = testData.get(i).rowId;
-            for (int j = 0; j < predicted[i].length; j++) {
-                float prob = predicted[i][j];
-                forward(new Object[] {rowId, j, prob});
+    protected void forwardPredicted(@Nonnull final List<LabeledPointWithRowId> testData,
+            @Nonnull final float[][] predicted) throws HiveException {
+        Preconditions.checkArgument(predicted.length == testData.size(), HiveException.class);
+
+        final Object[] forwardObj = new Object[3];
+        for (int i = 0, size = testData.size(); i < size; i++) {
+            final float[] predicted_i = predicted[i];
+            final String rowId = testData.get(i).getRowId();
+            forwardObj[0] = rowId;
+
+            assert (predicted_i.length > 1);
+            for (int j = 0; j < predicted_i.length; j++) {
+                forwardObj[1] = j;
+                float prob = predicted_i[j];
+                forwardObj[2] = prob;
+                forward(forwardObj);
             }
         }
     }
