@@ -106,9 +106,6 @@ public abstract class MulticlassOnlineClassifierUDTF extends LearnerBaseUDTF {
         PrimitiveObjectInspector featureOutputOI = dense_model ? PrimitiveObjectInspectorFactory.javaIntObjectInspector
                 : featureInputOI;
         this.label2model = new HashMap<Object, PredictionModel>(64);
-        if (preloadedModelFile != null) {
-            loadPredictionModel(label2model, preloadedModelFile, labelInputOI, featureOutputOI);
-        }
 
         this.count = 0;
         return getReturnOI(labelInputOI, featureOutputOI);

@@ -155,9 +155,6 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         PrimitiveObjectInspector featureOutputOI = dense_model ? PrimitiveObjectInspectorFactory.javaIntObjectInspector
                 : featureInputOI;
         this.model = createModel();
-        if (preloadedModelFile != null) {
-            loadPredictionModel(model, preloadedModelFile, featureOutputOI);
-        }
 
         try {
             this.optimizer = createOptimizer(optimizerOptions);
@@ -243,7 +240,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     }
 
     @Nonnull
-    protected StructObjectInspector getReturnOI(@Nonnull ObjectInspector featureOutputOI) {
+    protected StructObjectInspector getReturnOI(@Nonnull PrimitiveObjectInspector featureOutputOI) {
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
@@ -364,7 +361,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 feature = Long.valueOf(featureStr);
                 break;
             default:
-                throw new IllegalStateException("Unexpected feature type " + featureType + " for feature: " + featureStr);
+                throw new IllegalStateException("Unexpected feature type " + featureType
+                        + " for feature: " + featureStr);
         }
         double value = buf.getDouble();
         return new FeatureValue(feature, value);

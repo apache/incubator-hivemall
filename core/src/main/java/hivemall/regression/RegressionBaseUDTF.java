@@ -92,9 +92,6 @@ public abstract class RegressionBaseUDTF extends LearnerBaseUDTF {
         PrimitiveObjectInspector featureOutputOI = dense_model ? PrimitiveObjectInspectorFactory.javaIntObjectInspector
                 : featureInputOI;
         this.model = createModel();
-        if (preloadedModelFile != null) {
-            loadPredictionModel(model, preloadedModelFile, featureOutputOI);
-        }
 
         this.count = 0;
         this.sampled = 0;
