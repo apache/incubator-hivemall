@@ -35,9 +35,9 @@ public class LimitedInputStream extends FilterInputStream {
     protected final long max;
     protected long pos = 0L;
 
-    public LimitedInputStream(final InputStream is, @Nonnegative final long size) {
-        super(is);
-        this.max = size;
+    public LimitedInputStream(final InputStream in, @Nonnegative final long maxSize) {
+        super(in);
+        this.max = maxSize;
     }
 
     protected void raiseError() throws IOException {
@@ -53,29 +53,29 @@ public class LimitedInputStream extends FilterInputStream {
 
     @Override
     public int read() throws IOException {
-        int result = super.read();
-        if (result != -1) {
+        int res = super.read();
+        if (res != -1) {
             proceed(1L);
         }
-        return result;
+        return res;
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        int bytesRead = super.read(b, off, len);
-        if (bytesRead > 0) {
-            proceed(bytesRead);
+        int res = super.read(b, off, len);
+        if (res > 0) {
+            proceed(res);
         }
-        return bytesRead;
+        return res;
     }
 
     @Override
     public long skip(long n) throws IOException {
-        long skippedBytes = super.skip(n);
-        if (skippedBytes > 0) {
-            proceed(skippedBytes);
+        long res = super.skip(n);
+        if (res > 0) {
+            proceed(res);
         }
-        return skippedBytes;
+        return res;
     }
 
     @Override
