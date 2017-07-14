@@ -24,10 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Input stream which is limited to a certain length
- * Implementation is based on BoundedInputStream in Apache Commons IO and LimitedInputStream in Apache Commons FileUpload
+ * Input stream which is limited to a certain length.
+ * Implementation is based on LimitedInputStream in Apache Commons FileUpload.
  *
- * @link https://commons.apache.org/proper/commons-io/javadocs/api-2.5/org/apache/commons/io/input/BoundedInputStream.html
  * @link https://commons.apache.org/proper/commons-fileupload/apidocs/org/apache/commons/fileupload/util/LimitedInputStream.html
  */
 public class LimitedInputStream extends FilterInputStream {
