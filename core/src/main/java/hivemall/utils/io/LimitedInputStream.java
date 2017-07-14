@@ -19,6 +19,7 @@
 package hivemall.utils.io;
 
 import javax.annotation.Nonnegative;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -29,14 +30,13 @@ import java.io.InputStream;
  * @link https://commons.apache.org/proper/commons-io/javadocs/api-2.5/org/apache/commons/io/input/BoundedInputStream.html
  * @link https://commons.apache.org/proper/commons-fileupload/apidocs/org/apache/commons/fileupload/util/LimitedInputStream.html
  */
-public class LimitedInputStream extends InputStream {
+public class LimitedInputStream extends FilterInputStream {
 
-    private final InputStream is;
     protected final long max;
     protected long pos = 0L;
 
     public LimitedInputStream(final InputStream is, @Nonnegative final long size) {
-        this.is = is;
+        super(is);
         this.max = size;
     }
 
@@ -53,19 +53,16 @@ public class LimitedInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        int result = is.read();
-        proceed(1L);
+        int result = super.read();
+        if (result != -1) {
+            proceed(1L);
+        }
         return result;
     }
 
     @Override
-    public int read(final byte[] b) throws IOException {
-        return read(b, 0, b.length);
-    }
-
-    @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        int bytesRead = is.read(b, off, len);
+        int bytesRead = super.read(b, off, len);
         if (bytesRead > 0) {
             proceed(bytesRead);
         }
@@ -74,37 +71,19 @@ public class LimitedInputStream extends InputStream {
 
     @Override
     public long skip(long n) throws IOException {
-        long skippedBytes = is.skip(n);
-        proceed(skippedBytes);
+        long skippedBytes = super.skip(n);
+        if (skippedBytes > 0) {
+            proceed(skippedBytes);
+        }
         return skippedBytes;
     }
 
     @Override
     public int available() throws IOException {
-        if (pos == max) {
+        if (pos >= max) {
             return 0;
         }
-        return is.available();
-    }
-
-    @Override
-    public void close() throws IOException {
-        is.close();
-    }
-
-    @Override
-    public synchronized void reset() throws IOException {
-        is.reset();
-    }
-
-    @Override
-    public synchronized void mark(int readlimit) {
-        is.mark(readlimit);
-    }
-
-    @Override
-    public boolean markSupported() {
-        return is.markSupported();
+        return super.available();
     }
 
 }
