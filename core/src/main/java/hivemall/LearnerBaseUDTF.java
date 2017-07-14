@@ -18,6 +18,8 @@
  */
 package hivemall;
 
+import static hivemall.HivemallConstants.BIGINT_TYPE_NAME;
+import static hivemall.HivemallConstants.INT_TYPE_NAME;
 import hivemall.mix.MixMessage.MixEventName;
 import hivemall.mix.client.MixClient;
 import hivemall.model.DenseModel;
@@ -49,6 +51,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(LearnerBaseUDTF.class);
@@ -247,6 +252,21 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
 
     protected int getInitialModelSize() {
         return 16384;
+    }
+
+    @Nonnull
+    protected ObjectInspector getFeatureOutputOI(@Nonnull PrimitiveObjectInspector featureInputOI)
+            throws UDFArgumentException {
+        if (dense_model) {
+            final String typeName = featureInputOI.getTypeName();
+            if (INT_TYPE_NAME.equals(typeName) || BIGINT_TYPE_NAME.equals(typeName)) {
+                return PrimitiveObjectInspectorFactory.javaIntObjectInspector; // see DenseModel
+            }
+            throw new UDFArgumentException(
+                "Only INT or BIGINT is allowed for the element of feature vector when -densemodel option is specified: "
+                        + typeName);
+        }
+        return ObjectInspectorUtils.getStandardObjectInspector(featureInputOI);
     }
 
     @Override

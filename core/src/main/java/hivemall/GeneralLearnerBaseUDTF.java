@@ -77,12 +77,7 @@ import org.apache.hadoop.mapred.Reporter;
 public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(GeneralLearnerBaseUDTF.class);
 
-    public enum FeatureType {
-        STRING, INT, LONG
-    }
-
     private ListObjectInspector featureListOI;
-    private PrimitiveObjectInspector featureInputOI;
     private PrimitiveObjectInspector targetOI;
     private FeatureType featureType;
 
@@ -147,13 +142,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             throw new UDFArgumentException(
                 "_FUNC_ takes 2 arguments: List<Int|BigInt|Text> features, float target [, constant string options]");
         }
-        this.featureInputOI = processFeaturesOI(argOIs[0]);
+        this.featureListOI = HiveUtils.asListOI(argOIs[0]);
+        this.featureType = getFeatureType(featureListOI);
         this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
 
         processOptions(argOIs);
 
-        PrimitiveObjectInspector featureOutputOI = dense_model ? PrimitiveObjectInspectorFactory.javaIntObjectInspector
-                : featureInputOI;
         this.model = createModel();
 
         try {
@@ -165,7 +159,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         this.count = 0L;
         this.sampled = 0;
 
-        return getReturnOI(featureOutputOI);
+        return getReturnOI(getFeatureOutputOI(featureType));
     }
 
     @Override
@@ -220,33 +214,67 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         return cl;
     }
 
-    @Nonnull
-    protected PrimitiveObjectInspector processFeaturesOI(@Nonnull ObjectInspector arg)
-            throws UDFArgumentException {
-        this.featureListOI = (ListObjectInspector) arg;
-        ObjectInspector featureRawOI = featureListOI.getListElementObjectInspector();
-        if (featureRawOI instanceof StringObjectInspector) {
-            this.featureType = FeatureType.STRING;
-        } else if (featureRawOI instanceof IntObjectInspector) {
-            this.featureType = FeatureType.INT;
-        } else if (featureRawOI instanceof LongObjectInspector) {
-            this.featureType = FeatureType.LONG;
-        } else {
-            throw new UDFArgumentException("Feature object inspector must be one of "
-                    + "[StringObjectInspector, IntObjectInspector, LongObjectInspector]: "
-                    + featureRawOI.toString());
-        }
-        return HiveUtils.asPrimitiveObjectInspector(featureRawOI);
+    public enum FeatureType {
+        STRING, INT, LONG
     }
 
     @Nonnull
-    protected StructObjectInspector getReturnOI(@Nonnull PrimitiveObjectInspector featureOutputOI) {
+    private static FeatureType getFeatureType(@Nonnull ListObjectInspector featureListOI)
+            throws UDFArgumentException {
+        final ObjectInspector featureOI = featureListOI.getListElementObjectInspector();
+        if (featureOI instanceof StringObjectInspector) {
+            return FeatureType.STRING;
+        } else if (featureOI instanceof IntObjectInspector) {
+            return FeatureType.INT;
+        } else if (featureOI instanceof LongObjectInspector) {
+            return FeatureType.LONG;
+        } else {
+            throw new UDFArgumentException("Feature object inspector must be one of "
+                    + "[StringObjectInspector, IntObjectInspector, LongObjectInspector]: "
+                    + featureOI.toString());
+        }
+    }
+
+    @Nonnull
+    protected final ObjectInspector getFeatureOutputOI(@Nonnull final FeatureType featureType)
+            throws UDFArgumentException {
+        final PrimitiveObjectInspector outputOI;
+        if (dense_model) {
+            switch (featureType) {
+                case INT:
+                case LONG:
+                    outputOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector; // see DenseModel (long is also parsed as int)
+                    break;
+                default:
+                    throw new UDFArgumentException(
+                        "Only INT or BIGINT is allowed for the element of feature vector when -densemodel option is specified: "
+                                + featureType);
+            }
+        } else {
+            switch (featureType) {
+                case STRING:
+                    outputOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                    break;
+                case INT:
+                    outputOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+                    break;
+                case LONG:
+                    outputOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected feature type: " + featureType);
+            }
+        }
+        return outputOI;
+    }
+
+    @Nonnull
+    protected StructObjectInspector getReturnOI(@Nonnull ObjectInspector featureOutputOI) {
         ArrayList<String> fieldNames = new ArrayList<String>();
         ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
         fieldNames.add("feature");
-        ObjectInspector featureOI = ObjectInspectorUtils.getStandardObjectInspector(featureOutputOI);
-        fieldOIs.add(featureOI);
+        fieldOIs.add(featureOutputOI);
         fieldNames.add("weight");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
         if (useCovariance()) {
