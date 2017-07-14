@@ -80,13 +80,4 @@ public class LimitedInputStream extends FilterInputStream {
         }
         return res;
     }
-
-    @Override
-    public int available() throws IOException {
-        if (pos >= max) {
-            return 0;
-        }
-        return super.available();
-    }
-
 }
