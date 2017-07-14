@@ -18,6 +18,10 @@
  */
 package hivemall.regression;
 
+import static hivemall.utils.hadoop.HiveUtils.lazyInteger;
+import static hivemall.utils.hadoop.HiveUtils.lazyLong;
+import static hivemall.utils.hadoop.HiveUtils.lazyString;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,11 +29,21 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.generic.Collector;
+import org.apache.hadoop.hive.serde2.lazy.LazyInteger;
+import org.apache.hadoop.hive.serde2.lazy.LazyLong;
+import org.apache.hadoop.hive.serde2.lazy.LazyString;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyPrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyStringObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -84,6 +98,128 @@ public class GeneralRegressionUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
     }
 
+    @Test
+    public void testNoOptions() throws Exception {
+        List<String> x = Arrays.asList("1:-2", "2:-1");
+        float y = 0.f;
+
+        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
+        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
+
+        udtf.process(new Object[] {x, y});
+
+        udtf.finalizeTraining();
+
+        float predicted = udtf.predict(udtf.parseFeatures(x));
+        Assert.assertEquals(y, predicted, 1E-5);
+    }
+
+    private <T> void testFeature(@Nonnull List<T> x, @Nonnull ObjectInspector featureOI,
+            @Nonnull Class<T> featureClass, @Nonnull Class<?> modelFeatureClass) throws Exception {
+        float y = 0.f;
+
+        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
+        ListObjectInspector featureListOI = ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
+
+        udtf.initialize(new ObjectInspector[] {featureListOI, valueOI});
+
+        final List<Object> modelFeatures = new ArrayList<Object>();
+        udtf.setCollector(new Collector() {
+            @Override
+            public void collect(Object input) throws HiveException {
+                Object[] forwardMapObj = (Object[]) input;
+                modelFeatures.add(forwardMapObj[0]);
+            }
+        });
+
+        udtf.process(new Object[] {x, y});
+
+        udtf.close();
+
+        Assert.assertFalse(modelFeatures.isEmpty());
+        for (Object modelFeature : modelFeatures) {
+            Assert.assertEquals("All model features must have same type", modelFeatureClass,
+                modelFeature.getClass());
+        }
+    }
+
+    @Test
+    public void testLazyStringFeature() throws Exception {
+        LazyStringObjectInspector oi = LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(
+            false, (byte) 0);
+        List<LazyString> x = Arrays.asList(lazyString("テスト:-2", oi), lazyString("漢字:-333.0", oi),
+            lazyString("test:-1"));
+        testFeature(x, oi, LazyString.class, String.class);
+    }
+
+    @Test
+    public void testStringFeature() throws Exception {
+        List<String> x = Arrays.asList("1:-2", "2:-1");
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        testFeature(x, featureOI, String.class, String.class);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIlleagalStringFeature() throws Exception {
+        List<String> x = Arrays.asList("1:-2jjjj", "2:-1");
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        testFeature(x, featureOI, String.class, String.class);
+    }
+
+    @Test
+    public void testTextFeature() throws Exception {
+        List<Text> x = Arrays.asList(new Text("1:-2"), new Text("2:-1"));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        testFeature(x, featureOI, Text.class, String.class);
+    }
+
+    @Test
+    public void testIntegerFeature() throws Exception {
+        List<Integer> x = Arrays.asList(111, 222);
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        testFeature(x, featureOI, Integer.class, Integer.class);
+    }
+
+    @Test
+    public void testLazyIntegerFeature() throws Exception {
+        List<LazyInteger> x = Arrays.asList(lazyInteger(111), lazyInteger(222));
+        ObjectInspector featureOI = LazyPrimitiveObjectInspectorFactory.LAZY_INT_OBJECT_INSPECTOR;
+        testFeature(x, featureOI, LazyInteger.class, Integer.class);
+    }
+
+    @Test
+    public void testWritableIntFeature() throws Exception {
+        List<IntWritable> x = Arrays.asList(new IntWritable(111), new IntWritable(222));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+        testFeature(x, featureOI, IntWritable.class, Integer.class);
+    }
+
+    @Test
+    public void testLongFeature() throws Exception {
+        List<Long> x = Arrays.asList(111L, 222L);
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
+        testFeature(x, featureOI, Long.class, Long.class);
+    }
+
+    @Test
+    public void testLazyLongFeature() throws Exception {
+        List<LazyLong> x = Arrays.asList(lazyLong(111), lazyLong(222));
+        ObjectInspector featureOI = LazyPrimitiveObjectInspectorFactory.LAZY_LONG_OBJECT_INSPECTOR;
+        testFeature(x, featureOI, LazyLong.class, Long.class);
+    }
+
+    @Test
+    public void testWritableLongFeature() throws Exception {
+        List<LongWritable> x = Arrays.asList(new LongWritable(111L), new LongWritable(222L));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+        testFeature(x, featureOI, LongWritable.class, Long.class);
+    }
+
     private void run(@Nonnull String options) throws Exception {
         println(options);
 
@@ -108,9 +244,6 @@ public class GeneralRegressionUDTFTest {
             x2 += x2Step;
         }
 
-        int numTrain = (int) (numSamples * 0.8);
-        int maxIter = 512;
-
         GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -120,23 +253,29 @@ public class GeneralRegressionUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, floatOI, params});
 
-        double cumLossPrev = Double.MAX_VALUE;
-        double cumLoss = 0.d;
-        int it = 0;
-        while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
-            cumLossPrev = cumLoss;
-            udtf.resetCumulativeLoss();
-            for (int i = 0; i < numTrain; i++) {
-                udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
-            }
-            cumLoss = udtf.getCumulativeLoss();
-            println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
-        }
-        Assert.assertTrue(cumLoss / numTrain < 0.1d);
-
         float accum = 0.f;
+        for (int i = 0; i < numSamples; i++) {
+            float y = ys.get(i).floatValue();
+            float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
+            accum += Math.abs(y - predicted);
+        }
+        float maeInit = accum / numSamples;
+        println("Mean absolute error before training: " + maeInit);
 
-        for (int i = numTrain; i < numSamples; i++) {
+        for (int i = 0; i < numSamples; i++) {
+            udtf.process(new Object[] {samplesList.get(i), (Float) ys.get(i)});
+        }
+
+        udtf.finalizeTraining();
+
+        double cumLoss = udtf.getCumulativeLoss();
+        println("Cumulative loss: " + cumLoss);
+        double normalizedLoss = cumLoss / numSamples;
+        Assert.assertTrue("cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss
+                + "\noptions: " + options, normalizedLoss < 0.1d);
+
+        accum = 0.f;
+        for (int i = 0; i < numSamples; i++) {
             float y = ys.get(i).floatValue();
 
             float predicted = udtf.predict(udtf.parseFeatures(samplesList.get(i)));
@@ -144,10 +283,10 @@ public class GeneralRegressionUDTFTest {
 
             accum += Math.abs(y - predicted);
         }
-
-        float err = accum / (numSamples - numTrain);
-        println("Mean absolute error: " + err);
-        Assert.assertTrue(err < 0.2f);
+        float mae = accum / numSamples;
+        println("Mean absolute error after training: " + mae);
+        Assert.assertTrue("accum: " + accum + ", mae (init):" + maeInit + ", mae:" + mae
+                + "\noptions: " + options, mae < maeInit);
     }
 
     @Test
@@ -165,7 +304,7 @@ public class GeneralRegressionUDTFTest {
 
                 for (String loss : lossFunctions) {
                     String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -lambda 1e-6 -eta0 1e-1";
+                            + " -iter 512";
 
                     // sparse
                     run(options);

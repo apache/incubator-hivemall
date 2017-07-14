@@ -34,7 +34,6 @@
 package hivemall.smile.regression;
 
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
-import static hivemall.smile.utils.SmileExtUtils.resolveName;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.ints.ColumnMajorIntMatrix;

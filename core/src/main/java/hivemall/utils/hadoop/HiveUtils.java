@@ -28,6 +28,7 @@ import static hivemall.HivemallConstants.SMALLINT_TYPE_NAME;
 import static hivemall.HivemallConstants.STRING_TYPE_NAME;
 import static hivemall.HivemallConstants.TINYINT_TYPE_NAME;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
@@ -46,10 +47,14 @@ import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.io.ShortWritable;
+import org.apache.hadoop.hive.serde2.lazy.ByteArrayRef;
 import org.apache.hadoop.hive.serde2.lazy.LazyDouble;
 import org.apache.hadoop.hive.serde2.lazy.LazyInteger;
+import org.apache.hadoop.hive.serde2.lazy.LazyLong;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazyString;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyPrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyStringObjectInspector;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap;
 import org.apache.hadoop.hive.serde2.objectinspector.ConstantObjectInspector;
@@ -775,6 +780,7 @@ public final class HiveUtils {
         return (ConstantObjectInspector) oi;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asPrimitiveObjectInspector(
             @Nonnull final ObjectInspector oi) throws UDFArgumentException {
         if (oi.getCategory() != Category.PRIMITIVE) {
@@ -784,6 +790,7 @@ public final class HiveUtils {
         return (PrimitiveObjectInspector) oi;
     }
 
+    @Nonnull
     public static StringObjectInspector asStringOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!STRING_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -792,6 +799,7 @@ public final class HiveUtils {
         return (StringObjectInspector) argOI;
     }
 
+    @Nonnull
     public static BinaryObjectInspector asBinaryOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!BINARY_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -800,6 +808,7 @@ public final class HiveUtils {
         return (BinaryObjectInspector) argOI;
     }
 
+    @Nonnull
     public static BooleanObjectInspector asBooleanOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!BOOLEAN_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -808,6 +817,7 @@ public final class HiveUtils {
         return (BooleanObjectInspector) argOI;
     }
 
+    @Nonnull
     public static IntObjectInspector asIntOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!INT_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -816,6 +826,7 @@ public final class HiveUtils {
         return (IntObjectInspector) argOI;
     }
 
+    @Nonnull
     public static LongObjectInspector asLongOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!BIGINT_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -824,6 +835,7 @@ public final class HiveUtils {
         return (LongObjectInspector) argOI;
     }
 
+    @Nonnull
     public static DoubleObjectInspector asDoubleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!DOUBLE_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -832,6 +844,7 @@ public final class HiveUtils {
         return (DoubleObjectInspector) argOI;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asIntCompatibleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
@@ -857,6 +870,7 @@ public final class HiveUtils {
         return oi;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asLongCompatibleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
@@ -883,6 +897,7 @@ public final class HiveUtils {
         return oi;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asIntegerOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
@@ -1037,4 +1052,43 @@ public final class HiveUtils {
         }
         return obj;
     }
+
+    @Nonnull
+    public static LazyString lazyString(@Nonnull final String str) {
+        return lazyString(str, (byte) '\\');
+    }
+
+    @Nonnull
+    public static LazyString lazyString(@Nonnull final String str, final byte escapeChar) {
+        LazyStringObjectInspector oi = LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(
+            false, escapeChar);
+        return lazyString(str, oi);
+    }
+
+    @Nonnull
+    public static LazyString lazyString(@Nonnull final String str,
+            @Nonnull final LazyStringObjectInspector oi) {
+        LazyString lazy = new LazyString(oi);
+        ByteArrayRef ref = new ByteArrayRef();
+        byte[] data = str.getBytes(StandardCharsets.UTF_8);
+        ref.setData(data);
+        lazy.init(ref, 0, data.length);
+        return lazy;
+    }
+
+    @Nonnull
+    public static LazyInteger lazyInteger(@Nonnull final int v) {
+        LazyInteger lazy = new LazyInteger(
+            LazyPrimitiveObjectInspectorFactory.LAZY_INT_OBJECT_INSPECTOR);
+        lazy.getWritableObject().set(v);
+        return lazy;
+    }
+
+    @Nonnull
+    public static LazyLong lazyLong(@Nonnull final long v) {
+        LazyLong lazy = new LazyLong(LazyPrimitiveObjectInspectorFactory.LAZY_LONG_OBJECT_INSPECTOR);
+        lazy.getWritableObject().set(v);
+        return lazy;
+    }
+
 }

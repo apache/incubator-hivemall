@@ -50,12 +50,12 @@ public class FeatureValueTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testParseExpectingIllegalArgumentException() {
+    public void testParseExpectingIllegalArgumentException1() {
         FeatureValue.parse("ad_url:");
     }
 
-    @Test(expected = NumberFormatException.class)
-    public void testParseExpectingNumberFormatException() {
+    @Test(expected = IllegalArgumentException.class)
+    public void testParseExpectingIllegalArgumentException2() {
         FeatureValue.parse("ad_url:xxxxx");
     }
 

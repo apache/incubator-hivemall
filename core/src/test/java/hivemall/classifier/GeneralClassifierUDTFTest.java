@@ -18,6 +18,9 @@
  */
 package hivemall.classifier;
 
+import static hivemall.utils.hadoop.HiveUtils.lazyInteger;
+import static hivemall.utils.hadoop.HiveUtils.lazyLong;
+import static hivemall.utils.hadoop.HiveUtils.lazyString;
 import hivemall.utils.math.MathUtils;
 
 import java.io.BufferedReader;
@@ -35,11 +38,20 @@ import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.generic.Collector;
+import org.apache.hadoop.hive.serde2.lazy.LazyInteger;
+import org.apache.hadoop.hive.serde2.lazy.LazyLong;
+import org.apache.hadoop.hive.serde2.lazy.LazyString;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyPrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.lazy.objectinspector.primitive.LazyStringObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -82,6 +94,129 @@ public class GeneralClassifierUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
 
+    @Test
+    public void testNoOptions() throws Exception {
+        List<String> x = Arrays.asList("1:-2", "2:-1");
+        int y = 0;
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
+
+        udtf.process(new Object[] {x, y});
+
+        udtf.finalizeTraining();
+
+        float score = udtf.predict(udtf.parseFeatures(x));
+        int predicted = score > 0.f ? 1 : 0;
+        Assert.assertTrue(y == predicted);
+    }
+
+    private <T> void testFeature(@Nonnull List<T> x, @Nonnull ObjectInspector featureOI,
+            @Nonnull Class<T> featureClass, @Nonnull Class<?> modelFeatureClass) throws Exception {
+        int y = 0;
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+        ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ListObjectInspector featureListOI = ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
+
+        udtf.initialize(new ObjectInspector[] {featureListOI, valueOI});
+
+        final List<Object> modelFeatures = new ArrayList<Object>();
+        udtf.setCollector(new Collector() {
+            @Override
+            public void collect(Object input) throws HiveException {
+                Object[] forwardMapObj = (Object[]) input;
+                modelFeatures.add(forwardMapObj[0]);
+            }
+        });
+
+        udtf.process(new Object[] {x, y});
+
+        udtf.close();
+
+        Assert.assertFalse(modelFeatures.isEmpty());
+        for (Object modelFeature : modelFeatures) {
+            Assert.assertEquals("All model features must have same type", modelFeatureClass,
+                modelFeature.getClass());
+        }
+    }
+
+    @Test
+    public void testStringFeature() throws Exception {
+        List<String> x = Arrays.asList("1:-2", "2:-1");
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        testFeature(x, featureOI, String.class, String.class);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIllegalStringFeature() throws Exception {
+        List<String> x = Arrays.asList("1:-2jjjjj", "2:-1");
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        testFeature(x, featureOI, String.class, String.class);
+    }
+
+    @Test
+    public void testLazyStringFeature() throws Exception {
+        LazyStringObjectInspector oi = LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(
+            false, (byte) 0);
+        List<LazyString> x = Arrays.asList(lazyString("テスト:-2", oi), lazyString("漢字:-333.0", oi),
+            lazyString("test:-1"));
+        testFeature(x, oi, LazyString.class, String.class);
+    }
+
+    @Test
+    public void testTextFeature() throws Exception {
+        List<Text> x = Arrays.asList(new Text("1:-2"), new Text("2:-1"));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        testFeature(x, featureOI, Text.class, String.class);
+    }
+
+    @Test
+    public void testIntegerFeature() throws Exception {
+        List<Integer> x = Arrays.asList(111, 222);
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        testFeature(x, featureOI, Integer.class, Integer.class);
+    }
+
+    @Test
+    public void testLazyIntegerFeature() throws Exception {
+        List<LazyInteger> x = Arrays.asList(lazyInteger(111), lazyInteger(222));
+        ObjectInspector featureOI = LazyPrimitiveObjectInspectorFactory.LAZY_INT_OBJECT_INSPECTOR;
+        testFeature(x, featureOI, LazyInteger.class, Integer.class);
+    }
+
+    @Test
+    public void testWritableIntFeature() throws Exception {
+        List<IntWritable> x = Arrays.asList(new IntWritable(111), new IntWritable(222));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+        testFeature(x, featureOI, IntWritable.class, Integer.class);
+    }
+
+    @Test
+    public void testLongFeature() throws Exception {
+        List<Long> x = Arrays.asList(111L, 222L);
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
+        testFeature(x, featureOI, Long.class, Long.class);
+    }
+
+    @Test
+    public void testLazyLongFeature() throws Exception {
+        List<LazyLong> x = Arrays.asList(lazyLong(111), lazyLong(222));
+        ObjectInspector featureOI = LazyPrimitiveObjectInspectorFactory.LAZY_LONG_OBJECT_INSPECTOR;
+        testFeature(x, featureOI, LazyLong.class, Long.class);
+    }
+
+    @Test
+    public void testWritableLongFeature() throws Exception {
+        List<LongWritable> x = Arrays.asList(new LongWritable(111L), new LongWritable(222L));
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+        testFeature(x, featureOI, LongWritable.class, Long.class);
+    }
+
     private void run(@Nonnull String options) throws Exception {
         println(options);
 
@@ -95,8 +230,6 @@ public class GeneralClassifierUDTFTest {
 
         int[] labels = new int[] {0, 0, 0, 1, 1, 1};
 
-        int maxIter = 512;
-
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -106,19 +239,17 @@ public class GeneralClassifierUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
-        double cumLossPrev = Double.MAX_VALUE;
-        double cumLoss = 0.d;
-        int it = 0;
-        while ((it < maxIter) && (Math.abs(cumLoss - cumLossPrev) > 1e-3f)) {
-            cumLossPrev = cumLoss;
-            udtf.resetCumulativeLoss();
-            for (int i = 0, size = samplesList.size(); i < size; i++) {
-                udtf.process(new Object[] {samplesList.get(i), labels[i]});
-            }
-            cumLoss = udtf.getCumulativeLoss();
-            println("Iter: " + ++it + ", Cumulative loss: " + cumLoss);
+        for (int i = 0, size = samplesList.size(); i < size; i++) {
+            udtf.process(new Object[] {samplesList.get(i), labels[i]});
         }
-        Assert.assertTrue(cumLoss / samplesList.size() < 0.5d);
+
+        udtf.finalizeTraining();
+
+        double cumLoss = udtf.getCumulativeLoss();
+        println("Cumulative loss: " + cumLoss);
+        double normalizedLoss = cumLoss / samplesList.size();
+        Assert.assertTrue("cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss
+                + "\noptions: " + options, normalizedLoss < 0.5d);
 
         int numTests = 0;
         int numCorrect = 0;
@@ -157,7 +288,8 @@ public class GeneralClassifierUDTFTest {
                 }
 
                 for (String loss : lossFunctions) {
-                    String options = "-opt " + opt + " -reg " + reg + " -loss " + loss;
+                    String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
+                            + " -cv_rate 0.001 -iter 512";
 
                     // sparse
                     run(options);
@@ -178,15 +310,13 @@ public class GeneralClassifierUDTFTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testNews20() throws IOException, ParseException, HiveException {
-        int nIter = 10;
-
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-            "-opt SGD -loss logloss -reg L2 -lambda 0.1");
+            "-opt SGD -loss logloss -reg L2 -lambda 0.1 -cv_rate 0.005");
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
 
@@ -213,13 +343,7 @@ public class GeneralClassifierUDTFTest {
         news20.close();
 
         // perform SGD iterations
-        for (int it = 1; it < nIter; it++) {
-            for (int i = 0, size = wordsList.size(); i < size; i++) {
-                words = wordsList.get(i);
-                int label = labels.get(i);
-                udtf.process(new Object[] {words, label});
-            }
-        }
+        udtf.finalizeTraining();
 
         int numTests = 0;
         int numCorrect = 0;

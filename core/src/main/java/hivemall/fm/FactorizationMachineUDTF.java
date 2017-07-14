@@ -20,11 +20,11 @@ package hivemall.fm;
 
 import hivemall.UDTFWithOptions;
 import hivemall.common.ConversionState;
+import hivemall.fm.FMStringFeatureMapModel.Entry;
 import hivemall.optimizer.EtaEstimator;
 import hivemall.optimizer.LossFunctions;
 import hivemall.optimizer.LossFunctions.LossFunction;
 import hivemall.optimizer.LossFunctions.LossType;
-import hivemall.fm.FMStringFeatureMapModel.Entry;
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
@@ -539,8 +539,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 }
                 inputBuf.flip();
 
-                int iter = 2;
-                for (; iter <= iterations; iter++) {
+                for (int iter = 2; iter <= iterations; iter++) {
+                    _cvState.next();
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
 
@@ -557,12 +557,12 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         ++_t;
                         train(x, y, adaregr);
                     }
-                    if (_cvState.isConverged(iter, numTrainingExamples)) {
+                    if (_cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
                     inputBuf.rewind();
                 }
-                LOG.info("Performed " + Math.min(iter, iterations) + " iterations of "
+                LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on memory (thus " + NumberUtils.formatNumber(_t)
                         + " training updates in total) ");
@@ -587,8 +587,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 }
 
                 // run iterations
-                int iter = 2;
-                for (; iter <= iterations; iter++) {
+                for (int iter = 2; iter <= iterations; iter++) {
+                    _cvState.next();
                     setCounterValue(iterCounter, iter);
 
                     inputBuf.clear();
@@ -639,11 +639,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         }
                         inputBuf.compact();
                     }
-                    if (_cvState.isConverged(iter, numTrainingExamples)) {
+                    if (_cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
                 }
-                LOG.info("Performed " + Math.min(iter, iterations) + " iterations of "
+                LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
                         + NumberUtils.formatNumber(_t) + " training updates in total)");
