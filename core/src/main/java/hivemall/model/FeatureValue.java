@@ -28,7 +28,7 @@ import org.apache.hadoop.io.Text;
 
 public final class FeatureValue {
 
-    private/* final */Object feature;
+    private/* final */Object feature; // possible types: String, Text, Integer, Long
     private/* final */double value;
 
     public FeatureValue() {}// used for Probe
@@ -108,7 +108,11 @@ public final class FeatureValue {
             String s1 = s.substring(0, pos);
             String s2 = s.substring(pos + 1);
             feature = mhash ? Integer.valueOf(MurmurHash3.murmurhash3(s1)) : new Text(s1);
-            weight = Double.parseDouble(s2);
+            try {
+                weight = Double.parseDouble(s2);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Failed to parse a feature value: " + s, e);
+            }
         } else {
             feature = mhash ? Integer.valueOf(MurmurHash3.murmurhash3(s)) : new Text(s);
             weight = 1.d;
@@ -135,7 +139,11 @@ public final class FeatureValue {
         if (pos > 0) {
             feature = s.substring(0, pos);
             String s2 = s.substring(pos + 1);
-            weight = Double.parseDouble(s2);
+            try {
+                weight = Double.parseDouble(s2);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Failed to parse a feature value: " + s, e);
+            }
         } else {
             feature = s;
             weight = 1.d;
@@ -157,7 +165,11 @@ public final class FeatureValue {
         if (pos > 0) {
             probe.feature = s.substring(0, pos);
             String s2 = s.substring(pos + 1);
-            probe.value = Double.parseDouble(s2);
+            try {
+                probe.value = Double.parseDouble(s2);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Failed to parse a feature value: " + s, e);
+            }
         } else {
             probe.feature = s;
             probe.value = 1.d;
