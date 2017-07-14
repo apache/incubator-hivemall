@@ -18,8 +18,6 @@
  */
 package hivemall;
 
-import static hivemall.HivemallConstants.BIGINT_TYPE_NAME;
-import static hivemall.HivemallConstants.INT_TYPE_NAME;
 import hivemall.mix.MixMessage.MixEventName;
 import hivemall.mix.client.MixClient;
 import hivemall.model.DenseModel;
@@ -258,13 +256,8 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     protected ObjectInspector getFeatureOutputOI(@Nonnull PrimitiveObjectInspector featureInputOI)
             throws UDFArgumentException {
         if (dense_model) {
-            final String typeName = featureInputOI.getTypeName();
-            if (INT_TYPE_NAME.equals(typeName) || BIGINT_TYPE_NAME.equals(typeName)) {
-                return PrimitiveObjectInspectorFactory.javaIntObjectInspector; // see DenseModel
-            }
-            throw new UDFArgumentException(
-                "Only INT or BIGINT is allowed for the element of feature vector when -densemodel option is specified: "
-                        + typeName);
+            // TODO validation
+            return PrimitiveObjectInspectorFactory.javaIntObjectInspector; // see DenseModel
         }
         return ObjectInspectorUtils.getStandardObjectInspector(featureInputOI);
     }

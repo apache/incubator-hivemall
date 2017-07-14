@@ -240,16 +240,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             throws UDFArgumentException {
         final PrimitiveObjectInspector outputOI;
         if (dense_model) {
-            switch (featureType) {
-                case INT:
-                case LONG:
-                    outputOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector; // see DenseModel (long is also parsed as int)
-                    break;
-                default:
-                    throw new UDFArgumentException(
-                        "Only INT or BIGINT is allowed for the element of feature vector when -densemodel option is specified: "
-                                + featureType);
-            }
+            // TODO validation
+            outputOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector; // see DenseModel (long/string is also parsed as int)
         } else {
             switch (featureType) {
                 case STRING:
