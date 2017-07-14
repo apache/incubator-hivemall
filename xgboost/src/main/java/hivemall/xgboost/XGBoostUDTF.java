@@ -275,7 +275,7 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     }
 
     /** It `target` has valid input range, it overrides this */
-    protected abstract void checkTargetValue(double target) throws HiveException;
+    protected void checkTargetValue(double target) throws HiveException {}
 
     @Override
     public void process(@Nonnull Object[] args) throws HiveException {
