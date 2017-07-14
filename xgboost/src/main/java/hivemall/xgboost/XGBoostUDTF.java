@@ -21,6 +21,7 @@ package hivemall.xgboost;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import javax.annotation.Nonnull;
 
 import ml.dmlc.xgboost4j.LabeledPoint;
 import ml.dmlc.xgboost4j.java.Booster;
@@ -232,8 +233,8 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
             // Try to create a `Booster` instance to check if given XGBoost options
             // are valid, or not.
             createXGBooster(params, featuresList);
-        } catch (XGBoostError e) {
-            throw new UDFArgumentException(e.getMessage());
+        } catch (Exception e) {
+            throw new UDFArgumentException(e);
         }
 
         return cl;
@@ -264,49 +265,38 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
     /** It `target` has valid input range, it overrides this */
     public void checkTargetValue(double target) throws HiveException {}
 
-
     @Override
     public void process(Object[] args) throws HiveException {
         if (args[0] != null) {
             // TODO: Need to support dense inputs
-            final List<String> features = (List<String>) featureListOI.getList(args[0]);
+            final List<?> features = (List<?>) featureListOI.getList(args[0]);
+            final String[] fv = new String[features.size()];
+            for (int i = 0; i < features.size(); i++) {
+                fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
+            }
             double target = PrimitiveObjectInspectorUtils.getDouble(args[1], this.targetOI);
             checkTargetValue(target);
-            final LabeledPoint point = XGBoostUtils.parseFeatures(target, features);
+            final LabeledPoint point = XGBoostUtils.parseFeatures(target, fv);
             if (point != null) {
                 this.featuresList.add(point);
             }
         }
     }
 
-    /**
-     * Need to override this for a Spark wrapper because `MapredContext` does not work in there.
-     */
-    protected String generateUniqueModelId() {
-        return "xgbmodel-" + String.valueOf(HadoopUtils.getTaskId());
+    private String generateUniqueModelId() {
+        return "xgbmodel-" + HadoopUtils.getUniqueTaskIdString();
     }
 
-    private static Booster createXGBooster(final Map<String, Object> params,
-            final List<LabeledPoint> input) throws XGBoostError {
-        try {
-            Class<?>[] args = {Map.class, DMatrix[].class};
-            Constructor<Booster> ctor;
-            ctor = Booster.class.getDeclaredConstructor(args);
-            ctor.setAccessible(true);
-            return ctor.newInstance(new Object[] {params,
-                    new DMatrix[] {new DMatrix(input.iterator(), "")}});
-        } catch (InstantiationException e) {
-            // Catch java reflection error as fast as possible
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        }
-        // No one reach here
-        return null;
+    @Nonnull
+    private static Booster createXGBooster(
+            final Map<String, Object> params, final List<LabeledPoint> input)
+            throws NoSuchMethodException, XGBoostError, IllegalAccessException,
+                InvocationTargetException, InstantiationException {
+        Class<?>[] args = {Map.class, DMatrix[].class};
+        Constructor<Booster> ctor = Booster.class.getDeclaredConstructor(args);
+        ctor.setAccessible(true);
+        return ctor.newInstance(new Object[] {params,
+                new DMatrix[] {new DMatrix(input.iterator(), "")}});
     }
 
     @Override
@@ -326,7 +316,7 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
             logger.info("model_id:" + modelId.toString() + " size:" + predModel.length);
             forward(new Object[] {modelId, predModel});
         } catch (Exception e) {
-            throw new HiveException(e.getMessage());
+            throw new HiveException(e);
         }
     }
 

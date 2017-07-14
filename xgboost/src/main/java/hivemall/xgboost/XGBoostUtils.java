@@ -27,18 +27,18 @@ public final class XGBoostUtils {
     private XGBoostUtils() {}
 
     /** Transform List<String> inputs into a XGBoost input format */
-    public static LabeledPoint parseFeatures(double target, List<String> features) {
-        final int size = features.size();
+    public static LabeledPoint parseFeatures(double target, String[] features) {
+        final int size = features.length;
         if (size == 0) {
             return null;
         }
         final int[] indices = new int[size];
         final float[] values = new float[size];
         for (int i = 0; i < size; i++) {
-            if (features.get(i) == null) {
+            if (features[i] == null) {
                 continue;
             }
-            final String str = features.get(i);
+            final String str = features[i];
             final int pos = str.indexOf(':');
             if (pos >= 1) {
                 indices[i] = Integer.parseInt(str.substring(0, pos));
