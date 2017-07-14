@@ -19,6 +19,7 @@
 package hivemall.nlp.tokenizer;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -133,6 +134,54 @@ public class KuromojiUDFTest {
     }
 
     @Test
+    public void testFiveArgumentArray() throws UDFArgumentException, IOException {
+        GenericUDF udf = new KuromojiUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[5];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        // mode
+        PrimitiveTypeInfo stringType = new PrimitiveTypeInfo();
+        stringType.setTypeName("string");
+        argOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType, null);
+        // stopWords
+        argOIs[2] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, null);
+        // stopTags
+        argOIs[3] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, null);
+        // userDictUrl
+        argOIs[4] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, null);
+        udf.initialize(argOIs);
+        udf.close();
+    }
+
+    @Test
+    public void testFiveArgumenString() throws UDFArgumentException, IOException {
+        GenericUDF udf = new KuromojiUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[5];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        // mode
+        PrimitiveTypeInfo stringType = new PrimitiveTypeInfo();
+        stringType.setTypeName("string");
+        argOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType, null);
+        // stopWords
+        argOIs[2] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, null);
+        // stopTags
+        argOIs[3] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, null);
+        // userDictUrl
+        argOIs[4] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType, null);
+        udf.initialize(argOIs);
+        udf.close();
+    }
+
+    @Test
     public void testEvaluateOneRow() throws IOException, HiveException {
         KuromojiUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];
@@ -187,6 +236,130 @@ public class KuromojiUDFTest {
         tokens = udf.evaluate(args);
         Assert.assertNotNull(tokens);
         Assert.assertEquals(4, tokens.size());
+
+        udf.close();
+    }
+
+    @Test
+    public void testEvaluateUserDictArray() throws IOException, HiveException {
+        KuromojiUDF udf = new KuromojiUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[5];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        // mode
+        PrimitiveTypeInfo stringType = new PrimitiveTypeInfo();
+        stringType.setTypeName("string");
+        argOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType, null);
+        // stopWords
+        argOIs[2] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector, null);
+        // stopTags
+        argOIs[3] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector, null);
+        // userDictArray (from https://raw.githubusercontent.com/atilika/kuromoji/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt)
+        List<String> userDict = new ArrayList<String>();
+        userDict.add("日本経済新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞");
+        userDict.add("関西国際空港,関西 国際 空港,カンサイ コクサイ クウコウ,テスト名詞");
+        argOIs[4] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector, userDict);
+        udf.initialize(argOIs);
+
+        DeferredObject[] args = new DeferredObject[1];
+        args[0] = new DeferredObject() {
+            public Text get() throws HiveException {
+                return new Text("日本経済新聞。");
+            }
+
+            @Override
+            public void prepare(int arg) throws HiveException {}
+        };
+
+        List<Text> tokens = udf.evaluate(args);
+
+        Assert.assertNotNull(tokens);
+        Assert.assertEquals(3, tokens.size());
+
+        udf.close();
+    }
+
+    @Test(expected = UDFArgumentException.class)
+    public void testEvaluateInvalidUserDictURL() throws IOException, HiveException {
+        KuromojiUDF udf = new KuromojiUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[5];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        // mode
+        PrimitiveTypeInfo stringType = new PrimitiveTypeInfo();
+        stringType.setTypeName("string");
+        argOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType, null);
+        // stopWords
+        argOIs[2] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector, null);
+        // stopTags
+        argOIs[3] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector, null);
+        // userDictUrl
+        argOIs[4] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType, new Text("http://google.com/"));
+        udf.initialize(argOIs);
+
+        DeferredObject[] args = new DeferredObject[1];
+        args[0] = new DeferredObject() {
+            public Text get() throws HiveException {
+                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
+            }
+
+            @Override
+            public void prepare(int arg) throws HiveException {}
+        };
+
+        List<Text> tokens = udf.evaluate(args);
+        Assert.assertNotNull(tokens);
+
+        udf.close();
+    }
+
+    @Test
+    public void testEvaluateUserDictURL() throws IOException, HiveException {
+        KuromojiUDF udf = new KuromojiUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[5];
+        // line
+        argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        // mode
+        PrimitiveTypeInfo stringType = new PrimitiveTypeInfo();
+        stringType.setTypeName("string");
+        argOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType, null);
+        // stopWords
+        argOIs[2] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector, null);
+        // stopTags
+        argOIs[3] = ObjectInspectorFactory.getStandardConstantListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector, null);
+        // userDictUrl (Kuromoji official sample user defined dict on GitHub)
+        // e.g., "日本経済新聞" will be "日本", "経済", and "新聞"
+        argOIs[4] = PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
+            stringType,
+            new Text(
+                "https://raw.githubusercontent.com/atilika/kuromoji/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt"));
+        udf.initialize(argOIs);
+
+        DeferredObject[] args = new DeferredObject[1];
+        args[0] = new DeferredObject() {
+            public Text get() throws HiveException {
+                return new Text("クロモジのJapaneseAnalyzerを使ってみる。日本経済新聞。");
+            }
+
+            @Override
+            public void prepare(int arg) throws HiveException {}
+        };
+
+        List<Text> tokens = udf.evaluate(args);
+
+        Assert.assertNotNull(tokens);
+        Assert.assertEquals(7, tokens.size());
 
         udf.close();
     }

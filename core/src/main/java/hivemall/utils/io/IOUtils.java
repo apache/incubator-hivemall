@@ -33,6 +33,8 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.PushbackInputStream;
+import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -127,6 +129,32 @@ public final class IOUtils {
         final int ch3 = in.read();
         final int ch4 = in.read();
         return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
+    }
+
+    /**
+     * Look ahead InputStream and decompress it as GZIPInputStream if needed
+     *
+     * @link https://stackoverflow.com/a/4818946
+     */
+    @Nonnull
+    public static InputStream decodeInputStream(@Nonnull final InputStream is) throws IOException {
+        final PushbackInputStream pb = new PushbackInputStream(is, 2);
+
+        // look ahead
+        final byte[] signature = new byte[2];
+        final int nread = pb.read(signature);
+        // If no byte is available because the stream is at the end of the file, the value -1 is returned; 
+        // otherwise, at least one byte is read and stored into b.
+        if (nread > 0) {// may be -1 (EOF) or 1 or 2
+            pb.unread(signature, 0, nread); // push back 
+        }
+
+        final int streamHeader = ((int) signature[0] & 0xff) | ((signature[1] << 8) & 0xff00);
+        if (streamHeader == GZIPInputStream.GZIP_MAGIC) {
+            return new GZIPInputStream(pb);
+        } else {
+            return pb;
+        }
     }
 
     public static void writeChar(final char v, final OutputStream out) throws IOException {

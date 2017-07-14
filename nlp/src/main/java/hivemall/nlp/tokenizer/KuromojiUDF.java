@@ -20,8 +20,14 @@ package hivemall.nlp.tokenizer;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
+import hivemall.utils.io.HttpUtils;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -44,19 +51,24 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
+import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 @Description(
         name = "tokenize_ja",
-        value = "_FUNC_(String line [, const string mode = \"normal\", const list<string> stopWords, const list<string> stopTags])"
+        value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
                 + " - returns tokenized strings in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class KuromojiUDF extends GenericUDF {
+    private static final int CONNECT_TIMEOUT_MS = 10000; // 10 sec
+    private static final int READ_TIMEOUT_MS = 60000; // 60 sec
+    private static final long MAX_INPUT_STREAM_SIZE = 32L * 1024L * 1024L; // ~32MB
 
     private Mode _mode;
-    private String[] _stopWordsArray;
-    private Set<String> _stoptags;
+    private CharArraySet _stopWords;
+    private Set<String> _stopTags;
+    private UserDictionary _userDict;
 
     // workaround to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.util.ConcurrentModificationException
     private transient JapaneseAnalyzer _analyzer;
@@ -64,15 +76,18 @@ public final class KuromojiUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         final int arglen = arguments.length;
-        if (arglen < 1 || arglen > 4) {
+        if (arglen < 1 || arglen > 5) {
             throw new UDFArgumentException("Invalid number of arguments for `tokenize_ja`: "
                     + arglen);
         }
 
         this._mode = (arglen >= 2) ? tokenizationMode(arguments[1]) : Mode.NORMAL;
-        this._stopWordsArray = (arglen >= 3) ? HiveUtils.getConstStringArray(arguments[2]) : null;
-        this._stoptags = (arglen >= 4) ? stopTags(arguments[3])
+        this._stopWords = (arglen >= 3) ? stopWords(arguments[2])
+                : JapaneseAnalyzer.getDefaultStopSet();
+        this._stopTags = (arglen >= 4) ? stopTags(arguments[3])
                 : JapaneseAnalyzer.getDefaultStopTags();
+        this._userDict = (arglen >= 5) ? userDictionary(arguments[4]) : null;
+
         this._analyzer = null;
 
         return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
@@ -80,11 +95,8 @@ public final class KuromojiUDF extends GenericUDF {
 
     @Override
     public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
-        JapaneseAnalyzer analyzer = _analyzer;
-        if (analyzer == null) {
-            CharArraySet stopwords = stopWords(_stopWordsArray);
-            analyzer = new JapaneseAnalyzer(null, _mode, stopwords, _stoptags);
-            this._analyzer = analyzer;
+        if (_analyzer == null) {
+            this._analyzer = new JapaneseAnalyzer(_userDict, _mode, _stopWords, _stopTags);
         }
 
         Object arg0 = arguments[0].get();
@@ -96,12 +108,12 @@ public final class KuromojiUDF extends GenericUDF {
         final List<Text> results = new ArrayList<Text>(32);
         TokenStream stream = null;
         try {
-            stream = analyzer.tokenStream("", line);
+            stream = _analyzer.tokenStream("", line);
             if (stream != null) {
                 analyzeTokens(stream, results);
             }
         } catch (IOException e) {
-            IOUtils.closeQuietly(analyzer);
+            IOUtils.closeQuietly(_analyzer);
             throw new HiveException(e);
         } finally {
             IOUtils.closeQuietly(stream);
@@ -115,7 +127,8 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static Mode tokenizationMode(@Nonnull ObjectInspector oi) throws UDFArgumentException {
+    private static Mode tokenizationMode(@Nonnull final ObjectInspector oi)
+            throws UDFArgumentException {
         final String arg = HiveUtils.getConstString(oi);
         if (arg == null) {
             return Mode.NORMAL;
@@ -137,8 +150,12 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static CharArraySet stopWords(@Nonnull final String[] array)
+    private static CharArraySet stopWords(@Nonnull final ObjectInspector oi)
             throws UDFArgumentException {
+        if (HiveUtils.isVoidOI(oi)) {
+            return JapaneseAnalyzer.getDefaultStopSet();
+        }
+        final String[] array = HiveUtils.getConstStringArray(oi);
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopSet();
         }
@@ -152,6 +169,9 @@ public final class KuromojiUDF extends GenericUDF {
     @Nonnull
     private static Set<String> stopTags(@Nonnull final ObjectInspector oi)
             throws UDFArgumentException {
+        if (HiveUtils.isVoidOI(oi)) {
+            return JapaneseAnalyzer.getDefaultStopTags();
+        }
         final String[] array = HiveUtils.getConstStringArray(oi);
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopTags();
@@ -168,6 +188,85 @@ public final class KuromojiUDF extends GenericUDF {
             }
         }
         return results;
+    }
+
+    @Nullable
+    private static UserDictionary userDictionary(@Nonnull final ObjectInspector oi)
+            throws UDFArgumentException {
+        if (HiveUtils.isConstListOI(oi)) {
+            return userDictionary(HiveUtils.getConstStringArray(oi));
+        } else if (HiveUtils.isConstString(oi)) {
+            return userDictionary(HiveUtils.getConstString(oi));
+        } else {
+            throw new UDFArgumentException(
+                "User dictionary MUST be given as an array of constant string or constant string (URL)");
+        }
+    }
+
+    @Nullable
+    private static UserDictionary userDictionary(@Nullable final String[] userDictArray)
+            throws UDFArgumentException {
+        if (userDictArray == null) {
+            return null;
+        }
+
+        final StringBuilder builder = new StringBuilder();
+        for (String row : userDictArray) {
+            builder.append(row).append('\n');
+        }
+        final Reader reader = new StringReader(builder.toString());
+        try {
+            return UserDictionary.open(reader); // return null if empty
+        } catch (Throwable e) {
+            throw new UDFArgumentException(
+                "Failed to create user dictionary based on the given array<string>: " + e);
+        }
+    }
+
+    @Nullable
+    private static UserDictionary userDictionary(@Nullable final String userDictURL)
+            throws UDFArgumentException {
+        if (userDictURL == null) {
+            return null;
+        }
+
+        final HttpURLConnection conn;
+        try {
+            conn = HttpUtils.getHttpURLConnection(userDictURL);
+        } catch (IllegalArgumentException | IOException e) {
+            throw new UDFArgumentException("Failed to create HTTP connection to the URL: " + e);
+        }
+
+        // allow to read as a compressed GZIP file for efficiency
+        conn.setRequestProperty("Accept-Encoding", "gzip");
+
+        conn.setConnectTimeout(CONNECT_TIMEOUT_MS); // throw exception from connect()
+        conn.setReadTimeout(READ_TIMEOUT_MS); // throw exception from getXXX() methods
+
+        final int responseCode;
+        try {
+            responseCode = conn.getResponseCode();
+        } catch (IOException e) {
+            throw new UDFArgumentException("Failed to get response code: " + e);
+        }
+        if (responseCode != 200) {
+            throw new UDFArgumentException("Got invalid response code: " + responseCode);
+        }
+
+        final InputStream is;
+        try {
+            is = IOUtils.decodeInputStream(HttpUtils.getLimitedInputStream(conn,
+                MAX_INPUT_STREAM_SIZE));
+        } catch (NullPointerException | IOException e) {
+            throw new UDFArgumentException("Failed to get input stream from the connection: " + e);
+        }
+
+        final Reader reader = new InputStreamReader(is);
+        try {
+            return UserDictionary.open(reader); // return null if empty
+        } catch (Throwable e) {
+            throw new UDFArgumentException("Failed to parse the file in CSV format: " + e);
+        }
     }
 
     private static void analyzeTokens(@Nonnull TokenStream stream, @Nonnull List<Text> results)
