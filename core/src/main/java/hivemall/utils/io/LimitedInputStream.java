@@ -27,10 +27,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Input stream which is limited to a certain length.
- * Implementation is based on LimitedInputStream in Apache Commons FileUpload.
+ * Input stream which is limited to a certain length. Implementation is based on LimitedInputStream
+ * in Apache Commons FileUpload.
  *
- * @link https://commons.apache.org/proper/commons-fileupload/apidocs/org/apache/commons/fileupload/util/LimitedInputStream.html
+ * @link 
+ *       https://commons.apache.org/proper/commons-fileupload/apidocs/org/apache/commons/fileupload/util
+ *       /LimitedInputStream.html
  */
 public class LimitedInputStream extends FilterInputStream {
 
@@ -44,7 +46,8 @@ public class LimitedInputStream extends FilterInputStream {
     }
 
     protected void raiseError() throws IOException {
-        throw new IOException("Exceeded maximum size of input stream: limit = " + max + " bytes, but pos = " + pos);
+        throw new IOException("Exceeded maximum size of input stream: limit = " + max
+                + " bytes, but pos = " + pos);
     }
 
     private void proceed(@Nonnegative long bytes) throws IOException {
