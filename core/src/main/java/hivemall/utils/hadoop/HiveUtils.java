@@ -780,6 +780,7 @@ public final class HiveUtils {
         return (ConstantObjectInspector) oi;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asPrimitiveObjectInspector(
             @Nonnull final ObjectInspector oi) throws UDFArgumentException {
         if (oi.getCategory() != Category.PRIMITIVE) {
@@ -789,6 +790,7 @@ public final class HiveUtils {
         return (PrimitiveObjectInspector) oi;
     }
 
+    @Nonnull
     public static StringObjectInspector asStringOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!STRING_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -797,6 +799,7 @@ public final class HiveUtils {
         return (StringObjectInspector) argOI;
     }
 
+    @Nonnull
     public static BinaryObjectInspector asBinaryOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!BINARY_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -805,6 +808,7 @@ public final class HiveUtils {
         return (BinaryObjectInspector) argOI;
     }
 
+    @Nonnull
     public static BooleanObjectInspector asBooleanOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!BOOLEAN_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -813,6 +817,7 @@ public final class HiveUtils {
         return (BooleanObjectInspector) argOI;
     }
 
+    @Nonnull
     public static IntObjectInspector asIntOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!INT_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -821,6 +826,7 @@ public final class HiveUtils {
         return (IntObjectInspector) argOI;
     }
 
+    @Nonnull
     public static LongObjectInspector asLongOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!BIGINT_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -829,6 +835,7 @@ public final class HiveUtils {
         return (LongObjectInspector) argOI;
     }
 
+    @Nonnull
     public static DoubleObjectInspector asDoubleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!DOUBLE_TYPE_NAME.equals(argOI.getTypeName())) {
@@ -837,6 +844,7 @@ public final class HiveUtils {
         return (DoubleObjectInspector) argOI;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asIntCompatibleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
@@ -862,6 +870,7 @@ public final class HiveUtils {
         return oi;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asLongCompatibleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
@@ -888,6 +897,7 @@ public final class HiveUtils {
         return oi;
     }
 
+    @Nonnull
     public static PrimitiveObjectInspector asIntegerOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
