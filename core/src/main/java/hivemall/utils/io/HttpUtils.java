@@ -40,7 +40,7 @@ public final class HttpUtils {
 
     @Nonnull
     public static InputStream getLimitedInputStream(@Nonnull HttpURLConnection conn,
-            @Nonnegative long size) throws IOException {
+            @Nonnegative long size) throws NullPointerException, IOException {
         InputStream is = conn.getInputStream();
         is = new LimitedInputStream(is, size);
         return is;

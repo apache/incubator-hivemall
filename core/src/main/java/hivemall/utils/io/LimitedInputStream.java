@@ -18,6 +18,9 @@
  */
 package hivemall.utils.io;
 
+import hivemall.utils.lang.Preconditions;
+
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnegative;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -34,8 +37,9 @@ public class LimitedInputStream extends FilterInputStream {
     protected final long max;
     protected long pos = 0L;
 
-    public LimitedInputStream(final InputStream in, @Nonnegative final long maxSize) {
+    public LimitedInputStream(@CheckForNull final InputStream in, @Nonnegative final long maxSize) {
         super(in);
+        Preconditions.checkNotNull(in, "Base input stream must not be null");
         this.max = maxSize;
     }
 

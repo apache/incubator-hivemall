@@ -78,4 +78,9 @@ public class LimitedInputStreamTest {
         br.read(buf);
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testNullInputStream() throws NullPointerException {
+        new LimitedInputStream(null, 100);
+    }
+
 }

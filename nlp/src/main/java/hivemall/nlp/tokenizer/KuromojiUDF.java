@@ -257,7 +257,7 @@ public final class KuromojiUDF extends GenericUDF {
         final InputStream is;
         try {
             is = IOUtils.decompressStream(HttpUtils.getLimitedInputStream(conn, MAX_INPUT_STREAM_SIZE));
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new UDFArgumentException("Failed to get input stream from the connection: " + e);
         }
 
