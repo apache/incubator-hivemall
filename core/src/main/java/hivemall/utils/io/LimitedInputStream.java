@@ -29,21 +29,25 @@ import java.io.InputStream;
  * @link https://commons.apache.org/proper/commons-io/javadocs/api-2.5/org/apache/commons/io/input/BoundedInputStream.html
  * @link https://commons.apache.org/proper/commons-fileupload/apidocs/org/apache/commons/fileupload/util/LimitedInputStream.html
  */
-public final class LimitedInputStream extends InputStream {
+public class LimitedInputStream extends InputStream {
 
     private final InputStream is;
-    private final long max;
-    private long pos = 0L;
+    protected final long max;
+    protected long pos = 0L;
 
     public LimitedInputStream(final InputStream is, @Nonnegative final long size) {
         this.is = is;
         this.max = size;
     }
 
+    protected void raiseError() throws IOException {
+        throw new IOException("Exceeded maximum size of input stream: limit = " + max + " bytes, but pos = " + pos);
+    }
+
     private void proceed(@Nonnegative long bytes) throws IOException {
         this.pos += bytes;
         if (pos > max) {
-            throw new IOException("Exceeded maximum size of input stream [" + max + " bytes]");
+            raiseError();
         }
     }
 
