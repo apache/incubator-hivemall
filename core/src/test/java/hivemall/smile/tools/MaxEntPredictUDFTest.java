@@ -215,7 +215,7 @@ public class MaxEntPredictUDFTest {
             	correct++;
             }
         }
-        Assert.assertEquals(50, correct);
+        Assert.assertEquals(52, correct);
     }
     
     public static int outcome(String outcome){
