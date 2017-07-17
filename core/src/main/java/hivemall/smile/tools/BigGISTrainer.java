@@ -215,7 +215,7 @@ public class BigGISTrainer {
 	      ComparableEvent ev = x.createComparableEvent(ti, di.getPredicateIndex(), di.getOMap());
 	    	
 	      for (int j = 0; j < ev.predIndexes.length; j++) {
-	          predCount[ev.predIndexes[j]][di.getOMap().get(String.valueOf(x.getOutcome(ti)))] += 1;
+	          predCount[ev.predIndexes[j]][di.getOMap().get(String.valueOf(x.getOutcome(ti)))] += (float)1 * ev.values[j];
 	      }
 	    }
 
