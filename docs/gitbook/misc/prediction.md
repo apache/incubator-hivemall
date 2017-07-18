@@ -109,8 +109,8 @@ Below we list possible options for `train_regression` and `train_classifier`, an
 	- For `train_regression`
 		- SquaredLoss (synonym: squared)
 		- QuantileLoss (synonym: quantile)
-		- EpsilonInsensitiveLoss (synonym: epsilon_intensitive)
-		- SquaredEpsilonInsensitiveLoss (synonym: squared_epsilon_intensitive)
+		- EpsilonInsensitiveLoss (synonym: epsilon_insensitive)
+		- SquaredEpsilonInsensitiveLoss (synonym: squared_epsilon_insensitive)
 		- HuberLoss (synonym: huber)
 	- For `train_classifier`
 		- HingeLoss (synonym: hinge)
@@ -120,8 +120,8 @@ Below we list possible options for `train_regression` and `train_classifier`, an
 		- The following losses are mainly designed for regression but can sometimes be useful in classification as well:
 		  - SquaredLoss (synonym: squared)
 		  - QuantileLoss (synonym: quantile)
-		  - EpsilonInsensitiveLoss (synonym: epsilon_intensitive)
-		  - SquaredEpsilonInsensitiveLoss (synonym: squared_epsilon_intensitive)
+		  - EpsilonInsensitiveLoss (synonym: epsilon_insensitive)
+		  - SquaredEpsilonInsensitiveLoss (synonym: squared_epsilon_insensitive)
 		  - HuberLoss (synonym: huber)
 
 - Regularization function: `-reg`, `-regularization`
@@ -130,9 +130,9 @@ Below we list possible options for `train_regression` and `train_classifier`, an
 	- ElasticNet
 	- RDA
 	
-Additionally, there are several variants of the SGD technique, and it is also configureable as:
+Additionally, there are several variants of the SGD technique, and it is also configurable as:
 
-- Optimizer `-opt`, `-optimizer`
+- Optimizer: `-opt`, `-optimizer`
 	- SGD
 	- AdaGrad
 	- AdaDelta
@@ -140,6 +140,24 @@ Additionally, there are several variants of the SGD technique, and it is also co
 
 > #### Note
 >
-> Option values are case insensitive and you can use `sgd` or `rda`, or `huberloss`.
+> Option values are case insensitive and you can use `sgd` or `rda`, or `huberloss` in lower-case letters.
+
+Furthermore, optimizer offers to set auxiliary options such as:
+
+- Number of iterations: `-iter`, `-iterations` [default: 10]
+	- Repeat optimizer's learning procedure more than once to diligently find better result.
+- Convergence rate: `-cv_rate`, `-convergence_rate` [default: 0.005]
+	- Define a stopping criterion for the iterative training.
+	- If the criterion is too small or too large, you may encounter over-fitting or under-fitting depending on value of `-iter` option.
+- Mini-batch size: `-mini_batch`, `-mini_batch_size` [default: 1]
+	- Instead of learning samples one-by-one, this option enables optimizer to utilize multiple samples at once to minimize the error function.
+	- Appropriate mini-batch size leads efficient training and effective prediction model.
+
+For details of available options, following queries might be helpful to list all of them:
+
+```sql
+select train_regression(array(), 0, '-help');
+select train_classifier(array(), 0, '-help');
+```
 
 In practice, you can try different combinations of the options in order to achieve higher prediction accuracy.

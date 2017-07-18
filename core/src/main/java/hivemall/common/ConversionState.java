@@ -81,7 +81,7 @@ public final class ConversionState {
         return currLosses > prevLosses;
     }
 
-    public boolean isConverged(final long obserbedTrainingExamples) {
+    public boolean isConverged(final long observedTrainingExamples) {
         if (conversionCheck == false) {
             return false;
         }
@@ -110,7 +110,7 @@ public final class ConversionState {
             if (logger.isDebugEnabled()) {
                 logger.debug("Iteration #" + curIter + " [curLosses=" + currLosses
                         + ", prevLosses=" + prevLosses + ", changeRate=" + changeRate
-                        + ", #trainingExamples=" + obserbedTrainingExamples + ']');
+                        + ", #trainingExamples=" + observedTrainingExamples + ']');
             }
             this.readyToFinishIterations = false;
         }
