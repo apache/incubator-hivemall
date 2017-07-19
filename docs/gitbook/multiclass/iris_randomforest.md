@@ -221,8 +221,6 @@ SELECT
 FROM (
   SELECT
     rowid, 
-    -- hivemall v0.4.1-alpha.2 and before
-    -- tree_predict(p.model, t.features, ${classification}) as predicted
     -- hivemall v0.4.1 and later
     -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
     -- hivemall v0.5-rc.1 or later
@@ -263,8 +261,6 @@ SELECT
 FROM (
   SELECT
     t.rowid, 
-    -- hivemall v0.4.1-alpha.2 and before
-    -- tree_predict(p.pred_model, t.features, ${classification}) as predicted
     -- hivemall v0.4.1 and later
     -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
     -- hivemall v0.5-rc.1 or later
@@ -273,6 +269,7 @@ FROM (
     -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted as predicted -- to use the old model in v0.5-rc.1 or later
   FROM (
     SELECT 
+      -- hivemall v0.4.1 and later
       -- model_id, model_type, pred_model
       -- hivemall v0.5-rc.1 or later
       model_id, model_weight, model

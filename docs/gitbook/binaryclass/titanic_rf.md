@@ -198,8 +198,6 @@ FROM (
   FROM (
     SELECT
       t.passengerid, 
-      -- hivemall v0.4.1-alpha.2 or before
-      -- tree_predict(p.model, t.features, ${classification}) as predicted
       -- hivemall v0.4.1-alpha.3 or later
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
       -- hivemall v0.5-rc.1 or later
@@ -208,7 +206,8 @@ FROM (
       -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
     FROM (
       SELECT 
-        -- model_id, pred_model
+        -- hivemall v0.4.1-alpha.3 or later
+        -- model_id, model_type, pred_model
         -- hivemall v0.5-rc.1 or later
         model_id, model_weight, model
       FROM 
@@ -342,8 +341,6 @@ FROM (
   FROM (
     SELECT
       t.passengerid, 
-      -- hivemall v0.4.1-alpha.2 or before
-      -- tree_predict(p.model, t.features, ${classification}) as predicted
       -- hivemall v0.4.1-alpha.3 or later
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
       -- hivemall v0.5-rc.1 or later
@@ -352,6 +349,7 @@ FROM (
       -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
     FROM (
       SELECT 
+        -- hivemall v0.4.1-alpha.3 or later
         -- model_id, model_type, pred_model
         -- hivemall v0.5-rc.1 or later
         model_id, model_weight, model
