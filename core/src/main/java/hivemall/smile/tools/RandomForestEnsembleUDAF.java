@@ -119,6 +119,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
         @Override
         public ObjectInspector init(@Nonnull Mode mode, @Nonnull ObjectInspector[] argOIs)
                 throws HiveException {
+            super.init(mode, argOIs);
+            
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
                 this.yhatOI = HiveUtils.asIntegerOI(argOIs[0]);
