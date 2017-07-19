@@ -198,16 +198,16 @@ FROM (
   FROM (
     SELECT
       t.passengerid, 
-      -- hivemall v0.4.1-alpha.2 or before
-      -- tree_predict(p.model, t.features, ${classification}) as predicted
       -- hivemall v0.4.1-alpha.3 or later
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
       -- hivemall v0.5-rc.1 or later
       p.model_weight,
       tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
+      -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
     FROM (
       SELECT 
-        -- model_id, pred_model
+        -- hivemall v0.4.1-alpha.3 or later
+        -- model_id, model_type, pred_model
         -- hivemall v0.5-rc.1 or later
         model_id, model_weight, model
       FROM 
@@ -221,6 +221,9 @@ FROM (
 ) t2
 ;
 ```
+
+> #### Caution
+> `tree_predict_v1` is for the backward compatibility for using prediction models built before `v0.5-rc.1` on `v0.5-rc.1` or later.
 
 # Kaggle submission
 
@@ -338,15 +341,15 @@ FROM (
   FROM (
     SELECT
       t.passengerid, 
-      -- hivemall v0.4.1-alpha.2 or before
-      -- tree_predict(p.model, t.features, ${classification}) as predicted
       -- hivemall v0.4.1-alpha.3 or later
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
       -- hivemall v0.5-rc.1 or later
       p.model_weight,
       tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
+      -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
     FROM (
       SELECT 
+        -- hivemall v0.4.1-alpha.3 or later
         -- model_id, model_type, pred_model
         -- hivemall v0.5-rc.1 or later
         model_id, model_weight, model
@@ -358,8 +361,7 @@ FROM (
   ) t1
   group by
     passengerid
-) t2
-;
+) t2;
 
 create or replace view rf_submit_03 as
 select 

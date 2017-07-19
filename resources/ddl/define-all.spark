@@ -665,6 +665,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION train_randomforest_regr AS 'hivemall.s
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tree_predict")
 sqlContext.sql("CREATE TEMPORARY FUNCTION tree_predict AS 'hivemall.smile.tools.TreePredictUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tree_predict_v1")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tree_predict_v1 AS 'hivemall.smile.tools.TreePredictUDFv1'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tree_export")
 sqlContext.sql("CREATE TEMPORARY FUNCTION tree_export AS 'hivemall.smile.tools.TreeExportUDF'")
 
