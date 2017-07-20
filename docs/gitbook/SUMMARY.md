@@ -27,7 +27,7 @@
     * [Input Format](getting_started/input-format.md)
 
 * [Tips for Effective Hivemall](tips/README.md)
-    * [Explicit addBias() for better prediction](tips/addbias.md)
+    * [Explicit add_bias() for better prediction](tips/addbias.md)
     * [Use rand_amplify() to better prediction results](tips/rand_amplify.md)
     * [Real-time Prediction on RDBMS](tips/rt_prediction.md)
     * [Ensemble learning for stable prediction](tips/ensemble_learning.md)

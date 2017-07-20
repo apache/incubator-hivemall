@@ -28,8 +28,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2alpha3 or later]
 from 
  (select 
-     -- train_arow(addBias(features),label) as (feature,weight) -- [hivemall v0.1]
-     train_arow(addBias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_arow(add_bias(features),label) as (feature,weight) -- [hivemall v0.1]
+     train_arow(add_bias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      kdd10b_train_x3
  ) t 

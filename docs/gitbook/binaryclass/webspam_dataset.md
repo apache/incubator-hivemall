@@ -67,7 +67,7 @@ INSERT OVERWRITE TABLE webspam_train_orcfile
 select
   s.rowid, 
   label,
-  addBias(features) as features
+  add_bias(features) as features
 from webspam_raw s
 where not exists (select rowid from webspam_test t where s.rowid = t.rowid)
 CLUSTER BY rand(43);
@@ -90,6 +90,6 @@ select
   split(feature,":")[0] as feature,
   cast(split(feature,":")[1] as float) as value
 from 
-  webspam_test LATERAL VIEW explode(addBias(features)) t AS feature;
+  webspam_test LATERAL VIEW explode(add_bias(features)) t AS feature;
 ```
 *Caution:* For this dataset, use small *shufflebuffersize* because each training example has lots of features though (xtimes * shufflebuffersize * N) training examples are cached in memory.

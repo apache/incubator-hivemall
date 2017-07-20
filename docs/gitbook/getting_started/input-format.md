@@ -80,7 +80,7 @@ Note 1.0 is used for the weight when omitting *weight*.
 
 Note that "0" is reserved for a Bias variable (called dummy variable in Statistics). 
 
-The [addBias](../tips/addbias.html) function is Hivemall appends "0:1.0" as an element of array in *features*.
+The [add_bias](../tips/addbias.html) function is Hivemall appends "0:1.0" as an element of array in *features*.
 
 ## Feature hashing
 

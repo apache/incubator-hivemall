@@ -26,8 +26,8 @@ With bias clause b, a trainer learns the following f(x).
 _f(x)=Wx+b_ 
 Then, the predicted model considers bias existing in the dataset and the predicted hyperplane does not always cross the origin.
 
-**addBias()** of Hivemall, adds a bias to a feature vector. 
-To enable a bias clause, use addBias() for **both**_(important!)_ training and test data as follows.
+**add_bias()** of Hivemall, adds a bias to a feature vector. 
+To enable a bias clause, use add_bias() for **both**_(important!)_ training and test data as follows.
 The bias _b_ is a feature of "0" ("-1" in before v0.3) by the default. See [AddBiasUDF](../tips/addbias.html) for the detail.
 
 Note that Bias is expressed as a feature that found in all training/testing examples.
@@ -43,7 +43,7 @@ select
   -- extract_feature(feature) as feature, -- hivemall v0.3.1 or later
   -- extract_weight(feature) as value     -- hivemall v0.3.1 or later
 from 
-  e2006tfidf_test LATERAL VIEW explode(addBias(features)) t AS feature;
+  e2006tfidf_test LATERAL VIEW explode(add_bias(features)) t AS feature;
 ```
 
 # Adding a bias clause to training data
@@ -54,7 +54,7 @@ select
  avg(weight) as weight
 from 
  (select 
-     pa1a_regress(addBias(features),target) as (feature,weight)
+     pa1a_regress(add_bias(features),target) as (feature,weight)
   from 
      e2006tfidf_train_x3
  ) t 

@@ -39,7 +39,7 @@ select
  avg(weight) as weight
 from 
  (select 
-     logress(addBias(features),label,"-total_steps ${total_steps}") as (feature,weight)
+     logress(add_bias(features),label,"-total_steps ${total_steps}") as (feature,weight)
   from 
      a9atrain
  ) t 
@@ -59,7 +59,7 @@ select
   extract_feature(feature) as feature,
   extract_weight(feature) as value
 from 
-  a9atest LATERAL VIEW explode(addBias(features)) t AS feature
+  a9atest LATERAL VIEW explode(add_bias(features)) t AS feature
 )
 select
   t.rowid, 

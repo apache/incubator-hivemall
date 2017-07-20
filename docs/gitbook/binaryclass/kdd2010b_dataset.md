@@ -65,7 +65,7 @@ select
   split(feature,":")[0] as feature,
   cast(split(feature,":")[1] as float) as value
 from 
-  kdd10b_test LATERAL VIEW explode(addBias(features)) t AS feature;
+  kdd10b_test LATERAL VIEW explode(add_bias(features)) t AS feature;
 
 set hivevar:xtimes=3;
 set hivevar:shufflebuffersize=1000;

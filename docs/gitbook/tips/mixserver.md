@@ -69,7 +69,7 @@ select
  cast(voted_avg(weight) as float) as weight
 from 
  (select 
-     train_pa1(addBias(features),label,"-mix host01,host02,host03") as (feature,weight)
+     train_pa1(add_bias(features),label,"-mix host01,host02,host03") as (feature,weight)
   from 
      kdd10a_train_x3
  ) t 

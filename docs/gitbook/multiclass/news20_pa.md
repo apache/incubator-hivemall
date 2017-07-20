@@ -44,7 +44,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     train_multiclass_pa2(addBias(features),label) as (label,feature,weight)
+     train_multiclass_pa2(add_bias(features),label) as (label,feature,weight)
   from 
      news20mc_train_x3
  ) t 

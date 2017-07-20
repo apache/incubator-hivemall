@@ -35,7 +35,7 @@ select
  avg(weight) as weight
 from 
  (select 
-     logress(addBias(features),label,"-total_steps ${total_steps} -mini_batch ${mini_batch_size}") as (feature,weight)
+     logress(add_bias(features),label,"-total_steps ${total_steps} -mini_batch ${mini_batch_size}") as (feature,weight)
   from 
      a9atrain
  ) t 
