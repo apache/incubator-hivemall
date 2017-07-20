@@ -32,12 +32,12 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 /**
  * A general regression class with replaceable optimization functions.
  */
-@Description(name = "train_regression",
+@Description(name = "train_regressor",
         value = "_FUNC_(list<string|int|bigint> features, double label [, const string options])"
                 + " - Returns a relation consists of <string|int|bigint feature, float weight>",
         extended = "Build a prediction model by a generic regressor")
 @Since(version = "0.5-rc.1")
-public final class GeneralRegressionUDTF extends GeneralLearnerBaseUDTF {
+public final class GeneralRegressorUDTF extends GeneralLearnerBaseUDTF {
 
     @Override
     protected String getLossOptionDescription() {

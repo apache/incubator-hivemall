@@ -37,7 +37,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 /**
  * ADADELTA: AN ADAPTIVE LEARNING RATE METHOD.
  *
- * @deprecated Use {@link hivemall.regression.GeneralRegressionUDTF} instead
+ * @deprecated Use {@link hivemall.regression.GeneralRegressorUDTF} instead
  */
 @Deprecated
 @Description(

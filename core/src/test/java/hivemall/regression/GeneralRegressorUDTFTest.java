@@ -47,12 +47,12 @@ import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class GeneralRegressionUDTFTest {
+public class GeneralRegressorUDTFTest {
     private static final boolean DEBUG = false;
 
     @Test(expected = UDFArgumentException.class)
     public void testUnsupportedOptimizer() throws Exception {
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
@@ -64,7 +64,7 @@ public class GeneralRegressionUDTFTest {
 
     @Test(expected = UDFArgumentException.class)
     public void testUnsupportedLossFunction() throws Exception {
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
@@ -76,7 +76,7 @@ public class GeneralRegressionUDTFTest {
 
     @Test(expected = UDFArgumentException.class)
     public void testInvalidLossFunction() throws Exception {
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
@@ -88,7 +88,7 @@ public class GeneralRegressionUDTFTest {
 
     @Test(expected = UDFArgumentException.class)
     public void testUnsupportedRegularization() throws Exception {
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
@@ -103,7 +103,7 @@ public class GeneralRegressionUDTFTest {
         List<String> x = Arrays.asList("1:-2", "2:-1");
         float y = 0.f;
 
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
@@ -122,7 +122,7 @@ public class GeneralRegressionUDTFTest {
             @Nonnull Class<T> featureClass, @Nonnull Class<?> modelFeatureClass) throws Exception {
         float y = 0.f;
 
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ListObjectInspector featureListOI = ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
 
@@ -244,7 +244,7 @@ public class GeneralRegressionUDTFTest {
             x2 += x2Step;
         }
 
-        GeneralRegressionUDTF udtf = new GeneralRegressionUDTF();
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);

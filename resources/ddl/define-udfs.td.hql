@@ -172,7 +172,7 @@ create temporary function haversine_distance as 'hivemall.geospatial.HaversineDi
 create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
 create temporary function dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapperUDTF';
 create temporary function train_classifier as 'hivemall.classifier.GeneralClassifierUDTF';
-create temporary function train_regression as 'hivemall.regression.GeneralRegressionUDTF';
+create temporary function train_regressor as 'hivemall.regression.GeneralRegressorUDTF';
 create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
 
 -- NLP features

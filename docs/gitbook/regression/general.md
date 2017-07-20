@@ -24,7 +24,7 @@ In our regression tutorials, you can tackle realistic prediction problems by usi
 - [AROW](e2006_arow.html#arow)
 - [AROWe](e2006_arow.html#arowe)
 
-Our `train_regression` function enables you to solve the regression problems with flexible configureable options. Let us try the function below.
+Our `train_regressor` function enables you to solve the regression problems with flexible configurable options. Let us try the function below.
 
 It should be noted that the sample queries require you to prepare [E2006-tfidf data](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression.html#E2006-tfidf). See [our E2006-tfidf tutorial page](../regression/e2006_dataset.md) for further instructions.
 
@@ -42,7 +42,7 @@ select
 	avg(weight) as weight
 from (
 	select 
-  	train_regression(features,target,'-loss squaredloss -opt AdaGrad -reg no') as (feature,weight)
+  	train_regressor(features,target,'-loss squaredloss -opt AdaGrad -reg no') as (feature,weight)
   from 
     e2006tfidf_train_x3
 ) t 
