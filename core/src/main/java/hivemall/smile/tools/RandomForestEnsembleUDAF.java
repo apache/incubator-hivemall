@@ -18,14 +18,19 @@
  */
 package hivemall.smile.tools;
 
+import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
+import hivemall.utils.lang.Counter;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.SizeOf;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -44,6 +49,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StandardMapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspector;
@@ -55,7 +61,7 @@ import org.apache.hadoop.io.IntWritable;
 
 @Description(
         name = "rf_ensemble",
-        value = "_FUNC_(int yhat, array<double> proba [, double model_weight=1.0])"
+        value = "_FUNC_(int yhat [, array<double> proba [, double model_weight=1.0]])"
                 + " - Returns emsebled prediction results in <int label, double probability, array<double> probabilities>")
 public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver {
 
@@ -64,30 +70,225 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
     }
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
-        if (typeInfo.length != 2 && typeInfo.length != 3) {
-            throw new UDFArgumentLengthException("Expected 2 or 3 arguments but got "
-                    + typeInfo.length);
+    public GenericUDAFEvaluator getEvaluator(@Nonnull final TypeInfo[] typeInfo)
+            throws SemanticException {
+        switch (typeInfo.length) {
+            case 1: {
+                if (!HiveUtils.isIntegerTypeInfo(typeInfo[0])) {
+                    throw new UDFArgumentTypeException(0, "Expected INT for yhat: " + typeInfo[0]);
+                }
+                return new RfEvaluatorV1();
+            }
+            case 3:
+                if (!HiveUtils.isFloatingPointTypeInfo(typeInfo[2])) {
+                    throw new UDFArgumentTypeException(2,
+                        "Expected DOUBLE or FLOAT for model_weight: " + typeInfo[2]);
+                }
+                /* fall through */
+            case 2: {// typeInfo.length == 2 || typeInfo.length == 3
+                if (!HiveUtils.isIntegerTypeInfo(typeInfo[0])) {
+                    throw new UDFArgumentTypeException(0, "Expected INT for yhat: " + typeInfo[0]);
+                }
+                if (!HiveUtils.isFloatingPointListTypeInfo(typeInfo[1])) {
+                    throw new UDFArgumentTypeException(1,
+                        "ARRAY<double> is expected for posteriori: " + typeInfo[1]);
+                }
+                return new RfEvaluatorV2();
+            }
+            default:
+                throw new UDFArgumentLengthException("Expected 1~3 arguments but got "
+                        + typeInfo.length);
         }
-        if (!HiveUtils.isIntegerTypeInfo(typeInfo[0])) {
-            throw new UDFArgumentTypeException(0, "Expected INT for yhat: " + typeInfo[0]);
+    }
+
+    @Deprecated
+    public static final class RfEvaluatorV1 extends GenericUDAFEvaluator {
+
+        // original input
+        private PrimitiveObjectInspector yhatOI;
+
+        // partial aggregation
+        private StandardMapObjectInspector internalMergeOI;
+        private IntObjectInspector keyOI;
+        private IntObjectInspector valueOI;
+
+        public RfEvaluatorV1() {
+            super();
         }
-        if (!HiveUtils.isFloatingPointListTypeInfo(typeInfo[1])) {
-            throw new UDFArgumentTypeException(1, "ARRAY<double> is expected for posteriori: "
-                    + typeInfo[1]);
+
+        @Override
+        public ObjectInspector init(@Nonnull Mode mode, @Nonnull ObjectInspector[] argOIs)
+                throws HiveException {
+            super.init(mode, argOIs);
+            
+            // initialize input
+            if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
+                this.yhatOI = HiveUtils.asIntegerOI(argOIs[0]);
+            } else {// from partial aggregation
+                this.internalMergeOI = (StandardMapObjectInspector) argOIs[0];
+                this.keyOI = HiveUtils.asIntOI(internalMergeOI.getMapKeyObjectInspector());
+                this.valueOI = HiveUtils.asIntOI(internalMergeOI.getMapValueObjectInspector());
+            }
+
+            // initialize output
+            final ObjectInspector outputOI;
+            if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial       
+                outputOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector);
+            } else {// terminate
+                List<String> fieldNames = new ArrayList<>(3);
+                List<ObjectInspector> fieldOIs = new ArrayList<>(3);
+                fieldNames.add("label");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+                fieldNames.add("probability");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                fieldNames.add("probabilities");
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
+                    fieldOIs);
+            }
+            return outputOI;
         }
-        if (typeInfo.length == 3) {
-            if (!HiveUtils.isFloatingPointTypeInfo(typeInfo[2])) {
-                throw new UDFArgumentTypeException(2, "Expected DOUBLE or FLOAT for model_weight: "
-                        + typeInfo[2]);
+
+        @Override
+        public RfAggregationBufferV1 getNewAggregationBuffer() throws HiveException {
+            RfAggregationBufferV1 buf = new RfAggregationBufferV1();
+            buf.reset();
+            return buf;
+        }
+
+        @Override
+        public void reset(AggregationBuffer agg) throws HiveException {
+            RfAggregationBufferV1 buf = (RfAggregationBufferV1) agg;
+            buf.reset();
+        }
+
+        @Override
+        public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
+            RfAggregationBufferV1 buf = (RfAggregationBufferV1) agg;
+
+            Preconditions.checkNotNull(parameters[0]);
+            int yhat = PrimitiveObjectInspectorUtils.getInt(parameters[0], yhatOI);
+
+            buf.iterate(yhat);
+        }
+
+        @Override
+        public Object terminatePartial(AggregationBuffer agg) throws HiveException {
+            RfAggregationBufferV1 buf = (RfAggregationBufferV1) agg;
+
+            return buf.terminatePartial();
+        }
+
+        @Override
+        public void merge(AggregationBuffer agg, Object partial) throws HiveException {
+            final RfAggregationBufferV1 buf = (RfAggregationBufferV1) agg;
+
+            Map<?, ?> partialResult = internalMergeOI.getMap(partial);
+            for (Map.Entry<?, ?> entry : partialResult.entrySet()) {
+                putIntoMap(entry.getKey(), entry.getValue(), buf);
             }
         }
-        return new RfEvaluator();
+
+        private void putIntoMap(@CheckForNull Object key, @CheckForNull Object value,
+                @Nonnull RfAggregationBufferV1 dst) {
+            Preconditions.checkNotNull(key);
+            Preconditions.checkNotNull(value);
+
+            int k = keyOI.get(key);
+            int v = valueOI.get(value);
+            dst.merge(k, v);
+        }
+
+        @Override
+        public Object terminate(AggregationBuffer agg) throws HiveException {
+            RfAggregationBufferV1 buf = (RfAggregationBufferV1) agg;
+
+            return buf.terminate();
+        }
+
+    }
+
+    public static final class RfAggregationBufferV1 extends AbstractAggregationBuffer {
+
+        @Nonnull
+        private Counter<Integer> partial;
+
+        public RfAggregationBufferV1() {
+            super();
+            reset();
+        }
+
+        void reset() {
+            this.partial = new Counter<Integer>();
+        }
+
+        void iterate(final int k) {
+            partial.increment(k);
+        }
+
+        @Nonnull
+        Map<Integer, Integer> terminatePartial() {
+            return partial.getMap();
+        }
+
+        void merge(final int k, final int v) {
+            partial.increment(Integer.valueOf(k), v);
+        }
+
+        @Nullable
+        Object[] terminate() {
+            final Map<Integer, Integer> counts = partial.getMap();
+
+            final int size = counts.size();
+            if (size == 0) {
+                return null;
+            }
+
+            final IntArrayList keyList = new IntArrayList(size);
+            long totalCnt = 0L;
+            Integer maxKey = null;
+            int maxCnt = Integer.MIN_VALUE;
+            for (Map.Entry<Integer, Integer> e : counts.entrySet()) {
+                Integer key = e.getKey();
+                keyList.add(key);
+                int cnt = e.getValue().intValue();
+                totalCnt += cnt;
+                if (cnt >= maxCnt) {
+                    maxCnt = cnt;
+                    maxKey = key;
+                }
+            }
+
+            final int[] keyArray = keyList.toArray();
+            Arrays.sort(keyArray);
+            int last = keyArray[keyArray.length - 1];
+
+            double totalCnt_d = (double) totalCnt;
+            final double[] probabilities = new double[Math.max(2, last + 1)];
+            for (int i = 0, len = probabilities.length; i < len; i++) {
+                final Integer cnt = counts.get(Integer.valueOf(i));
+                if (cnt == null) {
+                    probabilities[i] = 0.d;
+                } else {
+                    probabilities[i] = cnt.intValue() / totalCnt_d;
+                }
+            }
+
+            Object[] result = new Object[3];
+            result[0] = new IntWritable(maxKey);
+            double proba = maxCnt / totalCnt_d;
+            result[1] = new DoubleWritable(proba);
+            result[2] = WritableUtils.toWritableList(probabilities);
+            return result;
+        }
+
     }
 
 
     @SuppressWarnings("deprecation")
-    public static final class RfEvaluator extends GenericUDAFEvaluator {
+    public static final class RfEvaluatorV2 extends GenericUDAFEvaluator {
 
         private PrimitiveObjectInspector yhatOI;
         private ListObjectInspector posterioriOI;
@@ -100,7 +301,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
         private IntObjectInspector sizeFieldOI;
         private StandardListObjectInspector posterioriFieldOI;
 
-        public RfEvaluator() {
+        public RfEvaluatorV2() {
             super();
         }
 
@@ -152,21 +353,21 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
         }
 
         @Override
-        public RfAggregationBuffer getNewAggregationBuffer() throws HiveException {
-            RfAggregationBuffer buf = new RfAggregationBuffer();
+        public RfAggregationBufferV2 getNewAggregationBuffer() throws HiveException {
+            RfAggregationBufferV2 buf = new RfAggregationBufferV2();
             reset(buf);
             return buf;
         }
 
         @Override
         public void reset(AggregationBuffer agg) throws HiveException {
-            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            RfAggregationBufferV2 buf = (RfAggregationBufferV2) agg;
             buf.reset();
         }
 
         @Override
         public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
-            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            RfAggregationBufferV2 buf = (RfAggregationBufferV2) agg;
 
             Preconditions.checkNotNull(parameters[0]);
             int yhat = PrimitiveObjectInspectorUtils.getInt(parameters[0], yhatOI);
@@ -185,7 +386,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
 
         @Override
         public Object terminatePartial(AggregationBuffer agg) throws HiveException {
-            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            RfAggregationBufferV2 buf = (RfAggregationBufferV2) agg;
             if (buf._k == -1) {
                 return null;
             }
@@ -201,7 +402,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
             if (partial == null) {
                 return;
             }
-            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            RfAggregationBufferV2 buf = (RfAggregationBufferV2) agg;
 
             Object o1 = internalMergeOI.getStructFieldData(partial, sizeField);
             int size = sizeFieldOI.get(o1);
@@ -220,7 +421,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
 
         @Override
         public Object terminate(AggregationBuffer agg) throws HiveException {
-            RfAggregationBuffer buf = (RfAggregationBuffer) agg;
+            RfAggregationBufferV2 buf = (RfAggregationBufferV2) agg;
             if (buf._k == -1) {
                 return null;
             }
@@ -239,13 +440,13 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
 
     }
 
-    public static final class RfAggregationBuffer extends AbstractAggregationBuffer {
+    public static final class RfAggregationBufferV2 extends AbstractAggregationBuffer {
 
         @Nullable
         private double[] _posteriori;
         private int _k;
 
-        public RfAggregationBuffer() {
+        public RfAggregationBufferV2() {
             super();
             reset();
         }
