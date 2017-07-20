@@ -51,8 +51,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_multiclass_cw(addBias(features),label) as (label,feature,weight) -- [hivemall v0.1]
-     train_multiclass_cw(addBias(features),label) as (label,feature,weight,covar)    -- [hivemall v0.2 or later]
+     -- train_multiclass_cw(add_bias(features),label) as (label,feature,weight) -- [hivemall v0.1]
+     train_multiclass_cw(add_bias(features),label) as (label,feature,weight,covar)    -- [hivemall v0.2 or later]
   from 
      news20mc_train_x3
  ) t 
@@ -126,8 +126,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_multiclass_arow(addBias(features),label) as (label,feature,weight) -- [hivemall v0.1]
-     train_multiclass_arow(addBias(features),label) as (label,feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_multiclass_arow(add_bias(features),label) as (label,feature,weight) -- [hivemall v0.1]
+     train_multiclass_arow(add_bias(features),label) as (label,feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      news20mc_train_x3
  ) t 
@@ -201,8 +201,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_multiclass_scw(addBias(features),label) as (label,feature,weight) -- [hivemall v0.1]
-     train_multiclass_scw(addBias(features),label) as (label,feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_multiclass_scw(add_bias(features),label) as (label,feature,weight) -- [hivemall v0.1]
+     train_multiclass_scw(add_bias(features),label) as (label,feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      news20mc_train_x3
  ) t 
@@ -276,8 +276,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_multiclass_scw2(addBias(features),label) as (label,feature,weight) -- [hivemall v0.1]
-     train_multiclass_scw2(addBias(features),label) as (label,feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_multiclass_scw2(add_bias(features),label) as (label,feature,weight) -- [hivemall v0.1]
+     train_multiclass_scw2(add_bias(features),label) as (label,feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      news20mc_train_x3
  ) t 

@@ -333,8 +333,8 @@ create temporary function tf as 'hivemall.ftvec.text.TermFrequencyUDAF';
 -- Regression functions --
 --------------------------
 
-drop temporary function if exists train_regression;
-create temporary function train_regression as 'hivemall.regression.GeneralRegressionUDTF';
+drop temporary function if exists train_regressor;
+create temporary function train_regressor as 'hivemall.regression.GeneralRegressorUDTF';
 
 drop temporary function if exists logress;
 create temporary function logress as 'hivemall.regression.LogressUDTF';

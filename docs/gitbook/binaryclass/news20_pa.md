@@ -37,7 +37,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     perceptron(addBias(features),label) as (feature,weight)
+     perceptron(add_bias(features),label) as (feature,weight)
   from 
      news20b_train_x3
  ) t 
@@ -96,7 +96,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     train_pa(addBias(features),label) as (feature,weight)
+     train_pa(add_bias(features),label) as (feature,weight)
   from 
      news20b_train_x3
  ) t 
@@ -155,7 +155,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     train_pa1(addBias(features),label) as (feature,weight)
+     train_pa1(add_bias(features),label) as (feature,weight)
   from 
      news20b_train_x3
  ) t 
@@ -214,7 +214,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     train_pa2(addBias(features),label) as (feature,weight)
+     train_pa2(add_bias(features),label) as (feature,weight)
   from 
      news20b_train_x3
  ) t 

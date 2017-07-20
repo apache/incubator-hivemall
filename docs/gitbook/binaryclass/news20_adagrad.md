@@ -16,10 +16,14 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
-_Note that this feature is supported since Hivemall v0.3-beta2 or later._
+
+<!-- toc -->
+
+> #### Note
+> This feature is supported since Hivemall `v0.3-beta2` or later.
 
 ## UDF preparation
+
 ```
 add jar ./tmp/hivemall-with-dependencies.jar;
 source ./tmp/define-all.hive;
@@ -29,8 +33,8 @@ use news20;
 
 #[AdaGradRDA]
 
-_Note that the current AdaGradRDA implmenetation can only be applied to classification, not to regression, because it uses hinge loss for the loss function._
-
+> #### Note
+> The current AdaGradRDA implmenetation can only be applied to classification, not to regression, because it uses hinge loss for the loss function.
 
 ## model building
 ```sql
@@ -101,7 +105,10 @@ from
  ) t 
 group by feature;
 ```
-_adagrad takes 0/1 for a label value and convert_label(label) converts a label value from -1/+1 to 0/1._
+
+> #### Caution
+> `adagrad` takes 0/1 for a label value and `convert_label(label)` converts a label value from -1/+1 to 0/1.
+
 ## prediction
 ```sql
 create or replace view news20b_adagrad_predict1 
@@ -135,7 +142,8 @@ where actual == predicted;
 
 #[AdaDelta]
 
-_Note that AdaDelta is better suited for regression problem because the current implementation only support logistic loss._
+> #### Caution
+> AdaDelta can only be applied for regression problem because the current implementation only support logistic loss.
 
 ## model building
 ```sql
@@ -178,12 +186,15 @@ from
     on (t.rowid = p.rowid);
 ```
 
+
+
 ```sql
 select count(1)/4996 from news20b_adadelta_submit1 
 where actual == predicted;
 ```
+
+_AdaDelta often performs better than AdaGrad._
+
 > 0.9549639711769415 (adagrad)
 
 > 0.9545636509207366 (adadelta)
-
-_Note that AdaDelta often performs better than AdaGrad._

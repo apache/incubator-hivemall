@@ -56,7 +56,7 @@ The goal of regression is to predict **real values** as shown below:
 
 In practice, target values could be any of small/large float/int negative/positive values. [Our CTR prediction tutorial](../regression/kddcup12tr2.md) solves regression problem with small floating point target values in a 0-1 range, for example.
 
-While there are several ways to realize regression by using Hivemall, `train_regression()` is one of the most flexible functions. This feature is explained in: [Regression](../regression/general.md).
+While there are several ways to realize regression by using Hivemall, `train_regressor()` is one of the most flexible functions. This feature is explained in [this page](../regression/general.md).
 
 # Classification
 
@@ -103,10 +103,10 @@ Eventually, minimizing the function $$E(\mathbf{w})$$ can be implemented by the 
 
 Interestingly, depending on a choice of loss and regularization function, prediction model you obtained will behave differently; even if one combination could work as a classifier, another choice might be appropriate for regression.
 
-Below we list possible options for `train_regression` and `train_classifier`, and this is the reason why these two functions are the most flexible in Hivemall:
+Below we list possible options for `train_regressor` and `train_classifier`, and this is the reason why these two functions are the most flexible in Hivemall:
 
 - Loss function: `-loss`, `-loss_function`
-	- For `train_regression`
+	- For `train_regressor`
 		- SquaredLoss (synonym: squared)
 		- QuantileLoss (synonym: quantile)
 		- EpsilonInsensitiveLoss (synonym: epsilon_insensitive)
@@ -156,7 +156,7 @@ Furthermore, optimizer offers to set auxiliary options such as:
 For details of available options, following queries might be helpful to list all of them:
 
 ```sql
-select train_regression(array(), 0, '-help');
+select train_regressor(array(), 0, '-help');
 select train_classifier(array(), 0, '-help');
 ```
 

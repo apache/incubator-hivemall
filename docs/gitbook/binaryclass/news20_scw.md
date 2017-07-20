@@ -39,8 +39,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_cw(addBias(features), label) as (feature, weight) -- [hivemall v0.1]
-     train_cw(addBias(features), label) as (feature, weight, covar) -- [hivemall v0.2 or later]
+     -- train_cw(add_bias(features), label) as (feature, weight) -- [hivemall v0.1]
+     train_cw(add_bias(features), label) as (feature, weight, covar) -- [hivemall v0.2 or later]
   from 
      news20b_train_x3
  ) t 
@@ -102,8 +102,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_arow(addBias(features),label) as (feature,weight) -- [hivemall v0.1]
-     train_arow(addBias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_arow(add_bias(features),label) as (feature,weight) -- [hivemall v0.1]
+     train_arow(add_bias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      news20b_train_x3
  ) t 
@@ -164,8 +164,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_scw(addBias(features),label) as (feature,weight) -- [hivemall v0.1]
-     train_scw(addBias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_scw(add_bias(features),label) as (feature,weight) -- [hivemall v0.1]
+     train_scw(add_bias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      news20b_train_x3
  ) t 
@@ -226,8 +226,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_scw2(addBias(features),label) as (feature,weight)    -- [hivemall v0.1]
-     train_scw2(addBias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_scw2(add_bias(features),label) as (feature,weight)    -- [hivemall v0.1]
+     train_scw2(add_bias(features),label) as (feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      news20b_train_x3
  ) t 

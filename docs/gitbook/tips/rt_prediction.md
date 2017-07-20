@@ -135,7 +135,7 @@ select
   extract_feature(feature) as feature,
   extract_weight(feature) as value
 from
-  a9atest LATERAL VIEW explode(addBias(features)) t AS feature;
+  a9atest LATERAL VIEW explode(add_bias(features)) t AS feature;
 
 desc extended a9atest_exploded_tsv;
 > location:hdfs://dm01:9000/user/hive/warehouse/a9a.db/a9atest_exploded_tsv,

@@ -44,7 +44,7 @@ SET hivevar:possible_labels="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,16,19,18,20"
 ```
 create or replace view news20_onevsrest_train
 as
-select transform(${possible_labels}, rowid, label, addBias(features))
+select transform(${possible_labels}, rowid, label, add_bias(features))
   ROW FORMAT DELIMITED
     FIELDS TERMINATED BY "\t"
     COLLECTION ITEMS TERMINATED BY ","

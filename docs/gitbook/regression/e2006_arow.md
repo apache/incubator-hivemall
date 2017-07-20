@@ -32,7 +32,7 @@ select
  avg(weight) as weight
 from 
  (select 
-     train_pa1a_regr(addBias(features),target) as (feature,weight)
+     train_pa1a_regr(add_bias(features),target) as (feature,weight)
   from 
      e2006tfidf_train_x3
  ) t 
@@ -96,7 +96,7 @@ select
  avg(weight) as weight
 from 
  (select 
-     train_pa2a_regr(addBias(features),target) as (feature,weight)
+     train_pa2a_regr(add_bias(features),target) as (feature,weight)
   from 
      e2006tfidf_train_x3
  ) t 
@@ -160,8 +160,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_arow_regr(addBias(features),target) as (feature,weight)    -- [hivemall v0.1]
-     train_arow_regr(addBias(features),target) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_arow_regr(add_bias(features),target) as (feature,weight)    -- [hivemall v0.1]
+     train_arow_regr(add_bias(features),target) as (feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      e2006tfidf_train_x3
  ) t 
@@ -226,8 +226,8 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_arowe_regr(addBias(features),target) as (feature,weight)    -- [hivemall v0.1]
-     train_arowe_regr(addBias(features),target) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     -- train_arowe_regr(add_bias(features),target) as (feature,weight)    -- [hivemall v0.1]
+     train_arowe_regr(add_bias(features),target) as (feature,weight,covar) -- [hivemall v0.2 or later]
   from 
      e2006tfidf_train_x3
  ) t 

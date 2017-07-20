@@ -92,5 +92,5 @@ select
   -- cast(extract_feature(feature) as int) as feature,
   -- extract_weight(feature) as value
 from 
-  news20mc_test LATERAL VIEW explode(addBias(features)) t AS feature;
+  news20mc_test LATERAL VIEW explode(add_bias(features)) t AS feature;
 ```

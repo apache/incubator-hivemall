@@ -99,5 +99,5 @@ select
   -- extract_feature(feature) as feature,
   -- extract_weight(feature) as value
 from 
-  news20b_test LATERAL VIEW explode(addBias(features)) t AS feature;
+  news20b_test LATERAL VIEW explode(add_bias(features)) t AS feature;
 ```

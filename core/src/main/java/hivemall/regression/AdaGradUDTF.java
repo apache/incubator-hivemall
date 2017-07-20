@@ -37,7 +37,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 /**
  * ADAGRAD algorithm with element-wise adaptive learning rates.
  *
- * @deprecated Use {@link hivemall.regression.GeneralRegressionUDTF} instead
+ * @deprecated Use {@link hivemall.regression.GeneralRegressorUDTF} instead
  */
 @Deprecated
 @Description(

@@ -31,7 +31,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 /**
  * Logistic regression using SGD.
  * 
- * @deprecated Use {@link hivemall.regression.GeneralRegressionUDTF} instead
+ * @deprecated Use {@link hivemall.regression.GeneralRegressorUDTF} instead
  */
 @Deprecated
 @Description(

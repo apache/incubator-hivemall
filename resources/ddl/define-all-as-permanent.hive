@@ -337,8 +337,8 @@ CREATE FUNCTION tf as 'hivemall.ftvec.text.TermFrequencyUDAF' USING JAR '${hivem
 -- Regression functions --
 --------------------------
 
-DROP FUNCTION IF EXISTS train_regression;
-CREATE FUNCTION train_regression as 'hivemall.regression.GeneralRegressionUDTF' USING JAR '${hivemall_jar}';
+DROP FUNCTION IF EXISTS train_regressor;
+CREATE FUNCTION train_regressor as 'hivemall.regression.GeneralRegressorUDTF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS train_logregr;
 CREATE FUNCTION train_logregr as 'hivemall.regression.LogressUDTF' USING JAR '${hivemall_jar}';

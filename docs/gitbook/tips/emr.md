@@ -107,7 +107,7 @@ select
   cast(split(feature,":")[0] as int) as feature,
   cast(split(feature,":")[1] as float) as value
 from 
-  news20b_test LATERAL VIEW explode(addBias(features)) t AS feature;
+  news20b_test LATERAL VIEW explode(add_bias(features)) t AS feature;
 ```
 
 ---
@@ -132,7 +132,7 @@ select
  cast(voted_avg(weight) as float) as weight
 from 
  (select 
-     train_arow(addBias(features),label) as (feature,weight)
+     train_arow(add_bias(features),label) as (feature,weight)
   from 
      news20b_train_x3
  ) t 

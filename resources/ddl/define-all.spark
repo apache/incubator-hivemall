@@ -336,8 +336,8 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tf AS 'hivemall.ftvec.text.TermFrequen
  * Regression functions
  */
 
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_regression")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_regression AS 'hivemall.regression.GeneralRegressionUDTF'")
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_regressor")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_regressor AS 'hivemall.regression.GeneralRegressorUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS logress")
 sqlContext.sql("CREATE TEMPORARY FUNCTION logress AS 'hivemall.regression.LogressUDTF'")
