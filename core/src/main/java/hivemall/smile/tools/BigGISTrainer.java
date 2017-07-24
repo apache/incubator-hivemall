@@ -541,21 +541,8 @@ public class BigGISTrainer {
 	    int numCorrect = 0;
 	    for (int ei = 0; ei < numUniqueEvents; ei++) {
 	      ComparableEvent ev = x.createComparableEvent(ei, di.getPredicateIndex(), di.getOMap());
-	      int[] int_contexts = new int[ev.predIndexes.length];
-	      int ccc = 0;
-	      for (int int_context : ev.predIndexes){
-	    	  int_contexts[ccc] = (int)int_context;
-	    	  ccc++;
-	      }
-	      float[] float_values = new float[ev.values.length];
-	      ccc = 0;
-	      for (double float_value : ev.values){
-	    	  float_values[ccc] = Double.valueOf(float_value).floatValue();
-	    	  ccc++;
-	      }
-	      
-	      prior.logPrior(modelDistribution,int_contexts,float_values);
-	      GISModel.eval(int_contexts, float_values, modelDistribution, evalParams);
+	      prior.logPrior(modelDistribution,ev.predIndexes,ev.values);
+	      GISModel.eval(ev.predIndexes, ev.values, modelDistribution, evalParams);
 	      
 	      for (int j = 0; j < ev.predIndexes.length; j++) {
 	        int pi = ev.predIndexes[j];
