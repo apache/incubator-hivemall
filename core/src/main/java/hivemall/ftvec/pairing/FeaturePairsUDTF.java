@@ -265,7 +265,6 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
             final Feature[] features = Feature.parseFFMFeatures(arg, fvOI, null, _numFeatures, _numFields);
 
             // W0
-            forward[0] = f0;
             f0.set(0);
             forward[1] = null;
             forward[2] = null;
@@ -279,7 +278,6 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                 int iField = ei.getField();
 
                 // Wi
-                forward[0] = f0;
                 f0.set(i);
                 forward[1] = null;
                 f2.set(xi);
