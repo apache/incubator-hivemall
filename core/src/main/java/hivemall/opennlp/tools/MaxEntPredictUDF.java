@@ -71,11 +71,11 @@ public class MaxEntPredictUDF extends GenericUDF {
     private StringObjectInspector attributesOI;
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureElemOI;
-    
+
     @Nullable
     private Vector featuresProbe;
     private Attribute[] attributes;
-    
+
     @Nullable
     private transient MaxentModel evaluator;
 
@@ -87,16 +87,15 @@ public class MaxEntPredictUDF extends GenericUDF {
 
         this.modelOI = HiveUtils.asStringOI(argOIs[0]);
         this.attributesOI = HiveUtils.asStringOI(argOIs[1]);
-        
+
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[2]);
         this.featureListOI = listOI;
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         if (HiveUtils.isNumberOI(elemOI)) {
             this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
-        }  else {
-            throw new UDFArgumentException(
-                "_FUNC_ takes array<double> for the second argument: "
-                        + listOI.getTypeName());
+        } else {
+            throw new UDFArgumentException("_FUNC_ takes array<double> for the second argument: "
+                    + listOI.getTypeName());
         }
 
         List<String> fieldNames = new ArrayList<String>(2);
@@ -114,20 +113,21 @@ public class MaxEntPredictUDF extends GenericUDF {
         if (arg0 == null) {
             throw new HiveException("Model was null");
         }
-        
+
         Text model = modelOI.getPrimitiveWritableObject(arg0);
         try {
-			evaluator = new SepDelimitedTextGISModelReader(model).constructModel();
-		} catch (IOException e) {
-			throw new HiveException(e.getMessage());
-		}
-        
+            evaluator = new SepDelimitedTextGISModelReader(model).constructModel();
+        } catch (IOException e) {
+            throw new HiveException(e.getMessage());
+        }
+
         Object arg1 = arguments[1].get();
         if (arg1 == null) {
             throw new HiveException("arguments were null");
         }
-        attributes = SmileExtUtils.resolveAttributes(attributesOI.getPrimitiveWritableObject(arg1).toString());
-        
+        attributes = SmileExtUtils.resolveAttributes(attributesOI.getPrimitiveWritableObject(arg1)
+                                                                 .toString());
+
         Object arg2 = arguments[2].get();
         if (arg2 == null) {
             throw new HiveException("array<double> features was null");
@@ -135,50 +135,50 @@ public class MaxEntPredictUDF extends GenericUDF {
         this.featuresProbe = parseFeatures(arg2, featuresProbe);
 
         double[] obs = this.featuresProbe.toArray();
-        
+
         String[] names = new String[obs.length];
-  	    float[] values = new float[obs.length];
-	    for (int i = 0; i < obs.length; i++){
-	    	  if (attributes[i].type == AttributeType.NOMINAL){
-	    		  names[i] = i + "_" + String.valueOf(obs[i]).toString();
-	    		  values[i] = Double.valueOf(1.0).floatValue();
-	    	  }else{
-	    		  names[i] = String.valueOf(i);
-	    		  values[i] = Double.valueOf(obs[i]).floatValue();
-	    	  }
-	    }
-        
-        double[] ocs = evaluator.eval(names,values);
-        String klass = evaluator.getBestOutcome(ocs);
-        
-        List<DoubleWritable> ocss = new ArrayList<DoubleWritable>();
-        for (int i = 0; i < ocs.length; i++){
-        	ocss.add(new DoubleWritable(ocs[i]));
+        float[] values = new float[obs.length];
+        for (int i = 0; i < obs.length; i++) {
+            if (attributes[i].type == AttributeType.NOMINAL) {
+                names[i] = i + "_" + String.valueOf(obs[i]).toString();
+                values[i] = Double.valueOf(1.0).floatValue();
+            } else {
+                names[i] = String.valueOf(i);
+                values[i] = Double.valueOf(obs[i]).floatValue();
+            }
         }
-        
-        return new Object[]{new Text(klass), ocss};
+
+        double[] ocs = evaluator.eval(names, values);
+        String klass = evaluator.getBestOutcome(ocs);
+
+        List<DoubleWritable> ocss = new ArrayList<DoubleWritable>();
+        for (int i = 0; i < ocs.length; i++) {
+            ocss.add(new DoubleWritable(ocs[i]));
+        }
+
+        return new Object[] {new Text(klass), ocss};
     }
 
     @Nonnull
     private Vector parseFeatures(@Nonnull final Object argObj, @Nonnull Vector probe) {
-    	final int length = featureListOI.getListLength(argObj);
-    	if (probe == null) {
+        final int length = featureListOI.getListLength(argObj);
+        if (probe == null) {
             probe = new DenseVector(length);
         } else if (length != probe.size()) {
             probe = new DenseVector(length);
         }
-    	
-    	for (int i = 0; i < length; i++) {
+
+        for (int i = 0; i < length; i++) {
             Object o = featureListOI.getListElement(argObj, i);
             if (o == null) {
                 continue;
             }
             double v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
             probe.set(i, v);
-        } 
+        }
         return probe;
     }
- 
+
     @Override
     public void close() throws IOException {
         this.modelOI = null;

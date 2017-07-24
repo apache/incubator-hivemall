@@ -34,107 +34,108 @@ import opennlp.model.DataReader;
 
 public abstract class AbstractAggregatedModelReader {
 
-	  /**
-	   * The number of predicates contained in the model.
-	   */
-	  protected int NUM_PREDS;
-	  protected List<DataReader> dataReaders;
-	  
-	  public AbstractAggregatedModelReader(List<DataReader> dataReaders) {
-	    super();
-	    this.dataReaders = dataReaders;
-	  }
-	  
-	  /**
-	   * Implement as needed for the format the model is stored in.
-	   */
-	  public int readInt(int i) throws java.io.IOException {
-	    return dataReaders.get(i).readInt();
-	  }
+    /**
+     * The number of predicates contained in the model.
+     */
+    protected int NUM_PREDS;
+    protected List<DataReader> dataReaders;
 
-	  /**
-	   * Implement as needed for the format the model is stored in.
-	   */
-	  public double readDouble(int i) throws java.io.IOException {
-	    return dataReaders.get(i).readDouble();
-	  }
+    public AbstractAggregatedModelReader(List<DataReader> dataReaders) {
+        super();
+        this.dataReaders = dataReaders;
+    }
 
-	  /**
-	   * Implement as needed for the format the model is stored in.
-	   */
-	  public String readUTF(int i) throws java.io.IOException {
-	    return dataReaders.get(i).readUTF();
-	  }
-	      
-	  public AbstractModel getModel() throws IOException {
-	    checkModelType();
-	    return constructModel();
-	  }
+    /**
+     * Implement as needed for the format the model is stored in.
+     */
+    public int readInt(int i) throws java.io.IOException {
+        return dataReaders.get(i).readInt();
+    }
 
-	  public abstract void checkModelType() throws java.io.IOException;
-	  
-	  public abstract AbstractModel constructModel() throws java.io.IOException;
+    /**
+     * Implement as needed for the format the model is stored in.
+     */
+    public double readDouble(int i) throws java.io.IOException {
+        return dataReaders.get(i).readDouble();
+    }
 
-	  protected String[] getOutcomes(int d) throws java.io.IOException {
-	      int numOutcomes = readInt(d);
-	      String[] outcomeLabels = new String[numOutcomes];
-	      for (int i=0; i<numOutcomes; i++) outcomeLabels[i] = readUTF(d);
-	      return outcomeLabels;
-	  }
+    /**
+     * Implement as needed for the format the model is stored in.
+     */
+    public String readUTF(int i) throws java.io.IOException {
+        return dataReaders.get(i).readUTF();
+    }
 
-	  protected int[][] getOutcomePatterns(int d) throws java.io.IOException {
-	      int numOCTypes = readInt(d);
-	      int[][] outcomePatterns = new int[numOCTypes][];
-	      for (int i=0; i<numOCTypes; i++) {
-	          StringTokenizer tok = new StringTokenizer(readUTF(d), " ");
-	          int[] infoInts = new int[tok.countTokens()];
-	          for (int j = 0; tok.hasMoreTokens(); j++) {
-	              infoInts[j] = Integer.parseInt(tok.nextToken());
-	          }
-	          outcomePatterns[i] = infoInts;
-	      }
-	      return outcomePatterns;
-	  }
+    public AbstractModel getModel() throws IOException {
+        checkModelType();
+        return constructModel();
+    }
 
-	  protected String[] getPredicates(int d) throws java.io.IOException {
-	      NUM_PREDS = readInt(d);
-	      String[] predLabels = new String[NUM_PREDS];
-	      for (int i=0; i<NUM_PREDS; i++)
-	          predLabels[i] = readUTF(d);
-	      return predLabels;
-	  }
+    public abstract void checkModelType() throws java.io.IOException;
 
-	  /**
-	   * Reads the parameters from a file and populates an array of context objects.
-	   * @param outcomePatterns The outcomes patterns for the model.  The first index refers to which 
-	   * outcome pattern (a set of outcomes that occurs with a context) is being specified.  The
-	   * second index specifies the number of contexts which use this pattern at index 0, and the
-	   * index of each outcomes which make up this pattern in indicies 1-n.  
-	   * @return An array of context objects.
-	   * @throws java.io.IOException when the model file does not match the outcome patterns or can not be read.
-	   */
-	  protected Context[] getParameters(int d, int[][] outcomePatterns) throws java.io.IOException {
-	    Context[] params = new Context[NUM_PREDS];
-	    int pid=0;
-	    for (int i=0; i<outcomePatterns.length; i++) {
-	      //construct outcome pattern
-	      int[] outcomePattern = new int[outcomePatterns[i].length-1];
-	      for (int k=1; k<outcomePatterns[i].length; k++) {
-	        outcomePattern[k-1] = outcomePatterns[i][k];
-	      }
-	      //System.err.println("outcomePattern "+i+" of "+outcomePatterns.length+" with "+outcomePatterns[i].length+" outcomes ");
-	      //populate parameters for each context which uses this outcome pattern. 
-	      for (int j=0; j<outcomePatterns[i][0]; j++) {
-	        double[] contextParameters = new double[outcomePatterns[i].length-1];
-	        for (int k=1; k<outcomePatterns[i].length; k++) {
-	          contextParameters[k-1] = readDouble(d);
-	        }
-	        params[pid] = new Context(outcomePattern,contextParameters);
-	        pid++;
-	      }
-	    }
-	    return params;
-	  }
+    public abstract AbstractModel constructModel() throws java.io.IOException;
+
+    protected String[] getOutcomes(int d) throws java.io.IOException {
+        int numOutcomes = readInt(d);
+        String[] outcomeLabels = new String[numOutcomes];
+        for (int i = 0; i < numOutcomes; i++)
+            outcomeLabels[i] = readUTF(d);
+        return outcomeLabels;
+    }
+
+    protected int[][] getOutcomePatterns(int d) throws java.io.IOException {
+        int numOCTypes = readInt(d);
+        int[][] outcomePatterns = new int[numOCTypes][];
+        for (int i = 0; i < numOCTypes; i++) {
+            StringTokenizer tok = new StringTokenizer(readUTF(d), " ");
+            int[] infoInts = new int[tok.countTokens()];
+            for (int j = 0; tok.hasMoreTokens(); j++) {
+                infoInts[j] = Integer.parseInt(tok.nextToken());
+            }
+            outcomePatterns[i] = infoInts;
+        }
+        return outcomePatterns;
+    }
+
+    protected String[] getPredicates(int d) throws java.io.IOException {
+        NUM_PREDS = readInt(d);
+        String[] predLabels = new String[NUM_PREDS];
+        for (int i = 0; i < NUM_PREDS; i++)
+            predLabels[i] = readUTF(d);
+        return predLabels;
+    }
+
+    /**
+     * Reads the parameters from a file and populates an array of context objects.
+     * 
+     * @param outcomePatterns The outcomes patterns for the model. The first index refers to which outcome pattern (a set of outcomes that occurs with
+     *        a context) is being specified. The second index specifies the number of contexts which use this pattern at index 0, and the index of
+     *        each outcomes which make up this pattern in indicies 1-n.
+     * @return An array of context objects.
+     * @throws java.io.IOException when the model file does not match the outcome patterns or can not be read.
+     */
+    protected Context[] getParameters(int d, int[][] outcomePatterns) throws java.io.IOException {
+        Context[] params = new Context[NUM_PREDS];
+        int pid = 0;
+        for (int i = 0; i < outcomePatterns.length; i++) {
+            //construct outcome pattern
+            int[] outcomePattern = new int[outcomePatterns[i].length - 1];
+            for (int k = 1; k < outcomePatterns[i].length; k++) {
+                outcomePattern[k - 1] = outcomePatterns[i][k];
+            }
+            //System.err.println("outcomePattern "+i+" of "+outcomePatterns.length+" with "+outcomePatterns[i].length+" outcomes ");
+            //populate parameters for each context which uses this outcome pattern. 
+            for (int j = 0; j < outcomePatterns[i][0]; j++) {
+                double[] contextParameters = new double[outcomePatterns[i].length - 1];
+                for (int k = 1; k < outcomePatterns[i].length; k++) {
+                    contextParameters[k - 1] = readDouble(d);
+                }
+                params[pid] = new Context(outcomePattern, contextParameters);
+                pid++;
+            }
+        }
+        return params;
+    }
 
 
 }
