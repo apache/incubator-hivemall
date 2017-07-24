@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package hivemall.smile.tools;
+package hivemall.opennlp.tools;
 
 import java.io.File;
 import java.io.FileInputStream;

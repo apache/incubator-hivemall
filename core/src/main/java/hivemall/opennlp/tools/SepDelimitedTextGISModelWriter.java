@@ -1,4 +1,4 @@
-package hivemall.smile.tools;
+package hivemall.opennlp.tools;
 
 import java.io.BufferedWriter;
 import java.io.File;

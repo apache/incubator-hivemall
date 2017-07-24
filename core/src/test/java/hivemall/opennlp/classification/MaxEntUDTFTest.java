@@ -1,4 +1,4 @@
-package hivemall.smile.classification;
+package hivemall.opennlp.classification;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
