@@ -18,6 +18,7 @@
  */
 package hivemall.fm;
 
+import static hivemall.utils.lang.Primitives.castToShort;
 import hivemall.utils.hashing.MurmurHash3;
 import hivemall.utils.lang.NumberUtils;
 
@@ -219,7 +220,7 @@ public abstract class Feature {
             } else {
                 index = MurmurHash3.murmurhash3(lead, numFields);
             }
-            short field = (short) index;
+            short field = castToShort(index);
             double value = parseFeatureValue(rest);
             return new IntFeature(index, field, value);
         }
@@ -237,7 +238,7 @@ public abstract class Feature {
         } else {
             // +NUM_FIELD to avoid conflict to quantitative features
             index = MurmurHash3.murmurhash3(indexStr, numFeatures) + numFields;
-            field = (short) MurmurHash3.murmurhash3(lead, numFields);
+            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
         }
         String valueStr = rest.substring(pos2 + 1);
         double value = parseFeatureValue(valueStr);
@@ -296,7 +297,7 @@ public abstract class Feature {
             } else {
                 index = MurmurHash3.murmurhash3(lead, numFields);
             }
-            short field = (short) index;
+            short field = castToShort(index);
             probe.setField(field);
             probe.setFeatureIndex(index);
             probe.value = parseFeatureValue(rest);
@@ -316,7 +317,7 @@ public abstract class Feature {
         } else {
             // +NUM_FIELD to avoid conflict to quantitative features
             index = MurmurHash3.murmurhash3(indexStr, numFeatures) + numFields;
-            field = (short) MurmurHash3.murmurhash3(lead, numFields);
+            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
         }
         probe.setField(field);
         probe.setFeatureIndex(index);

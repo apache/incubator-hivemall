@@ -92,16 +92,16 @@ public final class Primitives {
         b[off] = (byte) (val >>> 8);
     }
 
-    public static int toIntExact(final long longValue) {
-        final int casted = (int) longValue;
-        if (casted != longValue) {
-            throw new ArithmeticException("integer overflow: " + longValue);
-        }
-        return casted;
-    }
-
     public static int castToInt(final long value) {
         final int result = (int) value;
+        if (result != value) {
+            throw new IllegalArgumentException("Out of range: " + value);
+        }
+        return result;
+    }
+
+    public static short castToShort(final int value) {
+        final short result = (short) value;
         if (result != value) {
             throw new IllegalArgumentException("Out of range: " + value);
         }
