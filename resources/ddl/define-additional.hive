@@ -12,6 +12,20 @@ create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
 drop temporary function if exists tokenize_cn;
 create temporary function tokenize_cn as 'hivemall.nlp.tokenizer.SmartcnUDF';
 
+----------------------
+-- Maxent features --
+----------------------
+
+drop temporary function if exists train_maxent_classifier;
+create temporary function train_maxent_classifier as 'hivemall.opennlp.classification.MaxEntUDTF';
+
+drop temporary function if exists predict_maxent_classifier;
+create temporary function predict_maxent_classifier as 'hivemall.opennlp.tools.MaxEntPredictUDF';
+
+drop temporary function if exists aggregate_classifiers;
+create temporary function aggregate_classifiers as 'hivemall.opennlp.tools.MaxEntMixtureWeightUDAF';
+
+
 ------------------------------
 -- XGBoost related features --
 ------------------------------
