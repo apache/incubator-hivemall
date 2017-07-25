@@ -596,7 +596,7 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_ffm")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_ffm AS 'hivemall.fm.FieldAwareFactorizationMachineUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS ffm_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION ffm_predict AS 'hivemall.fm.FFMPredictUDF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION ffm_predict AS 'hivemall.fm.FFMPredictGenericUDAF'")
 
 /**
  * Anomaly Detection

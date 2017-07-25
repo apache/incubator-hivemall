@@ -23,6 +23,7 @@ import hivemall.fm.Entry.FTRLEntry;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.buffer.HeapBuffer;
 import hivemall.utils.collections.maps.Int2LongOpenHashTable;
+import hivemall.utils.collections.maps.Int2LongOpenHashTable.IMapIterator;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.math.MathUtils;
 
@@ -39,7 +40,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     private final HeapBuffer _buf;
 
     // hyperparams
-    private final int _numFeatures;
+    // private final int _numFeatures;
     private final int _numFields;
 
     // FTEL
@@ -55,18 +56,13 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         this._w0 = 0.f;
         this._map = new Int2LongOpenHashTable(DEFAULT_MAPSIZE);
         this._buf = new HeapBuffer(HeapBuffer.DEFAULT_CHUNK_SIZE);
-        this._numFeatures = params.numFeatures;
+        // this._numFeatures = params.numFeatures;
         this._numFields = params.numFields;
         this._alpha = params.alphaFTRL;
         this._beta = params.betaFTRL;
         this._lambda1 = params.lambda1;
         this._lamdda2 = params.lamdda2;
         this._entrySize = entrySize(_factor, _useFTRL, _useAdaGrad);
-    }
-
-    @Nonnull
-    FFMPredictionModel toPredictionModel() {
-        return new FFMPredictionModel(_map, _buf, _w0, _factor, _numFeatures, _numFields);
     }
 
     @Override
@@ -270,6 +266,49 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
             return new Entry(_buf, _factor, ptr);
         }
     }
+
+    @Nonnull
+    EntryIterator entries() {
+        return new EntryIterator(this);
+    }
+
+    static final class EntryIterator {
+
+        @Nonnull
+        private final IMapIterator dictItor;
+        @Nonnull
+        private final Entry entryProbe;
+
+        EntryIterator(@Nonnull FFMStringFeatureMapModel model) {
+            this.dictItor = model._map.entries();
+            this.entryProbe = new Entry(model._buf, model._factor);
+        }
+
+        @Nonnull
+        Entry getEntryProbe() {
+            return entryProbe;
+        }
+
+        boolean hasNext() {
+            return dictItor.hasNext();
+        }
+
+        int next() {
+            return dictItor.next();
+        }
+
+        int getEntryIndex() {
+            return dictItor.getKey();
+        }
+
+        @Nonnull
+        void getEntry(@Nonnull final Entry probe) {
+            long offset = dictItor.getValue();
+            probe.setOffset(offset);
+        }
+
+    }
+
 
     private static int entrySize(int factors, boolean ftrl, boolean adagrad) {
         if (ftrl) {

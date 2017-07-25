@@ -58,7 +58,7 @@ class Entry {
         return _offset;
     }
 
-    void setOffset(long offset) {
+    void setOffset(final long offset) {
         this._offset = offset;
     }
 

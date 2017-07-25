@@ -612,7 +612,7 @@ drop temporary function if exists train_ffm;
 create temporary function train_ffm as 'hivemall.fm.FieldAwareFactorizationMachineUDTF';
 
 drop temporary function if exists ffm_predict;
-create temporary function ffm_predict as 'hivemall.fm.FFMPredictUDF';
+create temporary function ffm_predict as 'hivemall.fm.FFMPredictGenericUDAF';
 
 ---------------------------
 -- Anomaly Detection ------

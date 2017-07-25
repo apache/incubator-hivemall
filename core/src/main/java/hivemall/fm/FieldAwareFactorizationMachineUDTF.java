@@ -18,25 +18,23 @@
  */
 package hivemall.fm;
 
+import hivemall.fm.FFMStringFeatureMapModel.EntryIterator;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.collections.arrays.DoubleArray3D;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
-import hivemall.utils.hadoop.Text3;
-import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.math.MathUtils;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -44,6 +42,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
 /**
@@ -56,7 +56,6 @@ import org.apache.hadoop.io.Text;
         name = "train_ffm",
         value = "_FUNC_(array<string> x, double y [, const string options]) - Returns a prediction model")
 public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachineUDTF {
-    private static final Log LOG = LogFactory.getLog(FieldAwareFactorizationMachineUDTF.class);
 
     // ----------------------------------------
     // Learning hyper-parameters/options
@@ -150,8 +149,14 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
 
-        fieldNames.add("model");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        fieldNames.add("i");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+
+        fieldNames.add("Wi");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
+
+        fieldNames.add("Vi");
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -267,39 +272,46 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         this._fieldList = null;
         this._sumVfX = null;
 
-        Text modelId = new Text();
-        String taskId = HadoopUtils.getUniqueTaskIdString();
-        modelId.set(taskId);
+        final int factors = _factors;
+        final IntWritable idx = new IntWritable();
+        final FloatWritable Wi = new FloatWritable(0.f);
+        final FloatWritable[] Vi = HiveUtils.newFloatArray(factors, 0.f);
 
-        FFMPredictionModel predModel = _ffmModel.toPredictionModel();
-        this._ffmModel = null; // help GC
+        final Object[] forwardObjs = new Object[4];
+        String modelId = HadoopUtils.getUniqueTaskIdString();
+        forwardObjs[0] = new Text(modelId);
+        forwardObjs[1] = idx;
+        forwardObjs[2] = Wi;
+        forwardObjs[3] = null; // Vi
 
-        if (LOG.isInfoEnabled()) {
-            LOG.info("Serializing a model '" + modelId + "'... Configured # features: "
-                    + _numFeatures + ", Configured # fields: " + _numFields
-                    + ", Actual # features: " + predModel.getActualNumFeatures()
-                    + ", Estimated uncompressed bytes: "
-                    + NumberUtils.prettySize(predModel.approxBytesConsumed()));
-        }
-
-        byte[] serialized;
-        try {
-            serialized = predModel.serialize();
-            predModel = null;
-        } catch (IOException e) {
-            throw new HiveException("Failed to serialize a model", e);
-        }
-
-        if (LOG.isInfoEnabled()) {
-            LOG.info("Forwarding a serialized/compressed model '" + modelId + "' of size: "
-                    + NumberUtils.prettySize(serialized.length));
-        }
-
-        Text modelObj = new Text3(serialized);
-        serialized = null;
-        Object[] forwardObjs = new Object[] {modelId, modelObj};
-
+        // W0
+        idx.set(0);
+        Wi.set(_ffmModel.getW0());
         forward(forwardObjs);
+
+        forwardObjs[3] = Arrays.asList(Vi);
+
+        final EntryIterator itor = _ffmModel.entries();
+        final Entry entry = itor.getEntryProbe();
+        final float[] Vf = new float[factors];
+        while (itor.next() != -1) {
+            // set i
+            int i = itor.getEntryIndex();
+            idx.set(i);
+
+            itor.getEntry(entry);
+
+            // set Wi
+            Wi.set(entry.getW());
+
+            // set Vif
+            entry.getV(Vf);
+            for (int f = 0; f < factors; f++) {
+                Vi[f].set(Vf[f]);
+            }
+
+            forward(forwardObjs);
+        }
     }
 
 }
