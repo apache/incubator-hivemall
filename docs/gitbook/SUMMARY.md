@@ -156,22 +156,29 @@
     * [Factorization Machine](recommend/movielens_fm.md)
     * [10-fold Cross Validation (Matrix Factorization)](recommend/movielens_cv.md)
 
-## Part X - Anomaly Detection
+## Part X - Maximum Entropy
+
+* [Maximum Entropy](maxent/m.md)
+    * [Data Preparation](maxent/data.md)
+    * [Training](maxent/train.md)
+    * [Average Weighting](maxent/avg.md)
+
+## Part XI - Anomaly Detection
 
 * [Outlier Detection using Local Outlier Factor (LOF)](anomaly/lof.md)
 * [Change-Point Detection using Singular Spectrum Transformation (SST)](anomaly/sst.md)
 * [ChangeFinder: Detecting Outlier and Change-Point Simultaneously](anomaly/changefinder.md)
 
-## Part XI - Clustering
+## Part XII - Clustering
 
 * [Latent Dirichlet Allocation](clustering/lda.md)
 * [Probabilistic Latent Semantic Analysis](clustering/plsa.md)
 
-## Part XII - GeoSpatial functions
+## Part XIII - GeoSpatial functions
 
 * [Lat/Lon functions](geospatial/latlon.md)
 
-## Part XIII - Hivemall on Spark
+## Part XIV - Hivemall on Spark
 
 * [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
@@ -186,7 +193,7 @@
     * [Top-k Join processing](spark/misc/topk_join.md)
     * [Other utility functions](spark/misc/functions.md)
 
-## Part XIV - Hivemall on Docker
+## Part XV - Hivemall on Docker
 
 * [Getting Started](docker/getting_started.md)
 
