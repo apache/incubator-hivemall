@@ -19,6 +19,7 @@
 package hivemall.fm;
 
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.SizeOf;
 
 import javax.annotation.Nonnull;
 
@@ -69,13 +70,13 @@ public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
                 "List type is expected for the third argument Vjfi: " + typeInfo[2].getTypeName());
         }
         ListTypeInfo typeInfo1 = (ListTypeInfo) typeInfo[1];
-        if (!HiveUtils.isFloatingPointListTypeInfo(typeInfo1.getListElementTypeInfo())) {
+        if (!HiveUtils.isFloatingPointTypeInfo(typeInfo1.getListElementTypeInfo())) {
             throw new UDFArgumentTypeException(1,
                 "Double or Float type is expected for the element type of list Vifj: "
                         + typeInfo1.getTypeName());
         }
         ListTypeInfo typeInfo2 = (ListTypeInfo) typeInfo[2];
-        if (!HiveUtils.isFloatingPointListTypeInfo(typeInfo2.getListElementTypeInfo())) {
+        if (!HiveUtils.isFloatingPointTypeInfo(typeInfo2.getListElementTypeInfo())) {
             throw new UDFArgumentTypeException(2,
                 "Double or Float type is expected for the element type of list Vjfi: "
                         + typeInfo1.getTypeName());
@@ -198,7 +199,7 @@ public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static class FFMPredictAggregationBuffer extends AbstractAggregationBuffer {
+    public static final class FFMPredictAggregationBuffer extends AbstractAggregationBuffer {
 
         private double sum;
 
@@ -241,6 +242,11 @@ public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
             }
 
             this.sum += (prod * Xi * Xj);
+        }
+
+        @Override
+        public int estimate() {
+            return SizeOf.DOUBLE;
         }
 
     }
