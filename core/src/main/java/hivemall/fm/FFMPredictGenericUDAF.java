@@ -43,9 +43,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
-@Description(
-        name = "ffm_predict",
-        value = "_FUNC_(float Wi, float Wj, array<float> Vifj, array<float> Vjfi, float Xi, float Xj)"
+@Description(name = "ffm_predict",
+        value = "_FUNC_(float Wi, array<float> Vifj, array<float> Vjfi, float Xi, float Xj)"
                 + " - Returns a prediction value in Double")
 public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
@@ -55,7 +54,7 @@ public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
     public Evaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 5) {
             throw new UDFArgumentLengthException(
-                "Expected argument length is 6 but given argument length was " + typeInfo.length);
+                "Expected argument length is 5 but given argument length was " + typeInfo.length);
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[0])) {
             throw new UDFArgumentTypeException(0,
@@ -150,14 +149,17 @@ public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
             final double wi = PrimitiveObjectInspectorUtils.getDouble(parameters[0], wiOI);
             if (parameters[3] == null && parameters[4] == null) {// Xi and Xj are null => global bias `w0`
+                // (i=0, j=null, xi=null, xj=null) => (wi, vi=?, vj=null, xi=null, xj=null)
                 myAggr.addW0(wi);
             } else if (parameters[4] == null) {// Only Xi is nonnull => linear combination `wi` * `xi`
+                // (i, j=null, xi, xj=null) => (wi, vi, vj=null, xi, xj=null)
                 double xi = PrimitiveObjectInspectorUtils.getDouble(parameters[3], xiOI);
                 myAggr.addWiXi(wi, xi);
             } else {// both Xi and Xj are nonnull => <Vifj, Vjfi> Xi Xj
+                // (i, j, xi, xj) => (wi, vi, vj, xi, xj)
                 if (parameters[1] == null || parameters[2] == null) {
-                    throw new UDFArgumentException(
-                        "The second and third arguments (Vij, Vji) must not be null");
+                    // vi, vj can be null where feature index does not exist in the prediction model  
+                    return;
                 }
 
                 float[] vij = HiveUtils.asFloatArray(parameters[1], vijOI, vijElemOI, false);
