@@ -670,6 +670,36 @@ public final class HiveUtils {
     }
 
     @Nullable
+    public static float[] asFloatArray(@Nullable final Object argObj,
+            @Nonnull final ListObjectInspector listOI,
+            @Nonnull final PrimitiveObjectInspector elemOI) throws UDFArgumentException {
+        return asFloatArray(argObj, listOI, elemOI, true);
+    }
+
+    @Nullable
+    public static float[] asFloatArray(@Nullable final Object argObj,
+            @Nonnull final ListObjectInspector listOI,
+            @Nonnull final PrimitiveObjectInspector elemOI, final boolean avoidNull)
+            throws UDFArgumentException {
+        if (argObj == null) {
+            return null;
+        }
+        final int length = listOI.getListLength(argObj);
+        final float[] ary = new float[length];
+        for (int i = 0; i < length; i++) {
+            Object o = listOI.getListElement(argObj, i);
+            if (o == null) {
+                if (avoidNull) {
+                    continue;
+                }
+                throw new UDFArgumentException("Found null at index " + i);
+            }
+            ary[i] = PrimitiveObjectInspectorUtils.getFloat(o, elemOI);
+        }
+        return ary;
+    }
+    
+    @Nullable
     public static double[] asDoubleArray(@Nullable final Object argObj,
             @Nonnull final ListObjectInspector listOI,
             @Nonnull final PrimitiveObjectInspector elemOI) throws UDFArgumentException {
@@ -694,8 +724,7 @@ public final class HiveUtils {
                 }
                 throw new UDFArgumentException("Found null at index " + i);
             }
-            double d = PrimitiveObjectInspectorUtils.getDouble(o, elemOI);
-            ary[i] = d;
+            ary[i] = PrimitiveObjectInspectorUtils.getDouble(o, elemOI);
         }
         return ary;
     }
@@ -721,8 +750,7 @@ public final class HiveUtils {
                 }
                 throw new UDFArgumentException("Found null at index " + i);
             }
-            double d = PrimitiveObjectInspectorUtils.getDouble(o, elemOI);
-            out[i] = d;
+            out[i] = PrimitiveObjectInspectorUtils.getDouble(o, elemOI);
         }
         return;
     }
@@ -746,8 +774,7 @@ public final class HiveUtils {
                 out[i] = nullValue;
                 continue;
             }
-            double d = PrimitiveObjectInspectorUtils.getDouble(o, elemOI);
-            out[i] = d;
+            out[i] = PrimitiveObjectInspectorUtils.getDouble(o, elemOI);
         }
         return;
     }
@@ -766,11 +793,11 @@ public final class HiveUtils {
         int count = 0;
         final int length = listOI.getListLength(argObj);
         for (int i = 0; i < length; i++) {
-            Object o = listOI.getListElement(argObj, i);
+            final Object o = listOI.getListElement(argObj, i);
             if (o == null) {
                 continue;
             }
-            int index = PrimitiveObjectInspectorUtils.getInt(o, elemOI);
+            final int index = PrimitiveObjectInspectorUtils.getInt(o, elemOI);
             if (index < 0) {
                 throw new UDFArgumentException("Negative index is not allowed: " + index);
             }
@@ -945,6 +972,26 @@ public final class HiveUtils {
             case DOUBLE:
             case STRING:
             case TIMESTAMP:
+                break;
+            default:
+                throw new UDFArgumentTypeException(0,
+                    "Only numeric or string type arguments are accepted but " + argOI.getTypeName()
+                            + " is passed.");
+        }
+        return oi;
+    }
+
+    @Nonnull
+    public static PrimitiveObjectInspector asFloatingPointOI(@Nonnull final ObjectInspector argOI)
+            throws UDFArgumentTypeException {
+        if (argOI.getCategory() != Category.PRIMITIVE) {
+            throw new UDFArgumentTypeException(0, "Only primitive type arguments are accepted but "
+                    + argOI.getTypeName() + " is passed.");
+        }
+        final PrimitiveObjectInspector oi = (PrimitiveObjectInspector) argOI;
+        switch (oi.getPrimitiveCategory()) {
+            case FLOAT:
+            case DOUBLE:
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
