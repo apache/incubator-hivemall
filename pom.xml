@@ -291,7 +291,7 @@
         <profile>
             <id>java7</id>
             <properties>
-                <spark.test.jvm.opts>-ea -Xms1024m -Xmx2048m -XX:PermSize=128m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
+                <spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:PermSize=128m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
             </properties>
             <activation>
                 <jdk>[,1.8)</jdk> <!-- version < 1.8 -->
@@ -300,7 +300,7 @@
         <profile>
             <id>java8</id>
             <properties>
-                <spark.test.jvm.opts>-ea -Xms1024m -Xmx2048m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
+                <spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
             </properties>
             <activation>
                 <jdk>[1.8,)</jdk> <!-- version >= 1.8 -->
