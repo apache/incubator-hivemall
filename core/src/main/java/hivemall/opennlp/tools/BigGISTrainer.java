@@ -1,27 +1,12 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
 package hivemall.opennlp.tools;
 
 import java.io.IOException;
 
 import hivemall.math.matrix.Matrix;
+import hivemall.math.matrix.builders.CSRMatrixBuilder;
+import hivemall.math.matrix.builders.DoKMatrixBuilder;
+import hivemall.math.matrix.builders.MatrixBuilder;
+import hivemall.math.matrix.sparse.DoKMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
 import opennlp.maxent.GISModel;
@@ -169,9 +154,13 @@ public class BigGISTrainer {
      * @param di The data indexer used to compress events in memory.
      * @return The newly trained model, which can be used immediately or saved to disk using an opennlp.maxent.io.GISModelWriter object.
      */
-    public GISModel trainModel(int iterations, BigDataIndexer di, MatrixForTraining x) {
-        return trainModel(iterations, di, new UniformPrior(), x);
+    public GISModel trainModel(int iterations, BigDataIndexer di, MatrixForTraining x,
+            boolean smoothing, Prior modelPrior, int cutoff) {
+        this.cutoff = cutoff;
+        this.useGaussianSmoothing = smoothing;
+        return trainModel(iterations, di, modelPrior, x);
     }
+
 
     /**
      * Train a model using the GIS algorithm.
@@ -185,7 +174,6 @@ public class BigGISTrainer {
             MatrixForTraining x) {
         /************** Incorporate all of the needed info ******************/
         display("Incorporating indexed data for training...  \n");
-        this.cutoff = 0;
         predicateCounts = di.getPredCounts();
         numUniqueEvents = x.numRows();
         this.prior = modelPrior;
@@ -224,15 +212,20 @@ public class BigGISTrainer {
         display("\t  Number of Predicates: " + numPreds + "\n");
 
         // set up feature arrays
-        float[][] predCount = new float[numPreds][numOutcomes];
+        Matrix predCount = new DoKMatrix(numPreds, numOutcomes);
+        //float[][] predCount = new float[numPreds][numOutcomes];
         for (int ti = 0; ti < numUniqueEvents; ti++) {
             ComparableEvent ev = x.createComparableEvent(ti, di.getPredicateIndex(), di.getOMap());
 
             for (int j = 0; j < ev.predIndexes.length; j++) {
-                predCount[ev.predIndexes[j]][di.getOMap().get(String.valueOf(x.getOutcome(ti)))] += (float) 1
-                        * ev.values[j];
+                double v = predCount.get(ev.predIndexes[j],
+                    di.getOMap().get(String.valueOf(x.getOutcome(ti))));
+                predCount.set(ev.predIndexes[j],
+                    di.getOMap().get(String.valueOf(x.getOutcome(ti))), v + (float) 1
+                            * ev.values[j]);
             }
         }
+
 
         //printTable(predCount);
         di = null; // don't need it anymore
@@ -270,7 +263,7 @@ public class BigGISTrainer {
                 outcomePattern = allOutcomesPattern;
             } else { //determine active outcomes
                 for (int oi = 0; oi < numOutcomes; oi++) {
-                    if (predCount[pi][oi] > 0 && predicateCounts[pi] >= cutoff) {
+                    if (predCount.get(pi, oi) > 0 && predicateCounts[pi] >= cutoff) {
                         activeOutcomes[numActiveOutcomes] = oi;
                         numActiveOutcomes++;
                     }
@@ -291,8 +284,8 @@ public class BigGISTrainer {
                 int oi = outcomePattern[aoi];
                 params[pi].setParameter(aoi, 0.0);
                 modelExpects[pi].setParameter(aoi, 0.0);
-                if (predCount[pi][oi] > 0) {
-                    observedExpects[pi].setParameter(aoi, predCount[pi][oi]);
+                if (predCount.get(pi, oi) > 0) {
+                    observedExpects[pi].setParameter(aoi, predCount.get(pi, oi));
                 } else if (useSimpleSmoothing) {
                     observedExpects[pi].setParameter(aoi, smoothingObservation);
                 }
