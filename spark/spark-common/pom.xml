@@ -32,9 +32,6 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<PermGen>64m</PermGen>
-		<MaxPermGen>1024m</MaxPermGen>
-		<CodeCacheSize>512m</CodeCacheSize>
 		<main.basedir>${project.parent.basedir}</main.basedir>
 	</properties>
 
@@ -138,11 +135,8 @@
 						<!-- <arg>-feature</arg> -->
 					</args>
 					<jvmArgs>
-						<jvmArg>-Xms1024m</jvmArg>
+						<jvmArg>-Xms512m</jvmArg>
 						<jvmArg>-Xmx1024m</jvmArg>
-						<jvmArg>-XX:PermSize=${PermGen}</jvmArg>
-						<jvmArg>-XX:MaxPermSize=${MaxPermGen}</jvmArg>
-						<jvmArg>-XX:ReservedCodeCacheSize=${CodeCacheSize}</jvmArg>
 					</jvmArgs>
 				</configuration>
 			</plugin>
