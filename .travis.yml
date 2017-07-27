@@ -36,6 +36,7 @@ notifications:
 script:
   - mvn -q scalastyle:check test -Pspark-2.1
   # test the spark-2.0 modules only in the following runs
+  - if [[ ! -z "$(java -version 2>&1 | grep 1.8)" ]]; then mvn -q scalastyle:check clean -Pspark-2.2 -Djava.source.version=1.8 -Djava.target.version=1.8 -pl spark/spark-2.2 -am test -Dtest=none; fi
   - mvn -q scalastyle:check clean -Pspark-2.0 -pl spark/spark-2.0 -am test -Dtest=none
 
 after_success:
