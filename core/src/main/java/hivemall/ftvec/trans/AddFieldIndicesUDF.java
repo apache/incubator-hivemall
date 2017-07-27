@@ -52,7 +52,7 @@ public final class AddFieldIndicesUDF extends GenericUDF {
         }
 
         this.listOI = HiveUtils.asListOI(argOIs[0]);
-        if (!HiveUtils.isStringOI(listOI)) {
+        if (!HiveUtils.isStringOI(listOI.getListElementObjectInspector())) {
             throw new UDFArgumentException("Expected array<string> but got " + argOIs[0]);
         }
 
