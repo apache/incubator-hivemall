@@ -289,10 +289,19 @@ public final class HiveUtils {
         }
     }
 
-    @Nonnull
     public static boolean isListOI(@Nonnull final ObjectInspector oi) {
         Category category = oi.getCategory();
         return category == Category.LIST;
+    }
+
+    public static boolean isStringListOI(@Nonnull final ObjectInspector oi)
+            throws UDFArgumentException {
+        Category category = oi.getCategory();
+        if (category != Category.LIST) {
+            throw new UDFArgumentException("Expected List OI but was: " + oi);
+        }
+        ListObjectInspector listOI = (ListObjectInspector) oi;
+        return isStringOI(listOI.getListElementObjectInspector());
     }
 
     public static boolean isMapOI(@Nonnull final ObjectInspector oi) {
@@ -698,7 +707,7 @@ public final class HiveUtils {
         }
         return ary;
     }
-    
+
     @Nullable
     public static double[] asDoubleArray(@Nullable final Object argObj,
             @Nonnull final ListObjectInspector listOI,
