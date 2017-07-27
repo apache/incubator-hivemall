@@ -566,6 +566,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   test("invoke regression functions") {
     import hiveContext.implicits._
     Seq(
+      "train_regressor",
       "train_adadelta",
       "train_adagrad",
       "train_arow_regr",
@@ -585,6 +586,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   test("invoke classifier functions") {
     import hiveContext.implicits._
     Seq(
+      "train_classifier",
       "train_perceptron",
       "train_pa",
       "train_pa1",
@@ -729,6 +731,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 
   ignore("check regression precision") {
     Seq(
+      "train_regressor",
       "train_adadelta",
       "train_adagrad",
       "train_arow_regr",
@@ -746,6 +749,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 
   ignore("check classifier precision") {
     Seq(
+      "train_classifier",
       "train_perceptron",
       "train_pa",
       "train_pa1",
