@@ -74,7 +74,7 @@ public final class AddFieldIndicesUDF extends GenericUDF {
             if (f == null) {
                 continue;
             }
-            argumented.add((i + 1) + ':' + f);
+            argumented.add((i + 1) + ":" + f);
         }
 
         return argumented;

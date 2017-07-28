@@ -190,24 +190,47 @@ from
 
 ## Quantitative Features
 
-`array<string> quantitative_features(array<string> featureNames, ...)` is a helper function to create sparse quantitative features from a table.
+`array<string> quantitative_features(array<string> featureNames, feature1, feature2, .. [, const string options])` is a helper function to create sparse quantitative features from a table.
 
 ```sql
-select quantitative_features(array("apple","value"),1,120.3);
+select quantitative_features(
+  array("apple","height","weight"),
+  1,180.3,70.2
+  -- ,"-emit_null"
+);
 ```
-> ["apple:1.0","value:120.3"]
+> ["apple:1.0","height:180.3","weight:70.2"]
+
+```sql
+select quantitative_features(
+  array("apple","height","weight"),
+  1,cast(null as double),70.2
+  ,"-emit_null"
+);
+```
+> ["apple:1.0",null,"weight:70.2"]
 
 ## Categorical Features
 
-`array<string> categorical_features(array<string> featureNames, ...)` is a helper function to create sparse categorical features from a table.
+`array<string> categorical_features(array<string> featureNames,  feature1, feature2, .. [, const string options])` is a helper function to create sparse categorical features from a table.
 
 ```sql
 select categorical_features(
   array("is_cat","is_dog","is_lion","is_pengin","species"),
   1, 0, 1.0, true, "dog"
+  -- ,"-emit_null"
 );
 ```
 > ["is_cat#1","is_dog#0","is_lion#1.0","is_pengin#true","species#dog"]
+
+```sql
+select categorical_features(
+  array("is_cat","is_dog","is_lion","is_pengin","species"),
+  1, 0, 1.0, true, null
+  ,"-emit_null"
+);
+```
+> ["is_cat#1","is_dog#0","is_lion#1.0","is_pengin#true",null]
 
 ## Preparing training data table 
 

@@ -304,20 +304,23 @@ public abstract class Feature {
             return;
         }
 
-        String indexStr = rest.substring(0, pos2);
-        final int index;
         final short field;
-        if (NumberUtils.isDigits(indexStr) && NumberUtils.isDigits(lead)) {
+        if (NumberUtils.isDigits(lead)) {
+            field = parseField(lead, numFields);
+        } else {
+            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
+        }
+        final int index;
+        final String indexStr = rest.substring(0, pos2);
+        if (NumberUtils.isDigits(indexStr)) {
             index = parseFeatureIndex(indexStr);
             if (index >= (numFeatures + numFields)) {
                 throw new HiveException("Feature index MUST be less than "
                         + (numFeatures + numFields) + " but was " + index);
             }
-            field = parseField(lead, numFields);
         } else {
             // +NUM_FIELD to avoid conflict to quantitative features
             index = MurmurHash3.murmurhash3(indexStr, numFeatures) + numFields;
-            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
         }
         probe.setField(field);
         probe.setFeatureIndex(index);
