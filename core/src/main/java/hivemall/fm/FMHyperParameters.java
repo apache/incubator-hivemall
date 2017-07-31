@@ -171,13 +171,14 @@ class FMHyperParameters {
 
             // feature hashing
             if (numFeatures == -1) {
-                int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"),
-                    Feature.DEFAULT_FEATURE_BITS);
-                if (hashbits < 18 || hashbits > 31) {
-                    throw new UDFArgumentException("-feature_hashing MUST be in range [18,31]: "
-                            + hashbits);
+                int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"), -1);
+                if (hashbits != -1) {
+                    if (hashbits < 18 || hashbits > 31) {
+                        throw new UDFArgumentException(
+                            "-feature_hashing MUST be in range [18,31]: " + hashbits);
+                    }
+                    this.numFeatures = 1 << hashbits;
                 }
-                this.numFeatures = 1 << hashbits;
             }
             this.numFields = Primitives.parseInt(cl.getOptionValue("num_fields"), numFields);
             if (numFields <= 1) {

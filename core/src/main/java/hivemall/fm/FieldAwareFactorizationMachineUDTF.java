@@ -86,26 +86,26 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         opts.addOption("disable_wi", "no_coeff", false, "Not to include linear term [default: OFF]");
         // feature hashing
         opts.addOption("feature_hashing", true,
-            "The number of bits for feature hashing in range [18,31] [default:21]");
-        opts.addOption("num_fields", true, "The number of fields [default:1024]");
+            "The number of bits for feature hashing in range [18,31] [default: -1]. No feature hashing for -1.");
+        opts.addOption("num_fields", true, "The number of fields [default: 1024]");
         // adagrad
         opts.addOption("disable_adagrad", false,
             "Whether to use AdaGrad for tuning learning rate [default: ON]");
-        opts.addOption("eta0_V", true, "The initial learning rate for V [default 1.0]");
-        opts.addOption("eps", true, "A constant used in the denominator of AdaGrad [default 1.0]");
+        opts.addOption("eta0_V", true, "The initial learning rate for V [default: 1.0]");
+        opts.addOption("eps", true, "A constant used in the denominator of AdaGrad [default: 1.0]");
         // FTRL
         opts.addOption("disable_ftrl", false,
             "Whether not to use Follow-The-Regularized-Reader [default: OFF]");
         opts.addOption("alpha", "alphaFTRL", true,
-            "Alpha value (learning rate) of Follow-The-Regularized-Reader [default 0.1]");
+            "Alpha value (learning rate) of Follow-The-Regularized-Reader [default: 0.1]");
         opts.addOption("beta", "betaFTRL", true,
-            "Beta value (a learning smoothing parameter) of Follow-The-Regularized-Reader [default 1.0]");
+            "Beta value (a learning smoothing parameter) of Follow-The-Regularized-Reader [default: 1.0]");
         opts.addOption(
             "lambda1",
             true,
-            "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default 0.1]");
+            "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.1]");
         opts.addOption("lambda2", true,
-            "L2 regularization value of Follow-The-Regularized-Reader [default 0.01]");
+            "L2 regularization value of Follow-The-Regularized-Reader [default: 0.01]");
         return opts;
     }
 

@@ -128,6 +128,7 @@ public abstract class Feature {
         }
     }
 
+    @Nullable
     public static Feature[] parseFFMFeatures(@Nonnull final Object arg,
             @Nonnull final ListObjectInspector listOI, @Nullable final Feature[] probes,
             final int numFeatures, final int numFields) throws HiveException {
@@ -225,20 +226,21 @@ public abstract class Feature {
             return new IntFeature(index, field, value);
         }
 
-        final String indexStr = rest.substring(0, pos2);
-        final int index;
+
         final short field;
-        if (NumberUtils.isDigits(indexStr) && NumberUtils.isDigits(lead)) {
-            index = parseFeatureIndex(indexStr);
-            if (index >= (numFeatures + numFields)) {
-                throw new HiveException("Feature index MUST be less than "
-                        + (numFeatures + numFields) + " but was " + index);
-            }
+        if (NumberUtils.isDigits(lead)) {
             field = parseField(lead, numFields);
+        } else {
+            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
+        }
+
+        final int index;
+        final String indexStr = rest.substring(0, pos2);
+        if (numFeatures == -1 && NumberUtils.isDigits(indexStr)) {
+            index = parseFeatureIndex(indexStr);
         } else {
             // +NUM_FIELD to avoid conflict to quantitative features
             index = MurmurHash3.murmurhash3(indexStr, numFeatures) + numFields;
-            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
         }
         String valueStr = rest.substring(pos2 + 1);
         double value = parseFeatureValue(valueStr);
@@ -312,12 +314,8 @@ public abstract class Feature {
         }
         final int index;
         final String indexStr = rest.substring(0, pos2);
-        if (NumberUtils.isDigits(indexStr)) {
+        if (numFeatures == -1 && NumberUtils.isDigits(indexStr)) {
             index = parseFeatureIndex(indexStr);
-            if (index >= (numFeatures + numFields)) {
-                throw new HiveException("Feature index MUST be less than "
-                        + (numFeatures + numFields) + " but was " + index);
-            }
         } else {
             // +NUM_FIELD to avoid conflict to quantitative features
             index = MurmurHash3.murmurhash3(indexStr, numFeatures) + numFields;

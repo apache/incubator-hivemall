@@ -19,18 +19,19 @@
 package hivemall.ftvec.pairing;
 
 import hivemall.UDTFWithOptions;
-import hivemall.model.FeatureValue;
 import hivemall.fm.Feature;
+import hivemall.model.FeatureValue;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hashing.HashFunction;
 import hivemall.utils.lang.Preconditions;
+import hivemall.utils.lang.Primitives;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-import hivemall.utils.lang.Primitives;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -61,11 +62,13 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("kpa", false,
-            "Generate feature pairs for Kernel-Expansion Passive Aggressive [default:true]");
+            "Generate feature pairs for Kernel-Expansion Passive Aggressive [default:false]");
         opts.addOption("ffm", false,
             "Generate feature pairs for Field-aware Factorization Machines [default:false]");
+        // feature hashing
+        opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("feature_hashing", true,
-                "The number of bits for feature hashing in range [18,31] [default:21]");
+            "The number of bits for feature hashing in range [18,31]. [default: -1] No feature hashing for -1.");
         opts.addOption("num_fields", true, "The number of fields [default:1024]");
         return opts;
     }
@@ -84,10 +87,23 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                 this._type = Type.kpa;
             } else if (cl.hasOption("ffm")) {
                 this._type = Type.ffm;
-                int featureBits = Primitives.parseInt(
-                        cl.getOptionValue("feature_hashing"), Feature.DEFAULT_FEATURE_BITS);
-                this._numFeatures = 1 << featureBits;
-                this._numFields = Primitives.parseInt(cl.getOptionValue("num_fields"), Feature.DEFAULT_NUM_FIELDS);
+                this._numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), -1);
+                if (_numFeatures == -1) {
+                    int featureBits = Primitives.parseInt(cl.getOptionValue("feature_hashing"), -1);
+                    if (featureBits != -1) {
+                        if (featureBits < 18 || featureBits > 31) {
+                            throw new UDFArgumentException(
+                                "-feature_hashing MUST be in range [18,31]: " + featureBits);
+                        }
+                        this._numFeatures = 1 << featureBits;
+                    }
+                }
+                this._numFields = Primitives.parseInt(cl.getOptionValue("num_fields"),
+                    Feature.DEFAULT_NUM_FIELDS);
+                if (_numFields <= 1) {
+                    throw new UDFArgumentException("-num_fields MUST be greater than 1: "
+                            + _numFields);
+                }
             } else {
                 throw new UDFArgumentException("Unsupported option: " + cl.getArgList().get(0));
             }
@@ -246,6 +262,9 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
         @Nonnull
         private final Writable[] forward;
 
+        @Nullable
+        private transient Feature[] _features;
+
         FFMProcessor(@Nonnull ListObjectInspector fvOI) {
             super(fvOI);
             this.f0 = new IntWritable();
@@ -253,6 +272,7 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
             this.f2 = new DoubleWritable();
             this.f3 = new DoubleWritable();
             this.forward = new Writable[] {f0, null, null, null};
+            this._features = null;
         }
 
         @Override
@@ -262,7 +282,8 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                 return;
             }
 
-            final Feature[] features = Feature.parseFFMFeatures(arg, fvOI, null, _numFeatures, _numFields);
+            this._features = Feature.parseFFMFeatures(arg, fvOI, _features, _numFeatures,
+                _numFields);
 
             // W0
             f0.set(0);
@@ -272,6 +293,7 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
             forward(forward);
 
             forward[2] = f2;
+            final Feature[] features = _features;
             for (int i = 0, len = features.length; i < len; i++) {
                 Feature ei = features[i];
                 double xi = ei.getValue();

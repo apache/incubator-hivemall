@@ -68,6 +68,7 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         opts.addOption("no_hash", "disable_feature_hashing", false,
             "Wheather to disable feature hashing [default: false]");
         // feature hashing
+        opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("hash", "feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default:21]");
         opts.addOption("fields", "num_fields", true, "The number of fields [default:1024]");
@@ -80,18 +81,23 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         CommandLine cl = parseOptions(optionValue);
 
         // feature hashing
-        int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"),
-            Feature.DEFAULT_FEATURE_BITS);
-        if (hashbits < 18 || hashbits > 31) {
-            throw new UDFArgumentException("-feature_hashing MUST be in range [18,31]: " + hashbits);
+        int numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), -1);
+        if (numFeatures == -1) {
+            int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"),
+                Feature.DEFAULT_FEATURE_BITS);
+            if (hashbits < 18 || hashbits > 31) {
+                throw new UDFArgumentException("-feature_hashing MUST be in range [18,31]: "
+                        + hashbits);
+            }
+            numFeatures = 1 << hashbits;
         }
-        int numFeatures = 1 << hashbits;
+        this._numFeatures = numFeatures;
+
         int numFields = Primitives.parseInt(cl.getOptionValue("num_fields"),
             Feature.DEFAULT_NUM_FIELDS);
         if (numFields <= 1) {
             throw new UDFArgumentException("-num_fields MUST be greater than 1: " + numFields);
         }
-        this._numFeatures = numFeatures;
         this._numFields = numFields;
 
         this._emitIndicies = cl.hasOption("emit_indicies");
