@@ -17,6 +17,7 @@
  * under the License.
  */
 
+
 package hivemall.opennlp.tools;
 
 import java.io.File;
@@ -55,10 +56,12 @@ import opennlp.maxent.io.GISModelReader;
 import opennlp.maxent.io.GISModelWriter;
 import opennlp.model.AbstractModel;
 import opennlp.model.Context;
+import opennlp.model.DataIndexer;
 import opennlp.model.EvalParameters;
 import opennlp.model.EventStream;
 import opennlp.model.IndexHashTable;
 import opennlp.model.OnePassRealValueDataIndexer;
+import opennlp.model.UniformPrior;
 
 
 public class MaxEntPredictUDFTest {
@@ -134,7 +137,6 @@ public class MaxEntPredictUDFTest {
         GISModelWriter writer = new SepDelimitedTextGISModelWriter(model, "@");
         writer.persist();
         String stored_model = writer.toString();
-        System.out.println(stored_model);
         // read model from string
         GISModelReader reader = new SepDelimitedTextGISModelReader(new Text(stored_model));
         AbstractModel read_model = reader.constructModel();
@@ -238,8 +240,10 @@ public class MaxEntPredictUDFTest {
         matrixBuilder = null;
 
         EventStream es = new MatrixEventStream(x, y, SmileExtUtils.resolveAttributes(types));
+        GIS.PRINT_MESSAGES = false;
+        //AbstractModel openNLPModel = GIS.trainModel(100, new OnePassRealValueDataIndexer(es,0, false), USE_SMOOTHING);
         AbstractModel openNLPModel = GIS.trainModel(100, new OnePassRealValueDataIndexer(es, 0,
-            false), USE_SMOOTHING);
+            false), false, USE_SMOOTHING, new UniformPrior(), 0);
 
         EventStream matrixEs = new MatrixEventStream(x, y, SmileExtUtils.resolveAttributes(types));
         AbstractModel hivemallModel;
@@ -376,9 +380,9 @@ public class MaxEntPredictUDFTest {
         Collections.sort(hivemallParameters);
 
         for (int i = 0; i < openNLPParameters.size(); i++) {
-            BigDecimal openNLP = new BigDecimal(openNLPParameters.get(i)).setScale(6,
+            BigDecimal openNLP = new BigDecimal(openNLPParameters.get(i)).setScale(3,
                 RoundingMode.HALF_EVEN);
-            BigDecimal hiveMall = new BigDecimal(hivemallParameters.get(i)).setScale(6,
+            BigDecimal hiveMall = new BigDecimal(hivemallParameters.get(i)).setScale(3,
                 RoundingMode.HALF_EVEN);
             Assert.assertEquals(openNLP, hiveMall);
         }
