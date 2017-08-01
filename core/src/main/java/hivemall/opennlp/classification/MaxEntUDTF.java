@@ -1,25 +1,7 @@
-/* 
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
 package hivemall.opennlp.classification;
 
 import java.io.FileNotFoundException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,54 +55,53 @@ import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
-
+import opennlp.maxent.GIS;
 import opennlp.maxent.io.GISModelWriter;
 import opennlp.model.AbstractModel;
 import opennlp.model.ComparableEvent;
 import opennlp.model.Event;
 import opennlp.model.EventStream;
+import opennlp.model.OnePassRealValueDataIndexer;
 
-public class MaxEntUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(MaxEntUDTF.class);
-
-    private ListObjectInspector featureListOI;
+public class MaxEntUDTF extends UDTFWithOptions{
+	private static final Log logger = LogFactory.getLog(MaxEntUDTF.class);
+	
+	private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector labelOI;
 
     private MatrixBuilder matrixBuilder;
     private IntArrayList labels;
-
-    private boolean _real;
-    private Attribute[] _attributes;
-    private static boolean _USE_SMOOTHING;
-    private double _SMOOTHING_OBSERVATION;
-
-    private int _numTrees = 1;
-
+    
+	private boolean _real;
+	private Attribute[] _attributes;
+	private static boolean _USE_SMOOTHING;
+	private double _SMOOTHING_OBSERVATION;
+	
+	private int _numTrees = 1;
+    
     @Nullable
     private Reporter _progressReporter;
     @Nullable
     private Counter _treeBuildTaskCounter;
-
+    
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("real", "quantative_feature_presence_indication", true,
-            "true or false [default: true]");
-        opts.addOption("smoothing", "smoothimg", true,
-            "Shall smoothing be performed [default: false]");
-        opts.addOption("constant", "smoothing_constant", true, "real number [default: 1.0]");
+        //opts.addOption("real", "quantative_feature_presence_indication", true,"true or false [default: true]");
+        //opts.addOption("smoothing", "smoothimg", true, "Shall smoothing be performed [default: false]");
+        //opts.addOption("constant", "smoothing_constant", true, "real number [default: 1.0]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
         return opts;
     }
-
+    
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-        boolean real = true;
-        boolean USE_SMOOTHING = false;
-        double SMOOTHING_OBSERVATION = 0.1;
-
+    	boolean real = true;
+ 	    boolean USE_SMOOTHING = false;
+ 	    double SMOOTHING_OBSERVATION = 0.1;
+ 	    
         Attribute[] attrs = null;
 
         CommandLine cl = null;
@@ -128,12 +109,10 @@ public class MaxEntUDTF extends UDTFWithOptions {
             String rawArgs = HiveUtils.getConstString(argOIs[2]);
             cl = parseOptions(rawArgs);
 
-            real = Primitives.parseBoolean(
-                cl.getOptionValue("quantative_feature_presence_indication"), real);
+            real = Primitives.parseBoolean(cl.getOptionValue("quantative_feature_presence_indication"), real);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
             USE_SMOOTHING = Primitives.parseBoolean(cl.getOptionValue("smoothing"), USE_SMOOTHING);
-            SMOOTHING_OBSERVATION = Primitives.parseDouble(cl.getOptionValue("smoothing_constant"),
-                SMOOTHING_OBSERVATION);
+            SMOOTHING_OBSERVATION = Primitives.parseDouble(cl.getOptionValue("smoothing_constant"), SMOOTHING_OBSERVATION);
         }
 
         this._real = real;
@@ -143,7 +122,7 @@ public class MaxEntUDTF extends UDTFWithOptions {
 
         return cl;
     }
-
+    
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 2 || argOIs.length > 3) {
@@ -159,8 +138,8 @@ public class MaxEntUDTF extends UDTFWithOptions {
             this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
             this.matrixBuilder = new CSRMatrixBuilder(8192);
         } else {
-            throw new UDFArgumentException("_FUNC_ takes double[] for the first argument: "
-                    + listOI.getTypeName());
+            throw new UDFArgumentException(
+                "_FUNC_ takes double[] for the first argument: " + listOI.getTypeName());
         }
         this.labelOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
 
@@ -168,25 +147,20 @@ public class MaxEntUDTF extends UDTFWithOptions {
 
         this.labels = new IntArrayList(1024);
 
-        final ArrayList<String> fieldNames = new ArrayList<String>(6);
-        final ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(6);
+        final ArrayList<String> fieldNames = new ArrayList<String>(3);
+        final ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(3);
 
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        fieldNames.add("model_weight");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("attributes");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        fieldNames.add("oob_errors");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-        fieldNames.add("oob_tests");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
-
+    
     @Override
     public void process(Object[] args) throws HiveException {
         if (args[0] == null) {
@@ -196,9 +170,9 @@ public class MaxEntUDTF extends UDTFWithOptions {
         int label = PrimitiveObjectInspectorUtils.getInt(args[1], labelOI);
         labels.add(label);
     }
-
+    
     private void parseFeatures(@Nonnull final Object argObj, @Nonnull final MatrixBuilder builder) {
-        final int length = featureListOI.getListLength(argObj);
+    	final int length = featureListOI.getListLength(argObj);
         for (int i = 0; i < length; i++) {
             Object o = featureListOI.getListElement(argObj, i);
             if (o == null) {
@@ -206,10 +180,10 @@ public class MaxEntUDTF extends UDTFWithOptions {
             }
             double v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
             builder.nextColumn(i, v);
-        }
+        } 
         builder.nextRow();
     }
-
+    
     @Override
     public void close() throws HiveException {
         this._progressReporter = getReporter();
@@ -233,15 +207,13 @@ public class MaxEntUDTF extends UDTFWithOptions {
         this.featureElemOI = null;
         this.labelOI = null;
     }
-
+    
     private void checkOptions() throws HiveException {
-        if (_USE_SMOOTHING == false && _SMOOTHING_OBSERVATION != 0.1) {
-            throw new HiveException(
-                "Instructions received to avoid smoothing, but smoothing constant is set ["
-                        + _SMOOTHING_OBSERVATION + "]");
+    	if (_USE_SMOOTHING == false && _SMOOTHING_OBSERVATION != 0.1) {
+            throw new HiveException("Instructions received to avoid smoothing, but smoothing constant is set [" + _SMOOTHING_OBSERVATION + "]");
         }
     }
-
+    
     /**
      * @param x features
      * @param y label
@@ -262,8 +234,8 @@ public class MaxEntUDTF extends UDTFWithOptions {
         Attribute[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
 
         if (logger.isInfoEnabled()) {
-            logger.info("real: " + _real + ", smoothing: " + this._USE_SMOOTHING
-                    + ", smoothing constant: " + _SMOOTHING_OBSERVATION);
+            logger.info("real: " + _real + ", smoothing: " + this._USE_SMOOTHING + ", smoothing constant: "
+                    + _SMOOTHING_OBSERVATION);
         }
 
         IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
@@ -272,7 +244,7 @@ public class MaxEntUDTF extends UDTFWithOptions {
         for (int i = 0; i < _numTrees; i++) {
             tasks.add(new TrainingTask(this, i, attributes, x, y, prediction, remainingTasks));
         }
-
+        
         MapredContext mapredContext = MapredContextAccessor.get();
         final SmileTaskExecutor executor = new SmileTaskExecutor(mapredContext);
         try {
@@ -282,50 +254,33 @@ public class MaxEntUDTF extends UDTFWithOptions {
         } finally {
             executor.shotdown();
         }
-
+        
     }
+    
 
-
-
+    
     /**
      * Synchronized because {@link #forward(Object)} should be called from a single thread.
      * 
-     * @param accuracy
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
-            @Nonnull Attribute[] attributes, @Nonnegative final double accuracy, final int[] y,
+    		@Nonnull Attribute[] attributes,
+            final int[] y,
             @Nonnull final IntMatrix prediction, final boolean lastTask) throws HiveException {
-        int oobErrors = 0;
-        int oobTests = 0;
-        if (lastTask) {
-            // out-of-bag error estimate
-            for (int i = 0; i < y.length; i++) {
-                final int pred = MatrixUtils.whichMax(prediction, i);
-                if (pred != -1 && prediction.get(i, pred) > 0) {
-                    oobTests++;
-                    if (pred != y[i]) {
-                        oobErrors++;
-                    }
-                }
-            }
-        }
 
         final Object[] forwardObjs = new Object[6];
         String modelId = RandomUtils.getUUID();
         forwardObjs[0] = new Text(modelId);
-        forwardObjs[1] = new DoubleWritable(accuracy);
-        forwardObjs[2] = model;
-        forwardObjs[3] = new Text(SmileExtUtils.resolveAttributes(attributes));
-        forwardObjs[4] = new IntWritable(oobErrors);
-        forwardObjs[5] = new IntWritable(oobTests);
+        forwardObjs[1] = model;
+        forwardObjs[2] = new Text(SmileExtUtils.resolveAttributes(attributes));
         forward(forwardObjs);
 
         reportProgress(_progressReporter);
         incrCounter(_treeBuildTaskCounter, 1);
 
-        logger.info("Forwarded " + taskId + "-th DecisionTree out of " + _numTrees);
+        logger.info("Forwarded " + taskId);
     }
-
+    
     /**
      * Trains a regression tree.
      */
@@ -341,7 +296,7 @@ public class MaxEntUDTF extends UDTFWithOptions {
          */
         @Nonnull
         private final int[] _y;
-
+        
         /**
          * Attribute properties.
          */
@@ -358,13 +313,13 @@ public class MaxEntUDTF extends UDTFWithOptions {
         @Nonnull
         private final MaxEntUDTF _udtf;
         private final int _taskId;
-
+ 
         @Nonnull
         private final AtomicInteger _remainingTasks;
 
-        TrainingTask(@Nonnull MaxEntUDTF udtf, int taskId, @Nonnull Attribute[] attributes,
-                @Nonnull Matrix x, @Nonnull int[] y, @Nonnull IntMatrix prediction,
-                @Nonnull AtomicInteger remainingTasks) {
+        TrainingTask(@Nonnull MaxEntUDTF udtf, int taskId,
+        		@Nonnull Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y, 
+                @Nonnull IntMatrix prediction, @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;
@@ -380,69 +335,41 @@ public class MaxEntUDTF extends UDTFWithOptions {
 
             EventStream es = new MatrixEventStream(_x, _y, _attributes);
             AbstractModel model;
-            try {
-                MatrixForTraining mx = new MatrixForTraining(_x, _y, _attributes);
-                model = BigGIS.trainModel(100, new OnePassBigDataIndexer(es, 0), mx);
-            } catch (IOException e) {
-                throw new HiveException(e.getMessage());
-            }
-
-            // out-of-bag prediction
-            int oob = 0;
-            int correct = 0;
-            EventStream test = new MatrixEventStream(_x, _y, _attributes);
-            for (int i = 0; i < N; i++) {
-                oob++;
-                Event event;
-                try {
-                    event = test.next();
-
-                    float[] vals = event.getValues();
-                    String[] contexts = event.getContext();
-                    double[] ocs = model.eval(contexts, vals);
-                    int p = Integer.valueOf(model.getBestOutcome(ocs));
-
-                    if (p == _y[i]) {
-                        correct++;
-                    }
-                    synchronized (_udtf) {
-                        _prediction.incr(i, p);
-                    }
-                } catch (IOException e) {
-                    throw new HiveException(e.getMessage());
-                }
-            }
-
-            double accuracy = (oob == 0) ? 1.0d : (double) correct / oob;
+			try {
+				MatrixForTraining mx = new MatrixForTraining(_x, _y, _attributes);
+				model = BigGIS.trainModel(100, new OnePassBigDataIndexer(es,0), mx);
+			} catch (IOException e) {
+				throw new HiveException(e.getMessage());
+			}
+           
             int remain = _remainingTasks.decrementAndGet();
             boolean lastTask = (remain == 0);
             GISModelWriter writer;
-            try {
-                writer = new SepDelimitedTextGISModelWriter(model, "@");
-                writer.persist();
-            } catch (FileNotFoundException e) {
-                throw new HiveException(e.getMessage());
-            } catch (IOException e) {
-                throw new HiveException(e.getMessage());
-            }
-
-            _udtf.forward(_taskId + 1, new Text(writer.toString()), _attributes, accuracy, _y,
-                _prediction, lastTask);
+			try {
+				writer = new SepDelimitedTextGISModelWriter(model, "@");
+				writer.persist();
+			} catch (FileNotFoundException e) {
+				throw new HiveException(e.getMessage());
+			} catch (IOException e) {
+				throw new HiveException(e.getMessage());
+			}
+            
+            _udtf.forward(_taskId + 1, new Text(writer.toString()), _attributes, _y, _prediction, lastTask);
 
             return Integer.valueOf(remain);
         }
 
         @Nonnull
         private static Text getModel(@Nonnull final AbstractModel model) throws HiveException {
-            GISModelWriter writer;
-            try {
-                writer = new SepDelimitedTextGISModelWriter(model, "@");
-                writer.persist();
-            } catch (FileNotFoundException e) {
-                throw new HiveException(e.getMessage());
-            } catch (IOException e) {
-                throw new HiveException(e.getMessage());
-            }
+        	GISModelWriter writer;
+			try {
+				writer = new SepDelimitedTextGISModelWriter(model, "@");
+				writer.persist();
+			} catch (FileNotFoundException e) {
+				throw new HiveException(e.getMessage());
+			} catch (IOException e) {
+				throw new HiveException(e.getMessage());
+			}
             return new Text(writer.toString());
         }
 
