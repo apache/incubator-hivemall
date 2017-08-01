@@ -133,7 +133,12 @@ public class MaxEntUDTF extends UDTFWithOptions {
 
             //real = Primitives.parseBoolean(cl.getOptionValue("quantative_feature_presence_indication"), real);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
-            numOfIterations = Integer.valueOf(cl.getOptionValue("iterations_number"));
+            String num = cl.getOptionValue("iterations_number");
+            if (num != null && !num.isEmpty()) {
+
+                numOfIterations = Integer.valueOf(num);
+            }
+
             //USE_SMOOTHING = Primitives.parseBoolean(cl.getOptionValue("smoothing"), USE_SMOOTHING);
             //SMOOTHING_OBSERVATION = Primitives.parseDouble(cl.getOptionValue("smoothing_constant"), SMOOTHING_OBSERVATION);
         }
@@ -141,8 +146,8 @@ public class MaxEntUDTF extends UDTFWithOptions {
         //this._real = real;
         this._attributes = attrs;
         this._numOfIterations = numOfIterations;
-        //this._USE_SMOOTHING = USE_SMOOTHING;
-        //this._SMOOTHING_OBSERVATION = SMOOTHING_OBSERVATION;
+        this._USE_SMOOTHING = USE_SMOOTHING;
+        this._SMOOTHING_OBSERVATION = SMOOTHING_OBSERVATION;
 
         return cl;
     }
