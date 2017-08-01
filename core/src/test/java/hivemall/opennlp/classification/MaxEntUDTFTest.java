@@ -96,7 +96,7 @@ public class MaxEntUDTFTest {
 
         MaxEntUDTF udtf = new MaxEntUDTF();
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-real true -attrs " + types);
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-attrs " + types);
         udtf.initialize(new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
