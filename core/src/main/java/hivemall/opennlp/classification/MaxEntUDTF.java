@@ -1,6 +1,23 @@
-/* * Licensed to the Apache Software Foundation (ASF) under one * or more contributor license agreements.  See the NOTICE file * distributed with this work for additional information * regarding copyright ownership.  The ASF licenses this file * to you under the Apache License, Version 2.0 (the * "License"); you may not use this file except in compliance * with the License.  You may obtain a copy of the License at *  *   http://www.apache.org/licenses/LICENSE-2.0 *  * Unless required by applicable law or agreed to in writing, * software distributed under the License is distributed on an * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY * KIND, either express or implied.  See the License for the * specific language governing permissions and limitations * under the License. */
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
-package hivemall.opennlp.classification;
+package hivemall.smile.classification;
 
 import java.io.FileNotFoundException;
 
@@ -46,11 +63,11 @@ import hivemall.math.matrix.ints.DoKIntMatrix;
 import hivemall.math.matrix.ints.IntMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
-import hivemall.opennlp.tools.BigGIS;
-import hivemall.opennlp.tools.MatrixEventStream;
-import hivemall.opennlp.tools.MatrixForTraining;
-import hivemall.opennlp.tools.OnePassBigDataIndexer;
-import hivemall.opennlp.tools.SepDelimitedTextGISModelWriter;
+import hivemall.smile.tools.BigGIS;
+import hivemall.smile.tools.MatrixEventStream;
+import hivemall.smile.tools.MatrixForTraining;
+import hivemall.smile.tools.OnePassBigDataIndexer;
+import hivemall.smile.tools.SepDelimitedTextGISModelWriter;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.collections.lists.IntArrayList;
@@ -77,6 +94,7 @@ public class MaxEntUDTF extends UDTFWithOptions {
 
     private boolean _real;
     private Attribute[] _attributes;
+    private static int _numOfIterations = 100;
     private static boolean _USE_SMOOTHING;
     private double _SMOOTHING_OBSERVATION;
 
@@ -93,6 +111,7 @@ public class MaxEntUDTF extends UDTFWithOptions {
         //opts.addOption("real", "quantative_feature_presence_indication", true,"true or false [default: true]");
         //opts.addOption("smoothing", "smoothimg", true, "Shall smoothing be performed [default: false]");
         //opts.addOption("constant", "smoothing_constant", true, "real number [default: 1.0]");
+        opts.addOption("iter", "iterations_number", true, "number [default: 100]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
         return opts;
@@ -103,6 +122,7 @@ public class MaxEntUDTF extends UDTFWithOptions {
         boolean real = true;
         boolean USE_SMOOTHING = false;
         double SMOOTHING_OBSERVATION = 0.1;
+        int numOfIterations = this._numOfIterations;
 
         Attribute[] attrs = null;
 
@@ -111,18 +131,18 @@ public class MaxEntUDTF extends UDTFWithOptions {
             String rawArgs = HiveUtils.getConstString(argOIs[2]);
             cl = parseOptions(rawArgs);
 
-            real = Primitives.parseBoolean(
-                cl.getOptionValue("quantative_feature_presence_indication"), real);
+            //real = Primitives.parseBoolean(cl.getOptionValue("quantative_feature_presence_indication"), real);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
-            USE_SMOOTHING = Primitives.parseBoolean(cl.getOptionValue("smoothing"), USE_SMOOTHING);
-            SMOOTHING_OBSERVATION = Primitives.parseDouble(cl.getOptionValue("smoothing_constant"),
-                SMOOTHING_OBSERVATION);
+            numOfIterations = Integer.valueOf(cl.getOptionValue("iterations_number"));
+            //USE_SMOOTHING = Primitives.parseBoolean(cl.getOptionValue("smoothing"), USE_SMOOTHING);
+            //SMOOTHING_OBSERVATION = Primitives.parseDouble(cl.getOptionValue("smoothing_constant"), SMOOTHING_OBSERVATION);
         }
 
-        this._real = real;
+        //this._real = real;
         this._attributes = attrs;
-        this._USE_SMOOTHING = USE_SMOOTHING;
-        this._SMOOTHING_OBSERVATION = SMOOTHING_OBSERVATION;
+        this._numOfIterations = numOfIterations;
+        //this._USE_SMOOTHING = USE_SMOOTHING;
+        //this._SMOOTHING_OBSERVATION = SMOOTHING_OBSERVATION;
 
         return cl;
     }
@@ -241,7 +261,8 @@ public class MaxEntUDTF extends UDTFWithOptions {
 
         if (logger.isInfoEnabled()) {
             logger.info("real: " + _real + ", smoothing: " + this._USE_SMOOTHING
-                    + ", smoothing constant: " + _SMOOTHING_OBSERVATION);
+                    + ", smoothing constant: " + _SMOOTHING_OBSERVATION
+                    + ", number of iterations: " + this._numOfIterations);
         }
 
         IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
@@ -342,7 +363,7 @@ public class MaxEntUDTF extends UDTFWithOptions {
             AbstractModel model;
             try {
                 MatrixForTraining mx = new MatrixForTraining(_x, _y, _attributes);
-                model = BigGIS.trainModel(100, new OnePassBigDataIndexer(es, 0), mx);
+                model = BigGIS.trainModel(_numOfIterations, new OnePassBigDataIndexer(es, 0), mx);
             } catch (IOException e) {
                 throw new HiveException(e.getMessage());
             }
