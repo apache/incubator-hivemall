@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package hivemall.smile.classification;
+package hivemall.opennlp.classification;
 
 import java.io.FileNotFoundException;
 
@@ -63,11 +63,11 @@ import hivemall.math.matrix.ints.DoKIntMatrix;
 import hivemall.math.matrix.ints.IntMatrix;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.data.Attribute.AttributeType;
-import hivemall.smile.tools.BigGIS;
-import hivemall.smile.tools.MatrixEventStream;
-import hivemall.smile.tools.MatrixForTraining;
-import hivemall.smile.tools.OnePassBigDataIndexer;
-import hivemall.smile.tools.SepDelimitedTextGISModelWriter;
+import hivemall.opennlp.tools.BigGIS;
+import hivemall.opennlp.tools.MatrixEventStream;
+import hivemall.opennlp.tools.MatrixForTraining;
+import hivemall.opennlp.tools.OnePassBigDataIndexer;
+import hivemall.opennlp.tools.SepDelimitedTextGISModelWriter;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.collections.lists.IntArrayList;
