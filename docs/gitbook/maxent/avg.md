@@ -20,5 +20,7 @@
 # Aggregate models when training resulted in more than one model
 
 ```sql
-select aggregate_classifiers(model) as model, collect_set(attributes)[0] as attributes from tmodel_maxent;
+SELECT aggregate_classifiers(model) 
+AS model, collect_set(attributes)[0] AS attributes 
+FROM realtimemodel;
 ```

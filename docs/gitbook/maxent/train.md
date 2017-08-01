@@ -19,30 +19,28 @@
 
 # Training the model
 
-Assume that we already have a table **t_test_maxent** with features and labels in the following format:
-
-| docid | doc  |
-|:---:|:---|
-| 1  | "Fruits and vegetables are healthy." |
-|2 | "I like apples, oranges, and avocados. I do not like the flu or colds." |
-| ... | ... |
-
-Training the model requires **train_maxent_classifier**:
+Once the data is prepared, in this case in a **realtimedata** data. Training the model requires **train_maxent_classifier**:
 
 ```sql
-CREATE TABLE tmodel_maxent
+CREATE TABLE realtimemodel
 STORED AS SEQUENCEFILE
 AS
 select
-train_maxent_classifier(features, klass, "-attrs
-Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,C,Q,Q,Q,Q,Q,Q,Q,Q")
+  train_maxent_classifier(features, label, "-attrs C,Q,Q")
 from
-t_test_maxent;
+  realtimetrain;
 ```
 
 # Predict
 
 ```sql
-create table tmodel_combined as
-select predict_maxent_classifier(b.model, b.attributes, a.features) result, klass from t_test_maxent a join tmodel_maxent b;
+CREATE TABLE realtime_predicted AS
+SELECT
+predict_maxent_classifier(b.model, b.attributes, a.features) result, a.label 
+FROM 
+realtimetrain a JOIN realtimemodel b;
+ 
+SELECT count(1) 
+FROM realtime_predicted 
+WHERE result.value == label;
 ```
