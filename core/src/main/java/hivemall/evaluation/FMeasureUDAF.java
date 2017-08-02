@@ -38,8 +38,8 @@ import org.apache.hadoop.io.LongWritable;
 
 import javax.annotation.Nonnull;
 
-@Description(name = "fmeasure",
-        value = "_FUNC_(array[int], array[int], double) - Return a F-measure score")
+@Description(name = "f1score",
+        value = "_FUNC_(array[int], array[int], double) - Return a F-measure/F1 score")
 public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
     @Override

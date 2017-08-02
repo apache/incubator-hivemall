@@ -50,9 +50,7 @@ public class FMeasureUDAFTest {
         partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
 
         agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
-
     }
-
 
     @Test
     public void test() throws Exception {
@@ -62,8 +60,8 @@ public class FMeasureUDAFTest {
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
-
         evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+
         Assert.assertEquals(0.625, agg.get(), 1e-4);
     }
 
@@ -75,7 +73,6 @@ public class FMeasureUDAFTest {
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
-
         evaluator.iterate(agg, new Object[] {actual, predicted, beta});
 
         // FMeasure for beta has zero value is not defined
@@ -90,7 +87,6 @@ public class FMeasureUDAFTest {
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
-
         evaluator.iterate(agg, new Object[] {actual, predicted, beta});
 
         // FMeasure for beta has negative value is not defined
@@ -137,7 +133,4 @@ public class FMeasureUDAFTest {
 
         Assert.assertEquals(-1.d, agg.get(), 1e-5);
     }
-
-
-
 }
