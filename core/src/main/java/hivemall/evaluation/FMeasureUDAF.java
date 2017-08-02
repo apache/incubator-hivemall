@@ -46,18 +46,18 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
     public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
-                    "_FUNC_ takes two or three arguments");
+                "_FUNC_ takes two or three arguments");
         }
 
         ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
         if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())) {
             throw new UDFArgumentTypeException(0,
-                    "The first argument `array actual` is invalid form: " + typeInfo[0]);
+                "The first argument `array actual` is invalid form: " + typeInfo[0]);
         }
         ListTypeInfo arg2type = HiveUtils.asListTypeInfo(typeInfo[1]);
         if (!HiveUtils.isPrimitiveTypeInfo(arg2type.getListElementTypeInfo())) {
             throw new UDFArgumentTypeException(1,
-                    "The second argument `array predicted` is invalid form: " + typeInfo[1]);
+                "The second argument `array predicted` is invalid form: " + typeInfo[1]);
         }
 
         return new Evaluator();
@@ -141,7 +141,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
         @Override
         public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
-                            Object[] parameters) throws HiveException {
+                Object[] parameters) throws HiveException {
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
 
             List<?> actual = actualOI.getList(parameters[0]);
@@ -160,7 +160,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             }
             if (beta <= 0.d) {
                 throw new UDFArgumentException(
-                        "The third argument `double beta` must be greater than 0.0");
+                    "The third argument `double beta` must be greater than 0.0");
             }
 
             myAggr.iterate(actual, predicted, beta);
@@ -188,7 +188,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             Object tpObj = internalMergeOI.getStructFieldData(partial, tpField);
             Object totalActualObj = internalMergeOI.getStructFieldData(partial, totalActualField);
-            Object totalPredictedObj = internalMergeOI.getStructFieldData(partial, totalPredictedField);
+            Object totalPredictedObj = internalMergeOI.getStructFieldData(partial,
+                totalPredictedField);
             Object betaObj = internalMergeOI.getStructFieldData(partial, betaField);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
             long totalActual = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalActualObj);
@@ -208,7 +209,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         }
     }
 
-    public static class FMeasureAggregationBuffer extends GenericUDAFEvaluator.AbstractAggregationBuffer {
+    public static class FMeasureAggregationBuffer extends
+            GenericUDAFEvaluator.AbstractAggregationBuffer {
         long tp;
         /** tp + fn */
         long totalActual;
@@ -216,7 +218,9 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         long totalPredicted;
         double beta;
 
-        public FMeasureAggregationBuffer() { super(); }
+        public FMeasureAggregationBuffer() {
+            super();
+        }
 
         void reset() {
             this.tp = 0L;
@@ -246,8 +250,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         }
 
         private static double precision(long tp, long totalPredicted) {
-            return (totalPredicted == 0L) ? 0d : tp
-                    / (double) totalPredicted;
+            return (totalPredicted == 0L) ? 0d : tp / (double) totalPredicted;
         }
 
         private static double recall(long tp, long totalActual) {

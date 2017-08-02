@@ -31,8 +31,7 @@ public class FMeasureUDAFTest {
         inputOIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector
-        };
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector};
 
         evaluator = fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
         List<String> fieldNames = new ArrayList<>();
