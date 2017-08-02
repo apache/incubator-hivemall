@@ -24,6 +24,7 @@ import hivemall.utils.lang.NumberUtils;
 
 import java.nio.ByteBuffer;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -31,7 +32,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 
 public abstract class Feature {
-    public static final int DEFAULT_NUM_FIELDS = 1024;
+    public static final int DEFAULT_NUM_FIELDS = 256;
     public static final int DEFAULT_FEATURE_BITS = 21;
     public static final int DEFAULT_NUM_FEATURES = 1 << 21; // 2^21    
 
@@ -52,10 +53,11 @@ public abstract class Feature {
         throw new UnsupportedOperationException();
     }
 
-    public void setFeatureIndex(int i) {
+    public void setFeatureIndex(@Nonnegative int i) {
         throw new UnsupportedOperationException();
     }
 
+    @Nonnegative
     public int getFeatureIndex() {
         throw new UnsupportedOperationException();
     }

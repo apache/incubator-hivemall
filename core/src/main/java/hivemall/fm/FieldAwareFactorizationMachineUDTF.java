@@ -87,7 +87,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         // feature hashing
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default: -1]. No feature hashing for -1.");
-        opts.addOption("num_fields", true, "The number of fields [default: 1024]");
+        opts.addOption("num_fields", true, "The number of fields [default: 256]");
         // adagrad
         opts.addOption("disable_adagrad", false,
             "Whether to use AdaGrad for tuning learning rate [default: ON]");

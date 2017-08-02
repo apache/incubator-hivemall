@@ -20,19 +20,21 @@ package hivemall.fm;
 
 import java.nio.ByteBuffer;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public final class IntFeature extends Feature {
 
+    @Nonnegative
     private int index;
     /** -1 if not defined */
     private short field;
 
-    public IntFeature(int index, double value) {
+    public IntFeature(@Nonnegative int index, double value) {
         this(index, (short) -1, value);
     }
 
-    public IntFeature(int index, short field, double value) {
+    public IntFeature(@Nonnegative int index, short field, double value) {
         super(value);
         this.field = field;
         this.index = index;
