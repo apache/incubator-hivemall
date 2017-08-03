@@ -21,8 +21,10 @@ package hivemall.evaluation;
 import hivemall.utils.hadoop.HiveUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 
 import org.apache.hadoop.hive.ql.exec.*;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -30,9 +32,14 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
@@ -49,24 +56,24 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 "_FUNC_ takes two or three arguments");
         }
 
-        ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
-        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())) {
-            throw new UDFArgumentTypeException(0,
-                "The first argument `array actual` is invalid form: " + typeInfo[0]);
-        }
-        ListTypeInfo arg2type = HiveUtils.asListTypeInfo(typeInfo[1]);
-        if (!HiveUtils.isPrimitiveTypeInfo(arg2type.getListElementTypeInfo())) {
-            throw new UDFArgumentTypeException(1,
-                "The second argument `array predicted` is invalid form: " + typeInfo[1]);
-        }
+//        ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
+//        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())) {
+//            throw new UDFArgumentTypeException(0,
+//                "The first argument `array actual` is invalid form: " + typeInfo[0]);
+//        }
+//        ListTypeInfo arg2type = HiveUtils.asListTypeInfo(typeInfo[1]);
+//        if (!HiveUtils.isPrimitiveTypeInfo(arg2type.getListElementTypeInfo())) {
+//            throw new UDFArgumentTypeException(1,
+//                "The second argument `array predicted` is invalid form: " + typeInfo[1]);
+//        }
 
         return new Evaluator();
     }
 
     public static class Evaluator extends GenericUDAFEvaluator {
 
-        private ListObjectInspector actualOI;
-        private ListObjectInspector predictedOI;
+        private ObjectInspector actualOI;
+        private ObjectInspector predictedOI;
         private PrimitiveObjectInspector betaOI;
         private StructObjectInspector internalMergeOI;
 
@@ -85,8 +92,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
-                this.actualOI = (ListObjectInspector) parameters[0];
-                this.predictedOI = (ListObjectInspector) parameters[1];
+                this.actualOI = parameters[0];
+                this.predictedOI = parameters[1];
                 if (parameters.length == 3) {
                     this.betaOI = HiveUtils.asNumberOI(parameters[2]);
                 }
@@ -140,27 +147,39 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
-                Object[] parameters) throws HiveException {
+        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg, Object[] parameters) throws HiveException {
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
 
-            List<?> actual = actualOI.getList(parameters[0]);
-            if (actual == null) {
-                actual = Collections.emptyList();
-            }
+            boolean isBinary = HiveUtils.isIntOI(actualOI) || HiveUtils.isBooleanOI(actualOI);
 
-            List<?> predicted = predictedOI.getList(parameters[1]);
-            if (predicted == null) {
-                return;
-            }
+            // boolean isMultiLabel =
 
+            List<?> actual = Collections.emptyList();
+            List<?> predicted;
+            if(isBinary){
+                if(((IntObjectInspector) actualOI).get(parameters[0]) == 1){
+                    actual = Arrays.asList(1);
+                }
+                if(((IntObjectInspector) predictedOI).get(parameters[1]) == 1){
+                    predicted = Arrays.asList(1);
+                }else{
+                    predicted = Collections.emptyList();
+                }
+            }else{
+                actual = ((ListObjectInspector) predictedOI).getList(parameters[0]);
+                predicted = ((ListObjectInspector) predictedOI).getList(parameters[1]);
+            }
             double beta = 1.d;
             if (parameters.length == 3) {
                 beta = HiveUtils.getDouble(parameters[2], betaOI);
             }
             if (beta <= 0.d) {
                 throw new UDFArgumentException(
-                    "The third argument `double beta` must be greater than 0.0");
+                        "The third argument `double beta` must be greater than 0.0");
+            }
+
+            if (predicted == null) {
+                return ;
             }
 
             myAggr.iterate(actual, predicted, beta);
@@ -188,8 +207,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             Object tpObj = internalMergeOI.getStructFieldData(partial, tpField);
             Object totalActualObj = internalMergeOI.getStructFieldData(partial, totalActualField);
-            Object totalPredictedObj = internalMergeOI.getStructFieldData(partial,
-                totalPredictedField);
+            Object totalPredictedObj = internalMergeOI.getStructFieldData(partial, totalPredictedField);
             Object betaObj = internalMergeOI.getStructFieldData(partial, betaField);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
             long totalActual = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalActualObj);
@@ -228,7 +246,6 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             this.totalPredicted = 0L;
         }
 
-
         void merge(long o_tp, long o_actual, long o_predicted, double beta) {
             tp += o_tp;
             totalActual += o_actual;
@@ -245,7 +262,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             if (divisor > 0) {
                 return ((1.d + squareBeta) * precision * recall) / divisor;
             } else {
-                return -1d;
+                return -1.d;
             }
         }
 
