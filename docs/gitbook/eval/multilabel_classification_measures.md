@@ -17,20 +17,13 @@
   under the License.
 -->
 
+<!-- toc -->
 
-## Recall
+# Evaluation metrics for multilabel classification
 
-$$
-\mathrm{precision} = \frac{\mathrm{\#true\ positive}}{\mathrm{\#true\ positive} + \mathrm{\#false\ negative}}
-$$
+## Micro F-measure/F1-score
 
-## Precision
 
-$$
-\mathrm{precision} = \frac{\mathrm{\#true\ positive}}{\mathrm{\#true\ positive} + \mathrm{\#false\ positive}}
-$$
-
-## F-measure/F1-score
 
 $$
 \mathrm{f}_{\beta} = (1+\beta^2) \frac{\mathrm{recision} * \mathrm{recall}}{\beta^2 \mathrm{recision} + \mathrm{recall}}
@@ -40,4 +33,3 @@ $$
 $$
 \mathrm{f}_1 = 2 \frac{\mathrm{recision} * \mathrm{recall}}{\mathrm{recision} + \mathrm{recall}}
 $$
-
