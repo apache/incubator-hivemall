@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -50,6 +51,77 @@ public class FMeasureUDAFTest {
         partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
 
         agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
+    }
+
+    @Test
+    public void testBinary() throws Exception {
+        List<List<Integer>> actual = Arrays.asList();
+        List<List<Integer>> predicted = Arrays.asList();
+
+        DoubleWritable beta = new DoubleWritable(1.d);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+
+        Assert.assertEquals(0.3333, agg.get(), 1e-4);
+    }
+
+    @Test
+    public void testSimpleBinary() throws Exception {
+        List<Integer> actual = Arrays.asList(1);
+        List<Integer> predicted = Arrays.asList(1);
+
+        DoubleWritable beta = new DoubleWritable(1.d);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+
+        Assert.assertEquals(1.d, agg.get(), 1e-4);
+    }
+
+    @Test
+    public void testNegativeInputBinary() throws Exception {
+        List<Integer> actual = Arrays.asList(1);
+        List<Integer> predicted = Arrays.asList(-1);
+
+        DoubleWritable beta = new DoubleWritable(1.d);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+
+        Assert.assertEquals(-1.d, agg.get(), 1e-4);
+    }
+
+    @Test
+    public void testBooleanInputBinary() throws Exception {
+        List<Boolean> actual = Arrays.asList(true);
+        List<Boolean> predicted = Arrays.asList(false);
+
+        DoubleWritable beta = new DoubleWritable(1.d);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+
+        Assert.assertEquals(-1.d, agg.get(), 1e-4);
+    }
+
+
+    @Test(expected = HiveException.class)
+    public void testNonBinaryInputForBinary() throws Exception {
+        List<Integer> actual = Arrays.asList(7);
+        List<Integer> predicted = Arrays.asList(1);
+
+        DoubleWritable beta = new DoubleWritable(1.d);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+
+        agg.get();
     }
 
     @Test

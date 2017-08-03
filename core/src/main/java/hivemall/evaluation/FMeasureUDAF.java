@@ -38,8 +38,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
+import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
@@ -56,16 +58,17 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 "_FUNC_ takes two or three arguments");
         }
 
-//        ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
-//        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())) {
-//            throw new UDFArgumentTypeException(0,
-//                "The first argument `array actual` is invalid form: " + typeInfo[0]);
-//        }
-//        ListTypeInfo arg2type = HiveUtils.asListTypeInfo(typeInfo[1]);
-//        if (!HiveUtils.isPrimitiveTypeInfo(arg2type.getListElementTypeInfo())) {
-//            throw new UDFArgumentTypeException(1,
-//                "The second argument `array predicted` is invalid form: " + typeInfo[1]);
-//        }
+        // TODO: add conditions for argument: int, boolean only
+        ListTypeInfo arg1type = HiveUtils.asListTypeInfo(typeInfo[0]);
+        if (!HiveUtils.isPrimitiveTypeInfo(arg1type.getListElementTypeInfo())) {
+            throw new UDFArgumentTypeException(0,
+                "The first argument `array actual` is invalid form: " + typeInfo[0]);
+        }
+        ListTypeInfo arg2type = HiveUtils.asListTypeInfo(typeInfo[1]);
+        if (!HiveUtils.isPrimitiveTypeInfo(arg2type.getListElementTypeInfo())) {
+            throw new UDFArgumentTypeException(1,
+                "The second argument `array predicted` is invalid form: " + typeInfo[1]);
+        }
 
         return new Evaluator();
     }
@@ -149,26 +152,36 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         @Override
         public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg, Object[] parameters) throws HiveException {
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
-
-            boolean isBinary = HiveUtils.isIntOI(actualOI) || HiveUtils.isBooleanOI(actualOI);
-
-            // boolean isMultiLabel =
+            boolean isList = HiveUtils.isListOI(actualOI);
 
             List<?> actual = Collections.emptyList();
             List<?> predicted;
-            if(isBinary){
-                if(((IntObjectInspector) actualOI).get(parameters[0]) == 1){
-                    actual = Arrays.asList(1);
-                }
-                if(((IntObjectInspector) predictedOI).get(parameters[1]) == 1){
-                    predicted = Arrays.asList(1);
-                }else{
-                    predicted = Collections.emptyList();
+
+            if (!isList) {// binary case
+                if (HiveUtils.isBooleanOI(actualOI)) {
+                    if (((BooleanObjectInspector) actualOI).get(parameters[0])) {
+                        actual = Arrays.asList(1);
+                    }
+                    if (((BooleanObjectInspector) predictedOI).get(parameters[1])) {
+                        predicted = Arrays.asList(1);
+                    } else {
+                        predicted = Collections.emptyList();
+                    }
+                } else {// int case
+                    if (((IntObjectInspector) actualOI).get(parameters[0]) == 1) {
+                        actual = Arrays.asList(1);
+                    }
+                    if (((IntObjectInspector) predictedOI).get(parameters[1]) == 1) {
+                        predicted = Arrays.asList(1);
+                    } else {
+                        predicted = Collections.emptyList();
+                    }
                 }
             }else{
                 actual = ((ListObjectInspector) predictedOI).getList(parameters[0]);
                 predicted = ((ListObjectInspector) predictedOI).getList(parameters[1]);
             }
+
             double beta = 1.d;
             if (parameters.length == 3) {
                 beta = HiveUtils.getDouble(parameters[2], betaOI);
