@@ -22,6 +22,7 @@ import hivemall.fm.Entry.AdaGradEntry;
 import hivemall.fm.Entry.FTRLEntry;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.buffer.HeapBuffer;
+import hivemall.utils.collections.lists.LongArrayList;
 import hivemall.utils.collections.maps.Int2LongOpenHashTable;
 import hivemall.utils.collections.maps.Int2LongOpenHashTable.IMapIterator;
 import hivemall.utils.lang.NumberUtils;
@@ -37,10 +38,12 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     private float _w0;
     @Nonnull
     private final Int2LongOpenHashTable _map;
+    @Nonnull
     private final HeapBuffer _buf;
+    @Nonnull
+    private final LongArrayList _freelist;
 
     // hyperparams
-    // private final int _numFeatures;
     private final int _numFields;
 
     // FTEL
@@ -56,7 +59,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         this._w0 = 0.f;
         this._map = new Int2LongOpenHashTable(DEFAULT_MAPSIZE);
         this._buf = new HeapBuffer(HeapBuffer.DEFAULT_CHUNK_SIZE);
-        // this._numFeatures = params.numFeatures;
+        this._freelist = new LongArrayList();
         this._numFields = params.numFields;
         this._alpha = params.alphaFTRL;
         this._beta = params.betaFTRL;
@@ -215,7 +218,11 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     protected void removeEntry(@Nonnull final Feature x) {
         int j = x.getFeatureIndex();
-        _map.remove(j);
+
+        final long ptr = _map.remove(j);
+        if (ptr != -1L) {
+            _freelist.add(ptr);
+        }
     }
 
     @Nonnull
@@ -235,16 +242,22 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     @Nonnull
     private Entry newEntry() {
-        if (_useFTRL) {
-            long ptr = _buf.allocate(_entrySize);
-            return new FTRLEntry(_buf, _factor, ptr);
-        } else if (_useAdaGrad) {
-            long ptr = _buf.allocate(_entrySize);
-            return new AdaGradEntry(_buf, _factor, ptr);
-        } else {
-            long ptr = _buf.allocate(_entrySize);
-            return new Entry(_buf, _factor, ptr);
+        final long ptr;
+        if (_freelist.isEmpty()) {
+            ptr = _buf.allocate(_entrySize);
+        } else {// reuse removed entry
+            ptr = _freelist.remove();
         }
+
+        final Entry entry;
+        if (_useFTRL) {
+            entry = new FTRLEntry(_buf, _factor, ptr);
+        } else if (_useAdaGrad) {
+            entry = new AdaGradEntry(_buf, _factor, ptr);
+        } else {
+            entry = new Entry(_buf, _factor, ptr);
+        }
+        return entry;
     }
 
     @Nullable
@@ -308,7 +321,6 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         }
 
     }
-
 
     private static int entrySize(int factors, boolean ftrl, boolean adagrad) {
         if (ftrl) {
