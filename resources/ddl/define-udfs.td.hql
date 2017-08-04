@@ -131,6 +131,7 @@ create temporary function base91 as 'hivemall.tools.text.Base91UDF';
 create temporary function unbase91 as 'hivemall.tools.text.Unbase91UDF';
 create temporary function lr_datagen as 'hivemall.dataset.LogisticRegressionDataGeneratorUDTF';
 create temporary function f1score as 'hivemall.evaluation.FMeasureUDAF';
+create temporary function fmeasure as 'hivemall.evaluation.FMeasureUDAF';
 create temporary function mae as 'hivemall.evaluation.MeanAbsoluteErrorUDAF';
 create temporary function mse as 'hivemall.evaluation.MeanSquaredErrorUDAF';
 create temporary function rmse as 'hivemall.evaluation.RootMeanSquaredErrorUDAF';
