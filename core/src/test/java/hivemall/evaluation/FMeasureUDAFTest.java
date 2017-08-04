@@ -292,7 +292,7 @@ public class FMeasureUDAFTest {
 
         evaluator.iterate(agg, new Object[] {actual, predicted, beta});
 
-        Assert.assertEquals(-1.d, agg.get(), 1e-5);
+        Assert.assertEquals(0.d, agg.get(), 1e-5);
     }
 
     @Test
@@ -314,5 +314,24 @@ public class FMeasureUDAFTest {
         // should equal to spark's micro f1 measure result
         // https://spark.apache.org/docs/latest/mllib-evaluation-metrics.html#multilabel-classification
         Assert.assertEquals(0.6956d, agg.get(), 1e-4);
+    }
+
+    @Test
+    public void testMultiLabelFmeasureMultiSamples() throws Exception {
+        String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
+
+        String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
+                {"1", "2"}};
+
+        DoubleWritable beta = new DoubleWritable(2.0d);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < actual.length; i++) {
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
+        }
+
+        Assert.assertEquals(0.6779d, agg.get(), 1e-4);
     }
 }

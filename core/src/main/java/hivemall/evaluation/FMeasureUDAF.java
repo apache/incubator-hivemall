@@ -43,6 +43,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInsp
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.LongWritable;
 
 import javax.annotation.Nonnull;
@@ -95,6 +96,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         private StructField totalActualField;
         private StructField totalPredictedField;
         private StructField betaField;
+        private StructField isAverageMicroFiled;
 
         public Evaluator() {}
 
@@ -117,6 +119,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 this.totalActualField = soi.getStructFieldRef("totalActual");
                 this.totalPredictedField = soi.getStructFieldRef("totalPredicted");
                 this.betaField = soi.getStructFieldRef("beta");
+                this.isAverageMicroFiled = soi.getStructFieldRef("isAverageMicro");
             }
 
             // initialize output
@@ -141,6 +144,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
             fieldNames.add("beta");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+            fieldNames.add("isAverageMicro");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
 
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
@@ -167,6 +172,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             List<?> actual = Collections.emptyList();
             List<?> predicted = Collections.emptyList();
+            boolean isAverageMicro = isList;
 
             if (isList) {// array case
                 actual = ((ListObjectInspector) predictedOI).getList(parameters[0]);
@@ -207,7 +213,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 throw new UDFArgumentException(
                     "The third argument `double beta` must be greater than 0.0:" + beta);
             }
-            myAggr.iterate(actual, predicted, beta);
+            myAggr.iterate(actual, predicted, beta, isAverageMicro);
         }
 
         @Override
@@ -215,11 +221,12 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 throws HiveException {
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
 
-            Object[] partialResult = new Object[4];
+            Object[] partialResult = new Object[5];
             partialResult[0] = new LongWritable(myAggr.tp);
             partialResult[1] = new LongWritable(myAggr.totalActual);
             partialResult[2] = new LongWritable(myAggr.totalPredicted);
             partialResult[3] = new DoubleWritable(myAggr.beta);
+            partialResult[4] = new BooleanWritable(myAggr.isAverageMicro);
             return partialResult;
         }
 
@@ -235,13 +242,16 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             Object totalPredictedObj = internalMergeOI.getStructFieldData(partial,
                 totalPredictedField);
             Object betaObj = internalMergeOI.getStructFieldData(partial, betaField);
+            Object isAverageMicroObj = internalMergeOI.getStructFieldData(partial,
+                isAverageMicroFiled);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
             long totalActual = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalActualObj);
             long totalPredicted = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalPredictedObj);
             double beta = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(betaObj);
+            boolean isAverageMicro = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector.get(isAverageMicroObj);
 
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
-            myAggr.merge(tp, totalActual, totalPredicted, beta);
+            myAggr.merge(tp, totalActual, totalPredicted, beta, isAverageMicro);
         }
 
         @Override
@@ -261,6 +271,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         /** tp + fp */
         long totalPredicted;
         double beta;
+        boolean isAverageMicro;
 
         public FMeasureAggregationBuffer() {
             super();
@@ -272,24 +283,52 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             this.totalPredicted = 0L;
         }
 
-        void merge(long o_tp, long o_actual, long o_predicted, double beta) {
+        void merge(long o_tp, long o_actual, long o_predicted, double beta, boolean isAverageMicro) {
             tp += o_tp;
             totalActual += o_actual;
             totalPredicted += o_predicted;
             this.beta = beta;
+            this.isAverageMicro = isAverageMicro;
         }
 
         double get() {
-            double precision = precision(tp, totalPredicted);
-            double recall = recall(tp, totalActual);
             double squareBeta = Math.pow(beta, 2.d);
+            double divisor;
+            double numerator;
 
-            double divisor = squareBeta * precision + recall;
+            if (isAverageMicro) {
+                divisor = denom(tp, totalActual, totalPredicted, squareBeta);
+                numerator = (1.d + squareBeta) * tp;
+            } else {
+                double precision = precision(tp, totalPredicted);
+                double recall = recall(tp, totalActual);
+                divisor = squareBeta * precision + recall;
+                numerator = (1.d + squareBeta) * precision * recall;
+            }
+
             if (divisor > 0) {
-                return ((1.d + squareBeta) * precision * recall) / divisor;
+                return (numerator / divisor);
             } else {
                 return -1.d;
             }
+        }
+
+        private static double denom(long tp, long totalActual, long totalPredicted,
+                double squareBeta) {
+            long lp = totalPredicted - tp;
+
+            if (lp < 0) {
+                lp = 0;
+            }
+
+            long pl = totalActual - tp;
+
+            if (pl < 0) {
+                pl = 0;
+            }
+
+            double denom = squareBeta * (tp + lp) + tp + pl;
+            return denom;
         }
 
         private static double precision(long tp, long totalPredicted) {
@@ -300,12 +339,12 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             return (totalActual == 0L) ? 0d : tp / (double) totalActual;
         }
 
-        void iterate(@Nonnull List<?> actual, @Nonnull List<?> predicted, @Nonnull double beta) {
+        void iterate(@Nonnull List<?> actual, @Nonnull List<?> predicted, @Nonnull double beta,
+                @Nonnull boolean isAverageMicro) {
             final int numActual = actual.size();
             final int numPredicted = predicted.size();
             int countTp = 0;
 
-            //            for (int i = 0; i < numPredicted; i++) {
             for (Object p : predicted) {
                 if (actual.contains(p)) {
                     countTp++;
@@ -315,6 +354,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             this.totalActual += numActual;
             this.totalPredicted += numPredicted;
             this.beta = beta;
+            this.isAverageMicro = isAverageMicro;
         }
     }
 }
