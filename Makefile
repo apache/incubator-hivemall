@@ -26,7 +26,7 @@ XGBOOST_HOME := "${HIVEMALL_OUT}/xgboost"
 XGBOOST_OUT := "${XGBOOST_HOME}/target"
 XGBOOST_CLASSES := "${XGBOOST_OUT}/classes"
 HIVEMALL_LIB_DIR := "${HIVEMALL_HOME}/xgboost/src/main/resources/lib"
-CANDIDATES := 'linux-arm64' 'linux-armv6' 'linux-armv7' 'linux-ppc64le' 'linux-x64' 'linux-x86' 'windows-x64' 'windows-x86'
+CANDIDATES := 'linux-arm64' 'linux-ppc64le' 'linux-x64' 'windows-x64'
 
 
 .PHONY: phony
@@ -34,16 +34,17 @@ phony: ;
 
 .PHONY: clean-xgboost
 clean-xgboost:
-	rm -rf ${XGBOOST_HOME} ${HIVEMALL_LIB_DIR}
+	rm -rf ${XGBOOST_HOME}
+
+.PHONY: clean-all-xgboost
+clean-all-xgboost: clean-xgboost
+	rm -rf ${HIVEMALL_LIB_DIR}
 
 .PHONY: fetch-xgboost
 fetch-xgboost: clean-xgboost
 	set -eux && \
 	mkdir -p ${XGBOOST_HOME} && \
-	git clone --depth 1 --single-branch -b ${XGBOOST_BRANCH} ${XGBOOST_REPO} ${XGBOOST_HOME} && \
-	cd ${XGBOOST_HOME} && \
-	git submodule init && \
-	git submodule update
+	git clone --depth 1 --single-branch -b ${XGBOOST_BRANCH} --recursive ${XGBOOST_REPO} ${XGBOOST_HOME}
 
 .PHONY: xgboost-native-local
 xgboost-native-local: fetch-xgboost
@@ -72,13 +73,16 @@ xgboost-native-%: fetch-xgboost
 	echo ${CANDIDATES} | grep -q $${OS_ARCH} && \
 	docker run --rm dockcross/$${OS_ARCH} > ${DOCKCROSS_SCRIPT} && \
 	chmod +x ${DOCKCROSS_SCRIPT} && \
-	./${DOCKCROSS_SCRIPT} sh -c ' \
+	./${DOCKCROSS_SCRIPT} sh -c " \
 		sudo apt-get update && \
 		sudo apt-get install -y --no-install-recommends openjdk-7-jdk && \
 		cd target/xgboost/jvm-packages && \
+		sed -i -e 's/CXX=g++//' create_jni.sh && \
+		[ ! $${OS_ARCH##*-} = 'x64' ] && \
+			for f in '../Makefile' '../dmlc-core/Makefile' '../rabit/Makefile'; do sed -i -e 's/-m64//g' -e 's/-msse2//g' \$${f}; done || \
 		export ENABLE_STATIC_LINKS=1 && \
 		export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 && \
-		./create_jni.sh' && \
+		./create_jni.sh" && \
 	mkdir -p ${HIVEMALL_LIB_DIR}/$${OS_ARCH} && \
 	cp ${XGBOOST_HOME}/jvm-packages/lib/libxgboost4j.so ${HIVEMALL_LIB_DIR}/$${OS_ARCH} && \
 	rm -rf ${DOCKCROSS_SCRIPT} \
