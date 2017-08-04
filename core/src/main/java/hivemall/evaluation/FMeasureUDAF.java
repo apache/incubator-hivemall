@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -48,7 +47,8 @@ import org.apache.hadoop.io.LongWritable;
 
 import javax.annotation.Nonnull;
 
-@Description(name = "f1score",
+@Description(
+        name = "f1score",
         value = "_FUNC_(array | int | boolean, array | int | boolean, double) - Return a F-measure/F1 score")
 public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
@@ -59,22 +59,26 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 "_FUNC_ takes two or three arguments");
         }
 
-        boolean isArg1ListOrIntOrBoolean = HiveUtils.isListTypeInfo(typeInfo[0]) || HiveUtils.isIntegerTypeInfo(typeInfo[0]) || HiveUtils.isBooleanTypeInfo(typeInfo[0]);
-        if(!isArg1ListOrIntOrBoolean){
+        boolean isArg1ListOrIntOrBoolean = HiveUtils.isListTypeInfo(typeInfo[0])
+                || HiveUtils.isIntegerTypeInfo(typeInfo[0])
+                || HiveUtils.isBooleanTypeInfo(typeInfo[0]);
+        if (!isArg1ListOrIntOrBoolean) {
             throw new UDFArgumentTypeException(0,
-                    "The first argument `array/int/boolean actual` is invalid form: " + typeInfo[0]);
+                "The first argument `array/int/boolean actual` is invalid form: " + typeInfo[0]);
         }
 
-        boolean isArg2ListOrIntOrBoolean = HiveUtils.isListTypeInfo(typeInfo[1]) || HiveUtils.isIntegerTypeInfo(typeInfo[1]) || HiveUtils.isBooleanTypeInfo(typeInfo[1]);
-        if(!isArg2ListOrIntOrBoolean){
+        boolean isArg2ListOrIntOrBoolean = HiveUtils.isListTypeInfo(typeInfo[1])
+                || HiveUtils.isIntegerTypeInfo(typeInfo[1])
+                || HiveUtils.isBooleanTypeInfo(typeInfo[1]);
+        if (!isArg2ListOrIntOrBoolean) {
             throw new UDFArgumentTypeException(1,
-                    "The first argument `array/int/boolean actual` is invalid form: " + typeInfo[1]);
+                "The first argument `array/int/boolean actual` is invalid form: " + typeInfo[1]);
         }
 
-        if(typeInfo[0] != typeInfo[1]){
-            throw new UDFArgumentTypeException(1,
-                    "The first argument's `actual` type is " + typeInfo[0] +
-                    ", but the second argument `predicated`'s type is not match: " + typeInfo[1]);
+        if (typeInfo[0] != typeInfo[1]) {
+            throw new UDFArgumentTypeException(1, "The first argument's `actual` type is "
+                    + typeInfo[0] + ", but the second argument `predicated`'s type is not match: "
+                    + typeInfo[1]);
         }
 
         return new Evaluator();
@@ -156,7 +160,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg, Object[] parameters) throws HiveException {
+        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
+                Object[] parameters) throws HiveException {
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
             boolean isList = HiveUtils.isListOI(actualOI) && HiveUtils.isListOI(predictedOI);
 
@@ -166,7 +171,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             if (isList) {// array case
                 actual = ((ListObjectInspector) predictedOI).getList(parameters[0]);
                 predicted = ((ListObjectInspector) predictedOI).getList(parameters[1]);
-            }else{//binary case
+            } else {//binary case
                 if (HiveUtils.isBooleanOI(actualOI)) { // boolean case
                     if (((BooleanObjectInspector) actualOI).get(parameters[0])) {
                         actual = Arrays.asList(1);
@@ -174,13 +179,13 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                     if (((BooleanObjectInspector) predictedOI).get(parameters[1])) {
                         predicted = Arrays.asList(1);
                     }
-                } else{ // int case
+                } else { // int case
                     int actualOIValue = ((IntObjectInspector) actualOI).get(parameters[0]);
                     if (actualOIValue == 1) {
                         actual = Arrays.asList(1);
-                    }else if (!(actualOIValue == 0 || actualOIValue == -1)){
+                    } else if (!(actualOIValue == 0 || actualOIValue == -1)) {
                         throw new UDFArgumentException(
-                                "The first argument `int actual` must be 1, 0, or -1:" + actualOIValue);
+                            "The first argument `int actual` must be 1, 0, or -1:" + actualOIValue);
                     }
 
                     int predictedOIValue = ((IntObjectInspector) predictedOI).get(parameters[1]);
@@ -188,7 +193,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                         predicted = Arrays.asList(1);
                     } else if (!(predictedOIValue == 0 || predictedOIValue == -1)) {
                         throw new UDFArgumentException(
-                                "The second argument `int predicted` must be 1, 0, or -1:" + predictedOIValue);
+                            "The second argument `int predicted` must be 1, 0, or -1:"
+                                    + predictedOIValue);
                     }
                 }
             }
@@ -199,7 +205,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             }
             if (beta <= 0.d) {
                 throw new UDFArgumentException(
-                        "The third argument `double beta` must be greater than 0.0:" + beta);
+                    "The third argument `double beta` must be greater than 0.0:" + beta);
             }
             myAggr.iterate(actual, predicted, beta);
         }
@@ -226,7 +232,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             Object tpObj = internalMergeOI.getStructFieldData(partial, tpField);
             Object totalActualObj = internalMergeOI.getStructFieldData(partial, totalActualField);
-            Object totalPredictedObj = internalMergeOI.getStructFieldData(partial, totalPredictedField);
+            Object totalPredictedObj = internalMergeOI.getStructFieldData(partial,
+                totalPredictedField);
             Object betaObj = internalMergeOI.getStructFieldData(partial, betaField);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
             long totalActual = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalActualObj);
@@ -298,7 +305,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             final int numPredicted = predicted.size();
             int countTp = 0;
 
-//            for (int i = 0; i < numPredicted; i++) {
+            //            for (int i = 0; i < numPredicted; i++) {
             for (Object p : predicted) {
                 if (actual.contains(p)) {
                     countTp++;

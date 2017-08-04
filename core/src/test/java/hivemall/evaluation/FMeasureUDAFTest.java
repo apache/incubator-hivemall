@@ -61,7 +61,7 @@ public class FMeasureUDAFTest {
             inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
         } else if (actualClassName.equals("java.lang.Boolean")) {
             inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
-        }else if ((actualClassName.equals("java.lang.String"))) {
+        } else if ((actualClassName.equals("java.lang.String"))) {
             inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING);
         }
 
@@ -70,7 +70,7 @@ public class FMeasureUDAFTest {
             inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
         } else if (predicatedClassName.equals("java.lang.Boolean")) {
             inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
-        }else if ((predicatedClassName.equals("java.lang.String"))) {
+        } else if ((predicatedClassName.equals("java.lang.String"))) {
             inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING);
         }
 
@@ -96,7 +96,7 @@ public class FMeasureUDAFTest {
 
     @Test
     public void testBinaryMultiSamples() throws Exception {
-        final int[] actual =    {0, 1, 0, 0, 0, 1, 0, 0};
+        final int[] actual = {0, 1, 0, 0, 0, 1, 0, 0};
         final int[] predicted = {1, 0, 0, 1, 0, 1, 0, 1};
         binarySetUp(actual[0], predicted[0]);
         DoubleWritable beta = new DoubleWritable(1.d);
@@ -104,7 +104,7 @@ public class FMeasureUDAFTest {
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for(int i = 0; i < actual.length; i++){
+        for (int i = 0; i < actual.length; i++) {
             evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
         }
 
@@ -115,7 +115,7 @@ public class FMeasureUDAFTest {
 
     @Test
     public void testBinaryMultiSamplesBeta2() throws Exception {
-        final int[] actual =    {0, 1, 0, 0, 0, 1, 0, 0};
+        final int[] actual = {0, 1, 0, 0, 0, 1, 0, 0};
         final int[] predicted = {1, 0, 0, 1, 0, 1, 0, 1};
         binarySetUp(actual[0], predicted[0]);
         DoubleWritable beta = new DoubleWritable(2.d);
@@ -123,7 +123,7 @@ public class FMeasureUDAFTest {
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for(int i = 0; i < actual.length; i++){
+        for (int i = 0; i < actual.length; i++) {
             evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
         }
 
@@ -297,32 +297,17 @@ public class FMeasureUDAFTest {
 
     @Test
     public void testMultiLabelF1MultiSamples() throws Exception {
-        String[][] actual = {
-                {"0", "1"},
-                {"0", "2"},
-                {},
-                {"2"},
-                {"2", "0"},
-                {"0", "1", "2"},
-                {"1"}
-        };
+        String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
 
-        String[][] predicted = {
-                {"0", "2"},
-                {"0", "1"},
-                {"0"},
-                {"2"},
-                {"2", "0"},
-                {"0", "1"},
-                {"1", "2"}
-        };
+        String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
+                {"1", "2"}};
 
         DoubleWritable beta = new DoubleWritable(1.0d);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for(int i = 0; i < actual.length; i++){
+        for (int i = 0; i < actual.length; i++) {
             evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
         }
 
