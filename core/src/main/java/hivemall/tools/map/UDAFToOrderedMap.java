@@ -57,7 +57,7 @@ public class UDAFToOrderedMap extends UDAFToMap {
         boolean reverseOrder = false;
         if (typeInfo.length == 3) {
             if (HiveUtils.isBooleanTypeInfo(typeInfo[2]) == false) {
-                throw new UDFArgumentTypeException(2, "The three argument must be boolean type: "
+                throw new UDFArgumentTypeException(2, "The third argument must be boolean type: "
                         + typeInfo[2].getTypeName());
             }
             ObjectInspector[] argOIs = info.getParameterObjectInspectors();
