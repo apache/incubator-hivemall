@@ -463,6 +463,9 @@ CREATE FUNCTION to_map as 'hivemall.tools.map.UDAFToMap' USING JAR '${hivemall_j
 DROP FUNCTION IF EXISTS to_ordered_map;
 CREATE FUNCTION to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS to_bounded_ordered_map;
+CREATE FUNCTION to_bounded_ordered_map as 'hivemall.tools.map.UDAFToBoundedOrderedMap' USING JAR '${hivemall_jar}';
+
 ---------------------
 -- Math functions --
 ---------------------
