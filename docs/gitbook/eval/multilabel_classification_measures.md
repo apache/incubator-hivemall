@@ -22,19 +22,18 @@
 # Multi-label classification
 
 
-Multi-label classification problem is predicting the labels given categorized dataset.
-Each sample $$i$$ has $$l_i$$ labels ($$0 \leq  l_i \leq |L| $$  )
-, where $$L$$ is the number of unique labels in the geven dataset.
+Multi-label classification problem is the task to predict the labels given categorized dataset.
+Each sample $$i$$ has $$l_i$$ labels, where $$L$$ is the number of unique labels in the dataset, and $$0 \leq  l_i \leq |L| $$.
 
-This page focuses on evaluation of the results from such Multi-label classification problems.
+This page focuses on evaluation of the results from such multi-label classification problems.
 
-# Examples
+# Example
 
-For the metrics explanation, this page introduces toy example data and two metrics.
+For the metrics explanation, this page introduces toy example dataset.
 
 ## Data
 
-The following table shows the sample of Multi-label classification's prediction.
+The following table shows the sample of multi-label classification's prediction.
 Animal names represent the tags of blog post.
 Left column includes supervised labels,
 Right column includes are predicted labels by a Multi-label classifier.
@@ -52,19 +51,14 @@ Right column includes are predicted labels by a Multi-label classifier.
 
 # Evaluation metrics for multi-label classification
 
-Hivemall provises micro F1-score and micro F-measure.
-
-Given $$N$$ blog posts, we uses 
+Hivemall provides micro F1-score and micro F-measure.
 
 Define $$L$$ is the set of the tag of blog posts, and 
 $$l_i$$ is a tag set of $$i$$th document.
 In the same manner,
 $$p_i$$ is a predicted tag set of $$i$$th document.
 
-
-
 ## Micro F1-score
-
 
 F1-score is the harmonic mean of recall and precision.
 
@@ -102,26 +96,28 @@ from data
 --- 0.6956521739130435;
 ```
 
-
 ## Micro F-measure
+
 
 F-measure is generalized F1-score and the weighted harmonic mean of recall and precision.
 
-$$\beta$$ is the parameter to determine the weight of precision.
-So, F1-score is the special case of F-measure given $$\beta=1$$.
-
-If $$\beta$$ is larger positive value than `1.0`, F-measure reaches to micro recall.
-On the other hand,
-if $$\beta$$ is smaller positive value than `1.0`, F-measure reaches to micro precision.
-
-The following query shows the example to obtain F-measure with $$\beta=2$$.
-
+The value is computed by the following equation:
 $$
 \mathrm{F}_{\beta} = (1+\beta^2) \frac
 {\sum_i |l_i \cap p_i |}
 { \beta^2 (\sum_i |l_i \cap p_i | + \sum_i |p_i - l_i |) + \sum_i |l_i \cap p_i | + \sum_i |l_i - p_i |}
 $$
 
+$$\beta$$ is the parameter to determine the weight of precision.
+So, F1-score is the special case of F-measure given $$\beta=1$$.
+
+If $$\beta$$ is larger positive value than `1.0`, F-measure reaches micro recall.
+On the other hand,
+if $$\beta$$ is smaller positive value than `1.0`, F-measure reaches micro precision.
+
+If $$\beta$$ is omitted, hivemall calculates F-measure with $$\beta=1$$ (: equivalent to F1-score).
+
+The following query shows the example to obtain F-measure with $$\beta=2$$.
 
 ```sql
 WITH data as (
@@ -140,9 +136,9 @@ union all
   select array("dog")                as actual, array("dog", "bird") as predicted
 )
 select
-  fmeasure(actual, predicted, 2)
+  fmeasure(actual, predicted, '-beta 2.')
 from data
 ;
 
---- 0.6956521739130435;
+-- 0.6779661016949152;
 ```

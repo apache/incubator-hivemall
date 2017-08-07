@@ -18,12 +18,17 @@
  */
 package hivemall.evaluation;
 
+import hivemall.UDAFEvaluatorWithOptions;
 import hivemall.utils.hadoop.HiveUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import hivemall.utils.lang.Primitives;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -33,26 +38,19 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructField;
-import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
-import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.LongWritable;
 
 import javax.annotation.Nonnull;
 
 @Description(
-        name = "f1score",
-        value = "_FUNC_(array | int | boolean, array | int | boolean, double) - Return a F-measure/F1 score")
+        name = "fmeasure",
+        value = "_FUNC_(array | int | boolean, array | int | boolean, String) - Return a F-measure (f1score is the special with beta=1.)")
 public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
-
     @Override
     public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
@@ -85,20 +83,57 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         return new Evaluator();
     }
 
-    public static class Evaluator extends GenericUDAFEvaluator {
+    public static class Evaluator extends UDAFEvaluatorWithOptions {
 
         private ObjectInspector actualOI;
         private ObjectInspector predictedOI;
-        private PrimitiveObjectInspector betaOI;
         private StructObjectInspector internalMergeOI;
 
         private StructField tpField;
         private StructField totalActualField;
         private StructField totalPredictedField;
-        private StructField betaField;
-        private StructField isAverageMicroFiled;
+        private StructField betaOptionField;
+        private StructField averageOptionFiled;
+
+        private double beta;
+        private String average;
 
         public Evaluator() {}
+
+        @Override
+        protected Options getOptions() {
+            Options opts = new Options();
+            opts.addOption("beta", true, "The weight of precision [default: 1.]");
+            opts.addOption("average", true, "The way of average calculation [default: micro]");
+            return opts;
+        }
+
+        @Override
+        protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
+            CommandLine cl = null;
+
+            if (argOIs.length >= 3) {
+                String rawArgs = HiveUtils.getConstString(argOIs[2]);
+                cl = parseOptions(rawArgs);
+
+                this.beta = Primitives.parseDouble(cl.getOptionValue("beta"), 1.0d);
+                if (this.beta <= 0.d) {
+                    throw new UDFArgumentException(
+                        "The third argument `double beta` must be greater than 0.0: " + beta);
+                }
+
+                this.average = cl.getOptionValue("average", "micro");
+                if (!(this.average.equals("binary") || this.average.equals("macro") || this.average.equals("micro"))) {
+                    throw new UDFArgumentException(
+                        "The third argument `String average` must be one of the {binary, micro, macro}: "
+                                + this.average);
+                }
+            } else {
+                this.beta = 1.0d;
+                this.average = "micro";
+            }
+            return cl;
+        }
 
         @Override
         public ObjectInspector init(Mode mode, ObjectInspector[] parameters) throws HiveException {
@@ -107,19 +142,17 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
+                this.processOptions(parameters);
                 this.actualOI = parameters[0];
                 this.predictedOI = parameters[1];
-                if (parameters.length == 3) {
-                    this.betaOI = HiveUtils.asNumberOI(parameters[2]);
-                }
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 this.internalMergeOI = soi;
                 this.tpField = soi.getStructFieldRef("tp");
                 this.totalActualField = soi.getStructFieldRef("totalActual");
                 this.totalPredictedField = soi.getStructFieldRef("totalPredicted");
-                this.betaField = soi.getStructFieldRef("beta");
-                this.isAverageMicroFiled = soi.getStructFieldRef("isAverageMicro");
+                this.betaOptionField = soi.getStructFieldRef("beta");
+                this.averageOptionFiled = soi.getStructFieldRef("average");
             }
 
             // initialize output
@@ -144,8 +177,9 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
             fieldNames.add("beta");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-            fieldNames.add("isAverageMicro");
-            fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
+            fieldNames.add("average");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+
 
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
@@ -162,6 +196,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 throws HiveException {
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
             myAggr.reset();
+            myAggr.setOptions(this.beta, this.average);
         }
 
         @Override
@@ -172,18 +207,30 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             List<?> actual = Collections.emptyList();
             List<?> predicted = Collections.emptyList();
-            boolean isAverageMicro = isList;
+
+            if (this.average.equals("macro")) {
+                throw new UnsupportedOperationException();
+            }
+
 
             if (isList) {// array case
+                if (this.average.equals("binary")) {
+                    throw new UnsupportedOperationException();
+                }
                 actual = ((ListObjectInspector) predictedOI).getList(parameters[0]);
                 predicted = ((ListObjectInspector) predictedOI).getList(parameters[1]);
             } else {//binary case
                 if (HiveUtils.isBooleanOI(actualOI)) { // boolean case
                     if (((BooleanObjectInspector) actualOI).get(parameters[0])) {
                         actual = Arrays.asList(1);
+                    } else {
+                        actual = Arrays.asList(0);
                     }
+
                     if (((BooleanObjectInspector) predictedOI).get(parameters[1])) {
                         predicted = Arrays.asList(1);
+                    } else {
+                        predicted = Arrays.asList(0);
                     }
                 } else { // int case
                     int actualOIValue = ((IntObjectInspector) actualOI).get(parameters[0]);
@@ -192,6 +239,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                     } else if (!(actualOIValue == 0 || actualOIValue == -1)) {
                         throw new UDFArgumentException(
                             "The first argument `int actual` must be 1, 0, or -1:" + actualOIValue);
+                    } else if (!this.average.equals("binary")) {
+                        actual = Arrays.asList(0);
                     }
 
                     int predictedOIValue = ((IntObjectInspector) predictedOI).get(parameters[1]);
@@ -201,19 +250,12 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                         throw new UDFArgumentException(
                             "The second argument `int predicted` must be 1, 0, or -1:"
                                     + predictedOIValue);
+                    } else if (!this.average.equals("binary")) {
+                        predicted = Arrays.asList(0);
                     }
                 }
             }
-
-            double beta = 1.d;
-            if (parameters.length == 3) {
-                beta = HiveUtils.getDouble(parameters[2], betaOI);
-            }
-            if (beta <= 0.d) {
-                throw new UDFArgumentException(
-                    "The third argument `double beta` must be greater than 0.0:" + beta);
-            }
-            myAggr.iterate(actual, predicted, beta, isAverageMicro);
+            myAggr.iterate(actual, predicted);
         }
 
         @Override
@@ -226,7 +268,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             partialResult[1] = new LongWritable(myAggr.totalActual);
             partialResult[2] = new LongWritable(myAggr.totalPredicted);
             partialResult[3] = new DoubleWritable(myAggr.beta);
-            partialResult[4] = new BooleanWritable(myAggr.isAverageMicro);
+            partialResult[4] = myAggr.average;
             return partialResult;
         }
 
@@ -241,17 +283,16 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             Object totalActualObj = internalMergeOI.getStructFieldData(partial, totalActualField);
             Object totalPredictedObj = internalMergeOI.getStructFieldData(partial,
                 totalPredictedField);
-            Object betaObj = internalMergeOI.getStructFieldData(partial, betaField);
-            Object isAverageMicroObj = internalMergeOI.getStructFieldData(partial,
-                isAverageMicroFiled);
+            Object betaObj = internalMergeOI.getStructFieldData(partial, betaOptionField);
+            Object averageObj = internalMergeOI.getStructFieldData(partial, averageOptionFiled);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
             long totalActual = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalActualObj);
             long totalPredicted = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalPredictedObj);
             double beta = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(betaObj);
-            boolean isAverageMicro = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector.get(isAverageMicroObj);
+            String average = PrimitiveObjectInspectorFactory.writableStringObjectInspector.getPrimitiveJavaObject(averageObj);
 
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
-            myAggr.merge(tp, totalActual, totalPredicted, beta, isAverageMicro);
+            myAggr.merge(tp, totalActual, totalPredicted, beta, average);
         }
 
         @Override
@@ -271,10 +312,15 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         /** tp + fp */
         long totalPredicted;
         double beta;
-        boolean isAverageMicro;
+        String average;
 
         public FMeasureAggregationBuffer() {
             super();
+        }
+
+        void setOptions(double beta, String average) {
+            this.beta = beta;
+            this.average = average;
         }
 
         void reset() {
@@ -283,12 +329,12 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             this.totalPredicted = 0L;
         }
 
-        void merge(long o_tp, long o_actual, long o_predicted, double beta, boolean isAverageMicro) {
+        void merge(long o_tp, long o_actual, long o_predicted, double beta, String average) {
             tp += o_tp;
             totalActual += o_actual;
             totalPredicted += o_predicted;
             this.beta = beta;
-            this.isAverageMicro = isAverageMicro;
+            this.average = average;
         }
 
         double get() {
@@ -296,14 +342,16 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             double divisor;
             double numerator;
 
-            if (isAverageMicro) {
+            if (average.equals("micro")) {
                 divisor = denom(tp, totalActual, totalPredicted, squareBeta);
                 numerator = (1.d + squareBeta) * tp;
-            } else {
+            } else if (average.equals("binary")) {
                 double precision = precision(tp, totalPredicted);
                 double recall = recall(tp, totalActual);
                 divisor = squareBeta * precision + recall;
                 numerator = (1.d + squareBeta) * precision * recall;
+            } else {
+                throw new UnsupportedOperationException();
             }
 
             if (divisor > 0) {
@@ -318,17 +366,16 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             long lp = totalPredicted - tp;
 
             if (lp < 0) {
-                lp = 0;
+                lp = 0L;
             }
 
             long pl = totalActual - tp;
 
             if (pl < 0) {
-                pl = 0;
+                pl = 0L;
             }
 
-            double denom = squareBeta * (tp + lp) + tp + pl;
-            return denom;
+            return squareBeta * (tp + lp) + tp + pl;
         }
 
         private static double precision(long tp, long totalPredicted) {
@@ -339,8 +386,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             return (totalActual == 0L) ? 0d : tp / (double) totalActual;
         }
 
-        void iterate(@Nonnull List<?> actual, @Nonnull List<?> predicted, @Nonnull double beta,
-                @Nonnull boolean isAverageMicro) {
+        void iterate(@Nonnull List<?> actual, @Nonnull List<?> predicted) {
             final int numActual = actual.size();
             final int numPredicted = predicted.size();
             int countTp = 0;
@@ -353,8 +399,6 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             this.tp += countTp;
             this.totalActual += numActual;
             this.totalPredicted += numPredicted;
-            this.beta = beta;
-            this.isAverageMicro = isAverageMicro;
         }
     }
 }

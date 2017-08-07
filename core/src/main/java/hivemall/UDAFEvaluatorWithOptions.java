@@ -1,0 +1,97 @@
+package hivemall;
+
+import hivemall.utils.lang.CommandLineUtils;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.exec.MapredContext;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.mapred.Counters;
+import org.apache.hadoop.mapred.Reporter;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+public abstract class UDAFEvaluatorWithOptions extends GenericUDAFEvaluator {
+
+    @Nullable
+    protected MapredContext mapredContext;
+
+    @Override
+    public final void configure(MapredContext mapredContext) {
+        this.mapredContext = mapredContext;
+    }
+
+    @Nullable
+    protected final Reporter getReporter() {
+        if (mapredContext == null) {
+            return null;
+        }
+        return mapredContext.getReporter();
+    }
+
+    protected static void reportProgress(@Nullable Reporter reporter) {
+        if (reporter != null) {
+            synchronized (reporter) {
+                reporter.progress();
+            }
+        }
+    }
+
+    protected static void setCounterValue(@Nullable Counters.Counter counter, long value) {
+        if (counter != null) {
+            synchronized (counter) {
+                counter.setValue(value);
+            }
+        }
+    }
+
+    protected static void incrCounter(@Nullable Counters.Counter counter, long incr) {
+        if (counter != null) {
+            synchronized (counter) {
+                counter.increment(incr);
+            }
+        }
+    }
+
+    protected abstract Options getOptions();
+
+    @Nonnull
+    protected final CommandLine parseOptions(String optionValue) throws UDFArgumentException {
+        String[] args = optionValue.split("\\s+");
+        Options opts = getOptions();
+        opts.addOption("help", false, "Show function help");
+        CommandLine cl = CommandLineUtils.parseOptions(args, opts);
+
+        if (cl.hasOption("help")) {
+            Description funcDesc = getClass().getAnnotation(Description.class);
+            final String cmdLineSyntax;
+            if (funcDesc == null) {
+                cmdLineSyntax = getClass().getSimpleName();
+            } else {
+                String funcName = funcDesc.name();
+                cmdLineSyntax = funcName == null ? getClass().getSimpleName()
+                        : funcDesc.value().replace("_FUNC_", funcDesc.name());
+            }
+            StringWriter sw = new StringWriter();
+            sw.write('\n');
+            PrintWriter pw = new PrintWriter(sw);
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp(pw, HelpFormatter.DEFAULT_WIDTH, cmdLineSyntax, null, opts,
+                HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
+            pw.flush();
+            String helpMsg = sw.toString();
+            throw new UDFArgumentException(helpMsg);
+        }
+
+        return cl;
+    }
+
+    protected abstract CommandLine processOptions(ObjectInspector[] argOIs)
+            throws UDFArgumentException;
+}

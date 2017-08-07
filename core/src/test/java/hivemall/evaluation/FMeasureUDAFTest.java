@@ -1,19 +1,18 @@
 package hivemall.evaluation;
 
-
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,7 +21,6 @@ public class FMeasureUDAFTest {
     FMeasureUDAF fmeasure;
     GenericUDAFEvaluator evaluator;
     ObjectInspector[] inputOIs;
-    ObjectInspector[] partialOI;
     FMeasureUDAF.FMeasureAggregationBuffer agg;
 
     @Before
@@ -31,28 +29,29 @@ public class FMeasureUDAFTest {
         inputOIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector};
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-beta 1.")};
 
         evaluator = fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
-        List<String> fieldNames = new ArrayList<>();
-        List<ObjectInspector> fieldOIs = new ArrayList<>();
-
-        fieldNames.add("tp");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("totalActual");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("totalPredicted");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("beta");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-
-        partialOI = new ObjectInspector[2];
-        partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
 
         agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
     }
 
-    private void binarySetUp(Object actual, Object predicted) throws Exception {
+    private void setUpWithArguments(double beta, String average) throws Exception {
+        fmeasure = new FMeasureUDAF();
+        inputOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-beta " + beta
+                            + " -average " + average)};
+
+        evaluator = fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+        agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
+    }
+
+    private void binarySetUp(Object actual, Object predicted, double beta, String average)
+            throws Exception {
         fmeasure = new FMeasureUDAF();
         inputOIs = new ObjectInspector[3];
 
@@ -74,38 +73,27 @@ public class FMeasureUDAFTest {
             inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING);
         }
 
-        inputOIs[2] = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+        inputOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-beta " + beta
+                    + " -average " + average);
+
         evaluator = fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
-        List<String> fieldNames = new ArrayList<>();
-        List<ObjectInspector> fieldOIs = new ArrayList<>();
-
-        fieldNames.add("tp");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("totalActual");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("totalPredicted");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        fieldNames.add("beta");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-
-        partialOI = new ObjectInspector[2];
-        partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
-
         agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
     }
 
     @Test
-    public void testBinaryMultiSamples() throws Exception {
+    public void testBinaryMultiSamplesAverageBinary() throws Exception {
         final int[] actual = {0, 1, 0, 0, 0, 1, 0, 0};
         final int[] predicted = {1, 0, 0, 1, 0, 1, 0, 1};
-        binarySetUp(actual[0], predicted[0]);
-        DoubleWritable beta = new DoubleWritable(1.d);
+        double beta = 1.;
+        String average = "binary";
+        binarySetUp(actual[0], predicted[0], beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
         for (int i = 0; i < actual.length; i++) {
-            evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i]});
         }
 
         // should equal to turi's result
@@ -113,22 +101,57 @@ public class FMeasureUDAFTest {
         Assert.assertEquals(0.3333d, agg.get(), 1e-4);
     }
 
-    @Test
-    public void testBinaryMultiSamplesBeta2() throws Exception {
+    @Test(expected = UnsupportedOperationException.class)
+    public void testBinaryMultiSamplesAverageMacro() throws Exception {
         final int[] actual = {0, 1, 0, 0, 0, 1, 0, 0};
         final int[] predicted = {1, 0, 0, 1, 0, 1, 0, 1};
-        binarySetUp(actual[0], predicted[0]);
-        DoubleWritable beta = new DoubleWritable(2.d);
+        double beta = 1.;
+        String average = "macro";
+        binarySetUp(actual[0], predicted[0], beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
         for (int i = 0; i < actual.length; i++) {
-            evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i]});
         }
 
-        // should equal to turi's result
-        // https://turi.com/learn/userguide/evaluation/classification.html#fscores-f1-fbeta-
+        agg.get();
+    }
+
+    @Test
+    public void testBinaryMultiSamples() throws Exception {
+        final int[] actual = {0, 1, 0, 0, 0, 1, 0, 0};
+        final int[] predicted = {1, 0, 0, 1, 0, 1, 0, 1};
+        double beta = 1.;
+        String average = "micro";
+        binarySetUp(actual[0], predicted[0], beta, average);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < actual.length; i++) {
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i]});
+        }
+
+        Assert.assertEquals(0.5d, agg.get(), 1e-4);
+    }
+
+    @Test
+    public void testBinaryMultiSamplesBeta2() throws Exception {
+        final int[] actual = {0, 1, 0, 0, 0, 1, 0, 0};
+        final int[] predicted = {1, 0, 0, 1, 0, 1, 0, 1};
+        double beta = 2.0;
+        String average = "binary";
+        binarySetUp(actual[0], predicted[0], beta, average);
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < actual.length; i++) {
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i]});
+        }
+
         Assert.assertEquals(0.4166d, agg.get(), 1e-4);
     }
 
@@ -136,7 +159,9 @@ public class FMeasureUDAFTest {
     public void testBinary() throws Exception {
         int actual = 1;
         int predicted = 1;
-        binarySetUp(actual, predicted);
+        double beta = 1.0;
+        String average = "micro";
+        binarySetUp(actual, predicted, beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -150,14 +175,12 @@ public class FMeasureUDAFTest {
     public void testBinaryNegativeInput() throws Exception {
         int actual = 1;
         int predicted = -1;
-        binarySetUp(actual, predicted);
-
-        DoubleWritable beta = new DoubleWritable(1.d);
+        binarySetUp(actual, predicted, 1.0, "binary");
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         Assert.assertEquals(-1.d, agg.get(), 1e-4);
     }
@@ -166,13 +189,13 @@ public class FMeasureUDAFTest {
     public void testBinaryBooleanInput() throws Exception {
         boolean actual = true;
         boolean predicted = false;
-        DoubleWritable beta = new DoubleWritable(1.d);
-        binarySetUp(actual, predicted);
+        double beta = 1.0d;
+        binarySetUp(actual, predicted, beta, "binary");
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         Assert.assertEquals(-1.d, agg.get(), 1e-4);
     }
@@ -181,13 +204,12 @@ public class FMeasureUDAFTest {
     public void testBinaryInvalidStringInput() throws Exception {
         String actual = "cat";
         int predicted = 1;
-        binarySetUp(actual, predicted);
-        DoubleWritable beta = new DoubleWritable(1.d);
+        binarySetUp(actual, predicted, 1.0, "micro");
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         agg.get();
     }
@@ -197,13 +219,12 @@ public class FMeasureUDAFTest {
     public void testBinaryInvalidLargeIntInput() throws Exception {
         int actual = 1;
         int predicted = 3;
-        binarySetUp(actual, predicted);
-        DoubleWritable beta = new DoubleWritable(1.d);
+        binarySetUp(actual, predicted, 1.0, "micro");
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         agg.get();
     }
@@ -213,12 +234,13 @@ public class FMeasureUDAFTest {
     public void testMultiLabelZeroBeta() throws Exception {
         List<Integer> actual = Arrays.asList(1, 3, 2, 6);
         List<Integer> predicted = Arrays.asList(1, 2, 4);
-        DoubleWritable beta = new DoubleWritable(0.d);
+        double beta = 0.;
+        setUpWithArguments(beta, "micro");
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         // FMeasure for beta has zero value is not defined
         agg.get();
@@ -228,12 +250,14 @@ public class FMeasureUDAFTest {
     public void testMultiLabelNegativeBeta() throws Exception {
         List<Integer> actual = Arrays.asList(1, 3, 2, 6);
         List<Integer> predicted = Arrays.asList(1, 2, 4);
-        DoubleWritable beta = new DoubleWritable(-1.d);
+        double beta = -1.0d;
+        String average = "micro";
+        setUpWithArguments(beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         // FMeasure for beta has negative value is not defined
         agg.get();
@@ -243,40 +267,30 @@ public class FMeasureUDAFTest {
     public void testMultiLabelF1score() throws Exception {
         List<Integer> actual = Arrays.asList(1, 3, 2, 6);
         List<Integer> predicted = Arrays.asList(1, 2, 4);
-        DoubleWritable beta = new DoubleWritable(1.0d);
+        double beta = 1.0;
+        String average = " micro";
+        setUpWithArguments(beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         Assert.assertEquals(0.5714285714285715d, agg.get(), 1e-5);
-    }
-
-    @Test
-    public void testMultiLabelFMeasure() throws Exception {
-        List<Integer> actual = Arrays.asList(1, 3, 2, 6);
-        List<Integer> predicted = Arrays.asList(1, 2, 4);
-        DoubleWritable beta = new DoubleWritable(0.5d);
-
-        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
-        evaluator.reset(agg);
-
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
-
-        Assert.assertEquals(0.625, agg.get(), 1e-4);
     }
 
     @Test
     public void testMultiLabelMaxFMeasure() throws Exception {
         List<Integer> actual = Arrays.asList(1, 2, 3);
         List<Integer> predicted = Arrays.asList(1, 2, 3);
-        DoubleWritable beta = new DoubleWritable(1.0d);
+        double beta = 1.0;
+        String average = "micro";
+        setUpWithArguments(beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         Assert.assertEquals(1.d, agg.get(), 1e-5);
     }
@@ -285,12 +299,14 @@ public class FMeasureUDAFTest {
     public void testMultiLabelMinFMeasure() throws Exception {
         List<Integer> actual = Arrays.asList(0, 0, 0);
         List<Integer> predicted = Arrays.asList(1, 2, 3);
-        DoubleWritable beta = new DoubleWritable(1.0d);
+        double beta = 1.0;
+        String average = "micro";
+        setUpWithArguments(beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        evaluator.iterate(agg, new Object[] {actual, predicted, beta});
+        evaluator.iterate(agg, new Object[] {actual, predicted});
 
         Assert.assertEquals(0.d, agg.get(), 1e-5);
     }
@@ -302,13 +318,15 @@ public class FMeasureUDAFTest {
         String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
                 {"1", "2"}};
 
-        DoubleWritable beta = new DoubleWritable(1.0d);
+        double beta = 1.0;
+        String average = "micro";
+        setUpWithArguments(beta, average);
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
         for (int i = 0; i < actual.length; i++) {
-            evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i]});
         }
 
         // should equal to spark's micro f1 measure result
@@ -322,14 +340,14 @@ public class FMeasureUDAFTest {
 
         String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
                 {"1", "2"}};
-
-        DoubleWritable beta = new DoubleWritable(2.0d);
-
+        double beta = 2.0;
+        String average = "micro";
+        setUpWithArguments(beta, average);
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
         for (int i = 0; i < actual.length; i++) {
-            evaluator.iterate(agg, new Object[] {actual[i], predicted[i], beta});
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i]});
         }
 
         Assert.assertEquals(0.6779d, agg.get(), 1e-4);
