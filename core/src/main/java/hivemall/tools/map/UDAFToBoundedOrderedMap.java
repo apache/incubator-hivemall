@@ -21,6 +21,7 @@ package hivemall.tools.map;
 import hivemall.utils.hadoop.HiveUtils;
 
 import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
@@ -192,6 +193,10 @@ public class UDAFToBoundedOrderedMap extends UDAFToMap {
             Object key = ObjectInspectorUtils.copyToStandardObject(parameters[0], inputKeyOI);
             Object value = ObjectInspectorUtils.copyToStandardObject(parameters[1], inputValueOI);
             int size = HiveUtils.getInt(parameters[2], sizeOI);
+
+            if (size <= 0) {
+                throw new UDFArgumentException("Map size must be positive value: " + size);
+            }
 
             BoundedMapAggregationBuffer myagg = (BoundedMapAggregationBuffer) agg;
             myagg.container.put(key, value);

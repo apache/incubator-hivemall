@@ -18,6 +18,7 @@
  */
 package hivemall.tools.map;
 
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
@@ -45,6 +46,25 @@ public class UDAFToBoundedOrderedMapTest {
                 PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING),
                 PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT)};
     }
+
+    @Test(expected = UDFArgumentException.class)
+    public void testInvalidMapSize() throws Exception {
+        evaluator = new UDAFToBoundedOrderedMap.BoundedOrderedMapEvaluator();
+        agg = (UDAFToBoundedOrderedMap.BoundedOrderedMapEvaluator.BoundedMapAggregationBuffer) evaluator.getNewAggregationBuffer();
+
+        // should be sorted by scores in a descending order
+        final double[] keys = new double[] {0.7, 0.5, 0.8};
+        final String[] values = new String[] {"banana", "apple", "candy"};
+        int size = 0;
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < keys.length; i++) {
+            evaluator.iterate(agg, new Object[] {keys[i], values[i], size});
+        }
+    }
+
 
     @Test
     public void testNaturalOrder() throws Exception {
