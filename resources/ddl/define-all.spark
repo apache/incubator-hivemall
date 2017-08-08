@@ -454,9 +454,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION to_map AS 'hivemall.tools.map.UDAFToMa
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_ordered_map")
 sqlContext.sql("CREATE TEMPORARY FUNCTION to_ordered_map AS 'hivemall.tools.map.UDAFToOrderedMap'")
 
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_bounded_ordered_map")
-sqlContext.sql("CREATE TEMPORARY FUNCTION to_bounded_ordered_map AS 'hivemall.tools.map.UDAFToBoundedOrderedMap'")
-
 /**
  * Math functions
  */

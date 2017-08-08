@@ -455,9 +455,6 @@ create temporary function to_map as 'hivemall.tools.map.UDAFToMap';
 drop temporary function if exists to_ordered_map;
 create temporary function to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap';
 
-drop temporary function if exists to_bounded_ordered_map;
-create temporary function to_bounded_ordered_map as 'hivemall.tools.map.UDAFToBoundedOrderedMap';
-
 ---------------------
 -- Math functions --
 ---------------------
