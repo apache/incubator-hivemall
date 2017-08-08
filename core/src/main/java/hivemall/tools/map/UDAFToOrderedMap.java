@@ -79,8 +79,9 @@ public class UDAFToOrderedMap extends UDAFToMap {
                 }
                 reverseOrder = (size > 0); // positive size => top-k
             } else {
-                throw new UDFArgumentTypeException(2, "The third argument must be boolean or integer type: "
-                        + typeInfo[2].getTypeName());
+                throw new UDFArgumentTypeException(2,
+                    "The third argument must be boolean or integer type: "
+                            + typeInfo[2].getTypeName());
             }
         }
 
@@ -154,8 +155,8 @@ public class UDAFToOrderedMap extends UDAFToMap {
             }
 
             this.partialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                    ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
-                    ObjectInspectorUtils.getStandardObjectInspector(inputValueOI));
+                ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
+                ObjectInspectorUtils.getStandardObjectInspector(inputValueOI));
 
             // initialize output
             final ObjectInspector outputOI;
@@ -170,7 +171,7 @@ public class UDAFToOrderedMap extends UDAFToMap {
                 fieldOIs.add(sizeOI);
 
                 outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
-                        fieldOIs);
+                    fieldOIs);
             } else {// terminate
                 outputOI = partialMapOI;
             }
