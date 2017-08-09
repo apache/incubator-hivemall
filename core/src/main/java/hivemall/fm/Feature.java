@@ -365,9 +365,11 @@ public abstract class Feature {
         return field;
     }
 
-    public static int toIntFeature(@Nonnull final Feature x, final int yField, final int numFields) {
+    public static int toIntFeature(@Nonnull final Feature x, @Nonnegative final int yField,
+            @Nonnegative final int numFactors, @Nonnegative final int numFields) {
         int index = x.getFeatureIndex();
-        return index * numFields + yField;
+        int align1 = numFactors * numFields;
+        return index * align1 + yField * numFields /* align0 */;
     }
 
 }
