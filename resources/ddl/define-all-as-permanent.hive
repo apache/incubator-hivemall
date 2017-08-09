@@ -518,6 +518,9 @@ CREATE FUNCTION x_rank as 'hivemall.tools.RankSequenceUDF' USING JAR '${hivemall
 DROP FUNCTION IF EXISTS each_top_k;
 CREATE FUNCTION each_top_k as 'hivemall.tools.EachTopKUDTF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS to_ordered_queue;
+CREATE FUNCTION to_ordered_queue as 'hivemall.tools.UDAFToOrderedQueue' USING JAR '${hivemall_jar}';
+
 -------------------------------
 -- Text processing functions --
 -------------------------------

@@ -510,6 +510,9 @@ create temporary function x_rank as 'hivemall.tools.RankSequenceUDF';
 drop temporary function if exists each_top_k;
 create temporary function each_top_k as 'hivemall.tools.EachTopKUDTF';
 
+drop temporary function if exists to_ordered_queue;
+create temporary function to_ordered_queue as 'hivemall.tools.UDAFToOrderedQueue';
+
 -------------------------------
 -- Text processing functions --
 -------------------------------
