@@ -430,7 +430,7 @@ group by
 
 ```sql
 select 
-  id, to_ordered_list(key, value, '-k 10') as topk
+  id, to_ordered_list(value, key, '-k 10') as topk
 from 
   test
 group by
@@ -441,4 +441,4 @@ group by
 >
 > In case that `key` could duplicate in `id`, `to_ordered_map` behaves differently because key `K` is always unique in `Map<K, V>`.
 
-Similarly to `each_top_k`, tail-k can also be represented as: `to_ordered_map(key, value, -10)` and `to_ordered_list(key, value, '-k -10')`.
+Similarly to `each_top_k`, tail-k can also be represented as: `to_ordered_map(key, value, -10)` and `to_ordered_list(value, key, '-k -10')`.

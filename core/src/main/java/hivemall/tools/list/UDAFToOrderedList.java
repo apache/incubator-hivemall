@@ -45,10 +45,10 @@ import java.io.StringWriter;
 import java.util.*;
 
 /**
- * Return list of values sorted by key.
+ * Return list of values sorted by value itself or specific key.
  */
 @Description(name = "to_ordered_list",
-        value = "_FUNC_(key, value [, const string options]) - Return list of values sorted by key")
+        value = "_FUNC_(value, key [, const string options]) - Return list of values sorted by value itself or specific key")
 public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
     @SuppressWarnings("deprecation")
@@ -58,26 +58,26 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "Expecting two or three arguments: " + typeInfo.length);
         }
-        if (typeInfo[0].getCategory() != ObjectInspector.Category.PRIMITIVE) {
-            throw new UDFArgumentTypeException(0,
+        if (typeInfo[1].getCategory() != ObjectInspector.Category.PRIMITIVE) {
+            throw new UDFArgumentTypeException(1,
                 "Only primitive type arguments are accepted for the key but "
-                        + typeInfo[0].getTypeName() + " was passed as parameter 1.");
+                        + typeInfo[1].getTypeName() + " was passed as the second parameter.");
         }
         return new UDAFToOrderedListEvaluator();
     }
 
     public static class UDAFToOrderedListEvaluator extends GenericUDAFEvaluator {
 
-        private PrimitiveObjectInspector keyOI;
         private ObjectInspector valueOI;
+        private PrimitiveObjectInspector keyOI;
 
-        private ListObjectInspector keyListOI;
         private ListObjectInspector valueListOI;
+        private ListObjectInspector keyListOI;
 
         private StructObjectInspector internalMergeOI;
 
-        private StructField keyListField;
         private StructField valueListField;
+        private StructField keyListField;
         private StructField sizeField;
         private StructField reverseOrderField;
 
@@ -164,23 +164,23 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
                 processOptions(argOIs);
-                this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
-                this.valueOI = argOIs[1];
+                this.valueOI = argOIs[0];
+                this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) argOIs[0];
                 this.internalMergeOI = soi;
-
-                // re-extract input key OI
-                this.keyListField = soi.getStructFieldRef("keyList");
-                StandardListObjectInspector keyListOI = (StandardListObjectInspector) keyListField.getFieldObjectInspector();
-                this.keyOI = HiveUtils.asPrimitiveObjectInspector(keyListOI.getListElementObjectInspector());
-                this.keyListOI = ObjectInspectorFactory.getStandardListObjectInspector(keyOI);
 
                 // re-extract input value OI
                 this.valueListField = soi.getStructFieldRef("valueList");
                 StandardListObjectInspector valueListOI = (StandardListObjectInspector) valueListField.getFieldObjectInspector();
                 this.valueOI = valueListOI.getListElementObjectInspector();
                 this.valueListOI = ObjectInspectorFactory.getStandardListObjectInspector(valueOI);
+
+                // re-extract input key OI
+                this.keyListField = soi.getStructFieldRef("keyList");
+                StandardListObjectInspector keyListOI = (StandardListObjectInspector) keyListField.getFieldObjectInspector();
+                this.keyOI = HiveUtils.asPrimitiveObjectInspector(keyListOI.getListElementObjectInspector());
+                this.keyListOI = ObjectInspectorFactory.getStandardListObjectInspector(keyOI);
 
                 this.sizeField = soi.getStructFieldRef("size");
                 this.reverseOrderField = soi.getStructFieldRef("reverseOrder");
@@ -189,7 +189,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             // initialize output
             final ObjectInspector outputOI;
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
-                outputOI = internalMergeOI(keyOI, valueOI);
+                outputOI = internalMergeOI(valueOI, keyOI);
             } else {// terminate
                 outputOI = ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(valueOI));
             }
@@ -198,15 +198,15 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         }
 
         private static StructObjectInspector internalMergeOI(
-                @Nonnull PrimitiveObjectInspector keyOI, @Nonnull ObjectInspector valueOI) {
+                @Nonnull ObjectInspector valueOI, @Nonnull PrimitiveObjectInspector keyOI) {
             ArrayList<String> fieldNames = new ArrayList<String>();
             ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
-            fieldNames.add("keyList");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(keyOI)));
-
             fieldNames.add("valueList");
             fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(valueOI)));
+
+            fieldNames.add("keyList");
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(keyOI)));
 
             fieldNames.add("size");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
@@ -239,8 +239,8 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 return;
             }
 
-            Object key = ObjectInspectorUtils.copyToStandardObject(parameters[0], keyOI);
-            Object value = ObjectInspectorUtils.copyToStandardObject(parameters[1], valueOI);
+            Object value = ObjectInspectorUtils.copyToStandardObject(parameters[0], valueOI);
+            Object key = ObjectInspectorUtils.copyToStandardObject(parameters[1], keyOI);
 
             TupleWithKey tuple = new TupleWithKey(key, value);
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
@@ -254,15 +254,15 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
 
             Map<String, List<Object>> tuples = myagg.drainQueue();
-            List<Object> keyList = tuples.get("key");
             List<Object> valueList = tuples.get("value");
-            if (keyList.size() == 0) {
+            List<Object> keyList = tuples.get("key");
+            if (valueList.size() == 0) {
                 return null;
             }
 
             Object[] partialResult = new Object[4];
-            partialResult[0] = keyList;
-            partialResult[1] = valueList;
+            partialResult[0] = valueList;
+            partialResult[1] = keyList;
             partialResult[2] = new IntWritable(myagg.size);
             partialResult[3] = new BooleanWritable(myagg.reverseOrder);
 
@@ -276,19 +276,19 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 return;
             }
 
-            Object keyListObj = internalMergeOI.getStructFieldData(partial, keyListField);
-            final List<?> keyListRaw = keyListOI.getList(HiveUtils.castLazyBinaryObject(keyListObj));
-            final List<Object> keyList = new ArrayList<Object>();
-            for (int i = 0, n = keyListRaw.size(); i < n; i++) {
-                keyList.add(ObjectInspectorUtils.copyToStandardObject(keyListRaw.get(i), keyOI));
-            }
-
             Object valueListObj = internalMergeOI.getStructFieldData(partial, valueListField);
             final List<?> valueListRaw = valueListOI.getList(HiveUtils.castLazyBinaryObject(valueListObj));
             final List<Object> valueList = new ArrayList<Object>();
             for (int i = 0, n = valueListRaw.size(); i < n; i++) {
                 valueList.add(ObjectInspectorUtils.copyToStandardObject(valueListRaw.get(i),
                     valueOI));
+            }
+
+            Object keyListObj = internalMergeOI.getStructFieldData(partial, keyListField);
+            final List<?> keyListRaw = keyListOI.getList(HiveUtils.castLazyBinaryObject(keyListObj));
+            final List<Object> keyList = new ArrayList<Object>();
+            for (int i = 0, n = keyListRaw.size(); i < n; i++) {
+                keyList.add(ObjectInspectorUtils.copyToStandardObject(keyListRaw.get(i), keyOI));
             }
 
             Object sizeObj = internalMergeOI.getStructFieldData(partial, sizeField);

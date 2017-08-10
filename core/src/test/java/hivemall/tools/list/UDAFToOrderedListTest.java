@@ -47,17 +47,17 @@ public class UDAFToOrderedListTest {
     @Test
     public void testNaturalOrder() throws Exception {
         ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector};
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
 
-        final double[] keys = new double[] {0.7, 0.5, 0.7};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        final double[] keys = new double[] {0.7, 0.5, 0.7};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for (int i = 0; i < keys.length; i++) {
-            evaluator.iterate(agg, new Object[] {keys[i], values[i]});
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
         List<Object> res = (List<Object>) evaluator.terminate(agg);
@@ -74,19 +74,19 @@ public class UDAFToOrderedListTest {
     @Test
     public void testReverseOrder() throws Exception {
         ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reverse_order")};
 
-        final double[] keys = new double[] {0.7, 0.5, 0.7};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        final double[] keys = new double[] {0.7, 0.5, 0.7};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for (int i = 0; i < keys.length; i++) {
-            evaluator.iterate(agg, new Object[] {keys[i], values[i]});
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
         List<Object> res = (List<Object>) evaluator.terminate(agg);
@@ -103,19 +103,19 @@ public class UDAFToOrderedListTest {
     @Test
     public void testTopK() throws Exception {
         ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2")};
 
-        final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        final double[] keys = new double[] {0.7, 0.5, 0.8};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for (int i = 0; i < keys.length; i++) {
-            evaluator.iterate(agg, new Object[] {keys[i], values[i]});
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
         List<Object> res = (List<Object>) evaluator.terminate(agg);
@@ -129,19 +129,19 @@ public class UDAFToOrderedListTest {
     public void testReverseTopK() throws Exception {
         // = tail-k
         ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2 -reverse")};
 
-        final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        final double[] keys = new double[] {0.7, 0.5, 0.8};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for (int i = 0; i < keys.length; i++) {
-            evaluator.iterate(agg, new Object[] {keys[i], values[i]});
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
         List<Object> res = (List<Object>) evaluator.terminate(agg);
@@ -154,19 +154,19 @@ public class UDAFToOrderedListTest {
     @Test
     public void testTailK() throws Exception {
         ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2")};
 
-        final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        final double[] keys = new double[] {0.7, 0.5, 0.8};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for (int i = 0; i < keys.length; i++) {
-            evaluator.iterate(agg, new Object[] {keys[i], values[i]});
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
         List<Object> res = (List<Object>) evaluator.terminate(agg);
@@ -180,19 +180,19 @@ public class UDAFToOrderedListTest {
     public void testReverseTailK() throws Exception {
         // = top-k
         ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2 -reverse")};
 
-        final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        final double[] keys = new double[] {0.7, 0.5, 0.8};
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
 
-        for (int i = 0; i < keys.length; i++) {
-            evaluator.iterate(agg, new Object[] {keys[i], values[i]});
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
         List<Object> res = (List<Object>) evaluator.terminate(agg);

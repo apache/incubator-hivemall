@@ -85,7 +85,7 @@ This page describes a list of useful Hivemall generic functions.
 
 ## List UDAF
 
-- `to_ordered_list(key, value [, const string options])` - Convert two aggregated columns into an ordered key-value map
+- `to_ordered_list(value, key [, const string options])` - Return list of values sorted by key
 
 # Bitset functions
 
@@ -145,7 +145,7 @@ The compression level must be in range [-1,9]
 
 - `to_map(key, value)` - Convert two aggregated columns into a key-value map
 
-- `to_ordered_map(key, value [, const int|boolean k|reverseOrder=false])` - Return list of values sorted by key
+- `to_ordered_map(key, value [, const int|boolean k|reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
 
 # MapReduce functions
 
