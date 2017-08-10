@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.tools;
+package hivemall.tools.list;
 
-import hivemall.tools.UDAFToOrderedQueue.UDAFToOrderedQueueEvaluator;
-import hivemall.tools.UDAFToOrderedQueue.UDAFToOrderedQueueEvaluator.QueueAggregationBuffer;
+import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator;
+import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator.QueueAggregationBuffer;
 
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -33,14 +33,14 @@ import org.junit.Test;
 import java.util.List;
 
 @SuppressWarnings("deprecation")
-public class UDAFToOrderedQueueTest {
+public class UDAFToOrderedListTest {
 
     GenericUDAFEvaluator evaluator;
     QueueAggregationBuffer agg;
 
     @Before
     public void setUp() throws Exception {
-        this.evaluator = new UDAFToOrderedQueueEvaluator();
+        this.evaluator = new UDAFToOrderedListEvaluator();
         this.agg = (QueueAggregationBuffer) evaluator.getNewAggregationBuffer();
     }
 

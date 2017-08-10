@@ -455,6 +455,13 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_ordered_map")
 sqlContext.sql("CREATE TEMPORARY FUNCTION to_ordered_map AS 'hivemall.tools.map.UDAFToOrderedMap'")
 
 /**
+ * List functions
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_ordered_list")
+sqlContext.sql("CREATE TEMPORARY FUNCTION to_ordered_list AS 'hivemall.tools.list.UDAFToOrderedList'")
+
+/**
  * Math functions
  */
 
@@ -493,9 +500,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION x_rank AS 'hivemall.tools.RankSequence
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS each_top_k")
 sqlContext.sql("CREATE TEMPORARY FUNCTION each_top_k AS 'hivemall.tools.EachTopKUDTF'")
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_ordered_queue")
-sqlContext.sql("CREATE TEMPORARY FUNCTION to_ordered_queue AS 'hivemall.tools.UDAFToOrderedQueue'")
 
 /**
  * Text processing functions

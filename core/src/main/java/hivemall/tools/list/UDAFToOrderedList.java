@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.tools;
+package hivemall.tools.list;
 
 import hivemall.utils.collections.BoundedPriorityQueue;
 import hivemall.utils.hadoop.HiveUtils;
@@ -47,9 +47,9 @@ import java.util.*;
 /**
  * Return list of values sorted by key.
  */
-@Description(name = "to_ordered_queue",
+@Description(name = "to_ordered_list",
         value = "_FUNC_(key, value [, const string options]) - Return list of values sorted by key")
-public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
+public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
     @SuppressWarnings("deprecation")
     @Override
@@ -63,10 +63,10 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
                 "Only primitive type arguments are accepted for the key but "
                         + typeInfo[0].getTypeName() + " was passed as parameter 1.");
         }
-        return new UDAFToOrderedQueueEvaluator();
+        return new UDAFToOrderedListEvaluator();
     }
 
-    public static class UDAFToOrderedQueueEvaluator extends GenericUDAFEvaluator {
+    public static class UDAFToOrderedListEvaluator extends GenericUDAFEvaluator {
 
         private PrimitiveObjectInspector keyOI;
         private ObjectInspector valueOI;
