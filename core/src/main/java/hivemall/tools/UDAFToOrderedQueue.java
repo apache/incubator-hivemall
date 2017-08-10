@@ -34,7 +34,6 @@ import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -71,8 +70,6 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
 
         private PrimitiveObjectInspector keyOI;
         private ObjectInspector valueOI;
-        private PrimitiveObjectInspector sizeOI;
-        private PrimitiveObjectInspector reverseOrderOI;
 
         private ListObjectInspector keyListOI;
         private ListObjectInspector valueListOI;
@@ -169,8 +166,6 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
                 processOptions(argOIs);
                 this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
                 this.valueOI = argOIs[1];
-                this.sizeOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
-                this.reverseOrderOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) argOIs[0];
                 this.internalMergeOI = soi;
@@ -179,47 +174,47 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
                 this.keyListField = soi.getStructFieldRef("keyList");
                 StandardListObjectInspector keyListOI = (StandardListObjectInspector) keyListField.getFieldObjectInspector();
                 this.keyOI = HiveUtils.asPrimitiveObjectInspector(keyListOI.getListElementObjectInspector());
+                this.keyListOI = ObjectInspectorFactory.getStandardListObjectInspector(keyOI);
 
                 // re-extract input value OI
                 this.valueListField = soi.getStructFieldRef("valueList");
                 StandardListObjectInspector valueListOI = (StandardListObjectInspector) valueListField.getFieldObjectInspector();
                 this.valueOI = valueListOI.getListElementObjectInspector();
+                this.valueListOI = ObjectInspectorFactory.getStandardListObjectInspector(valueOI);
 
                 this.sizeField = soi.getStructFieldRef("size");
-                this.sizeOI = (PrimitiveObjectInspector) sizeField.getFieldObjectInspector();
-
                 this.reverseOrderField = soi.getStructFieldRef("reverseOrder");
-                this.reverseOrderOI = (PrimitiveObjectInspector) reverseOrderField.getFieldObjectInspector();
             }
-
-            this.keyListOI = ObjectInspectorFactory.getStandardListObjectInspector(keyOI);
-            this.valueListOI = ObjectInspectorFactory.getStandardListObjectInspector(valueOI);
 
             // initialize output
             final ObjectInspector outputOI;
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
-                ArrayList<String> fieldNames = new ArrayList<String>();
-                ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-
-                fieldNames.add("keyList");
-                fieldOIs.add(keyListOI);
-
-                fieldNames.add("valueList");
-                fieldOIs.add(valueListOI);
-
-                fieldNames.add("size");
-                fieldOIs.add(sizeOI);
-
-                fieldNames.add("reverseOrder");
-                fieldOIs.add(reverseOrderOI);
-
-                outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
-                    fieldOIs);
+                outputOI = internalMergeOI(keyOI, valueOI);
             } else {// terminate
-                outputOI = valueListOI;
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(valueOI));
             }
 
             return outputOI;
+        }
+
+        private static StructObjectInspector internalMergeOI(
+                @Nonnull PrimitiveObjectInspector keyOI, @Nonnull ObjectInspector valueOI) {
+            ArrayList<String> fieldNames = new ArrayList<String>();
+            ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
+
+            fieldNames.add("keyList");
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(keyOI)));
+
+            fieldNames.add("valueList");
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(valueOI)));
+
+            fieldNames.add("size");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+
+            fieldNames.add("reverseOrder");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
+
+            return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
 
         @SuppressWarnings("deprecation")
@@ -297,11 +292,10 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
             }
 
             Object sizeObj = internalMergeOI.getStructFieldData(partial, sizeField);
-            int size = HiveUtils.getInt(sizeObj, sizeOI);
+            int size = PrimitiveObjectInspectorFactory.writableIntObjectInspector.get(sizeObj);
 
             Object reverseOrderObj = internalMergeOI.getStructFieldData(partial, reverseOrderField);
-            boolean reverseOrder = PrimitiveObjectInspectorUtils.getBoolean(reverseOrderObj,
-                reverseOrderOI);
+            boolean reverseOrder = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector.get(reverseOrderObj);
 
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
             myagg.setOptions(size, reverseOrder);

@@ -40,8 +40,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardMapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.IntWritable;
+
+import javax.annotation.Nonnull;
 
 /**
  * Convert two aggregated columns into a sorted key-value map.
@@ -150,32 +153,40 @@ public class UDAFToOrderedMap extends UDAFToMap {
                 this.inputKeyOI = HiveUtils.asPrimitiveObjectInspector(partialMapOI.getMapKeyObjectInspector());
                 this.inputValueOI = partialMapOI.getMapValueObjectInspector();
 
+                this.partialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+                    ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
+                    ObjectInspectorUtils.getStandardObjectInspector(inputValueOI));
+
                 this.sizeField = soi.getStructFieldRef("size");
                 this.sizeOI = (PrimitiveObjectInspector) sizeField.getFieldObjectInspector();
             }
 
-            this.partialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
-                ObjectInspectorUtils.getStandardObjectInspector(inputValueOI));
-
             // initialize output
             final ObjectInspector outputOI;
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
-                ArrayList<String> fieldNames = new ArrayList<String>();
-                ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-
-                fieldNames.add("partialMap");
-                fieldOIs.add(partialMapOI);
-
-                fieldNames.add("size");
-                fieldOIs.add(sizeOI);
-
-                outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
-                    fieldOIs);
+                outputOI = internalMergeOI(inputKeyOI, inputValueOI);
             } else {// terminate
-                outputOI = partialMapOI;
+                outputOI = ObjectInspectorFactory.getStandardMapObjectInspector(
+                    ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
+                    ObjectInspectorUtils.getStandardObjectInspector(inputValueOI));
             }
             return outputOI;
+        }
+
+        private static StructObjectInspector internalMergeOI(
+                @Nonnull PrimitiveObjectInspector keyOI, @Nonnull ObjectInspector valueOI) {
+            ArrayList<String> fieldNames = new ArrayList<String>();
+            ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
+
+            fieldNames.add("partialMap");
+            fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
+                ObjectInspectorUtils.getStandardObjectInspector(keyOI),
+                ObjectInspectorUtils.getStandardObjectInspector(valueOI)));
+
+            fieldNames.add("size");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+
+            return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
 
         static class MapAggregationBuffer extends AbstractAggregationBuffer {
