@@ -32,6 +32,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
@@ -47,21 +48,36 @@ import java.util.*;
 /**
  * Return list of values sorted by value itself or specific key.
  */
-@Description(name = "to_ordered_list",
-        value = "_FUNC_(value, key [, const string options]) - Return list of values sorted by value itself or specific key")
+@Description(
+        name = "to_ordered_list",
+        value = "_FUNC_(value [, key, const string options]) - Return list of values sorted by value itself or specific key")
 public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
-    @SuppressWarnings("deprecation")
     @Override
-    public GenericUDAFEvaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
-        if (typeInfo.length != 2 && typeInfo.length != 3) {
+    public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info)
+            throws SemanticException {
+        @SuppressWarnings("deprecation")
+        TypeInfo[] typeInfo = info.getParameters();
+        ObjectInspector[] argOIs = info.getParameterObjectInspectors();
+        if ((typeInfo.length == 1) || (typeInfo.length == 2 && HiveUtils.isConstString(argOIs[1]))) {
+            // sort values by value itself w/o key
+            if (typeInfo[0].getCategory() != ObjectInspector.Category.PRIMITIVE) {
+                throw new UDFArgumentTypeException(0,
+                    "Only primitive type arguments are accepted for value but "
+                            + typeInfo[0].getTypeName() + " was passed as the first parameter.");
+            }
+        } else if ((typeInfo.length == 2)
+                || (typeInfo.length == 3 && HiveUtils.isConstString(argOIs[2]))) {
+            // sort values by key
+            if (typeInfo[1].getCategory() != ObjectInspector.Category.PRIMITIVE) {
+                throw new UDFArgumentTypeException(1,
+                    "Only primitive type arguments are accepted for key but "
+                            + typeInfo[1].getTypeName() + " was passed as the second parameter.");
+            }
+        } else {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
-                "Expecting two or three arguments: " + typeInfo.length);
-        }
-        if (typeInfo[1].getCategory() != ObjectInspector.Category.PRIMITIVE) {
-            throw new UDFArgumentTypeException(1,
-                "Only primitive type arguments are accepted for the key but "
-                        + typeInfo[1].getTypeName() + " was passed as the second parameter.");
+                "Number of arguments must be in [1, 3] including constant string for options: "
+                        + typeInfo.length);
         }
         return new UDAFToOrderedListEvaluator();
     }
@@ -84,6 +100,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         @Nonnegative
         private int size;
         private boolean reverseOrder;
+        private boolean sortByKey;
 
         protected Options getOptions() {
             Options opts = new Options();
@@ -127,11 +144,16 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
             CommandLine cl = null;
 
+            int optionIndex = 1;
+            if (sortByKey) {
+                optionIndex = 2;
+            }
+
             int k = 0;
             boolean reverseOrder = false;
 
-            if (argOIs.length >= 3) {
-                String rawArgs = HiveUtils.getConstString(argOIs[2]);
+            if (argOIs.length >= optionIndex + 1) {
+                String rawArgs = HiveUtils.getConstString(argOIs[optionIndex]);
                 cl = parseOptions(rawArgs);
 
                 reverseOrder = cl.hasOption("reverse_order");
@@ -163,9 +185,20 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
+                // this flag will be used in `processOptions` and `iterate` (= when Mode.PARTIAL1 or Mode.COMPLETE)
+                this.sortByKey = (argOIs.length == 2 && !HiveUtils.isConstString(argOIs[1]))
+                        || (argOIs.length == 3 && HiveUtils.isConstString(argOIs[2]));
+
+                if (sortByKey) {
+                    this.valueOI = argOIs[0];
+                    this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
+                } else {
+                    // sort values by value itself
+                    this.valueOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
+                    this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
+                }
+
                 processOptions(argOIs);
-                this.valueOI = argOIs[0];
-                this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) argOIs[0];
                 this.internalMergeOI = soi;
@@ -197,8 +230,8 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             return outputOI;
         }
 
-        private static StructObjectInspector internalMergeOI(
-                @Nonnull ObjectInspector valueOI, @Nonnull PrimitiveObjectInspector keyOI) {
+        private static StructObjectInspector internalMergeOI(@Nonnull ObjectInspector valueOI,
+                @Nonnull PrimitiveObjectInspector keyOI) {
             ArrayList<String> fieldNames = new ArrayList<String>();
             ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
@@ -235,12 +268,21 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         @Override
         public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
                 Object[] parameters) throws HiveException {
-            if (parameters[0] == null || parameters[1] == null) {
+            if (parameters[0] == null) {
                 return;
             }
-
             Object value = ObjectInspectorUtils.copyToStandardObject(parameters[0], valueOI);
-            Object key = ObjectInspectorUtils.copyToStandardObject(parameters[1], keyOI);
+
+            final Object key;
+            if (sortByKey) {
+                if (parameters[1] == null) {
+                    return;
+                }
+                key = ObjectInspectorUtils.copyToStandardObject(parameters[1], keyOI);
+            } else {
+                // set value to key
+                key = ObjectInspectorUtils.copyToStandardObject(parameters[0], valueOI);
+            }
 
             TupleWithKey tuple = new TupleWithKey(key, value);
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;

@@ -85,7 +85,7 @@ This page describes a list of useful Hivemall generic functions.
 
 ## List UDAF
 
-- `to_ordered_list(value, key [, const string options])` - Return list of values sorted by key
+- `to_ordered_list(value [, const string options])` or `to_ordered_list(value, key [, const string options])` - Return list of values sorted by value itself or specific key
 
 # Bitset functions
 
