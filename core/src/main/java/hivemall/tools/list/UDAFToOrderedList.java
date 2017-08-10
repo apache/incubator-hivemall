@@ -388,7 +388,6 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
         }
 
-
         /**
          * Since BoundedPriorityQueue does not directly inherit PriorityQueue, we provide handler
          * class which wraps each of PriorityQueue and BoundedPriorityQueue.

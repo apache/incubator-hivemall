@@ -50,7 +50,7 @@ import javax.annotation.Nonnull;
  * Convert two aggregated columns into a sorted key-value map.
  */
 @Description(name = "to_ordered_map",
-        value = "_FUNC_(key, value [, const boolean|int reverseOrder=false|size]) "
+        value = "_FUNC_(key, value [, const int|boolean k|reverseOrder=false]) "
                 + "- Convert two aggregated columns into an ordered key-value map")
 public class UDAFToOrderedMap extends UDAFToMap {
 
