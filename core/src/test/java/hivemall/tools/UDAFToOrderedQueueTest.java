@@ -77,7 +77,7 @@ public class UDAFToOrderedQueueTest {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reverse_order")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reverse_order")};
 
         final double[] keys = new double[] {0.7, 0.5, 0.7};
         final String[] values = new String[] {"banana", "apple", "candy"};
@@ -106,7 +106,7 @@ public class UDAFToOrderedQueueTest {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2")};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
@@ -132,7 +132,7 @@ public class UDAFToOrderedQueueTest {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2 -reverse")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2 -reverse")};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
@@ -157,7 +157,7 @@ public class UDAFToOrderedQueueTest {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2")};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
@@ -183,7 +183,7 @@ public class UDAFToOrderedQueueTest {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2 -reverse")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2 -reverse")};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};

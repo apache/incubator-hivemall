@@ -57,12 +57,12 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
-                    "Expecting two or three arguments: " + typeInfo.length);
+                "Expecting two or three arguments: " + typeInfo.length);
         }
         if (typeInfo[0].getCategory() != ObjectInspector.Category.PRIMITIVE) {
             throw new UDFArgumentTypeException(0,
-                    "Only primitive type arguments are accepted for the key but "
-                            + typeInfo[0].getTypeName() + " was passed as parameter 1.");
+                "Only primitive type arguments are accepted for the key but "
+                        + typeInfo[0].getTypeName() + " was passed as parameter 1.");
         }
         return new UDAFToOrderedQueueEvaluator();
     }
@@ -91,7 +91,8 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
         protected Options getOptions() {
             Options opts = new Options();
             opts.addOption("k", true, "To top-k (positive) or tail-k (negative) ordered queue");
-            opts.addOption("reverse", "reverse_order", false, "Sort values by key in a reverse (e.g., descending) order [default: false]");
+            opts.addOption("reverse", "reverse_order", false,
+                "Sort values by key in a reverse (e.g., descending) order [default: false]");
             return opts;
         }
 
@@ -117,7 +118,7 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
                 PrintWriter pw = new PrintWriter(sw);
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp(pw, HelpFormatter.DEFAULT_WIDTH, cmdLineSyntax, null, opts,
-                        HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
+                    HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
                 pw.flush();
                 String helpMsg = sw.toString();
                 throw new UDFArgumentException(helpMsg);
@@ -213,7 +214,7 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
                 fieldOIs.add(reverseOrderOI);
 
                 outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
-                        fieldOIs);
+                    fieldOIs);
             } else {// terminate
                 outputOI = valueListOI;
             }
@@ -253,8 +254,8 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public Object terminatePartial(
-                @SuppressWarnings("deprecation") AggregationBuffer agg) throws HiveException {
+        public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
+                throws HiveException {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
 
             Map<String, List<Object>> tuples = myagg.drainQueue();
@@ -291,14 +292,16 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
             final List<?> valueListRaw = valueListOI.getList(HiveUtils.castLazyBinaryObject(valueListObj));
             final List<Object> valueList = new ArrayList<Object>();
             for (int i = 0, n = valueListRaw.size(); i < n; i++) {
-                valueList.add(ObjectInspectorUtils.copyToStandardObject(valueListRaw.get(i), valueOI));
+                valueList.add(ObjectInspectorUtils.copyToStandardObject(valueListRaw.get(i),
+                    valueOI));
             }
 
             Object sizeObj = internalMergeOI.getStructFieldData(partial, sizeField);
             int size = HiveUtils.getInt(sizeObj, sizeOI);
 
             Object reverseOrderObj = internalMergeOI.getStructFieldData(partial, reverseOrderField);
-            boolean reverseOrder = PrimitiveObjectInspectorUtils.getBoolean(reverseOrderObj, reverseOrderOI);
+            boolean reverseOrder = PrimitiveObjectInspectorUtils.getBoolean(reverseOrderObj,
+                reverseOrderOI);
 
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
             myagg.setOptions(size, reverseOrder);
@@ -375,7 +378,8 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
                     comparator = Collections.reverseOrder();
                 } else {
                     comparator = new Comparator<TupleWithKey>() {
-                        @Override public int compare(TupleWithKey o1, TupleWithKey o2) {
+                        @Override
+                        public int compare(TupleWithKey o1, TupleWithKey o2) {
                             return o1.compareTo(o2);
                         }
                     };
@@ -392,8 +396,8 @@ public class UDAFToOrderedQueue extends AbstractGenericUDAFResolver {
 
 
         /**
-         * Since BoundedPriorityQueue does not directly inherit PriorityQueue,
-         * we provide handler class which wraps each of PriorityQueue and BoundedPriorityQueue.
+         * Since BoundedPriorityQueue does not directly inherit PriorityQueue, we provide handler
+         * class which wraps each of PriorityQueue and BoundedPriorityQueue.
          */
         private static abstract class AbstractQueueHandler {
 
