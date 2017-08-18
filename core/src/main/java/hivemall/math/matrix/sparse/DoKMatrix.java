@@ -329,4 +329,22 @@ public final class DoKMatrix extends AbstractMatrix {
         return Primitives.toLong(row, col);
     }
 
+    public double unsafeGet(@Nonnegative final int row, @Nonnegative final int col,
+            final double defaultValue) {
+        long index = index(row, col);
+        return elements.get(index, defaultValue);
+    }
+
+    public void unsafeSet(@Nonnegative final int row, @Nonnegative final int col, final double value) {
+        if (value == 0.d) {
+            return;
+        }
+
+        long index = index(row, col);
+        if (elements.put(index, value, 0.d) == 0.d) {
+            nnz++;
+            this.numRows = Math.max(numRows, row + 1);
+            this.numColumns = Math.max(numColumns, col + 1);
+        }
+    }
 }
