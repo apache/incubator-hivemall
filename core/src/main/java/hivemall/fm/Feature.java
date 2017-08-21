@@ -180,6 +180,9 @@ public abstract class Feature {
                 int index = parseFeatureIndex(fv);
                 return new IntFeature(index, 1.d);
             } else {
+                if ("0".equals(fv)) {
+                    throw new HiveException("Index value should not be 0: " + fv);
+                }
                 return new StringFeature(/* index */fv, 1.d);
             }
         } else {
@@ -191,6 +194,9 @@ public abstract class Feature {
                 return new IntFeature(index, value);
             } else {
                 double value = parseFeatureValue(valueStr);
+                if ("0".equals(indexStr)) {
+                    throw new HiveException("Index value should not be 0: " + fv);
+                }
                 return new StringFeature(/* index */indexStr, value);
             }
         }
@@ -199,6 +205,12 @@ public abstract class Feature {
     @Nonnull
     static IntFeature parseFFMFeature(@Nonnull final String fv) throws HiveException {
         return parseFFMFeature(fv, DEFAULT_NUM_FEATURES, DEFAULT_NUM_FIELDS);
+    }
+
+    @Nonnull
+    static IntFeature parseFFMFeature(@Nonnull final String fv, final int numFeatures)
+            throws HiveException {
+        return parseFFMFeature(fv, -1, DEFAULT_NUM_FIELDS);
     }
 
     @Nonnull
@@ -258,6 +270,9 @@ public abstract class Feature {
                 int index = parseFeatureIndex(fv);
                 probe.setFeatureIndex(index);
             } else {
+                if ("0".equals(fv)) {
+                    throw new HiveException("Index value should not be 0: " + fv);
+                }
                 probe.setFeature(fv);
             }
             probe.value = 1.d;
@@ -269,6 +284,9 @@ public abstract class Feature {
                 probe.setFeatureIndex(index);
                 probe.value = parseFeatureValue(valueStr);
             } else {
+                if ("0".equals(indexStr)) {
+                    throw new HiveException("Index value should not be 0: " + fv);
+                }
                 probe.setFeature(indexStr);
                 probe.value = parseFeatureValue(valueStr);
             }
@@ -329,7 +347,6 @@ public abstract class Feature {
         probe.value = parseFeatureValue(valueStr);
     }
 
-
     private static int parseFeatureIndex(@Nonnull final String indexStr) throws HiveException {
         final int index;
         try {
@@ -337,7 +354,7 @@ public abstract class Feature {
         } catch (NumberFormatException e) {
             throw new HiveException("Invalid index value: " + indexStr, e);
         }
-        if (index < 0) {
+        if (index <= 0) {
             throw new HiveException("Feature index MUST be greater than 0: " + indexStr);
         }
         return index;
@@ -365,11 +382,15 @@ public abstract class Feature {
         return field;
     }
 
-    public static int toIntFeature(@Nonnull final Feature x, @Nonnegative final int yField,
-            @Nonnegative final int numFactors, @Nonnegative final int numFields) {
+    public static int toIntFeature(@Nonnull final Feature x) {
         int index = x.getFeatureIndex();
-        int align1 = numFactors * numFields;
-        return index * align1 + yField * numFields /* align0 */;
+        return -index;
+    }
+
+    public static int toIntFeature(@Nonnull final Feature x, @Nonnegative final int yField,
+            @Nonnegative final int numFields) {
+        int index = x.getFeatureIndex();
+        return index * numFields + yField;
     }
 
 }

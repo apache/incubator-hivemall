@@ -143,12 +143,11 @@ class FMHyperParameters {
         int numFields = Feature.DEFAULT_NUM_FIELDS;
 
         // adagrad
-        boolean useAdaGrad = true;
-        float eta0_V = 1.f;
+        boolean useAdaGrad = false;
         float eps = 1.f;
 
         // FTRL
-        boolean useFTRL = true;
+        boolean useFTRL = false;
         float alphaFTRL = 0.1f; // Learning Rate
         float betaFTRL = 1.f; // Smoothing parameter for AdaGrad
         float lambda1 = 0.1f; // L1 Regularization
@@ -185,29 +184,45 @@ class FMHyperParameters {
                 throw new UDFArgumentException("-num_fields MUST be greater than 1: " + numFields);
             }
 
-            // adagrad
-            this.useAdaGrad = !cl.hasOption("disable_adagrad");
-            this.eta0_V = Primitives.parseFloat(cl.getOptionValue("eta0_V"), eta0_V);
-            this.eps = Primitives.parseFloat(cl.getOptionValue("eps"), eps);
-
-            // FTRL
-            this.useFTRL = !cl.hasOption("disable_ftrl");
-            this.alphaFTRL = Primitives.parseFloat(cl.getOptionValue("alphaFTRL"), alphaFTRL);
-            if (alphaFTRL == 0.f) {
-                throw new UDFArgumentException("-alphaFTRL SHOULD NOT be 0");
+            // optimizer
+            final String optimizer = cl.getOptionValue("optimizer", "ftrl").toLowerCase();
+            switch (optimizer) {
+                case "ftrl": {
+                    this.useFTRL = true;
+                    this.useAdaGrad = false;
+                    this.alphaFTRL = Primitives.parseFloat(cl.getOptionValue("alphaFTRL"),
+                        alphaFTRL);
+                    if (alphaFTRL == 0.f) {
+                        throw new UDFArgumentException("-alphaFTRL SHOULD NOT be 0");
+                    }
+                    this.betaFTRL = Primitives.parseFloat(cl.getOptionValue("betaFTRL"), betaFTRL);
+                    this.lambda1 = Primitives.parseFloat(cl.getOptionValue("lambda1"), lambda1);
+                    this.lamdda2 = Primitives.parseFloat(cl.getOptionValue("lamdda2"), lamdda2);
+                    break;
+                }
+                case "adagrad": {
+                    this.useAdaGrad = true;
+                    this.useFTRL = false;
+                    this.eps = Primitives.parseFloat(cl.getOptionValue("eps"), eps);
+                    break;
+                }
+                case "sgd":
+                    // fall through
+                default: {
+                    this.useFTRL = false;
+                    this.useAdaGrad = false;
+                    break;
+                }
             }
-            this.betaFTRL = Primitives.parseFloat(cl.getOptionValue("betaFTRL"), betaFTRL);
-            this.lambda1 = Primitives.parseFloat(cl.getOptionValue("lambda1"), lambda1);
-            this.lamdda2 = Primitives.parseFloat(cl.getOptionValue("lamdda2"), lamdda2);
         }
 
         @Override
         public String toString() {
             return "FFMHyperParameters [globalBias=" + globalBias + ", linearCoeff=" + linearCoeff
-                    + ", numFields=" + numFields + ", useAdaGrad=" + useAdaGrad + ", eta0_V="
-                    + eta0_V + ", eps=" + eps + ", useFTRL=" + useFTRL + ", alphaFTRL=" + alphaFTRL
-                    + ", betaFTRL=" + betaFTRL + ", lambda1=" + lambda1 + ", lamdda2=" + lamdda2
-                    + "], " + super.toString();
+                    + ", numFields=" + numFields + ", useAdaGrad=" + useAdaGrad + ", eps=" + eps
+                    + ", useFTRL=" + useFTRL + ", alphaFTRL=" + alphaFTRL + ", betaFTRL="
+                    + betaFTRL + ", lambda1=" + lambda1 + ", lamdda2=" + lamdda2 + "], "
+                    + super.toString();
         }
 
     }

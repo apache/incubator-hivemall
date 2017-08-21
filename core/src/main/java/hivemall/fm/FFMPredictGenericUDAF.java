@@ -142,32 +142,36 @@ public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
         @Override
         public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
                 Object[] parameters) throws HiveException {
-            if (parameters[0] == null) {
-                return;
-            }
             final FFMPredictAggregationBuffer myAggr = (FFMPredictAggregationBuffer) agg;
 
-            final double wi = PrimitiveObjectInspectorUtils.getDouble(parameters[0], wiOI);
-            if (parameters[3] == null && parameters[4] == null) {// Xi and Xj are null => global bias `w0`
-                // (i=0, j=null, xi=null, xj=null) => (wi, vi=?, vj=null, xi=null, xj=null)
-                myAggr.addW0(wi);
-            } else if (parameters[4] == null) {// Only Xi is nonnull => linear combination `wi` * `xi`
-                // (i, j=null, xi, xj=null) => (wi, vi, vj=null, xi, xj=null)
-                double xi = PrimitiveObjectInspectorUtils.getDouble(parameters[3], xiOI);
-                myAggr.addWiXi(wi, xi);
-            } else {// both Xi and Xj are nonnull => <Vifj, Vjfi> Xi Xj
-                // (i, j, xi, xj) => (wi, vi, vj, xi, xj)
+            if (parameters[0] == null) {//  Wi is null
+                if (parameters[3] == null || parameters[4] == null) {
+                    // both Xi and Xj are nonnull => <Vifj, Vjfi> Xi Xj
+                    return;
+                }
                 if (parameters[1] == null || parameters[2] == null) {
                     // vi, vj can be null where feature index does not exist in the prediction model  
                     return;
                 }
 
+                // (i, j, xi, xj) => (wi, vi, vj, xi, xj)
                 float[] vij = HiveUtils.asFloatArray(parameters[1], vijOI, vijElemOI, false);
                 float[] vji = HiveUtils.asFloatArray(parameters[2], vjiOI, vjiElemOI, false);
                 double xi = PrimitiveObjectInspectorUtils.getDouble(parameters[3], xiOI);
                 double xj = PrimitiveObjectInspectorUtils.getDouble(parameters[4], xjOI);
 
                 myAggr.addViVjXiXj(vij, vji, xi, xj);
+            } else {
+                final double wi = PrimitiveObjectInspectorUtils.getDouble(parameters[0], wiOI);
+
+                if (parameters[3] == null && parameters[4] == null) {// Xi and Xj are null => global bias `w0`
+                    // (i=0, j=null, xi=null, xj=null) => (wi, vi=?, vj=null, xi=null, xj=null)
+                    myAggr.addW0(wi);
+                } else if (parameters[4] == null) {// Only Xi is nonnull => linear combination `wi` * `xi`
+                    // (i, j=null, xi, xj=null) => (wi, vi, vj=null, xi, xj=null)
+                    double xi = PrimitiveObjectInspectorUtils.getDouble(parameters[3], xiOI);
+                    myAggr.addWiXi(wi, xi);
+                }
             }
         }
 

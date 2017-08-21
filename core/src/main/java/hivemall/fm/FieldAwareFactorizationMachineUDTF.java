@@ -29,12 +29,15 @@ import hivemall.utils.math.MathUtils;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -56,11 +59,10 @@ import org.apache.hadoop.io.Text;
         name = "train_ffm",
         value = "_FUNC_(array<string> x, double y [, const string options]) - Returns a prediction model")
 public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachineUDTF {
+    private static final Log LOG = LogFactory.getLog(FieldAwareFactorizationMachineUDTF.class);
 
     // ----------------------------------------
     // Learning hyper-parameters/options
-    private boolean _FTRL;
-
     private boolean _globalBias;
     private boolean _linearCoeff;
 
@@ -88,14 +90,12 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default: -1]. No feature hashing for -1.");
         opts.addOption("num_fields", true, "The number of fields [default: 256]");
+        // optimizer
+        opts.addOption("opt", "optimizer", true,
+            "Gradient Descent optimizer [default: ftrl, adagrad, sgd]");
         // adagrad
-        opts.addOption("disable_adagrad", false,
-            "Whether to use AdaGrad for tuning learning rate [default: ON]");
-        opts.addOption("eta0_V", true, "The initial learning rate for V [default: 1.0]");
         opts.addOption("eps", true, "A constant used in the denominator of AdaGrad [default: 1.0]");
         // FTRL
-        opts.addOption("disable_ftrl", false,
-            "Whether not to use Follow-The-Regularized-Reader [default: OFF]");
         opts.addOption("alpha", "alphaFTRL", true,
             "Alpha value (learning rate) of Follow-The-Regularized-Reader [default: 0.1]");
         opts.addOption("beta", "betaFTRL", true,
@@ -124,7 +124,6 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         CommandLine cl = super.processOptions(argOIs);
 
         FFMHyperParameters params = (FFMHyperParameters) _params;
-        this._FTRL = params.useFTRL;
         this._globalBias = params.globalBias;
         this._linearCoeff = params.linearCoeff;
         this._numFeatures = params.numFeatures;
@@ -189,8 +188,6 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
     @Override
     protected void trainTheta(@Nonnull final Feature[] x, final double y) throws HiveException {
-        final float eta_t = _etaEstimator.eta(_t);
-
         final double p = _ffmModel.predict(x);
         final double lossGrad = _ffmModel.dloss(p, y);
 
@@ -203,6 +200,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
         // w0 update
         if (_globalBias) {
+            float eta_t = _etaEstimator.eta(_t);
             _ffmModel.updateW0(lossGrad, eta_t);
         }
 
@@ -215,9 +213,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             if (x_i.value == 0.f) {
                 continue;
             }
-            boolean useV = updateWi(lossGrad, x_i, eta_t); // wi update
-            if (useV == false) {
-                continue;
+            if (_linearCoeff) {
+                _ffmModel.updateWi(lossGrad, x_i, _t);// wi update
             }
             for (int fieldIndex = 0, size = fieldList.size(); fieldIndex < size; fieldIndex++) {
                 final int yField = fieldList.get(fieldIndex);
@@ -232,18 +229,6 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         sumVfX.clear();
         this._sumVfX = sumVfX;
         fieldList.clear();
-    }
-
-    private boolean updateWi(double lossGrad, @Nonnull Feature xi, float eta) {
-        if (!_linearCoeff) {
-            return true;
-        }
-        if (_FTRL) {
-            return _ffmModel.updateWiFTRL(lossGrad, xi, eta);
-        } else {
-            _ffmModel.updateWi(lossGrad, xi, eta);
-            return true;
-        }
     }
 
     @Nonnull
@@ -262,6 +247,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
     @Override
     public void close() throws HiveException {
+        LOG.info(_ffmModel.getStatistics());
+
         super.close();
         this._ffmModel = null;
     }
@@ -276,6 +263,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         final IntWritable idx = new IntWritable();
         final FloatWritable Wi = new FloatWritable(0.f);
         final FloatWritable[] Vi = HiveUtils.newFloatArray(factors, 0.f);
+        final List<FloatWritable> ViObj = Arrays.asList(Vi);
 
         final Object[] forwardObjs = new Object[4];
         String modelId = HadoopUtils.getUniqueTaskIdString();
@@ -289,25 +277,28 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         Wi.set(_ffmModel.getW0());
         forward(forwardObjs);
 
-        forwardObjs[3] = Arrays.asList(Vi);
-
         final EntryIterator itor = _ffmModel.entries();
-        final Entry entry = itor.getEntryProbe();
+        final Entry entryW = itor.getEntryProbeW();
+        final Entry entryV = itor.getEntryProbeV();
         final float[] Vf = new float[factors];
         while (itor.next() != -1) {
             // set i
             int i = itor.getEntryIndex();
             idx.set(i);
 
-            itor.getEntry(entry);
-
-            // set Wi
-            Wi.set(entry.getW());
-
-            // set Vif
-            entry.getV(Vf);
-            for (int f = 0; f < factors; f++) {
-                Vi[f].set(Vf[f]);
+            if (Entry.isEntryW(i)) {// set Wi
+                itor.getEntry(entryW);
+                Wi.set(entryV.getW());
+                forwardObjs[2] = Wi;
+                forwardObjs[3] = null;
+            } else {// set Vif
+                itor.getEntry(entryV);
+                entryV.getV(Vf);
+                for (int f = 0; f < factors; f++) {
+                    Vi[f].set(Vf[f]);
+                }
+                forwardObjs[2] = null;
+                forwardObjs[3] = ViObj;
             }
 
             forward(forwardObjs);

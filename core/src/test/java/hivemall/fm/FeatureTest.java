@@ -34,7 +34,7 @@ public class FeatureTest {
 
     @Test
     public void testParseFFMFeature() throws HiveException {
-        IntFeature f1 = Feature.parseFFMFeature("2:1163:0.3651");
+        IntFeature f1 = Feature.parseFFMFeature("2:1163:0.3651", -1);
         Assert.assertEquals(2, f1.getField());
         Assert.assertEquals(1163, f1.getFeatureIndex());
         Assert.assertEquals("1163", f1.getFeature());
@@ -83,6 +83,11 @@ public class FeatureTest {
     @Test(expected = HiveException.class)
     public void testParseIntFeatureFails() throws HiveException {
         Feature.parseFeature("2:1163:0.3651", true);
+    }
+
+    @Test(expected = HiveException.class)
+    public void testParseFeatureZeroIndex() throws HiveException {
+        Feature.parseFFMFeature("0:0.3652");
     }
 
 }

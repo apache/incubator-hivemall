@@ -54,7 +54,6 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
     private Type _type;
     private RowProcessor _proc;
     private int _numFields;
-    private int _numFactors;
     private int _numFeatures;
 
     public FeaturePairsUDTF() {}
@@ -71,7 +70,6 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31]. [default: -1] No feature hashing for -1.");
         opts.addOption("num_fields", true, "The number of fields [default:1024]");
-        opts.addOption("f", "factors", true, "The number of the latent variables [default: 5]");
         return opts;
     }
 
@@ -105,11 +103,6 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                 if (_numFields <= 1) {
                     throw new UDFArgumentException("-num_fields MUST be greater than 1: "
                             + _numFields);
-                }
-                this._numFactors = Primitives.parseInt(cl.getOptionValue("factors"), 5);
-                if (_numFactors < 1) {
-                    throw new UDFArgumentException("-factors MUST be greater than 0: "
-                            + _numFactors);
                 }
             } else {
                 throw new UDFArgumentException("Unsupported option: " + cl.getArgList().get(0));
@@ -303,25 +296,24 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
             final Feature[] features = _features;
             for (int i = 0, len = features.length; i < len; i++) {
                 Feature ei = features[i];
-                double xi = ei.getValue();
-                int iField = ei.getField();
 
                 // Wi
-                f0.set(i);
+                f0.set(ei.getFeatureIndex());
                 forward[1] = null;
-                f2.set(xi);
+                f2.set(ei.getValue());
                 forward[3] = null;
                 forward(forward);
 
                 forward[1] = f1;
                 forward[3] = f3;
+                final int iField = ei.getField();
                 for (int j = i + 1; j < len; j++) {
                     Feature ej = features[j];
                     double xj = ej.getValue();
                     int jField = ej.getField();
 
-                    int ifj = Feature.toIntFeature(ei, jField, _numFactors, _numFields);
-                    int jfi = Feature.toIntFeature(ej, iField, _numFactors, _numFields);
+                    int ifj = Feature.toIntFeature(ei, jField, _numFields);
+                    int jfi = Feature.toIntFeature(ej, iField, _numFields);
 
                     // Vifj, Vjfi
                     f0.set(ifj);
