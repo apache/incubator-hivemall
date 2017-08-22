@@ -97,15 +97,15 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         opts.addOption("eps", true, "A constant used in the denominator of AdaGrad [default: 1.0]");
         // FTRL
         opts.addOption("alpha", "alphaFTRL", true,
-            "Alpha value (learning rate) of Follow-The-Regularized-Reader [default: 0.1]");
+            "Alpha value (learning rate) of Follow-The-Regularized-Reader [default: 0.2]");
         opts.addOption("beta", "betaFTRL", true,
             "Beta value (a learning smoothing parameter) of Follow-The-Regularized-Reader [default: 1.0]");
         opts.addOption(
             "lambda1",
             true,
-            "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.1]");
+            "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.001]");
         opts.addOption("lambda2", true,
-            "L2 regularization value of Follow-The-Regularized-Reader [default: 0.01]");
+            "L2 regularization value of Follow-The-Regularized-Reader [default: 0.005]");
         return opts;
     }
 
@@ -220,6 +220,9 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
                 final int yField = fieldList.get(fieldIndex);
                 for (int f = 0, k = _factors; f < k; f++) {
                     double sumViX = sumVfX.get(i, fieldIndex, f);
+                    if (sumViX == 0.d) {// grad will be 0 => skip it
+                        continue;
+                    }
                     _ffmModel.updateV(lossGrad, x_i, yField, f, sumViX, _t);
                 }
             }

@@ -48,6 +48,10 @@ class Entry {
         this._factors = factors;
     }
 
+    Entry(@Nonnull HeapBuffer buf, int key, @Nonnegative long offset) {
+        this(buf, 1, key, offset);
+    }
+
     Entry(@Nonnull HeapBuffer buf, int factors, int key, @Nonnegative long offset) {
         this(buf, factors, Entry.sizeOf(factors), key, offset);
     }
@@ -87,16 +91,18 @@ class Entry {
     final void getV(@Nonnull final float[] Vf) {
         final long offset = _offset;
         final int len = Vf.length;
-        for (int i = 0; i < len; i++) {
-            Vf[i] = _buf.getFloat(offset + SizeOf.FLOAT * i);
+        for (int f = 0; f < len; f++) {
+            long index = offset + SizeOf.FLOAT * f;
+            Vf[f] = _buf.getFloat(index);
         }
     }
 
     final void setV(@Nonnull final float[] Vf) {
         final long offset = _offset;
         final int len = Vf.length;
-        for (int i = 0; i < len; i++) {
-            _buf.putFloat(offset + SizeOf.FLOAT * i, Vf[i]);
+        for (int f = 0; f < len; f++) {
+            long index = offset + SizeOf.FLOAT * f;
+            _buf.putFloat(index, Vf[f]);
         }
     }
 
@@ -174,9 +180,14 @@ class Entry {
 
         final long _gg_offset;
 
-        AdaGradEntry(@Nonnull HeapBuffer buf, int factors, int key, @Nonnegative long offset) {
-            super(buf, factors, AdaGradEntry.sizeOf(factors), offset);
-            this._gg_offset = _offset + Entry.sizeOf(_factors);
+        AdaGradEntry(@Nonnull HeapBuffer buf, int key, @Nonnegative long offset) {
+            this(buf, 1, key, offset);
+        }
+
+        AdaGradEntry(@Nonnull HeapBuffer buf, @Nonnegative int factors, int key,
+                @Nonnegative long offset) {
+            super(buf, factors, AdaGradEntry.sizeOf(factors), key, offset);
+            this._gg_offset = _offset + Entry.sizeOf(factors);
         }
 
         @Override
@@ -224,9 +235,13 @@ class Entry {
 
         final long _z_offset;
 
-        FTRLEntry(@Nonnull HeapBuffer buf, int factors, int key, long offset) {
+        FTRLEntry(@Nonnull HeapBuffer buf, int key, long offset) {
+            this(buf, 1, key, offset);
+        }
+
+        FTRLEntry(@Nonnull HeapBuffer buf, @Nonnegative int factors, int key, long offset) {
             super(buf, factors, FTRLEntry.sizeOf(factors), key, offset);
-            this._z_offset = _offset + Entry.sizeOf(_factors);
+            this._z_offset = _offset + Entry.sizeOf(factors);
         }
 
         @Override
@@ -279,13 +294,11 @@ class Entry {
         void clear() {
             for (int f = 0; f < _factors; f++) {
                 _buf.putFloat(offsetZ(f), 0.f);
-            }
-            for (int f = 0; f < _factors; f++) {
                 _buf.putDouble(offsetN(f), 0.d);
             }
         }
 
-        static int sizeOf(@Nonnegative int factors) {
+        static int sizeOf(@Nonnegative final int factors) {
             return Entry.sizeOf(factors) + (SizeOf.FLOAT + SizeOf.DOUBLE) * factors;
         }
 

@@ -157,13 +157,12 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     }
 
     @Override
-    protected Entry getEntry(@Nonnull final Feature x) {
+    protected Entry getEntryW(@Nonnull final Feature x) {
         final int j = Feature.toIntFeature(x);
 
         Entry entry = getEntry(j);
         if (entry == null) {
-            float[] V = initV();
-            entry = newEntry(j, V);
+            entry = newEntry(j, 0.f);
             long ptr = entry.getOffset();
             _map.put(j, ptr);
         }
@@ -171,7 +170,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     }
 
     @Override
-    protected Entry getEntry(@Nonnull final Feature x, @Nonnull final int yField) {
+    protected Entry getEntryV(@Nonnull final Feature x, @Nonnull final int yField) {
         final int j = Feature.toIntFeature(x, yField, _numFields);
 
         Entry entry = getEntry(j);
@@ -216,11 +215,11 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         }
         final Entry entry;
         if (_useFTRL) {
-            entry = new FTRLEntry(_buf, _factor, key, ptr);
+            entry = new FTRLEntry(_buf, key, ptr);
         } else if (_useAdaGrad) {
-            entry = new AdaGradEntry(_buf, _factor, key, ptr);
+            entry = new AdaGradEntry(_buf, key, ptr);
         } else {
-            entry = new Entry(_buf, _factor, key, ptr);
+            entry = new Entry(_buf, key, ptr);
         }
 
         entry.setW(W);
@@ -262,12 +261,22 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     @Nonnull
     private Entry getEntry(final int key, @Nonnegative final long ptr) {
-        if (_useFTRL) {
-            return new FTRLEntry(_buf, _factor, key, ptr);
-        } else if (_useAdaGrad) {
-            return new AdaGradEntry(_buf, _factor, key, ptr);
+        if (Entry.isEntryW(key)) {
+            if (_useFTRL) {
+                return new FTRLEntry(_buf, key, ptr);
+            } else if (_useAdaGrad) {
+                return new AdaGradEntry(_buf, key, ptr);
+            } else {
+                return new Entry(_buf, key, ptr);
+            }
         } else {
-            return new Entry(_buf, _factor, key, ptr);
+            if (_useFTRL) {
+                return new FTRLEntry(_buf, _factor, key, ptr);
+            } else if (_useAdaGrad) {
+                return new AdaGradEntry(_buf, _factor, key, ptr);
+            } else {
+                return new Entry(_buf, _factor, key, ptr);
+            }
         }
     }
 

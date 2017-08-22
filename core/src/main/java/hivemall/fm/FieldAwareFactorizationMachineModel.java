@@ -51,7 +51,11 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     public FieldAwareFactorizationMachineModel(@Nonnull FFMHyperParameters params) {
         super(params);
         this._params = params;
-        this._eta0 = params.eta.eta0();
+        if (params.useAdaGrad) {
+            this._eta0 = 1.0f;
+        } else {
+            this._eta0 = params.eta.eta0();
+        }
         this._eps = params.eps;
         this._useAdaGrad = params.useAdaGrad;
         this._useFTRL = params.useFTRL;
@@ -121,7 +125,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         final double Xi = x.getValue();
         float gradWi = (float) (dloss * Xi);
 
-        final Entry theta = getEntry(x);
+        final Entry theta = getEntryW(x);
         float wi = theta.getW();
 
         final float eta = eta(theta, t, gradWi);
@@ -141,13 +145,14 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         final double Xi = x.getValue();
         float gradWi = (float) (dloss * Xi);
 
-        final Entry theta = getEntry(x);
+        final Entry theta = getEntryW(x);
 
         final float z = theta.updateZ(gradWi, _alpha);
         final double n = theta.updateN(gradWi);
 
         if (Math.abs(z) <= _lambda1) {
             removeEntry(theta);
+            return;
         }
 
         final float nextWi = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
@@ -174,7 +179,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         final float gradV = (float) (dloss * h);
         final float lambdaVf = getLambdaV(f);
 
-        final Entry theta = getEntry(x, yField);
+        final Entry theta = getEntryV(x, yField);
         final float currentV = theta.getV(f);
         final float eta = eta(theta, f, t, gradV);
         final float nextV = currentV - eta * (gradV + 2.f * lambdaVf * currentV);
@@ -193,16 +198,17 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         final double h = Xi * sumViX;
         final float gradV = (float) (dloss * h);
 
-        final Entry theta = getEntry(x, yField);
+        final Entry theta = getEntryV(x, yField);
         float oldV = theta.getV(f);
         final float z = theta.updateZ(f, oldV, gradV, _alpha);
         final double n = theta.updateN(f, gradV);
 
         if (Math.abs(z) <= _lambda1) {
-            //theta.setV(f, 0.f);
-            //if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
-            //    removeEntry(theta);
-            //}
+            theta.setV(f, 0.f);
+            if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
+                removeEntry(theta);
+            }
+            return;
         }
 
         final float nextV = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
@@ -217,7 +223,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     }
 
     protected final float eta(@Nonnull final Entry theta, final long t, final float grad) {
-        return eta(theta, 1, t, grad);
+        return eta(theta, 0, t, grad);
     }
 
     protected final float eta(@Nonnull final Entry theta, @Nonnegative final int f, final long t,
@@ -288,10 +294,10 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     }
 
     @Nonnull
-    protected abstract Entry getEntry(@Nonnull Feature x);
+    protected abstract Entry getEntryW(@Nonnull Feature x);
 
     @Nonnull
-    protected abstract Entry getEntry(@Nonnull Feature x, @Nonnull int yField);
+    protected abstract Entry getEntryV(@Nonnull Feature x, @Nonnull int yField);
 
     @Override
     protected final String varDump(@Nonnull final Feature[] x) {
