@@ -49,7 +49,7 @@ import javax.annotation.Nonnull;
 
 @Description(
         name = "fmeasure",
-        value = "_FUNC_(array | int | boolean, array | int | boolean, String) - Return a F-measure (f1score is the special with beta=1.)")
+        value = "_FUNC_(array | int | boolean actual , array | int | boolean predicted, String) - Return a F-measure (f1score is the special with beta=1.)")
 public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
     @Override
     public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
@@ -71,7 +71,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 || HiveUtils.isBooleanTypeInfo(typeInfo[1]);
         if (!isArg2ListOrIntOrBoolean) {
             throw new UDFArgumentTypeException(1,
-                "The first argument `array/int/boolean actual` is invalid form: " + typeInfo[1]);
+                "The second argument `array/int/boolean actual` is invalid form: " + typeInfo[1]);
         }
 
         if (typeInfo[0] != typeInfo[1]) {
@@ -112,26 +112,34 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
             CommandLine cl = null;
 
+            double beta = 1.0d;
+            String average = "micro";
+
             if (argOIs.length >= 3) {
                 String rawArgs = HiveUtils.getConstString(argOIs[2]);
                 cl = parseOptions(rawArgs);
 
-                this.beta = Primitives.parseDouble(cl.getOptionValue("beta"), 1.0d);
-                if (this.beta <= 0.d) {
+                beta = Primitives.parseDouble(cl.getOptionValue("beta"), beta);
+                if (beta <= 0.d) {
                     throw new UDFArgumentException(
                         "The third argument `double beta` must be greater than 0.0: " + beta);
                 }
 
-                this.average = cl.getOptionValue("average", "micro");
-                if (!(this.average.equals("binary") || this.average.equals("macro") || this.average.equals("micro"))) {
+                average = cl.getOptionValue("average", "micro");
+
+                if (average.equals("macro")) {
+                    throw new UDFArgumentException("\"-average macro\" is not supported");
+                }
+
+                if (!(average.equals("binary") || average.equals("micro"))) {
                     throw new UDFArgumentException(
                         "The third argument `String average` must be one of the {binary, micro, macro}: "
-                                + this.average);
+                                + average);
                 }
-            } else {
-                this.beta = 1.0d;
-                this.average = "micro";
             }
+
+            this.beta = beta;
+            this.average = average;
             return cl;
         }
 
@@ -180,7 +188,6 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             fieldNames.add("average");
             fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
 
-
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
 
@@ -208,16 +215,12 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             List<?> actual = Collections.emptyList();
             List<?> predicted = Collections.emptyList();
 
-            if (this.average.equals("macro")) {
-                throw new UnsupportedOperationException();
-            }
-
-
             if (isList) {// array case
                 if (this.average.equals("binary")) {
-                    throw new UnsupportedOperationException();
+                    throw new UDFArgumentException(
+                        "\"-average binary\" is not supported when `predict` is array");
                 }
-                actual = ((ListObjectInspector) predictedOI).getList(parameters[0]);
+                actual = ((ListObjectInspector) actualOI).getList(parameters[0]);
                 predicted = ((ListObjectInspector) predictedOI).getList(parameters[1]);
             } else {//binary case
                 if (HiveUtils.isBooleanOI(actualOI)) { // boolean case
@@ -338,7 +341,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         }
 
         double get() {
-            double squareBeta = Math.pow(beta, 2.d);
+            double squareBeta = beta * beta;
             double divisor;
             double numerator;
 

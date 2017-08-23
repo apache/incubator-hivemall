@@ -330,7 +330,6 @@ public class FMeasureUDAFTest {
     @Test
     public void testMultiLabelF1MultiSamples() throws Exception {
         String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
-
         String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
                 {"1", "2"}};
 
@@ -353,7 +352,6 @@ public class FMeasureUDAFTest {
     @Test
     public void testMultiLabelFmeasureMultiSamples() throws Exception {
         String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
-
         String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
                 {"1", "2"}};
         double beta = 2.0;
@@ -367,5 +365,25 @@ public class FMeasureUDAFTest {
         }
 
         Assert.assertEquals(0.6779d, agg.get(), 1e-4);
+    }
+
+    @Test(expected = HiveException.class)
+    public void testMultiLabelFmeasureBinary() throws Exception {
+        String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
+        String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
+                {"1", "2"}};
+
+        double beta = 1.0;
+        String average = "binary";
+
+        setUpWithArguments(beta, average);
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < actual.length; i++) {
+            evaluator.iterate(agg, new Object[] {actual[i], predicted[i]});
+        }
+
+        agg.get();
     }
 }
