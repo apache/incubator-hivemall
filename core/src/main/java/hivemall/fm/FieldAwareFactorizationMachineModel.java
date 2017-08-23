@@ -174,12 +174,16 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
             return;
         }
 
+        final Entry theta = getEntryV(x, yField);
+        if (theta == null) {
+            return;
+        }
+
         final double Xi = x.getValue();
         final double h = Xi * sumViX;
         final float gradV = (float) (dloss * h);
         final float lambdaVf = getLambdaV(f);
 
-        final Entry theta = getEntryV(x, yField);
         final float currentV = theta.getV(f);
         final float eta = eta(theta, f, t, gradV);
         final float nextV = currentV - eta * (gradV + 2.f * lambdaVf * currentV);
@@ -194,11 +198,15 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
 
     private void updateV_FTRL(final double dloss, @Nonnull final Feature x,
             @Nonnull final int yField, final int f, final double sumViX) {
+        final Entry theta = getEntryV(x, yField);
+        if (theta == null) {
+            return;
+        }
+
         final double Xi = x.getValue();
         final double h = Xi * sumViX;
         final float gradV = (float) (dloss * h);
 
-        final Entry theta = getEntryV(x, yField);
         float oldV = theta.getV(f);
         final float z = theta.updateZ(f, oldV, gradV, _alpha);
         final double n = theta.updateN(f, gradV);
@@ -296,7 +304,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     @Nonnull
     protected abstract Entry getEntryW(@Nonnull Feature x);
 
-    @Nonnull
+    @Nullable
     protected abstract Entry getEntryV(@Nonnull Feature x, @Nonnull int yField);
 
     @Override

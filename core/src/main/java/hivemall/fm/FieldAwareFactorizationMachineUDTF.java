@@ -251,8 +251,11 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
     @Override
     public void close() throws HiveException {
-        LOG.info(_ffmModel.getStatistics());
+        if (LOG.isInfoEnabled()) {
+            LOG.info(_ffmModel.getStatistics());
+        }
 
+        _ffmModel.disableInitV(); // trick to avoid re-instantiating removed (zero-filled) entry of V
         super.close();
         this._ffmModel = null;
     }

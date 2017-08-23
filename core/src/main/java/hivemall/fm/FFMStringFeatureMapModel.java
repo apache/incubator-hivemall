@@ -49,6 +49,8 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     @Nonnull
     private final LongArrayList _freelistV;
 
+    private boolean _initV;
+
     // hyperparams
     private final int _numFields;
 
@@ -67,8 +69,8 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         this._buf = new HeapBuffer(HeapBuffer.DEFAULT_CHUNK_SIZE);
         this._freelistW = new LongArrayList();
         this._freelistV = new LongArrayList();
+        this._initV = true;
         this._numFields = params.numFields;
-
         this._entrySizeW = entrySize(1, _useFTRL, _useAdaGrad);
         this._entrySizeV = entrySize(_factor, _useFTRL, _useAdaGrad);
     }
@@ -81,6 +83,10 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         } else {
             return Entry.sizeOf(factors);
         }
+    }
+
+    void disableInitV() {
+        this._initV = false;
     }
 
     @Override
@@ -132,6 +138,9 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
         Entry entry = getEntry(j);
         if (entry == null) {
+            if (_initV == false) {
+                return 0.f;
+            }
             float[] V = initV();
             entry = newEntry(j, V);
             long ptr = entry.getOffset();
@@ -147,6 +156,9 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
         Entry entry = getEntry(j);
         if (entry == null) {
+            if (_initV == false) {
+                return;
+            }
             float[] V = initV();
             entry = newEntry(j, V);
             long ptr = entry.getOffset();
@@ -174,6 +186,9 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
         Entry entry = getEntry(j);
         if (entry == null) {
+            if (_initV == false) {
+                return null;
+            }
             float[] V = initV();
             entry = newEntry(j, V);
             long ptr = entry.getOffset();
