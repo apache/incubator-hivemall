@@ -57,7 +57,6 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     // statistics
     private long _bytesAllocated, _bytesUsed;
-
     private int _numAllocatedW, _numReusedW, _numRemovedW;
     private int _numAllocatedV, _numReusedV, _numRemovedV;
 
@@ -209,6 +208,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
             ptr = _buf.allocate(_entrySizeW);
             this._numAllocatedW++;
             this._bytesAllocated += _entrySizeW;
+            this._bytesUsed += _entrySizeW;
         } else {// reuse removed entry
             ptr = _freelistW.remove();
             this._numReusedW++;
@@ -233,6 +233,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
             ptr = _buf.allocate(_entrySizeV);
             this._numAllocatedV++;
             this._bytesAllocated += _entrySizeV;
+            this._bytesUsed += _entrySizeV;
         } else {// reuse removed entry
             ptr = _freelistV.remove();
             this._numReusedV++;

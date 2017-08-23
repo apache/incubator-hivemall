@@ -101,10 +101,11 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         opts.addOption("beta", "betaFTRL", true,
             "Beta value (a learning smoothing parameter) of Follow-The-Regularized-Reader [default: 1.0]");
         opts.addOption(
+            "l1",
             "lambda1",
             true,
             "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.001]");
-        opts.addOption("lambda2", true,
+        opts.addOption("l2", "lambda2", true,
             "L2 regularization value of Follow-The-Regularized-Reader [default: 0.005]");
         return opts;
     }
