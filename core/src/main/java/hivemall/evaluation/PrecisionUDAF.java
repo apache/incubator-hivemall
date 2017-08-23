@@ -47,7 +47,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
 @Description(
-        name = "precision",
+        name = "precision_at",
         value = "_FUNC_(array rankItems, array correctItems [, const int recommendSize = rankItems.size])"
                 + " - Returns Precision")
 public final class PrecisionUDAF extends AbstractGenericUDAFResolver {
