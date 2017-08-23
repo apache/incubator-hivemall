@@ -379,3 +379,66 @@ FROM
 | 4  | 0.4432108402252197  | 3 | 26220 | 1 |
 | 5  | 0.44323229789733887 | 3 | 18541 | 0 |
 | .. | .. | .. | .. | .. |
+
+# Alternative approaches
+
+In order to utilize mapper-side aggregation and reduce computational cost of shuffling, you can use [`to_ordered_map`](./generic_funcs.md#map-udafs) or [`to_ordered_list`](./generic_funcs.md#list-udaf) to get top/tail-k elements instead of `each_top_k`.
+
+As long as `key` is unique in each `id`, the following queries return same result:
+
+```sql
+with t as (
+  select
+    each_top_k(
+      10, id, key,
+      id, value
+    ) as (rank, key, id, value)
+  from (
+    select
+      *
+    from 
+      test
+    cluster by 
+      id
+  ) t
+)
+select 
+  id, collect_list(value) as topk
+from 
+  t
+group by
+  id
+```
+
+```sql
+with t as (
+  select
+    id, to_ordered_map(key, value, 10) as m
+  from 
+    test
+  group by
+    id
+)
+select 
+  id, collect_list(value) as topk
+from 
+  t
+lateral view explode(m) t as key, value
+group by
+  id
+```
+
+```sql
+select 
+  id, to_ordered_list(value, key, '-k 10') as topk
+from 
+  test
+group by
+  id
+```
+
+> #### Caution
+>
+> In case that `key` could duplicate in `id`, `to_ordered_map` behaves differently because key `K` is always unique in `Map<K, V>`.
+
+Similarly to `each_top_k`, tail-k can also be represented as: `to_ordered_map(key, value, -10)` and `to_ordered_list(value, key, '-k -10')`.

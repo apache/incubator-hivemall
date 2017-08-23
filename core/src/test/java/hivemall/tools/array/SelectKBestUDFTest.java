@@ -31,7 +31,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SelectKBeatUDFTest {
+public class SelectKBestUDFTest {
 
     @Test
     public void test() throws Exception {
