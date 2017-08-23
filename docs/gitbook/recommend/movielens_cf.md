@@ -21,6 +21,11 @@
 
 <!-- toc -->
 
+> #### Caution
+> In order to obtain ranked list of items, this page introduces queries using `to_ordered_map()` such as `map_values(to_ordered_map(rating, movieid, true))`. However, this kind of usage has a potential issue that multiple `movieid`-s (i.e., values) which have the exactly same `rating` (i.e., key) will be aggregated to single arbitrary `movieid`, because `to_ordered_map()` creates a key-value map which uses duplicated `rating` as key.
+>
+> Hence, if map key could duplicate on more then one map values, we recommend you to use `to_ordered_list(value, key, '-reverse')` instead of `map_values(to_ordered_map(key, value, true))`. The alternative approach is available from Hivemall v0.5-rc.1 or later.
+
 # Compute movie-movie similarity
 
 [As we explained in the general introduction of item-based CF](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation.md), following query finds top-$$k$$ nearest-neighborhood movies for each movie:
