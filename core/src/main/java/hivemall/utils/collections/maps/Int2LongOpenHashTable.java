@@ -123,23 +123,23 @@ public class Int2LongOpenHashTable implements Externalizable {
         return _states;
     }
 
-    public boolean containsKey(int key) {
+    public boolean containsKey(final int key) {
         return findKey(key) >= 0;
     }
 
     /**
      * @return -1.f if not found
      */
-    public long get(int key) {
-        int i = findKey(key);
+    public long get(final int key) {
+        final int i = findKey(key);
         if (i < 0) {
             return defaultReturnValue;
         }
         return _values[i];
     }
 
-    public long put(int key, long value) {
-        int hash = keyHash(key);
+    public long put(final int key, final long value) {
+        final int hash = keyHash(key);
         int keyLength = _keys.length;
         int keyIdx = hash % keyLength;
 
@@ -149,9 +149,9 @@ public class Int2LongOpenHashTable implements Externalizable {
             keyIdx = hash % keyLength;
         }
 
-        int[] keys = _keys;
-        long[] values = _values;
-        byte[] states = _states;
+        final int[] keys = _keys;
+        final long[] values = _values;
+        final byte[] states = _states;
 
         if (states[keyIdx] == FULL) {// double hashing
             if (keys[keyIdx] == key) {
@@ -160,7 +160,7 @@ public class Int2LongOpenHashTable implements Externalizable {
                 return old;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -184,8 +184,8 @@ public class Int2LongOpenHashTable implements Externalizable {
     }
 
     /** Return weather the required slot is free for new entry */
-    protected boolean isFree(int index, int key) {
-        byte stat = _states[index];
+    protected boolean isFree(final int index, final int key) {
+        final byte stat = _states[index];
         if (stat == FREE) {
             return true;
         }
@@ -196,7 +196,7 @@ public class Int2LongOpenHashTable implements Externalizable {
     }
 
     /** @return expanded or not */
-    protected boolean preAddEntry(int index) {
+    protected boolean preAddEntry(final int index) {
         if ((_used + 1) >= _threshold) {// too filled
             int newCapacity = Math.round(_keys.length * _growFactor);
             ensureCapacity(newCapacity);
@@ -205,19 +205,19 @@ public class Int2LongOpenHashTable implements Externalizable {
         return false;
     }
 
-    protected int findKey(int key) {
-        int[] keys = _keys;
-        byte[] states = _states;
-        int keyLength = keys.length;
+    protected int findKey(final int key) {
+        final int[] keys = _keys;
+        final byte[] states = _states;
+        final int keyLength = keys.length;
 
-        int hash = keyHash(key);
+        final int hash = keyHash(key);
         int keyIdx = hash % keyLength;
         if (states[keyIdx] != FREE) {
             if (states[keyIdx] == FULL && keys[keyIdx] == key) {
                 return keyIdx;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -234,13 +234,13 @@ public class Int2LongOpenHashTable implements Externalizable {
         return -1;
     }
 
-    public long remove(int key) {
-        int[] keys = _keys;
-        long[] values = _values;
-        byte[] states = _states;
-        int keyLength = keys.length;
+    public long remove(final int key) {
+        final int[] keys = _keys;
+        final long[] values = _values;
+        final byte[] states = _states;
+        final int keyLength = keys.length;
 
-        int hash = keyHash(key);
+        final int hash = keyHash(key);
         int keyIdx = hash % keyLength;
         if (states[keyIdx] != FREE) {
             if (states[keyIdx] == FULL && keys[keyIdx] == key) {
@@ -250,7 +250,7 @@ public class Int2LongOpenHashTable implements Externalizable {
                 return old;
             }
             //  second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -305,30 +305,30 @@ public class Int2LongOpenHashTable implements Externalizable {
         return buf.toString();
     }
 
-    protected void ensureCapacity(int newCapacity) {
+    protected void ensureCapacity(final int newCapacity) {
         int prime = Primes.findLeastPrimeNumber(newCapacity);
         rehash(prime);
         this._threshold = Math.round(prime * _loadFactor);
     }
 
-    private void rehash(int newCapacity) {
+    private void rehash(final int newCapacity) {
         int oldCapacity = _keys.length;
         if (newCapacity <= oldCapacity) {
             throw new IllegalArgumentException("new: " + newCapacity + ", old: " + oldCapacity);
         }
-        int[] newkeys = new int[newCapacity];
-        long[] newValues = new long[newCapacity];
-        byte[] newStates = new byte[newCapacity];
+        final int[] newkeys = new int[newCapacity];
+        final long[] newValues = new long[newCapacity];
+        final byte[] newStates = new byte[newCapacity];
         int used = 0;
         for (int i = 0; i < oldCapacity; i++) {
             if (_states[i] == FULL) {
                 used++;
-                int k = _keys[i];
-                long v = _values[i];
-                int hash = keyHash(k);
+                final int k = _keys[i];
+                final long v = _values[i];
+                final int hash = keyHash(k);
                 int keyIdx = hash % newCapacity;
                 if (newStates[keyIdx] == FULL) {// second hashing
-                    int decr = 1 + (hash % (newCapacity - 2));
+                    final int decr = 1 + (hash % (newCapacity - 2));
                     while (newStates[keyIdx] != FREE) {
                         keyIdx -= decr;
                         if (keyIdx < 0) {
