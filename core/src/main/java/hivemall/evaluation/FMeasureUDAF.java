@@ -348,13 +348,11 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             if (average.equals("micro")) {
                 divisor = denom(tp, totalActual, totalPredicted, squareBeta);
                 numerator = (1.d + squareBeta) * tp;
-            } else if (average.equals("binary")) {
+            } else { // binary
                 double precision = precision(tp, totalPredicted);
                 double recall = recall(tp, totalActual);
                 divisor = squareBeta * precision + recall;
                 numerator = (1.d + squareBeta) * precision * recall;
-            } else {
-                throw new UnsupportedOperationException();
             }
 
             if (divisor > 0) {
