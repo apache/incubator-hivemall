@@ -18,7 +18,6 @@
  */
 package hivemall.fm;
 
-import static hivemall.utils.lang.Primitives.castToShort;
 import hivemall.utils.hashing.MurmurHash3;
 import hivemall.utils.lang.NumberUtils;
 
@@ -235,7 +234,7 @@ public abstract class Feature {
             } else {
                 index = MurmurHash3.murmurhash3(lead, numFields);
             }
-            short field = castToShort(index);
+            short field = NumberUtils.castToShort(index);
             double value = parseFeatureValue(rest);
             return new IntFeature(index, field, value);
         }
@@ -245,7 +244,7 @@ public abstract class Feature {
         if (NumberUtils.isDigits(lead)) {
             field = parseField(lead, numFields);
         } else {
-            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
+            field = NumberUtils.castToShort(MurmurHash3.murmurhash3(lead, numFields));
         }
 
         final int index;
@@ -319,7 +318,7 @@ public abstract class Feature {
             } else {
                 index = MurmurHash3.murmurhash3(lead, numFields);
             }
-            short field = castToShort(index);
+            short field = NumberUtils.castToShort(index);
             probe.setField(field);
             probe.setFeatureIndex(index);
             probe.value = parseFeatureValue(rest);
@@ -330,7 +329,7 @@ public abstract class Feature {
         if (NumberUtils.isDigits(lead)) {
             field = parseField(lead, numFields);
         } else {
-            field = castToShort(MurmurHash3.murmurhash3(lead, numFields));
+            field = NumberUtils.castToShort(MurmurHash3.murmurhash3(lead, numFields));
         }
         final int index;
         final String indexStr = rest.substring(0, pos2);

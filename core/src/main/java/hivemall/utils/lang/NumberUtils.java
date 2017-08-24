@@ -107,4 +107,72 @@ public final class NumberUtils {
         return true;
     }
 
+    /**
+     * @throws ArithmeticException
+     */
+    public static int castToInt(final long value) {
+        final int result = (int) value;
+        if (result != value) {
+            throw new ArithmeticException("Out of range: " + value);
+        }
+        return result;
+    }
+
+    /**
+     * @throws ArithmeticException
+     */
+    public static short castToShort(final int value) {
+        final short result = (short) value;
+        if (result != value) {
+            throw new ArithmeticException("Out of range: " + value);
+        }
+        return result;
+    }
+
+    /**
+     * Cast Double to Float.
+     * 
+     * @throws ArithmeticException
+     */
+    public static float castToFloat(final double v) {
+        if ((v < Float.MIN_VALUE) || (v > Float.MAX_VALUE)) {
+            throw new ArithmeticException("Double value is out of Float range: " + v);
+        }
+        return (float) v;
+    }
+
+    /**
+     * Cast Double to Float.
+     * 
+     * @return v if v is Float range; Float.MIN_VALUE or Float.MAX_VALUE otherwise
+     */
+    public static float safeCast(final double v) {
+        if (v < Float.MIN_VALUE) {
+            return Float.MIN_VALUE;
+        } else if (v > Float.MAX_VALUE) {
+            return Float.MAX_VALUE;
+        }
+        return (float) v;
+    }
+
+    /**
+     * Cast Double to Float.
+     * 
+     * @return v if v is Float range; defaultValue otherwise
+     */
+    public static float safeCast(final double v, final float defaultValue) {
+        if ((v < Float.MIN_VALUE) || (v > Float.MAX_VALUE)) {
+            return defaultValue;
+        }
+        return (float) v;
+    }
+
+    public static int toUnsignedShort(final short v) {
+        return v & 0xFFFF; // convert to range 0-65535 from -32768-32767.
+    }
+
+    public static int toUnsignedInt(final byte x) {
+        return ((int) x) & 0xff;
+    }
+
 }
