@@ -135,6 +135,10 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
                     + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + wi + ", dloss=" + dloss
                     + ", eta=" + eta + ", t=" + t);
         }
+        if (MathUtils.closeToZero(nextWi)) {
+            removeEntry(theta);
+            return;
+        }
         theta.setW(nextWi);
     }
 
@@ -161,6 +165,10 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
             throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
                     + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + theta.getW()
                     + ", dloss=" + dloss + ", n=" + n + ", z=" + z);
+        }
+        if (MathUtils.closeToZero(nextWi)) {
+            removeEntry(theta);
+            return;
         }
         theta.setW(nextWi);
     }
@@ -192,6 +200,13 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
                     + x.getFeatureIndex() + "]\n" + "Xi=" + Xi + ", Vif=" + currentV + ", h=" + h
                     + ", gradV=" + gradV + ", lambdaVf=" + lambdaVf + ", dloss=" + dloss
                     + ", sumViX=" + sumViX + ", t=" + t);
+        }
+        if (MathUtils.closeToZero(nextV)) {
+            theta.setV(f, 0.f);
+            if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
+                removeEntry(theta);
+            }
+            return;
         }
         theta.setV(f, nextV);
     }
@@ -226,6 +241,13 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
                     + x.getFeatureIndex() + "]\n" + "Xi=" + Xi + ", Vif=" + theta.getV(f) + ", h="
                     + h + ", gradV=" + gradV + ", dloss=" + dloss + ", sumViX=" + sumViX + ", n="
                     + n + ", z=" + z);
+        }
+        if (MathUtils.closeToZero(nextV)) {
+            theta.setV(f, 0.f);
+            if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
+                removeEntry(theta);
+            }
+            return;
         }
         theta.setV(f, nextV);
     }

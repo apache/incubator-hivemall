@@ -251,7 +251,7 @@ class Entry {
             final long zOffset = offsetZ(f);
 
             final float z = _buf.getFloat(zOffset);
-            final double n = _buf.getDouble(offsetN(f));
+            final double n = _buf.getFloat(offsetN(f)); // implicit cast to float
 
             double gg = gradW * gradW;
             float sigma = (float) ((Math.sqrt(n + gg) - Math.sqrt(n)) / alpha);
@@ -272,13 +272,13 @@ class Entry {
 
             final long nOffset = offsetN(f);
 
-            final double n = _buf.getDouble(nOffset);
+            final double n = _buf.getFloat(nOffset);
             final double newN = n + gradW * gradW;
             if (!NumberUtils.isFinite(newN)) {
                 throw new IllegalStateException("Got newN " + newN + " where n=" + n + ", gradW="
                         + gradW);
             }
-            _buf.putDouble(nOffset, newN);
+            _buf.putFloat(nOffset, NumberUtils.castToFloat(newN)); // cast may throw ArithmeticException
             return newN;
         }
 
@@ -287,28 +287,28 @@ class Entry {
         }
 
         private long offsetN(@Nonnegative final int f) {
-            return _z_offset + SizeOf.FLOAT * _factors + SizeOf.DOUBLE * f;
+            return _z_offset + SizeOf.FLOAT * (_factors + f);
         }
 
         @Override
         void clear() {
             for (int f = 0; f < _factors; f++) {
                 _buf.putFloat(offsetZ(f), 0.f);
-                _buf.putDouble(offsetN(f), 0.d);
+                _buf.putFloat(offsetN(f), 0.f);
             }
         }
 
         static int sizeOf(@Nonnegative final int factors) {
-            return Entry.sizeOf(factors) + (SizeOf.FLOAT + SizeOf.DOUBLE) * factors;
+            return Entry.sizeOf(factors) + (SizeOf.FLOAT + SizeOf.FLOAT) * factors;
         }
 
         @Override
         public String toString() {
             final float[] Z = new float[_factors];
-            final double[] N = new double[_factors];
+            final float[] N = new float[_factors];
             for (int f = 0; f < _factors; f++) {
                 Z[f] = _buf.getFloat(offsetZ(f));
-                N[f] = _buf.getDouble(offsetN(f));
+                N[f] = _buf.getFloat(offsetN(f));
             }
             return super.toString() + ", Z=" + Arrays.toString(Z) + ", N=" + Arrays.toString(N);
         }
