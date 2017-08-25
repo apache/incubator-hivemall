@@ -48,6 +48,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 /**
  * An optimized Hashed Map implementation.
  * <p/>
@@ -80,16 +83,17 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         resize(MathUtils.bitsRequired(size < 256 ? 256 : size));
     }
 
-    public V put(K key, V value) {
+    @Nullable
+    public V put(@Nullable final K key, @Nullable final V value) {
         if (key == null) {
             throw new NullPointerException(this.getClass().getName() + " key");
         }
 
         for (;;) {
             int off = getBucketOffset(key);
-            int end = off + sweep;
+            final int end = off + sweep;
             for (; off < end; off++) {
-                K searchKey = keys[off];
+                final K searchKey = keys[off];
                 if (searchKey == null) {
                     // insert
                     keys[off] = key;
@@ -109,9 +113,10 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         }
     }
 
-    public V get(Object key) {
+    @Nullable
+    public V get(@Nonnull final Object key) {
         int off = getBucketOffset(key);
-        int end = sweep + off;
+        final int end = sweep + off;
         for (; off < end; off++) {
             if (keys[off] != null && compare(keys[off], key)) {
                 return values[off];
@@ -120,9 +125,10 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         return null;
     }
 
-    public V remove(Object key) {
+    @Nullable
+    public V remove(@Nonnull final Object key) {
         int off = getBucketOffset(key);
-        int end = sweep + off;
+        final int end = sweep + off;
         for (; off < end; off++) {
             if (keys[off] != null && compare(keys[off], key)) {
                 keys[off] = null;
@@ -139,7 +145,7 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         return size;
     }
 
-    public void putAll(Map<? extends K, ? extends V> m) {
+    public void putAll(@Nonnull final Map<? extends K, ? extends V> m) {
         for (K key : m.keySet()) {
             put(key, m.get(key));
         }
@@ -149,11 +155,11 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         return size == 0;
     }
 
-    public boolean containsKey(Object key) {
+    public boolean containsKey(@Nonnull final Object key) {
         return get(key) != null;
     }
 
-    public boolean containsValue(Object value) {
+    public boolean containsValue(@Nonnull final Object value) {
         for (V v : values) {
             if (v != null && compare(v, value)) {
                 return true;
@@ -165,11 +171,12 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
     public void clear() {
         Arrays.fill(keys, null);
         Arrays.fill(values, null);
-        size = 0;
+        this.size = 0;
     }
 
+    @Nonnull
     public Set<K> keySet() {
-        Set<K> set = new HashSet<K>();
+        final Set<K> set = new HashSet<K>();
         for (K key : keys) {
             if (key != null) {
                 set.add(key);
@@ -178,8 +185,9 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         return set;
     }
 
+    @Nonnull
     public Collection<V> values() {
-        Collection<V> list = new ArrayList<V>();
+        final Collection<V> list = new ArrayList<V>();
         for (V value : values) {
             if (value != null) {
                 list.add(value);
@@ -188,8 +196,9 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         return list;
     }
 
+    @Nonnull
     public Set<Entry<K, V>> entrySet() {
-        Set<Entry<K, V>> set = new HashSet<Entry<K, V>>();
+        final Set<Entry<K, V>> set = new HashSet<Entry<K, V>>();
         for (K key : keys) {
             if (key != null) {
                 set.add(new MapEntry<K, V>(this, key));
@@ -250,19 +259,19 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + ' ' + this.size;
+        return this.getClass().getSimpleName() + ' ' + size;
     }
 
     @SuppressWarnings("unchecked")
-    private void resize(int bits) {
+    private void resize(final int bits) {
         this.bits = bits;
         this.sweepbits = bits / 4;
         this.sweep = MathUtils.powerOf(2, sweepbits) * 4;
-        this.sweepmask = MathUtils.bitMask(bits - this.sweepbits) << sweepbits;
+        this.sweepmask = MathUtils.bitMask(bits - sweepbits) << sweepbits;
 
         // remember old values so we can recreate the entries
-        K[] existingKeys = this.keys;
-        V[] existingValues = this.values;
+        final K[] existingKeys = this.keys;
+        final V[] existingValues = this.values;
 
         // create the arrays
         this.values = (V[]) new Object[MathUtils.powerOf(2, bits) + sweep];
@@ -279,11 +288,11 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
         }
     }
 
-    private int getBucketOffset(Object key) {
-        return (key.hashCode() << this.sweepbits) & this.sweepmask;
+    private int getBucketOffset(@Nonnull final Object key) {
+        return (key.hashCode() << sweepbits) & sweepmask;
     }
 
-    private static boolean compare(final Object v1, final Object v2) {
+    private static boolean compare(@Nonnull final Object v1, @Nonnull final Object v2) {
         return v1 == v2 || v1.equals(v2);
     }
 

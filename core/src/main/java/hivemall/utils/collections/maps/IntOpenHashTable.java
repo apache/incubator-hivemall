@@ -34,7 +34,7 @@ import javax.annotation.Nonnull;
  */
 public final class IntOpenHashTable<V> implements Externalizable {
 
-    public static final float DEFAULT_LOAD_FACTOR = 0.7f;
+    public static final float DEFAULT_LOAD_FACTOR = 0.75f;
     public static final float DEFAULT_GROW_FACTOR = 2.0f;
 
     public static final byte FREE = 0;

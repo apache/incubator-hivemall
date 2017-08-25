@@ -44,7 +44,7 @@ public class Int2LongOpenHashTable implements Externalizable {
     protected static final byte REMOVED = 2;
 
     public static final int DEFAULT_SIZE = 65536;
-    public static final float DEFAULT_LOAD_FACTOR = 0.7f;
+    public static final float DEFAULT_LOAD_FACTOR = 0.75f;
     public static final float DEFAULT_GROW_FACTOR = 2.0f;
 
     protected final transient float _loadFactor;
