@@ -200,7 +200,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     @Override
     protected void removeEntry(@Nonnull final Entry entry) {
         final int j = entry.getKey();
-        final long ptr = _map.remove(j);
+        final long ptr = _map.remove(j, -1L);
         if (ptr == -1L) {
             return; // should never be happen.
         }
@@ -268,7 +268,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     @Nullable
     private Entry getEntry(final int key) {
-        final long ptr = _map.get(key);
+        final long ptr = _map.get(key, -1L);
         if (ptr == -1L) {
             return null;
         }

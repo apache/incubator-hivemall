@@ -158,7 +158,7 @@ public final class Int2LongOpenHashMap {
         return defaultValue;
     }
 
-    public long remove(final int key) {
+    public long remove(final int key, final long defaultValue) {
         if (key == 0) {
             if (hasKey0) {
                 this.hasKey0 = false;
@@ -167,7 +167,7 @@ public final class Int2LongOpenHashMap {
                 size--;
                 return old;
             } else {
-                return 0L;
+                return defaultValue;
             }
         }
 
@@ -182,7 +182,7 @@ public final class Int2LongOpenHashMap {
                 return previous;
             }
         }
-        return 0L;
+        return defaultValue;
     }
 
     public int size() {
