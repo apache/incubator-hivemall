@@ -183,7 +183,7 @@ public final class SparseModel extends AbstractPredictionModel {
     @SuppressWarnings("unchecked")
     @Override
     public <K, V extends IWeightValue> IMapIterator<K, V> entries() {
-        return (IMapIterator<K, V>) weights.entries();
+        return (IMapIterator<K, V>) weights.entries(true);
     }
 
 }

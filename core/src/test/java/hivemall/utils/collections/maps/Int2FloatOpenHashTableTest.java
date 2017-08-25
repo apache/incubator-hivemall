@@ -23,7 +23,7 @@ import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class Int2FloatOpenHashMapTest {
+public class Int2FloatOpenHashTableTest {
 
     @Test
     public void testSize() {

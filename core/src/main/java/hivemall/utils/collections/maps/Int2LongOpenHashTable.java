@@ -347,7 +347,7 @@ public class Int2LongOpenHashTable implements Externalizable {
         this._used = used;
     }
 
-    private static int keyHash(int key) {
+    private static int keyHash(final int key) {
         return key & 0x7fffffff;
     }
 

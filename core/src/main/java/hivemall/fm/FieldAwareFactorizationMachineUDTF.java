@@ -288,7 +288,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         final Entry entryW = itor.getEntryProbeW();
         final Entry entryV = itor.getEntryProbeV();
         final float[] Vf = new float[factors];
-        while (itor.next() != -1) {
+        while (itor.next()) {
             // set i
             int i = itor.getEntryIndex();
             idx.set(i);

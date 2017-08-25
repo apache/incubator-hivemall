@@ -23,8 +23,8 @@ import hivemall.fm.Entry.FTRLEntry;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.buffer.HeapBuffer;
 import hivemall.utils.collections.lists.LongArrayList;
-import hivemall.utils.collections.maps.Int2LongOpenHashTable;
-import hivemall.utils.collections.maps.Int2LongOpenHashTable.IMapIterator;
+import hivemall.utils.collections.maps.Int2LongOpenHashMap;
+import hivemall.utils.collections.maps.Int2LongOpenHashMap.MapIterator;
 import hivemall.utils.lang.NumberUtils;
 
 import java.text.NumberFormat;
@@ -40,7 +40,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     // LEARNING PARAMS
     private float _w0;
     @Nonnull
-    private final Int2LongOpenHashTable _map;
+    private final Int2LongOpenHashMap _map;
     @Nonnull
     private final HeapBuffer _buf;
 
@@ -65,7 +65,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     public FFMStringFeatureMapModel(@Nonnull FFMHyperParameters params) {
         super(params);
         this._w0 = 0.f;
-        this._map = new Int2LongOpenHashTable(DEFAULT_MAPSIZE);
+        this._map = new Int2LongOpenHashMap(DEFAULT_MAPSIZE);
         this._buf = new HeapBuffer(HeapBuffer.DEFAULT_CHUNK_SIZE);
         this._freelistW = new LongArrayList();
         this._freelistV = new LongArrayList();
@@ -321,7 +321,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     static final class EntryIterator {
 
         @Nonnull
-        private final IMapIterator dictItor;
+        private final MapIterator dictItor;
         @Nonnull
         private final Entry entryProbeW;
         @Nonnull
@@ -347,7 +347,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
             return dictItor.hasNext();
         }
 
-        int next() {
+        boolean next() {
             return dictItor.next();
         }
 
