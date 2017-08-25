@@ -41,15 +41,22 @@ import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
- * An optimized Hashed Map implementation.
- * <p/>
- * <p>
- * This Hashmap does not allow nulls to be used as keys or values.
- * <p/>
- * <p>
+ * A space efficient open-addressing HashMap implementation with integer keys and long values.
+ * 
+ * Unlike {@link Int2LongOpenHashTable}, it maintains single arrays for keys and object references.
+ * 
  * It uses single open hashing arrays sized to binary powers (256, 512 etc) rather than those
- * divisable by prime numbers. This allows the hash offset calculation to be a simple binary masking
+ * divisible by prime numbers. This allows the hash offset calculation to be a simple binary masking
  * operation.
+ * 
+ * The index into the arrays is determined by masking a portion of the key and shifting it to
+ * provide a series of small buckets within the array. To insert an entry the a sweep is searched
+ * until an empty key space is found. A sweep is 4 times the length of a bucket, to reduce the need
+ * to rehash. If no key space is found within a sweep, the table size is doubled.
+ * 
+ * While performance is high, the slowest situation is where lookup occurs for entries that do not
+ * exist, as an entire sweep area must be searched. However, this HashMap is more space efficient
+ * than other open-addressing HashMap implementations as in fastutil.
  */
 @NotThreadSafe
 public final class Int2LongOpenHashMap {
