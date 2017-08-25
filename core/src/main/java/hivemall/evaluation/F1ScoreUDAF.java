@@ -29,8 +29,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 
 @SuppressWarnings("deprecation")
-@Description(name = "f1score",
-        value = "_FUNC_(array[int], array[int]) - Return a F1 score")
+@Description(name = "f1score", value = "_FUNC_(array[int], array[int]) - Return a F1 score")
 public final class F1ScoreUDAF extends UDAF {
 
     public static class Evaluator implements UDAFEvaluator {
