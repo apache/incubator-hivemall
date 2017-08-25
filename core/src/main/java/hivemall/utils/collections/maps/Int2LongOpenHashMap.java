@@ -215,7 +215,6 @@ public final class Int2LongOpenHashMap {
         return false;
     }
 
-
     public void clear() {
         this.hasKey0 = false;
         this.value0 = 0L;
@@ -249,18 +248,14 @@ public final class Int2LongOpenHashMap {
             for (int i = 0; i < existingKeys.length; i++) {
                 final int k = existingKeys[i];
                 if (k != 0) {
-                    put(existingKeys[i], existingValues[i]);
+                    put(k, existingValues[i]);
                 }
             }
         }
     }
 
-    private static int keyHash(final int key) {
-        return key & 0x7fffffff;
-    }
-
     private int getBucketOffset(final int key) {
-        return (keyHash(key) << sweepbits) & sweepmask;
+        return (key << sweepbits) & sweepmask;
     }
 
     @Nonnull
