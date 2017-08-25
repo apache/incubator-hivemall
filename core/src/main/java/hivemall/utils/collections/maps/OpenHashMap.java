@@ -216,19 +216,23 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
             this.key = key;
         }
 
+        @Override
         public K getKey() {
             return key;
         }
 
+        @Override
         public V getValue() {
             return map.get(key);
         }
 
+        @Override
         public V setValue(V value) {
             return map.put(key, value);
         }
     }
 
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         // remember the number of bits
         out.writeInt(this.bits);
@@ -244,6 +248,7 @@ public final class OpenHashMap<K, V> implements Map<K, V>, Externalizable {
     }
 
     @SuppressWarnings("unchecked")
+    @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // resize to old bit size
         int bitSize = in.readInt();

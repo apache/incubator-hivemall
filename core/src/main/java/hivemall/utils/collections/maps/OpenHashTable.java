@@ -27,12 +27,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-import java.util.HashMap;
 
 import javax.annotation.Nonnull;
 
 /**
- * An open-addressing hash table with double-hashing that requires less memory to {@link HashMap}.
+ * An open-addressing hash table with double-hashing that requires less memory to HashMap.
  */
 public final class OpenHashTable<K, V> implements Externalizable {
 

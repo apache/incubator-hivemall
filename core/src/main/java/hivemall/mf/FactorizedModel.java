@@ -18,7 +18,7 @@
  */
 package hivemall.mf;
 
-import hivemall.utils.collections.maps.IntOpenHashMap;
+import hivemall.utils.collections.maps.IntOpenHashTable;
 import hivemall.utils.math.MathUtils;
 
 import java.util.Random;
@@ -42,10 +42,10 @@ public final class FactorizedModel {
     private int minIndex, maxIndex;
     @Nonnull
     private Rating meanRating;
-    private IntOpenHashMap<Rating[]> users;
-    private IntOpenHashMap<Rating[]> items;
-    private IntOpenHashMap<Rating> userBias;
-    private IntOpenHashMap<Rating> itemBias;
+    private IntOpenHashTable<Rating[]> users;
+    private IntOpenHashTable<Rating[]> items;
+    private IntOpenHashTable<Rating> userBias;
+    private IntOpenHashTable<Rating> itemBias;
 
     private final Random[] randU, randI;
 
@@ -67,10 +67,10 @@ public final class FactorizedModel {
         this.minIndex = 0;
         this.maxIndex = 0;
         this.meanRating = ratingInitializer.newRating(meanRating);
-        this.users = new IntOpenHashMap<Rating[]>(expectedSize);
-        this.items = new IntOpenHashMap<Rating[]>(expectedSize);
-        this.userBias = new IntOpenHashMap<Rating>(expectedSize);
-        this.itemBias = new IntOpenHashMap<Rating>(expectedSize);
+        this.users = new IntOpenHashTable<Rating[]>(expectedSize);
+        this.items = new IntOpenHashTable<Rating[]>(expectedSize);
+        this.userBias = new IntOpenHashTable<Rating>(expectedSize);
+        this.itemBias = new IntOpenHashTable<Rating>(expectedSize);
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
     }
