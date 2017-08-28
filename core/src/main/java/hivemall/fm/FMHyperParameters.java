@@ -151,7 +151,7 @@ class FMHyperParameters {
         float alphaFTRL = 0.2f; // Learning Rate
         float betaFTRL = 1.f; // Smoothing parameter for AdaGrad
         float lambda1 = 0.001f; // L1 Regularization
-        float lamdda2 = 0.005f; // L2 Regularization
+        float lamdda2 = 0.0001f; // L2 Regularization
 
         FFMHyperParameters() {
             super();

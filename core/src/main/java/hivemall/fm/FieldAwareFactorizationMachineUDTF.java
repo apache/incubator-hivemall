@@ -106,7 +106,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             true,
             "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.001]");
         opts.addOption("l2", "lambda2", true,
-            "L2 regularization value of Follow-The-Regularized-Reader [default: 0.005]");
+            "L2 regularization value of Follow-The-Regularized-Reader [default: 0.0001]");
         return opts;
     }
 
