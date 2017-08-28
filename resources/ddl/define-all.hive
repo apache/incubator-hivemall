@@ -713,8 +713,8 @@ create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAt
 --------------------
 -- recommendation --
 --------------------
-drop temporary function if exists slim_train;
-create temporary function slim_train as 'hivemall.recommend.SlimUDTF';
+drop temporary function if exists train_slim;
+create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
 
 --------------------------------------------------------------------------------------------------
 -- macros available from hive 0.12.0

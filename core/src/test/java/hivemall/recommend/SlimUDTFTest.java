@@ -78,7 +78,6 @@ public class SlimUDTFTest {
                     slim.process(args);
                 }
             }
-            System.out.println(slim.getLoss());
             slim.resetLoss();
         }
     }
