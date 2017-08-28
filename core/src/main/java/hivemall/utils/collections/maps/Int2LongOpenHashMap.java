@@ -256,7 +256,7 @@ public final class Int2LongOpenHashMap {
     }
 
     private int getBucketOffset(final int key) {
-        return (HashUtils.fnvHash(key) << sweepbits) & sweepmask;
+        return (HashUtils.fnv1a(key) << sweepbits) & sweepmask;
     }
 
     @Nonnull

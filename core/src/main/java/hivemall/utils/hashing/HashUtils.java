@@ -41,7 +41,7 @@ public final class HashUtils {
         return k;
     }
 
-    public static int fnvHash(final int k) {
+    public static int fnv1a(final int k) {
         int hash = 0x811c9dc5;
         for (int i = 0; i < 4; i++) {
             hash ^= k << (i * 8);
