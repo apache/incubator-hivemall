@@ -120,7 +120,7 @@ You can learn more about this from the following external resource:
 
 If `micro` is passed to `average`, 
 recall and precision are modified to consider True Negative.
-So, micro f1score are calucluated by those modified recall and precision.
+So, micro f1score are calculated by those modified recall and precision.
 
 $$
 \mathrm{recall} = \frac{\mathrm{\#TP} + \mathrm{\#TN}}{\mathrm{\#TP} + \mathrm{\#FN} + \mathrm{\#TN}}
