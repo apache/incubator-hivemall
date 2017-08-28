@@ -185,16 +185,14 @@ public final class StringUtils {
     public static String join(@Nonnull final List<String> list, @Nonnull final String sep) {
         final StringBuilder buf = new StringBuilder(128);
         for (int i = 0, size = list.size(); i < size; i++) {
-            final String s = list.get(i);
-            if (s == null) {
-                continue;
-            }
-
             if (i > 0) { // append separator before each element, except for the head element
                 buf.append(sep);
             }
 
-            buf.append(s);
+            final String s = list.get(i);
+            if (s != null) {
+                buf.append(s);
+            }
         }
         return buf.toString();
     }
