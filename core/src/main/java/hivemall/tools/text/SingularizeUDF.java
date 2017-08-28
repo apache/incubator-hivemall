@@ -44,7 +44,7 @@ import hivemall.utils.lang.StringUtils;
 @UDFType(deterministic = true, stateful = false)
 public final class SingularizeUDF extends UDF {
 
-    // sorted by a ascending (i.e., alphabetical) order for binary search
+    // sorted by an ascending (i.e., alphabetical) order for binary search
     // plural preposition to detect compound words like "plural-preposition-something"
     private static final String[] prepositions = new String[] {"about", "above", "across", "after",
             "among", "around", "at", "athwart", "before", "behind", "below", "beneath", "beside",
@@ -109,7 +109,7 @@ public final class SingularizeUDF extends UDF {
     }
 
     private static final List<String> rules = Arrays.asList(
-        // regexp1, replacement1, regexp2, regexp2, ...
+        // regexp1, replacement1, regexp2, replacement2, ...
         "(quiz)zes$", "$1", "(matr)ices$", "$1ix", "(vert|ind)ices$", "$1ex", "^(ox)en", "$1",
         "(alias|status)$", "$1", "(alias|status)es$", "$1", "(octop|vir)us$", "$1us",
         "(octop|vir)i$", "$1us", "(cris|ax|test)es$", "$1is", "(cris|ax|test)is$", "$1is",
