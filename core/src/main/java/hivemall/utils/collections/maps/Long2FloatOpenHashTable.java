@@ -27,9 +27,14 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 
 /**
- * An open-addressing hash table with float hashing
+ * An open-addressing hash table using double hashing.
+ *
+ * <pre>
+ * Primary hash function: h1(k) = k mod m
+ * Secondary hash function: h2(k) = 1 + (k mod(m-2))
+ * </pre>
  * 
- * @see http://en.wikipedia.org/wiki/float_hashing
+ * @see http://en.wikipedia.org/wiki/Double_hashing
  */
 public final class Long2FloatOpenHashTable implements Externalizable {
 

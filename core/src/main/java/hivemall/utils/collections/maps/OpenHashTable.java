@@ -31,7 +31,14 @@ import java.util.Arrays;
 import javax.annotation.Nonnull;
 
 /**
- * An open-addressing hash table with double-hashing that requires less memory to HashMap.
+ * An open-addressing hash table using double-hashing.
+ *
+ * <pre>
+ * Primary hash function: h1(k) = k mod m
+ * Secondary hash function: h2(k) = 1 + (k mod(m-2))
+ * </pre>
+ *
+ * @see http://en.wikipedia.org/wiki/Double_hashing
  */
 public final class OpenHashTable<K, V> implements Externalizable {
 
