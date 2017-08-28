@@ -33,6 +33,7 @@
 //
 package hivemall.utils.collections.maps;
 
+import hivemall.utils.hashing.HashUtils;
 import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
@@ -255,7 +256,7 @@ public final class Int2LongOpenHashMap {
     }
 
     private int getBucketOffset(final int key) {
-        return (key << sweepbits) & sweepmask;
+        return (HashUtils.fnvHash(key) << sweepbits) & sweepmask;
     }
 
     @Nonnull
