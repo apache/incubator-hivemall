@@ -70,6 +70,9 @@ $$
 { 2* \sum_i |l_i \cap p_i | + \sum_i |l_i - p_i| + \sum_i |p_i - l_i| }
 $$
 
+> #### Caution
+> Hivemall also provides `f1score` function, but it is old function to obtain F1-score. The value of `f1score` is based on set operation. So, we recommend to use `fmeasure` function to get F1-score based on this article.
+
 The following query shows the example to obtain F1-score.
 
 ```sql
@@ -92,12 +95,9 @@ select
   fmeasure(actual, predicted)
 from data
 ;
-
---- 0.6956521739130435;
 ```
 
-> #### Caution
-> Hivemall also provides `f1score` function, but it is old function to obtain F1-score. The value of `f1score` is based on set operation. So, we recommend to use `fmeasure` function to get F1-score based on this article.
+> 0.6956521739130435
 
 ## Micro F-measure
 
@@ -142,6 +142,6 @@ select
   fmeasure(actual, predicted, '-beta 2.')
 from data
 ;
-
--- 0.6779661016949152;
 ```
+
+> 0.6779661016949152

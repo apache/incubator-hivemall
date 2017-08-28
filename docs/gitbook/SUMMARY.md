@@ -66,9 +66,9 @@
 
 ## Part IV - Evaluation
 
-* [Binary Classification metrics](eval/binary_classification_measures.md)
+* [Binary Classification Metrics](eval/binary_classification_measures.md)
     * [Area Under the ROC Curve](eval/auc.md)
-* [Multi-label Classification metrics](eval/multilabel_classification_measures.md)
+* [Multi-label Classification Metrics](eval/multilabel_classification_measures.md)
 * [Regression metrics](eval/regression.md)
 * [Ranking Measures](eval/rank.md)
 

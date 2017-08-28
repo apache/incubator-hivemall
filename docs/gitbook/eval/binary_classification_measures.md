@@ -155,8 +155,32 @@ select
   fmeasure(truth, predicted, '-average micro')
 from data
 ;
+```
 
--- 0.5;
+> 0.5
+
+
+It should be noted that, since the old `f1score(truth, predicted)` function simply counts the number of "matched" elements between `truth` and `predicted`, the above query is equivalent to:
+
+
+```
+WITH data as (
+  select 1 as truth, 0 as predicted
+union all
+  select 0 as truth, 1 as predicted
+union all
+  select 0 as truth, 0 as predicted
+union all
+  select 1 as truth, 1 as predicted
+union all
+  select 0 as truth, 1 as predicted
+union all
+  select 0 as truth, 0 as predicted
+)
+select
+  f1score(array(truth), array(predicted))
+from data
+;
 ```
 
 ### Binary average
@@ -182,9 +206,9 @@ select
   fmeasure(truth, predicted, '-average binary')
 from data
 ;
-
--- 0.4;
 ```
+
+> 0.4
 
 
 ## F-measure
@@ -229,8 +253,9 @@ select
 from data
 ;
 
--- 0.5;
 ```
+
+> 0.5
 
 The following query shows the example to obtain F-measure with $$\beta=2$$ and binary average.
 
@@ -253,8 +278,9 @@ select
 from data
 ;
 
--- 0.45454545454545453;
 ```
+
+> 0.45454545454545453
 
 You can learn more about this from the following external resource:
 

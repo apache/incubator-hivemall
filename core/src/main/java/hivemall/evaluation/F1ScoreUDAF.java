@@ -63,9 +63,9 @@ public final class F1ScoreUDAF extends UDAF {
             }
 
             void merge(PartialResult other) {
-                this.tp = other.tp;
-                this.totalActual = other.totalActual;
-                this.totalPredicted = other.totalPredicted;
+                this.tp += other.tp;
+                this.totalActual += other.totalActual;
+                this.totalPredicted += other.totalPredicted;
             }
         }
 

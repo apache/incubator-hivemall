@@ -291,8 +291,9 @@ public class FMeasureUDAFTest {
 
         evaluator.iterate(agg, new Object[] {actual, predicted});
 
-        // TODO: describe the way to get this expected value by spark
-        Assert.assertEquals(0.5714285714285715d, agg.get(), 1e-5);
+        // should equal to spark's micro f1 measure result
+        // https://spark.apache.org/docs/latest/mllib-evaluation-metrics.html#multilabel-classification
+        Assert.assertEquals(0.5714285714285714, agg.get(), 1e-5);
     }
 
     @Test

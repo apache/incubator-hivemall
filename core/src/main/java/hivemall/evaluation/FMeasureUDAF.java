@@ -71,12 +71,12 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 || HiveUtils.isBooleanTypeInfo(typeInfo[1]);
         if (!isArg2ListOrIntOrBoolean) {
             throw new UDFArgumentTypeException(1,
-                "The second argument `array/int/boolean actual` is invalid form: " + typeInfo[1]);
+                "The second argument `array/int/boolean predicted` is invalid form: " + typeInfo[1]);
         }
 
         if (typeInfo[0] != typeInfo[1]) {
-            throw new UDFArgumentTypeException(1, "The first argument's `actual` type is "
-                    + typeInfo[0] + ", but the second argument `predicated`'s type is not match: "
+            throw new UDFArgumentTypeException(1, "The first argument `actual`'s type is "
+                    + typeInfo[0] + ", but the second argument `predicted`'s type is not match: "
                     + typeInfo[1]);
         }
 
@@ -125,7 +125,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                         "The third argument `double beta` must be greater than 0.0: " + beta);
                 }
 
-                average = cl.getOptionValue("average", "micro");
+                average = cl.getOptionValue("average", average);
 
                 if (average.equals("macro")) {
                     throw new UDFArgumentException("\"-average macro\" is not supported");
