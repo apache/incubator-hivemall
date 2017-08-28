@@ -57,6 +57,30 @@ public class Int2LongOpenHashMapTest {
     }
 
     @Test
+    public void testPutRemoveGet() {
+        Int2LongOpenHashMap map = new Int2LongOpenHashMap(16384);
+        final int numEntries = 1000000;
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertEquals(0L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(-i, -i));
+            if (i % 2 == 0) {
+                Assert.assertEquals(i, map.remove(i, -1));
+            } else {
+                Assert.assertEquals(i, map.put(i, i));
+            }
+        }
+        Assert.assertEquals(numEntries + (numEntries / 2) - 1, map.size());
+        for (int i = 0; i < numEntries; i++) {
+            if (i % 2 == 0) {
+                Assert.assertFalse(map.containsKey(i));
+            } else {
+                Assert.assertEquals(i, map.get(i));
+            }
+            Assert.assertEquals(-i, map.get(-i));
+        }
+    }
+
+    @Test
     public void testIterator() {
         Int2LongOpenHashMap map = new Int2LongOpenHashMap(1000);
         Int2LongOpenHashMap.MapIterator itor = map.entries();

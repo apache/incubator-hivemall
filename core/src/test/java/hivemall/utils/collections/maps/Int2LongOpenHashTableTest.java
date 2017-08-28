@@ -18,7 +18,6 @@
  */
 package hivemall.utils.collections.maps;
 
-import hivemall.utils.collections.maps.Int2LongOpenHashTable;
 import hivemall.utils.lang.ObjectUtils;
 
 import java.io.IOException;
@@ -59,6 +58,31 @@ public class Int2LongOpenHashTableTest {
         for (int i = 0; i < numEntries; i++) {
             long v = map.get(i);
             Assert.assertEquals(i, v);
+        }
+    }
+
+    @Test
+    public void testPutRemoveGet() {
+        Int2LongOpenHashTable map = new Int2LongOpenHashTable(16384);
+        map.defaultReturnValue(0L);
+        final int numEntries = 1000000;
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertEquals(0L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(-i, -i));
+            if (i % 2 == 0) {
+                Assert.assertEquals(i, map.remove(i));
+            } else {
+                Assert.assertEquals(i, map.put(i, i));
+            }
+        }
+        Assert.assertEquals(numEntries + (numEntries / 2) - 1, map.size());
+        for (int i = 0; i < numEntries; i++) {
+            if (i % 2 == 0) {
+                Assert.assertFalse(map.containsKey(i));
+            } else {
+                Assert.assertEquals(i, map.get(i));
+            }
+            Assert.assertEquals(-i, map.get(-i));
         }
     }
 
