@@ -174,6 +174,7 @@ create temporary function dimsum_mapper as 'hivemall.knn.similarity.DIMSUMMapper
 create temporary function train_classifier as 'hivemall.classifier.GeneralClassifierUDTF';
 create temporary function train_regressor as 'hivemall.regression.GeneralRegressorUDTF';
 create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
+create temporary function singularize as 'hivemall.tools.text.SingularizeUDF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
