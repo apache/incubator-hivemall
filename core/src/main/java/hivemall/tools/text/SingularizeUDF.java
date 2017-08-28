@@ -143,7 +143,7 @@ public final class SingularizeUDF extends UDF {
 
             if ((chunks.size() > 1) && (Arrays.binarySearch(prepositions, chunks.get(1)) >= 0)) {
                 String head = chunks.remove(0);
-                return singularize(head) + "-" + StringUtils.concat(chunks, "-");
+                return singularize(head) + "-" + StringUtils.join(chunks, "-");
             }
         }
 
