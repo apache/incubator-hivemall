@@ -29,7 +29,8 @@ Hivemall provides some tutorials to deal with binary classification problems as 
 - [News classification](../binaryclass/news20_dataset.html)
 
 This page focuses on the evaluation of the results from such binary classification problems.
-If you want to know about Area Under the ROC Curve, please check [AUC](./auc.md) page.
+If your classifier outputs probability rather than 0/1 label, evaluation based on [Area Under the ROC Curve](./auc.md) would be more appropriate.
+
 
 # Example
 
@@ -40,32 +41,36 @@ For the metrics explanation, this page introduces toy example data and two metri
 The following table shows the sample of binary classification's prediction.
 In this case, `1` means positive label and `0` means negative label.
 Left column includes supervised label data,
-Right column includes are predicted label by a binary classifier.w
+and center column includes predicted label by a binary classifier.
 
-| truth label| predicted label |
-|:---:|:---:|
-| 1 | 0 |
-| 0 | 1 |
-| 0 | 0 |
-| 1 | 1 |
-| 0 | 1 |
-| 0 | 0 |
+| truth label| predicted label | |
+|:---:|:---:|:---:|
+| 1 | 0 |False Negative|
+| 0 | 1 |False Positive|
+| 0 | 0 |True Negative|
+| 1 | 1 |True Positive|
+| 0 | 1 |False Positive|
+| 0 | 0 |True Negative|
 
 ## Preliminary metrics
 
 Some evaluation metrics are calculated based on 4 values:
 
-- True Positive: truth label is positive and predicted label is also positive
-- True Negative: truth label is negative and predicted label is also negative
-- False Positive: truth label is negative but predicted label is positive
-- False Negative: truth label is positive but predicted label is negative
+- True Positive (TP): truth label is positive and predicted label is also positive
+- True Negative (TN): truth label is negative and predicted label is also negative
+- False Positive (FP): truth label is negative but predicted label is positive
+- False Negative (FN): truth label is positive but predicted label is negative
+
+`TR` and `TN` represent correct classification, and `FP` and `FN` illustrate incorrect ones.
 
 In this example, we can obtain those values:
 
-- True Positive: 1
-- True Negative: 1
-- False Positive: 2
-- False Negative: 2
+- TP: 1
+- TN: 2
+- FP: 2
+- FN: 1
+
+if you want to know about those metrics, Wikipedia provides [more detail information](https://en.wikipedia.org/wiki/Sensitivity_and_specificity).
 
 ### Recall
 
@@ -73,7 +78,7 @@ Recall indicates the true positive rate in truth positive labels.
 The value is computed by the following equation:
 
 $$
-\mathrm{recall} = \frac{\mathrm{\#true\ positive}}{\mathrm{\#true\ positive} + \mathrm{\#false\ negative}}
+\mathrm{recall} = \frac{\mathrm{\#TP}}{\mathrm{\#TP} + \mathrm{\#FN}}
 $$
 
 In the previous example, $$\mathrm{precision} = \frac{1}{2}$$.
@@ -84,7 +89,7 @@ Precision indicates the true positive rate in positive predictive labels.
 The value is computed by the following equation:
 
 $$
-\mathrm{precision} = \frac{\mathrm{\#true\ positive}}{\mathrm{\#true\ positive} + \mathrm{\#false\ positive}}
+\mathrm{precision} = \frac{\mathrm{\#TP}}{\mathrm{\#TP} + \mathrm{\#FP}}
 $$
 
 In the previous example, $$\mathrm{precision} = \frac{1}{3}$$.
@@ -100,14 +105,34 @@ $$
 \mathrm{F}_1 = 2 \frac{\mathrm{precision} * \mathrm{recall}}{\mathrm{precision} + \mathrm{recall}}
 $$
 
-Hivemall's `f1score` function provides the option which can switch `micro`(default) or `binary` by passing `average` argument.
+Hivemall's `fmeasure` function provides the option which can switch `micro`(default) or `binary` by passing `average` argument.
+
+
+> #### Caution
+> Hivemall also provides `f1score` function, but it is old function to obtain F1-score. The value of `f1score` is based on set operation. So, we recommend to use `fmeasure` function to get F1-score based on this article.
+
+You can learn more about this from the following external resource:
+
+- [scikit-learn's F1-score](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+
 
 ### Micro average
 
-If `micro` is passed to `average`, true positive includes true positive and false negative (: predicted label matches truth label) in above equations.
-If `average` argument is omitted, `f1score` use default value: `'-average micro'`.
+If `micro` is passed to `average`, 
+recall and precision are modified to consider True Negative.
+So, micro f1score are calucluated by those modified recall and precision.
 
-The Following query shows the example to obtain F1-score.
+$$
+\mathrm{recall} = \frac{\mathrm{\#TP} + \mathrm{\#TN}}{\mathrm{\#TP} + \mathrm{\#FN} + \mathrm{\#TN}}
+$$
+
+$$
+\mathrm{precision} = \frac{\mathrm{\#TP} + \mathrm{\#TN}}{\mathrm{\#TP} + \mathrm{\#FP} + \mathrm{\#TN}}
+$$
+
+If `average` argument is omitted, `fmeasure` use default value: `'-average micro'`.
+
+The following query shows the example to obtain F1-score.
 Each row value has the same type (`int` or `boolean`).
 If row value's type is `int`, `1` is considered as the positive label, and `-1` or `0` is considered as the negative label.
 
@@ -127,7 +152,7 @@ union all
   select 0 as truth, 0 as predicted
 )
 select
-  f1score(truth, predicted, '-average micro')
+  fmeasure(truth, predicted, '-average micro')
 from data
 ;
 
@@ -136,9 +161,9 @@ from data
 
 ### Binary average
 
-If `binary` is passed to `average`, TP only includes true positive in above equations.
+If `binary` is passed to `average`, `True Negative` samples are ignored to get F1-score.
 
-The Following query shows the example to obtain F1-score.
+The following query shows the example to obtain F1-score with binary average.
 ```sql
 WITH data as (
   select 1 as truth, 0 as predicted
@@ -154,7 +179,7 @@ union all
   select 0 as truth, 0 as predicted
 )
 select
-  f1score(truth, predicted, '-average binary')
+  fmeasure(truth, predicted, '-average binary')
 from data
 ;
 
@@ -230,3 +255,7 @@ from data
 
 -- 0.45454545454545453;
 ```
+
+You can learn more about this from the following external resource:
+
+- [scikit-learn's FMeasure](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.fbeta_score.html)

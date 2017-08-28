@@ -212,8 +212,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
             boolean isList = HiveUtils.isListOI(actualOI) && HiveUtils.isListOI(predictedOI);
 
-            List<?> actual = Collections.emptyList();
-            List<?> predicted = Collections.emptyList();
+            final List<?> actual;
+            final List<?> predicted;
 
             if (isList) {// array case
                 if (this.average.equals("binary")) {
@@ -224,42 +224,50 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 predicted = ((ListObjectInspector) predictedOI).getList(parameters[1]);
             } else {//binary case
                 if (HiveUtils.isBooleanOI(actualOI)) { // boolean case
-                    if (((BooleanObjectInspector) actualOI).get(parameters[0])) {
-                        actual = Arrays.asList(1);
-                    } else {
-                        actual = Arrays.asList(0);
-                    }
-
-                    if (((BooleanObjectInspector) predictedOI).get(parameters[1])) {
-                        predicted = Arrays.asList(1);
-                    } else {
-                        predicted = Arrays.asList(0);
-                    }
+                    actual = Arrays.asList(asIntLabel(parameters[0],
+                        (BooleanObjectInspector) actualOI));
+                    predicted = Arrays.asList(asIntLabel(parameters[1],
+                        (BooleanObjectInspector) predictedOI));
                 } else { // int case
-                    int actualOIValue = ((IntObjectInspector) actualOI).get(parameters[0]);
-                    if (actualOIValue == 1) {
-                        actual = Arrays.asList(1);
-                    } else if (!(actualOIValue == 0 || actualOIValue == -1)) {
-                        throw new UDFArgumentException(
-                            "The first argument `int actual` must be 1, 0, or -1:" + actualOIValue);
-                    } else if (!this.average.equals("binary")) {
-                        actual = Arrays.asList(0);
+                    int actualLabel = asIntLabel(parameters[0], (IntObjectInspector) actualOI);
+
+                    if (actualLabel == 0 && this.average.equals("binary")) {
+                        actual = Collections.emptyList();
+                    } else {
+                        actual = Arrays.asList(actualLabel);
                     }
 
-                    int predictedOIValue = ((IntObjectInspector) predictedOI).get(parameters[1]);
-                    if (predictedOIValue == 1) {
-                        predicted = Arrays.asList(1);
-                    } else if (!(predictedOIValue == 0 || predictedOIValue == -1)) {
-                        throw new UDFArgumentException(
-                            "The second argument `int predicted` must be 1, 0, or -1:"
-                                    + predictedOIValue);
-                    } else if (!this.average.equals("binary")) {
-                        predicted = Arrays.asList(0);
+                    int predictedLabel = asIntLabel(parameters[1], (IntObjectInspector) predictedOI);
+                    if (predictedLabel == 0 && this.average.equals("binary")) {
+                        predicted = Collections.emptyList();
+                    } else {
+                        predicted = Arrays.asList(predictedLabel);
                     }
                 }
             }
             myAggr.iterate(actual, predicted);
         }
+
+        private int asIntLabel(@Nonnull Object o, @Nonnull BooleanObjectInspector booleanOI) {
+            if (booleanOI.get(o)) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        private int asIntLabel(@Nonnull Object o, @Nonnull IntObjectInspector intOI)
+                throws HiveException {
+            int value = intOI.get(o);
+            if (!(value == 1 || value == 0 || value == -1)) {
+                throw new UDFArgumentException("Int label must be 1, 0 or -1: " + value);
+            }
+            if (value == -1) {
+                value = 0;
+            }
+            return value;
+        }
+
 
         @Override
         public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
@@ -358,23 +366,14 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
             if (divisor > 0) {
                 return (numerator / divisor);
             } else {
-                return -1.d;
+                return 0.d;
             }
         }
 
         private static double denom(long tp, long totalActual, long totalPredicted,
                 double squareBeta) {
-            long lp = totalPredicted - tp;
-
-            if (lp < 0) {
-                lp = 0L;
-            }
-
-            long pl = totalActual - tp;
-
-            if (pl < 0) {
-                pl = 0L;
-            }
+            long lp = totalActual - tp;
+            long pl = totalPredicted - tp;
 
             return squareBeta * (tp + lp) + tp + pl;
         }

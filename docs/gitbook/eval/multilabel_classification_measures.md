@@ -23,7 +23,7 @@
 
 
 Multi-label classification problem is the task to predict the labels given categorized dataset.
-Each sample $$i$$ has $$l_i$$ labels, where $$L$$ is the number of unique labels in the dataset, and $$0 \leq  l_i \leq |L| $$.
+Each sample $$i$$ has $$l_i$$ labels, where $$L$$ is a set of unique labels in the dataset, and $$0 \leq  l_i \leq |L|$$.
 
 This page focuses on evaluation of the results from such multi-label classification problems.
 
@@ -36,17 +36,17 @@ For the metrics explanation, this page introduces toy example dataset.
 The following table shows the sample of multi-label classification's prediction.
 Animal names represent the tags of blog post.
 Left column includes supervised labels,
-Right column includes are predicted labels by a Multi-label classifier.
+and right column includes predicted labels by a multi-label classifier.
 
 | truth labels| predicted labels |
 |:---:|:---:|
-|cat, dog | cat, bird |
-| cat, bird | cat, dog |
-| | cat |
+| cat, bird | cat, dog|
+| cat, dog | cat, bird|
+| cat | (*no truth label*)|
 | bird | bird |
-| bird, cat | bird, cat |
-| cat, dog, bird | cat, dog |
-| dog | dog, bird|
+| bird, cat | bird, cat|
+| cat, dog | cat, dog, bird |
+| dog, bird | dog |
 
 
 # Evaluation metrics for multi-label classification
@@ -67,34 +67,37 @@ The value is computed by the following equation:
 $$
 \mathrm{F}_1 = 2 \frac
 {\sum_i |l_i \cap p_i |}
-{ 2* \sum_i |l_i \cap p_i | + \sum_i |l_i - p_i | + \sum_i |p_i - l_i | }
+{ 2* \sum_i |l_i \cap p_i | + \sum_i |l_i - p_i| + \sum_i |p_i - l_i| }
 $$
 
-The Following query shows the example to obtain F1-score.
+The following query shows the example to obtain F1-score.
 
 ```sql
 WITH data as (
-  select array("cat", "dog")         as actual, array("cat", "bird") as predicted
+  select array("cat", "bird") as actual, array("cat", "dog")         as predicted
 union all
-  select array("cat", "bird")        as actual, array("cat", "dog")  as predicted
+  select array("cat", "dog")  as actual, array("cat", "bird")        as predicted
 union all
-  select array()                     as actual, array("cat")         as predicted
+  select array("cat")         as actual, array()                     as predicted
 union all
-  select array("bird")               as actual, array("bird")        as predicted
+  select array("bird")        as actual, array("bird")               as predicted
 union all
-  select array("bird", "cat")        as actual, array("bird", "cat") as predicted
+  select array("bird", "cat") as actual, array("bird", "cat")        as predicted
 union all
-  select array("cat", "dog", "bird") as actual, array("cat", "dog")  as predicted
+  select array("cat", "dog")  as actual, array("cat", "dog", "bird") as predicted
 union all
-  select array("dog")                as actual, array("dog", "bird") as predicted
+  select array("dog", "bird") as actual, array("dog")                as predicted
 )
 select
-  f1score(actual, predicted)
+  fmeasure(actual, predicted)
 from data
 ;
 
 --- 0.6956521739130435;
 ```
+
+> #### Caution
+> Hivemall also provides `f1score` function, but it is old function to obtain F1-score. The value of `f1score` is based on set operation. So, we recommend to use `fmeasure` function to get F1-score based on this article.
 
 ## Micro F-measure
 
@@ -105,7 +108,7 @@ The value is computed by the following equation:
 $$
 \mathrm{F}_{\beta} = (1+\beta^2) \frac
 {\sum_i |l_i \cap p_i |}
-{ \beta^2 (\sum_i |l_i \cap p_i | + \sum_i |p_i - l_i |) + \sum_i |l_i \cap p_i | + \sum_i |l_i - p_i |}
+{ \beta^2 (\sum_i |l_i \cap p_i | + \sum_i |l_i - p_i|) + \sum_i |l_i \cap p_i | + \sum_i |p_i - l_i|}
 $$
 
 $$\beta$$ is the parameter to determine the weight of precision.
@@ -121,19 +124,19 @@ The following query shows the example to obtain F-measure with $$\beta=2$$.
 
 ```sql
 WITH data as (
-  select array("cat", "dog")         as actual, array("cat", "bird") as predicted
+  select array("cat", "bird") as actual, array("cat", "dog")         as predicted
 union all
-  select array("cat", "bird")        as actual, array("cat", "dog")  as predicted
+  select array("cat", "dog")  as actual, array("cat", "bird")        as predicted
 union all
-  select array()                     as actual, array("cat")         as predicted
+  select array("cat")         as actual, array()                     as predicted
 union all
-  select array("bird")               as actual, array("bird")        as predicted
+  select array("bird")        as actual, array("bird")               as predicted
 union all
-  select array("bird", "cat")        as actual, array("bird", "cat") as predicted
+  select array("bird", "cat") as actual, array("bird", "cat")        as predicted
 union all
-  select array("cat", "dog", "bird") as actual, array("cat", "dog")  as predicted
+  select array("cat", "dog")  as actual, array("cat", "dog", "bird") as predicted
 union all
-  select array("dog")                as actual, array("dog", "bird") as predicted
+  select array("dog", "bird") as actual, array("dog")                as predicted
 )
 select
   fmeasure(actual, predicted, '-beta 2.')

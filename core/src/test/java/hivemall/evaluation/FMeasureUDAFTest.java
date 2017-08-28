@@ -199,7 +199,7 @@ public class FMeasureUDAFTest {
 
         evaluator.iterate(agg, new Object[] {actual, predicted});
 
-        Assert.assertEquals(-1.d, agg.get(), 1e-4);
+        Assert.assertEquals(0.d, agg.get(), 1e-4);
     }
 
     @Test
@@ -214,7 +214,7 @@ public class FMeasureUDAFTest {
 
         evaluator.iterate(agg, new Object[] {actual, predicted});
 
-        Assert.assertEquals(-1.d, agg.get(), 1e-4);
+        Assert.assertEquals(0.d, agg.get(), 1e-4);
     }
 
     @Test(expected = HiveException.class)
@@ -329,9 +329,10 @@ public class FMeasureUDAFTest {
 
     @Test
     public void testMultiLabelF1MultiSamples() throws Exception {
-        String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
-        String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
+        String[][] actual = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
                 {"1", "2"}};
+        String[][] predicted = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"},
+                {"1"}};
 
         double beta = 1.0;
         String average = "micro";
@@ -351,9 +352,11 @@ public class FMeasureUDAFTest {
 
     @Test
     public void testMultiLabelFmeasureMultiSamples() throws Exception {
-        String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
-        String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
+        String[][] actual = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
                 {"1", "2"}};
+        String[][] predicted = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"},
+                {"1"}};
+
         double beta = 2.0;
         String average = "micro";
         setUpWithArguments(beta, average);
@@ -369,9 +372,10 @@ public class FMeasureUDAFTest {
 
     @Test(expected = HiveException.class)
     public void testMultiLabelFmeasureBinary() throws Exception {
-        String[][] actual = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
-        String[][] predicted = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
+        String[][] actual = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
                 {"1", "2"}};
+        String[][] predicted = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"},
+                {"1"}};
 
         double beta = 1.0;
         String average = "binary";
