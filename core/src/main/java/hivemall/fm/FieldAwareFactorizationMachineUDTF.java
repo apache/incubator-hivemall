@@ -220,8 +220,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             for (int fieldIndex = 0, size = fieldList.size(); fieldIndex < size; fieldIndex++) {
                 final int yField = fieldList.get(fieldIndex);
                 for (int f = 0, k = _factors; f < k; f++) {
-                    double sumViX = sumVfX.get(i, fieldIndex, f);
-                    if (sumViX == 0.d) {// grad will be 0 => skip it
+                    final double sumViX = sumVfX.get(i, fieldIndex, f);
+                    if (MathUtils.closeToZero(sumViX, 1E-9d)) {// grad will be 0 => skip it
                         continue;
                     }
                     _ffmModel.updateV(lossGrad, x_i, yField, f, sumViX, _t);
