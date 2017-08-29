@@ -96,6 +96,24 @@ In the previous example, $$\mathrm{precision} = \frac{1}{3}$$.
 
 # Metrics
 
+To use metrics examples, please create the following table.
+
+```sql
+create table data as 
+  select 1 as truth, 0 as predicted
+union all
+  select 0 as truth, 1 as predicted
+union all
+  select 0 as truth, 0 as predicted
+union all
+  select 1 as truth, 1 as predicted
+union all
+  select 0 as truth, 1 as predicted
+union all
+  select 0 as truth, 0 as predicted
+;
+```
+
 ## F1-score
 
 F1-score is the harmonic mean of recall and precision.
@@ -138,23 +156,7 @@ If row value's type is `int`, `1` is considered as the positive label, and `-1` 
 
 
 ```sql
-WITH data as (
-  select 1 as truth, 0 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-union all
-  select 1 as truth, 1 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-)
-select
-  fmeasure(truth, predicted, '-average micro')
-from data
-;
+select fmeasure(truth, predicted, '-average micro') from data;
 ```
 
 > 0.5
@@ -163,24 +165,8 @@ from data
 It should be noted that, since the old `f1score(truth, predicted)` function simply counts the number of "matched" elements between `truth` and `predicted`, the above query is equivalent to:
 
 
-```
-WITH data as (
-  select 1 as truth, 0 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-union all
-  select 1 as truth, 1 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-)
-select
-  f1score(array(truth), array(predicted))
-from data
-;
+```sql
+select f1score(array(truth), array(predicted)) from data;
 ```
 
 ### Binary average
@@ -189,23 +175,7 @@ If `binary` is passed to `average`, `True Negative` samples are ignored to get F
 
 The following query shows the example to obtain F1-score with binary average.
 ```sql
-WITH data as (
-  select 1 as truth, 0 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-union all
-  select 1 as truth, 1 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-)
-select
-  fmeasure(truth, predicted, '-average binary')
-from data
-;
+select fmeasure(truth, predicted, '-average binary') from data;
 ```
 
 > 0.4
@@ -235,24 +205,7 @@ Hivemall's `fmeasure` function also provides the option which can switch `micro`
 The following query shows the example to obtain F-measure with $$\beta=2$$ and micro average.
 
 ```sql
-WITH data as (
-  select 1 as truth, 0 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-union all
-  select 1 as truth, 1 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-)
-select
-  fmeasure(truth, predicted, '-beta 2. -average micro')
-from data
-;
-
+select fmeasure(truth, predicted, '-beta 2. -average micro') from data;
 ```
 
 > 0.5
@@ -260,24 +213,7 @@ from data
 The following query shows the example to obtain F-measure with $$\beta=2$$ and binary average.
 
 ```sql
-WITH data as (
-  select 1 as truth, 0 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-union all
-  select 1 as truth, 1 as predicted
-union all
-  select 0 as truth, 1 as predicted
-union all
-  select 0 as truth, 0 as predicted
-)
-select
-  fmeasure(truth, predicted, '-beta 2. -average binary')
-from data
-;
-
+select fmeasure(truth, predicted, '-beta 2. -average binary') from data;
 ```
 
 > 0.45454545454545453
