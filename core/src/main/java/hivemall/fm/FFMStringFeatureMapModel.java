@@ -145,6 +145,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
             entry = newEntry(j, V);
             long ptr = entry.getOffset();
             _map.put(j, ptr);
+            return V[f];
         }
         return entry.getV(f);
     }
