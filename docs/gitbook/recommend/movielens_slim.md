@@ -24,49 +24,17 @@ _Caution: SLIM is supported from Hivemall v0.xxx or later._
 
 # Data preparation
 
-First of all, please create `ratings` table described in [this article](../recommend/movielens_dataset.html).
-
-Here, all dataset is splited into two holds: `training` and `testing`.
-
-```sql
-DROP TABLE ratings2;
-CREATE TABLE ratings2
-as
-select
-  rand(${seed}) as rnd, 
-  userid, 
-  movieid, 
-  rating
-from 
-  ratings;
-```
-
-```sql
---- use 70% for training
-DROP TABLE training;
-CREATE TABLE training
-as
-select * from ratings2
-where rnd < 0.7
-;
-
---- use 30% for testing
-DROP TABLE testing;
-CREATE TABLE testing
-as
-select * from ratings2
-where rnd > 0.7
-;
-```
+First of all, please create `ratings`, `training` and `testing` tables described in [this article](../recommend/movielens_dataset.html).
+Here, we use `training` data to build prediction model, and `testing` data to recommend items.
 
 ## Precompute movie-movie similarity
 
-SLIM needs top-$$k$$ most similar items for each item to approximate matrix calculation.
+SLIM needs top-$$k$$ most similar items for each item to approximate user-item matrix.
 Here, we particularly focus on [DIMSUM](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation), an efficient and approximated similarity computation scheme, and try to make recommendation from the MovieLens data.
 
 Since we set `k=20`, output has 20 most-similar movies per `movieid`.
-We can adjust trade-off by varying `k`.
-Largeer `k` is better approximation for raw user-item maxtrix, but training time increases.
+We can adjust trade-off between training time and approximation by varying `k`.
+Larger `k` is better approximation for raw user-item matrix, but training time increases.
 
 [As we explained in the general introduction of item-based CF](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation.md), following query finds top-$$k$$ nearest-neighborhood movies for each movie:
 
@@ -130,25 +98,24 @@ topk as (
   ) t
 )
 select 
-  movieid, other, similarity as rnd
+  movieid, other, similarity
 from 
   topk
 ;
 ```
 
-<!-- ここをあとで変える -->
 | movieid | other | similarity |
 |:---:|:---:|:---|
-|1    |   2095 |   0.9377422722094696 |
-|1    |   231  |   0.9316530366756418 |
-|1    |   1407 |   0.9194745656079863 |
-|1    |   3442 |   0.9133853300741587 |
-|1    |   1792 |   0.9072960945403309 |
+| 1 | 3114 | 0.6344983426248486 |
+| 1 | 1270 | 0.6040521649557099 |
+| 1 | 1265 | 0.6016164707421789 |
+| 1 | 551 | 0.5821309170339302 |
+| 1 | 337 | 0.5796952228203991 |
 |...|...|...|
 
 
 > #### Caution
-> To run query above, you may need to run two statement before query above. 
+> To run query above, you may need to run two statement before. 
 ```sql
 set hive.strict.checks.cartesian.product=false;
 set hive.mapred.mode=nonstrict;
@@ -246,7 +213,7 @@ group by i, j
 
 # Prediction
 
-Next, we predict rating for user-movie pairs based on the top-$$k$$ similarities:
+Next, we predict rating of user-movie pairs based on top-$$k$$ similar items:
 
 ```sql
 DROP TABLE predicted_test_matrix;
@@ -269,7 +236,7 @@ select
   coalesce(sum(l.r_uk*r.wij), ${mu}) as predicted
 from knn_exploded l
 LEFT OUTER JOIN slim_w r 
-  ON (l.i = r.i AND l.k = r.j)
+  ON (l.i = r.i and l.k = r.j)
 group by l.u, l.i
 ;
 ```
@@ -310,11 +277,11 @@ select * from top3_recommend;
 
 | userid | items |
 |:---:|:---:|
-| 1 | [127,170,181] |
-| 2 | [300,258,50]  |
-| 3 | [302,258,331] |
-| 4 | [294,264,303] |
-| 5 | [181,204,173] |
+| 1 | [1246,588,150] |
+| 2 | [1084,3256,1527] |
+| 3 | [2858,1270,590] |
+| 4 | [1954,3527] |
+| 5 | [1213,1732,6] |
 |...|...|
 
 
@@ -328,4 +295,4 @@ from
 JOIN predicted_test_matrix as r ON (l.movieid = r.i and l.userid = r.u);
 ```
 
-> DUMMY VALUE for mne
+> 2.0634030247474398
