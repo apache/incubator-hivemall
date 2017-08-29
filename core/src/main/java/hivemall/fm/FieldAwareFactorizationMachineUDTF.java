@@ -195,7 +195,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         double loss = _lossFunction.loss(p, y);
         _cvState.incrLoss(loss);
 
-        if (MathUtils.closeToZero(lossGrad)) {
+        if (MathUtils.closeToZero(lossGrad, 1E-9d)) {
             return;
         }
 

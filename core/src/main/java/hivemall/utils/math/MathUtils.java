@@ -264,7 +264,7 @@ public final class MathUtils {
         return r;
     }
 
-    public static boolean equals(@Nonnull final float value, final float expected, final float delta) {
+    public static boolean equals(final float value, final float expected, final float delta) {
         if (Double.isNaN(value)) {
             return false;
         }
@@ -274,8 +274,7 @@ public final class MathUtils {
         return true;
     }
 
-    public static boolean equals(@Nonnull final double value, final double expected,
-            final double delta) {
+    public static boolean equals(final double value, final double expected, final double delta) {
         if (Double.isNaN(value)) {
             return false;
         }
@@ -285,23 +284,31 @@ public final class MathUtils {
         return true;
     }
 
-    public static boolean almostEquals(@Nonnull final float value, final float expected) {
+    public static boolean almostEquals(final float value, final float expected) {
         return equals(value, expected, 1E-15f);
     }
 
-    public static boolean almostEquals(@Nonnull final double value, final double expected) {
+    public static boolean almostEquals(final double value, final double expected) {
         return equals(value, expected, 1E-15d);
     }
 
-    public static boolean closeToZero(@Nonnull final float value) {
-        if (Math.abs(value) > 1E-15f) {
+    public static boolean closeToZero(final float value) {
+        return closeToZero(value, 1E-15f);
+    }
+
+    public static boolean closeToZero(final float value, final float tol) {
+        if (Math.abs(value) > tol) {
             return false;
         }
         return true;
     }
 
-    public static boolean closeToZero(@Nonnull final double value) {
-        if (Math.abs(value) > 1E-15d) {
+    public static boolean closeToZero(final double value) {
+        return closeToZero(value, 1E-15d);
+    }
+
+    public static boolean closeToZero(final double value, final double tol) {
+        if (Math.abs(value) > tol) {
             return false;
         }
         return true;

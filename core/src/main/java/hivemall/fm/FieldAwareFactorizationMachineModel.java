@@ -135,7 +135,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
                     + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + wi + ", dloss=" + dloss
                     + ", eta=" + eta + ", t=" + t);
         }
-        if (MathUtils.closeToZero(nextWi)) {
+        if (MathUtils.closeToZero(nextWi, 1E-9f)) {
             removeEntry(theta);
             return;
         }
@@ -166,7 +166,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
                     + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + theta.getW()
                     + ", dloss=" + dloss + ", n=" + n + ", z=" + z);
         }
-        if (MathUtils.closeToZero(nextWi)) {
+        if (MathUtils.closeToZero(nextWi, 1E-9f)) {
             removeEntry(theta);
             return;
         }
@@ -201,7 +201,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
                     + ", gradV=" + gradV + ", lambdaVf=" + lambdaVf + ", dloss=" + dloss
                     + ", sumViX=" + sumViX + ", t=" + t);
         }
-        if (MathUtils.closeToZero(nextV)) {
+        if (MathUtils.closeToZero(nextV, 1E-9f)) {
             theta.setV(f, 0.f);
             if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
                 removeEntry(theta);
@@ -242,7 +242,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
                     + h + ", gradV=" + gradV + ", dloss=" + dloss + ", sumViX=" + sumViX + ", n="
                     + n + ", z=" + z);
         }
-        if (MathUtils.closeToZero(nextV)) {
+        if (MathUtils.closeToZero(nextV, 1E-9f)) {
             theta.setV(f, 0.f);
             if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
                 removeEntry(theta);

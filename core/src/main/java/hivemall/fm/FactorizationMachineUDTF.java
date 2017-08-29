@@ -376,7 +376,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         double loss = _lossFunction.loss(p, y);
         _cvState.incrLoss(loss);
 
-        if (MathUtils.closeToZero(lossGrad)) {
+        if (MathUtils.closeToZero(lossGrad, 1E-9d)) {
             return;
         }
 
