@@ -37,6 +37,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
+import org.apache.hadoop.hive.ql.util.JavaDataModel;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
@@ -44,6 +45,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationType;
 
 import javax.annotation.Nonnull;
 
@@ -315,8 +318,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         }
     }
 
-    public static class FMeasureAggregationBuffer extends
-            GenericUDAFEvaluator.AbstractAggregationBuffer {
+    @AggregationType(estimable = true)
+    public static class FMeasureAggregationBuffer extends AbstractAggregationBuffer {
         long tp;
         /** tp + fn */
         long totalActual;
@@ -327,6 +330,12 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
         public FMeasureAggregationBuffer() {
             super();
+        }
+
+        @Override
+        public int estimate() {
+            JavaDataModel model = JavaDataModel.get();
+            return model.primitive2() * 4 + model.lengthFor(average);
         }
 
         void setOptions(double beta, String average) {
