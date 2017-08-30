@@ -108,7 +108,7 @@ public class Int2LongOpenHashTableTest {
     @Test
     public void testIterator() {
         Int2LongOpenHashTable map = new Int2LongOpenHashTable(1000);
-        Int2LongOpenHashTable.IMapIterator itor = map.entries();
+        Int2LongOpenHashTable.MapIterator itor = map.entries();
         Assert.assertFalse(itor.hasNext());
 
         final int numEntries = 1000000;
