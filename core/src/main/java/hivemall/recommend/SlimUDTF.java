@@ -22,6 +22,7 @@ import hivemall.UDTFWithOptions;
 import hivemall.common.ConversionState;
 import hivemall.math.matrix.sparse.DoKMatrix;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.NIOUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
@@ -33,6 +34,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
+import smile.classification.KNN;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -119,9 +121,8 @@ public class SlimUDTF extends UDTFWithOptions {
                 }
             } catch (IOException ioe) {
                 throw new UDFArgumentException(ioe);
-            } catch (Throwable e) {
-                throw new UDFArgumentException(e);
             }
+
             this.fileIO = new NioStatefullSegment(file,false);
             this.inputBuf = ByteBuffer.allocateDirect(1024*1024); // 1MB
         }
@@ -217,10 +218,10 @@ public class SlimUDTF extends UDTFWithOptions {
         if (this.previousItemId != i){
             this.previousItemId = i;
 
-            for (Map.Entry<?, ?> userRate : ((Map<?, ?>) Ri).entrySet()) {
-                Object u = userRate.getKey();
-                double rui = PrimitiveObjectInspectorUtils.getDouble(userRate.getValue(), this.itemIRateValueOI);
-                this.A.unsafeSet((int) u, i, rui); // need optimize
+            for (Map.Entry<?, ?> userRates : ((Map<?, ?>) Ri).entrySet()) {
+                int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemIRateKeyOI);
+                double rui = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(), this.itemIRateValueOI);
+                this.A.unsafeSet(u, i, rui); // need optimize
             }
 
             // save KNNi
@@ -262,8 +263,7 @@ public class SlimUDTF extends UDTFWithOptions {
         }
     }
 
-    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
-            throws HiveException {
+    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst) throws HiveException {
         srcBuf.flip();
         try {
             dst.write(srcBuf);
@@ -275,6 +275,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
+        // evoke last user id data
 
         runIterativeTraining();
 
@@ -292,7 +293,7 @@ public class SlimUDTF extends UDTFWithOptions {
         }
     }
 
-    protected double predict(Object u, int i, Map<?, ?> topKRatesOfI, int excludeIndex) {
+    protected double predict(int u, int i, Map<?, ?> topKRatesOfI, int excludeIndex) {
         if (!topKRatesOfI.containsKey(u)) {
             return 0.;
         }
@@ -311,7 +312,7 @@ public class SlimUDTF extends UDTFWithOptions {
         return pred;
     }
 
-    protected double predict(Object u, int i, Map<?, ?> topKRatesOfI) {
+    protected double predict(int u, int i, Map<?, ?> topKRatesOfI) {
         if (!topKRatesOfI.containsKey(u)) {
             return 0.;
         }
@@ -335,9 +336,9 @@ public class SlimUDTF extends UDTFWithOptions {
         double gradSum = 0.d;
         double rateSum = 0.d;
 
-        for (Map.Entry<?, ?> userRate : Rj.entrySet()) {
-            Object u = userRate.getKey();
-            double ruj = PrimitiveObjectInspectorUtils.getDouble(userRate.getValue(),
+        for (Map.Entry<?, ?> userRates : Rj.entrySet()) {
+            int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemJRateKeyOI);
+            double ruj = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(),
                     this.itemJRateValueOI);
             double rui = 0.d;
             if (Ri.containsKey(u)) {
@@ -349,7 +350,7 @@ public class SlimUDTF extends UDTFWithOptions {
             rateSum += ruj * ruj;
 
             if (this.numIterations > 1){
-                this.A.unsafeSet((int) u, j, ruj); // need optimize
+                this.A.unsafeSet(u, j, ruj);
             }
         }
 
@@ -359,6 +360,36 @@ public class SlimUDTF extends UDTFWithOptions {
         this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum));
     }
 
+    private double train(int i, Map<Integer, Map<Integer, Double>> KNNi) {
+        // this.A.each
+
+        int N = Rj.size();
+        double gradSum = 0.d;
+        double rateSum = 0.d;
+
+        for (Map.Entry<?, ?> userRates : Rj.entrySet()) {
+            int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemJRateKeyOI);
+            double ruj = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(),
+                    this.itemJRateValueOI);
+            double rui = 0.d;
+            if (Ri.containsKey(u)) {
+                rui = PrimitiveObjectInspectorUtils.getDouble(Ri.get(u), this.itemIRateValueOI);
+            }
+
+            double eui = rui - predict(u, i, topKRatesOfI, j);
+            gradSum += ruj * eui;
+            rateSum += ruj * ruj;
+
+            if (this.numIterations > 1){
+                this.A.unsafeSet(u, j, ruj);
+            }
+        }
+
+        gradSum /= N;
+        rateSum /= N;
+
+        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum));
+    }
 
 //    private void train(int i, Map<?, ?> Ri, Map<?, ?> topKRatesOfI, int j, Map<?, ?> Rj) {
 //        int N = Rj.size();
@@ -403,9 +434,54 @@ public class SlimUDTF extends UDTFWithOptions {
         return update;
     }
 
-    private final void runIterativeTraining() throws HiveException {
-        for (int iter = 1; iter < this.numIterations; iter++){
+    private void runIterativeTraining() throws HiveException {
+        final ByteBuffer buf = this.inputBuf;
+        final NioStatefullSegment dst = this.fileIO;
+        assert (buf != null);
+        assert (dst != null);
 
+        try {
+            if (dst.getPosition() == 0L) {// run iterations w/o temporary file
+                if (buf.position() == 0) {
+                    return; // no training example
+                }
+                buf.flip();
+                int iter = 2;
+                for(; iter < this.numIterations; iter++) {
+                    while (buf.remaining() > 0) {
+                        int item_i = buf.getInt();
+                        int knnSize = buf.getInt();
+                        Map<Integer, Map<Integer, Double>> KNNi = new HashMap<>();
+                        for (int i = 0; i < knnSize; i++) {
+                            int user = buf.getInt();
+                            int RatedItemSize = buf.getInt();
+                            Map<Integer, Double> Ru = new HashMap<>();
+                            for (int j = 0; j < RatedItemSize; j++) {
+                                int item_id = buf.getInt();
+                                double rate = buf.getDouble();
+                                Ru.put(item_id, rate);
+                            }
+                            KNNi.put(user, Ru);
+                            train(i, KNNi);
+                        }
+                    }
+                    buf.rewind();
+                }
+            }else{
+
+            }
+        } catch (Throwable e) {
+            throw new HiveException("Exception caused in the iterative training", e);
+        } finally {
+            // delete the temporary file and release resources
+            try {
+                dst.close(true);
+            } catch (IOException e) {
+                throw new HiveException("Failed to close a file: "
+                        + dst.getFile().getAbsolutePath(), e);
+            }
+            this.inputBuf = null;
+            this.fileIO = null;
         }
     }
 }
