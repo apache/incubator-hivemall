@@ -123,8 +123,7 @@ public class SlimUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException(ioe);
             }
 
-            this.fileIO = new NioStatefullSegment(file,false);
-            this.inputBuf = ByteBuffer.allocateDirect(1024*1024); // 1MB
+            this.fileIO = new NioStatefullSegment(file, false);
         }
 
         fieldNames.add("i");
@@ -161,7 +160,7 @@ public class SlimUDTF extends UDTFWithOptions {
         double l2 = 0.01d;
         int numIterations = 3;
         boolean conversionCheck = true;
-        double cv_rate = 0.005;
+        double cv_rate = 0.005d;
 
         if (argOIs.length >= 6) {
             String rawArgs = HiveUtils.getConstString(argOIs[5]);
@@ -209,7 +208,7 @@ public class SlimUDTF extends UDTFWithOptions {
         Map topKRatesOfI = this.topKRatesOfIOI.getMap(args[2]);
         int j = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
         Map Rj = this.itemJRatesOI.getMap(args[4]);
-        trainAndStore(i, Ri, topKRatesOfI, j, Rj);
+        train(i, Ri, topKRatesOfI, j, Rj);
 
         if (this.numIterations == 1) {
             return;
@@ -218,50 +217,60 @@ public class SlimUDTF extends UDTFWithOptions {
         if (this.previousItemId != i){
             this.previousItemId = i;
 
-            for (Map.Entry<?, ?> userRates : ((Map<?, ?>) Ri).entrySet()) {
-                int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemIRateKeyOI);
-                double rui = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(), this.itemIRateValueOI);
-                this.A.unsafeSet(u, i, rui); // need optimize
-            }
+            recordTrainingInput()
+        }
+    }
 
-            // save KNNi
-            // count element size size: i, numKNN, [[u, numKNNu, [[item, rate], ...], ...]
-            ByteBuffer buf = inputBuf;
-            NioStatefullSegment dst = fileIO;
+    private static void recordTrainingInput(int itemId, Map topKNNOfI){
+        for (Map.Entry<?, ?> userRates : ((Map<?, ?>) Ri).entrySet()) {
+            int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemIRateKeyOI);
+            double rui = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(), this.itemIRateValueOI);
+            this.A.unsafeSet(u, i, rui); // need optimize
+        }
 
-            int numElementOfKNNi = 0;
-            Map<?, ?> knn = this.topKRatesOfIOI.getMap(topKRatesOfI);
-            for (Map.Entry<?, ?> ri : knn.entrySet()) {
-                numElementOfKNNi += this.topKRatesOfIValueOI.getMap(ri.getValue()).size();
-            }
+        // count element size size: i, numKNN, [[u, numKNNu, [[item, rate], ...], ...]
+        ByteBuffer buf = inputBuf;
+        NioStatefullSegment dst = fileIO;
 
-            int recordBytes = SizeOf.INT + SizeOf.INT + SizeOf.INT * 2 * knn.size() + (SizeOf.DOUBLE+SizeOf.INT) * numElementOfKNNi;
-            int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
+        int numElementOfKNNi = 0;
+        Map<?, ?> knn = this.topKRatesOfIOI.getMap(topKRatesOfI);
+        for (Map.Entry<?, ?> ri : knn.entrySet()) {
+            numElementOfKNNi += this.topKRatesOfIValueOI.getMap(ri.getValue()).size();
+        }
 
-            int remain = buf.remaining();
-            if (remain < requiredBytes) {
-                writeBuffer(buf, dst);
-            }
+        int recordBytes = SizeOf.INT + SizeOf.INT + SizeOf.INT * 2 * knn.size() + (SizeOf.DOUBLE+SizeOf.INT) * numElementOfKNNi;
+        int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
 
-            buf.putInt(i);
-            buf.putInt(knn.size());
-            for (Map.Entry<?, ?> ri : this.topKRatesOfIOI.getMap(topKRatesOfI).entrySet()){
-                int user = PrimitiveObjectInspectorUtils.getInt(ri.getKey(), this.topKRatesOfIKeyOI);
-                Map<?, ?> userKNN = this.topKRatesOfIValueOI.getMap(ri.getValue());
+        if (this.inputBuf == null){
+            this.inputBuf = ByteBuffer.allocateDirect(requiredBytes);
+        }
 
-                buf.putInt(user);
-                buf.putInt(userKNN.size());
+        ByteBuffer buf = inputBuf;
 
-                for (Map.Entry<?, ?> ratings : userKNN.entrySet()) {
-                    int item = PrimitiveObjectInspectorUtils.getInt(ratings.getKey(), this.topKRatesOfIValueKeyOI);
-                    double rating = PrimitiveObjectInspectorUtils.getDouble(ratings.getValue(), this.topKRatesOfIValueValueOI);
+        int remain = buf.remaining();
+        if (remain < requiredBytes) {
+            writeBuffer(buf, dst);
+        }
 
-                    buf.putInt(item);
-                    buf.putDouble(rating);
-                }
+        buf.putInt(i);
+        buf.putInt(knn.size());
+        for (Map.Entry<?, ?> ri : this.topKRatesOfIOI.getMap(topKRatesOfI).entrySet()){
+            int user = PrimitiveObjectInspectorUtils.getInt(ri.getKey(), this.topKRatesOfIKeyOI);
+            Map<?, ?> userKNN = this.topKRatesOfIValueOI.getMap(ri.getValue());
+
+            buf.putInt(user);
+            buf.putInt(userKNN.size());
+
+            for (Map.Entry<?, ?> ratings : userKNN.entrySet()) {
+                int item = PrimitiveObjectInspectorUtils.getInt(ratings.getKey(), this.topKRatesOfIValueKeyOI);
+                double rating = PrimitiveObjectInspectorUtils.getDouble(ratings.getValue(), this.topKRatesOfIValueValueOI);
+
+                buf.putInt(item);
+                buf.putDouble(rating);
             }
         }
     }
+
 
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst) throws HiveException {
         srcBuf.flip();
@@ -282,7 +291,7 @@ public class SlimUDTF extends UDTFWithOptions {
         int numItem = Math.max(this.W.numRows(), this.W.numColumns());
         for (int i = 0; i < numItem; i++) {
             for (int j = 0; j < numItem; j++) {
-                if (this.W.unsafeGet(i, j, 0.) != 0.) {
+                if (this.W.unsafeGet(i, j, 0.d) != 0.d) {
                     Object[] res = new Object[3];
                     res[0] = new IntWritable(i);
                     res[1] = new IntWritable(j);
@@ -295,7 +304,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
     protected double predict(int u, int i, Map<?, ?> topKRatesOfI, int excludeIndex) {
         if (!topKRatesOfI.containsKey(u)) {
-            return 0.;
+            return 0.d;
         }
         double pred = 0.d;
         for (Map.Entry<?, ?> rating : this.topKRatesOfIValueOI.getMap(topKRatesOfI.get(u))
@@ -314,7 +323,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
     protected double predict(int u, int i, Map<?, ?> topKRatesOfI) {
         if (!topKRatesOfI.containsKey(u)) {
-            return 0.;
+            return 0.d;
         }
 
         double pred = 0.d;
@@ -331,7 +340,7 @@ public class SlimUDTF extends UDTFWithOptions {
     }
 
 
-    private void trainAndStore(int i, Map<?, ?> Ri, Map<?, ?> topKRatesOfI, int j, Map<?, ?> Rj) {
+    private void train(int i, Map<?, ?> Ri, Map<?, ?> topKRatesOfI, int j, Map<?, ?> Rj) {
         int N = Rj.size();
         double gradSum = 0.d;
         double rateSum = 0.d;
@@ -391,44 +400,16 @@ public class SlimUDTF extends UDTFWithOptions {
         this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum));
     }
 
-//    private void train(int i, Map<?, ?> Ri, Map<?, ?> topKRatesOfI, int j, Map<?, ?> Rj) {
-//        int N = Rj.size();
-//        double gradSum = 0.d;
-//        double rateSum = 0.d;
-//        double errs = 0.d;
-//        for (Map.Entry<?, ?> userRate : Rj.entrySet()) {
-//            Object u = userRate.getKey();
-//            double ruj = PrimitiveObjectInspectorUtils.getDouble(userRate.getValue(),
-//                this.itemJRateValueOI);
-//            double rui = 0.d;
-//            if (Ri.containsKey(u)) {
-//                rui = PrimitiveObjectInspectorUtils.getDouble(Ri.get(u), this.itemIRateValueOI);
-//            }
-//
-//            double eui = rui - predict(u, i, topKRatesOfI, j);
-//            gradSum += ruj * eui;
-//            rateSum += ruj * ruj;
-//            errs += eui * eui;
-//        }
-//
-//        gradSum /= N;
-//        rateSum /= N;
-//        errs /= N;
-//
-//        this.loss += errs;
-//        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum));
-//    }
-
-    private double getUpdateTerm(double gradSum, double rateSum){
+    private static double getUpdateTerm(final double gradSum, final double rateSum){
         double update = 0.d;
         if (this.l1 < Math.abs(gradSum)) {
-            if (gradSum > 0.) {
+            if (gradSum > 0.d) {
                 update = (gradSum - this.l1) / (rateSum + this.l2);
             } else {
                 update = (gradSum + this.l1) / (rateSum + this.l2);
             }
-            if (update < 0.) { // non-negativity constraints
-                update = 0.;
+            if (update < 0.d) { // non-negativity constraints
+                update = 0.d;
             }
         }
         return update;
