@@ -257,6 +257,10 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
         _ffmModel.disableInitV(); // trick to avoid re-instantiating removed (zero-filled) entry of V
         super.close();
+
+        if (LOG.isInfoEnabled()) {
+            LOG.info(_ffmModel.getStatistics());
+        }
         this._ffmModel = null;
     }
 
