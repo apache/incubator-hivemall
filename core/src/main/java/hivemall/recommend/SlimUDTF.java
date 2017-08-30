@@ -217,21 +217,21 @@ public class SlimUDTF extends UDTFWithOptions {
         if (this.previousItemId != i){
             this.previousItemId = i;
 
-            recordTrainingInput()
+            // store Ri
+            for (Map.Entry<?, ?> userRates : ((Map<?, ?>) Ri).entrySet()) {
+                int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemIRateKeyOI);
+                double rui = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(), this.itemIRateValueOI);
+                this.A.unsafeSet(u, i, rui); // need optimize
+            }
+
+            recordTrainingInput(i, topKRatesOfI);
         }
     }
 
-    private static void recordTrainingInput(int itemId, Map topKNNOfI){
-        for (Map.Entry<?, ?> userRates : ((Map<?, ?>) Ri).entrySet()) {
-            int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemIRateKeyOI);
-            double rui = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(), this.itemIRateValueOI);
-            this.A.unsafeSet(u, i, rui); // need optimize
-        }
+    private void recordTrainingInput(int itemId, Map topKRatesOfI) throws HiveException {
+
 
         // count element size size: i, numKNN, [[u, numKNNu, [[item, rate], ...], ...]
-        ByteBuffer buf = inputBuf;
-        NioStatefullSegment dst = fileIO;
-
         int numElementOfKNNi = 0;
         Map<?, ?> knn = this.topKRatesOfIOI.getMap(topKRatesOfI);
         for (Map.Entry<?, ?> ri : knn.entrySet()) {
@@ -246,13 +246,14 @@ public class SlimUDTF extends UDTFWithOptions {
         }
 
         ByteBuffer buf = inputBuf;
+        NioStatefullSegment dst = fileIO;
 
         int remain = buf.remaining();
         if (remain < requiredBytes) {
             writeBuffer(buf, dst);
         }
 
-        buf.putInt(i);
+        buf.putInt(itemId);
         buf.putInt(knn.size());
         for (Map.Entry<?, ?> ri : this.topKRatesOfIOI.getMap(topKRatesOfI).entrySet()){
             int user = PrimitiveObjectInspectorUtils.getInt(ri.getKey(), this.topKRatesOfIKeyOI);
@@ -284,7 +285,6 @@ public class SlimUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
-        // evoke last user id data
 
         runIterativeTraining();
 
@@ -366,7 +366,7 @@ public class SlimUDTF extends UDTFWithOptions {
         gradSum /= N;
         rateSum /= N;
 
-        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum));
+        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
     }
 
     private double train(int i, Map<Integer, Map<Integer, Double>> KNNi) {
@@ -397,16 +397,16 @@ public class SlimUDTF extends UDTFWithOptions {
         gradSum /= N;
         rateSum /= N;
 
-        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum));
+        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
     }
 
-    private static double getUpdateTerm(final double gradSum, final double rateSum){
+    private static double getUpdateTerm(final double gradSum, final double rateSum, final double l1, final double l2){
         double update = 0.d;
-        if (this.l1 < Math.abs(gradSum)) {
+        if (l1 < Math.abs(gradSum)) {
             if (gradSum > 0.d) {
-                update = (gradSum - this.l1) / (rateSum + this.l2);
+                update = (gradSum - l1) / (rateSum + l2);
             } else {
-                update = (gradSum + this.l1) / (rateSum + this.l2);
+                update = (gradSum + l1) / (rateSum + l2);
             }
             if (update < 0.d) { // non-negativity constraints
                 update = 0.d;
