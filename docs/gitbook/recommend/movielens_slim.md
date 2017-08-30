@@ -149,7 +149,7 @@ with knn_item_user_matrix as (
 ), knn_item_matrix as (
   select
     movieid as i,
-    to_map(userid, ratings) as KNN_i --  map<user,list<struct<movieid,rating>>>
+    to_map(userid, ratings) as KNN_i -- map<userid, map<movieid,rating>>
   from
     knn_item_user_matrix
   group by
