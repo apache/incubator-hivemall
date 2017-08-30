@@ -309,6 +309,20 @@ public final class DoKMatrix extends AbstractMatrix {
         }
     }
 
+    public void eachNonZeroCell(@Nonnull final VectorProcedure procedure) {
+        if (nnz == 0) {
+            return;
+        }
+        final IMapIterator itor = elements.entries();
+        while (itor.next() != -1) {
+            long k = itor.getKey();
+            int row = Primitives.getHigh(k);
+            int col = Primitives.getLow(k);
+            double value = itor.getValue();
+            procedure.apply(row, col, value);
+        }
+    }
+
     @Override
     public RowMajorMatrix toRowMajorMatrix() {
         throw new UnsupportedOperationException("Not yet supported");
