@@ -23,8 +23,8 @@ import hivemall.fm.Entry.FTRLEntry;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.buffer.HeapBuffer;
 import hivemall.utils.collections.lists.LongArrayList;
-import hivemall.utils.collections.maps.Int2LongOpenHashMap;
-import hivemall.utils.collections.maps.Int2LongOpenHashMap.MapIterator;
+import hivemall.utils.collections.maps.Int2LongOpenHashTable;
+import hivemall.utils.collections.maps.Int2LongOpenHashTable.MapIterator;
 import hivemall.utils.lang.NumberUtils;
 
 import java.text.NumberFormat;
@@ -42,7 +42,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     // LEARNING PARAMS
     private float _w0;
     @Nonnull
-    private final Int2LongOpenHashMap _map;
+    private final Int2LongOpenHashTable _map;
     @Nonnull
     private final HeapBuffer _buf;
 
@@ -53,7 +53,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     private boolean _initV;
     @Nonnull
-    private final RoaringBitmap _removedV;
+    private RoaringBitmap _removedV;
 
     // hyperparams
     private final int _numFields;
@@ -69,7 +69,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     public FFMStringFeatureMapModel(@Nonnull FFMHyperParameters params) {
         super(params);
         this._w0 = 0.f;
-        this._map = new Int2LongOpenHashMap(DEFAULT_MAPSIZE);
+        this._map = new Int2LongOpenHashTable(DEFAULT_MAPSIZE);
         this._buf = new HeapBuffer(HeapBuffer.DEFAULT_CHUNK_SIZE);
         this._freelistW = new LongArrayList();
         this._freelistV = new LongArrayList();
@@ -212,7 +212,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     @Override
     protected void removeEntry(@Nonnull final Entry entry) {
         final int j = entry.getKey();
-        final long ptr = _map.remove(j, -1L);
+        final long ptr = _map.remove(j);
         if (ptr == -1L) {
             return; // should never be happen.
         }
@@ -281,7 +281,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     @Nullable
     private Entry getEntry(final int key) {
-        final long ptr = _map.get(key, -1L);
+        final long ptr = _map.get(key);
         if (ptr == -1L) {
             return null;
         }
@@ -361,7 +361,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         }
 
         boolean next() {
-            return dictItor.next();
+            return dictItor.next() != -1;
         }
 
         int getEntryIndex() {

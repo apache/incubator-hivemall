@@ -288,21 +288,22 @@ public class Int2LongOpenHashTable implements Externalizable {
         this._used = 0;
     }
 
-    public IMapIterator entries() {
+    @Nonnull
+    public MapIterator entries() {
         return new MapIterator();
     }
 
     @Override
     public String toString() {
         int len = size() * 10 + 2;
-        StringBuilder buf = new StringBuilder(len);
+        final StringBuilder buf = new StringBuilder(len);
         buf.append('{');
-        IMapIterator i = entries();
-        while (i.next() != -1) {
-            buf.append(i.getKey());
+        final MapIterator itor = entries();
+        while (itor.next() != -1) {
+            buf.append(itor.getKey());
             buf.append('=');
-            buf.append(i.getValue());
-            if (i.hasNext()) {
+            buf.append(itor.getValue());
+            if (itor.hasNext()) {
                 buf.append(',');
             }
         }
@@ -442,22 +443,7 @@ public class Int2LongOpenHashTable implements Externalizable {
         }
     }
 
-    public interface IMapIterator {
-
-        public boolean hasNext();
-
-        /**
-         * @return -1 if not found
-         */
-        public int next();
-
-        public int getKey();
-
-        public long getValue();
-
-    }
-
-    private final class MapIterator implements IMapIterator {
+    public final class MapIterator {
 
         int nextEntry;
         int lastEntry = -1;
@@ -478,6 +464,9 @@ public class Int2LongOpenHashTable implements Externalizable {
             return nextEntry < _keys.length;
         }
 
+        /**
+         * @return -1 if not found
+         */
         public int next() {
             if (!hasNext()) {
                 return -1;
