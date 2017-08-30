@@ -296,22 +296,22 @@ public final class MathUtils {
         return closeToZero(value, 1E-15f);
     }
 
-    public static boolean closeToZero(final float value, final float tol) {
-        if (Math.abs(value) > tol) {
-            return false;
+    public static boolean closeToZero(final float value, @Nonnegative final float tol) {
+        if (value == 0.f) {
+            return true;
         }
-        return true;
+        return Math.abs(value) <= tol;
     }
 
     public static boolean closeToZero(final double value) {
         return closeToZero(value, 1E-15d);
     }
 
-    public static boolean closeToZero(final double value, final double tol) {
-        if (Math.abs(value) > tol) {
-            return false;
+    public static boolean closeToZero(final double value, @Nonnegative final double tol) {
+        if (value == 0.d) {
+            return true;
         }
-        return true;
+        return Math.abs(value) <= tol;
     }
 
     public static double sign(final double x) {

@@ -34,6 +34,8 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.roaringbitmap.RoaringBitmap;
+
 public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachineModel {
     private static final int DEFAULT_MAPSIZE = 65536;
 
@@ -50,6 +52,8 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     private final LongArrayList _freelistV;
 
     private boolean _initV;
+    @Nonnull
+    private final RoaringBitmap _removedV;
 
     // hyperparams
     private final int _numFields;
@@ -70,6 +74,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         this._freelistW = new LongArrayList();
         this._freelistV = new LongArrayList();
         this._initV = true;
+        this._removedV = new RoaringBitmap();
         this._numFields = params.numFields;
         this._entrySizeW = entrySize(1, _useFTRL, _useAdaGrad);
         this._entrySizeV = entrySize(_factor, _useFTRL, _useAdaGrad);
@@ -140,6 +145,8 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         if (entry == null) {
             if (_initV == false) {
                 return 0.f;
+            } else if (_removedV.contains(j)) {
+                return 0.f;
             }
             float[] V = initV();
             entry = newEntry(j, V);
@@ -158,6 +165,8 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         Entry entry = getEntry(j);
         if (entry == null) {
             if (_initV == false) {
+                return;
+            } else if (_removedV.contains(j)) {
                 return;
             }
             float[] V = initV();
@@ -189,6 +198,8 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         if (entry == null) {
             if (_initV == false) {
                 return null;
+            } else if (_removedV.contains(j)) {
+                return null;
             }
             float[] V = initV();
             entry = newEntry(j, V);
@@ -211,6 +222,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
             this._numRemovedW++;
             this._bytesUsed -= _entrySizeW;
         } else {
+            _removedV.add(j);
             _freelistV.add(ptr);
             this._numRemovedV++;
             this._bytesUsed -= _entrySizeV;

@@ -22,6 +22,7 @@ import hivemall.utils.buffer.HeapBuffer;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.SizeOf;
+import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
 
@@ -146,7 +147,7 @@ class Entry {
             final long offset = _offset;
             for (int f = 0; f < _factors; f++) {
                 final float Vf = _buf.getFloat(offset + SizeOf.FLOAT * f);
-                if (Vf != 0.f) {
+                if (!MathUtils.closeToZero(Vf, 1E-9f)) {
                     return false;
                 }
             }
