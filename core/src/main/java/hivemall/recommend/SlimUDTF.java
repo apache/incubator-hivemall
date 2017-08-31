@@ -21,11 +21,12 @@ package hivemall.recommend;
 import hivemall.UDTFWithOptions;
 import hivemall.common.ConversionState;
 import hivemall.math.matrix.sparse.DoKMatrix;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.NIOUtils;
 import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
+import hivemall.utils.lang.mutable.MutableDouble;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -34,7 +35,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
-import smile.classification.KNN;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -49,25 +49,25 @@ public class SlimUDTF extends UDTFWithOptions {
     private int numIterations;
     private int previousItemId = -2147483648;
 
-    private final DoKMatrix W = new DoKMatrix();
-    private final DoKMatrix A = new DoKMatrix();
+    private final DoKMatrix W = new DoKMatrix(); // item-item weight matrix
+    private final DoKMatrix A = new DoKMatrix(); // item-user matrix
 
     private PrimitiveObjectInspector itemIOI;
     private PrimitiveObjectInspector itemJOI;
-    private MapObjectInspector itemIRatesOI;
-    private MapObjectInspector itemJRatesOI;
+    private MapObjectInspector RiOI;
+    private MapObjectInspector RjOI;
 
-    private MapObjectInspector topKRatesOfIOI;
-    private PrimitiveObjectInspector topKRatesOfIKeyOI;
-    private MapObjectInspector topKRatesOfIValueOI;
-    private PrimitiveObjectInspector topKRatesOfIValueKeyOI;
-    private PrimitiveObjectInspector topKRatesOfIValueValueOI;
+    private MapObjectInspector KNNiOI;
+    private PrimitiveObjectInspector KNNiKeyOI;
+    private MapObjectInspector KNNiValueOI;
+    private PrimitiveObjectInspector KNNiValueKeyOI;
+    private PrimitiveObjectInspector KNNiValueValueOI;
 
-    private PrimitiveObjectInspector itemIRateKeyOI;
-    private PrimitiveObjectInspector itemIRateValueOI;
+    private PrimitiveObjectInspector RiKeyOI;
+    private PrimitiveObjectInspector RiValueOI;
 
-    private PrimitiveObjectInspector itemJRateKeyOI;
-    private PrimitiveObjectInspector itemJRateValueOI;
+    private PrimitiveObjectInspector RjKeyOI;
+    private PrimitiveObjectInspector RjValueOI;
 
     // Used for iterations
     private NioStatefullSegment fileIO;
@@ -87,21 +87,21 @@ public class SlimUDTF extends UDTFWithOptions {
 
         this.itemIOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
 
-        this.itemIRatesOI = HiveUtils.asMapOI(argOIs[1]);
-        this.itemIRateKeyOI = HiveUtils.asIntCompatibleOI((this.itemIRatesOI.getMapKeyObjectInspector()));
-        this.itemIRateValueOI = HiveUtils.asDoubleCompatibleOI((this.itemIRatesOI.getMapValueObjectInspector()));
+        this.RiOI = HiveUtils.asMapOI(argOIs[1]);
+        this.RiKeyOI = HiveUtils.asIntCompatibleOI((this.RiOI.getMapKeyObjectInspector()));
+        this.RiValueOI = HiveUtils.asDoubleCompatibleOI((this.RiOI.getMapValueObjectInspector()));
 
-        this.topKRatesOfIOI = HiveUtils.asMapOI(argOIs[2]);
-        this.topKRatesOfIKeyOI = HiveUtils.asIntCompatibleOI(topKRatesOfIOI.getMapKeyObjectInspector());
-        this.topKRatesOfIValueOI = HiveUtils.asMapOI(topKRatesOfIOI.getMapValueObjectInspector());
-        this.topKRatesOfIValueKeyOI = HiveUtils.asIntCompatibleOI(topKRatesOfIValueOI.getMapKeyObjectInspector());
-        this.topKRatesOfIValueValueOI = HiveUtils.asDoubleCompatibleOI(topKRatesOfIValueOI.getMapValueObjectInspector());
+        this.KNNiOI = HiveUtils.asMapOI(argOIs[2]);
+        this.KNNiKeyOI = HiveUtils.asIntCompatibleOI(KNNiOI.getMapKeyObjectInspector());
+        this.KNNiValueOI = HiveUtils.asMapOI(KNNiOI.getMapValueObjectInspector());
+        this.KNNiValueKeyOI = HiveUtils.asIntCompatibleOI(KNNiValueOI.getMapKeyObjectInspector());
+        this.KNNiValueValueOI = HiveUtils.asDoubleCompatibleOI(KNNiValueOI.getMapValueObjectInspector());
 
         this.itemJOI = HiveUtils.asIntCompatibleOI(argOIs[3]);
 
-        this.itemJRatesOI = HiveUtils.asMapOI(argOIs[4]);
-        this.itemJRateKeyOI = HiveUtils.asIntCompatibleOI((this.itemJRatesOI.getMapKeyObjectInspector()));
-        this.itemJRateValueOI = HiveUtils.asDoubleCompatibleOI((this.itemJRatesOI.getMapValueObjectInspector()));
+        this.RjOI = HiveUtils.asMapOI(argOIs[4]);
+        this.RjKeyOI = HiveUtils.asIntCompatibleOI((this.RjOI.getMapKeyObjectInspector()));
+        this.RjValueOI = HiveUtils.asDoubleCompatibleOI((this.RjOI.getMapValueObjectInspector()));
 
         processOptions(argOIs);
 
@@ -147,7 +147,7 @@ public class SlimUDTF extends UDTFWithOptions {
         opts.addOption("numIterations", "iteration", true,
             "The number of iterations for coordinate descent [default: 40]");
         opts.addOption("disable_cv", "disable_cvtest", false,
-                "Whether to disable convergence check [default: enabled]");
+            "Whether to disable convergence check [default: enabled]");
         opts.addOption("cv_rate", "convergence_rate", true,
             "Threshold to determine convergence [default: 0.005]");
         return opts;
@@ -180,16 +180,16 @@ public class SlimUDTF extends UDTFWithOptions {
 
             numIterations = Primitives.parseInt(cl.getOptionValue("numIterations"), numIterations);
             if (numIterations <= 0) {
-                throw new UDFArgumentException("Argument `int numIterations` must be greater than 0: "
-                        + numIterations);
+                throw new UDFArgumentException(
+                    "Argument `int numIterations` must be greater than 0: " + numIterations);
             }
 
             conversionCheck = !cl.hasOption("disable_cvtest");
 
             cv_rate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), cv_rate);
             if (cv_rate <= 0) {
-                throw new UDFArgumentException("Argument `double cv_rate` must be greater than 0.0: "
-                        + cv_rate);
+                throw new UDFArgumentException(
+                    "Argument `double cv_rate` must be greater than 0.0: " + cv_rate);
             }
         }
 
@@ -203,45 +203,44 @@ public class SlimUDTF extends UDTFWithOptions {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        int i = PrimitiveObjectInspectorUtils.getInt(args[0], itemIOI);
-        Map Ri = this.itemIRatesOI.getMap(args[1]);
-        Map topKRatesOfI = this.topKRatesOfIOI.getMap(args[2]);
-        int j = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
-        Map Rj = this.itemJRatesOI.getMap(args[4]);
-        train(i, Ri, topKRatesOfI, j, Rj);
+        int itemI = PrimitiveObjectInspectorUtils.getInt(args[0], itemIOI);
+        Map Ri = this.RiOI.getMap(args[1]);
+        Map KNNi = this.KNNiOI.getMap(args[2]);
+        int itemJ = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
+        Map Rj = this.RjOI.getMap(args[4]);
+        train(itemI, Ri, KNNi, itemJ, Rj);
 
         if (this.numIterations == 1) {
             return;
         }
 
-        if (this.previousItemId != i){
-            this.previousItemId = i;
+        if (this.previousItemId != itemI) {
+            this.previousItemId = itemI;
 
             // store Ri
-            for (Map.Entry<?, ?> userRates : ((Map<?, ?>) Ri).entrySet()) {
-                int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemIRateKeyOI);
-                double rui = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(), this.itemIRateValueOI);
-                this.A.unsafeSet(u, i, rui); // need optimize
+            for (Map.Entry<?, ?> ruiEntry : ((Map<?, ?>) Ri).entrySet()) {
+                int user = PrimitiveObjectInspectorUtils.getInt(ruiEntry.getKey(), this.RiKeyOI);
+                double rui = PrimitiveObjectInspectorUtils.getDouble(ruiEntry.getValue(),
+                    this.RiValueOI);
+                this.A.unsafeSet(itemI, user, rui); // need optimize
             }
 
-            recordTrainingInput(i, topKRatesOfI);
+            recordTrainingInput(itemI, this.KNNiOI.getMap(KNNi));
         }
     }
 
-    private void recordTrainingInput(int itemId, Map topKRatesOfI) throws HiveException {
-
-
+    private void recordTrainingInput(int itemI, Map<?, ?> KNNi) throws HiveException {
         // count element size size: i, numKNN, [[u, numKNNu, [[item, rate], ...], ...]
         int numElementOfKNNi = 0;
-        Map<?, ?> knn = this.topKRatesOfIOI.getMap(topKRatesOfI);
-        for (Map.Entry<?, ?> ri : knn.entrySet()) {
-            numElementOfKNNi += this.topKRatesOfIValueOI.getMap(ri.getValue()).size();
+        for (Map.Entry<?, ?> RuEntry : KNNi.entrySet()) {
+            numElementOfKNNi += this.KNNiValueOI.getMap(RuEntry.getValue()).size();
         }
 
-        int recordBytes = SizeOf.INT + SizeOf.INT + SizeOf.INT * 2 * knn.size() + (SizeOf.DOUBLE+SizeOf.INT) * numElementOfKNNi;
+        int recordBytes = SizeOf.INT + SizeOf.INT + SizeOf.INT * 2 * KNNi.size()
+                + (SizeOf.DOUBLE + SizeOf.INT) * numElementOfKNNi;
         int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
 
-        if (this.inputBuf == null){
+        if (this.inputBuf == null) {
             this.inputBuf = ByteBuffer.allocateDirect(requiredBytes);
         }
 
@@ -253,27 +252,30 @@ public class SlimUDTF extends UDTFWithOptions {
             writeBuffer(buf, dst);
         }
 
-        buf.putInt(itemId);
-        buf.putInt(knn.size());
-        for (Map.Entry<?, ?> ri : this.topKRatesOfIOI.getMap(topKRatesOfI).entrySet()){
-            int user = PrimitiveObjectInspectorUtils.getInt(ri.getKey(), this.topKRatesOfIKeyOI);
-            Map<?, ?> userKNN = this.topKRatesOfIValueOI.getMap(ri.getValue());
+        buf.putInt(itemI);
+        buf.putInt(KNNi.size());
+        for (Map.Entry<?, ?> RuEntry : this.KNNiOI.getMap(KNNi).entrySet()) {
+            int user = PrimitiveObjectInspectorUtils.getInt(RuEntry.getKey(), this.KNNiKeyOI);
+            Map<?, ?> Ru = this.KNNiValueOI.getMap(RuEntry.getValue());
 
             buf.putInt(user);
-            buf.putInt(userKNN.size());
+            buf.putInt(Ru.size());
 
-            for (Map.Entry<?, ?> ratings : userKNN.entrySet()) {
-                int item = PrimitiveObjectInspectorUtils.getInt(ratings.getKey(), this.topKRatesOfIValueKeyOI);
-                double rating = PrimitiveObjectInspectorUtils.getDouble(ratings.getValue(), this.topKRatesOfIValueValueOI);
+            for (Map.Entry<?, ?> rukEntry : Ru.entrySet()) {
+                int itemK = PrimitiveObjectInspectorUtils.getInt(rukEntry.getKey(),
+                    this.KNNiValueKeyOI);
+                double ruk = PrimitiveObjectInspectorUtils.getDouble(rukEntry.getValue(),
+                    this.KNNiValueValueOI);
 
-                buf.putInt(item);
-                buf.putDouble(rating);
+                buf.putInt(itemK);
+                buf.putDouble(ruk);
             }
         }
     }
 
 
-    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst) throws HiveException {
+    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
+            throws HiveException {
         srcBuf.flip();
         try {
             dst.write(srcBuf);
@@ -302,105 +304,119 @@ public class SlimUDTF extends UDTFWithOptions {
         }
     }
 
-    protected double predict(int u, int i, Map<?, ?> topKRatesOfI, int excludeIndex) {
-        if (!topKRatesOfI.containsKey(u)) {
+    protected double predict(int user, int itemI, Map<?, ?> KNNi, int excludeIndex) {
+        if (!KNNi.containsKey(user)) {
             return 0.d;
         }
         double pred = 0.d;
-        for (Map.Entry<?, ?> rating : this.topKRatesOfIValueOI.getMap(topKRatesOfI.get(u))
-                                                              .entrySet()) {
-            int k = PrimitiveObjectInspectorUtils.getInt(rating.getKey(),
-                this.topKRatesOfIValueKeyOI);
-            if (k == excludeIndex) {
+        for (Map.Entry<?, ?> rukEntry : this.KNNiValueOI.getMap(KNNi.get(user)).entrySet()) {
+            int itemK = PrimitiveObjectInspectorUtils.getInt(rukEntry.getKey(), this.KNNiValueKeyOI);
+            if (itemK == excludeIndex) {
                 continue;
             }
-            double rate = PrimitiveObjectInspectorUtils.getDouble(rating.getValue(),
-                this.topKRatesOfIValueValueOI);
-            pred += rate * this.W.unsafeGet(i, k, 0.d);
+            double ruk = PrimitiveObjectInspectorUtils.getDouble(rukEntry.getValue(),
+                this.KNNiValueValueOI);
+            pred += ruk * this.W.unsafeGet(itemI, itemK, 0.d);
         }
         return pred;
     }
 
-    protected double predict(int u, int i, Map<?, ?> topKRatesOfI) {
-        if (!topKRatesOfI.containsKey(u)) {
+    protected double predict(int user, int itemI, Map<?, ?> KNNi) {
+        if (!KNNi.containsKey(user)) {
             return 0.d;
         }
 
         double pred = 0.d;
-        for (Map.Entry<?, ?> rating : this.topKRatesOfIValueOI.getMap(topKRatesOfI.get(u))
-                                                              .entrySet()) {
-            int k = PrimitiveObjectInspectorUtils.getInt(rating.getKey(),
-                this.topKRatesOfIValueKeyOI);
-            double rate = PrimitiveObjectInspectorUtils.getDouble(rating.getValue(),
-                this.topKRatesOfIValueValueOI);
+        for (Map.Entry<?, ?> rukEntry : this.KNNiValueOI.getMap(KNNi.get(user)).entrySet()) {
+            int itemK = PrimitiveObjectInspectorUtils.getInt(rukEntry.getKey(), this.KNNiValueKeyOI);
+            double ruk = PrimitiveObjectInspectorUtils.getDouble(rukEntry.getValue(),
+                this.KNNiValueValueOI);
 
-            pred += rate * this.W.unsafeGet(i, k, 0.d);
+            pred += ruk * this.W.unsafeGet(itemI, itemK, 0.d);
         }
         return pred;
     }
 
+    protected double predict4Iterative(int user, int itemI,
+            Map<Integer, Map<Integer, Double>> KNNi, int excludeIndex) {
+        if (!KNNi.containsKey(user)) {
+            return 0.d;
+        }
 
-    private void train(int i, Map<?, ?> Ri, Map<?, ?> topKRatesOfI, int j, Map<?, ?> Rj) {
+        double pred = 0.d;
+        for (Map.Entry<Integer, Double> rukEntry : KNNi.get(user).entrySet()) {
+            int itemK = rukEntry.getKey();
+            if (itemK == excludeIndex)
+                continue;
+            double ruk = rukEntry.getValue();
+
+            pred += ruk * this.W.unsafeGet(itemI, itemK, 0.d);
+        }
+
+        return pred;
+    }
+
+    private void train(int itemI, Map<?, ?> Ri, Map<?, ?> KNNi, int itemJ, Map<?, ?> Rj) {
         int N = Rj.size();
         double gradSum = 0.d;
         double rateSum = 0.d;
 
-        for (Map.Entry<?, ?> userRates : Rj.entrySet()) {
-            int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemJRateKeyOI);
-            double ruj = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(),
-                    this.itemJRateValueOI);
+        for (Map.Entry<?, ?> rujEntry : Rj.entrySet()) {
+            int user = PrimitiveObjectInspectorUtils.getInt(rujEntry.getKey(), this.RjKeyOI);
+            double ruj = PrimitiveObjectInspectorUtils.getDouble(rujEntry.getValue(),
+                this.RjValueOI);
             double rui = 0.d;
-            if (Ri.containsKey(u)) {
-                rui = PrimitiveObjectInspectorUtils.getDouble(Ri.get(u), this.itemIRateValueOI);
+            if (Ri.containsKey(user)) {
+                rui = PrimitiveObjectInspectorUtils.getDouble(Ri.get(user), this.RiValueOI);
             }
 
-            double eui = rui - predict(u, i, topKRatesOfI, j);
+            double eui = rui - predict(user, itemI, KNNi, itemJ);
             gradSum += ruj * eui;
             rateSum += ruj * ruj;
 
-            if (this.numIterations > 1){
-                this.A.unsafeSet(u, j, ruj);
+            if (this.numIterations > 1) {
+                this.A.unsafeSet(itemJ, user, ruj);
             }
         }
 
         gradSum /= N;
         rateSum /= N;
 
-        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
+        this.W.unsafeSet(itemI, itemJ, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
     }
 
-    private double train(int i, Map<Integer, Map<Integer, Double>> KNNi) {
-        // this.A.each
+    private double train(final int itemI, final Map<Integer, Map<Integer, Double>> KNNi,
+            final int itemJ) {
 
-        int N = Rj.size();
-        double gradSum = 0.d;
-        double rateSum = 0.d;
+        int N = this.A.numColumns(itemJ);
+        final MutableDouble mutableGradSum = new MutableDouble(0.d);
+        final MutableDouble mutableRateSum = new MutableDouble(0.d);
+        final MutableDouble mutableLossSum = new MutableDouble(0.d);
 
-        for (Map.Entry<?, ?> userRates : Rj.entrySet()) {
-            int u = PrimitiveObjectInspectorUtils.getInt(userRates.getKey(), this.itemJRateKeyOI);
-            double ruj = PrimitiveObjectInspectorUtils.getDouble(userRates.getValue(),
-                    this.itemJRateValueOI);
-            double rui = 0.d;
-            if (Ri.containsKey(u)) {
-                rui = PrimitiveObjectInspectorUtils.getDouble(Ri.get(u), this.itemIRateValueOI);
+        this.A.eachNonZeroInRow(itemJ, new VectorProcedure() {
+            @Override
+            public void apply(int user, double ruj) {
+                double rui = A.get(itemI, user, 0.d);
+                double eui = rui - predict4Iterative(itemI, user, KNNi, itemJ);
+
+                mutableGradSum.addValue(ruj * eui);
+                mutableRateSum.addValue(ruj * ruj);
+                mutableLossSum.addValue(eui * eui);
             }
+        });
 
-            double eui = rui - predict(u, i, topKRatesOfI, j);
-            gradSum += ruj * eui;
-            rateSum += ruj * ruj;
+        double gradSum = mutableGradSum.getValue() / N;
+        double rateSum = mutableRateSum.getValue() / N;
+        double wij = W.unsafeGet(itemI, itemJ, 0.d);
+        double loss = mutableLossSum.getValue() / N + 0.5 * this.l2 * wij * wij + this.l1 * wij;
 
-            if (this.numIterations > 1){
-                this.A.unsafeSet(u, j, ruj);
-            }
-        }
+        this.W.unsafeSet(itemI, itemJ, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
 
-        gradSum /= N;
-        rateSum /= N;
-
-        this.W.unsafeSet(i, j, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
+        return loss;
     }
 
-    private static double getUpdateTerm(final double gradSum, final double rateSum, final double l1, final double l2){
+    private static double getUpdateTerm(final double gradSum, final double rateSum,
+            final double l1, final double l2) {
         double update = 0.d;
         if (l1 < Math.abs(gradSum)) {
             if (gradSum > 0.d) {
@@ -428,27 +444,35 @@ public class SlimUDTF extends UDTFWithOptions {
                 }
                 buf.flip();
                 int iter = 2;
-                for(; iter < this.numIterations; iter++) {
+                for (; iter < this.numIterations; iter++) {
+                    cvState.next();
+
                     while (buf.remaining() > 0) {
-                        int item_i = buf.getInt();
+                        final int itemI = buf.getInt();
                         int knnSize = buf.getInt();
-                        Map<Integer, Map<Integer, Double>> KNNi = new HashMap<>();
+                        final Map<Integer, Map<Integer, Double>> KNNi = new HashMap<>();
                         for (int i = 0; i < knnSize; i++) {
                             int user = buf.getInt();
-                            int RatedItemSize = buf.getInt();
+                            int RuSize = buf.getInt();
                             Map<Integer, Double> Ru = new HashMap<>();
-                            for (int j = 0; j < RatedItemSize; j++) {
-                                int item_id = buf.getInt();
-                                double rate = buf.getDouble();
-                                Ru.put(item_id, rate);
+                            for (int j = 0; j < RuSize; j++) {
+                                int itemK = buf.getInt();
+                                double ruk = buf.getDouble();
+                                Ru.put(itemK, ruk);
                             }
                             KNNi.put(user, Ru);
-                            train(i, KNNi);
                         }
+
+                        this.W.eachNonZeroInRow(itemI, new VectorProcedure() {
+                            @Override
+                            public void apply(int itemJ, double wij) {
+                                cvState.incrLoss(train(itemI, KNNi, itemJ));
+                            }
+                        });
                     }
                     buf.rewind();
                 }
-            }else{
+            } else {
 
             }
         } catch (Throwable e) {
