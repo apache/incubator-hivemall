@@ -23,18 +23,24 @@ import hivemall.common.ConversionState;
 import hivemall.math.matrix.sparse.DoKMatrix;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
 import hivemall.utils.lang.mutable.MutableDouble;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapred.Counters;
+import org.apache.hadoop.mapred.Reporter;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -44,6 +50,8 @@ import java.util.*;
 
 
 public class SlimUDTF extends UDTFWithOptions {
+    private static final Log logger = LogFactory.getLog(SlimUDTF.class);
+
     private double l1;
     private double l2;
     private int numIterations;
@@ -352,6 +360,7 @@ public class SlimUDTF extends UDTFWithOptions {
         int N = Rj.size();
         double gradSum = 0.d;
         double rateSum = 0.d;
+        double lossSum = 0.d;
 
         for (Map.Entry<?, ?> rujEntry : Rj.entrySet()) {
             int user = PrimitiveObjectInspectorUtils.getInt(rujEntry.getKey(), this.RjKeyOI);
@@ -365,6 +374,7 @@ public class SlimUDTF extends UDTFWithOptions {
             double eui = rui - predict(user, itemI, KNNi, itemJ);
             gradSum += ruj * eui;
             rateSum += ruj * ruj;
+            lossSum += eui * eui;
 
             if (this.numIterations > 1) {
                 this.A.unsafeSet(itemJ, user, ruj);
@@ -373,11 +383,14 @@ public class SlimUDTF extends UDTFWithOptions {
 
         gradSum /= N;
         rateSum /= N;
+        double wij = W.unsafeGet(itemI, itemJ, 0.d);
+        double loss = lossSum / N + 0.5 * this.l2 * wij * wij + this.l1 * wij;
+        cvState.incrLoss(loss);
 
         this.W.unsafeSet(itemI, itemJ, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
     }
 
-    private double train(final int itemI, final Map<Integer, Map<Integer, Double>> KNNi,
+    private void train(final int itemI, final Map<Integer, Map<Integer, Double>> KNNi,
             final int itemJ) {
 
         int N = this.A.numColumns(itemJ);
@@ -399,12 +412,11 @@ public class SlimUDTF extends UDTFWithOptions {
 
         double gradSum = mutableGradSum.getValue() / N;
         double rateSum = mutableRateSum.getValue() / N;
-        double wij = W.unsafeGet(itemI, itemJ, 0.d);
+        double wij = this.W.unsafeGet(itemI, itemJ, 0.d);
         double loss = mutableLossSum.getValue() / N + 0.5 * this.l2 * wij * wij + this.l1 * wij;
+        cvState.incrLoss(loss);
 
         this.W.unsafeSet(itemI, itemJ, getUpdateTerm(gradSum, rateSum, this.l1, this.l2));
-
-        return loss;
     }
 
     private static double getUpdateTerm(final double gradSum, final double rateSum,
@@ -429,14 +441,21 @@ public class SlimUDTF extends UDTFWithOptions {
         assert (buf != null);
         assert (dst != null);
 
+        final Reporter reporter = getReporter();
+        final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
+            "hivemall.recommend.slim$Counter", "iteration");
+
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file
                 if (buf.position() == 0) {
                     return; // no training example
                 }
                 buf.flip();
-                for (int iter = 2; iter < this.numIterations; iter++) {
+                int iter = 2;
+                for (; iter < this.numIterations; iter++) {
                     cvState.next();
+                    reportProgress(reporter);
+                    setCounterValue(iterCounter, iter);
 
                     while (buf.remaining() > 0) {
                         int recordBytes = buf.getInt();
@@ -444,11 +463,21 @@ public class SlimUDTF extends UDTFWithOptions {
                         readAndTrain(buf);
                     }
                     buf.rewind();
-                    cvState.isConverged(observedTrainingExamples);
+                    if (cvState.isConverged(observedTrainingExamples)) {
+                        break;
+                    }
                 }
+                logger.info("Performed "
+                        + cvState.getCurrentIteration()
+                        + " iterations of "
+                        + NumberUtils.formatNumber(observedTrainingExamples)
+                        + " training examples on memory (thus "
+                        + NumberUtils.formatNumber(observedTrainingExamples
+                                * cvState.getCurrentIteration()) + " training updates in total) ");
+
             } else { // read training examples in the temporary file and invoke train for each example
                 // write KNNi in buffer to a temporary file
-                if(buf.remaining() > 0){
+                if (buf.remaining() > 0) {
                     writeBuffer(buf, dst);
                 }
 
@@ -459,12 +488,26 @@ public class SlimUDTF extends UDTFWithOptions {
                             + dst.getFile().getAbsolutePath(), e);
                 }
 
+                if (logger.isInfoEnabled()) {
+                    File tmpFile = dst.getFile();
+                    logger.info("Wrote KNN data for item i records to a temporary file for iterative training: "
+                            + tmpFile.getAbsolutePath()
+                            + " ("
+                            + FileUtils.prettyFileSize(tmpFile)
+                            + ")");
+                }
+
                 // run iterations
-                for (int iter = 2; iter < this.numIterations; iter++) {
+                int iter = 2;
+                for (; iter < this.numIterations; iter++) {
+                    cvState.next();
+                    setCounterValue(iterCounter, iter);
                     buf.clear();
                     dst.resetPosition();
 
                     while (true) {
+                        reportProgress(reporter);
+                        // load a KNNi to a buffer in the temporary file
                         final int bytesRead;
                         try {
                             bytesRead = dst.read(buf);
@@ -498,8 +541,17 @@ public class SlimUDTF extends UDTFWithOptions {
                         }
                         buf.compact();
                     }
-                    cvState.isConverged(observedTrainingExamples);
+                    if (cvState.isConverged(observedTrainingExamples)) {
+                        break;
+                    }
                 }
+                logger.info("Performed "
+                        + cvState.getCurrentIteration()
+                        + " iterations of "
+                        + NumberUtils.formatNumber(observedTrainingExamples)
+                        + " training examples on memory and KNNi data on secondary storage (thus "
+                        + NumberUtils.formatNumber(observedTrainingExamples
+                                * cvState.getCurrentIteration()) + " training updates in total) ");
 
             }
         } catch (Throwable e) {
@@ -535,13 +587,13 @@ public class SlimUDTF extends UDTFWithOptions {
 
         this.W.eachNonZeroInRow(itemI, new VectorProcedure() {
             @Override
-            public void apply(int itemJ, double wij) {
-                cvState.incrLoss(train(itemI, KNNi, itemJ));
+            public void apply(final int itemJ, final double wij) {
+                train(itemI, KNNi, itemJ);
             }
         });
     }
 
-    private void forwardModel() throws HiveException{
+    private void forwardModel() throws HiveException {
         int numItem = Math.max(this.W.numRows(), this.W.numColumns());
         for (int i = 0; i < numItem; i++) {
             for (int j = 0; j < numItem; j++) {
@@ -554,5 +606,6 @@ public class SlimUDTF extends UDTFWithOptions {
                 }
             }
         }
+        logger.info("Forwarded Slim's weights matrix");
     }
 }
