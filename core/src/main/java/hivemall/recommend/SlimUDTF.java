@@ -73,7 +73,8 @@ public class SlimUDTF extends UDTFWithOptions {
     private NioStatefullSegment fileIO;
     private ByteBuffer inputBuf;
 
-    protected ConversionState cvState;
+    private ConversionState cvState;
+    private long observedTrainingExamples;
 
     public SlimUDTF() {}
 
@@ -133,6 +134,8 @@ public class SlimUDTF extends UDTFWithOptions {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+
+        observedTrainingExamples = 0L;
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -209,6 +212,7 @@ public class SlimUDTF extends UDTFWithOptions {
         int itemJ = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
         Map Rj = this.RjOI.getMap(args[4]);
         train(itemI, Ri, KNNi, itemJ, Rj);
+        observedTrainingExamples++;
 
         if (this.numIterations == 1) {
             return;
@@ -252,6 +256,7 @@ public class SlimUDTF extends UDTFWithOptions {
             writeBuffer(buf, dst);
         }
 
+        buf.putInt(recordBytes);
         buf.putInt(itemI);
         buf.putInt(KNNi.size());
         for (Map.Entry<?, ?> RuEntry : this.KNNiOI.getMap(KNNi).entrySet()) {
@@ -287,21 +292,8 @@ public class SlimUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
-
         runIterativeTraining();
-
-        int numItem = Math.max(this.W.numRows(), this.W.numColumns());
-        for (int i = 0; i < numItem; i++) {
-            for (int j = 0; j < numItem; j++) {
-                if (this.W.unsafeGet(i, j, 0.d) != 0.d) {
-                    Object[] res = new Object[3];
-                    res[0] = new IntWritable(i);
-                    res[1] = new IntWritable(j);
-                    res[2] = new DoubleWritable(this.W.get(i, j));
-                    forward(res);
-                }
-            }
-        }
+        forwardModel();
     }
 
     protected double predict(int user, int itemI, Map<?, ?> KNNi, int excludeIndex) {
@@ -443,36 +435,71 @@ public class SlimUDTF extends UDTFWithOptions {
                     return; // no training example
                 }
                 buf.flip();
-                int iter = 2;
-                for (; iter < this.numIterations; iter++) {
+                for (int iter = 2; iter < this.numIterations; iter++) {
                     cvState.next();
 
                     while (buf.remaining() > 0) {
-                        final int itemI = buf.getInt();
-                        int knnSize = buf.getInt();
-                        final Map<Integer, Map<Integer, Double>> KNNi = new HashMap<>();
-                        for (int i = 0; i < knnSize; i++) {
-                            int user = buf.getInt();
-                            int RuSize = buf.getInt();
-                            Map<Integer, Double> Ru = new HashMap<>();
-                            for (int j = 0; j < RuSize; j++) {
-                                int itemK = buf.getInt();
-                                double ruk = buf.getDouble();
-                                Ru.put(itemK, ruk);
-                            }
-                            KNNi.put(user, Ru);
-                        }
-
-                        this.W.eachNonZeroInRow(itemI, new VectorProcedure() {
-                            @Override
-                            public void apply(int itemJ, double wij) {
-                                cvState.incrLoss(train(itemI, KNNi, itemJ));
-                            }
-                        });
+                        int recordBytes = buf.getInt();
+                        assert (recordBytes > 0) : recordBytes;
+                        readAndTrain(buf);
                     }
                     buf.rewind();
+                    cvState.isConverged(observedTrainingExamples);
                 }
-            } else {
+            } else { // read training examples in the temporary file and invoke train for each example
+                // write KNNi in buffer to a temporary file
+                if(buf.remaining() > 0){
+                    writeBuffer(buf, dst);
+                }
+
+                try {
+                    dst.flush();
+                } catch (IOException e) {
+                    throw new HiveException("Failed to flush a file: "
+                            + dst.getFile().getAbsolutePath(), e);
+                }
+
+                // run iterations
+                for (int iter = 2; iter < this.numIterations; iter++) {
+                    buf.clear();
+                    dst.resetPosition();
+
+                    while (true) {
+                        final int bytesRead;
+                        try {
+                            bytesRead = dst.read(buf);
+                        } catch (IOException e) {
+                            throw new HiveException("Failed to read a file: "
+                                    + dst.getFile().getAbsolutePath(), e);
+                        }
+                        if (bytesRead == 0) { // reached file EOF
+                            break;
+                        }
+                        assert (bytesRead > 0) : bytesRead;
+
+                        // reads training examples from a buffer
+                        buf.flip();
+                        int remain = buf.remaining();
+                        if (remain < SizeOf.INT) {
+                            throw new HiveException("Illegal file format was detected");
+                        }
+                        while (remain >= SizeOf.INT) {
+                            int pos = buf.position();
+                            int recordBytes = buf.getInt();
+                            remain -= SizeOf.INT;
+                            if (remain < recordBytes) {
+                                buf.position(pos);
+                                break;
+                            }
+
+                            readAndTrain(buf);
+
+                            remain -= recordBytes;
+                        }
+                        buf.compact();
+                    }
+                    cvState.isConverged(observedTrainingExamples);
+                }
 
             }
         } catch (Throwable e) {
@@ -487,6 +514,45 @@ public class SlimUDTF extends UDTFWithOptions {
             }
             this.inputBuf = null;
             this.fileIO = null;
+        }
+    }
+
+    private void readAndTrain(ByteBuffer buf) {
+        final int itemI = buf.getInt();
+        int knnSize = buf.getInt();
+        final Map<Integer, Map<Integer, Double>> KNNi = new HashMap<>();
+        for (int i = 0; i < knnSize; i++) {
+            int user = buf.getInt();
+            int RuSize = buf.getInt();
+            Map<Integer, Double> Ru = new HashMap<>();
+            for (int j = 0; j < RuSize; j++) {
+                int itemK = buf.getInt();
+                double ruk = buf.getDouble();
+                Ru.put(itemK, ruk);
+            }
+            KNNi.put(user, Ru);
+        }
+
+        this.W.eachNonZeroInRow(itemI, new VectorProcedure() {
+            @Override
+            public void apply(int itemJ, double wij) {
+                cvState.incrLoss(train(itemI, KNNi, itemJ));
+            }
+        });
+    }
+
+    private void forwardModel() throws HiveException{
+        int numItem = Math.max(this.W.numRows(), this.W.numColumns());
+        for (int i = 0; i < numItem; i++) {
+            for (int j = 0; j < numItem; j++) {
+                if (this.W.unsafeGet(i, j, 0.d) != 0.d) {
+                    Object[] res = new Object[3];
+                    res[0] = new IntWritable(i);
+                    res[1] = new IntWritable(j);
+                    res[2] = new DoubleWritable(this.W.get(i, j));
+                    forward(res);
+                }
+            }
         }
     }
 }
