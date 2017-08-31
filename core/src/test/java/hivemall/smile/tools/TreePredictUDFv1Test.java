@@ -52,6 +52,7 @@ import smile.validation.CrossValidation;
 import smile.validation.LOOCV;
 import smile.validation.RMSE;
 
+@SuppressWarnings("deprecation")
 public class TreePredictUDFv1Test {
     private static final boolean DEBUG = false;
 

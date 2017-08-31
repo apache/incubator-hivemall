@@ -18,6 +18,10 @@
  */
 package hivemall.tools.array;
 
+import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_ARRAY_META;
+import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_REF;
+import static org.apache.hadoop.hive.ql.util.JavaDataModel.PRIMITIVES1;
+import static org.apache.hadoop.hive.ql.util.JavaDataModel.PRIMITIVES2;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
@@ -34,6 +38,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationType;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -220,7 +225,8 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
         }
     }
 
-    public static class ArrayAvgAggregationBuffer extends AbstractAggregationBuffer {
+    @AggregationType(estimable = true)
+    public static final class ArrayAvgAggregationBuffer extends AbstractAggregationBuffer {
 
         int _size;
         // note that primitive array cannot be serialized by JDK serializer
@@ -286,6 +292,15 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
                 sum[i] += sumElemOI.get(sum_e);
                 Object count_e = countOI.getListElement(o_count, i);
                 count[i] += countElemOI.get(count_e);
+            }
+        }
+
+        @Override
+        public int estimate() {
+            if (_size == -1) {
+                return JAVA64_REF;
+            } else {
+                return PRIMITIVES1 + 2 * (JAVA64_ARRAY_META + PRIMITIVES2 * _size);
             }
         }
 

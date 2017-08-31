@@ -32,9 +32,6 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<PermGen>64m</PermGen>
-		<MaxPermGen>512m</MaxPermGen>
-		<CodeCacheSize>512m</CodeCacheSize>
 		<main.basedir>${project.parent.basedir}</main.basedir>
 	</properties>
 
@@ -164,11 +161,8 @@
 						<!-- <arg>-feature</arg> -->
 					</args>
 					<jvmArgs>
-						<jvmArg>-Xms1024m</jvmArg>
+						<jvmArg>-Xms512m</jvmArg>
 						<jvmArg>-Xmx1024m</jvmArg>
-						<jvmArg>-XX:PermSize=${PermGen}</jvmArg>
-						<jvmArg>-XX:MaxPermSize=${MaxPermGen}</jvmArg>
-						<jvmArg>-XX:ReservedCodeCacheSize=${CodeCacheSize}</jvmArg>
 					</jvmArgs>
 				</configuration>
 			</plugin>
@@ -233,7 +227,7 @@
 					<reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
 					<junitxml>.</junitxml>
 					<filereports>SparkTestSuite.txt</filereports>
-					<argLine>-ea -Xmx2g -XX:MaxPermSize=${MaxPermGen} -XX:ReservedCodeCacheSize=${CodeCacheSize}</argLine>
+					<argLine>${spark.test.jvm.opts}</argLine>
 					<stderr />
 					<environmentVariables>
 						<SPARK_PREPEND_CLASSES>1</SPARK_PREPEND_CLASSES>

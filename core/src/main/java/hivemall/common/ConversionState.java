@@ -99,18 +99,25 @@ public final class ConversionState {
         if (changeRate < convergenceRate) {
             if (readyToFinishIterations) {
                 // NOTE: never be true at the first iteration where prevLosses == Double.POSITIVE_INFINITY
-                logger.info("Training converged at " + curIter + "-th iteration. [curLosses="
-                        + currLosses + ", prevLosses=" + prevLosses + ", changeRate=" + changeRate
-                        + ']');
+                if (logger.isInfoEnabled()) {
+                    logger.info("Training converged at " + curIter + "-th iteration. [curLosses="
+                            + currLosses + ", prevLosses=" + prevLosses + ", changeRate="
+                            + changeRate + ']');
+                }
                 return true;
             } else {
+                if (logger.isInfoEnabled()) {
+                    logger.info("Iteration #" + curIter + " [curLosses=" + currLosses
+                            + ", prevLosses=" + prevLosses + ", changeRate=" + changeRate
+                            + ", #trainingExamples=" + observedTrainingExamples + ']');
+                }
                 this.readyToFinishIterations = true;
             }
         } else {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Iteration #" + curIter + " [curLosses=" + currLosses
-                        + ", prevLosses=" + prevLosses + ", changeRate=" + changeRate
-                        + ", #trainingExamples=" + observedTrainingExamples + ']');
+            if (logger.isInfoEnabled()) {
+                logger.info("Iteration #" + curIter + " [curLosses=" + currLosses + ", prevLosses="
+                        + prevLosses + ", changeRate=" + changeRate + ", #trainingExamples="
+                        + observedTrainingExamples + ']');
             }
             this.readyToFinishIterations = false;
         }

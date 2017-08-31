@@ -18,11 +18,6 @@
  */
 package hivemall.utils.collections.maps;
 
-import hivemall.utils.collections.maps.Int2LongOpenHashTable;
-import hivemall.utils.lang.ObjectUtils;
-
-import java.io.IOException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +25,7 @@ public class Int2LongOpenHashMapTest {
 
     @Test
     public void testSize() {
-        Int2LongOpenHashTable map = new Int2LongOpenHashTable(16384);
+        Int2LongOpenHashMap map = new Int2LongOpenHashMap(16384);
         map.put(1, 3L);
         Assert.assertEquals(3L, map.get(1));
         map.put(1, 5L);
@@ -40,67 +35,72 @@ public class Int2LongOpenHashMapTest {
 
     @Test
     public void testDefaultReturnValue() {
-        Int2LongOpenHashTable map = new Int2LongOpenHashTable(16384);
+        Int2LongOpenHashMap map = new Int2LongOpenHashMap(16384);
         Assert.assertEquals(0, map.size());
-        Assert.assertEquals(-1L, map.get(1));
-        long ret = Long.MIN_VALUE;
-        map.defaultReturnValue(ret);
-        Assert.assertEquals(ret, map.get(1));
+        Assert.assertEquals(0L, map.get(1));
+        Assert.assertEquals(Long.MIN_VALUE, map.get(1, Long.MIN_VALUE));
     }
 
     @Test
     public void testPutAndGet() {
-        Int2LongOpenHashTable map = new Int2LongOpenHashTable(16384);
+        Int2LongOpenHashMap map = new Int2LongOpenHashMap(16384);
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(-i, -i));
         }
-        Assert.assertEquals(numEntries, map.size());
+        Assert.assertEquals(numEntries * 2 - 1, map.size());
         for (int i = 0; i < numEntries; i++) {
-            long v = map.get(i);
-            Assert.assertEquals(i, v);
+            Assert.assertEquals(i, map.get(i));
+            Assert.assertEquals(-i, map.get(-i));
         }
     }
 
     @Test
-    public void testSerde() throws IOException, ClassNotFoundException {
-        Int2LongOpenHashTable map = new Int2LongOpenHashTable(16384);
+    public void testPutRemoveGet() {
+        Int2LongOpenHashMap map = new Int2LongOpenHashMap(16384);
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(-i, -i));
+            if (i % 2 == 0) {
+                Assert.assertEquals(i, map.remove(i, -1));
+            } else {
+                Assert.assertEquals(i, map.put(i, i));
+            }
         }
-
-        byte[] b = ObjectUtils.toCompressedBytes(map);
-        map = new Int2LongOpenHashTable(16384);
-        ObjectUtils.readCompressedObject(b, map);
-
-        Assert.assertEquals(numEntries, map.size());
+        Assert.assertEquals(numEntries + (numEntries / 2) - 1, map.size());
         for (int i = 0; i < numEntries; i++) {
-            long v = map.get(i);
-            Assert.assertEquals(i, v);
+            if (i % 2 == 0) {
+                Assert.assertFalse(map.containsKey(i));
+            } else {
+                Assert.assertEquals(i, map.get(i));
+            }
+            Assert.assertEquals(-i, map.get(-i));
         }
     }
 
     @Test
     public void testIterator() {
-        Int2LongOpenHashTable map = new Int2LongOpenHashTable(1000);
-        Int2LongOpenHashTable.IMapIterator itor = map.entries();
+        Int2LongOpenHashMap map = new Int2LongOpenHashMap(1000);
+        Int2LongOpenHashMap.MapIterator itor = map.entries();
         Assert.assertFalse(itor.hasNext());
 
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(i, i));
+            Assert.assertEquals(0L, map.put(-i, -i));
         }
-        Assert.assertEquals(numEntries, map.size());
+        Assert.assertEquals(numEntries * 2 - 1, map.size());
 
         itor = map.entries();
         Assert.assertTrue(itor.hasNext());
         while (itor.hasNext()) {
-            Assert.assertFalse(itor.next() == -1);
+            Assert.assertTrue(itor.next());
             int k = itor.getKey();
             long v = itor.getValue();
             Assert.assertEquals(k, v);
         }
-        Assert.assertEquals(-1, itor.next());
+        Assert.assertFalse(itor.next());
     }
 }

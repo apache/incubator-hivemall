@@ -23,6 +23,7 @@ import hivemall.utils.lang.Identifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -39,7 +40,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 @Description(
         name = "quantified_features",
-        value = "_FUNC_(boolean output, col1, col2, ...) - Returns an identified features in a dence array<double>")
+        value = "_FUNC_(boolean output, col1, col2, ...) - Returns an identified features in a dense array<double>")
 public final class QuantifiedFeaturesUDTF extends GenericUDTF {
 
     private BooleanObjectInspector boolOI;
@@ -76,8 +77,8 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
             }
         }
 
-        ArrayList<String> fieldNames = new ArrayList<String>(outputSize);
-        ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(outputSize);
+        List<String> fieldNames = new ArrayList<String>(outputSize);
+        List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(outputSize);
         fieldNames.add("features");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
 

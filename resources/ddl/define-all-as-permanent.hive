@@ -313,6 +313,9 @@ CREATE FUNCTION binarize_label as 'hivemall.ftvec.trans.BinarizeLabelUDTF' USING
 DROP FUNCTION IF EXISTS onehot_encoding;
 CREATE FUNCTION onehot_encoding as 'hivemall.ftvec.trans.OnehotEncodingUDAF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS add_field_indicies;
+CREATE FUNCTION add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF' USING JAR '${hivemall_jar}';
+
 ------------------------------
 -- ranking helper functions --
 ------------------------------
@@ -620,7 +623,7 @@ DROP FUNCTION IF EXISTS train_ffm;
 CREATE FUNCTION train_ffm as 'hivemall.fm.FieldAwareFactorizationMachineUDTF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS ffm_predict;
-CREATE FUNCTION ffm_predict as 'hivemall.fm.FFMPredictUDF' USING JAR '${hivemall_jar}';
+CREATE FUNCTION ffm_predict as 'hivemall.fm.FFMPredictGenericUDAF' USING JAR '${hivemall_jar}';
 
 ---------------------------
 -- Anomaly Detection ------

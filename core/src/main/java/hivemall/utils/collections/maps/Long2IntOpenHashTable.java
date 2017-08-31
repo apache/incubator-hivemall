@@ -27,7 +27,12 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 
 /**
- * An open-addressing hash table with double hashing
+ * An open-addressing hash table using double hashing.
+ *
+ * <pre>
+ * Primary hash function: h1(k) = k mod m
+ * Secondary hash function: h2(k) = 1 + (k mod(m-2))
+ * </pre>
  * 
  * @see http://en.wikipedia.org/wiki/Double_hashing
  */
@@ -37,7 +42,7 @@ public final class Long2IntOpenHashTable implements Externalizable {
     protected static final byte FULL = 1;
     protected static final byte REMOVED = 2;
 
-    private static final float DEFAULT_LOAD_FACTOR = 0.7f;
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
     private static final float DEFAULT_GROW_FACTOR = 2.0f;
 
     protected final transient float _loadFactor;

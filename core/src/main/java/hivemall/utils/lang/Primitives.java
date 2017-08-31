@@ -26,14 +26,6 @@ public final class Primitives {
 
     private Primitives() {}
 
-    public static int toUnsignedShort(final short v) {
-        return v & 0xFFFF; // convert to range 0-65535 from -32768-32767.
-    }
-
-    public static int toUnsignedInt(final byte x) {
-        return ((int) x) & 0xff;
-    }
-
     public static short parseShort(final String s, final short defaultValue) {
         if (s == null) {
             return defaultValue;
@@ -90,22 +82,6 @@ public final class Primitives {
     public static void putChar(final byte[] b, final int off, final char val) {
         b[off + 1] = (byte) (val >>> 0);
         b[off] = (byte) (val >>> 8);
-    }
-
-    public static int toIntExact(final long longValue) {
-        final int casted = (int) longValue;
-        if (casted != longValue) {
-            throw new ArithmeticException("integer overflow: " + longValue);
-        }
-        return casted;
-    }
-
-    public static int castToInt(final long value) {
-        final int result = (int) value;
-        if (result != value) {
-            throw new IllegalArgumentException("Out of range: " + value);
-        }
-        return result;
     }
 
     public static long toLong(final int high, final int low) {

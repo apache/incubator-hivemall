@@ -22,12 +22,19 @@ import hivemall.fm.Entry.AdaGradEntry;
 import hivemall.fm.Entry.FTRLEntry;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.buffer.HeapBuffer;
+import hivemall.utils.collections.lists.LongArrayList;
 import hivemall.utils.collections.maps.Int2LongOpenHashTable;
+import hivemall.utils.collections.maps.Int2LongOpenHashTable.MapIterator;
 import hivemall.utils.lang.NumberUtils;
-import hivemall.utils.math.MathUtils;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.roaringbitmap.RoaringBitmap;
 
 public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachineModel {
     private static final int DEFAULT_MAPSIZE = 65536;
@@ -36,37 +43,55 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     private float _w0;
     @Nonnull
     private final Int2LongOpenHashTable _map;
+    @Nonnull
     private final HeapBuffer _buf;
 
+    @Nonnull
+    private final LongArrayList _freelistW;
+    @Nonnull
+    private final LongArrayList _freelistV;
+
+    private boolean _initV;
+    @Nonnull
+    private RoaringBitmap _removedV;
+
     // hyperparams
-    private final int _numFeatures;
     private final int _numFields;
 
-    // FTEL
-    private final float _alpha;
-    private final float _beta;
-    private final float _lambda1;
-    private final float _lamdda2;
+    private final int _entrySizeW;
+    private final int _entrySizeV;
 
-    private final int _entrySize;
+    // statistics
+    private long _bytesAllocated, _bytesUsed;
+    private int _numAllocatedW, _numReusedW, _numRemovedW;
+    private int _numAllocatedV, _numReusedV, _numRemovedV;
 
     public FFMStringFeatureMapModel(@Nonnull FFMHyperParameters params) {
         super(params);
         this._w0 = 0.f;
         this._map = new Int2LongOpenHashTable(DEFAULT_MAPSIZE);
         this._buf = new HeapBuffer(HeapBuffer.DEFAULT_CHUNK_SIZE);
-        this._numFeatures = params.numFeatures;
+        this._freelistW = new LongArrayList();
+        this._freelistV = new LongArrayList();
+        this._initV = true;
+        this._removedV = new RoaringBitmap();
         this._numFields = params.numFields;
-        this._alpha = params.alphaFTRL;
-        this._beta = params.betaFTRL;
-        this._lambda1 = params.lambda1;
-        this._lamdda2 = params.lamdda2;
-        this._entrySize = entrySize(_factor, _useFTRL, _useAdaGrad);
+        this._entrySizeW = entrySize(1, _useFTRL, _useAdaGrad);
+        this._entrySizeV = entrySize(_factor, _useFTRL, _useAdaGrad);
     }
 
-    @Nonnull
-    FFMPredictionModel toPredictionModel() {
-        return new FFMPredictionModel(_map, _buf, _w0, _factor, _numFeatures, _numFields);
+    private static int entrySize(@Nonnegative int factors, boolean ftrl, boolean adagrad) {
+        if (ftrl) {
+            return FTRLEntry.sizeOf(factors);
+        } else if (adagrad) {
+            return AdaGradEntry.sizeOf(factors);
+        } else {
+            return Entry.sizeOf(factors);
+        }
+    }
+
+    void disableInitV() {
+        this._initV = false;
     }
 
     @Override
@@ -86,7 +111,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     @Override
     public float getW(@Nonnull final Feature x) {
-        int j = x.getFeatureIndex();
+        int j = Feature.toIntFeature(x);
 
         Entry entry = getEntry(j);
         if (entry == null) {
@@ -97,65 +122,17 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
     @Override
     protected void setW(@Nonnull final Feature x, final float nextWi) {
-        final int j = x.getFeatureIndex();
+        final int j = Feature.toIntFeature(x);
 
         Entry entry = getEntry(j);
         if (entry == null) {
-            float[] V = initV();
-            entry = newEntry(nextWi, V);
+            entry = newEntry(j, nextWi);
             long ptr = entry.getOffset();
             _map.put(j, ptr);
         } else {
             entry.setW(nextWi);
         }
     }
-
-    @Override
-    void updateWi(final double dloss, @Nonnull final Feature x, final float eta) {
-        final double Xi = x.getValue();
-        float gradWi = (float) (dloss * Xi);
-
-        final Entry theta = getEntry(x);
-        float wi = theta.getW();
-
-        float nextWi = wi - eta * (gradWi + 2.f * _lambdaW * wi);
-        if (!NumberUtils.isFinite(nextWi)) {
-            throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
-                    + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + wi + ", dloss=" + dloss
-                    + ", eta=" + eta);
-        }
-        theta.setW(nextWi);
-    }
-
-    /**
-     * Update Wi using Follow-the-Regularized-Leader
-     */
-    boolean updateWiFTRL(final double dloss, @Nonnull final Feature x, final float eta) {
-        final double Xi = x.getValue();
-        float gradWi = (float) (dloss * Xi);
-
-        final Entry theta = getEntry(x);
-        float wi = theta.getW();
-
-        final float z = theta.updateZ(gradWi, _alpha);
-        final double n = theta.updateN(gradWi);
-
-        if (Math.abs(z) <= _lambda1) {
-            removeEntry(x);
-            return wi != 0;
-        }
-
-        final float nextWi = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
-                / _alpha + _lamdda2));
-        if (!NumberUtils.isFinite(nextWi)) {
-            throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
-                    + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + wi + ", dloss=" + dloss
-                    + ", eta=" + eta + ", n=" + n + ", z=" + z);
-        }
-        theta.setW(nextWi);
-        return (nextWi != 0) || (wi != 0);
-    }
-
 
     /**
      * @return V_x,yField,f
@@ -166,10 +143,16 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
         Entry entry = getEntry(j);
         if (entry == null) {
+            if (_initV == false) {
+                return 0.f;
+            } else if (_removedV.contains(j)) {
+                return 0.f;
+            }
             float[] V = initV();
-            entry = newEntry(V);
+            entry = newEntry(j, V);
             long ptr = entry.getOffset();
             _map.put(j, ptr);
+            return V[f];
         }
         return entry.getV(f);
     }
@@ -181,8 +164,13 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
 
         Entry entry = getEntry(j);
         if (entry == null) {
+            if (_initV == false) {
+                return;
+            } else if (_removedV.contains(j)) {
+                return;
+            }
             float[] V = initV();
-            entry = newEntry(V);
+            entry = newEntry(j, V);
             long ptr = entry.getOffset();
             _map.put(j, ptr);
         }
@@ -190,13 +178,12 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     }
 
     @Override
-    protected Entry getEntry(@Nonnull final Feature x) {
-        final int j = x.getFeatureIndex();
+    protected Entry getEntryW(@Nonnull final Feature x) {
+        final int j = Feature.toIntFeature(x);
 
         Entry entry = getEntry(j);
         if (entry == null) {
-            float[] V = initV();
-            entry = newEntry(V);
+            entry = newEntry(j, 0.f);
             long ptr = entry.getOffset();
             _map.put(j, ptr);
         }
@@ -204,51 +191,92 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     }
 
     @Override
-    protected Entry getEntry(@Nonnull final Feature x, @Nonnull final int yField) {
+    protected Entry getEntryV(@Nonnull final Feature x, @Nonnull final int yField) {
         final int j = Feature.toIntFeature(x, yField, _numFields);
 
         Entry entry = getEntry(j);
         if (entry == null) {
+            if (_initV == false) {
+                return null;
+            } else if (_removedV.contains(j)) {
+                return null;
+            }
             float[] V = initV();
-            entry = newEntry(V);
+            entry = newEntry(j, V);
             long ptr = entry.getOffset();
             _map.put(j, ptr);
         }
         return entry;
     }
 
-    protected void removeEntry(@Nonnull final Feature x) {
-        int j = x.getFeatureIndex();
-        _map.remove(j);
-    }
-
-    @Nonnull
-    protected final Entry newEntry(final float W, @Nonnull final float[] V) {
-        Entry entry = newEntry();
-        entry.setW(W);
-        entry.setV(V);
-        return entry;
-    }
-
-    @Nonnull
-    protected final Entry newEntry(@Nonnull final float[] V) {
-        Entry entry = newEntry();
-        entry.setV(V);
-        return entry;
-    }
-
-    @Nonnull
-    private Entry newEntry() {
-        if (_useFTRL) {
-            long ptr = _buf.allocate(_entrySize);
-            return new FTRLEntry(_buf, _factor, ptr);
-        } else if (_useAdaGrad) {
-            long ptr = _buf.allocate(_entrySize);
-            return new AdaGradEntry(_buf, _factor, ptr);
-        } else {
-            long ptr = _buf.allocate(_entrySize);
-            return new Entry(_buf, _factor, ptr);
+    @Override
+    protected void removeEntry(@Nonnull final Entry entry) {
+        final int j = entry.getKey();
+        final long ptr = _map.remove(j);
+        if (ptr == -1L) {
+            return; // should never be happen.
         }
+        entry.clear();
+        if (Entry.isEntryW(j)) {
+            _freelistW.add(ptr);
+            this._numRemovedW++;
+            this._bytesUsed -= _entrySizeW;
+        } else {
+            _removedV.add(j);
+            _freelistV.add(ptr);
+            this._numRemovedV++;
+            this._bytesUsed -= _entrySizeV;
+        }
+    }
+
+    @Nonnull
+    protected final Entry newEntry(final int key, final float W) {
+        final long ptr;
+        if (_freelistW.isEmpty()) {
+            ptr = _buf.allocate(_entrySizeW);
+            this._numAllocatedW++;
+            this._bytesAllocated += _entrySizeW;
+            this._bytesUsed += _entrySizeW;
+        } else {// reuse removed entry
+            ptr = _freelistW.remove();
+            this._numReusedW++;
+        }
+        final Entry entry;
+        if (_useFTRL) {
+            entry = new FTRLEntry(_buf, key, ptr);
+        } else if (_useAdaGrad) {
+            entry = new AdaGradEntry(_buf, key, ptr);
+        } else {
+            entry = new Entry(_buf, key, ptr);
+        }
+
+        entry.setW(W);
+        return entry;
+    }
+
+    @Nonnull
+    protected final Entry newEntry(final int key, @Nonnull final float[] V) {
+        final long ptr;
+        if (_freelistV.isEmpty()) {
+            ptr = _buf.allocate(_entrySizeV);
+            this._numAllocatedV++;
+            this._bytesAllocated += _entrySizeV;
+            this._bytesUsed += _entrySizeV;
+        } else {// reuse removed entry
+            ptr = _freelistV.remove();
+            this._numReusedV++;
+        }
+        final Entry entry;
+        if (_useFTRL) {
+            entry = new FTRLEntry(_buf, _factor, key, ptr);
+        } else if (_useAdaGrad) {
+            entry = new AdaGradEntry(_buf, _factor, key, ptr);
+        } else {
+            entry = new Entry(_buf, _factor, key, ptr);
+        }
+
+        entry.setV(V);
+        return entry;
     }
 
     @Nullable
@@ -257,28 +285,95 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
         if (ptr == -1L) {
             return null;
         }
-        return getEntry(ptr);
+        return getEntry(key, ptr);
     }
 
     @Nonnull
-    private Entry getEntry(long ptr) {
-        if (_useFTRL) {
-            return new FTRLEntry(_buf, _factor, ptr);
-        } else if (_useAdaGrad) {
-            return new AdaGradEntry(_buf, _factor, ptr);
+    private Entry getEntry(final int key, @Nonnegative final long ptr) {
+        if (Entry.isEntryW(key)) {
+            if (_useFTRL) {
+                return new FTRLEntry(_buf, key, ptr);
+            } else if (_useAdaGrad) {
+                return new AdaGradEntry(_buf, key, ptr);
+            } else {
+                return new Entry(_buf, key, ptr);
+            }
         } else {
-            return new Entry(_buf, _factor, ptr);
+            if (_useFTRL) {
+                return new FTRLEntry(_buf, _factor, key, ptr);
+            } else if (_useAdaGrad) {
+                return new AdaGradEntry(_buf, _factor, key, ptr);
+            } else {
+                return new Entry(_buf, _factor, key, ptr);
+            }
         }
     }
 
-    private static int entrySize(int factors, boolean ftrl, boolean adagrad) {
-        if (ftrl) {
-            return FTRLEntry.sizeOf(factors);
-        } else if (adagrad) {
-            return AdaGradEntry.sizeOf(factors);
-        } else {
-            return Entry.sizeOf(factors);
+    @Nonnull
+    String getStatistics() {
+        final NumberFormat fmt = NumberFormat.getIntegerInstance(Locale.US);
+        return "FFMStringFeatureMapModel [bytesAllocated="
+                + NumberUtils.prettySize(_bytesAllocated) + ", bytesUsed="
+                + NumberUtils.prettySize(_bytesUsed) + ", numAllocatedW="
+                + fmt.format(_numAllocatedW) + ", numReusedW=" + fmt.format(_numReusedW)
+                + ", numRemovedW=" + fmt.format(_numRemovedW) + ", numAllocatedV="
+                + fmt.format(_numAllocatedV) + ", numReusedV=" + fmt.format(_numReusedV)
+                + ", numRemovedV=" + fmt.format(_numRemovedV) + "]";
+    }
+
+    @Override
+    public String toString() {
+        return getStatistics();
+    }
+
+    @Nonnull
+    EntryIterator entries() {
+        return new EntryIterator(this);
+    }
+
+    static final class EntryIterator {
+
+        @Nonnull
+        private final MapIterator dictItor;
+        @Nonnull
+        private final Entry entryProbeW;
+        @Nonnull
+        private final Entry entryProbeV;
+
+        EntryIterator(@Nonnull FFMStringFeatureMapModel model) {
+            this.dictItor = model._map.entries();
+            this.entryProbeW = new Entry(model._buf, 1);
+            this.entryProbeV = new Entry(model._buf, model._factor);
         }
+
+        @Nonnull
+        Entry getEntryProbeW() {
+            return entryProbeW;
+        }
+
+        @Nonnull
+        Entry getEntryProbeV() {
+            return entryProbeV;
+        }
+
+        boolean hasNext() {
+            return dictItor.hasNext();
+        }
+
+        boolean next() {
+            return dictItor.next() != -1;
+        }
+
+        int getEntryIndex() {
+            return dictItor.getKey();
+        }
+
+        @Nonnull
+        void getEntry(@Nonnull final Entry probe) {
+            long offset = dictItor.getValue();
+            probe.setOffset(offset);
+        }
+
     }
 
 }
