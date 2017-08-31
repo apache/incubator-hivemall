@@ -26,6 +26,7 @@ import hivemall.math.matrix.builders.DoKMatrixBuilder;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.collections.maps.Long2DoubleOpenHashTable;
+import hivemall.utils.collections.maps.Long2DoubleOpenHashTable.IMapIterator;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 
