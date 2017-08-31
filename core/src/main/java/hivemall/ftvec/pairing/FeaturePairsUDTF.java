@@ -298,7 +298,7 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                 Feature ei = features[i];
 
                 // Wi
-                f0.set(ei.getFeatureIndex());
+                f0.set(Feature.toIntFeature(ei));
                 forward[1] = null;
                 f2.set(ei.getValue());
                 forward[3] = null;
