@@ -695,3 +695,10 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION guess_attribute_types AS 'hivemall.smi
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_gradient_tree_boosting_classifier")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_gradient_tree_boosting_classifier AS 'hivemall.smile.classification.GradientTreeBoostingClassifierUDTF'")
+
+/**
+ * Recommendation
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_slim")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_slim AS 'hivemall.recommend.SlimUDTF'")
