@@ -61,42 +61,41 @@ public class SlimUDTFTest {
         double[][] data = { {1., 4., 0., 0., 0.}, {0., 3., 0., 1., 2.}, {2., 2., 0., 0., 3.},
                 {0., 1., 1., 0., 0.},};
 
-        for (int iter = 0; iter < 20; iter++) {
-            for (int i = 0; i < numItem; i++) {
-                Map<Integer, Double> Ri = new HashMap<>();
-                for (int u = 0; u < numUser; u++) {
-                    if (data[u][i] != 0.) {
-                        Ri.put(u, data[u][i]);
-                    }
-                }
-
-                // most similar data
-                Map<Integer, Map<Integer, Double>> knnRatesOfI = new HashMap<>();
-                for (int u = 0; u < numUser; u++) {
-                    Map<Integer, Double> Ru = new HashMap<>();
-                    for (int k = 0; k < numItem; k++) {
-                        if (k == i)
-                            continue;
-                        Ru.put(k, data[u][k]);
-                    }
-                    knnRatesOfI.put(u, Ru);
-                }
-
-                for (int j = 0; j < numItem; j++) {
-                    if (i == j)
-                        continue;
-                    Map<Integer, Double> Rj = new HashMap<>();
-                    for (int u = 0; u < numUser; u++) {
-                        if (data[u][j] != 0.) {
-                            Rj.put(u, data[u][j]);
-                        }
-                    }
-
-                    Object[] args = {i, Ri, knnRatesOfI, j, Rj};
-                    slim.process(args);
+        for (int i = 0; i < numItem; i++) {
+            Map<Integer, Double> Ri = new HashMap<>();
+            for (int u = 0; u < numUser; u++) {
+                if (data[u][i] != 0.) {
+                    Ri.put(u, data[u][i]);
                 }
             }
+
+            // most similar data
+            Map<Integer, Map<Integer, Double>> knnRatesOfI = new HashMap<>();
+            for (int u = 0; u < numUser; u++) {
+                Map<Integer, Double> Ru = new HashMap<>();
+                for (int k = 0; k < numItem; k++) {
+                    if (k == i)
+                        continue;
+                    Ru.put(k, data[u][k]);
+                }
+                knnRatesOfI.put(u, Ru);
+            }
+
+            for (int j = 0; j < numItem; j++) {
+                if (i == j)
+                    continue;
+                Map<Integer, Double> Rj = new HashMap<>();
+                for (int u = 0; u < numUser; u++) {
+                    if (data[u][j] != 0.) {
+                        Rj.put(u, data[u][j]);
+                    }
+                }
+
+                Object[] args = {i, Ri, knnRatesOfI, j, Rj};
+                slim.process(args);
+            }
         }
+        slim.finalizeTraining();
     }
 
     @Test(expected = HiveException.class)
