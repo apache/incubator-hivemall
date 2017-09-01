@@ -210,21 +210,21 @@ public class SlimUDTF extends UDTFWithOptions {
         }
 
         int itemI = PrimitiveObjectInspectorUtils.getInt(args[0], itemIOI);
-        Int2DoubleOpenHashTable ri = parseIntDoubleMap(this.riOI.getMap(args[1]), riKeyOI,
-            riValueOI);
+        Int2DoubleOpenHashTable ri = map2Int2DoubleOpenHashTable(this.riOI.getMap(args[1]),
+            riKeyOI, riValueOI);
 
         Map<Integer, Int2DoubleOpenHashTable> knnItems = new HashMap<>();
         for (Map.Entry<?, ?> entry : this.knnItemsOI.getMap(args[2]).entrySet()) {
             int user = PrimitiveObjectInspectorUtils.getInt(entry.getKey(), this.knnItemsKeyOI);
-            Int2DoubleOpenHashTable ru = parseIntDoubleMap(
+            Int2DoubleOpenHashTable ru = map2Int2DoubleOpenHashTable(
                 this.knnItemsValueOI.getMap(entry.getValue()), knnItemsValueKeyOI,
                 knnItemsValueValueOI);
             knnItems.put(user, ru);
         }
 
         int itemJ = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
-        Int2DoubleOpenHashTable rj = parseIntDoubleMap(this.rjOI.getMap(args[4]), rjKeyOI,
-            rjValueOI);
+        Int2DoubleOpenHashTable rj = map2Int2DoubleOpenHashTable(this.rjOI.getMap(args[4]),
+            rjKeyOI, rjValueOI);
         train(itemI, ri, knnItems, itemJ, rj);
         observedTrainingExamples++;
 
@@ -270,8 +270,8 @@ public class SlimUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException(ioe);
             }
 
-            this.fileIO = dst = new NioStatefullSegment(file, false);
             this.inputBuf = buf = ByteBuffer.allocateDirect(8 * 1024 * 1024); // 8MB
+            this.fileIO = dst = new NioStatefullSegment(file, false);
         }
 
         // count element size size: i, numKNN, [[u, numKNNu, [[item, rate], ...], ...]
@@ -527,7 +527,6 @@ public class SlimUDTF extends UDTFWithOptions {
                             }
 
                             trainFromBuffer(buf);
-
                             remain -= recordBytes;
                         }
                         buf.compact();
@@ -609,7 +608,7 @@ public class SlimUDTF extends UDTFWithOptions {
         }
     }
 
-    private static Int2DoubleOpenHashTable parseIntDoubleMap(Map<?, ?> map,
+    private static Int2DoubleOpenHashTable map2Int2DoubleOpenHashTable(Map<?, ?> map,
             PrimitiveObjectInspector keyOI, PrimitiveObjectInspector valueOI) {
         Int2DoubleOpenHashTable result = new Int2DoubleOpenHashTable(16384);
         result.defaultReturnValue(0.d);
