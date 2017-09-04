@@ -39,15 +39,15 @@ public class SlimUDTFTest {
 
         ObjectInspector itemIRatesOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
+            PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
         ObjectInspector itemJRatesOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
+            PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
         ObjectInspector topKRatesOfIOI = ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.javaIntObjectInspector,
             ObjectInspectorFactory.getStandardMapObjectInspector(
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector));
+                PrimitiveObjectInspectorFactory.javaFloatObjectInspector));
         ObjectInspector optionArgumentOI = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-l2 0.01 -l1 0.01");
 
@@ -58,11 +58,11 @@ public class SlimUDTFTest {
         int numUser = 4;
         int numItem = 5;
 
-        double[][] data = { {1., 4., 0., 0., 0.}, {0., 3., 0., 1., 2.}, {2., 2., 0., 0., 3.},
-                {0., 1., 1., 0., 0.},};
+        float[][] data = { {1.f, 4.f, 0.f, 0.f, 0.f}, {0.f, 3.f, 0.f, 1.f, 2.f},
+                {2.f, 2.f, 0.f, 0.f, 3.f}, {0.f, 1.f, 1.f, 0.f, 0.f}};
 
         for (int i = 0; i < numItem; i++) {
-            Map<Integer, Double> Ri = new HashMap<>();
+            Map<Integer, Float> Ri = new HashMap<>();
             for (int u = 0; u < numUser; u++) {
                 if (data[u][i] != 0.) {
                     Ri.put(u, data[u][i]);
@@ -70,9 +70,9 @@ public class SlimUDTFTest {
             }
 
             // most similar data
-            Map<Integer, Map<Integer, Double>> knnRatesOfI = new HashMap<>();
+            Map<Integer, Map<Integer, Float>> knnRatesOfI = new HashMap<>();
             for (int u = 0; u < numUser; u++) {
-                Map<Integer, Double> Ru = new HashMap<>();
+                Map<Integer, Float> Ru = new HashMap<>();
                 for (int k = 0; k < numItem; k++) {
                     if (k == i)
                         continue;
@@ -84,7 +84,7 @@ public class SlimUDTFTest {
             for (int j = 0; j < numItem; j++) {
                 if (i == j)
                     continue;
-                Map<Integer, Double> Rj = new HashMap<>();
+                Map<Integer, Float> Rj = new HashMap<>();
                 for (int u = 0; u < numUser; u++) {
                     if (data[u][j] != 0.) {
                         Rj.put(u, data[u][j]);
