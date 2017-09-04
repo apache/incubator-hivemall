@@ -131,6 +131,9 @@ public class SlimUDTF extends UDTFWithOptions {
         this.observedTrainingExamples = 0L;
         this.previousItemId = -2147483648;
 
+//        this.dataMatrix = null;
+//        this.weightMatrix = null;
+
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
@@ -155,7 +158,7 @@ public class SlimUDTF extends UDTFWithOptions {
         CommandLine cl = null;
         double l1 = 0.01d;
         double l2 = 0.01d;
-        int numIterations = 20;
+        int numIterations = 40;
         boolean conversionCheck = true;
         double cv_rate = 0.005d;
 
