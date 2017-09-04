@@ -131,8 +131,8 @@ public class SlimUDTF extends UDTFWithOptions {
         this.observedTrainingExamples = 0L;
         this.previousItemId = -2147483648;
 
-//        this.dataMatrix = null;
-//        this.weightMatrix = null;
+        this.dataMatrix = null;
+        this.weightMatrix = null;
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
