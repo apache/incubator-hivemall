@@ -583,6 +583,9 @@ create temporary function precision_at as 'hivemall.evaluation.PrecisionUDAF';
 drop temporary function if exists recall_at;
 create temporary function recall_at as 'hivemall.evaluation.RecallUDAF';
 
+drop temporary function if exists hitrate;
+create temporary function hitrate as 'hivemall.evaluation.HitRateUDAF';
+
 drop temporary function if exists mrr;
 create temporary function mrr as 'hivemall.evaluation.MRRUDAF';
 

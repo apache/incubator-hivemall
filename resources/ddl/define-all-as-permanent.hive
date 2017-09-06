@@ -591,6 +591,9 @@ CREATE FUNCTION precision_at as 'hivemall.evaluation.PrecisionUDAF' USING JAR '$
 DROP FUNCTION IF EXISTS recall_at;
 CREATE FUNCTION recall_at as 'hivemall.evaluation.RecallUDAF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS hitrate;
+CREATE FUNCTION hitrate as 'hivemall.evaluation.HitRateUDAF' USING JAR '${hivemall_jar}';
+
 DROP FUNCTION IF EXISTS mrr;
 CREATE FUNCTION mrr as 'hivemall.evaluation.MRRUDAF' USING JAR '${hivemall_jar}';
 
