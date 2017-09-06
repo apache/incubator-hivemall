@@ -141,9 +141,9 @@ public class SlimUDTF extends UDTFWithOptions {
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("l1", "l1coefficient", true,
-            "Coefficient for l1 regularizer [default: 0.01]");
+            "Coefficient for l1 regularizer [default: 0.001]");
         opts.addOption("l2", "l2coefficient", true,
-            "Coefficient for l2 regularizer [default: 0.01]");
+            "Coefficient for l2 regularizer [default: 0.0005]");
         opts.addOption("numIterations", "iteration", true,
             "The number of iterations for coordinate descent [default: 40]");
         opts.addOption("disable_cv", "disable_cvtest", false,
@@ -156,8 +156,8 @@ public class SlimUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = null;
-        double l1 = 0.01d;
-        double l2 = 0.01d;
+        double l1 = 0.001d;
+        double l2 = 0.0005d;
         int numIterations = 40;
         boolean conversionCheck = true;
         double cv_rate = 0.005d;
@@ -167,14 +167,14 @@ public class SlimUDTF extends UDTFWithOptions {
             cl = parseOptions(rawArgs);
 
             l1 = Primitives.parseDouble(cl.getOptionValue("l1"), l1);
-            if (l1 < 0.d || l1 > 1.d) {
-                throw new UDFArgumentException("Argument `double l1` must be within [0., 1.]: "
+            if (l1 < 0.d) {
+                throw new UDFArgumentException("Argument `double l1` must be non-negative: "
                         + l1);
             }
 
             l2 = Primitives.parseDouble(cl.getOptionValue("l2"), l2);
-            if (l2 < 0.d || l2 > 1.d) {
-                throw new UDFArgumentException("Argument `double l2` must be within [0., 1.]: "
+            if (l2 < 0.d) {
+                throw new UDFArgumentException("Argument `double l2` must be non-negative: "
                         + l2);
             }
 
@@ -564,6 +564,8 @@ public class SlimUDTF extends UDTFWithOptions {
         final int itemI = buf.getInt();
         int knnSize = buf.getInt();
         final Map<Integer, Int2FloatOpenHashTable> knnItems = new HashMap<>();
+        Set<Integer> pairItems = new HashSet<>();
+
         for (int i = 0; i < knnSize; i++) {
             int user = buf.getInt();
             int ruSize = buf.getInt();
@@ -572,24 +574,21 @@ public class SlimUDTF extends UDTFWithOptions {
 
             for (int j = 0; j < ruSize; j++) {
                 int itemK = buf.getInt();
+                pairItems.add(itemK);
                 float ruk = buf.getFloat();
                 ru.put(itemK, ruk);
             }
             knnItems.put(user, ru);
         }
 
-        this.weightMatrix.eachNonZeroInRow(itemI, new VectorProcedure() {
-            @Override
-            public void apply(final int itemJ, final double wij) {
-                train(itemI, knnItems, itemJ);
-            }
-        });
+        for(int itemJ : pairItems){
+            train(itemI, knnItems, itemJ);
+        }
     }
 
     private void forwardModel() throws HiveException {
-        int numItem = Math.max(this.weightMatrix.numRows(), this.weightMatrix.numColumns());
-        for (int i = 0; i < numItem; i++) {
-            for (int j = 0; j < numItem; j++) {
+        for (int i = 0; i < this.weightMatrix.numRows(); i++) {
+            for (int j = 0; j < this.weightMatrix.numColumns(); j++) {
                 if (this.weightMatrix.unsafeGet(i, j, 0.d) != 0.d) {
                     Object[] res = new Object[3];
                     res[0] = new IntWritable(i);
