@@ -67,9 +67,8 @@ public final class GradedResponsesMeasures {
             final int recommendSize) {
         double result = 0.d;
         for (int i = 0; i < recommendSize; i++) {
-            int rank = truthList.indexOf(recommendList.get(i));
-            if (rank != -1) {
-                result += 1.d / (rank + 1);
+            if (truthList.contains(recommendList.get(i))) {
+                result += 1.d / (i + 1);
             }
         }
         return result;

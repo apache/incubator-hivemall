@@ -45,11 +45,11 @@ public class GradedResponsesMeasuresTest {
         List<Integer> truthItemList = Arrays.asList(1, 2, 3, 5);
 
         double actual = GradedResponsesMeasures.RHR(recommendItemList, truthItemList, 5);
-        double expected = 1.d + 1.d / 2 + 1.d / 3;
+        double expected = 1.d / 2 + 1.d / 3 + 1.d / 4;
         Assert.assertEquals(expected, actual, 0.0001d);
 
         actual = GradedResponsesMeasures.RHR(recommendItemList, truthItemList, 3);
-        expected = 1.d + 1.d / 2;
+        expected = 1.d / 2 + 1.d / 3;
         Assert.assertEquals(expected, actual, 0.0001d);
 
         actual = GradedResponsesMeasures.RHR(recommendItemList, truthItemList, 1);
