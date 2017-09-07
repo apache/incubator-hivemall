@@ -54,4 +54,24 @@ public final class GradedResponsesMeasures {
         return dcg;
     }
 
+
+    /**
+     * Computes Reciprocal HitRank (RHR)
+     *
+     * @param recommendList predicted item list order by score
+     * @param truthList gruond truth item list order by rank
+     * @param recommendSize the number of positive items
+     * @return RHR
+     */
+    public static double RHR(final List<?> recommendList, final List<?> truthList,
+            final int recommendSize) {
+        double result = 0.d;
+        for (int i = 0; i < recommendSize; i++) {
+            int rank = truthList.indexOf(recommendList.get(i));
+            if (rank != -1) {
+                result += 1.d / (rank + 1);
+            }
+        }
+        return result;
+    }
 }

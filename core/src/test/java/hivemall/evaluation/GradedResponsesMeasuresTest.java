@@ -39,4 +39,21 @@ public class GradedResponsesMeasuresTest {
         Assert.assertEquals(0.812891283859d, actual, 0.0001d);
     }
 
+    @Test
+    public void testRHR() {
+        List<Integer> recommendItemList = Arrays.asList(0, 1, 2, 3, 4);
+        List<Integer> truthItemList = Arrays.asList(1, 2, 3, 5);
+
+        double actual = GradedResponsesMeasures.RHR(recommendItemList, truthItemList, 5);
+        double expected = 1.d + 1.d / 2 + 1.d / 3;
+        Assert.assertEquals(expected, actual, 0.0001d);
+
+        actual = GradedResponsesMeasures.RHR(recommendItemList, truthItemList, 3);
+        expected = 1.d + 1.d / 2;
+        Assert.assertEquals(expected, actual, 0.0001d);
+
+        actual = GradedResponsesMeasures.RHR(recommendItemList, truthItemList, 1);
+        expected = 0.d;
+        Assert.assertEquals(expected, actual, 0.0001d);
+    }
 }

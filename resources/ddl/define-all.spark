@@ -570,6 +570,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION recall_at AS 'hivemall.evaluation.Reca
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS hitrate")
 sqlContext.sql("CREATE TEMPORARY FUNCTION hitrate AS 'hivemall.evaluation.HitRateUDAF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS arhr")
+sqlContext.sql("CREATE TEMPORARY FUNCTION arhr AS 'hivemall.evaluation.ARHRUDAF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS mrr")
 sqlContext.sql("CREATE TEMPORARY FUNCTION mrr AS 'hivemall.evaluation.MRRUDAF'")
 
