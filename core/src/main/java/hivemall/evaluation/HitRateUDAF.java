@@ -236,7 +236,7 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
         void iterate(@Nonnull List<?> recommendList, @Nonnull List<?> truthList,
                 @Nonnull int recommendSize) {
-            sum += BinaryResponsesMeasures.hit(recommendList, truthList, recommendSize);
+            sum += BinaryResponsesMeasures.Hit(recommendList, truthList, recommendSize);
             count++;
         }
     }

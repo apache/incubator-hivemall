@@ -142,7 +142,7 @@ public final class BinaryResponsesMeasures {
      * @param recommendSize top-`recommendSize` items in `rankedList` are recommended
      * @return Recall
      */
-    public static double hit(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
+    public static double Hit(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
             @Nonnull final int recommendSize) {
 
         boolean isHit = false;
