@@ -39,7 +39,7 @@ Larger `k` is better approximation for raw user-item matrix, but training time i
 [As we explained in the general introduction of item-based CF](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation.md), following query finds top-$$k$$ nearest-neighborhood movies for each movie:
 
 ```sql
-set hivevar:k=20;
+set hivevar:k=30;
 
 DROP TABLE knn_train;
 create table knn_train
@@ -210,7 +210,6 @@ group by i, j
 
 ## Usage of `train_slim`
 
-
 # Prediction
 
 Next, we predict rating of user-movie pairs based on top-$$k$$ similar items:
@@ -227,7 +226,7 @@ with knn_exploded as (
   from testing l
   LEFT OUTER JOIN knn_train r1
     ON (l.movieid = r1.movieid)
-  JOIN ratings r2 
+  JOIN training r2 
     ON (r1.other = r2.movieid and l.userid = r2.userid)
 )
 select 
@@ -286,13 +285,3 @@ select * from top3_recommend;
 
 
 # Evaluation
-
-```sql
-select
-  mae(predicted, rating) as mae
-from
-  testing as l
-JOIN predicted_test_matrix as r ON (l.movieid = r.i and l.userid = r.u);
-```
-
-> 2.0634030247474398
