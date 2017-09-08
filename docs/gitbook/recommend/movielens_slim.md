@@ -27,6 +27,11 @@ _Caution: SLIM is supported from Hivemall v0.xxx or later._
 First of all, please create `ratings`, `training` and `testing` tables described in [this article](../recommend/movielens_dataset.html).
 Here, we use `training` data to build prediction model, and `testing` data to recommend items.
 
+
+## Rating Binarization
+
+
+
 ## Precompute movie-movie similarity
 
 SLIM needs top-$$k$$ most similar items for each item to approximate user-item matrix.
@@ -44,14 +49,14 @@ set hivevar:k=30;
 DROP TABLE knn_train;
 create table knn_train
 as
-with movie_magnitude as ( 
+with movie_magnitude as (
   select
     to_map(j, mag) as mags
   from (
-    select 
+    select
       movieid as j,
       l2_norm(rating) as mag
-    from 
+    from
       training
     group by
       movieid
@@ -68,7 +73,7 @@ movie_features as (
   group by
     userid
 ),
-partial_result as ( 
+partial_result as (
   select
     dimsum_mapper(f.feature_vector, m.mags, '-threshold 0.1 -int_feature')
       as (movieid, other, s)
@@ -76,19 +81,19 @@ partial_result as (
     movie_features f
   left outer join movie_magnitude m
 ),
-similarity as ( 
+similarity as (
     select
-      movieid, 
+      movieid,
       other,
       sum(s) as similarity
-    from 
+    from
       partial_result
     group by
       movieid, other
 ),
 topk as (
   select
-    each_top_k( 
+    each_top_k(
       ${k}, movieid, similarity, -- use top k items
       movieid, other
     ) as (rank, similarity, movieid, other)
@@ -97,9 +102,9 @@ topk as (
     CLUSTER BY movieid
   ) t
 )
-select 
+select
   movieid, other, similarity
-from 
+from
   topk
 ;
 ```
@@ -115,7 +120,7 @@ from
 
 
 > #### Caution
-> To run query above, you may need to run two statement before. 
+> To run query above, you may need to run two statement before.
 ```sql
 set hive.strict.checks.cartesian.product=false;
 set hive.mapred.mode=nonstrict;
@@ -125,7 +130,7 @@ set hive.mapred.mode=nonstrict;
 
 ```sql
 DROP TABLE item_matrix;
-CREATE table item_matrix as 
+CREATE table item_matrix as
   select
     movieid as i,
     to_map(userid, rating) as R_i
@@ -149,7 +154,7 @@ with knn_item_user_matrix as (
 ), knn_item_matrix as (
   select
     movieid as i,
-    to_map(userid, ratings) as KNN_i -- map<userid, map<movieid,rating>>
+    to_map(userid, ratings) as KNN_i -- map<userid, map<movieid, rating>>
   from
     knn_item_user_matrix
   group by
@@ -194,10 +199,10 @@ from (
   select
     train_slim(i, r_i, knn_i, j, r_j) as (i, j, wij)
   from (
-    select 
+    select
       movieid as i,
       r_i,
-      knn_i, 
+      knn_i,
       other as j,
       r_j
     from slim_training_item
@@ -210,31 +215,49 @@ group by i, j
 
 ## Usage of `train_slim`
 
+
+
 # Prediction
 
 Next, we predict rating of user-movie pairs based on top-$$k$$ similar items:
 
 ```sql
-DROP TABLE predicted_test_matrix;
-CREATE TABLE predicted_test_matrix as
+drop table predict_pair;
+create table predict_pair
+as
+with userids as (
+    select DISTINCT(userid)
+    from testing
+), cross_table as (
+    select l.userid as u, t.movieid as m
+    from userids l
+    CROSS JOIN
+        (select DISTINCT(movieid) from ratings) t
+)
+select u as userid, m as movieid from cross_table
+    where m not in
+        (select movieid from training r where u=r.userid)
+;
+
+CREATE TABLE predicted_test_matrix_thres5 as
 with knn_exploded as (
   select
     l.userid  as u,
-    l.movieid as i, -- axis 
+    l.movieid as i, -- axis
     r1.other   as k, -- other
     r2.rating  as r_uk
-  from testing l
-  LEFT OUTER JOIN knn_train r1
+  from predict_pair l
+  LEFT OUTER JOIN knn_train_thres5 r1
     ON (l.movieid = r1.movieid)
-  JOIN training r2 
+  JOIN training_thres5 r2
     ON (r1.other = r2.movieid and l.userid = r2.userid)
 )
-select 
+select
   l.u,
   l.i,
-  coalesce(sum(l.r_uk*r.wij), ${mu}) as predicted
+  coalesce(sum(l.r_uk*r.w), ${mu}) as predicted
 from knn_exploded l
-LEFT OUTER JOIN slim_w r 
+LEFT OUTER JOIN slim_w_thres5 r
   ON (l.i = r.i and l.k = r.j)
 group by l.u, l.i
 ;
@@ -250,14 +273,14 @@ group by l.u, l.i
 
 ```sql
 DROP TABLE if exists top3_recommend;
-create table top3_recommend 
-as 
+create table top3_recommend
+as
 WITH top_k as (
   select
      each_top_k(3, u, predicted, u, i)
       as (rank, predicted, userid, i)
   from (
-    select * from predicted_test_matrix
+    select * from predicted_test_matrix_thres5
     CLUSTER BY u
   ) t
 )
@@ -285,3 +308,31 @@ select * from top3_recommend;
 
 
 # Evaluation
+
+```sql
+WITH top_k as (
+  select
+     each_top_k(10, u, predicted, u, i)
+      as (rank, predicted, userid, i)
+  from (
+    select * from predicted_test_matrix_thres5
+    CLUSTER BY u
+  ) t
+), rec_items as (
+select
+  userid,
+  collect_list(i) as items
+from
+  top_k
+group by
+  userid
+), truth_data_thres as (
+  select userid, collect_list(movieid) as truth
+  from testing_thres5
+  group by userid
+) select hitrate(r.items, l.truth), arhr(r.items, l.truth), COUNT(*)
+from truth_data_thres l
+join rec_items r on (l.userid=r.userid)
+WHERE size(r.items) = 10
+;
+```
