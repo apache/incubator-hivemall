@@ -168,14 +168,12 @@ public class SlimUDTF extends UDTFWithOptions {
 
             l1 = Primitives.parseDouble(cl.getOptionValue("l1"), l1);
             if (l1 < 0.d) {
-                throw new UDFArgumentException("Argument `double l1` must be non-negative: "
-                        + l1);
+                throw new UDFArgumentException("Argument `double l1` must be non-negative: " + l1);
             }
 
             l2 = Primitives.parseDouble(cl.getOptionValue("l2"), l2);
             if (l2 < 0.d) {
-                throw new UDFArgumentException("Argument `double l2` must be non-negative: "
-                        + l2);
+                throw new UDFArgumentException("Argument `double l2` must be non-negative: " + l2);
             }
 
             numIterations = Primitives.parseInt(cl.getOptionValue("numIterations"), numIterations);
@@ -581,7 +579,7 @@ public class SlimUDTF extends UDTFWithOptions {
             knnItems.put(user, ru);
         }
 
-        for(int itemJ : pairItems){
+        for (int itemJ : pairItems) {
             train(itemI, knnItems, itemJ);
         }
     }
