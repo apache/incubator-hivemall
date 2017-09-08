@@ -24,20 +24,95 @@ _Caution: SLIM is supported from Hivemall v0.xxx or later._
 
 # Data preparation
 
-First of all, please create `ratings`, `training` and `testing` tables described in [this article](../recommend/movielens_dataset.html).
-Here, we use `training` data to build prediction model, and `testing` data to recommend items.
+# Data binarization
 
+In this article, rating value are binarized to consider only high rating items which rating is higher than 4 or equals 4).
+In next section, since dataset is splited into training and testing data,
+`rnd` feild is inserted into each record.
 
-## Rating Binarization
+```sql
+SET hivevar:seed=31;
 
+drop table ratings2;
+create table ratings2 as
+select
+  rand(${seed}) as rnd,
+  userid,
+  movieid,
+  1. as rating
+from
+  ratings
+where rating >= 4.
+;
+```
 
+## Splitting dataset
+
+In this article, to evaluate a recommendation model, there are two type cross validations:
+leave-one-out cross validation and $$K$$-hold cross validation.
+The former is used in **slim**, which is written this article, paper,
+and the latter is used in [Mendely's slide](slideshare.net/MarkLevy/efficient-slides/).
+
+### Leave-one-out cross validation case
+
+For leave-one-out cross validation,
+dataset is splited into a training set and a testing set by randomly selecting one of the non-zero entries of each user and placing it into the testing set.
+
+``` sql
+drop table testing;
+create table testing
+as
+WITH top_k as (
+  select
+     each_top_k(1, userid, rnd, userid, movieid)
+      as (rank, rnd, userid, movieid)
+  from (
+    select * from ratings2
+    CLUSTER BY userid
+  ) t
+)
+select
+  userid,
+  movieid
+from
+  top_k
+;
+
+drop table training;
+create table training as
+select l.userid, l.movieid, 1. as rating
+FROM ratings2 l
+where l.movieid not in
+        (select r.movieid from testing r where l.userid=r.userid)
+;
+```
+
+### $$K$$-hold corss validation case
+
+When $$K=2$$, dataset is splited into training data and testing dataset which are have the same number of records.
+
+``` sql
+drop table testing;
+create table testing
+as
+select * from ratings2
+    where rnd >= 0.5
+;
+
+drop table training;
+create table training
+as
+select * from ratings2
+    where rnd <= 0.5
+;
+```
 
 ## Precompute movie-movie similarity
 
 SLIM needs top-$$k$$ most similar items for each item to approximate user-item matrix.
 Here, we particularly focus on [DIMSUM](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation), an efficient and approximated similarity computation scheme, and try to make recommendation from the MovieLens data.
 
-Since we set `k=20`, output has 20 most-similar movies per `movieid`.
+Since we set `k=30`, output has 30 most-similar movies per `movieid`.
 We can adjust trade-off between training time and approximation by varying `k`.
 Larger `k` is better approximation for raw user-item matrix, but training time increases.
 
@@ -109,6 +184,7 @@ from
 ;
 ```
 
+
 | movieid | other | similarity |
 |:---:|:---:|:---|
 | 1 | 3114 | 0.6344983426248486 |
@@ -176,6 +252,42 @@ from
 
 # Training
 
+
+
+
+## Build a prediction model by SLIM
+
+```sql
+DROP TABLE slim_w;
+create table slim_w as
+select
+  i, nn, avg(w) as w
+from (
+  select
+    train_slim(i, r_i, knn_i, j, r_j) as (i, nn, w)
+  from (
+    select
+      movieid as i,
+      r_i,
+      knn_i,
+      other as j,
+      r_j
+    from slim_training_item
+    CLUSTER BY i
+  ) t1
+) t2
+group by i, nn
+;
+```
+
+## Usage of `train_slim`
+
+
+
+
+# Prediction
+
+
 ## Set hyperparamters
 
 ```sql
@@ -188,49 +300,15 @@ set hivevar:mu=0.;
 > `null` is replaced `$mu`.
 
 
-## Build a prediction model by SLIM
-
-```sql
-DROP TABLE slim_w;
-create table slim_w as
-select
-  i, j, avg(wij) as wij
-from (
-  select
-    train_slim(i, r_i, knn_i, j, r_j) as (i, j, wij)
-  from (
-    select
-      movieid as i,
-      r_i,
-      knn_i,
-      other as j,
-      r_j
-    from slim_training_item
-    CLUSTER BY i
-  ) t1
-) t2
-group by i, j
-;
-```
-
-## Usage of `train_slim`
-
-
-
-# Prediction
-
-Next, we predict rating of user-movie pairs based on top-$$k$$ similar items:
+Next, we predict ratings of user-movie pairs based on top-$$k$$ similar itemsfor not all training data:
 
 ```sql
 drop table predict_pair;
 create table predict_pair
 as
-with userids as (
-    select DISTINCT(userid)
-    from testing
-), cross_table as (
+with cross_table as (
     select l.userid as u, t.movieid as m
-    from userids l
+    from testing l
     CROSS JOIN
         (select DISTINCT(movieid) from ratings) t
 )
@@ -239,17 +317,18 @@ select u as userid, m as movieid from cross_table
         (select movieid from training r where u=r.userid)
 ;
 
-CREATE TABLE predicted_test_matrix_thres5 as
+DROP TABLE predicted_test_matrix;
+CREATE TABLE predicted_test_matrix as
 with knn_exploded as (
   select
     l.userid  as u,
     l.movieid as i, -- axis
-    r1.other   as k, -- other
-    r2.rating  as r_uk
+    r1.other  as k, -- other
+    r2.rating as r_uk
   from predict_pair l
-  LEFT OUTER JOIN knn_train_thres5 r1
+  LEFT OUTER JOIN knn_train r1
     ON (l.movieid = r1.movieid)
-  JOIN training_thres5 r2
+  JOIN training r2
     ON (r1.other = r2.movieid and l.userid = r2.userid)
 )
 select
@@ -257,17 +336,11 @@ select
   l.i,
   coalesce(sum(l.r_uk*r.w), ${mu}) as predicted
 from knn_exploded l
-LEFT OUTER JOIN slim_w_thres5 r
-  ON (l.i = r.i and l.k = r.j)
+LEFT OUTER JOIN slim_w r
+  ON (l.i = r.i and l.k = r.nn)
 group by l.u, l.i
 ;
 ```
-
-> #### Note
-> When prediction for test data, we can use top-$$k$$ similarity for all data: training and testing data.
-> If you want to do that, please run query to compute top-$$k$$ item-item similarity on all data.
-
-
 
 # Top-3 recommendation for each user
 
@@ -309,13 +382,15 @@ select * from top3_recommend;
 
 # Evaluation
 
+## TOP-$$N$$ items evaluations: Hit Rate, ARHR and Precision@N
+
 ```sql
 WITH top_k as (
   select
      each_top_k(10, u, predicted, u, i)
       as (rank, predicted, userid, i)
   from (
-    select * from predicted_test_matrix_thres5
+    select * from predicted_test_matrix
     CLUSTER BY u
   ) t
 ), rec_items as (
@@ -328,11 +403,45 @@ group by
   userid
 ), truth_data_thres as (
   select userid, collect_list(movieid) as truth
-  from testing_thres5
+  from testing
   group by userid
-) select hitrate(r.items, l.truth), arhr(r.items, l.truth), COUNT(*)
+) select hitrate(r.items, l.truth) as HITRATE, arhr(r.items, l.truth) as ARHR, precision_at(r.items, l.truth) as prec10, COUNT(*)
 from truth_data_thres l
 join rec_items r on (l.userid=r.userid)
-WHERE size(r.items) = 10
+;
+```
+
+## MRR
+
+``` sql
+WITH ordered as (
+  select
+    u, i, predicted
+  from
+    predicted_test_matrix
+  order by
+    u, predicted desc
+), rec_items as (
+select
+  u as userid,
+  collect_list(i) as items
+from
+  ordered
+group by
+  u
+), truth_data as (
+select
+  userid, collect_list(movieid) as truth
+from
+  testing
+group by
+  userid
+)
+select
+  mrr(r.items, l.truth), COUNT(*)
+from
+  truth_data l
+join
+  rec_items r on (l.userid=r.userid)
 ;
 ```
