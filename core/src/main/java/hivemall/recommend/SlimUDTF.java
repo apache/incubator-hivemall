@@ -61,7 +61,7 @@ public class SlimUDTF extends UDTFWithOptions {
     private int previousItemId;
 
     private transient DoKMatrix weightMatrix; // item-item weight matrix
-    private transient DoKMatrix dataMatrix; // item-user matrix
+    private transient DoKMatrix dataMatrix; // item-user matrix to get the number of nnz values in column
 
     private PrimitiveObjectInspector itemIOI;
     private PrimitiveObjectInspector itemJOI;
@@ -120,9 +120,9 @@ public class SlimUDTF extends UDTFWithOptions {
         List<String> fieldNames = new ArrayList<>();
         List<ObjectInspector> fieldOIs = new ArrayList<>();
 
-        fieldNames.add("i");
         fieldNames.add("j");
-        fieldNames.add("wij");
+        fieldNames.add("nn");
+        fieldNames.add("w");
 
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
