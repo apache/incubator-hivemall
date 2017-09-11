@@ -36,7 +36,9 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
@@ -52,6 +54,10 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 
+@Description(
+        name = "train_slim",
+        value = "_FUNC_( int i, map<int, double> r_i, map<int, map<int, double>> topKRatesOfI, int j, map<int, double> r_j [, constant string options]) " +
+                "- Returns row index, column index and non-zero weight value of prediction model")
 public class SlimUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(SlimUDTF.class);
 
@@ -92,9 +98,17 @@ public class SlimUDTF extends UDTFWithOptions {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int numArgs = argOIs.length;
+
+        if (numArgs == 1 && HiveUtils.isStringOI(argOIs[0])) {
+            String rawArgs = HiveUtils.getConstString(argOIs[0]);
+            parseOptions(rawArgs);
+        }
+
         if (numArgs != 5 && numArgs != 6) {
             throw new UDFArgumentException(
-                "_FUNC_ takes arguments: int i, map<int, double> r_i, map<int, map<int, double>> topKRatesOfI, int j, map<int, double> r_j, [, constant string options]");
+                getClass().getSimpleName()
+                        + " takes 5 or 6 arguments: int i, map<int, double> r_i, map<int, map<int, double>> topKRatesOfI, int j, map<int, double> r_j [, constant string options]: "
+                        + Arrays.toString(argOIs));
         }
 
         this.itemIOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
@@ -144,7 +158,7 @@ public class SlimUDTF extends UDTFWithOptions {
             "Coefficient for l1 regularizer [default: 0.001]");
         opts.addOption("l2", "l2coefficient", true,
             "Coefficient for l2 regularizer [default: 0.0005]");
-        opts.addOption("numIterations", "iteration", true,
+        opts.addOption("iters", "iterations", true,
             "The number of iterations for coordinate descent [default: 40]");
         opts.addOption("disable_cv", "disable_cvtest", false,
             "Whether to disable convergence check [default: enabled]");
@@ -176,10 +190,10 @@ public class SlimUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException("Argument `double l2` must be non-negative: " + l2);
             }
 
-            numIterations = Primitives.parseInt(cl.getOptionValue("numIterations"), numIterations);
+            numIterations = Primitives.parseInt(cl.getOptionValue("iters"), numIterations);
             if (numIterations <= 0) {
-                throw new UDFArgumentException(
-                    "Argument `int numIterations` must be greater than 0: " + numIterations);
+                throw new UDFArgumentException("Argument `int iters` must be greater than 0: "
+                        + numIterations);
             }
 
             conversionCheck = !cl.hasOption("disable_cvtest");
