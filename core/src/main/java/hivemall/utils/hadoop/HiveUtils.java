@@ -440,6 +440,13 @@ public final class HiveUtils {
         return PrimitiveObjectInspectorUtils.getDouble(o, oi);
     }
 
+    public static int getInt(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
+        if (o == null) {
+            return 0;
+        }
+        return PrimitiveObjectInspectorUtils.getInt(o, oi);
+    }
+
     @SuppressWarnings("unchecked")
     @Nullable
     public static <T extends Writable> T getConstValue(@Nonnull final ObjectInspector oi)

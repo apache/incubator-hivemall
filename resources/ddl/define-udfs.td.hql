@@ -177,6 +177,7 @@ create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
 create temporary function train_ffm as 'hivemall.fm.FieldAwareFactorizationMachineUDTF';
 create temporary function ffm_predict as 'hivemall.fm.FFMPredictGenericUDAF';
 create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
+create temporary function to_ordered_list as 'hivemall.tools.list.UDAFToOrderedList';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

@@ -83,6 +83,10 @@ This page describes a list of useful Hivemall generic functions.
 
 - `array_sum(array<NUMBER>)` - Returns an array<double> in which each element is summed up
 
+## List UDAF
+
+- `to_ordered_list(value [, const string options])` or `to_ordered_list(value, key [, const string options])` - Return list of values sorted by value itself or specific key
+
 # Bitset functions
 
 ## Bitset UDF
@@ -141,8 +145,7 @@ The compression level must be in range [-1,9]
 
 - `to_map(key, value)` - Convert two aggregated columns into a key-value map
 
-- `to_ordered_map(key, value [, const boolean reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
-
+- `to_ordered_map(key, value [, const int|boolean k|reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
 
 # MapReduce functions
 

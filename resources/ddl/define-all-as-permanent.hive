@@ -467,6 +467,13 @@ DROP FUNCTION IF EXISTS to_ordered_map;
 CREATE FUNCTION to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap' USING JAR '${hivemall_jar}';
 
 ---------------------
+-- list functions --
+---------------------
+
+DROP FUNCTION IF EXISTS to_ordered_list;
+CREATE FUNCTION to_ordered_list as 'hivemall.tools.list.UDAFToOrderedList' USING JAR '${hivemall_jar}';
+
+---------------------
 -- Math functions --
 ---------------------
 

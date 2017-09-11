@@ -459,6 +459,13 @@ drop temporary function if exists to_ordered_map;
 create temporary function to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap';
 
 ---------------------
+-- list functions --
+---------------------
+
+drop temporary function if exists to_ordered_list;
+create temporary function to_ordered_list as 'hivemall.tools.list.UDAFToOrderedList';
+
+---------------------
 -- Math functions --
 ---------------------
 
