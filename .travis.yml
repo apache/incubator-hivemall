@@ -34,9 +34,7 @@ notifications:
   email: false
 
 script:
-  - mvn -q scalastyle:check test -Pspark-2.1
-  # test the spark-2.0 modules only in the following runs
-  - mvn -q scalastyle:check clean -Pspark-2.0 -pl spark/spark-2.0 -am test -Dtest=none
+  - ./bin/run_travis_tests.sh
 
 after_success:
   - mvn clean cobertura:cobertura coveralls:report
