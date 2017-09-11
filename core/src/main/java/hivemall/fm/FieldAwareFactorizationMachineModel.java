@@ -22,9 +22,11 @@ import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.collections.arrays.DoubleArray3D;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -34,19 +36,33 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
 
     @Nonnull
     protected final FFMHyperParameters _params;
-    protected final float _eta0_V;
+    protected final float _eta0;
     protected final float _eps;
 
     protected final boolean _useAdaGrad;
     protected final boolean _useFTRL;
 
+    // FTEL
+    private final float _alpha;
+    private final float _beta;
+    private final float _lambda1;
+    private final float _lamdda2;
+
     public FieldAwareFactorizationMachineModel(@Nonnull FFMHyperParameters params) {
         super(params);
         this._params = params;
-        this._eta0_V = params.eta0_V;
+        if (params.useAdaGrad) {
+            this._eta0 = 1.0f;
+        } else {
+            this._eta0 = params.eta.eta0();
+        }
         this._eps = params.eps;
         this._useAdaGrad = params.useAdaGrad;
         this._useFTRL = params.useFTRL;
+        this._alpha = params.alphaFTRL;
+        this._beta = params.betaFTRL;
+        this._lambda1 = params.lambda1;
+        this._lamdda2 = params.lamdda2;
     }
 
     public abstract float getV(@Nonnull Feature x, @Nonnull int yField, int f);
@@ -100,31 +116,152 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         return ret;
     }
 
+    void updateWi(final double dloss, @Nonnull final Feature x, final long t) {
+        if (_useFTRL) {
+            updateWi_FTRL(dloss, x);
+            return;
+        }
+
+        final double Xi = x.getValue();
+        float gradWi = (float) (dloss * Xi);
+
+        final Entry theta = getEntryW(x);
+        float wi = theta.getW();
+
+        final float eta = eta(theta, t, gradWi);
+        float nextWi = wi - eta * (gradWi + 2.f * _lambdaW * wi);
+        if (!NumberUtils.isFinite(nextWi)) {
+            throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
+                    + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + wi + ", dloss=" + dloss
+                    + ", eta=" + eta + ", t=" + t);
+        }
+        if (MathUtils.closeToZero(nextWi, 1E-9f)) {
+            removeEntry(theta);
+            return;
+        }
+        theta.setW(nextWi);
+    }
+
+    /**
+     * Update Wi using Follow-the-Regularized-Leader
+     */
+    private void updateWi_FTRL(final double dloss, @Nonnull final Feature x) {
+        final double Xi = x.getValue();
+        float gradWi = (float) (dloss * Xi);
+
+        final Entry theta = getEntryW(x);
+
+        final float z = theta.updateZ(gradWi, _alpha);
+        final double n = theta.updateN(gradWi);
+
+        if (Math.abs(z) <= _lambda1) {
+            removeEntry(theta);
+            return;
+        }
+
+        final float nextWi = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
+                / _alpha + _lamdda2));
+        if (!NumberUtils.isFinite(nextWi)) {
+            throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
+                    + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + theta.getW()
+                    + ", dloss=" + dloss + ", n=" + n + ", z=" + z);
+        }
+        if (MathUtils.closeToZero(nextWi, 1E-9f)) {
+            removeEntry(theta);
+            return;
+        }
+        theta.setW(nextWi);
+    }
+
+    protected abstract void removeEntry(@Nonnull final Entry entry);
+
     void updateV(final double dloss, @Nonnull final Feature x, @Nonnull final int yField,
             final int f, final double sumViX, long t) {
+        if (_useFTRL) {
+            updateV_FTRL(dloss, x, yField, f, sumViX);
+            return;
+        }
+
+        final Entry theta = getEntryV(x, yField);
+        if (theta == null) {
+            return;
+        }
+
         final double Xi = x.getValue();
         final double h = Xi * sumViX;
         final float gradV = (float) (dloss * h);
         final float lambdaVf = getLambdaV(f);
 
-        final Entry theta = getEntry(x, yField);
         final float currentV = theta.getV(f);
-        final float eta = etaV(theta, t, gradV);
+        final float eta = eta(theta, f, t, gradV);
         final float nextV = currentV - eta * (gradV + 2.f * lambdaVf * currentV);
         if (!NumberUtils.isFinite(nextV)) {
             throw new IllegalStateException("Got " + nextV + " for next V" + f + '['
                     + x.getFeatureIndex() + "]\n" + "Xi=" + Xi + ", Vif=" + currentV + ", h=" + h
                     + ", gradV=" + gradV + ", lambdaVf=" + lambdaVf + ", dloss=" + dloss
-                    + ", sumViX=" + sumViX);
+                    + ", sumViX=" + sumViX + ", t=" + t);
+        }
+        if (MathUtils.closeToZero(nextV, 1E-9f)) {
+            theta.setV(f, 0.f);
+            if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
+                removeEntry(theta);
+            }
+            return;
         }
         theta.setV(f, nextV);
     }
 
-    protected final float etaV(@Nonnull final Entry theta, final long t, final float grad) {
+    private void updateV_FTRL(final double dloss, @Nonnull final Feature x,
+            @Nonnull final int yField, final int f, final double sumViX) {
+        final Entry theta = getEntryV(x, yField);
+        if (theta == null) {
+            return;
+        }
+
+        final double Xi = x.getValue();
+        final double h = Xi * sumViX;
+        final float gradV = (float) (dloss * h);
+
+        float oldV = theta.getV(f);
+        final float z = theta.updateZ(f, oldV, gradV, _alpha);
+        final double n = theta.updateN(f, gradV);
+
+        if (Math.abs(z) <= _lambda1) {
+            theta.setV(f, 0.f);
+            if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
+                removeEntry(theta);
+            }
+            return;
+        }
+
+        final float nextV = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
+                / _alpha + _lamdda2));
+        if (!NumberUtils.isFinite(nextV)) {
+            throw new IllegalStateException("Got " + nextV + " for next V" + f + '['
+                    + x.getFeatureIndex() + "]\n" + "Xi=" + Xi + ", Vif=" + theta.getV(f) + ", h="
+                    + h + ", gradV=" + gradV + ", dloss=" + dloss + ", sumViX=" + sumViX + ", n="
+                    + n + ", z=" + z);
+        }
+        if (MathUtils.closeToZero(nextV, 1E-9f)) {
+            theta.setV(f, 0.f);
+            if (theta.removable()) { // Whether other factors are zero filled or not? Remove if zero filled
+                removeEntry(theta);
+            }
+            return;
+        }
+        theta.setV(f, nextV);
+    }
+
+    protected final float eta(@Nonnull final Entry theta, final long t, final float grad) {
+        return eta(theta, 0, t, grad);
+    }
+
+    protected final float eta(@Nonnull final Entry theta, @Nonnegative final int f, final long t,
+            final float grad) {
         if (_useAdaGrad) {
-            double gg = theta.getSumOfSquaredGradientsV();
-            theta.addGradientV(grad);
-            return (float) (_eta0_V / Math.sqrt(_eps + gg));
+            double gg = theta.getSumOfSquaredGradients(f);
+            theta.addGradient(f, grad);
+            return (float) (_eta0 / Math.sqrt(_eps + gg));
         } else {
             return _eta.eta(t);
         }
@@ -187,10 +324,10 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     }
 
     @Nonnull
-    protected abstract Entry getEntry(@Nonnull Feature x);
+    protected abstract Entry getEntryW(@Nonnull Feature x);
 
-    @Nonnull
-    protected abstract Entry getEntry(@Nonnull Feature x, @Nonnull int yField);
+    @Nullable
+    protected abstract Entry getEntryV(@Nonnull Feature x, @Nonnull int yField);
 
     @Override
     protected final String varDump(@Nonnull final Feature[] x) {

@@ -19,7 +19,7 @@
 package hivemall.fm;
 
 import hivemall.utils.collections.IMapIterator;
-import hivemall.utils.collections.maps.OpenHashTable;
+import hivemall.utils.collections.maps.OpenHashMap;
 
 import javax.annotation.Nonnull;
 
@@ -28,12 +28,12 @@ public final class FMStringFeatureMapModel extends FactorizationMachineModel {
 
     // LEARNING PARAMS
     private float _w0;
-    private final OpenHashTable<String, Entry> _map;
+    private final OpenHashMap<String, Entry> _map;
 
     public FMStringFeatureMapModel(@Nonnull FMHyperParameters params) {
         super(params);
         this._w0 = 0.f;
-        this._map = new OpenHashTable<String, FMStringFeatureMapModel.Entry>(DEFAULT_MAPSIZE);
+        this._map = new OpenHashMap<String, FMStringFeatureMapModel.Entry>(DEFAULT_MAPSIZE);
     }
 
     @Override
@@ -42,7 +42,7 @@ public final class FMStringFeatureMapModel extends FactorizationMachineModel {
     }
 
     IMapIterator<String, Entry> entries() {
-        return _map.entries();
+        return _map.entries(true);
     }
 
     @Override

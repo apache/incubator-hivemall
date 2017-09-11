@@ -23,6 +23,7 @@ import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hashing.MurmurHash3;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +60,7 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
     private boolean _mhash = true;
     private int _numFeatures = Feature.DEFAULT_NUM_FEATURES;
     private int _numFields = Feature.DEFAULT_NUM_FIELDS;
+    private boolean _emitIndicies = false;
 
     @Override
     protected Options getOptions() {
@@ -66,9 +68,11 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         opts.addOption("no_hash", "disable_feature_hashing", false,
             "Wheather to disable feature hashing [default: false]");
         // feature hashing
+        opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("hash", "feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default:21]");
         opts.addOption("fields", "num_fields", true, "The number of fields [default:1024]");
+        opts.addOption("emit_indicies", false, "Emit indicies for fields [default: false]");
         return opts;
     }
 
@@ -77,19 +81,27 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         CommandLine cl = parseOptions(optionValue);
 
         // feature hashing
-        int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"),
-            Feature.DEFAULT_FEATURE_BITS);
-        if (hashbits < 18 || hashbits > 31) {
-            throw new UDFArgumentException("-feature_hashing MUST be in range [18,31]: " + hashbits);
+        int numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), -1);
+        if (numFeatures == -1) {
+            int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"),
+                Feature.DEFAULT_FEATURE_BITS);
+            if (hashbits < 18 || hashbits > 31) {
+                throw new UDFArgumentException("-feature_hashing MUST be in range [18,31]: "
+                        + hashbits);
+            }
+            numFeatures = 1 << hashbits;
         }
-        int numFeatures = 1 << hashbits;
+        this._numFeatures = numFeatures;
+
         int numFields = Primitives.parseInt(cl.getOptionValue("num_fields"),
             Feature.DEFAULT_NUM_FIELDS);
         if (numFields <= 1) {
             throw new UDFArgumentException("-num_fields MUST be greater than 1: " + numFields);
         }
-        this._numFeatures = numFeatures;
         this._numFields = numFields;
+
+        this._emitIndicies = cl.hasOption("emit_indicies");
+
         return cl;
     }
 
@@ -111,7 +123,10 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
                     + numFeatureNames);
         }
         for (String featureName : _featureNames) {
-            if (featureName.indexOf(':') != -1) {
+            if (featureName == null) {
+                throw new UDFArgumentException("featureName should not be null: "
+                        + Arrays.toString(_featureNames));
+            } else if (featureName.indexOf(':') != -1) {
                 throw new UDFArgumentException("featureName should not include colon: "
                         + featureName);
             }
@@ -174,18 +189,20 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
             // categorical feature representation 
             final String fv;
             if (_mhash) {
-                int field = MurmurHash3.murmurhash3(_featureNames[i], _numFields);
+                int field = _emitIndicies ? i : MurmurHash3.murmurhash3(_featureNames[i],
+                    _numFields);
                 // +NUM_FIELD to avoid conflict to quantitative features
                 int index = MurmurHash3.murmurhash3(feature, _numFeatures) + _numFields;
                 fv = builder.append(field).append(':').append(index).append(":1").toString();
-                builder.setLength(0);
+                StringUtils.clear(builder);
             } else {
-                fv = builder.append(featureName)
-                            .append(':')
-                            .append(feature)
-                            .append(":1")
-                            .toString();
-                builder.setLength(0);
+                if (_emitIndicies) {
+                    builder.append(i);
+                } else {
+                    builder.append(featureName);
+                }
+                fv = builder.append(':').append(feature).append(":1").toString();
+                StringUtils.clear(builder);
             }
 
             _result.add(new Text(fv));

@@ -309,6 +309,9 @@ create temporary function binarize_label as 'hivemall.ftvec.trans.BinarizeLabelU
 drop temporary function if exists onehot_encoding;
 create temporary function onehot_encoding as 'hivemall.ftvec.trans.OnehotEncodingUDAF';
 
+drop temporary function if exists add_field_indicies;
+create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
+
 ------------------------------
 -- ranking helper functions --
 ------------------------------
@@ -612,7 +615,7 @@ drop temporary function if exists train_ffm;
 create temporary function train_ffm as 'hivemall.fm.FieldAwareFactorizationMachineUDTF';
 
 drop temporary function if exists ffm_predict;
-create temporary function ffm_predict as 'hivemall.fm.FFMPredictUDF';
+create temporary function ffm_predict as 'hivemall.fm.FFMPredictGenericUDAF';
 
 ---------------------------
 -- Anomaly Detection ------

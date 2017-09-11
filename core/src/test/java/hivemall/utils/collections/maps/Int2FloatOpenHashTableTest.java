@@ -18,46 +18,56 @@
  */
 package hivemall.utils.collections.maps;
 
-import hivemall.utils.collections.maps.IntOpenHashMap;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class IntOpenHashMapTest {
+public class Int2FloatOpenHashTableTest {
 
     @Test
     public void testSize() {
-        IntOpenHashMap<Float> map = new IntOpenHashMap<Float>(16384);
-        map.put(1, Float.valueOf(3.f));
-        Assert.assertEquals(Float.valueOf(3.f), map.get(1));
-        map.put(1, Float.valueOf(5.f));
-        Assert.assertEquals(Float.valueOf(5.f), map.get(1));
+        Int2FloatOpenHashTable map = new Int2FloatOpenHashTable(16384);
+        map.put(1, 3.f);
+        Assert.assertEquals(3.f, map.get(1), 0.d);
+        map.put(1, 5.f);
+        Assert.assertEquals(5.f, map.get(1), 0.d);
         Assert.assertEquals(1, map.size());
     }
 
     @Test
+    public void testDefaultReturnValue() {
+        Int2FloatOpenHashTable map = new Int2FloatOpenHashTable(16384);
+        Assert.assertEquals(0, map.size());
+        Assert.assertEquals(-1.f, map.get(1), 0.d);
+        float ret = Float.MIN_VALUE;
+        map.defaultReturnValue(ret);
+        Assert.assertEquals(ret, map.get(1), 0.d);
+    }
+
+    @Test
     public void testPutAndGet() {
-        IntOpenHashMap<Integer> map = new IntOpenHashMap<Integer>(16384);
+        Int2FloatOpenHashTable map = new Int2FloatOpenHashTable(16384);
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertNull(map.put(i, i));
+            Assert.assertEquals(-1.f, map.put(i, Float.valueOf(i + 0.1f)), 0.d);
         }
         Assert.assertEquals(numEntries, map.size());
         for (int i = 0; i < numEntries; i++) {
-            Integer v = map.get(i);
-            Assert.assertEquals(i, v.intValue());
+            Float v = map.get(i);
+            Assert.assertEquals(i + 0.1f, v.floatValue(), 0.d);
         }
     }
 
     @Test
     public void testIterator() {
-        IntOpenHashMap<Integer> map = new IntOpenHashMap<Integer>(1000);
-        IntOpenHashMap.IMapIterator<Integer> itor = map.entries();
+        Int2FloatOpenHashTable map = new Int2FloatOpenHashTable(1000);
+        Int2FloatOpenHashTable.IMapIterator itor = map.entries();
         Assert.assertFalse(itor.hasNext());
 
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertNull(map.put(i, i));
+            Assert.assertEquals(-1.f, map.put(i, Float.valueOf(i + 0.1f)), 0.d);
         }
         Assert.assertEquals(numEntries, map.size());
 
@@ -66,9 +76,22 @@ public class IntOpenHashMapTest {
         while (itor.hasNext()) {
             Assert.assertFalse(itor.next() == -1);
             int k = itor.getKey();
-            Integer v = itor.getValue();
-            Assert.assertEquals(k, v.intValue());
+            Float v = itor.getValue();
+            Assert.assertEquals(k + 0.1f, v.floatValue(), 0.d);
         }
+        Assert.assertEquals(-1, itor.next());
+    }
+
+    @Test
+    public void testIterator2() {
+        Int2FloatOpenHashTable map = new Int2FloatOpenHashTable(100);
+        map.put(33, 3.16f);
+
+        Int2FloatOpenHashTable.IMapIterator itor = map.entries();
+        Assert.assertTrue(itor.hasNext());
+        Assert.assertNotEquals(-1, itor.next());
+        Assert.assertEquals(33, itor.getKey());
+        Assert.assertEquals(3.16f, itor.getValue(), 0.d);
         Assert.assertEquals(-1, itor.next());
     }
 

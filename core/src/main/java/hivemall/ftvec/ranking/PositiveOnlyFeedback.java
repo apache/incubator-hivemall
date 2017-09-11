@@ -19,8 +19,8 @@
 package hivemall.ftvec.ranking;
 
 import hivemall.utils.collections.lists.IntArrayList;
-import hivemall.utils.collections.maps.IntOpenHashMap;
-import hivemall.utils.collections.maps.IntOpenHashMap.IMapIterator;
+import hivemall.utils.collections.maps.IntOpenHashTable;
+import hivemall.utils.collections.maps.IntOpenHashTable.IMapIterator;
 
 import java.util.BitSet;
 
@@ -30,13 +30,13 @@ import javax.annotation.Nullable;
 public class PositiveOnlyFeedback {
 
     @Nonnull
-    protected final IntOpenHashMap<IntArrayList> rows;
+    protected final IntOpenHashTable<IntArrayList> rows;
 
     protected int maxItemId;
     protected int totalFeedbacks;
 
     public PositiveOnlyFeedback(int maxItemId) {
-        this.rows = new IntOpenHashMap<IntArrayList>(1024);
+        this.rows = new IntOpenHashTable<IntArrayList>(1024);
         this.maxItemId = maxItemId;
         this.totalFeedbacks = 0;
     }

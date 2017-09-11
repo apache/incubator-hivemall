@@ -27,16 +27,22 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-import java.util.HashMap;
 
 import javax.annotation.Nonnull;
 
 /**
- * An open-addressing hash table with double-hashing that requires less memory to {@link HashMap}.
+ * An open-addressing hash table using double-hashing.
+ *
+ * <pre>
+ * Primary hash function: h1(k) = k mod m
+ * Secondary hash function: h2(k) = 1 + (k mod(m-2))
+ * </pre>
+ *
+ * @see http://en.wikipedia.org/wiki/Double_hashing
  */
 public final class OpenHashTable<K, V> implements Externalizable {
 
-    public static final float DEFAULT_LOAD_FACTOR = 0.7f;
+    public static final float DEFAULT_LOAD_FACTOR = 0.75f;
     public static final float DEFAULT_GROW_FACTOR = 2.0f;
 
     protected static final byte FREE = 0;

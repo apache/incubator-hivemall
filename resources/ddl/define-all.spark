@@ -312,6 +312,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION binarize_label AS 'hivemall.ftvec.tran
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS onehot_encoding")
 sqlContext.sql("CREATE TEMPORARY FUNCTION onehot_encoding AS 'hivemall.ftvec.trans.OnehotEncodingUDAF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS add_field_indicies")
+sqlContext.sql("CREATE TEMPORARY FUNCTION add_field_indicies AS 'hivemall.ftvec.trans.AddFieldIndicesUDF'")
+
 /**
  * ranking helper functions
  */
@@ -596,7 +599,7 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_ffm")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_ffm AS 'hivemall.fm.FieldAwareFactorizationMachineUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS ffm_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION ffm_predict AS 'hivemall.fm.FFMPredictUDF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION ffm_predict AS 'hivemall.fm.FFMPredictGenericUDAF'")
 
 /**
  * Anomaly Detection

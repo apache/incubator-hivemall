@@ -18,6 +18,9 @@
  */
 package hivemall.fm;
 
+import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_ARRAY_META;
+import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_REF;
+import static org.apache.hadoop.hive.ql.util.JavaDataModel.PRIMITIVES2;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
@@ -35,6 +38,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationType;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -234,6 +238,7 @@ public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
     }
 
+    @AggregationType(estimable = true)
     public static class FMPredictAggregationBuffer extends AbstractAggregationBuffer {
 
         private double ret;
@@ -327,6 +332,16 @@ public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
                 }
             }
             return predict;
+        }
+
+        @Override
+        public int estimate() {
+            if (sumVjXj == null) {
+                return PRIMITIVES2 + 2 * JAVA64_REF;
+            } else {
+                // model.array() = JAVA64_ARRAY_META + JAVA64_REF
+                return PRIMITIVES2 + 2 * (JAVA64_ARRAY_META + PRIMITIVES2 * sumVjXj.length);
+            }
         }
     }
 

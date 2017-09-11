@@ -49,4 +49,27 @@ public class IntOpenHashTableTest {
         }
     }
 
+    @Test
+    public void testIterator() {
+        IntOpenHashTable<Integer> map = new IntOpenHashTable<Integer>(1000);
+        IntOpenHashTable.IMapIterator<Integer> itor = map.entries();
+        Assert.assertFalse(itor.hasNext());
+
+        final int numEntries = 1000000;
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertNull(map.put(i, i));
+        }
+        Assert.assertEquals(numEntries, map.size());
+
+        itor = map.entries();
+        Assert.assertTrue(itor.hasNext());
+        while (itor.hasNext()) {
+            Assert.assertFalse(itor.next() == -1);
+            int k = itor.getKey();
+            Integer v = itor.getValue();
+            Assert.assertEquals(k, v.intValue());
+        }
+        Assert.assertEquals(-1, itor.next());
+    }
+
 }
