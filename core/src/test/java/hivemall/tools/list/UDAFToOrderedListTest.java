@@ -21,22 +21,20 @@ package hivemall.tools.list;
 import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator;
 import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator.QueueAggregationBuffer;
 
+import java.util.List;
+
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.List;
-
-@SuppressWarnings("deprecation")
 public class UDAFToOrderedListTest {
 
-    GenericUDAFEvaluator evaluator;
-    QueueAggregationBuffer agg;
+    private UDAFToOrderedListEvaluator evaluator;
+    private QueueAggregationBuffer agg;
 
     @Before
     public void setUp() throws Exception {
@@ -57,7 +55,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(3, res.size());
         Assert.assertEquals("apple", res.get(0));
@@ -81,7 +79,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(3, res.size());
         Assert.assertEquals("candy", res.get(0));
@@ -105,7 +103,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("candy", res.get(0));
@@ -129,7 +127,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("apple", res.get(0));
@@ -152,7 +150,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("apple", res.get(0));
@@ -176,7 +174,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("candy", res.get(0));
@@ -199,7 +197,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(3, res.size());
         Assert.assertEquals("apple", res.get(0));
@@ -257,7 +255,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("candy", res.get(0));
@@ -283,7 +281,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("apple", res.get(0));
@@ -308,7 +306,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("apple", res.get(0));
@@ -334,7 +332,7 @@ public class UDAFToOrderedListTest {
             evaluator.iterate(agg, new Object[] {values[i], keys[i]});
         }
 
-        List<Object> res = (List<Object>) evaluator.terminate(agg);
+        List<Object> res = evaluator.terminate(agg);
 
         Assert.assertEquals(2, res.size());
         Assert.assertEquals("candy", res.get(0));

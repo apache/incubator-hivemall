@@ -18,13 +18,13 @@
  */
 package hivemall.tools.map;
 
+import hivemall.utils.collections.maps.BoundedSortedMap;
 import hivemall.utils.hadoop.HiveUtils;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeMap;
+
+import javax.annotation.Nonnegative;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -34,17 +34,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardMapObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructField;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
-import org.apache.hadoop.io.IntWritable;
-
-import javax.annotation.Nonnull;
 
 /**
  * Convert two aggregated columns into a sorted key-value map.
@@ -52,13 +42,13 @@ import javax.annotation.Nonnull;
 @Description(name = "to_ordered_map",
         value = "_FUNC_(key, value [, const int k|const boolean reverseOrder=false]) "
                 + "- Convert two aggregated columns into an ordered key-value map")
-public class UDAFToOrderedMap extends UDAFToMap {
+public final class UDAFToOrderedMap extends UDAFToMap {
 
     @Override
     public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info)
             throws SemanticException {
         @SuppressWarnings("deprecation")
-        TypeInfo[] typeInfo = info.getParameters();
+        final TypeInfo[] typeInfo = info.getParameters();
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "Expecting two or three arguments: " + typeInfo.length);
@@ -81,6 +71,7 @@ public class UDAFToOrderedMap extends UDAFToMap {
                     throw new UDFArgumentException("Map size must be nonzero: " + size);
                 }
                 reverseOrder = (size > 0); // positive size => top-k
+                size = Math.abs(size);
             } else {
                 throw new UDFArgumentTypeException(2,
                     "The third argument must be boolean or integer type: "
@@ -89,205 +80,53 @@ public class UDAFToOrderedMap extends UDAFToMap {
         }
 
         if (reverseOrder) { // descending
-            if (size != 0) {
-                return new TopKOrderedMapEvaluator();
-            }
-            return new ReverseOrderedMapEvaluator();
+            return new DescendingMapEvaluator(size);
         } else { // ascending
-            if (size != 0) {
-                return new TailKOrderedMapEvaluator();
-            }
-            return new NaturalOrderedMapEvaluator();
+            return new AscendingMapEvaluator(size);
         }
     }
 
-    public static class NaturalOrderedMapEvaluator extends UDAFToMapEvaluator {
+    public static final class AscendingMapEvaluator extends UDAFToMapEvaluator {
 
-        @Override
-        public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
-                throws HiveException {
-            ((MapAggregationBuffer) agg).container = new TreeMap<Object, Object>();
-        }
+        private final int size;
 
-    }
-
-    public static class ReverseOrderedMapEvaluator extends UDAFToMapEvaluator {
-
-        @Override
-        public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
-                throws HiveException {
-            ((MapAggregationBuffer) agg).container = new TreeMap<Object, Object>(
-                Collections.reverseOrder());
-        }
-
-    }
-
-    public static class TopKOrderedMapEvaluator extends GenericUDAFEvaluator {
-
-        protected PrimitiveObjectInspector inputKeyOI;
-        protected ObjectInspector inputValueOI;
-        protected StandardMapObjectInspector partialMapOI;
-        protected PrimitiveObjectInspector sizeOI;
-
-        protected StructObjectInspector internalMergeOI;
-
-        protected StructField partialMapField;
-        protected StructField sizeField;
-
-        @Override
-        public ObjectInspector init(Mode mode, ObjectInspector[] argOIs) throws HiveException {
-            super.init(mode, argOIs);
-
-            // initialize input
-            if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
-                this.inputKeyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
-                this.inputValueOI = argOIs[1];
-                this.sizeOI = HiveUtils.asIntegerOI(argOIs[2]);
-            } else {// from partial aggregation
-                StructObjectInspector soi = (StructObjectInspector) argOIs[0];
-                this.internalMergeOI = soi;
-
-                this.partialMapField = soi.getStructFieldRef("partialMap");
-                // re-extract input key/value OIs
-                StandardMapObjectInspector partialMapOI = (StandardMapObjectInspector) partialMapField.getFieldObjectInspector();
-                this.inputKeyOI = HiveUtils.asPrimitiveObjectInspector(partialMapOI.getMapKeyObjectInspector());
-                this.inputValueOI = partialMapOI.getMapValueObjectInspector();
-
-                this.partialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                    ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
-                    ObjectInspectorUtils.getStandardObjectInspector(inputValueOI));
-
-                this.sizeField = soi.getStructFieldRef("size");
-                this.sizeOI = (PrimitiveObjectInspector) sizeField.getFieldObjectInspector();
-            }
-
-            // initialize output
-            final ObjectInspector outputOI;
-            if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
-                outputOI = internalMergeOI(inputKeyOI, inputValueOI);
-            } else {// terminate
-                outputOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                    ObjectInspectorUtils.getStandardObjectInspector(inputKeyOI),
-                    ObjectInspectorUtils.getStandardObjectInspector(inputValueOI));
-            }
-            return outputOI;
-        }
-
-        private static StructObjectInspector internalMergeOI(
-                @Nonnull PrimitiveObjectInspector keyOI, @Nonnull ObjectInspector valueOI) {
-            ArrayList<String> fieldNames = new ArrayList<String>();
-            ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-
-            fieldNames.add("partialMap");
-            fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
-                ObjectInspectorUtils.getStandardObjectInspector(keyOI),
-                ObjectInspectorUtils.getStandardObjectInspector(valueOI)));
-
-            fieldNames.add("size");
-            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-
-            return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
-        }
-
-        static class MapAggregationBuffer extends AbstractAggregationBuffer {
-            Map<Object, Object> container;
-            int size;
-
-            MapAggregationBuffer() {
-                super();
-            }
+        AscendingMapEvaluator(@Nonnegative int size) {
+            super();
+            this.size = size;
         }
 
         @Override
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
-            myagg.container = new TreeMap<Object, Object>(Collections.reverseOrder());
-            myagg.size = Integer.MAX_VALUE;
-        }
-
-        @Override
-        public MapAggregationBuffer getNewAggregationBuffer() throws HiveException {
-            MapAggregationBuffer myagg = new MapAggregationBuffer();
-            reset(myagg);
-            return myagg;
-        }
-
-        @Override
-        public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
-                Object[] parameters) throws HiveException {
-            assert (parameters.length == 3);
-
-            if (parameters[0] == null) {
-                return;
+            if (size == 0) {
+                ((MapAggregationBuffer) agg).container = new TreeMap<Object, Object>();
+            } else {
+                ((MapAggregationBuffer) agg).container = new BoundedSortedMap<Object, Object>(size);
             }
-
-            Object key = ObjectInspectorUtils.copyToStandardObject(parameters[0], inputKeyOI);
-            Object value = ObjectInspectorUtils.copyToStandardObject(parameters[1], inputValueOI);
-            int size = Math.abs(HiveUtils.getInt(parameters[2], sizeOI)); // size could be negative for tail-k
-
-            MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
-            myagg.container.put(key, value);
-            myagg.size = size;
-        }
-
-        @Override
-        public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
-                throws HiveException {
-            MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
-
-            Object[] partialResult = new Object[2];
-            partialResult[0] = myagg.container;
-            partialResult[1] = new IntWritable(myagg.size);
-
-            return partialResult;
-        }
-
-        @Override
-        public void merge(@SuppressWarnings("deprecation") AggregationBuffer agg, Object partial)
-                throws HiveException {
-            if (partial == null) {
-                return;
-            }
-
-            MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
-
-            Object partialMapObj = internalMergeOI.getStructFieldData(partial, partialMapField);
-            Map<?, ?> partialMap = partialMapOI.getMap(HiveUtils.castLazyBinaryObject(partialMapObj));
-            for (Map.Entry<?, ?> e : partialMap.entrySet()) {
-                Object key = ObjectInspectorUtils.copyToStandardObject(e.getKey(), inputKeyOI);
-                Object value = ObjectInspectorUtils.copyToStandardObject(e.getValue(), inputValueOI);
-                myagg.container.put(key, value);
-            }
-
-            Object sizeObj = internalMergeOI.getStructFieldData(partial, sizeField);
-            int size = HiveUtils.getInt(sizeObj, sizeOI);
-            myagg.size = size;
-        }
-
-        @Override
-        public Map<Object, Object> terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
-                throws HiveException {
-            MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
-            if (myagg.size < myagg.container.size()) {
-                Object toKey = myagg.container.keySet().toArray()[myagg.size];
-                return ((SortedMap<Object, Object>) myagg.container).headMap(toKey);
-            }
-            return myagg.container;
         }
 
     }
 
-    public static class TailKOrderedMapEvaluator extends TopKOrderedMapEvaluator {
+    public static final class DescendingMapEvaluator extends UDAFToMapEvaluator {
+
+        private final int size;
+
+        DescendingMapEvaluator(int size) {
+            super();
+            this.size = size;
+        }
 
         @Override
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
-            myagg.container = new TreeMap<Object, Object>();
-            myagg.size = Integer.MAX_VALUE;
+            if (size == 0) {
+                ((MapAggregationBuffer) agg).container = new TreeMap<Object, Object>(
+                    Collections.reverseOrder());
+            } else {
+                ((MapAggregationBuffer) agg).container = new BoundedSortedMap<Object, Object>(size,
+                    true);
+            }
         }
 
     }
-
 }

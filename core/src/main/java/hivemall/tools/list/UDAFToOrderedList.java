@@ -21,6 +21,23 @@ package hivemall.tools.list;
 import hivemall.utils.collections.BoundedPriorityQueue;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.CommandLineUtils;
+import hivemall.utils.lang.NaturalComparator;
+import hivemall.utils.lang.Preconditions;
+import hivemall.utils.struct.Pair;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.PriorityQueue;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -33,25 +50,26 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StandardListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.IntWritable;
 
-import javax.annotation.Nonnegative;
-import javax.annotation.Nonnull;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.*;
-
 /**
  * Return list of values sorted by value itself or specific key.
  */
-@Description(
-        name = "to_ordered_list",
-        value = "_FUNC_(value [, key, const string options]) - Return list of values sorted by value itself or specific key")
-public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
+@Description(name = "to_ordered_list",
+        value = "_FUNC_(PRIMITIVE value [, PRIMITIVE key, const string options])"
+                + " - Return list of values sorted by value itself or specific key")
+public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
     @Override
     public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info)
@@ -151,7 +169,6 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
             int k = 0;
             boolean reverseOrder = false;
-
             if (argOIs.length >= optionIndex + 1) {
                 String rawArgs = HiveUtils.getConstString(argOIs[optionIndex]);
                 cl = parseOptions(rawArgs);
@@ -161,18 +178,18 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 if (cl.hasOption("k")) {
                     k = Integer.parseInt(cl.getOptionValue("k"));
                     if (k == 0) {
-                        throw new UDFArgumentException("`k` must be nonzero: " + k);
+                        throw new UDFArgumentException("`k` must be non-zero value: " + k);
                     }
                 }
             }
-
             this.size = Math.abs(k);
 
-            if ((k > 0 && reverseOrder) || (k < 0 && !reverseOrder) || (k == 0 && !reverseOrder)) {
-                // reverse top-k, natural tail-k = ascending = natural order output = reverse order priority queue
+            if ((k > 0 && reverseOrder) || (k < 0 && reverseOrder == false)
+                    || (k == 0 && reverseOrder == false)) {
+                // top-k on reverse order = tail-k on natural order (so, top-k on descending)
                 this.reverseOrder = true;
-            } else { // (k > 0 && !reverseOrder) || (k < 0 && reverseOrder) || (k == 0 && reverseOrder)
-                // natural top-k or reverse tail-k = descending = reverse order output = natural order priority queue
+            } else { // (k > 0 && reverseOrder == false) || (k < 0 && reverseOrder) || (k == 0 && reverseOrder)
+                // top-k on natural order = tail-k on reverse order (so, top-k on ascending)
                 this.reverseOrder = false;
             }
 
@@ -190,7 +207,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                         || (argOIs.length == 3 && HiveUtils.isConstString(argOIs[2]));
 
                 if (sortByKey) {
-                    this.valueOI = argOIs[0];
+                    this.valueOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
                     this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
                 } else {
                     // sort values by value itself
@@ -230,20 +247,18 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             return outputOI;
         }
 
+        @Nonnull
         private static StructObjectInspector internalMergeOI(@Nonnull ObjectInspector valueOI,
                 @Nonnull PrimitiveObjectInspector keyOI) {
-            ArrayList<String> fieldNames = new ArrayList<String>();
-            ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
+            List<String> fieldNames = new ArrayList<String>();
+            List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
             fieldNames.add("valueList");
             fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(valueOI)));
-
             fieldNames.add("keyList");
             fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(keyOI)));
-
             fieldNames.add("size");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-
             fieldNames.add("reverseOrder");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
 
@@ -295,10 +310,10 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 throws HiveException {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
 
-            Map<String, List<Object>> tuples = myagg.drainQueue();
-            List<Object> valueList = tuples.get("value");
-            List<Object> keyList = tuples.get("key");
-            if (valueList.size() == 0) {
+            Pair<List<Object>, List<Object>> tuples = myagg.drainQueue();
+            List<Object> keyList = tuples.getKey();
+            List<Object> valueList = tuples.getValue();
+            if (valueList.isEmpty()) {
                 return null;
             }
 
@@ -307,7 +322,6 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             partialResult[1] = keyList;
             partialResult[2] = new IntWritable(myagg.size);
             partialResult[3] = new BooleanWritable(myagg.reverseOrder);
-
             return partialResult;
         }
 
@@ -345,11 +359,11 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public Object terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
+        public List<Object> terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
-            Map<String, List<Object>> tuples = myagg.drainQueue();
-            return tuples.get("value");
+            Pair<List<Object>, List<Object>> tuples = myagg.drainQueue();
+            return tuples.getValue();
         }
 
         static class QueueAggregationBuffer extends AbstractAggregationBuffer {
@@ -374,14 +388,14 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 this.reverseOrder = reverseOrder;
             }
 
-            void iterate(TupleWithKey tuple) {
+            void iterate(@Nonnull TupleWithKey tuple) {
                 if (queueHandler == null) {
                     initQueueHandler();
                 }
                 queueHandler.offer(tuple);
             }
 
-            void merge(List<Object> o_keyList, List<Object> o_valueList) {
+            void merge(@Nonnull List<Object> o_keyList, @Nonnull List<Object> o_valueList) {
                 if (queueHandler == null) {
                     initQueueHandler();
                 }
@@ -391,7 +405,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             }
 
             @Nonnull
-            Map<String, List<Object>> drainQueue() {
+            Pair<List<Object>, List<Object>> drainQueue() {
                 int n = queueHandler.size();
                 final Object[] keys = new Object[n];
                 final Object[] values = new Object[n];
@@ -402,10 +416,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 }
                 queueHandler.clear();
 
-                Map<String, List<Object>> res = new HashMap<String, List<Object>>();
-                res.put("key", Arrays.asList(keys));
-                res.put("value", Arrays.asList(values));
-                return res;
+                return Pair.of(Arrays.asList(keys), Arrays.asList(values));
             }
 
             private void initQueueHandler() {
@@ -413,12 +424,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 if (reverseOrder) {
                     comparator = Collections.reverseOrder();
                 } else {
-                    comparator = new Comparator<TupleWithKey>() {
-                        @Override
-                        public int compare(TupleWithKey o1, TupleWithKey o2) {
-                            return o1.compareTo(o2);
-                        }
-                    };
+                    comparator = NaturalComparator.getInstance();
                 }
 
                 if (size > 0) {
@@ -436,10 +442,11 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
          */
         private static abstract class AbstractQueueHandler {
 
-            abstract void offer(TupleWithKey tuple);
+            abstract void offer(@Nonnull TupleWithKey tuple);
 
             abstract int size();
 
+            @Nullable
             abstract TupleWithKey poll();
 
             abstract void clear();
@@ -450,6 +457,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
             private static final int DEFAULT_INITIAL_CAPACITY = 11; // same as PriorityQueue
 
+            @Nonnull
             private final PriorityQueue<TupleWithKey> queue;
 
             QueueHandler(@Nonnull Comparator<TupleWithKey> comparator) {
@@ -480,6 +488,7 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
         private static final class BoundedQueueHandler extends AbstractQueueHandler {
 
+            @Nonnull
             private final BoundedPriorityQueue<TupleWithKey> queue;
 
             BoundedQueueHandler(int size, @Nonnull Comparator<TupleWithKey> comparator) {
@@ -509,24 +518,29 @@ public class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         }
 
         private static final class TupleWithKey implements Comparable<TupleWithKey> {
-            private Object key;
-            private Object value;
+            @Nonnull
+            private final Object key;
+            @Nonnull
+            private final Object value;
 
-            TupleWithKey(Object key, Object value) {
-                this.key = key;
-                this.value = value;
+            TupleWithKey(@CheckForNull Object key, @CheckForNull Object value) {
+                this.key = Preconditions.checkNotNull(key);
+                this.value = Preconditions.checkNotNull(value);
             }
 
+            @Nonnull
             Object getKey() {
                 return key;
             }
 
+            @Nonnull
             Object getValue() {
                 return value;
             }
 
             @Override
             public int compareTo(TupleWithKey o) {
+                @SuppressWarnings("unchecked")
                 Comparable<? super Object> k = (Comparable<? super Object>) key;
                 return k.compareTo(o.getKey());
             }
