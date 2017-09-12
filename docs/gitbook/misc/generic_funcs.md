@@ -145,7 +145,7 @@ The compression level must be in range [-1,9]
 
 - `to_map(key, value)` - Convert two aggregated columns into a key-value map
 
-- `to_ordered_map(key, value [, const int|boolean k|reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
+- `to_ordered_map(key, value [, const int k|const boolean reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
 
 # MapReduce functions
 
