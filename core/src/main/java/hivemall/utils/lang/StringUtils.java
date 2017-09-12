@@ -250,5 +250,22 @@ public final class StringUtils {
         return builder.toString();
     }
 
+    public static int compare(@Nullable final String o1, @Nullable final String o2) {
+        return compare(o1, o2, true);
+    }
+
+    public static int compare(@Nullable final String o1, @Nullable final String o2,
+            final boolean nullIsLess) {
+        if (o1 == o2) {
+            return 0;
+        }
+        if (o1 == null) {
+            return nullIsLess ? -1 : 1;
+        }
+        if (o2 == null) {
+            return nullIsLess ? 1 : -1;
+        }
+        return o1.compareTo(o2);
+    }
 
 }
