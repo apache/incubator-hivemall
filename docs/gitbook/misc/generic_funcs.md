@@ -239,6 +239,14 @@ The compression level must be in range [-1,9]
 
 - `is_stopword(string word)` - Returns whether English stopword or not
 
+- `singularize(string word)` - Returns singular form of a given English word
+
+    ```sql
+    select singularize(lower("Apples"));
+
+    > "apple"
+    ```
+
 - `tokenize(string englishText [, boolean toLowerCase])` - Returns words in array<string>
 
 - `tokenize_ja(String line [, const string mode = "normal", const list<string> stopWords, const list<string> stopTags])` - returns tokenized strings in array<string>. Refer [this article](../misc/tokenizer.html) for detail.

@@ -28,7 +28,8 @@ public final class StringUtils {
 
     private StringUtils() {}
 
-    public static byte[] getBytes(final String s) {
+    @Nonnull
+    public static byte[] getBytes(@Nonnull final String s) {
         final int len = s.length();
         final byte[] b = new byte[len * 2];
         for (int i = 0; i < len; i++) {
@@ -37,11 +38,13 @@ public final class StringUtils {
         return b;
     }
 
-    public static String toString(byte[] b) {
+    @Nonnull
+    public static String toString(@Nonnull final byte[] b) {
         return toString(b, 0, b.length);
     }
 
-    public static String toString(byte[] b, int off, int len) {
+    @Nonnull
+    public static String toString(@Nonnull final byte[] b, final int off, final int len) {
         final int clen = len >>> 1;
         final char[] c = new char[clen];
         for (int i = 0; i < clen; i++) {
@@ -53,11 +56,11 @@ public final class StringUtils {
 
     /**
      * Checks whether the String a valid Java number. this code is ported from jakarta commons lang.
-     * 
+     *
      * @link http://jakarta.apache.org/commons/lang/apidocs/org/apache/commons/lang
      *       /math/NumberUtils.html
      */
-    public static boolean isNumber(final String str) {
+    public static boolean isNumber(@Nullable final String str) {
         if (str == null || str.length() == 0) {
             return false;
         }
@@ -97,7 +100,7 @@ public final class StringUtils {
 
             } else if (chars[i] == '.') {
                 if (hasDecPoint || hasExp) {
-                    // two decimal points or dec in exponent   
+                    // two decimal points or dec in exponent
                     return false;
                 }
                 hasDecPoint = true;
@@ -170,6 +173,7 @@ public final class StringUtils {
         buf.setLength(0);
     }
 
+    @Nonnull
     public static String concat(@Nonnull final List<String> list, @Nonnull final String sep) {
         final StringBuilder buf = new StringBuilder(128);
         for (String s : list) {
@@ -182,11 +186,29 @@ public final class StringUtils {
         return buf.toString();
     }
 
-    public static String[] split(final String str, final char separatorChar) {
+    @Nonnull
+    public static String join(@Nonnull final List<String> list, @Nonnull final String sep) {
+        final StringBuilder buf = new StringBuilder(128);
+        for (int i = 0, size = list.size(); i < size; i++) {
+            if (i > 0) { // append separator before each element, except for the head element
+                buf.append(sep);
+            }
+
+            final String s = list.get(i);
+            if (s != null) {
+                buf.append(s);
+            }
+        }
+        return buf.toString();
+    }
+
+    @Nullable
+    public static String[] split(@Nullable final String str, final char separatorChar) {
         return split(str, separatorChar, false);
     }
 
-    public static String[] split(final String str, final char separatorChar,
+    @Nullable
+    public static String[] split(@Nullable final String str, final char separatorChar,
             final boolean preserveAllTokens) {
         if (str == null) {
             return null;

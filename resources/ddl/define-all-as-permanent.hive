@@ -538,6 +538,9 @@ CREATE FUNCTION tokenize as 'hivemall.tools.text.TokenizeUDF' USING JAR '${hivem
 DROP FUNCTION IF EXISTS is_stopword;
 CREATE FUNCTION is_stopword as 'hivemall.tools.text.StopwordUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS singularize;
+CREATE FUNCTION singularize as 'hivemall.tools.text.SingularizeUDF' USING JAR '${hivemall_jar}';
+
 DROP FUNCTION IF EXISTS split_words;
 CREATE FUNCTION split_words as 'hivemall.tools.text.SplitWordsUDF' USING JAR '${hivemall_jar}';
 

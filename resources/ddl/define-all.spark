@@ -514,6 +514,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tokenize AS 'hivemall.tools.text.Token
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS is_stopword")
 sqlContext.sql("CREATE TEMPORARY FUNCTION is_stopword AS 'hivemall.tools.text.StopwordUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS singularize")
+sqlContext.sql("CREATE TEMPORARY FUNCTION singularize AS 'hivemall.tools.text.SingularizeUDF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS split_words")
 sqlContext.sql("CREATE TEMPORARY FUNCTION split_words AS 'hivemall.tools.text.SplitWordsUDF'")
 
