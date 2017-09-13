@@ -659,6 +659,13 @@ create temporary function train_plsa as 'hivemall.topicmodel.PLSAUDTF';
 drop temporary function if exists plsa_predict;
 create temporary function plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF';
 
+--------------
+-- word2vec --
+--------------
+
+drop temporary function if exists alias_table;
+create temporary function alias_table as 'hivemall.unsupervised.AliasTableBuilderUDTF';
+
 ---------------------------
 -- Geo-Spatial functions --
 ---------------------------
