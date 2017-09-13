@@ -64,6 +64,21 @@ final class HivemallOps(df: DataFrame) extends Logging {
   private[this] lazy val _strategy = new UserProvidedPlanner(_sparkSession.sqlContext.conf)
 
   /**
+   * @see [[hivemall.regression.GeneralRegressorUDTF]]
+   * @group regression
+   */
+  @scala.annotation.varargs
+  def train_regressor(exprs: Column*): DataFrame = withTypedPlan {
+    planHiveGenericUDTF(
+      df,
+      "hivemall.regression.GeneralRegressorUDTF",
+      "train_regressor",
+      toHivemallFeatures(exprs),
+      Seq("feature", "weight")
+    )
+  }
+
+  /**
    * @see [[hivemall.regression.AdaDeltaUDTF]]
    * @group regression
    */
@@ -225,6 +240,21 @@ final class HivemallOps(df: DataFrame) extends Logging {
       "train_randomforest_regr",
       setMixServs(toHivemallFeatures(exprs)),
       Seq("model_id", "model_type", "pred_model", "var_importance", "oob_errors", "oob_tests")
+    )
+  }
+
+  /**
+   * @see [[hivemall.classifier.GeneralClassifierUDTF]]
+   * @group classifier
+   */
+  @scala.annotation.varargs
+  def train_classifier(exprs: Column*): DataFrame = withTypedPlan {
+    planHiveGenericUDTF(
+      df,
+      "hivemall.classifier.GeneralClassifierUDTF",
+      "train_classifier",
+      toHivemallFeatures(exprs),
+      Seq("feature", "weight")
     )
   }
 
