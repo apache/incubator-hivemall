@@ -18,12 +18,11 @@
  */
 package hivemall.tools.text;
 
-import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.UDF;
-import org.apache.hadoop.hive.ql.udf.UDFType;
+import hivemall.utils.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,15 +31,13 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import hivemall.utils.lang.StringUtils;
+import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 
-/**
- * @link
- *       https://github.com/sundrio/sundrio/blob/95c2b11f7b842bdaa04f61e8e338aea60fb38f70/codegen/src
- *       /main/java/io/sundr/codegen/functions/Singularize.java
- * @link https://github.com/clips/pattern/blob/
- *       3eef00481a4555331cf9a099308910d977f6fc22/pattern/text/en/inflect.py#L445-L623
- */
+// Inspired by
+//  https://github.com/sundrio/sundrio/blob/95c2b11f7b842bdaa04f61e8e338aea60fb38f70/codegen/src/main/java/io/sundr/codegen/functions/Singularize.java
+//  https://github.com/clips/pattern/blob/3eef00481a4555331cf9a099308910d977f6fc22/pattern/text/en/inflect.py#L445-L623
 @Description(name = "singularize",
         value = "_FUNC_(string word) - Returns singular form of a given English word")
 @UDFType(deterministic = true, stateful = false)
@@ -128,7 +125,7 @@ public final class SingularizeUDF extends UDF {
     }
 
     @Nullable
-    private String singularize(@Nullable String word) {
+    private static String singularize(@Nullable final String word) {
         if (word == null) {
             return null;
         }
@@ -143,8 +140,7 @@ public final class SingularizeUDF extends UDF {
 
         if (word.contains("-")) { // compound words (e.g., mothers-in-law)
             final List<String> chunks = new ArrayList<>();
-            chunks.addAll(Arrays.asList(word.split("-")));
-
+            Collections.addAll(chunks, word.split("-"));
             if ((chunks.size() > 1) && (Arrays.binarySearch(prepositions, chunks.get(1)) >= 0)) {
                 String head = chunks.remove(0);
                 return singularize(head) + "-" + StringUtils.join(chunks, "-");
