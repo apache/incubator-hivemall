@@ -541,7 +541,10 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION lr_datagen AS 'hivemall.dataset.Logist
  */
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS f1score")
-sqlContext.sql("CREATE TEMPORARY FUNCTION f1score AS 'hivemall.evaluation.FMeasureUDAF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION f1score AS 'hivemall.evaluation.F1ScoreUDAF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS fmeasure")
+sqlContext.sql("CREATE TEMPORARY FUNCTION fmeasure AS 'hivemall.evaluation.FMeasureUDAF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS mae")
 sqlContext.sql("CREATE TEMPORARY FUNCTION mae AS 'hivemall.evaluation.MeanAbsoluteErrorUDAF'")

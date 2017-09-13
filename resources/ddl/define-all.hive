@@ -557,7 +557,10 @@ create temporary function lr_datagen as 'hivemall.dataset.LogisticRegressionData
 --------------------------
 
 drop temporary function if exists f1score;
-create temporary function f1score as 'hivemall.evaluation.FMeasureUDAF';
+create temporary function f1score as 'hivemall.evaluation.F1ScoreUDAF';
+
+drop temporary function if exists fmeasure;
+create temporary function fmeasure as 'hivemall.evaluation.FMeasureUDAF';
 
 drop temporary function if exists mae;
 create temporary function mae as 'hivemall.evaluation.MeanAbsoluteErrorUDAF';

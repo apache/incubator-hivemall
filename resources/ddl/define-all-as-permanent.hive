@@ -565,7 +565,10 @@ CREATE FUNCTION lr_datagen as 'hivemall.dataset.LogisticRegressionDataGeneratorU
 --------------------------
 
 DROP FUNCTION IF EXISTS f1score;
-CREATE FUNCTION f1score as 'hivemall.evaluation.FMeasureUDAF' USING JAR '${hivemall_jar}';
+CREATE FUNCTION f1score as 'hivemall.evaluation.F1ScoreUDAF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS fmeasure;
+CREATE FUNCTION fmeasure as 'hivemall.evaluation.FMeasureUDAF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS mae;
 CREATE FUNCTION mae as 'hivemall.evaluation.MeanAbsoluteErrorUDAF' USING JAR '${hivemall_jar}';

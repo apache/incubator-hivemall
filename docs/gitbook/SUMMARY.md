@@ -66,9 +66,10 @@
 
 ## Part IV - Evaluation
 
-* [Statistical evaluation of a prediction model](eval/stat_eval.md)
+* [Binary Classification Metrics](eval/binary_classification_measures.md)
     * [Area Under the ROC Curve](eval/auc.md)
-    
+* [Multi-label Classification Metrics](eval/multilabel_classification_measures.md)
+* [Regression metrics](eval/regression.md)
 * [Ranking Measures](eval/rank.md)
 
 * [Data Generation](eval/datagen.md)
