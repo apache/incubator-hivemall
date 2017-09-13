@@ -83,6 +83,39 @@ This page describes a list of useful Hivemall generic functions.
 
 - `array_sum(array<NUMBER>)` - Returns an array<double> in which each element is summed up
 
+## List UDAF
+
+- `to_ordered_list(PRIMITIVE value [, PRIMITIVE key, const string options])` or `to_ordered_list(value, key [, const string options])` - Return list of values sorted by value itself or specific key
+
+    ```sql
+    with t as (
+        select 5 as key, 'apple' as value
+        union all
+        select 3 as key, 'banana' as value
+        union all
+        select 4 as key, 'candy' as value
+        union all
+        select 2 as key, 'donut' as value
+        union all
+        select 3 as key, 'egg' as value
+    )
+    select                                             -- expected output
+        to_ordered_list(value, key, '-reverse'),       -- [apple, candy, (banana, egg | egg, banana), donut] (reverse order)
+        to_ordered_list(value, key, '-k 2'),           -- [apple, candy] (top-k)
+        to_ordered_list(value, key, '-k 100'),         -- [apple, candy, (banana, egg | egg, banana), dunut]
+        to_ordered_list(value, key, '-k 2 -reverse'),  -- [donut, (banana | egg)] (reverse top-k = tail-k)
+        to_ordered_list(value, key),                   -- [donut, (banana, egg | egg, banana), candy, apple] (natural order)
+        to_ordered_list(value, key, '-k -2'),          -- [donut, (banana | egg)] (tail-k)
+        to_ordered_list(value, key, '-k -100'),        -- [donut, (banana, egg | egg, banana), candy, apple]
+        to_ordered_list(value, key, '-k -2 -reverse'), -- [apple, candy] (reverse tail-k = top-k)
+        to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)    
+        to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)
+        to_ordered_list(key)                           -- [2, 3, 3, 4, 5] (natural ordered keys)
+    from 
+        t
+    ;
+    ```
+
 # Bitset functions
 
 ## Bitset UDF
@@ -141,8 +174,30 @@ The compression level must be in range [-1,9]
 
 - `to_map(key, value)` - Convert two aggregated columns into a key-value map
 
-- `to_ordered_map(key, value [, const boolean reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
+- `to_ordered_map(key, value [, const int k|const boolean reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
 
+    ```sql
+    with t as (
+        select 10 as key, 'apple' as value
+        union all
+        select 3 as key, 'banana' as value
+        union all
+        select 4 as key, 'candy' as value
+    )
+    select
+        to_ordered_map(key, value, true),   -- {10:"apple",4:"candy",3:"banana"} (reverse)
+        to_ordered_map(key, value, 1),      -- {10:"apple"} (top-1)
+        to_ordered_map(key, value, 2),      -- {10:"apple",4:"candy"} (top-2)
+        to_ordered_map(key, value, 3),      -- {10:"apple",4:"candy",3:"banana"} (top-3)
+        to_ordered_map(key, value, 100),    -- {10:"apple",4:"candy",3:"banana"} (top-100)
+        to_ordered_map(key, value),         -- {3:"banana",4:"candy",10:"apple"} (natural)
+        to_ordered_map(key, value, -1),     -- {3:"banana"} (tail-1)
+        to_ordered_map(key, value, -2),     -- {3:"banana",4:"candy"} (tail-2)
+        to_ordered_map(key, value, -3),     -- {3:"banana",4:"candy",10:"apple"} (tail-3)
+        to_ordered_map(key, value, -100)    -- {3:"banana",4:"candy",10:"apple"} (tail-100)
+    from t
+    ;
+    ```
 
 # MapReduce functions
 

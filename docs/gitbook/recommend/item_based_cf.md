@@ -437,6 +437,11 @@ from (
 
 In order to generate a list of recommended items, you can use either cooccurrence count or similarity as a relevance score.
 
+> #### Caution
+> In order to obtain ranked list of items, this section introduces queries using `map_values(to_ordered_map(rank, rec_item))`. However, this kind of usage has a potential issue that multiple `rec_item`-s which have the exactly same `rank` will be aggregated to single arbitrary `rec_item`, because `to_ordered_map()` creates a key-value map which uses duplicated `rank` as key.
+>
+> Since such situation is possible in case that `each_top_k()` is executed for different `userid`-s who have the same `cnt` or `similarity`, we recommend you to use `to_ordered_list(rec_item, rank, '-reverse')` instead of `map_values(to_ordered_map(rank, rec_item, true))`. The alternative approach is available from Hivemall v0.5-rc.1 or later.
+
 ### Cooccurrence-based
 
 ```sql

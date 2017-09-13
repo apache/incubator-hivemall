@@ -28,6 +28,11 @@ Practical machine learning applications such as information retrieval and recomm
 
 This page focuses on evaluation of the results from such ranking problems.
 
+> #### Caution
+> In order to obtain ranked list of items, this page introduces queries using `to_ordered_map()` such as `map_values(to_ordered_map(score, itemid, true))`. However, this kind of usage has a potential issue that multiple `itemid`-s (i.e., values) which have the exactly same `score` (i.e., key) will be aggregated to single arbitrary `itemid`, because `to_ordered_map()` creates a key-value map which uses duplicated `score` as key.
+>
+> Hence, if map key could duplicate on more then one map values, we recommend you to use `to_ordered_list(value, key, '-reverse')` instead of `map_values(to_ordered_map(key, value, true))`. The alternative approach is available from Hivemall v0.5-rc.1 or later.
+
 # Binary Response Measures
 
 In a context of ranking problem, **binary response** means that binary labels are assigned to items, and positive items are considered as *truth* observations.
