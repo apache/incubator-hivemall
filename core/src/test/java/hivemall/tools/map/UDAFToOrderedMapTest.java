@@ -18,10 +18,12 @@
  */
 package hivemall.tools.map;
 
-import hivemall.tools.map.UDAFToOrderedMap.AscendingMapEvaluator;
-import hivemall.tools.map.UDAFToOrderedMap.DescendingMapEvaluator;
+import hivemall.tools.map.UDAFToOrderedMap.NaturalOrderedMapEvaluator;
+import hivemall.tools.map.UDAFToOrderedMap.ReverseOrderedMapEvaluator;
+import hivemall.tools.map.UDAFToOrderedMap.TailKOrderedMapEvaluator;
+import hivemall.tools.map.UDAFToOrderedMap.TopKOrderedMapEvaluator;
 
-import java.util.SortedMap;
+import java.util.Map;
 
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -33,8 +35,8 @@ public class UDAFToOrderedMapTest {
 
     @Test
     public void testNaturalOrder() throws Exception {
-        AscendingMapEvaluator evaluator = new AscendingMapEvaluator(0);
-        AscendingMapEvaluator.MapAggregationBuffer agg = (AscendingMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        NaturalOrderedMapEvaluator evaluator = new NaturalOrderedMapEvaluator();
+        NaturalOrderedMapEvaluator.MapAggregationBuffer agg = (NaturalOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
         ObjectInspector[] inputOIs = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
@@ -50,7 +52,7 @@ public class UDAFToOrderedMapTest {
             evaluator.iterate(agg, new Object[] {keys[i], values[i]});
         }
 
-        SortedMap<Object, Object> res = (SortedMap<Object, Object>) evaluator.terminate(agg);
+        Map<Object, Object> res = evaluator.terminate(agg);
         Object[] sortedValues = res.values().toArray();
 
         Assert.assertEquals(3, sortedValues.length);
@@ -63,8 +65,8 @@ public class UDAFToOrderedMapTest {
 
     @Test
     public void testReverseOrder() throws Exception {
-        DescendingMapEvaluator evaluator = new DescendingMapEvaluator(0);
-        DescendingMapEvaluator.MapAggregationBuffer agg = (DescendingMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        ReverseOrderedMapEvaluator evaluator = new ReverseOrderedMapEvaluator();
+        ReverseOrderedMapEvaluator.MapAggregationBuffer agg = (ReverseOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
         ObjectInspector[] inputOIs = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
@@ -81,7 +83,7 @@ public class UDAFToOrderedMapTest {
             evaluator.iterate(agg, new Object[] {keys[i], values[i]});
         }
 
-        SortedMap<Object, Object> res = (SortedMap<Object, Object>) evaluator.terminate(agg);
+        Map<Object, Object> res = evaluator.terminate(agg);
         Object[] sortedValues = res.values().toArray();
 
         Assert.assertEquals(3, sortedValues.length);
@@ -94,9 +96,8 @@ public class UDAFToOrderedMapTest {
 
     @Test
     public void testTopK() throws Exception {
-        int size = 2;
-        DescendingMapEvaluator evaluator = new DescendingMapEvaluator(size);
-        DescendingMapEvaluator.MapAggregationBuffer agg = (DescendingMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        TopKOrderedMapEvaluator evaluator = new TopKOrderedMapEvaluator();
+        TopKOrderedMapEvaluator.MapAggregationBuffer agg = (TopKOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
         ObjectInspector[] inputOIs = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
@@ -105,6 +106,7 @@ public class UDAFToOrderedMapTest {
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        int size = 2;
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -113,7 +115,7 @@ public class UDAFToOrderedMapTest {
             evaluator.iterate(agg, new Object[] {keys[i], values[i], size});
         }
 
-        SortedMap<Object, Object> res = (SortedMap<Object, Object>) evaluator.terminate(agg);
+        Map<Object, Object> res = evaluator.terminate(agg);
         Object[] sortedValues = res.values().toArray();
 
         Assert.assertEquals(size, sortedValues.length);
@@ -125,9 +127,8 @@ public class UDAFToOrderedMapTest {
 
     @Test
     public void testTailK() throws Exception {
-        int size = -2;
-        AscendingMapEvaluator evaluator = new AscendingMapEvaluator(Math.abs(size));
-        AscendingMapEvaluator.MapAggregationBuffer agg = (AscendingMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        TailKOrderedMapEvaluator evaluator = new TailKOrderedMapEvaluator();
+        TailKOrderedMapEvaluator.MapAggregationBuffer agg = (TailKOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
         ObjectInspector[] inputOIs = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
@@ -136,6 +137,7 @@ public class UDAFToOrderedMapTest {
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
+        int size = -2;
 
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
         evaluator.reset(agg);
@@ -144,7 +146,7 @@ public class UDAFToOrderedMapTest {
             evaluator.iterate(agg, new Object[] {keys[i], values[i], size});
         }
 
-        SortedMap<Object, Object> res = (SortedMap<Object, Object>) evaluator.terminate(agg);
+        Map<Object, Object> res = evaluator.terminate(agg);
         Object[] sortedValues = res.values().toArray();
 
         Assert.assertEquals(Math.abs(size), sortedValues.length);
