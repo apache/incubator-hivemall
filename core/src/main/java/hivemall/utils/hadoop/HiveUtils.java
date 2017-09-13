@@ -326,6 +326,18 @@ public final class HiveUtils {
         return ObjectInspectorUtils.isConstantObjectInspector(oi) && isStringOI(oi);
     }
 
+    public static boolean isConstInt(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isIntOI(oi);
+    }
+
+    public static boolean isConstInteger(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isIntegerOI(oi);
+    }
+
+    public static boolean isConstBoolean(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isBooleanOI(oi);
+    }
+
     public static boolean isPrimitiveTypeInfo(@Nonnull TypeInfo typeInfo) {
         return typeInfo.getCategory() == ObjectInspector.Category.PRIMITIVE;
     }
