@@ -579,11 +579,11 @@ CREATE FUNCTION r2 as 'hivemall.evaluation.R2UDAF' USING JAR '${hivemall_jar}';
 DROP FUNCTION IF EXISTS ndcg;
 CREATE FUNCTION ndcg as 'hivemall.evaluation.NDCGUDAF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION IF EXISTS precision;
-CREATE FUNCTION precision as 'hivemall.evaluation.PrecisionUDAF' USING JAR '${hivemall_jar}';
+DROP FUNCTION IF EXISTS precision_at;
+CREATE FUNCTION precision_at as 'hivemall.evaluation.PrecisionUDAF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION IF EXISTS recall;
-CREATE FUNCTION recall as 'hivemall.evaluation.RecallUDAF' USING JAR '${hivemall_jar}';
+DROP FUNCTION IF EXISTS recall_at;
+CREATE FUNCTION recall_at as 'hivemall.evaluation.RecallUDAF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS mrr;
 CREATE FUNCTION mrr as 'hivemall.evaluation.MRRUDAF' USING JAR '${hivemall_jar}';

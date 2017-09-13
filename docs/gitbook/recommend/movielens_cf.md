@@ -234,8 +234,8 @@ with truth as (
     userid
 )
 select 
-  recall(t1.rec_movies, t2.truth, 10) as recall,
-  precision(t1.rec_movies, t2.truth, 10) as precision,
+  recall_at(t1.rec_movies, t2.truth, 10) as recall,
+  precision_at(t1.rec_movies, t2.truth, 10) as precision,
   average_precision(t1.rec_movies, t2.truth) as average_precision,
   auc(t1.rec_movies, t2.truth) as auc,
   mrr(t1.rec_movies, t2.truth) as mrr,
@@ -259,3 +259,6 @@ where -- at least 10 recommended items are necessary to compute recall@10 and pr
 |**NDCG**| 0.15787655209987522 |
 
 If you set larger value to the DIMSUM's `-threshold` option, similarity will be more aggressively approximated. Consequently, while efficiency is improved, the accuracy is likely to be decreased.
+
+> #### Caution
+> Before Hivemall v0.5-rc.1, `recall_at()` and `precision_at()` are respectively registered as `recall()` and `precision()`. However, since `precision` is a reserved keyword from Hive v2.2.0, [we renamed the function names](https://issues.apache.org/jira/browse/HIVEMALL-140). If you are still using `recall()` and/or `precision()`, we strongly recommend you to use the latest version of Hivemall and replace them with the newer function names.

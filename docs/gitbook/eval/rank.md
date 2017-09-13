@@ -92,12 +92,12 @@ select
   -- rec = [1,3,2,6], truth = [1,2,4] for each user
 	
   -- Recall@k
-  recall(t1.rec, t2.truth, t1.max_k) as recall,
-  recall(t1.rec, t2.truth, 2) as recall_at_2,
+  recall_at(t1.rec, t2.truth, t1.max_k) as recall,
+  recall_at(t1.rec, t2.truth, 2) as recall_at_2,
 
   -- Precision@k
-  precision(t1.rec, t2.truth, t1.max_k) as precision,
-  precision(t1.rec, t2.truth, 2) as precision_at_2,
+  precision_at(t1.rec, t2.truth, t1.max_k) as precision,
+  precision_at(t1.rec, t2.truth, 2) as precision_at_2,
 
   -- MAP
   average_precision(t1.rec, t2.truth, t1.max_k) as average_precision,
@@ -131,6 +131,9 @@ We have six different measures, and outputs will be:
 | NDCG | 0.7039180890341349 | 0.6131471927654585 |
 
 Here, we introduce the six measures for evaluation of ranked list of items. Importantly, each metric has a different concept behind formulation, and the accuracy measured by the metrics shows different values even for the exactly same input as demonstrated above. Thus, evaluation using multiple ranking measures is more convincing, and it should be easy in Hivemall.
+
+> #### Caution
+> Before Hivemall v0.5-rc.1, `recall_at()` and `precision_at()` are respectively registered as `recall()` and `precision()`. However, since `precision` is a reserved keyword from Hive v2.2.0, [we renamed the function names](https://issues.apache.org/jira/browse/HIVEMALL-140). If you are still using `recall()` and/or `precision()`, we strongly recommend you to use the latest version of Hivemall and replace them with the newer function names.
 
 ## Recall-At-k
 
