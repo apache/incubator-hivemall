@@ -21,29 +21,26 @@
 
 # Binary problems
 
-Binary classification problem is the task to predict the label of each data given two categories.
+Binary classification is a task to predict a label of each data given two categories.
 
-Hivemall provides some tutorials to deal with binary classification problems as follows:
+Hivemall provides several tutorials to deal with binary classification problems as follows:
 
 - [Online advertisement click prediction](../binaryclass/general.html)
 - [News classification](../binaryclass/news20_dataset.html)
 
-This page focuses on the evaluation for such binary classification problems.
+This page focuses on the evaluation of such binary classification problems.
 If your classifier outputs probability rather than 0/1 label, evaluation based on [Area Under the ROC Curve](./auc.md) would be more appropriate.
 
 
 # Example
 
-For the metrics explanation, this page introduces toy example data and two metrics.
+This page introduces toy example data and two metrics for explanation.
 
 ## Data
 
-The following table shows the sample of binary classification's prediction.
-In this case, `1` means positive label and `0` means negative label.
-Left column includes supervised label data,
-and center column includes predicted label by a binary classifier.
+The following table shows examples of binary classification's prediction.
 
-| truth label| predicted label | |
+| truth label| predicted label | description |
 |:---:|:---:|:---:|
 | 1 | 0 |False Negative|
 | 0 | 1 |False Positive|
@@ -51,6 +48,9 @@ and center column includes predicted label by a binary classifier.
 | 1 | 1 |True Positive|
 | 0 | 1 |False Positive|
 | 0 | 0 |True Negative|
+
+In this case, `1` means positive label and `0` means negative label.
+The leftmost column shows truth labels, and center column includes predicted labels.
 
 ## Preliminary metrics
 

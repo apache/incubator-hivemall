@@ -100,7 +100,7 @@ Note that `floor(prob / 0.2)` means that the rows are distributed to 5 bins for 
 
 # Difference between AUC and Logarithmic Loss
 
-Hivemall has another metric called [Logarithmic Loss](stat_eval.html#logarithmic-loss) for binary classification. Both AUC and Logarithmic Loss compute scores for probability-label pairs.
+Hivemall has another metric called [Logarithmic Loss](regression.html#logarithmic-loss) for binary classification. Both AUC and Logarithmic Loss compute scores for probability-label pairs.
 
 Score produced by AUC is a relative metric based on sorted pairs. On the other hand, Logarithmic Loss simply gives a metric by comparing probability with its truth label one-by-one.
 
