@@ -84,8 +84,8 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
             throw new UDFArgumentException("Illegal numSplit value: " + numSplit);
         }
 
-        List<String> index2word = new ArrayList<>();
-        List<Double> unnormalizedProb = new ArrayList<>();
+        final List<String> index2word = new ArrayList<>();
+        final List<Double> unnormalizedProb = new ArrayList<>();
 
         double denom = 0;
         for (Map.Entry<?, ?> entry : this.negativeTableOI.getMap(args[0]).entrySet()) {
@@ -97,13 +97,22 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
             index2word.add(word);
             denom += v;
         }
+
         int V = index2word.size();
 
+        createAliasTable(V, denom, unnormalizedProb);
+
+        this.numVocab = V;
+        this.index2word = index2word;
+    }
+
+    private void createAliasTable(final int V, final double denom,
+            final List<Double> unnormalizedProb) {
         Int2DoubleOpenHashTable S = new Int2DoubleOpenHashTable(V);
         Int2IntOpenHashTable A = new Int2IntOpenHashTable(V);
 
-        Queue<Integer> higherBin = new ArrayDeque<>();
-        Queue<Integer> lowerBin = new ArrayDeque<>();
+        final Queue<Integer> higherBin = new ArrayDeque<>();
+        final Queue<Integer> lowerBin = new ArrayDeque<>();
 
         for (int i = 0; i < V; i++) {
             double v = V * unnormalizedProb.get(i) / denom;
@@ -126,11 +135,8 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
                 higherBin.add(high);
             }
         }
-
-        this.numVocab = V;
         this.A = A;
         this.S = S;
-        this.index2word = index2word;
     }
 
     @Override
