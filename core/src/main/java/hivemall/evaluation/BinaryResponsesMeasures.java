@@ -19,6 +19,7 @@
 package hivemall.evaluation;
 
 import hivemall.utils.lang.Preconditions;
+import hivemall.utils.math.MathUtils;
 
 import java.util.List;
 
@@ -31,7 +32,6 @@ import javax.annotation.Nonnull;
  * References: B. McFee and G. R. Lanckriet. "Metric Learning to Rank" ICML 2010.
  */
 public final class BinaryResponsesMeasures {
-    private static final double LOG2 = Math.log(2);
 
     private BinaryResponsesMeasures() {}
 
@@ -56,7 +56,7 @@ public final class BinaryResponsesMeasures {
                 continue;
             }
             int rank = i + 1;
-            dcg += LOG2 / Math.log(rank + 1);
+            dcg += 1.d / MathUtils.log2(rank + 1);
         }
 
         final double idcg = IDCG(Math.min(groundTruth.size(), k));
@@ -77,7 +77,7 @@ public final class BinaryResponsesMeasures {
 
         double idcg = 0.d;
         for (int i = 0; i < n; i++) {
-            idcg += LOG2 / Math.log(i + 2);
+            idcg += 1.d / MathUtils.log2(i + 2);
         }
         return idcg;
     }
