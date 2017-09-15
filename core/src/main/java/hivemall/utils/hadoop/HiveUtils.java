@@ -21,6 +21,7 @@ package hivemall.utils.hadoop;
 import static hivemall.HivemallConstants.BIGINT_TYPE_NAME;
 import static hivemall.HivemallConstants.BINARY_TYPE_NAME;
 import static hivemall.HivemallConstants.BOOLEAN_TYPE_NAME;
+import static hivemall.HivemallConstants.DECIMAL_TYPE_NAME;
 import static hivemall.HivemallConstants.DOUBLE_TYPE_NAME;
 import static hivemall.HivemallConstants.FLOAT_TYPE_NAME;
 import static hivemall.HivemallConstants.INT_TYPE_NAME;
@@ -47,6 +48,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
 import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.lazy.ByteArrayRef;
 import org.apache.hadoop.hive.serde2.lazy.LazyDouble;
@@ -265,6 +267,7 @@ public final class HiveUtils {
             case LONG:
             case FLOAT:
             case DOUBLE:
+            case DECIMAL:
             case BYTE:
                 //case TIMESTAMP:
                 return true;
@@ -357,6 +360,7 @@ public final class HiveUtils {
             case LONG:
             case FLOAT:
             case DOUBLE:
+            case DECIMAL:
                 return true;
             default:
                 return false;
@@ -404,6 +408,7 @@ public final class HiveUtils {
         switch (((PrimitiveTypeInfo) typeInfo).getPrimitiveCategory()) {
             case DOUBLE:
             case FLOAT:
+            case DECIMAL:
                 return true;
             default:
                 return false;
@@ -630,6 +635,9 @@ public final class HiveUtils {
         } else if (TINYINT_TYPE_NAME.equals(typeName)) {
             ByteWritable v = getConstValue(numberOI);
             return v.get();
+        } else if (DECIMAL_TYPE_NAME.equals(typeName)) {
+            HiveDecimalWritable v = getConstValue(numberOI);
+            return v.getHiveDecimal().floatValue();
         }
         throw new UDFArgumentException("Unexpected argument type to cast as double: "
                 + TypeInfoUtils.getTypeInfoFromObjectInspector(numberOI));
@@ -656,6 +664,9 @@ public final class HiveUtils {
         } else if (TINYINT_TYPE_NAME.equals(typeName)) {
             ByteWritable v = getConstValue(numberOI);
             return v.get();
+        } else if (DECIMAL_TYPE_NAME.equals(typeName)) {
+            HiveDecimalWritable v = getConstValue(numberOI);
+            return v.getHiveDecimal().doubleValue();
         }
         throw new UDFArgumentException("Unexpected argument type to cast as double: "
                 + TypeInfoUtils.getTypeInfoFromObjectInspector(numberOI));
@@ -923,10 +934,10 @@ public final class HiveUtils {
             case LONG:
             case FLOAT:
             case DOUBLE:
+            case DECIMAL:
             case BOOLEAN:
             case BYTE:
             case STRING:
-            case DECIMAL:
                 break;
             default:
                 throw new UDFArgumentTypeException(0, "Unxpected type '" + argOI.getTypeName()
@@ -951,9 +962,9 @@ public final class HiveUtils {
             case BOOLEAN:
             case FLOAT:
             case DOUBLE:
+            case DECIMAL:
             case STRING:
             case TIMESTAMP:
-            case DECIMAL:
                 break;
             default:
                 throw new UDFArgumentTypeException(0, "Unxpected type '" + argOI.getTypeName()
@@ -998,6 +1009,7 @@ public final class HiveUtils {
             case LONG:
             case FLOAT:
             case DOUBLE:
+            case DECIMAL:
             case STRING:
             case TIMESTAMP:
                 break;
@@ -1020,6 +1032,7 @@ public final class HiveUtils {
         switch (oi.getPrimitiveCategory()) {
             case FLOAT:
             case DOUBLE:
+            case DECIMAL:
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
@@ -1044,6 +1057,7 @@ public final class HiveUtils {
             case LONG:
             case FLOAT:
             case DOUBLE:
+            case DECIMAL:
                 break;
             default:
                 throw new UDFArgumentTypeException(0,

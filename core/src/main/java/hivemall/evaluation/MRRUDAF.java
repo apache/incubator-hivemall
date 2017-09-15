@@ -235,7 +235,7 @@ public final class MRRUDAF extends AbstractGenericUDAFResolver {
 
         void iterate(@Nonnull List<?> recommendList, @Nonnull List<?> truthList,
                 @Nonnull int recommendSize) {
-            sum += BinaryResponsesMeasures.MRR(recommendList, truthList, recommendSize);
+            sum += BinaryResponsesMeasures.ReciprocalRank(recommendList, truthList, recommendSize);
             count++;
         }
     }

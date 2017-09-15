@@ -235,7 +235,7 @@ public final class MAPUDAF extends AbstractGenericUDAFResolver {
 
         void iterate(@Nonnull List<?> recommendList, @Nonnull List<?> truthList,
                 @Nonnull int recommendSize) {
-            sum += BinaryResponsesMeasures.MAP(recommendList, truthList, recommendSize);
+            sum += BinaryResponsesMeasures.AveragePrecision(recommendList, truthList, recommendSize);
             count++;
         }
     }

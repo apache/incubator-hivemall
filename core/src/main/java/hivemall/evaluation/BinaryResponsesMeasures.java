@@ -18,8 +18,12 @@
  */
 package hivemall.evaluation;
 
+import hivemall.utils.lang.Preconditions;
+import hivemall.utils.math.MathUtils;
+
 import java.util.List;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
@@ -40,19 +44,25 @@ public final class BinaryResponsesMeasures {
      * @return nDCG
      */
     public static double nDCG(@Nonnull final List<?> rankedList,
-            @Nonnull final List<?> groundTruth, @Nonnull final int recommendSize) {
-        double dcg = 0.d;
-        double idcg = IDCG(Math.min(recommendSize, groundTruth.size()));
+            @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
+        Preconditions.checkArgument(recommendSize > 0);
 
-        for (int i = 0, n = recommendSize; i < n; i++) {
+        double dcg = 0.d;
+
+        final int k = Math.min(rankedList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
             Object item_id = rankedList.get(i);
             if (!groundTruth.contains(item_id)) {
                 continue;
             }
             int rank = i + 1;
-            dcg += Math.log(2) / Math.log(rank + 1);
+            dcg += 1.d / MathUtils.log2(rank + 1);
         }
 
+        final double idcg = IDCG(Math.min(groundTruth.size(), k));
+        if (idcg == 0.d) {
+            return 0.d;
+        }
         return dcg / idcg;
     }
 
@@ -62,10 +72,12 @@ public final class BinaryResponsesMeasures {
      * @param n the number of positive items
      * @return ideal DCG
      */
-    public static double IDCG(final int n) {
+    public static double IDCG(@Nonnegative final int n) {
+        Preconditions.checkArgument(n >= 0);
+
         double idcg = 0.d;
         for (int i = 0; i < n; i++) {
-            idcg += Math.log(2) / Math.log(i + 2);
+            idcg += 1.d / MathUtils.log2(i + 2);
         }
         return idcg;
     }
@@ -79,8 +91,26 @@ public final class BinaryResponsesMeasures {
      * @return Precision
      */
     public static double Precision(@Nonnull final List<?> rankedList,
-            @Nonnull final List<?> groundTruth, @Nonnull final int recommendSize) {
-        return (double) countTruePositive(rankedList, groundTruth, recommendSize) / recommendSize;
+            @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
+        if (rankedList.isEmpty()) {
+            if (groundTruth.isEmpty()) {
+                return 1.d;
+            }
+            return 0.d;
+        }
+
+        Preconditions.checkArgument(recommendSize > 0); // can be zero when groundTruth is empty
+
+        int nTruePositive = 0;
+        final int k = Math.min(rankedList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
+            Object item_id = rankedList.get(i);
+            if (groundTruth.contains(item_id)) {
+                nTruePositive++;
+            }
+        }
+
+        return ((double) nTruePositive) / k;
     }
 
     /**
@@ -92,8 +122,15 @@ public final class BinaryResponsesMeasures {
      * @return Recall
      */
     public static double Recall(@Nonnull final List<?> rankedList,
-            @Nonnull final List<?> groundTruth, @Nonnull final int recommendSize) {
-        return (double) countTruePositive(rankedList, groundTruth, recommendSize)
+            @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
+        if (groundTruth.isEmpty()) {
+            if (rankedList.isEmpty()) {
+                return 1.d;
+            }
+            return 0.d;
+        }
+
+        return ((double) TruePositives(rankedList, groundTruth, recommendSize))
                 / groundTruth.size();
     }
 
@@ -105,11 +142,14 @@ public final class BinaryResponsesMeasures {
      * @param recommendSize top-`recommendSize` items in `rankedList` are recommended
      * @return number of true positives
      */
-    public static int countTruePositive(final List<?> rankedList, final List<?> groundTruth,
-            final int recommendSize) {
+    public static int TruePositives(final List<?> rankedList, final List<?> groundTruth,
+            @Nonnegative final int recommendSize) {
+        Preconditions.checkArgument(recommendSize > 0);
+
         int nTruePositive = 0;
 
-        for (int i = 0, n = recommendSize; i < n; i++) {
+        final int k = Math.min(rankedList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
             Object item_id = rankedList.get(i);
             if (groundTruth.contains(item_id)) {
                 nTruePositive++;
@@ -120,48 +160,65 @@ public final class BinaryResponsesMeasures {
     }
 
     /**
-     * Computes Mean Reciprocal Rank (MRR)
+     * Computes Reciprocal Rank
      *
      * @param rankedList a list of ranked item IDs (first item is highest-ranked)
      * @param groundTruth a collection of positive/correct item IDs
      * @param recommendSize top-`recommendSize` items in `rankedList` are recommended
-     * @return MRR
+     * @return Reciprocal Rank
+     * @link https://en.wikipedia.org/wiki/Mean_reciprocal_rank
      */
-    public static double MRR(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
-            @Nonnull final int recommendSize) {
-        for (int i = 0, n = recommendSize; i < n; i++) {
+    public static double ReciprocalRank(@Nonnull final List<?> rankedList,
+            @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
+        Preconditions.checkArgument(recommendSize > 0);
+
+        final int k = Math.min(rankedList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
             Object item_id = rankedList.get(i);
             if (groundTruth.contains(item_id)) {
-                return 1.0 / (i + 1.0);
+                return 1.d / (i + 1);
             }
         }
 
-        return 0.0;
+        return 0.d;
     }
 
     /**
-     * Computes Mean Average Precision (MAP)
+     * Computes Average Precision (AP)
      *
      * @param rankedList a list of ranked item IDs (first item is highest-ranked)
      * @param groundTruth a collection of positive/correct item IDs
      * @param recommendSize top-`recommendSize` items in `rankedList` are recommended
-     * @return MAP
+     * @return AveragePrecision
      */
-    public static double MAP(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
-            @Nonnull final int recommendSize) {
+    public static double AveragePrecision(@Nonnull final List<?> rankedList,
+            @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
+        Preconditions.checkArgument(recommendSize > 0);
+
+        if (groundTruth.isEmpty()) {
+            if (rankedList.isEmpty()) {
+                return 1.d;
+            }
+            return 0.d;
+        }
+
         int nTruePositive = 0;
-        double sumPrecision = 0.0;
+        double sumPrecision = 0.d;
 
         // accumulate precision@1 to @recommendSize
-        for (int i = 0, n = recommendSize; i < n; i++) {
+        final int k = Math.min(rankedList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
             Object item_id = rankedList.get(i);
             if (groundTruth.contains(item_id)) {
                 nTruePositive++;
-                sumPrecision += nTruePositive / (i + 1.0);
+                sumPrecision += nTruePositive / (i + 1.d);
             }
         }
 
-        return sumPrecision / groundTruth.size();
+        if (nTruePositive == 0) {
+            return 0.d;
+        }
+        return sumPrecision / nTruePositive;
     }
 
     /**
@@ -173,11 +230,14 @@ public final class BinaryResponsesMeasures {
      * @return AUC
      */
     public static double AUC(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
-            @Nonnull final int recommendSize) {
+            @Nonnegative final int recommendSize) {
+        Preconditions.checkArgument(recommendSize > 0);
+
         int nTruePositive = 0, nCorrectPairs = 0;
 
         // count # of pairs of items that are ranked in the correct order (i.e. TP > FP)
-        for (int i = 0, n = recommendSize; i < n; i++) {
+        final int k = Math.min(rankedList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
             Object item_id = rankedList.get(i);
             if (groundTruth.contains(item_id)) {
                 // # of true positives which are ranked higher position than i-th recommended item
@@ -197,7 +257,7 @@ public final class BinaryResponsesMeasures {
         }
 
         // AUC can equivalently be calculated by counting the portion of correctly ordered pairs
-        return (double) nCorrectPairs / nPairs;
+        return ((double) nCorrectPairs) / nPairs;
     }
 
 }
