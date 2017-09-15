@@ -59,6 +59,7 @@ Then, we split each document string into words: list of string.
 drop table docs_words;
 create table docs_words as
   select
+    docid,
     tokenize(doc, true) as words
   FROM
     docs
@@ -68,7 +69,7 @@ create table docs_words as
 Then, we count all word frequency and remove low frequency words.
 
 ``` sql
-set hivevar:mincount=100;
+set hivevar:mincount=15;
 
 drop table freq;
 create table freq as
@@ -88,7 +89,7 @@ We set the number of training words `numTrainWords` variable.
 select sum(freq) FROM freq;
 
 -- set variable query above result
-set hivevar:numTrainWords=12070885;
+set hivevar:numTrainWords=111200449;
 ```
 
 # Delete low frequency words from `docs_words`
@@ -99,7 +100,7 @@ create table docs_exploded as
   select
     docid, word
   from
-    docs LATERAL VIEW explode(tokenize(doc,true)) t as word
+    docs_words LATERAL VIEW explode(words) t as word
 ;
 
 drop table train_docs;
@@ -143,8 +144,6 @@ During word2vec training, negative words are used for negative example.
 ```sql
 set hivevar:noisePower=3/4;
 
-select sum(pow(freq, ${noisePower})) from freq;
-
 drop table negative_table;
 create table negative_table as
   select
@@ -164,7 +163,7 @@ Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 And then, this alias sampler is split into N tables for distributed training on hive.
 
 ``` sql
-set hivevar:numSplit=4;
+set hivevar:numSplit=16;
 
 drop table split_alias_table;
 create table split_alias_table as
@@ -182,31 +181,37 @@ group by k;
 # Train word2vec
 
 ```sql
+drop table w2v;
+create table w2v as 
 with discard_map as (
-select
-  to_map(word, discard) as m
-FROM
-  discard_table
-)
-select
-  word,
-  i,
-  avg(w) as wi
-from (
   select
-    train_word2vec(
-      words,
-      m,
-      alias,
-      ${numTrainWords},
-      "-lr 0.1 -win 5 -dim 200 -neg 5"
-   )
-   from
-     train_docs l
-   join split_alias_table r on
-     l.docid % ${numSplit} = r.k
-   join discard_map
-) t
-group by
-  word, i
+    to_map(word, discard) as m
+  FROM
+    discard_table
+) select
+    word, i, avg(wi)
+  FROM (
+    select(
+      skipgram(
+        words,
+        k,
+        alias,
+        m,
+        ${numTrainWords},
+        "-win 5 -dim 100 -neg 15"
+      )
+    )
+    from (
+      select
+        words, r.k, alias, m
+      from 
+        train_docs l
+      join split_alias_table r on
+        l.docid % ${numSplit} = r.k
+      join discard_map
+        CLUSTER BY r.k
+    ) t
+  ) t1
+group by word, i
+;
 ```
