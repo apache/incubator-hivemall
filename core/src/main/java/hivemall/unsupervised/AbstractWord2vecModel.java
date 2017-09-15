@@ -18,7 +18,6 @@
  */
 package hivemall.unsupervised;
 
-import hivemall.utils.collections.maps.Int2DoubleOpenHashTable;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 
@@ -33,7 +32,7 @@ public abstract class AbstractWord2vecModel {
     protected int dim;
     protected int win;
     protected int neg;
-    protected Int2DoubleOpenHashTable S;
+    protected Int2FloatOpenHashTable S;
     protected Int2IntOpenHashTable A;
     protected Random rnd;
     protected Int2FloatOpenHashTable sigmoidTable;
@@ -41,7 +40,7 @@ public abstract class AbstractWord2vecModel {
     protected Int2FloatOpenHashTable inputWeights;
 
     public AbstractWord2vecModel(int dim, int win, int neg, long numTrainWords,
-            Int2DoubleOpenHashTable S, Int2IntOpenHashTable A) {
+            Int2FloatOpenHashTable S, Int2IntOpenHashTable A) {
         this.dim = dim;
         this.win = win;
         this.neg = neg;
@@ -54,12 +53,12 @@ public abstract class AbstractWord2vecModel {
         this.sigmoidTable = initSigmoidTable(maxSigmoid, sigmoidTableSize);
 
         // TODO how to estimate size
-        this.inputWeights = new Int2FloatOpenHashTable(10578*dim);
+        this.inputWeights = new Int2FloatOpenHashTable(10578 * dim);
         // for small corpus, some word vector values are 0.
         // so it skip is one choice,
-        inputWeights.defaultReturnValue(0.f);
-        this.contextWeights = new Int2FloatOpenHashTable(10578*dim);
-        contextWeights.defaultReturnValue(0.f);
+        this.inputWeights.defaultReturnValue(0.f);
+        this.contextWeights = new Int2FloatOpenHashTable(10578 * dim);
+        this.contextWeights.defaultReturnValue(0.f);
     }
 
     protected static Int2FloatOpenHashTable initSigmoidTable(double maxSigmoid, int sigmoidTableSize) {
@@ -76,7 +75,7 @@ public abstract class AbstractWord2vecModel {
         do {
             int k = this.rnd.nextInt(this.A.size());
 
-            if (S.get(k) > this.rnd.nextDouble()) {
+            if (S.get(k) > this.rnd.nextFloat()) {
                 result = k;
             } else {
                 result = A.get(k);

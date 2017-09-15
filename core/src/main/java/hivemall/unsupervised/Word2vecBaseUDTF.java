@@ -19,7 +19,6 @@
 package hivemall.unsupervised;
 
 import hivemall.UDTFWithOptions;
-import hivemall.utils.collections.maps.Int2DoubleOpenHashTable;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 import hivemall.utils.hadoop.HiveUtils;
@@ -48,7 +47,7 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
     protected int neg;
     protected float startingLR;
     protected long numTrainWords;
-    protected Int2DoubleOpenHashTable S;
+    protected Int2FloatOpenHashTable S;
     protected Int2IntOpenHashTable A;
     protected Int2FloatOpenHashTable discardTable;
 
@@ -175,13 +174,20 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
 
         if (previousNegativeSamplerId != negativeSamplerId) {
             word2index = new HashMap<>();
-            parseNegativeTable(args[2], word2index);
+            parseNegativeTable(args[2]);
             parseDiscardTable(args[3]);
             numTrainWords = PrimitiveObjectInspectorUtils.getLong(args[4], this.numTrainWordsOI);
 
             // TODO reset or keep? (also alias table and word2index)
             this.model = createModel();
             previousNegativeSamplerId = negativeSamplerId;
+        }
+
+
+        if (wordCount - lastWordCount > 10000) {
+            wordCountActual += wordCount - lastWordCount;
+            lastWordCount = wordCount;
+            currentLR = getLearningRate(wordCountActual, numTrainWords, startingLR);
         }
 
         // parse document
@@ -206,11 +212,6 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
             doc.add(wordId);
         }
 
-        if (wordCount - lastWordCount > 10000) {
-            wordCountActual += wordCount - lastWordCount;
-            lastWordCount = wordCount;
-            currentLR = getLearningRate(wordCountActual, numTrainWords, startingLR);
-        }
         this.model.iteration(doc, currentLR);
     }
 
@@ -220,9 +221,9 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
             startingLR * 0.0001f);
     }
 
-    private void parseNegativeTable(Object listObj, Map<String, Integer> word2index) {
+    private void parseNegativeTable(Object listObj) {
         int aliasSize = negativeTableOI.getListLength(listObj);
-        Int2DoubleOpenHashTable S = new Int2DoubleOpenHashTable(aliasSize);
+        Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(aliasSize);
         Int2IntOpenHashTable A = new Int2IntOpenHashTable(aliasSize);
 
         // to avoid conflicting aliasBin[2]'s word
@@ -233,8 +234,8 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
                 negativeTableElementOI);
 
             word2index.put(word, wordId);
-            S.put(wordId, Double.parseDouble(PrimitiveObjectInspectorUtils.getString(
-                aliasBin.get(1), negativeTableElementOI)));
+            S.put(wordId, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
+                negativeTableElementOI)));
         }
 
         for (int i = 0; i < aliasSize; i++) {
@@ -257,7 +258,8 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
     }
 
     private void parseDiscardTable(Object mapObj) {
-        Int2FloatOpenHashTable discard = new Int2FloatOpenHashTable(this.discardTableOI.getMapSize(mapObj));
+        Int2FloatOpenHashTable discard = new Int2FloatOpenHashTable(
+            this.discardTableOI.getMapSize(mapObj));
         discard.defaultReturnValue(1.f);
 
         for (Map.Entry<?, ?> entry : this.discardTableOI.getMap(mapObj).entrySet()) {
@@ -281,17 +283,20 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
 
 
     public void close() throws HiveException {
-        for(Map.Entry<String, Integer> entry: word2index.entrySet()){
+        for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
 
             int wordindex = entry.getValue();
 
             Text word = new Text(entry.getKey());
 
-            for(int i = 0; i < dim; i++){
+            for (int i = 0; i < dim; i++) {
                 Object[] res = new Object[3];
                 res[0] = word;
                 res[1] = new IntWritable(i);
-                res[2] = new FloatWritable(model.inputWeights.get(wordindex*dim + i));
+                if (i == 0 && model.inputWeights.get(wordindex * dim + i) == 0.f){
+                    continue;
+                }
+                res[2] = new FloatWritable(model.inputWeights.get(wordindex * dim + i));
                 forward(res);
             }
         }

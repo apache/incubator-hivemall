@@ -18,7 +18,7 @@
  */
 package hivemall.unsupervised;
 
-import hivemall.utils.collections.maps.Int2DoubleOpenHashTable;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 import hivemall.utils.hadoop.HiveUtils;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -27,7 +27,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
@@ -43,7 +43,7 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
     private int numVocab;
     private List<String> index2word;
     private Int2IntOpenHashTable A;
-    private Int2DoubleOpenHashTable S;
+    private Int2FloatOpenHashTable S;
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -54,7 +54,7 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
 
         this.negativeTableOI = HiveUtils.asMapOI(argOIs[0]);
         this.negativeTableKeyOI = HiveUtils.asStringOI(negativeTableOI.getMapKeyObjectInspector());
-        this.negativeTableValueOI = HiveUtils.asDoubleOI(negativeTableOI.getMapValueObjectInspector());
+        this.negativeTableValueOI = HiveUtils.asFloatingPointOI(negativeTableOI.getMapValueObjectInspector());
 
         this.numSplitOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
 
@@ -68,7 +68,7 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
 
         fieldNames.add("p");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
         fieldNames.add("other");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
@@ -85,13 +85,13 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
         }
 
         final List<String> index2word = new ArrayList<>();
-        final List<Double> unnormalizedProb = new ArrayList<>();
+        final List<Float> unnormalizedProb = new ArrayList<>();
 
-        double denom = 0;
+        float denom = 0;
         for (Map.Entry<?, ?> entry : this.negativeTableOI.getMap(args[0]).entrySet()) {
             String word = PrimitiveObjectInspectorUtils.getString(entry.getKey(),
                 this.negativeTableKeyOI);
-            double v = PrimitiveObjectInspectorUtils.getDouble(entry.getValue(),
+            float v = PrimitiveObjectInspectorUtils.getFloat(entry.getValue(),
                 this.negativeTableValueOI);
             unnormalizedProb.add(v);
             index2word.add(word);
@@ -106,16 +106,15 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
         this.index2word = index2word;
     }
 
-    private void createAliasTable(final int V, final double denom,
-            final List<Double> unnormalizedProb) {
-        Int2DoubleOpenHashTable S = new Int2DoubleOpenHashTable(V);
+    private void createAliasTable(final int V, final float denom, final List<Float> unnormalizedProb) {
+        Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(V);
         Int2IntOpenHashTable A = new Int2IntOpenHashTable(V);
 
         final Queue<Integer> higherBin = new ArrayDeque<>();
         final Queue<Integer> lowerBin = new ArrayDeque<>();
 
         for (int i = 0; i < V; i++) {
-            double v = V * unnormalizedProb.get(i) / denom;
+            float v = V * unnormalizedProb.get(i) / denom;
             S.put(i, v);
             if (v > 1.) {
                 higherBin.add(i);
@@ -128,8 +127,8 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
             int low = lowerBin.remove();
             int high = higherBin.remove();
             A.put(low, high);
-            S.put(high, S.get(high) - 1. + S.get(low));
-            if (S.get(high) < 1.) {
+            S.put(high, S.get(high) - 1.f + S.get(low));
+            if (S.get(high) < 1.f) {
                 lowerBin.add(high);
             } else {
                 higherBin.add(high);
@@ -145,7 +144,7 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
             Object[] res = new Object[4];
             res[0] = new IntWritable(i % this.numSplit);
             res[1] = new Text(this.index2word.get(i));
-            res[2] = new DoubleWritable(this.S.get(i));
+            res[2] = new FloatWritable(this.S.get(i));
             if (this.A.get(i) == -1) {
                 res[3] = new Text();
             } else {

@@ -18,7 +18,7 @@
  */
 package hivemall.unsupervised;
 
-import hivemall.utils.collections.maps.Int2DoubleOpenHashTable;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 
 import javax.annotation.Nonnull;
@@ -26,7 +26,7 @@ import java.util.List;
 
 public final class SkipGramModel extends AbstractWord2vecModel {
 
-    public SkipGramModel(int dim, int win, int neg, long numTrainWords, Int2DoubleOpenHashTable S,
+    public SkipGramModel(int dim, int win, int neg, long numTrainWords, Int2FloatOpenHashTable S,
             Int2IntOpenHashTable A) {
         super(dim, win, neg, numTrainWords, S, A);
     }
