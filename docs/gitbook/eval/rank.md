@@ -83,7 +83,8 @@ with truth as (
 rec as (
   select
     userid,
-    map_values(to_ordered_map(score, itemid, true)) as rec,
+    -- map_values(to_ordered_map(score, itemid, true)) as rec,
+    to_ordered_list(itemid, score, '-reverse') as rec,
     cast(count(itemid) as int) as max_k
   from dummy_rec
   group by userid
@@ -222,7 +223,7 @@ While the binary response setting simply considers positive-only ranked list of 
 
 Unlike separated `dummy_truth` and `dummy_rec` table in the binary setting, we assume the following single table named `dummy_recrel` which contains item-$$\mathrm{rel}_n$$ pairs:
 
-| userid | itemid | score<br/>(predicted) | rel<br/>(expected) |
+| userid | itemid | score<br/>(predicted) | relscore<br/>(expected) |
 | :-: | :-: | :-: | :-: |
 | 1 | 1 | 10.0 | 5.0 |
 | 1 | 3 | 8.0 | 2.0 |
@@ -244,27 +245,31 @@ The function `ndcg()` can take non-binary `truth` values as the second argument:
 
 ```sql
 with truth as (
-  select userid, map_keys(to_ordered_map(relscore, itemid, true)) as truth
-  from dummy_recrel
-  group by userid
+  select
+    userid,
+    to_ordered_list(relscore, '-reverse') as truth
+  from
+    dummy_recrel
+  group by
+    userid
 ),
 rec as (
   select
     userid,
-    map_values (
-      to_ordered_map(score, struct(relscore, itemid), true)
-    ) as rec,
-    cast(count(itemid) as int) as max_k
-  from dummy_recrel
-  group by userid
+    to_ordered_list(struct(relscore, itemid), score, "-reverse") as rec,
+    count(itemid) as max_k
+  from
+    dummy_recrel
+  group by
+    userid
 )
 select 
   -- top-2 recommendation
   ndcg(t1.rec, t2.truth, 2), -- => 0.8128912838590544
-  
   -- top-3 recommendation
   ndcg(t1.rec, t2.truth, 3)  -- => 0.9187707805346093
-from rec t1
-join truth t2 on (t1.userid = t2.userid)
+from
+  rec t1
+  join truth t2 on (t1.userid = t2.userid)
 ;
 ```
