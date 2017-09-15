@@ -207,7 +207,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                         || (argOIs.length == 3 && HiveUtils.isConstString(argOIs[2]));
 
                 if (sortByKey) {
-                    this.valueOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
+                    this.valueOI = argOIs[0];
                     this.keyOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
                 } else {
                     // sort values by value itself
