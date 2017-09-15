@@ -38,10 +38,11 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableDoubleObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
@@ -180,20 +181,31 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
                 StructObjectInspector sOI = (StructObjectInspector) recommendListOI.getListElementObjectInspector();
                 List<?> fieldRefList = sOI.getAllStructFieldRefs();
                 StructField relScoreField = (StructField) fieldRefList.get(0);
-                WritableDoubleObjectInspector relScoreFieldOI = (WritableDoubleObjectInspector) relScoreField.getFieldObjectInspector();
+                PrimitiveObjectInspector relScoreFieldOI = HiveUtils.asDoubleCompatibleOI(relScoreField.getFieldObjectInspector());
                 for (int i = 0, n = recommendList.size(); i < n; i++) {
                     Object structObj = recommendList.get(i);
                     List<Object> fieldList = sOI.getStructFieldsDataAsList(structObj);
-                    double relScore = (double) relScoreFieldOI.get(fieldList.get(0));
+                    Object field0 = fieldList.get(0);
+                    if (field0 == null) {
+                        throw new UDFArgumentException("Field 0 of a struct field is null: "
+                                + fieldList);
+                    }
+                    double relScore = PrimitiveObjectInspectorUtils.getDouble(field0,
+                        relScoreFieldOI);
                     recommendRelScoreList.add(relScore);
                 }
 
                 // Create a ordered list of relevance scores for truth items
                 List<Double> truthRelScoreList = new ArrayList<Double>();
-                WritableDoubleObjectInspector truthRelScoreOI = (WritableDoubleObjectInspector) truthListOI.getListElementObjectInspector();
+                PrimitiveObjectInspector truthRelScoreOI = HiveUtils.asDoubleCompatibleOI(truthListOI.getListElementObjectInspector());
                 for (int i = 0, n = truthList.size(); i < n; i++) {
                     Object relScoreObj = truthList.get(i);
-                    double relScore = (double) truthRelScoreOI.get(relScoreObj);
+                    if (relScoreObj == null) {
+                        throw new UDFArgumentException("Found null in the ground truth: "
+                                + truthList);
+                    }
+                    double relScore = PrimitiveObjectInspectorUtils.getDouble(relScoreObj,
+                        truthRelScoreOI);
                     truthRelScoreList.add(relScore);
                 }
 
