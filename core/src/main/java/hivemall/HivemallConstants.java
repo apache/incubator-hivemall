@@ -18,6 +18,7 @@
  */
 package hivemall;
 
+
 public final class HivemallConstants {
 
     public static final String VERSION = "0.4.2-rc.2";
@@ -35,6 +36,7 @@ public final class HivemallConstants {
     public static final String BIGINT_TYPE_NAME = "bigint";
     public static final String FLOAT_TYPE_NAME = "float";
     public static final String DOUBLE_TYPE_NAME = "double";
+    public static final String DECIMAL_TYPE_NAME = "decimal";
     public static final String STRING_TYPE_NAME = "string";
     public static final String DATE_TYPE_NAME = "date";
     public static final String DATETIME_TYPE_NAME = "datetime";
