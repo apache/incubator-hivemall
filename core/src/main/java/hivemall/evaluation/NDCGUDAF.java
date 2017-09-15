@@ -18,6 +18,8 @@
  */
 package hivemall.evaluation;
 
+import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+import static org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory.writableLongObjectInspector;
 import hivemall.utils.hadoop.HiveUtils;
 
 import java.util.ArrayList;
@@ -121,8 +123,8 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
         }
 
         private static StructObjectInspector internalMergeOI() {
-            ArrayList<String> fieldNames = new ArrayList<String>();
-            ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
+            List<String> fieldNames = new ArrayList<>();
+            List<ObjectInspector> fieldOIs = new ArrayList<>();
 
             fieldNames.add("sum");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
@@ -236,8 +238,8 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
 
             Object sumObj = internalMergeOI.getStructFieldData(partial, sumField);
             Object countObj = internalMergeOI.getStructFieldData(partial, countField);
-            double sum = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(sumObj);
-            long count = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(countObj);
+            double sum = writableDoubleObjectInspector.get(sumObj);
+            long count = writableLongObjectInspector.get(countObj);
 
             NDCGAggregationBuffer myAggr = (NDCGAggregationBuffer) agg;
             myAggr.merge(sum, count);
