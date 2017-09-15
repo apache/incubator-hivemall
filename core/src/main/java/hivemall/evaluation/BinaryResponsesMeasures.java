@@ -98,8 +98,19 @@ public final class BinaryResponsesMeasures {
             }
             return 0.d;
         }
+
+        Preconditions.checkArgument(recommendSize > 0); // can be zero when groundTruth is empty
+
+        int nTruePositive = 0;
         final int k = Math.min(rankedList.size(), recommendSize);
-        return ((double) TruePositives(rankedList, groundTruth, recommendSize)) / k;
+        for (int i = 0; i < k; i++) {
+            Object item_id = rankedList.get(i);
+            if (groundTruth.contains(item_id)) {
+                nTruePositive++;
+            }
+        }
+
+        return ((double) nTruePositive) / k;
     }
 
     /**
@@ -118,6 +129,7 @@ public final class BinaryResponsesMeasures {
             }
             return 0.d;
         }
+
         return ((double) TruePositives(rankedList, groundTruth, recommendSize))
                 / groundTruth.size();
     }
