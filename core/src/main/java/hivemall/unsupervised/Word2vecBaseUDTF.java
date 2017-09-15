@@ -173,6 +173,10 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         int negativeSamplerId = PrimitiveObjectInspectorUtils.getInt(args[1], this.splitIdOI);
 
         if (previousNegativeSamplerId != negativeSamplerId) {
+            if (model != null){
+                forwardModel();
+            }
+
             word2index = new HashMap<>();
             parseNegativeTable(args[2]);
             parseDiscardTable(args[3]);
@@ -182,7 +186,6 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
             this.model = createModel();
             previousNegativeSamplerId = negativeSamplerId;
         }
-
 
         if (wordCount - lastWordCount > 10000) {
             wordCountActual += wordCount - lastWordCount;
@@ -244,13 +247,9 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
             String word = PrimitiveObjectInspectorUtils.getString(aliasBin.get(2),
                 negativeTableElementOI);
 
-            int wordId;
-            if (!word2index.containsKey(word)) {
-                wordId = word2index.size();
-            } else {
-                wordId = word2index.get(word);
-            }
+            int wordId = word2index.size();
             word2index.put(word, wordId);
+
             A.put(i, wordId);
         }
         this.S = S;
@@ -283,20 +282,27 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
 
 
     public void close() throws HiveException {
+        if (model != null){
+            forwardModel();
+        }
+    }
+
+    private void forwardModel() throws HiveException {
         for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
 
-            int wordindex = entry.getValue();
+            int wordId = entry.getValue();
 
             Text word = new Text(entry.getKey());
 
             for (int i = 0; i < dim; i++) {
+                if (i == 0 && model.inputWeights.get(wordId * dim + i) == 0.f){
+                    break;
+                }
+
                 Object[] res = new Object[3];
                 res[0] = word;
                 res[1] = new IntWritable(i);
-                if (i == 0 && model.inputWeights.get(wordindex * dim + i) == 0.f){
-                    continue;
-                }
-                res[2] = new FloatWritable(model.inputWeights.get(wordindex * dim + i));
+                res[2] = new FloatWritable(model.inputWeights.get(wordId * dim + i));
                 forward(res);
             }
         }
