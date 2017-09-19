@@ -55,7 +55,7 @@ select * FROM docs;
 
 Then, we split each document string into words: list of string.
 
-``` sql
+```sql
 drop table docs_words;
 create table docs_words as
   select
@@ -68,8 +68,8 @@ create table docs_words as
 
 Then, we count all word frequency and remove low frequency words.
 
-``` sql
-set hivevar:mincount=15;
+```sql
+set hivevar:mincount=5;
 
 drop table freq;
 create table freq as
@@ -85,11 +85,11 @@ where freq >= ${mincount}
 
 We set the number of training words `numTrainWords` variable.
 
-``` sql
+```sql
 select sum(freq) FROM freq;
 
 -- set variable query above result
-set hivevar:numTrainWords=111200449;
+set hivevar:numTrainWords=1313270;
 ```
 
 # Delete low frequency words from `docs_words`
@@ -162,8 +162,8 @@ Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 
 And then, this alias sampler is split into N tables for distributed training on hive.
 
-``` sql
-set hivevar:numSplit=16;
+```sql
+set hivevar:numSplit=4;
 
 drop table split_alias_table;
 create table split_alias_table as
@@ -176,6 +176,31 @@ from
 ) select k, collect_list(array(word, p, other)) as alias
 from alias_bins
 group by k;
+```
+
+
+```sql
+drop table skipgram_features;
+create table skipgram_features as 
+with discard_map as (
+  select
+    to_map(word, discard) as m
+  FROM
+    discard_table
+)
+select 
+  skipgram(words, k, alias, m, "-win 5 -neg 5")
+from(
+    select
+      words, r.k, alias, m
+    from 
+      train_docs l      
+    join split_alias_table r on
+      l.docid % ${numSplit} = r.k
+    join discard_map
+    where l.docid = 0
+    CLUSTER BY r.k
+) t;
 ```
 
 # Train word2vec

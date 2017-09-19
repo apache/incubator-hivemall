@@ -666,7 +666,9 @@ create temporary function plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF';
 drop temporary function if exists alias_table;
 create temporary function alias_table as 'hivemall.unsupervised.AliasTableBuilderUDTF';
 drop temporary function if exists skipgram;
-create temporary function skipgram as 'hivemall.unsupervised.SkipGramUDTF';
+create temporary function skipgram as 'hivemall.unsupervised.Word2vecFeatureUDTF';
+drop temporary function if exists train_skipgram;
+create temporary function train_skipgram as 'hivemall.unsupervised.SkipGramUDTF';
 
 
 ---------------------------
