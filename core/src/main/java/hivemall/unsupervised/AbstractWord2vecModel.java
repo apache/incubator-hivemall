@@ -22,40 +22,30 @@ import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 
 import javax.annotation.Nonnull;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public abstract class AbstractWord2vecModel {
     protected final int maxSigmoid = 6;
     protected final int sigmoidTableSize = 1000;
-    protected long numTrainWords;
-    protected int dim;
-    protected int win;
-    protected int neg;
-    protected Int2FloatOpenHashTable S;
-    protected Int2IntOpenHashTable A;
-    protected Random rnd;
     protected Int2FloatOpenHashTable sigmoidTable;
+
+    protected int dim;
+    private Random rnd;
+
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
 
-    public AbstractWord2vecModel(int dim, int win, int neg, long numTrainWords,
-            Int2FloatOpenHashTable S, Int2IntOpenHashTable A) {
+    public AbstractWord2vecModel(int dim) {
         this.dim = dim;
-        this.win = win;
-        this.neg = neg;
-        this.numTrainWords = numTrainWords;
-        this.A = A;
-        this.S = S;
-
-        rnd = new Random();
+        this.rnd = new Random();
 
         this.sigmoidTable = initSigmoidTable(maxSigmoid, sigmoidTableSize);
 
         // TODO how to estimate size
         this.inputWeights = new Int2FloatOpenHashTable(10578 * dim);
-        // for small corpus, some word vector values are 0.
-        // so it skip is one choice,
         this.inputWeights.defaultReturnValue(0.f);
         this.contextWeights = new Int2FloatOpenHashTable(10578 * dim);
         this.contextWeights.defaultReturnValue(0.f);
@@ -68,20 +58,6 @@ public abstract class AbstractWord2vecModel {
             sigmoidTable.put(i, 1.f / ((float) Math.exp(-x) + 1.f));
         }
         return sigmoidTable;
-    }
-
-    protected int negativeSample(final int excludeWordId) {
-        int result;
-        do {
-            int k = this.rnd.nextInt(this.A.size());
-
-            if (S.get(k) > this.rnd.nextFloat()) {
-                result = k;
-            } else {
-                result = A.get(k);
-            }
-        } while (result == excludeWordId);
-        return result;
     }
 
     protected float grad(int label, int w, int c) {
@@ -109,5 +85,9 @@ public abstract class AbstractWord2vecModel {
         }
     }
 
-    protected abstract void iteration(@Nonnull final List<Integer> doc, @Nonnull final float lr);
+    protected static float getLearningRate(@Nonnull final long wordCountActual,
+                                         @Nonnull final long numTrainWords, @Nonnull final float startingLR) {
+        return Math.max(startingLR * (1.f - (float) wordCountActual / (numTrainWords + 1L)),
+                startingLR * 0.0001f);
+    }
 }

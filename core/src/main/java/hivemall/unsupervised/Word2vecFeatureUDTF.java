@@ -213,7 +213,6 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         }
     }
 
-
     private void parseNegativeTable(Object listObj) {
         int aliasSize = negativeTableOI.getListLength(listObj);
         Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(aliasSize);

@@ -18,61 +18,46 @@
  */
 package hivemall.unsupervised;
 
-import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
-import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 
 import javax.annotation.Nonnull;
-import java.util.List;
 
 public final class SkipGramModel extends AbstractWord2vecModel {
 
-    public SkipGramModel(int dim, int win, int neg, long numTrainWords, Int2FloatOpenHashTable S,
-            Int2IntOpenHashTable A) {
-        super(dim, win, neg, numTrainWords, S, A);
+    protected SkipGramModel(int dim) {
+        super(dim);
     }
 
-    protected void iteration(@Nonnull final List<Integer> doc, @Nonnull final float lr) {
-        int docLength = doc.size();
-        for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
-            int w = doc.get(inputWordPosition);
-            int windowSize = rnd.nextInt(win);
-            float[] gradVec = new float[dim];
+    protected void onlineTrain(@Nonnull final int inWord,
+                               @Nonnull final int posWord,
+                               @Nonnull final int[] negWords,
+                               @Nonnull final float lr) {
 
-            for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
-                    + windowSize + 1; contextPosition++) {
-                if (contextPosition == inputWordPosition)
-                    continue;
-                if (contextPosition < 0)
-                    continue;
-                if (contextPosition >= docLength)
-                    continue;
-                int c = doc.get(contextPosition);
+        float[] gradVec = new float[dim];
 
-                int target, label;
-                for (int d = 0; d < neg + 1; d++) {
-                    if (d == 0) {
-                        target = c;
-                        label = 1;
-                    } else {
-                        target = negativeSample(c);
-                        label = 0;
-                    }
-                    float grad = grad(label, w, target) * lr;
+        // positive
+        float grad = grad(1, inWord, posWord) * lr;
+        for (int i = 0; i < dim; i++) {
+            gradVec[i] += grad * contextWeights.get(posWord * dim + i);
+            this.contextWeights.put(
+                    posWord * dim + i,
+                    grad * inputWeights.get(inWord * dim + i) + contextWeights.get(posWord * dim + i));
+        }
 
-                    for (int i = 0; i < dim; i++) {
-                        gradVec[i] += grad * contextWeights.get(target * dim + i);
-                        this.contextWeights.put(
-                            target * dim + i,
-                            grad * inputWeights.get(w * dim + i)
-                                    + contextWeights.get(target * dim + i));
-                    }
-                }
 
-                for (int i = 0; i < dim; i++) {
-                    this.inputWeights.put(w * dim + i,
-                        gradVec[i] + this.inputWeights.get(w * dim + i));
-                }
+        // negative
+        for (int target : negWords) {
+            grad = grad(0, inWord, target) * lr;
+            for (int i = 0; i < dim; i++) {
+                gradVec[i] += grad * contextWeights.get(target * dim + i);
+                this.contextWeights.put(
+                        target * dim + i,
+                        grad * inputWeights.get(inWord * dim + i) + contextWeights.get(target * dim + i));
             }
+        }
+
+        for (int i = 0; i < dim; i++) {
+            this.inputWeights.put(inWord * dim + i,
+                gradVec[i] + this.inputWeights.get(inWord * dim + i));
         }
     }
 }
