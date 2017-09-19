@@ -66,7 +66,8 @@ partial_result as ( -- launch DIMSUM in a MapReduce fashion
     movie_features f
   left outer join movie_magnitude m
 ),
-similarity as ( -- reduce (i.e., sum up) mappers' partial results
+similarity as (
+    -- reduce (i.e., sum up) mappers' partial results 
 	select
 	  movieid, 
 	  other,

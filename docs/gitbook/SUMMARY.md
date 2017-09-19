@@ -155,6 +155,7 @@
     * [Item-based Collaborative Filtering](recommend/movielens_cf.md)
     * [Matrix Factorization](recommend/movielens_mf.md)
     * [Factorization Machine](recommend/movielens_fm.md)
+    * [SLIM for Fast Top-K Recommendation](recommend/movielens_slim.md)
     * [10-fold Cross Validation (Matrix Factorization)](recommend/movielens_cv.md)
 
 ## Part X - Anomaly Detection

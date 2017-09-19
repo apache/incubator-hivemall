@@ -135,6 +135,34 @@ public final class BinaryResponsesMeasures {
     }
 
     /**
+     * Computes Hit@`recommendSize`
+     *
+     * @param rankedList a list of ranked item IDs (first item is highest-ranked)
+     * @param groundTruth a collection of positive/correct item IDs
+     * @param recommendSize top-`recommendSize` items in `rankedList` are recommended
+     * @return Recall
+     */
+    public static double Hit(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
+            @Nonnull final int recommendSize) {
+
+        boolean isHit = false;
+
+        for (int i = 0, n = recommendSize; i < n; i++) {
+            Object item_id = rankedList.get(i);
+            if (groundTruth.contains(item_id)) {
+                isHit = true;
+            }
+        }
+
+        if (isHit) {
+            return 1.d;
+        } else {
+            return 0.d;
+        }
+    }
+
+
+    /**
      * Counts the number of true positives
      *
      * @param rankedList a list of ranked item IDs (first item is highest-ranked)

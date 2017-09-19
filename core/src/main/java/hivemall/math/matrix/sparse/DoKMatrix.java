@@ -26,6 +26,7 @@ import hivemall.math.matrix.builders.DoKMatrixBuilder;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.collections.maps.Long2DoubleOpenHashTable;
+import hivemall.utils.collections.maps.Long2DoubleOpenHashTable.IMapIterator;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 
@@ -309,6 +310,20 @@ public final class DoKMatrix extends AbstractMatrix {
         }
     }
 
+    public void eachNonZeroCell(@Nonnull final VectorProcedure procedure) {
+        if (nnz == 0) {
+            return;
+        }
+        final IMapIterator itor = elements.entries();
+        while (itor.next() != -1) {
+            long k = itor.getKey();
+            int row = Primitives.getHigh(k);
+            int col = Primitives.getLow(k);
+            double value = itor.getValue();
+            procedure.apply(row, col, value);
+        }
+    }
+
     @Override
     public RowMajorMatrix toRowMajorMatrix() {
         throw new UnsupportedOperationException("Not yet supported");
@@ -329,4 +344,22 @@ public final class DoKMatrix extends AbstractMatrix {
         return Primitives.toLong(row, col);
     }
 
+    public double unsafeGet(@Nonnegative final int row, @Nonnegative final int col,
+            final double defaultValue) {
+        long index = index(row, col);
+        return elements.get(index, defaultValue);
+    }
+
+    public void unsafeSet(@Nonnegative final int row, @Nonnegative final int col, final double value) {
+        if (value == 0.d) {
+            return;
+        }
+
+        long index = index(row, col);
+        if (elements.put(index, value, 0.d) == 0.d) {
+            nnz++;
+            this.numRows = Math.max(numRows, row + 1);
+            this.numColumns = Math.max(numColumns, col + 1);
+        }
+    }
 }

@@ -512,9 +512,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
                 // write training examples in buffer to a temporary file
                 if (inputBuf.position() > 0) {
                     writeBuffer(inputBuf, fileIO, lastWritePos);
-                } else if (lastWritePos == 0) {
-                    return; // no training example
                 }
+
                 try {
                     fileIO.flush();
                 } catch (IOException e) {
