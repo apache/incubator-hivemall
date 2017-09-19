@@ -80,7 +80,6 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         return cl;
     }
 
-
     protected void forwardModel() throws HiveException {
         for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
 
@@ -102,16 +101,16 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         }
     }
 
-    @Nonnull
-    protected abstract AbstractWord2vecModel createModel();
-
     protected int getWordId(String word) {
-        if(word2index.containsKey(word)) {
+        if (word2index.containsKey(word)) {
             return word2index.get(word);
-        }else {
+        } else {
             int w = word2index.size();
             word2index.put(word, w);
             return w;
         }
     }
+
+    @Nonnull
+    protected abstract AbstractWord2vecModel createModel();
 }

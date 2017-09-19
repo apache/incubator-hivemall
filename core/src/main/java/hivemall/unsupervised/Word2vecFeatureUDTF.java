@@ -78,7 +78,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
 
         if (numArgs != 5 && numArgs != 6) {
             throw new UDFArgumentException(getClass().getSimpleName()
-                    + " takes 5 or 6 arguments:  [, constant string options]: "
+                    + " takges 5 or 6 arguments:  [, constant string options]: "
                     + Arrays.toString(argOIs));
         }
 

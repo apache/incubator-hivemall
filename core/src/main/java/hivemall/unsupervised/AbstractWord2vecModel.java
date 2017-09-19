@@ -19,12 +19,8 @@
 package hivemall.unsupervised;
 
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
-import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 
 import javax.annotation.Nonnull;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 public abstract class AbstractWord2vecModel {
@@ -38,7 +34,7 @@ public abstract class AbstractWord2vecModel {
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
 
-    public AbstractWord2vecModel(int dim) {
+    public AbstractWord2vecModel(final int dim) {
         this.dim = dim;
         this.rnd = new Random();
 
@@ -51,7 +47,8 @@ public abstract class AbstractWord2vecModel {
         this.contextWeights.defaultReturnValue(0.f);
     }
 
-    protected static Int2FloatOpenHashTable initSigmoidTable(double maxSigmoid, int sigmoidTableSize) {
+    protected static Int2FloatOpenHashTable initSigmoidTable(final double maxSigmoid,
+            final int sigmoidTableSize) {
         Int2FloatOpenHashTable sigmoidTable = new Int2FloatOpenHashTable(sigmoidTableSize);
         for (int i = 0; i < sigmoidTableSize; i++) {
             float x = ((float) i / sigmoidTableSize * 2 - 1) * (float) maxSigmoid;
@@ -60,7 +57,7 @@ public abstract class AbstractWord2vecModel {
         return sigmoidTable;
     }
 
-    protected float grad(int label, int w, int c) {
+    protected float grad(final int label, final int w, final int c) {
         if (!inputWeights.containsKey(w)) {
             for (int i = 0; i < dim; i++) {
                 inputWeights.put(w * dim + i, (this.rnd.nextFloat() - 0.5f) / this.dim);
@@ -75,7 +72,7 @@ public abstract class AbstractWord2vecModel {
         return (label - sigmoid(dotValue));
     }
 
-    private float sigmoid(float v) {
+    private float sigmoid(final float v) {
         if (v > maxSigmoid) {
             return 1.f;
         } else if (v < -maxSigmoid) {
@@ -86,8 +83,11 @@ public abstract class AbstractWord2vecModel {
     }
 
     protected static float getLearningRate(@Nonnull final long wordCountActual,
-                                         @Nonnull final long numTrainWords, @Nonnull final float startingLR) {
+            @Nonnull final long numTrainWords, @Nonnull final float startingLR) {
         return Math.max(startingLR * (1.f - (float) wordCountActual / (numTrainWords + 1L)),
-                startingLR * 0.0001f);
+            startingLR * 0.0001f);
     }
+
+    protected abstract void onlineTrain(@Nonnull final int inWord, @Nonnull final int posWord,
+            @Nonnull final int[] negWords, @Nonnull final float lr);
 }

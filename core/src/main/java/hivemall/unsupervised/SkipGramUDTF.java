@@ -70,6 +70,7 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
         this.model = null;
+        this.word2index = null;
         wordCount = 0L;
         lastWordCount = 0L;
         wordCountActual = 0L;
@@ -106,26 +107,27 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        int inWord = getWordId(PrimitiveObjectInspectorUtils.getString(args[0], inWordOI));
-        int posWord = getWordId(PrimitiveObjectInspectorUtils.getString(args[1], posWordOI));
-
         if (model == null) {
             this.model = createModel();
             this.word2index = new HashMap<>();
         }
 
-        numTrainWords = PrimitiveObjectInspectorUtils.getLong(args[3], this.numTrainWordsOI);
+        int inWord = getWordId(PrimitiveObjectInspectorUtils.getString(args[0], inWordOI));
+        int posWord = getWordId(PrimitiveObjectInspectorUtils.getString(args[1], posWordOI));
+
+        List<?> negWordsList = negWordsOI.getList(args[2]);
+        int[] negWords = new int[negWordsList.size()];
+        for (int i = 0; i < negWords.length; i++) {
+            negWords[i] = getWordId(PrimitiveObjectInspectorUtils.getString(negWordsList.get(i),
+                wordOI));
+        }
+
+        numTrainWords = PrimitiveObjectInspectorUtils.getLong(args[3], numTrainWordsOI);
 
         if (wordCount - lastWordCount > 10000) {
             wordCountActual += wordCount - lastWordCount;
             lastWordCount = wordCount;
             currentLR = model.getLearningRate(wordCountActual, numTrainWords, startingLR);
-        }
-
-        List<?> negWordsList = negWordsOI.getList(args[2]);
-        int[] negWords = new int[negWordsList.size()];
-        for(int i = 0; i < negWords.length; i++){
-            negWords[i] = getWordId(PrimitiveObjectInspectorUtils.getString(negWordsList.get(i), wordOI));
         }
 
         model.onlineTrain(inWord, posWord, negWords, currentLR);

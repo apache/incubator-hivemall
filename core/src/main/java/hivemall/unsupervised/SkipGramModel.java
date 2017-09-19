@@ -27,10 +27,8 @@ public final class SkipGramModel extends AbstractWord2vecModel {
         super(dim);
     }
 
-    protected void onlineTrain(@Nonnull final int inWord,
-                               @Nonnull final int posWord,
-                               @Nonnull final int[] negWords,
-                               @Nonnull final float lr) {
+    protected void onlineTrain(@Nonnull final int inWord, @Nonnull final int posWord,
+            @Nonnull final int[] negWords, @Nonnull final float lr) {
 
         float[] gradVec = new float[dim];
 
@@ -38,23 +36,21 @@ public final class SkipGramModel extends AbstractWord2vecModel {
         float grad = grad(1, inWord, posWord) * lr;
         for (int i = 0; i < dim; i++) {
             gradVec[i] += grad * contextWeights.get(posWord * dim + i);
-            this.contextWeights.put(
-                    posWord * dim + i,
-                    grad * inputWeights.get(inWord * dim + i) + contextWeights.get(posWord * dim + i));
+            this.contextWeights.put(posWord * dim + i, grad * inputWeights.get(inWord * dim + i)
+                    + contextWeights.get(posWord * dim + i));
         }
-
 
         // negative
         for (int target : negWords) {
             grad = grad(0, inWord, target) * lr;
             for (int i = 0; i < dim; i++) {
                 gradVec[i] += grad * contextWeights.get(target * dim + i);
-                this.contextWeights.put(
-                        target * dim + i,
-                        grad * inputWeights.get(inWord * dim + i) + contextWeights.get(target * dim + i));
+                this.contextWeights.put(target * dim + i, grad * inputWeights.get(inWord * dim + i)
+                        + contextWeights.get(target * dim + i));
             }
         }
 
+        // update inWord vector
         for (int i = 0; i < dim; i++) {
             this.inputWeights.put(inWord * dim + i,
                 gradVec[i] + this.inputWeights.get(inWord * dim + i));

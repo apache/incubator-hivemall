@@ -192,13 +192,12 @@ select
   skipgram(words, k, alias, m, "-win 5 -neg 5")
 from(
     select
-      words, r.k, alias, m
+      words, r.k, alias, mf
     from 
       train_docs l      
     join split_alias_table r on
       l.docid % ${numSplit} = r.k
     join discard_map
-    where l.docid = 0
     CLUSTER BY r.k
 ) t;
 ```
@@ -206,37 +205,10 @@ from(
 # Train word2vec
 
 ```sql
+# numTrainWords decrease?
+
 drop table w2v;
 create table w2v as 
-with discard_map as (
-  select
-    to_map(word, discard) as m
-  FROM
-    discard_table
-) select
-    word, i, avg(wi)
-  FROM (
-    select(
-      skipgram(
-        words,
-        k,
-        alias,
-        m,
-        ${numTrainWords},
-        "-win 5 -dim 100 -neg 15"
-      )
-    )
-    from (
-      select
-        words, r.k, alias, m
-      from 
-        train_docs l
-      join split_alias_table r on
-        l.docid % ${numSplit} = r.k
-      join discard_map
-        CLUSTER BY r.k
-    ) t
-  ) t1
-group by word, i
-;
+select train_skipgram(inword, posword, negwords, ${numTrainWords})
+  from skipgram_features;
 ```
