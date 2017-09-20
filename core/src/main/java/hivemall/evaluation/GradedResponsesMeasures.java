@@ -18,8 +18,12 @@
  */
 package hivemall.evaluation;
 
+import hivemall.utils.lang.Preconditions;
+import hivemall.utils.math.MathUtils;
+
 import java.util.List;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
@@ -32,7 +36,7 @@ public final class GradedResponsesMeasures {
     private GradedResponsesMeasures() {}
 
     public static double nDCG(@Nonnull final List<Double> recommendTopRelScoreList,
-            @Nonnull final List<Double> truthTopRelScoreList, @Nonnull final int recommendSize) {
+            @Nonnull final List<Double> truthTopRelScoreList, @Nonnegative final int recommendSize) {
         double dcg = DCG(recommendTopRelScoreList, recommendSize);
         double idcg = DCG(truthTopRelScoreList, recommendSize);
         return dcg / idcg;
@@ -45,32 +49,17 @@ public final class GradedResponsesMeasures {
      * @param recommendSize the number of positive items
      * @return DCG
      */
-    public static double DCG(final List<Double> topRelScoreList, final int recommendSize) {
+    public static double DCG(@Nonnull final List<Double> topRelScoreList,
+            @Nonnegative final int recommendSize) {
+        Preconditions.checkArgument(recommendSize > 0);
+
         double dcg = 0.d;
-        for (int i = 0; i < recommendSize; i++) {
+        final int k = Math.min(topRelScoreList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
             double relScore = topRelScoreList.get(i);
-            dcg += ((Math.pow(2, relScore) - 1) * Math.log(2)) / Math.log(i + 2);
+            dcg += ((Math.pow(2, relScore) - 1) * MathUtils.LOG2) / Math.log(i + 2);
         }
         return dcg;
-    }
-
-    /**
-     * Computes Reciprocal HitRank (RHR)
-     *
-     * @param recommendList predicted item list order by score
-     * @param truthList gruond truth item list order by rank
-     * @param recommendSize the number of positive items
-     * @return RHR
-     */
-    public static double RHR(final List<?> recommendList, final List<?> truthList,
-            final int recommendSize) {
-        double result = 0.d;
-        for (int i = 0; i < recommendSize; i++) {
-            if (truthList.contains(recommendList.get(i))) {
-                result += 1.d / (i + 1);
-            }
-        }
-        return result;
     }
 
 }
