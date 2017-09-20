@@ -53,7 +53,7 @@ public final class StringUtils {
 
     /**
      * Checks whether the String a valid Java number. this code is ported from jakarta commons lang.
-     * 
+     *
      * @link http://jakarta.apache.org/commons/lang/apidocs/org/apache/commons/lang
      *       /math/NumberUtils.html
      */
@@ -97,7 +97,7 @@ public final class StringUtils {
 
             } else if (chars[i] == '.') {
                 if (hasDecPoint || hasExp) {
-                    // two decimal points or dec in exponent   
+                    // two decimal points or dec in exponent
                     return false;
                 }
                 hasDecPoint = true;
@@ -250,5 +250,23 @@ public final class StringUtils {
         return builder.toString();
     }
 
+
+    public static int compare(@Nullable final String o1, @Nullable final String o2) {
+        return compare(o1, o2, true);
+    }
+
+    public static int compare(@Nullable final String o1, @Nullable final String o2,
+            final boolean nullIsLess) {
+        if (o1 == o2) {
+            return 0;
+        }
+        if (o1 == null) {
+            return nullIsLess ? -1 : 1;
+        }
+        if (o2 == null) {
+            return nullIsLess ? 1 : -1;
+        }
+        return o1.compareTo(o2);
+    }
 
 }

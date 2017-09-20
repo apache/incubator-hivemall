@@ -50,6 +50,8 @@ import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.lazy.LazyInteger;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazyString;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryMap;
 import org.apache.hadoop.hive.serde2.objectinspector.ConstantObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -231,6 +233,18 @@ public final class HiveUtils {
     public static boolean isListOI(@Nonnull final ObjectInspector oi) {
         Category category = oi.getCategory();
         return category == Category.LIST;
+    }
+
+    public static boolean isConstInt(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isIntOI(oi);
+    }
+
+    public static boolean isConstInteger(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isIntegerOI(oi);
+    }
+
+    public static boolean isConstBoolean(@Nonnull final ObjectInspector oi) {
+        return ObjectInspectorUtils.isConstantObjectInspector(oi) && isBooleanOI(oi);
     }
 
     public static boolean isPrimitiveTypeInfo(@Nonnull TypeInfo typeInfo) {
@@ -524,6 +538,13 @@ public final class HiveUtils {
         return ary;
     }
 
+    public static int getInt(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
+        if (o == null) {
+            return 0;
+        }
+        return PrimitiveObjectInspectorUtils.getInt(o, oi);
+    }
+
     /**
      * @return the number of true bits
      */
@@ -772,4 +793,15 @@ public final class HiveUtils {
         serde.initialize(conf, tbl);
         return serde;
     }
+
+    @Nonnull
+    public static Object castLazyBinaryObject(@Nonnull final Object obj) {
+        if (obj instanceof LazyBinaryMap) {
+            return ((LazyBinaryMap) obj).getMap();
+        } else if (obj instanceof LazyBinaryArray) {
+            return ((LazyBinaryArray) obj).getList();
+        }
+        return obj;
+    }
+
 }
