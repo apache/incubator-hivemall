@@ -28,19 +28,17 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Random;
 
 
@@ -51,9 +49,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
     private int win;
     private int neg;
 
-    private Map<String, Float> discardTable;
-
-    // alias sampler
+    // alias sampler for negative sampling
     private Int2FloatOpenHashTable S;
     private String[] aliasIndex2Word;
     private String[] aliasIndex2OtherWord;
@@ -66,19 +62,15 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
     private ListObjectInspector negativeTableElementListOI;
     private PrimitiveObjectInspector negativeTableElementOI;
 
-    private MapObjectInspector discardTableOI;
-    private PrimitiveObjectInspector discardTableKeyOI;
-    private PrimitiveObjectInspector discardTableValueOI;
-
     private PrimitiveObjectInspector splitIdOI;
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int numArgs = argOIs.length;
 
-        if (numArgs != 5 && numArgs != 6) {
+        if (numArgs != 3 && numArgs != 4) {
             throw new UDFArgumentException(getClass().getSimpleName()
-                    + " takges 5 or 6 arguments:  [, constant string options]: "
+                    + " takges 3 or 4 arguments:  [, constant string options]: "
                     + Arrays.toString(argOIs));
         }
 
@@ -90,19 +82,17 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         this.negativeTableElementListOI = HiveUtils.asListOI(negativeTableOI.getListElementObjectInspector());
         this.negativeTableElementOI = HiveUtils.asStringOI(negativeTableElementListOI.getListElementObjectInspector());
 
-        this.discardTableOI = HiveUtils.asMapOI(argOIs[3]);
-        this.discardTableKeyOI = HiveUtils.asStringOI(discardTableOI.getMapKeyObjectInspector());
-        this.discardTableValueOI = HiveUtils.asFloatingPointOI(discardTableOI.getMapValueObjectInspector());
-
         processOptions(argOIs);
 
         List<String> fieldNames = new ArrayList<>();
         List<ObjectInspector> fieldOIs = new ArrayList<>();
 
+        fieldNames.add("k");
         fieldNames.add("inWord");
         fieldNames.add("posWord");
         fieldNames.add("negWords");
 
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector));
@@ -129,8 +119,8 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         int win = 5;
         int neg = 5;
 
-        if (argOIs.length >= 6) {
-            String rawArgs = HiveUtils.getConstString(argOIs[5]);
+        if (argOIs.length >= 3) {
+            String rawArgs = HiveUtils.getConstString(argOIs[3]);
             cl = parseOptions(rawArgs);
 
             win = Primitives.parseInt(cl.getOptionValue("win"), win);
@@ -154,63 +144,54 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         int negativeSamplerId = PrimitiveObjectInspectorUtils.getInt(args[1], this.splitIdOI);
         if (previousNegativeSamplerId != negativeSamplerId) {
             parseNegativeTable(args[2]);
-            parseDiscardTable(args[3]);
             previousNegativeSamplerId = negativeSamplerId;
         }
 
         // parse document
-        List<String> doc = new ArrayList<>(1000);
-        int docLength = docOI.getListLength(args[0]);
-        for (int i = 0; i < docLength; i++) {
-            String word = PrimitiveObjectInspectorUtils.getString(docOI.getListElement(args[0], i),
-                wordOI);
-
-            // discard
-            if (discardTable.containsKey(word) && discardTable.get(word) < rnd.nextFloat()) {
-                continue;
-            }
-            doc.add(word);
+        List<?> doc = docOI.getList(args[0]);
+        int docLength = doc.size();
+        for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
+            String word = PrimitiveObjectInspectorUtils.getString(
+                docOI.getListElement(args[0], inputWordPosition), wordOI);
+            forwardSample(word, inputWordPosition, doc);
         }
-
-        forwardSample(doc);
     }
 
-    private void forwardSample(List<String> doc) throws HiveException {
-        final Text inWord = new Text();
+    private void forwardSample(String inputWord, int inputWordPosition, List<?> doc)
+            throws HiveException {
+        final Text inWord = new Text(inputWord);
         final Text posWord = new Text();
         final List<Text> negWords = new ArrayList<>(neg);
         for (int d = 0; d < neg; d++) {
             negWords.add(new Text());
         }
 
-        final Object[] forwardObjs = new Object[3];
-        forwardObjs[0] = inWord;
-        forwardObjs[1] = posWord;
-        forwardObjs[2] = negWords;
+        final Object[] forwardObjs = new Object[4];
+        forwardObjs[0] = new IntWritable(previousNegativeSamplerId);
+        forwardObjs[1] = inWord;
+        forwardObjs[2] = posWord;
+        forwardObjs[3] = negWords;
 
         int docLength = doc.size();
-        for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
-            inWord.set(doc.get(inputWordPosition));
+        int windowSize = rnd.nextInt(win) + 1;
 
-            int windowSize = rnd.nextInt(win) + 1;
+        for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
+                + windowSize + 1; contextPosition++) {
+            if (contextPosition == inputWordPosition)
+                continue;
+            if (contextPosition < 0)
+                continue;
+            if (contextPosition >= docLength)
+                continue;
 
-            for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
-                    + windowSize + 1; contextPosition++) {
-                if (contextPosition == inputWordPosition)
-                    continue;
-                if (contextPosition < 0)
-                    continue;
-                if (contextPosition >= docLength)
-                    continue;
+            String contextWord = PrimitiveObjectInspectorUtils.getString(doc.get(contextPosition),
+                wordOI);
+            posWord.set(contextWord);
 
-                String contextWord = doc.get(contextPosition);
-                posWord.set(contextWord);
-
-                for (int d = 0; d < neg; d++) {
-                    negWords.set(d, new Text(negativeSample(contextWord)));
-                }
-                forward(forwardObjs);
+            for (int d = 0; d < neg; d++) {
+                negWords.set(d, new Text(negativeSample(contextWord)));
             }
+            forward(forwardObjs);
         }
     }
 
@@ -236,19 +217,6 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         this.aliasIndex2OtherWord = aliasIndex2OtherWord;
     }
 
-    private void parseDiscardTable(Object mapObj) {
-        Map<String, Float> discard = new HashMap<>(discardTableOI.getMapSize(mapObj));
-
-        for (Map.Entry<?, ?> entry : this.discardTableOI.getMap(mapObj).entrySet()) {
-            String word = PrimitiveObjectInspectorUtils.getString(entry.getKey(),
-                this.discardTableKeyOI);
-            float p = PrimitiveObjectInspectorUtils.getFloat(entry.getValue(),
-                this.discardTableValueOI);
-
-            discard.put(word, p);
-        }
-        this.discardTable = discard;
-    }
 
     private String negativeSample(final String excludeWord) {
         String sample;

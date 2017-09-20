@@ -50,8 +50,8 @@ select * FROM docs;
 
 | docId | doc |
 |:----: |:----|
-|  0    | "Alice was beginning to get very tired of sitting by her sister on the bank ..." |
-| ...   | ... |
+|   0   | "Alice was beginning to get very tired of sitting by her sister on the bank ..." |
+|  ...  | ... |
 
 Then, we split each document string into words: list of string.
 
@@ -92,36 +92,12 @@ select sum(freq) FROM freq;
 set hivevar:numTrainWords=750105;
 ```
 
-# Delete low frequency words from `docs_words`
+# Create sub-sampling table
 
-```sql
-set hivevar:maxlength=1000;
-
-drop table train_docs;
-create table train_docs as
-  with docs_exploded as (
-    select
-      docid, word, pos%${maxlength} as pos, pos div ${maxlength} as splitid
-    from
-      docs_words LATERAL VIEW posexplode(words) t as pos, word
-  )
-select
-    docid,
-    to_ordered_list(l.word, pos) as words
-from
-  docs_exploded l
-join freq r on (l.word = r.word)
-group by
-  docid, splitid
-;
-```
-
-# Create discard table
-
-Discard table is stored a delete probability per word whether delete word or not.
+Sub-sampling table is stored a not deleted probability per word.
 During word2vec training,
-discarded words are skipped,
-but it is not skipped as context words.
+sub-sampled words are ignored.
+It is advanrage to train fastly and to count the imbalance the rare words and frequent words by reducing by reducing frequent words.
 
 ```sql
 set hivevar:sample=1e-4;
@@ -134,7 +110,37 @@ create table discard_table as
         sqrt(${sample}/(freq/${numTrainWords})) + ${sample}/(freq/${numTrainWords}) as discard
     from freq
 ) t
-where discard < 1.
+;
+```
+
+# Delete low frequency words and high frequency words from `docs_words`
+
+```sql
+set hivevar:maxlength=1000;
+SET hivevar:seed=31;
+
+drop table train_docs;
+create table train_docs as
+  with docs_exploded as (
+    select
+      docid,
+      word,
+      pos%${maxlength} as pos,
+      pos div ${maxlength} as splitid,
+      rand(${seed}) as rnd
+    from
+      docs_words LATERAL VIEW posexplode(words) t as pos, word
+  )
+select
+    docid,
+    to_ordered_list(l.word, pos) as words
+from
+  docs_exploded l
+join freq r on (l.word = r.word)
+join discard_table r2 on (l.word = r2.word)
+where r2.discard > l.rnd
+group by
+  docid, splitid
 ;
 ```
 
@@ -159,12 +165,13 @@ create table negative_table as
 
 ## Split negative sampling table
 
+Negative sampling is an approximate function of [softmax function](https://en.wikipedia.org/wiki/Softmax_function) by sampling from noise distribution.
 Negative sampling table is stored all valid words and its probabilities.
 
-To avoid using this huge memory splace and sample fastly from this distribution,
+To avoid using this huge memory splace like original implementation and sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 
-And then, this alias sampler is split into N tables for distributed training on hive.
+And then, this alias sampler is split into N tables for next query.
 
 ```sql
 set hivevar:numSplit=8;
@@ -187,62 +194,48 @@ group by k
 ;
 ```
 
+# Train word2vec
 
 ```sql
 drop table skipgram_features;
 create table skipgram_features as 
-with discard_map as (
-  select
-    to_map(word, discard) as discard_table
-  FROM
-    discard_table
-)
 select 
-  skipgram(words, k, negative_table, discard_table, "-win 5 -neg 15")
+  skipgram(words, k, negative_table, "-win 5 -neg 15")
 from(
     select
       words,
       r.k,
-      negative_table,
-      discard_table
+      negative_table
     from 
       train_docs l      
     join split_negative_table r on
       l.docid % ${numSplit} = r.k
-    join discard_map
+    CLUSTER BY r.k
 ) t
 ;
 ```
 
-# Train word2vec
-
 ```sql
-# numTrainWords decrease?
--- select COUNT(*) FROM skipgram_features;
-set hivevar:numTrainWords=2496652;
+# numTrainWords decreases?
+select COUNT(*) from skipgram_features;
+set hivevar:numSamples=371942434;
 
 drop table w2v;
 create table w2v as 
-select
-  train_skipgram(
-      inword,
-      posword,
-      negwords,
-      ${numTrainWords}
-  )
-  from skipgram_features
-;
-```
-
-```sql
-drop table w2v_list;
-create table w2v_list as
+select word, i, avg(wi) as wi
+from (
   select
-    word,
-    collect_list(wi) as vec
-  FROM
-    w2v
-  group by
-    word
+    train_skipgram(
+        inword,
+        posword,
+        negwords,
+        ${numSamples}
+    )
+    from (
+      select * from skipgram_features CLUSTER by k
+    ) t
+) t1
+group by
+    word, i
 ;
 ```
