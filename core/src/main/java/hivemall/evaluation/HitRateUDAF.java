@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -55,14 +56,14 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
-
 
 @Description(
         name = "hitrate",
@@ -98,7 +99,7 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
         private ListObjectInspector recommendListOI;
         private ListObjectInspector truthListOI;
-        private WritableIntObjectInspector recommendSizeOI;
+        private PrimitiveObjectInspector recommendSizeOI;
 
         private StructObjectInspector internalMergeOI;
         private StructField countField;
@@ -116,7 +117,7 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
                 this.recommendListOI = (ListObjectInspector) parameters[0];
                 this.truthListOI = (ListObjectInspector) parameters[1];
                 if (parameters.length == 3) {
-                    this.recommendSizeOI = (WritableIntObjectInspector) parameters[2];
+                    this.recommendSizeOI = HiveUtils.asIntegerOI(parameters[2]);
                 }
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
@@ -177,12 +178,12 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
-                recommendSize = recommendSizeOI.get(parameters[2]);
-            }
-            if (recommendSize < 0 || recommendSize > recommendList.size()) {
-                throw new UDFArgumentException(
-                    "The third argument `int recommendSize` must be in [0, " + recommendList.size()
-                            + "]");
+                recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
+                if (recommendSize <= 0) {
+                    throw new UDFArgumentException(
+                        "The third argument `int recommendSize` must be in greather than 0: "
+                                + recommendSize);
+                }
             }
 
             myAggr.iterate(recommendList, truthList, recommendSize);
@@ -225,11 +226,11 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static class HitRateAggregationBuffer extends
+    public static final class HitRateAggregationBuffer extends
             GenericUDAFEvaluator.AbstractAggregationBuffer {
 
-        double sum;
-        long count;
+        private double sum;
+        private long count;
 
         public HitRateAggregationBuffer() {
             super();
@@ -241,8 +242,8 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
         }
 
         void merge(double o_sum, long o_count) {
-            sum += o_sum;
-            count += o_count;
+            this.sum += o_sum;
+            this.count += o_count;
         }
 
         double get() {
@@ -253,9 +254,9 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
         }
 
         void iterate(@Nonnull List<?> recommendList, @Nonnull List<?> truthList,
-                @Nonnull int recommendSize) {
-            sum += BinaryResponsesMeasures.Hit(recommendList, truthList, recommendSize);
-            count++;
+                @Nonnegative int recommendSize) {
+            this.sum += BinaryResponsesMeasures.Hit(recommendList, truthList, recommendSize);
+            this.count++;
         }
     }
 }

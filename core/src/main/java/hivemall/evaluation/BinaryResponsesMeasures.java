@@ -140,26 +140,21 @@ public final class BinaryResponsesMeasures {
      * @param rankedList a list of ranked item IDs (first item is highest-ranked)
      * @param groundTruth a collection of positive/correct item IDs
      * @param recommendSize top-`recommendSize` items in `rankedList` are recommended
-     * @return Recall
+     * @return 1.0 if hit 0.0 if no hit
      */
     public static double Hit(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
             @Nonnegative final int recommendSize) {
         Preconditions.checkArgument(recommendSize > 0);
-        
-        boolean isHit = false;
 
-        for (int i = 0, n = recommendSize; i < n; i++) {
+        final int k = Math.min(rankedList.size(), recommendSize);
+        for (int i = 0; i < k; i++) {
             Object item_id = rankedList.get(i);
             if (groundTruth.contains(item_id)) {
-                isHit = true;
+                return 1.d;
             }
         }
 
-        if (isHit) {
-            return 1.d;
-        } else {
-            return 0.d;
-        }
+        return 0.d;
     }
 
     /**
