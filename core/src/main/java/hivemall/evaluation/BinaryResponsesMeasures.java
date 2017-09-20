@@ -45,7 +45,7 @@ public final class BinaryResponsesMeasures {
      */
     public static double nDCG(@Nonnull final List<?> rankedList,
             @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
-        Preconditions.checkArgument(recommendSize > 0);
+        Preconditions.checkArgument(recommendSize >= 0);
 
         double dcg = 0.d;
 
@@ -92,14 +92,14 @@ public final class BinaryResponsesMeasures {
      */
     public static double Precision(@Nonnull final List<?> rankedList,
             @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
+        Preconditions.checkArgument(recommendSize >= 0);
+
         if (rankedList.isEmpty()) {
             if (groundTruth.isEmpty()) {
                 return 1.d;
             }
             return 0.d;
         }
-
-        Preconditions.checkArgument(recommendSize > 0); // can be zero when groundTruth is empty
 
         int nTruePositive = 0;
         final int k = Math.min(rankedList.size(), recommendSize);
@@ -144,7 +144,7 @@ public final class BinaryResponsesMeasures {
      */
     public static double Hit(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
             @Nonnegative final int recommendSize) {
-        Preconditions.checkArgument(recommendSize > 0);
+        Preconditions.checkArgument(recommendSize >= 0);
 
         final int k = Math.min(rankedList.size(), recommendSize);
         for (int i = 0; i < k; i++) {
@@ -167,7 +167,7 @@ public final class BinaryResponsesMeasures {
      */
     public static int TruePositives(final List<?> rankedList, final List<?> groundTruth,
             @Nonnegative final int recommendSize) {
-        Preconditions.checkArgument(recommendSize > 0);
+        Preconditions.checkArgument(recommendSize >= 0);
 
         int nTruePositive = 0;
 
@@ -193,7 +193,7 @@ public final class BinaryResponsesMeasures {
      */
     public static double ReciprocalRank(@Nonnull final List<?> rankedList,
             @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
-        Preconditions.checkArgument(recommendSize > 0);
+        Preconditions.checkArgument(recommendSize >= 0);
 
         final int k = Math.min(rankedList.size(), recommendSize);
         for (int i = 0; i < k; i++) {
@@ -216,7 +216,7 @@ public final class BinaryResponsesMeasures {
      */
     public static double AveragePrecision(@Nonnull final List<?> rankedList,
             @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
-        Preconditions.checkArgument(recommendSize > 0);
+        Preconditions.checkArgument(recommendSize >= 0);
 
         if (groundTruth.isEmpty()) {
             if (rankedList.isEmpty()) {
@@ -254,7 +254,7 @@ public final class BinaryResponsesMeasures {
      */
     public static double AUC(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
             @Nonnegative final int recommendSize) {
-        Preconditions.checkArgument(recommendSize > 0);
+        Preconditions.checkArgument(recommendSize >= 0);
 
         int nTruePositive = 0, nCorrectPairs = 0;
 

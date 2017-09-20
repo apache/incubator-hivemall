@@ -51,7 +51,7 @@ public final class GradedResponsesMeasures {
      */
     public static double DCG(@Nonnull final List<Double> topRelScoreList,
             @Nonnegative final int recommendSize) {
-        Preconditions.checkArgument(recommendSize > 0);
+        Preconditions.checkArgument(recommendSize >= 0);
 
         double dcg = 0.d;
         final int k = Math.min(topRelScoreList.size(), recommendSize);

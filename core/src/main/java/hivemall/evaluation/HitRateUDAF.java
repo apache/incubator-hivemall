@@ -179,9 +179,9 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
                 recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
-                if (recommendSize <= 0) {
+                if (recommendSize < 0) {
                     throw new UDFArgumentException(
-                        "The third argument `int recommendSize` must be in greather than 0: "
+                        "The third argument `int recommendSize` must be in greather than or equals to 0: "
                                 + recommendSize);
                 }
             }
