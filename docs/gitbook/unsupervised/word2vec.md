@@ -89,28 +89,31 @@ We set the number of training words `numTrainWords` variable.
 select sum(freq) FROM freq;
 
 -- set variable query above result
-set hivevar:numTrainWords=1313270;
+set hivevar:numTrainWords=750105;
 ```
 
 # Delete low frequency words from `docs_words`
 
 ```sql
-drop table docs_exploded;
-create table docs_exploded as
-  select
-    docid, word
-  from
-    docs_words LATERAL VIEW explode(words) t as word
-;
+set hivevar:maxlength=1000;
 
 drop table train_docs;
 create table train_docs as
+  with docs_exploded as (
+    select
+      docid, word, pos%${maxlength} as pos, pos div ${maxlength} as splitid
+    from
+      docs_words LATERAL VIEW posexplode(words) t as pos, word
+  )
 select
     docid,
-    collect_list(l.word) as words
-from docs_exploded l
+    to_ordered_list(l.word, pos) as words
+from
+  docs_exploded l
 join freq r on (l.word = r.word)
-group by docid;
+group by
+  docid, splitid
+;
 ```
 
 # Create discard table
@@ -150,7 +153,8 @@ create table negative_table as
     word,
     pow(freq, ${noisePower}) as negative
   from
-    freq;
+    freq
+;
 ```
 
 ## Split negative sampling table
@@ -163,19 +167,24 @@ Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 And then, this alias sampler is split into N tables for distributed training on hive.
 
 ```sql
-set hivevar:numSplit=4;
+set hivevar:numSplit=8;
 
-drop table split_alias_table;
-create table split_alias_table as
+drop table split_negative_table;
+create table split_negative_table as
 with alias_bins as (
 select
     alias_table(to_map(word, negative), ${numSplit})
     as (k, word, p, other)
 from
     negative_table
-) select k, collect_list(array(word, p, other)) as alias
-from alias_bins
-group by k;
+)
+select
+  k,
+  collect_list(array(word, p, other)) as negative_table
+from
+  alias_bins
+group by k
+;
 ```
 
 
@@ -184,31 +193,56 @@ drop table skipgram_features;
 create table skipgram_features as 
 with discard_map as (
   select
-    to_map(word, discard) as m
+    to_map(word, discard) as discard_table
   FROM
     discard_table
 )
 select 
-  skipgram(words, k, alias, m, "-win 5 -neg 5")
+  skipgram(words, k, negative_table, discard_table, "-win 5 -neg 15")
 from(
     select
-      words, r.k, alias, mf
+      words,
+      r.k,
+      negative_table,
+      discard_table
     from 
       train_docs l      
-    join split_alias_table r on
+    join split_negative_table r on
       l.docid % ${numSplit} = r.k
     join discard_map
-    CLUSTER BY r.k
-) t;
+) t
+;
 ```
 
 # Train word2vec
 
 ```sql
 # numTrainWords decrease?
+-- select COUNT(*) FROM skipgram_features;
+set hivevar:numTrainWords=2496652;
 
 drop table w2v;
 create table w2v as 
-select train_skipgram(inword, posword, negwords, ${numTrainWords})
-  from skipgram_features;
+select
+  train_skipgram(
+      inword,
+      posword,
+      negwords,
+      ${numTrainWords}
+  )
+  from skipgram_features
+;
+```
+
+```sql
+drop table w2v_list;
+create table w2v_list as
+  select
+    word,
+    collect_list(wi) as vec
+  FROM
+    w2v
+  group by
+    word
+;
 ```

@@ -159,7 +159,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         }
 
         // parse document
-        List<String> doc = new ArrayList<>();
+        List<String> doc = new ArrayList<>(1000);
         int docLength = docOI.getListLength(args[0]);
         for (int i = 0; i < docLength; i++) {
             String word = PrimitiveObjectInspectorUtils.getString(docOI.getListElement(args[0], i),
@@ -203,10 +203,11 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
                 if (contextPosition >= docLength)
                     continue;
 
-                posWord.set(doc.get(contextPosition));
+                String contextWord = doc.get(contextPosition);
+                posWord.set(contextWord);
 
                 for (int d = 0; d < neg; d++) {
-                    negWords.set(d, new Text(negativeSample(posWord.toString())));
+                    negWords.set(d, new Text(negativeSample(contextWord)));
                 }
                 forward(forwardObjs);
             }

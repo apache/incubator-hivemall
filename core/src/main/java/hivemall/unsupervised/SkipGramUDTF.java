@@ -128,6 +128,7 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
             wordCountActual += wordCount - lastWordCount;
             lastWordCount = wordCount;
             currentLR = model.getLearningRate(wordCountActual, numTrainWords, startingLR);
+            // TODO: how to get learning rate?
         }
 
         model.onlineTrain(inWord, posWord, negWords, currentLR);
