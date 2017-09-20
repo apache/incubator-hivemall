@@ -144,6 +144,7 @@ create temporary function tree_predict as 'hivemall.smile.tools.TreePredictUDF';
 create temporary function rf_ensemble as 'hivemall.smile.tools.RandomForestEnsembleUDAF';
 create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAttributesUDF';
 create temporary function to_ordered_list as 'hivemall.tools.list.UDAFToOrderedList';
+create temporary function singularize as 'hivemall.tools.text.SingularizeUDF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

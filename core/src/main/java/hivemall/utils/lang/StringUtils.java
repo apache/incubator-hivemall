@@ -182,6 +182,22 @@ public final class StringUtils {
         return buf.toString();
     }
 
+    @Nonnull
+    public static String join(@Nonnull final List<String> list, @Nonnull final String sep) {
+        final StringBuilder buf = new StringBuilder(128);
+        for (int i = 0, size = list.size(); i < size; i++) {
+            if (i > 0) { // append separator before each element, except for the head element
+                buf.append(sep);
+            }
+
+            final String s = list.get(i);
+            if (s != null) {
+                buf.append(s);
+            }
+        }
+        return buf.toString();
+    }
+
     public static String[] split(final String str, final char separatorChar) {
         return split(str, separatorChar, false);
     }
