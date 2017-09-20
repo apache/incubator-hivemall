@@ -17,7 +17,7 @@
   under the License.
 -->
         
-[Cross-validation](http://en.wikipedia.org/wiki/Cross-validation_(statistics)#k-fold_cross-validationk-fold cross validation) is a model validation technique for assessing how a prediction model will generalize to an independent data set. This example shows a way to perform [k-fold cross validation](http://en.wikipedia.org/wiki/Cross-validation_(statistics)#k-fold_cross-validation) to evaluate prediction performance.
+[Cross-validation](http://en.wikipedia.org/wiki/Cross-validation_%28statistics%29) is a model validation technique for assessing how a prediction model will generalize to an independent data set. This example shows a way to perform [k-fold cross validation](http://en.wikipedia.org/wiki/Cross-validation_%28statistics%29#k-fold_cross-validation) to evaluate prediction performance.
 
 *Caution:* Matrix factorization is supported in Hivemall v0.3 or later.
 

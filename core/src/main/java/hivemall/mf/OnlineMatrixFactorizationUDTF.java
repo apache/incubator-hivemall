@@ -148,7 +148,7 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
             this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
             if (iterations < 1) {
                 throw new UDFArgumentException(
-                    "'-iterations' must be greater than or equals to 1: " + iterations);
+                    "'-iterations' must be greater than or equal to 1: " + iterations);
             }
             conversionCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
@@ -239,7 +239,7 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
         }
         int item = PrimitiveObjectInspectorUtils.getInt(args[1], itemOI);
         if (item < 0) {
-            throw new HiveException("Illegal item index: " + user);
+            throw new HiveException("Illegal item index: " + item);
         }
         double rating = PrimitiveObjectInspectorUtils.getDouble(args[2], ratingOI);
 
@@ -505,9 +505,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
                 // write training examples in buffer to a temporary file
                 if (inputBuf.position() > 0) {
                     writeBuffer(inputBuf, fileIO, lastWritePos);
-                } else if (lastWritePos == 0) {
-                    return; // no training example
                 }
+                
                 try {
                     fileIO.flush();
                 } catch (IOException e) {
