@@ -594,9 +594,6 @@ CREATE FUNCTION recall_at as 'hivemall.evaluation.RecallUDAF' USING JAR '${hivem
 DROP FUNCTION IF EXISTS hitrate;
 CREATE FUNCTION hitrate as 'hivemall.evaluation.HitRateUDAF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION IF EXISTS arhr;
-CREATE FUNCTION arhr as 'hivemall.evaluation.ARHRUDAF' USING JAR '${hivemall_jar}';
-
 DROP FUNCTION IF EXISTS mrr;
 CREATE FUNCTION mrr as 'hivemall.evaluation.MRRUDAF' USING JAR '${hivemall_jar}';
 
