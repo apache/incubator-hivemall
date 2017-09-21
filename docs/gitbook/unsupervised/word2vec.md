@@ -200,12 +200,12 @@ group by k
 drop table skipgram_features;
 create table skipgram_features as 
 select 
-  skipgram(words, k, negative_table, "-win 5 -neg 15")
+  skipgram(k, negative_table, words, "-win 5 -neg 15")
 from(
     select
-      words,
       r.k,
-      negative_table
+      negative_table,
+      words
     from 
       train_docs l      
     join split_negative_table r on
@@ -218,7 +218,7 @@ from(
 ```sql
 # numTrainWords decreases?
 select COUNT(*) from skipgram_features;
-set hivevar:numSamples=371942434;
+set hivevar:numSamples=2499494;
 
 drop table w2v;
 create table w2v as 
@@ -232,7 +232,8 @@ from (
         ${numSamples}
     )
     from (
-      select * from skipgram_features CLUSTER by k
+      select * from skipgram_features
+      CLUSTER by k
     ) t
 ) t1
 group by

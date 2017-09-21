@@ -38,6 +38,9 @@ import java.util.HashMap;
 import java.util.List;
 
 public class SkipGramUDTF extends Word2vecBaseUDTF {
+    private float startingLR;
+    private long numTrainWords;
+
     private PrimitiveObjectInspector inWordOI;
     private PrimitiveObjectInspector posWordOI;
     private ListObjectInspector negWordsOI;
@@ -75,9 +78,6 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
 
         this.model = null;
         this.word2index = null;
-        wordCount = 0L;
-        lastWordCount = 0L;
-        wordCountActual = 0L;
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -100,18 +100,19 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
             cl = parseOptions(rawArgs);
 
             lr = Primitives.parseFloat(cl.getOptionValue("lr"), lr);
-            if (lr < 0.d) {
+            if (lr < 0.f) {
                 throw new UDFArgumentException("Argument `float lr` must be positive: " + lr);
             }
         }
 
-        this.currentLR = this.startingLR = lr;
+        this.startingLR = lr;
         return cl;
     }
 
     @Override
     public void process(Object[] args) throws HiveException {
         if (model == null) {
+            this.numTrainWords = PrimitiveObjectInspectorUtils.getLong(args[3], numTrainWordsOI);
             this.model = createModel();
             this.word2index = new HashMap<>();
         }
@@ -120,34 +121,17 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
         int posWord = getWordId(PrimitiveObjectInspectorUtils.getString(args[1], posWordOI));
 
         List<?> negWordsList = negWordsOI.getList(args[2]);
-        int[] negWords = new int[negWordsList.size()];
+        final int[] negWords = new int[negWordsList.size()];
         for (int i = 0; i < negWords.length; i++) {
             negWords[i] = getWordId(PrimitiveObjectInspectorUtils.getString(negWordsList.get(i),
                 wordOI));
         }
 
-        numTrainWords = PrimitiveObjectInspectorUtils.getLong(args[3], numTrainWordsOI);
+        model.onlineTrain(inWord, posWord, negWords);
 
-        if (wordCount - lastWordCount > 10000) {
-            wordCountActual += wordCount - lastWordCount;
-            lastWordCount = wordCount;
-            currentLR = model.getLearningRate(wordCountActual, numTrainWords, startingLR);
-            // TODO: how to get learning rate?
-        }
-
-        model.onlineTrain(inWord, posWord, negWords, currentLR);
-        wordCount++;
-    }
-
-    public void close() throws HiveException {
-        if (model != null) {
-            forwardModel();
-            model = null;
-            word2index = null;
-        }
     }
 
     protected AbstractWord2vecModel createModel() {
-        return new SkipGramModel(dim);
+        return new SkipGramModel(dim, startingLR, numTrainWords);
     }
 }

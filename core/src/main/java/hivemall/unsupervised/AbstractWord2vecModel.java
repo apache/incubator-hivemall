@@ -18,36 +18,53 @@
  */
 package hivemall.unsupervised;
 
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 
 import javax.annotation.Nonnull;
-import java.util.Random;
 
 public abstract class AbstractWord2vecModel {
-    protected final int maxSigmoid = 6;
-    protected final int sigmoidTableSize = 1000;
-    protected Int2FloatOpenHashTable sigmoidTable;
+    // cached sigmoid function parameters
+    private final int MAX_SIGMOID = 6;
+    private final int SIGMOID_TABLE_SIZE = 1000;
+    private Int2FloatOpenHashTable sigmoidTable;
+
+    // learning rate parameters
+    protected float lr;
+    private float startingLR;
+    protected long numTrainWords;
+    protected long wordCount;
+    protected long lastWordCount;
+    protected long wordCountActual;
 
     protected int dim;
-    private Random rnd;
+    protected PRNG _rnd;
 
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
 
-    public AbstractWord2vecModel(final int dim) {
+    protected AbstractWord2vecModel(final int dim, final float startingLR, final long numTrainWords) {
         this.dim = dim;
-        this.rnd = new Random();
+        this.startingLR = this.lr = startingLR;
 
-        this.sigmoidTable = initSigmoidTable(maxSigmoid, sigmoidTableSize);
+        this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
+
+        this.sigmoidTable = initSigmoidTable(MAX_SIGMOID, SIGMOID_TABLE_SIZE);
 
         // TODO how to estimate size
         this.inputWeights = new Int2FloatOpenHashTable(10578 * dim);
         this.inputWeights.defaultReturnValue(0.f);
         this.contextWeights = new Int2FloatOpenHashTable(10578 * dim);
         this.contextWeights.defaultReturnValue(0.f);
+
+        this.wordCount = 0L;
+        this.lastWordCount = 0L;
+        this.wordCountActual = 0L;
+        this.numTrainWords = numTrainWords;
     }
 
-    protected static Int2FloatOpenHashTable initSigmoidTable(final double maxSigmoid,
+    private static Int2FloatOpenHashTable initSigmoidTable(final int maxSigmoid,
             final int sigmoidTableSize) {
         Int2FloatOpenHashTable sigmoidTable = new Int2FloatOpenHashTable(sigmoidTableSize);
         for (int i = 0; i < sigmoidTableSize; i++) {
@@ -57,37 +74,39 @@ public abstract class AbstractWord2vecModel {
         return sigmoidTable;
     }
 
-    protected float grad(final int label, final int w, final int c) {
-        if (!inputWeights.containsKey(w)) {
-            for (int i = 0; i < dim; i++) {
-                inputWeights.put(w * dim + i, (this.rnd.nextFloat() - 0.5f) / this.dim);
-            }
-        }
-
+    // cannot use for CBoW
+    protected float grad(final float label, final int w, final int c) {
         float dotValue = 0.f;
         for (int i = 0; i < dim; i++) {
             dotValue += inputWeights.get(w * dim + i) * contextWeights.get(c * dim + i);
         }
 
-        return (label - sigmoid(dotValue));
+        return (label - sigmoid(dotValue, MAX_SIGMOID, SIGMOID_TABLE_SIZE, sigmoidTable));
     }
 
-    private float sigmoid(final float v) {
-        if (v > maxSigmoid) {
+    private static float sigmoid(final float v, final int MAX_SIGMOID,
+            final int SIGMOID_TABLE_SIZE, final Int2FloatOpenHashTable sigmoidTable) {
+        if (v > MAX_SIGMOID) {
             return 1.f;
-        } else if (v < -maxSigmoid) {
+        } else if (v < -MAX_SIGMOID) {
             return 0.f;
         } else {
-            return sigmoidTable.get((int) ((v + maxSigmoid) * (sigmoidTableSize / maxSigmoid / 2)));
+            return sigmoidTable.get((int) ((v + MAX_SIGMOID) * (SIGMOID_TABLE_SIZE / MAX_SIGMOID / 2)));
         }
     }
 
-    protected static float getLearningRate(@Nonnull final long wordCountActual,
-            @Nonnull final long numTrainWords, @Nonnull final float startingLR) {
-        return Math.max(startingLR * (1.f - (float) wordCountActual / (numTrainWords + 1L)),
-            startingLR * 0.0001f);
+    protected void updateLearningRate() {
+        // TODO: is is valid lr?
+
+        if (wordCount - lastWordCount > 10000) {
+            wordCountActual += wordCount - lastWordCount;
+            lastWordCount = wordCount;
+
+            this.lr =  Math.max(startingLR * (1.f - (float) wordCountActual / (numTrainWords + 1L)),
+                    startingLR * 0.0001f);
+        }
     }
 
     protected abstract void onlineTrain(@Nonnull final int inWord, @Nonnull final int posWord,
-            @Nonnull final int[] negWords, @Nonnull final float lr);
+            @Nonnull final int[] negWords);
 }

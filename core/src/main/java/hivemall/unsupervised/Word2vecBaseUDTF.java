@@ -26,12 +26,11 @@ import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-
-import javax.annotation.Nonnull;
-
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+
+import javax.annotation.Nonnull;
 import java.util.Map;
 
 public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
@@ -39,14 +38,8 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
 
     // word2vec parameters
     protected int dim;
-    protected float startingLR;
-    protected long numTrainWords;
 
     // training parameters
-    protected float currentLR;
-    protected long wordCount;
-    protected long lastWordCount;
-    protected long wordCountActual;
     protected Map<String, Integer> word2index;
 
     @Override
@@ -79,19 +72,14 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
 
             int wordId = entry.getValue();
-
             Text word = new Text(entry.getKey());
+            Object[] result = new Object[3];
+            result[0] = word;
 
             for (int i = 0; i < dim; i++) {
-                if (i == 0 && model.inputWeights.get(wordId * dim + i) == 0.f) {
-                    break;
-                }
-
-                Object[] res = new Object[3];
-                res[0] = word;
-                res[1] = new IntWritable(i);
-                res[2] = new FloatWritable(model.inputWeights.get(wordId * dim + i));
-                forward(res);
+                result[1] = new IntWritable(i);
+                result[2] = new FloatWritable(model.inputWeights.get(wordId * dim + i));
+                forward(result);
             }
         }
     }
@@ -103,6 +91,14 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
             int w = word2index.size();
             word2index.put(word, w);
             return w;
+        }
+    }
+
+    public void close() throws HiveException {
+        if (model != null) {
+            forwardModel();
+            model = null;
+            word2index = null;
         }
     }
 

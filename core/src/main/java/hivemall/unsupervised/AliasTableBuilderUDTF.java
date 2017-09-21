@@ -21,6 +21,13 @@ package hivemall.unsupervised;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.collections.maps.Int2IntOpenHashTable;
 import hivemall.utils.hadoop.HiveUtils;
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.ArrayDeque;
+
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
@@ -34,8 +41,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-
-import java.util.*;
 
 public final class AliasTableBuilderUDTF extends GenericUDTF {
     private MapObjectInspector negativeTableOI;
@@ -83,31 +88,30 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
     @Override
     public void process(Object[] args) throws HiveException {
 
-        this.numSplit = PrimitiveObjectInspectorUtils.getInt(args[1], this.numSplitOI);
-        if (!(numSplit >= 1)) {
-            throw new UDFArgumentException("Illegal numSplit value: " + numSplit);
+        this.numSplit = PrimitiveObjectInspectorUtils.getInt(args[1], numSplitOI);
+        if (numSplit < 1) {
+            throw new UDFArgumentException("Argument `int numSplit` must be positive: " + numSplit);
+
         }
 
         final List<String> index2word = new ArrayList<>();
         final List<Float> unnormalizedProb = new ArrayList<>();
 
         float denom = 0;
-        for (Map.Entry<?, ?> entry : this.negativeTableOI.getMap(args[0]).entrySet()) {
+        for (Map.Entry<?, ?> entry : negativeTableOI.getMap(args[0]).entrySet()) {
             String word = PrimitiveObjectInspectorUtils.getString(entry.getKey(),
-                this.negativeTableKeyOI);
-            float v = PrimitiveObjectInspectorUtils.getFloat(entry.getValue(),
-                this.negativeTableValueOI);
-            unnormalizedProb.add(v);
+                negativeTableKeyOI);
             index2word.add(word);
+
+            float v = PrimitiveObjectInspectorUtils.getFloat(entry.getValue(), negativeTableValueOI);
+            unnormalizedProb.add(v);
             denom += v;
         }
 
-        int V = index2word.size();
-
-        createAliasTable(V, denom, unnormalizedProb);
-
-        this.numVocab = V;
+        this.numVocab = index2word.size();
         this.index2word = index2word;
+
+        createAliasTable(numVocab, denom, unnormalizedProb);
     }
 
     private void createAliasTable(final int V, final float denom, final List<Float> unnormalizedProb) {
@@ -120,7 +124,7 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
         for (int i = 0; i < V; i++) {
             float v = V * unnormalizedProb.get(i) / denom;
             S.put(i, v);
-            if (v > 1.) {
+            if (v > 1.f) {
                 higherBin.add(i);
             } else {
                 lowerBin.add(i);
@@ -144,15 +148,15 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
 
     @Override
     public void close() throws HiveException {
-        for (int i = 0; i < this.numVocab; i++) {
+        for (int i = 0; i < numVocab; i++) {
             Object[] res = new Object[4];
-            res[0] = new IntWritable(i % this.numSplit);
-            res[1] = new Text(this.index2word.get(i));
-            res[2] = new FloatWritable(this.S.get(i));
-            if (this.A.get(i) == -1) {
+            res[0] = new IntWritable(i % numSplit);
+            res[1] = new Text(index2word.get(i));
+            res[2] = new FloatWritable(S.get(i));
+            if (A.get(i) == -1) {
                 res[3] = new Text();
             } else {
-                res[3] = new Text(this.index2word.get(this.A.get(i)));
+                res[3] = new Text(index2word.get(A.get(i)));
             }
             forward(res);
         }

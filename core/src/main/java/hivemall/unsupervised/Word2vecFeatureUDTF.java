@@ -19,9 +19,16 @@
 package hivemall.unsupervised;
 
 import hivemall.UDTFWithOptions;
+import hivemall.math.random.PRNG;
+import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
+
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -36,14 +43,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-
 public class Word2vecFeatureUDTF extends UDTFWithOptions {
-    private Random rnd;
+    private PRNG _rnd;
 
     // skip-gram with negative sampling parameters
     private int win;
@@ -55,14 +56,14 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
     private String[] aliasIndex2OtherWord;
     private int previousNegativeSamplerId;
 
-    private ListObjectInspector docOI;
-    private PrimitiveObjectInspector wordOI;
+    private PrimitiveObjectInspector splitIdOI;
 
     private ListObjectInspector negativeTableOI;
     private ListObjectInspector negativeTableElementListOI;
     private PrimitiveObjectInspector negativeTableElementOI;
 
-    private PrimitiveObjectInspector splitIdOI;
+    private ListObjectInspector docOI;
+    private PrimitiveObjectInspector wordOI;
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -74,13 +75,12 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
                     + Arrays.toString(argOIs));
         }
 
-        this.docOI = HiveUtils.asListOI(argOIs[0]);
-        wordOI = HiveUtils.asStringOI(docOI.getListElementObjectInspector());
-
-        this.splitIdOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
-        this.negativeTableOI = HiveUtils.asListOI(argOIs[2]);
+        this.splitIdOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
+        this.negativeTableOI = HiveUtils.asListOI(argOIs[1]);
         this.negativeTableElementListOI = HiveUtils.asListOI(negativeTableOI.getListElementObjectInspector());
         this.negativeTableElementOI = HiveUtils.asStringOI(negativeTableElementListOI.getListElementObjectInspector());
+        this.docOI = HiveUtils.asListOI(argOIs[2]);
+        this.wordOI = HiveUtils.asStringOI(docOI.getListElementObjectInspector());
 
         processOptions(argOIs);
 
@@ -98,7 +98,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector));
 
         this.previousNegativeSamplerId = -1;
-        this.rnd = new Random();
+        this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -124,12 +124,12 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
             cl = parseOptions(rawArgs);
 
             win = Primitives.parseInt(cl.getOptionValue("win"), win);
-            if (win <= 0.d) {
+            if (win <= 0) {
                 throw new UDFArgumentException("Argument `int win` must be positive: " + win);
             }
 
             neg = Primitives.parseInt(cl.getOptionValue("neg"), neg);
-            if (neg < 0.d) {
+            if (neg < 0) {
                 throw new UDFArgumentException("Argument `int neg` must be non-negative: " + neg);
             }
         }
@@ -141,29 +141,22 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        int negativeSamplerId = PrimitiveObjectInspectorUtils.getInt(args[1], this.splitIdOI);
+        int negativeSamplerId = PrimitiveObjectInspectorUtils.getInt(args[0], splitIdOI);
         if (previousNegativeSamplerId != negativeSamplerId) {
-            parseNegativeTable(args[2]);
+            parseNegativeTable(args[1]);
             previousNegativeSamplerId = negativeSamplerId;
         }
 
-        // parse document
-        List<?> doc = docOI.getList(args[0]);
-        int docLength = doc.size();
-        for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
-            String word = PrimitiveObjectInspectorUtils.getString(
-                docOI.getListElement(args[0], inputWordPosition), wordOI);
-            forwardSample(word, inputWordPosition, doc);
-        }
+        List<?> doc = docOI.getList(args[2]);
+        forwardSample(doc);
     }
 
-    private void forwardSample(String inputWord, int inputWordPosition, List<?> doc)
-            throws HiveException {
-        final Text inWord = new Text(inputWord);
+    private void forwardSample(final List<?> doc) throws HiveException {
+        final Text inWord = new Text();
         final Text posWord = new Text();
-        final List<Text> negWords = new ArrayList<>(neg);
-        for (int d = 0; d < neg; d++) {
-            negWords.add(new Text());
+        final Text[] negWords = new Text[neg];
+        for (int i = 0; i < neg; i++) {
+            negWords[i] = new Text();
         }
 
         final Object[] forwardObjs = new Object[4];
@@ -173,25 +166,32 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         forwardObjs[3] = negWords;
 
         int docLength = doc.size();
-        int windowSize = rnd.nextInt(win) + 1;
 
-        for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
-                + windowSize + 1; contextPosition++) {
-            if (contextPosition == inputWordPosition)
-                continue;
-            if (contextPosition < 0)
-                continue;
-            if (contextPosition >= docLength)
-                continue;
-
-            String contextWord = PrimitiveObjectInspectorUtils.getString(doc.get(contextPosition),
+        for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
+            String inputWord = PrimitiveObjectInspectorUtils.getString(doc.get(inputWordPosition),
                 wordOI);
-            posWord.set(contextWord);
+            inWord.set(inputWord);
 
-            for (int d = 0; d < neg; d++) {
-                negWords.set(d, new Text(negativeSample(contextWord)));
+            int windowSize = _rnd.nextInt(win) + 1;
+
+            for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
+                    + windowSize + 1; contextPosition++) {
+                if (contextPosition == inputWordPosition)
+                    continue;
+                if (contextPosition < 0)
+                    continue;
+                if (contextPosition >= docLength)
+                    continue;
+
+                String contextWord = PrimitiveObjectInspectorUtils.getString(
+                    doc.get(contextPosition), wordOI);
+                posWord.set(contextWord);
+
+                for (int d = 0; d < neg; d++) {
+                    negWords[d].set(negativeSample(contextWord));
+                }
+                forward(forwardObjs);
             }
-            forward(forwardObjs);
         }
     }
 
@@ -204,10 +204,10 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         for (int i = 0; i < aliasSize; i++) {
             List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
                 listObj, i));
-            S.put(i, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
-                negativeTableElementOI)));
             aliasIndex2Word[i] = PrimitiveObjectInspectorUtils.getString(aliasBin.get(0),
                 negativeTableElementOI);
+            S.put(i, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
+                negativeTableElementOI)));
             aliasIndex2OtherWord[i] = PrimitiveObjectInspectorUtils.getString(aliasBin.get(2),
                 negativeTableElementOI);
         }
@@ -221,9 +221,9 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
     private String negativeSample(final String excludeWord) {
         String sample;
         do {
-            int k = rnd.nextInt(S.size());
+            int k = _rnd.nextInt(S.size());
 
-            if (S.get(k) > rnd.nextFloat()) {
+            if (S.get(k) > _rnd.nextDouble()) {
                 sample = aliasIndex2Word[k];
             } else {
                 sample = aliasIndex2OtherWord[k];
@@ -232,5 +232,6 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         return sample;
     }
 
+    @Override
     public void close() throws HiveException {}
 }
