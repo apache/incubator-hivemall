@@ -66,7 +66,10 @@ public final class KuromojiUDF extends GenericUDF {
     private static final long MAX_INPUT_STREAM_SIZE = 32L * 1024L * 1024L; // ~32MB
 
     private Mode _mode;
-    private CharArraySet _stopWords;
+
+    // lazy instantiation to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.lang.NullPointerException
+    private transient CharArraySet _stopWords;
+
     private Set<String> _stopTags;
     private UserDictionary _userDict;
 
