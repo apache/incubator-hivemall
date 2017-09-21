@@ -21,6 +21,7 @@ package hivemall.unsupervised;
 import hivemall.UDTFWithOptions;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -73,16 +74,22 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
     }
 
     private void forwardModel() throws HiveException {
-        for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
+        final Text word = new Text();
+        final IntWritable dimIndex = new IntWritable();
+        final FloatWritable value = new FloatWritable();
 
+        final Object[] result = new Object[3];
+        result[0] = word;
+        result[1] = dimIndex;
+        result[2] = value;
+
+        for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
             int wordId = entry.getValue();
-            Text word = new Text(entry.getKey());
-            Object[] result = new Object[3];
-            result[0] = word;
+            word.set(entry.getKey());
 
             for (int i = 0; i < dim; i++) {
-                result[1] = new IntWritable(i);
-                result[2] = new FloatWritable(model.inputWeights.get(wordId * dim + i));
+                dimIndex.set(i);
+                value.set(model.inputWeights.get(wordId * dim + i));
                 forward(result);
             }
         }

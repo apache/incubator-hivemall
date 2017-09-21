@@ -18,7 +18,6 @@
  */
 package hivemall.unsupervised;
 
-
 import javax.annotation.Nonnull;
 
 public final class SkipGramModel extends AbstractWord2vecModel {

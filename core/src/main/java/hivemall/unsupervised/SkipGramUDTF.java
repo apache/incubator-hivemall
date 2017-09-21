@@ -20,6 +20,7 @@ package hivemall.unsupervised;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -32,13 +33,16 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
+import javax.annotation.Nonnegative;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 public class SkipGramUDTF extends Word2vecBaseUDTF {
+    @Nonnegative
     private float startingLR;
+    @Nonnegative
     private long numTrainWords;
 
     private PrimitiveObjectInspector inWordOI;
@@ -100,7 +104,7 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
             cl = parseOptions(rawArgs);
 
             lr = Primitives.parseFloat(cl.getOptionValue("lr"), lr);
-            if (lr < 0.f) {
+            if (lr <= 0.f) {
                 throw new UDFArgumentException("Argument `float lr` must be positive: " + lr);
             }
         }

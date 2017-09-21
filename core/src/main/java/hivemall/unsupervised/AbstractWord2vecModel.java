@@ -22,6 +22,7 @@ import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public abstract class AbstractWord2vecModel {
@@ -31,13 +32,20 @@ public abstract class AbstractWord2vecModel {
     private Int2FloatOpenHashTable sigmoidTable;
 
     // learning rate parameters
+    @Nonnegative
     protected float lr;
+    @Nonnegative
     private float startingLR;
+    @Nonnegative
     private long numTrainWords;
+    @Nonnegative
     protected long wordCount;
+    @Nonnegative
     private long lastWordCount;
+    @Nonnegative
     private long wordCountActual;
 
+    @Nonnegative
     protected int dim;
     private PRNG _rnd;
 
@@ -107,8 +115,8 @@ public abstract class AbstractWord2vecModel {
             wordCountActual += wordCount - lastWordCount;
             lastWordCount = wordCount;
 
-            this.lr = Math.max(startingLR * (1.f - (float) wordCountActual / (numTrainWords + 1L)),
-                startingLR * 0.0001f);
+            this.lr = startingLR * Math.max((1.f - (float) wordCountActual / (numTrainWords + 1L)),
+                                             0.0001f);
         }
     }
 

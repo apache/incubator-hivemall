@@ -43,14 +43,17 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public class Word2vecFeatureUDTF extends UDTFWithOptions {
     private PRNG rnd;
 
-    // skip-gram with negative sampling parameters
+    // parameters for skip-gram with negative sampling
+    @Nonnegative
     private int win;
     private int neg;
+    @Nonnegative
     private int iter;
 
     // alias sampler for negative sampling
@@ -167,9 +170,9 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         final int numNegative = neg;
         final PRNG _rnd = rnd;
         final PrimitiveObjectInspector _wordOI = wordOI;
-        final Int2FloatOpenHashTable S_ = S;
-        final String[] aliasIndex2Word_ = aliasIndex2Word;
-        final String[] aliasIndex2OtherWord_ = aliasIndex2OtherWord;
+        final Int2FloatOpenHashTable _S = S;
+        final String[] _aliasIndex2Word = aliasIndex2Word;
+        final String[] _aliasIndex2OtherWord = aliasIndex2OtherWord;
 
         final Text inWord = new Text();
         final Text posWord = new Text();
@@ -210,12 +213,12 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
                     for (int d = 0; d < numNegative; d++) {
                         String sample;
                         do {
-                            int k = _rnd.nextInt(S_.size());
+                            int k = _rnd.nextInt(_S.size());
 
-                            if (S_.get(k) > _rnd.nextDouble()) {
-                                sample = aliasIndex2Word_[k];
+                            if (_S.get(k) > _rnd.nextDouble()) {
+                                sample = _aliasIndex2Word[k];
                             } else {
-                                sample = aliasIndex2OtherWord_[k];
+                                sample = _aliasIndex2OtherWord[k];
                             }
                         } while (sample.equals(contextWord));
 
