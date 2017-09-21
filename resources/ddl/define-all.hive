@@ -559,6 +559,31 @@ create temporary function train_ffm as 'hivemall.fm.FieldAwareFactorizationMachi
 drop temporary function ffm_predict;
 create temporary function ffm_predict as 'hivemall.fm.FFMPredictUDF';
 
+---------------------------
+-- Geo-Spatial functions --
+---------------------------
+
+drop temporary function if exists tile;
+create temporary function tile as 'hivemall.geospatial.TileUDF';
+
+drop temporary function if exists map_url;
+create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
+
+drop temporary function if exists lat2tiley;
+create temporary function lat2tiley as 'hivemall.geospatial.Lat2TileYUDF';
+
+drop temporary function if exists lon2tilex;
+create temporary function lon2tilex as 'hivemall.geospatial.Lon2TileXUDF';
+
+drop temporary function if exists tilex2lon;
+create temporary function tilex2lon as 'hivemall.geospatial.TileX2LonUDF';
+
+drop temporary function if exists tiley2lat;
+create temporary function tiley2lat as 'hivemall.geospatial.TileY2LatUDF';
+
+drop temporary function if exists haversine_distance;
+create temporary function haversine_distance as 'hivemall.geospatial.HaversineDistanceUDF';
+
 ----------------------------
 -- Smile related features --
 ----------------------------

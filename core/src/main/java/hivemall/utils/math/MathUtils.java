@@ -43,6 +43,13 @@ public final class MathUtils {
     private MathUtils() {}
 
     /**
+     * @return secant 1 / cos(d)
+     */
+    public static double sec(final double d) {
+        return 1.d / Math.cos(d);
+    }
+
+    /**
      * Returns a bit mask for the specified number of bits.
      */
     public static int bitMask(final int numberOfBits) {
@@ -110,7 +117,7 @@ public final class MathUtils {
      * in GPU Computing Gems, volume 2, 2010. The source code is available <a
      * href="http://gpucomputing.net/?q=node/1828">here</a>.
      * </p>
-     * 
+     *
      * @param x the value
      * @return t such that x = erf(t)
      */

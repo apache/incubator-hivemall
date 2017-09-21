@@ -145,6 +145,13 @@ create temporary function rf_ensemble as 'hivemall.smile.tools.RandomForestEnsem
 create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAttributesUDF';
 create temporary function to_ordered_list as 'hivemall.tools.list.UDAFToOrderedList';
 create temporary function singularize as 'hivemall.tools.text.SingularizeUDF';
+create temporary function tile as 'hivemall.geospatial.TileUDF';
+create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
+create temporary function lat2tiley as 'hivemall.geospatial.Lat2TileYUDF';
+create temporary function lon2tilex as 'hivemall.geospatial.Lon2TileXUDF';
+create temporary function tilex2lon as 'hivemall.geospatial.TileX2LonUDF';
+create temporary function tiley2lat as 'hivemall.geospatial.TileY2LatUDF';
+create temporary function haversine_distance as 'hivemall.geospatial.HaversineDistanceUDF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

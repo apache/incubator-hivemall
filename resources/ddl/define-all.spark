@@ -463,6 +463,31 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_fm")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_fm AS 'hivemall.fm.FactorizationMachineUDTF'")
 
 /**
+ * Geo Spatial Functions
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tile")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tile AS 'hivemall.geospatial.TileUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_url")
+sqlContext.sql("CREATE TEMPORARY FUNCTION map_url AS 'hivemall.geospatial.MapURLUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lat2tiley")
+sqlContext.sql("CREATE TEMPORARY FUNCTION lat2tiley AS 'hivemall.geospatial.Lat2TileYUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lon2tilex")
+sqlContext.sql("CREATE TEMPORARY FUNCTION lon2tilex AS 'hivemall.geospatial.Lon2TileXUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tilex2lon")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tilex2lon AS 'hivemall.geospatial.TileX2LonUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tiley2lat")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tiley2lat AS 'hivemall.geospatial.TileY2LatUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS haversine_distance")
+sqlContext.sql("CREATE TEMPORARY FUNCTION haversine_distance AS 'hivemall.geospatial.HaversineDistanceUDF'")
+
+/**
  * Smile related features
  */
 
