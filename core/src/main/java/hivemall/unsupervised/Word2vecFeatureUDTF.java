@@ -46,7 +46,7 @@ import org.apache.hadoop.io.Text;
 import javax.annotation.Nonnull;
 
 public class Word2vecFeatureUDTF extends UDTFWithOptions {
-    private PRNG _rnd;
+    private PRNG rnd;
 
     // skip-gram with negative sampling parameters
     private int win;
@@ -101,7 +101,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector));
 
         this.previousNegativeSamplerId = -1;
-        this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
+        this.rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -111,9 +111,9 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         Options opts = new Options();
         opts.addOption("win", "window", true, "Range for context word [default: 5]");
         opts.addOption("neg", "negative", true,
-                "The number of negative sampled words per word [default: 5]");
+            "The number of negative sampled words per word [default: 5]");
         opts.addOption("iter", "iteration", true,
-                "The number of skip-gram per word. It is equivalent to the epoch of word2vec [default: 5]");
+            "The number of skip-gram per word. It is equivalent to the epoch of word2vec [default: 5]");
         return opts;
     }
 
@@ -164,10 +164,17 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
     }
 
     private void forwardSample(@Nonnull final List<?> doc) throws HiveException {
+        final int numNegative = neg;
+        final PRNG _rnd = rnd;
+        final PrimitiveObjectInspector _wordOI = wordOI;
+        final Int2FloatOpenHashTable S_ = S;
+        final String[] aliasIndex2Word_ = aliasIndex2Word;
+        final String[] aliasIndex2OtherWord_ = aliasIndex2OtherWord;
+
         final Text inWord = new Text();
         final Text posWord = new Text();
-        final Text[] negWords = new Text[neg];
-        for (int i = 0; i < neg; i++) {
+        final Text[] negWords = new Text[numNegative];
+        for (int i = 0; i < numNegative; i++) {
             negWords[i] = new Text();
         }
 
@@ -180,10 +187,10 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         int docLength = doc.size();
         for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
             String inputWord = PrimitiveObjectInspectorUtils.getString(doc.get(inputWordPosition),
-                wordOI);
+                _wordOI);
             inWord.set(inputWord);
 
-            for(int i = 0; i < iter; i++){
+            for (int i = 0; i < iter; i++) {
                 int windowSize = _rnd.nextInt(win) + 1;
 
                 for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
@@ -196,12 +203,25 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
                         continue;
 
                     String contextWord = PrimitiveObjectInspectorUtils.getString(
-                            doc.get(contextPosition), wordOI);
+                        doc.get(contextPosition), _wordOI);
                     posWord.set(contextWord);
 
-                    for (int d = 0; d < neg; d++) {
-                        negWords[d].set(negativeSample(contextWord));
+                    // negative sampling
+                    for (int d = 0; d < numNegative; d++) {
+                        String sample;
+                        do {
+                            int k = _rnd.nextInt(S_.size());
+
+                            if (S_.get(k) > _rnd.nextDouble()) {
+                                sample = aliasIndex2Word_[k];
+                            } else {
+                                sample = aliasIndex2OtherWord_[k];
+                            }
+                        } while (sample.equals(contextWord));
+
+                        negWords[d].set(sample);
                     }
+
                     forward(forwardObjs);
                 }
             }
@@ -228,21 +248,6 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         this.S = S;
         this.aliasIndex2Word = aliasIndex2Word;
         this.aliasIndex2OtherWord = aliasIndex2OtherWord;
-    }
-
-
-    private String negativeSample(final String excludeWord) {
-        String sample;
-        do {
-            int k = _rnd.nextInt(S.size());
-
-            if (S.get(k) > _rnd.nextDouble()) {
-                sample = aliasIndex2Word[k];
-            } else {
-                sample = aliasIndex2OtherWord[k];
-            }
-        } while (sample.equals(excludeWord));
-        return sample;
     }
 
     @Override

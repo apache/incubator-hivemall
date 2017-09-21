@@ -27,38 +27,44 @@ public final class SkipGramModel extends AbstractWord2vecModel {
         super(dim, startingLR, numTrainWords);
     }
 
-    protected void onlineTrain(final int inWord, final int posWord,
-            @Nonnull final int[] negWords) {
+    protected void onlineTrain(final int inWord, final int posWord, @Nonnull final int[] negWords) {
+
+        final int vecDim = dim;
 
         updateLearningRate();
 
-        if (!inputWeights.containsKey(inWord * dim)) {
+        if (!inputWeights.containsKey(inWord * vecDim)) {
             initWordWeights(inWord);
-         }
+        }
 
-        float[] gradVec = new float[dim];
+        float[] gradVec = new float[vecDim];
 
         // positive words
         float gradient = grad(1.f, inWord, posWord) * lr;
-        for (int i = 0; i < dim; i++) {
-            gradVec[i] += gradient * contextWeights.get(posWord * dim + i);
-            contextWeights.put(posWord * dim + i, gradient * inputWeights.get(inWord * dim + i)
-                    + contextWeights.get(posWord * dim + i));
+        for (int i = 0; i < vecDim; i++) {
+            gradVec[i] += gradient * contextWeights.get(posWord * vecDim + i);
+            contextWeights.put(
+                posWord * vecDim + i,
+                gradient * inputWeights.get(inWord * vecDim + i)
+                        + contextWeights.get(posWord * vecDim + i));
         }
 
         // negative words
         for (int negWord : negWords) {
             gradient = grad(0.f, inWord, negWord) * lr;
-            for (int i = 0; i < dim; i++) {
-                gradVec[i] += gradient * contextWeights.get(negWord * dim + i);
-                contextWeights.put(negWord * dim + i, gradient * inputWeights.get(inWord * dim + i)
-                        + contextWeights.get(negWord * dim + i));
+            for (int i = 0; i < vecDim; i++) {
+                gradVec[i] += gradient * contextWeights.get(negWord * vecDim + i);
+                contextWeights.put(
+                    negWord * vecDim + i,
+                    gradient * inputWeights.get(inWord * vecDim + i)
+                            + contextWeights.get(negWord * vecDim + i));
             }
         }
 
         // update inWord vector
-        for (int i = 0; i < dim; i++) {
-            inputWeights.put(inWord * dim + i, gradVec[i] + inputWeights.get(inWord * dim + i));
+        for (int i = 0; i < vecDim; i++) {
+            inputWeights.put(inWord * vecDim + i,
+                gradVec[i] + inputWeights.get(inWord * vecDim + i));
         }
 
         wordCount++;

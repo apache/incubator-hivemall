@@ -200,7 +200,7 @@ group by k
 drop table skipgram_features;
 create table skipgram_features as 
 select 
-  skipgram(k, negative_table, words, "-win 5 -neg 15")
+  skipgram(k, negative_table, words, "-win 5 -neg 15 -iter 2")
 from(
     select
       r.k,

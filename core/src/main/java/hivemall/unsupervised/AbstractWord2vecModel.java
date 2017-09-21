@@ -73,7 +73,7 @@ public abstract class AbstractWord2vecModel {
         return sigmoidTable;
     }
 
-    protected void initWordWeights(final int wordId){
+    protected void initWordWeights(final int wordId) {
         for (int i = 0; i < dim; i++) {
             inputWeights.put(wordId * dim + i, ((float) _rnd.nextDouble() - 0.5f) / dim);
         }
