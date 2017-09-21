@@ -166,7 +166,6 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         forwardObjs[3] = negWords;
 
         int docLength = doc.size();
-
         for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
             String inputWord = PrimitiveObjectInspectorUtils.getString(doc.get(inputWordPosition),
                 wordOI);

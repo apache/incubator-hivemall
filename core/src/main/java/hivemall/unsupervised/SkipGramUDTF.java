@@ -44,7 +44,7 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
     private PrimitiveObjectInspector inWordOI;
     private PrimitiveObjectInspector posWordOI;
     private ListObjectInspector negWordsOI;
-    private PrimitiveObjectInspector wordOI;
+    private PrimitiveObjectInspector negWord;
     private PrimitiveObjectInspector numTrainWordsOI;
 
     @Override
@@ -60,7 +60,7 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
         this.inWordOI = HiveUtils.asStringOI(argOIs[0]);
         this.posWordOI = HiveUtils.asStringOI(argOIs[1]);
         this.negWordsOI = HiveUtils.asListOI(argOIs[2]);
-        this.wordOI = HiveUtils.asStringOI(negWordsOI.getListElementObjectInspector());
+        this.negWord = HiveUtils.asStringOI(negWordsOI.getListElementObjectInspector());
         this.numTrainWordsOI = HiveUtils.asLongCompatibleOI(argOIs[3]);
 
         processOptions(argOIs);
@@ -124,11 +124,10 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
         final int[] negWords = new int[negWordsList.size()];
         for (int i = 0; i < negWords.length; i++) {
             negWords[i] = getWordId(PrimitiveObjectInspectorUtils.getString(negWordsList.get(i),
-                wordOI));
+                negWord));
         }
 
         model.onlineTrain(inWord, posWord, negWords);
-
     }
 
     protected AbstractWord2vecModel createModel() {

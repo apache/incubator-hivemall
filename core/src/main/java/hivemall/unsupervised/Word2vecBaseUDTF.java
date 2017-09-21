@@ -36,10 +36,7 @@ import java.util.Map;
 public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
     protected transient AbstractWord2vecModel model;
 
-    // word2vec parameters
     protected int dim;
-
-    // training parameters
     protected Map<String, Integer> word2index;
 
     @Override
@@ -68,7 +65,15 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         return cl;
     }
 
-    protected void forwardModel() throws HiveException {
+    public void close() throws HiveException {
+        if (model != null) {
+            forwardModel();
+            model = null;
+            word2index = null;
+        }
+    }
+
+    private void forwardModel() throws HiveException {
         for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
 
             int wordId = entry.getValue();
@@ -94,13 +99,6 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         }
     }
 
-    public void close() throws HiveException {
-        if (model != null) {
-            forwardModel();
-            model = null;
-            word2index = null;
-        }
-    }
 
     @Nonnull
     protected abstract AbstractWord2vecModel createModel();

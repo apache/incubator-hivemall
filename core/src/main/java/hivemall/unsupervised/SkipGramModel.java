@@ -32,16 +32,13 @@ public final class SkipGramModel extends AbstractWord2vecModel {
 
         updateLearningRate();
 
-        // initialized weights for inWord
         if (!inputWeights.containsKey(inWord * dim)) {
-            for (int i = 0; i < dim; i++) {
-                inputWeights.put(inWord * dim + i, ((float) _rnd.nextDouble() - 0.5f) / dim);
-            }
-        }
+            initWordWeights(inWord);
+         }
 
         float[] gradVec = new float[dim];
 
-        // positive
+        // positive words
         float gradient = grad(1.f, inWord, posWord) * lr;
         for (int i = 0; i < dim; i++) {
             gradVec[i] += gradient * contextWeights.get(posWord * dim + i);
@@ -49,13 +46,13 @@ public final class SkipGramModel extends AbstractWord2vecModel {
                     + contextWeights.get(posWord * dim + i));
         }
 
-        // negative
-        for (int target : negWords) {
-            gradient = grad(0.f, inWord, target) * lr;
+        // negative words
+        for (int negWord : negWords) {
+            gradient = grad(0.f, inWord, negWord) * lr;
             for (int i = 0; i < dim; i++) {
-                gradVec[i] += gradient * contextWeights.get(target * dim + i);
-                contextWeights.put(target * dim + i, gradient * inputWeights.get(inWord * dim + i)
-                        + contextWeights.get(target * dim + i));
+                gradVec[i] += gradient * contextWeights.get(negWord * dim + i);
+                contextWeights.put(negWord * dim + i, gradient * inputWeights.get(inWord * dim + i)
+                        + contextWeights.get(negWord * dim + i));
             }
         }
 

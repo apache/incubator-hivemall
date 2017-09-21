@@ -33,13 +33,13 @@ public abstract class AbstractWord2vecModel {
     // learning rate parameters
     protected float lr;
     private float startingLR;
-    protected long numTrainWords;
+    private long numTrainWords;
     protected long wordCount;
-    protected long lastWordCount;
-    protected long wordCountActual;
+    private long lastWordCount;
+    private long wordCountActual;
 
     protected int dim;
-    protected PRNG _rnd;
+    private PRNG _rnd;
 
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
@@ -47,7 +47,11 @@ public abstract class AbstractWord2vecModel {
     protected AbstractWord2vecModel(final int dim, final float startingLR, final long numTrainWords) {
         this.dim = dim;
         this.startingLR = this.lr = startingLR;
+        this.numTrainWords = numTrainWords;
 
+        this.wordCount = 0L;
+        this.lastWordCount = 0L;
+        this.wordCountActual = 0L;
         this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         this.sigmoidTable = initSigmoidTable(MAX_SIGMOID, SIGMOID_TABLE_SIZE);
@@ -57,11 +61,6 @@ public abstract class AbstractWord2vecModel {
         this.inputWeights.defaultReturnValue(0.f);
         this.contextWeights = new Int2FloatOpenHashTable(10578 * dim);
         this.contextWeights.defaultReturnValue(0.f);
-
-        this.wordCount = 0L;
-        this.lastWordCount = 0L;
-        this.wordCountActual = 0L;
-        this.numTrainWords = numTrainWords;
     }
 
     private static Int2FloatOpenHashTable initSigmoidTable(final int maxSigmoid,
@@ -72,6 +71,12 @@ public abstract class AbstractWord2vecModel {
             sigmoidTable.put(i, 1.f / ((float) Math.exp(-x) + 1.f));
         }
         return sigmoidTable;
+    }
+
+    protected void initWordWeights(final int wordId){
+        for (int i = 0; i < dim; i++) {
+            inputWeights.put(wordId * dim + i, ((float) _rnd.nextDouble() - 0.5f) / dim);
+        }
     }
 
     // cannot use for CBoW
@@ -96,14 +101,14 @@ public abstract class AbstractWord2vecModel {
     }
 
     protected void updateLearningRate() {
-        // TODO: is is valid lr?
+        // TODO: valid lr?
 
         if (wordCount - lastWordCount > 10000) {
             wordCountActual += wordCount - lastWordCount;
             lastWordCount = wordCount;
 
-            this.lr =  Math.max(startingLR * (1.f - (float) wordCountActual / (numTrainWords + 1L)),
-                    startingLR * 0.0001f);
+            this.lr = Math.max(startingLR * (1.f - (float) wordCountActual / (numTrainWords + 1L)),
+                startingLR * 0.0001f);
         }
     }
 
