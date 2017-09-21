@@ -112,6 +112,6 @@ public abstract class AbstractWord2vecModel {
         }
     }
 
-    protected abstract void onlineTrain(@Nonnull final int inWord, @Nonnull final int posWord,
+    protected abstract void onlineTrain(final int inWord, final int posWord,
             @Nonnull final int[] negWords);
 }

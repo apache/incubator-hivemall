@@ -30,7 +30,6 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 
 public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
@@ -99,7 +98,5 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         }
     }
 
-
-    @Nonnull
     protected abstract AbstractWord2vecModel createModel();
 }

@@ -43,12 +43,15 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
+import javax.annotation.Nonnull;
+
 public class Word2vecFeatureUDTF extends UDTFWithOptions {
     private PRNG _rnd;
 
     // skip-gram with negative sampling parameters
     private int win;
     private int neg;
+    private int iter;
 
     // alias sampler for negative sampling
     private Int2FloatOpenHashTable S;
@@ -108,7 +111,9 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         Options opts = new Options();
         opts.addOption("win", "window", true, "Range for context word [default: 5]");
         opts.addOption("neg", "negative", true,
-            "The number of negative sampled words per word [default: 5]");
+                "The number of negative sampled words per word [default: 5]");
+        opts.addOption("iter", "iteration", true,
+                "The number of skip-gram per word. It is equivalent to the epoch of word2vec [default: 5]");
         return opts;
     }
 
@@ -118,6 +123,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
 
         int win = 5;
         int neg = 5;
+        int iter = 5;
 
         if (argOIs.length >= 3) {
             String rawArgs = HiveUtils.getConstString(argOIs[3]);
@@ -132,10 +138,16 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
             if (neg < 0) {
                 throw new UDFArgumentException("Argument `int neg` must be non-negative: " + neg);
             }
+
+            iter = Primitives.parseInt(cl.getOptionValue("iter"), iter);
+            if (iter < 0) {
+                throw new UDFArgumentException("Argument `int iter` must be non-negative: " + iter);
+            }
         }
 
         this.win = win;
         this.neg = neg;
+        this.iter = iter;
         return cl;
     }
 
@@ -151,7 +163,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
         forwardSample(doc);
     }
 
-    private void forwardSample(final List<?> doc) throws HiveException {
+    private void forwardSample(@Nonnull final List<?> doc) throws HiveException {
         final Text inWord = new Text();
         final Text posWord = new Text();
         final Text[] negWords = new Text[neg];
@@ -171,25 +183,27 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
                 wordOI);
             inWord.set(inputWord);
 
-            int windowSize = _rnd.nextInt(win) + 1;
+            for(int i = 0; i < iter; i++){
+                int windowSize = _rnd.nextInt(win) + 1;
 
-            for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
-                    + windowSize + 1; contextPosition++) {
-                if (contextPosition == inputWordPosition)
-                    continue;
-                if (contextPosition < 0)
-                    continue;
-                if (contextPosition >= docLength)
-                    continue;
+                for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
+                        + windowSize + 1; contextPosition++) {
+                    if (contextPosition == inputWordPosition)
+                        continue;
+                    if (contextPosition < 0)
+                        continue;
+                    if (contextPosition >= docLength)
+                        continue;
 
-                String contextWord = PrimitiveObjectInspectorUtils.getString(
-                    doc.get(contextPosition), wordOI);
-                posWord.set(contextWord);
+                    String contextWord = PrimitiveObjectInspectorUtils.getString(
+                            doc.get(contextPosition), wordOI);
+                    posWord.set(contextWord);
 
-                for (int d = 0; d < neg; d++) {
-                    negWords[d].set(negativeSample(contextWord));
+                    for (int d = 0; d < neg; d++) {
+                        negWords[d].set(negativeSample(contextWord));
+                    }
+                    forward(forwardObjs);
                 }
-                forward(forwardObjs);
             }
         }
     }

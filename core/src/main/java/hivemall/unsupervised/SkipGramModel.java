@@ -27,7 +27,7 @@ public final class SkipGramModel extends AbstractWord2vecModel {
         super(dim, startingLR, numTrainWords);
     }
 
-    protected void onlineTrain(@Nonnull final int inWord, @Nonnull final int posWord,
+    protected void onlineTrain(final int inWord, final int posWord,
             @Nonnull final int[] negWords) {
 
         updateLearningRate();
