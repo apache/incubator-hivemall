@@ -101,7 +101,8 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+
 
         this.previousNegativeSamplerId = -1;
         this.rnd = RandomNumberGeneratorFactory.createPRNG(1001);
@@ -182,16 +183,13 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
 
         final Text inWord = new Text();
         final Text posWord = new Text();
-        final Text[] negWords = new Text[numNegative];
-        for (int i = 0; i < numNegative; i++) {
-            negWords[i] = new Text();
-        }
+        final String[] negWords = new String[numNegative];
 
         final Object[] forwardObjs = new Object[4];
         forwardObjs[0] = new IntWritable(previousNegativeSamplerId);
         forwardObjs[1] = inWord;
         forwardObjs[2] = posWord;
-        forwardObjs[3] = negWords;
+        forwardObjs[3] = Arrays.asList(negWords);
 
         // reuse instance
         int windowSize, k;
@@ -225,8 +223,7 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
                                 negSample = _aliasIndex2OtherWord[k];
                             }
                         } while (negSample.equals(contextWord));
-
-                        negWords[d].set(negSample);
+                        negWords[d] = negSample;
                     }
 
                     forward(forwardObjs);
