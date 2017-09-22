@@ -24,13 +24,13 @@ In word embedding,
 each word represents a low dimension and dense vector representation.
 **Skip-gram** and **Continuous Bag-of-words** (a.k.a word2vec) are the most popular algorithms to obtain good word embeddings.
 
-Papers introduce the method are as follows:
+The papers introduce the method are as follows:
 
 - T. Mikolov, et al., [Distributed Representations of Words and Phrases and Their Compositionality
 ](http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf). NIPS, 2013.
 - T. Mikolov, et al., [Efficient Estimation of Word Representations in Vector Space](https://arxiv.org/abs/1301.3781). ICLR, 2013.
 
-Hivemall provides two type algorithms: Skip-gram and Continuous Bag-of-words (CBoW) with negative sampling for large data.
+Hivemall provides two type algorithms: Skip-gram and Continuous Bag-of-words (CBoW) with negative sampling.
 Hivemall enables you to train your sequence data such as,
 but not limited to, documents based on word2vec.
 This article gives usage instructions of the feature.
@@ -42,7 +42,7 @@ This article gives usage instructions of the feature.
 
 # Prepare document data
 
-Assume that we already have a table `docs` which contains many documents as string format:
+Assume that you already have a table `docs` which contains many documents as string format:
 
 ```sql
 select * FROM docs;
@@ -53,7 +53,7 @@ select * FROM docs;
 |   0   | "Alice was beginning to get very tired of sitting by her sister on the bank ..." |
 |  ...  | ... |
 
-Then, we split each document string into words: list of string.
+Then, each document is split into words: an array of string.
 
 ```sql
 drop table docs_words;
@@ -66,24 +66,37 @@ create table docs_words as
 ;
 ```
 
-Then, we count all word frequency and remove low frequency words.
+
+| docId | doc |
+|:----: |:----|
+|   0   | "alice", "was", "beginning", "to", "get", "very", "tired", "of", "sitting", "by", "her", "sister", "on", "the", "bank", ... |
+|  ...  | ... |
+
+Then, you count all word frequency and remove low frequency words.
 
 ```sql
 set hivevar:mincount=5;
 
 drop table freq;
 create table freq as
-select word, freq from (
-    select word, COUNT(*) as freq
-    from docs_words
+select
+  word,
+  freq
+from (
+    select
+      word,
+      COUNT(*) as freq
+    from
+      docs_words
     LATERAL VIEW explode(words) lTable as word
-    group by word
+    group by 
+      word
 ) t
 where freq >= ${mincount}
 ;
 ```
 
-We set the number of training words `numTrainWords` variable.
+`numTrainWords` variable is set the number of training words.
 
 ```sql
 select sum(freq) FROM freq;
@@ -96,18 +109,18 @@ set hivevar:numTrainWords=750105;
 
 Sub-sampling table is stored a not deleted probability per word.
 During word2vec training,
-sub-sampled words are ignored.
-It is advanrage to train fastly and to count the imbalance the rare words and frequent words by reducing by reducing frequent words.
+sub-sampled words are ignored in the corpus.
+It works to train fastly and to consider the imbalance the rare words and frequent words by reducing frequent words.
 
 ```sql
 set hivevar:sample=1e-4;
 
-drop table discard_table;
-create table discard_table as
+drop table subsampling_table;
+create table subsampling_table as
   select * FROM (
     select
         word,
-        sqrt(${sample}/(freq/${numTrainWords})) + ${sample}/(freq/${numTrainWords}) as discard
+        sqrt(${sample}/(freq/${numTrainWords})) + ${sample}/(freq/${numTrainWords}) as p
     from freq
 ) t
 ;
@@ -115,8 +128,13 @@ create table discard_table as
 
 # Delete low frequency words and high frequency words from `docs_words`
 
+To reduce useless words from documents, 
+low frequency words and high frequency words are deleted.
+And to avoid loading on memory, a long document is split into some sub-documents.
+
+
 ```sql
-set hivevar:maxlength=1000;
+set hivevar:maxlength=1500;
 SET hivevar:seed=31;
 
 drop table train_docs;
@@ -125,7 +143,7 @@ create table train_docs as
     select
       docid,
       word,
-      pos%${maxlength} as pos,
+      pos % ${maxlength} as pos,
       pos div ${maxlength} as splitid,
       rand(${seed}) as rnd
     from
@@ -137,8 +155,8 @@ select
 from
   docs_exploded l
 join freq r on (l.word = r.word)
-join discard_table r2 on (l.word = r2.word)
-where r2.discard > l.rnd
+join subsampling_table r2 on (l.word = r2.word)
+where r2.p > l.rnd
 group by
   docid, splitid
 ;
@@ -146,9 +164,11 @@ group by
 
 # Create negative sampling table
 
-Negative table is used to store word sampling probability for negative sampling.
+Negative sampling is an approximate function of [softmax function](https://en.wikipedia.org/wiki/Softmax_function).
+Here, `negative_table` is used to store word sampling probability for negative sampling.
 `noisePower` is a hyperparameter of noise distribution for negative sampling.
-During word2vec training, negative words are used for negative example.
+During word2vec training,
+words sampled this distribution are used for negative example.
 
 ```sql
 set hivevar:noisePower=3/4;
@@ -165,13 +185,10 @@ create table negative_table as
 
 ## Split negative sampling table
 
-Negative sampling is an approximate function of [softmax function](https://en.wikipedia.org/wiki/Softmax_function) by sampling from noise distribution.
-Negative sampling table is stored all valid words and its probabilities.
-
 To avoid using this huge memory space like original implementation and sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 
-And then, this alias sampler is split into N tables for next query.
+And then, this alias sampler is split into `numSplit` tables in the next query.
 
 ```sql
 set hivevar:numSplit=8;
@@ -196,11 +213,20 @@ group by k
 
 # Train word2vec
 
+Hivemall provides `word2vec_feature` function to prepare the input of word2vec train.
+The return record shows 
+
+| inWord | posWord | negWords|
+|---- |----|----|
+| "alice" | "was" | ["queen", "a", ...] |
+|  ...  | ... | ... |
+
 ```sql
+set hivevar:numSplit=8;
 drop table skipgram_features;
 create table skipgram_features as 
 select 
-  skipgram(k, negative_table, words, "-win 5 -neg 15 -iter 5")
+  word2vec_feature(k, negative_table, words, "-win 5 -neg 2 -iter 1 -model skipgram")
 from(
     select
       r.k,
@@ -218,7 +244,7 @@ from(
 ```sql
 # numTrainWords decreases?
 select COUNT(*) from skipgram_features;
-set hivevar:numSamples=12486700;
+set hivevar:numSamples=14911314;
 
 drop table w2v;
 create table w2v as 

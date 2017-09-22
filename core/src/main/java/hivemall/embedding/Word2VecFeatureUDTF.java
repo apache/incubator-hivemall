@@ -55,6 +55,7 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
     private int neg;
     @Nonnegative
     private int iter;
+    private boolean skipgram;
 
     // alias sampler for negative sampling
     private Int2FloatOpenHashTable S;
@@ -93,16 +94,23 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
         List<String> fieldNames = new ArrayList<>();
         List<ObjectInspector> fieldOIs = new ArrayList<>();
 
+
         fieldNames.add("k");
-        fieldNames.add("inWord");
-        fieldNames.add("posWord");
-        fieldNames.add("negWords");
-
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
+        if (skipgram) {
+            fieldNames.add("inWord");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        } else {
+            fieldNames.add("inWords");
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+        }
+
+        fieldNames.add("posWord");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+
+        fieldNames.add("negWords");
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
         this.previousNegativeSamplerId = -1;
         this.rnd = RandomNumberGeneratorFactory.createPRNG(1001);
@@ -118,6 +126,8 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
             "The number of negative sampled words per word [default: 5]");
         opts.addOption("iter", "iteration", true,
             "The number of skip-gram per word. It is equivalent to the epoch of word2vec [default: 5]");
+        opts.addOption("model", "modelName", true,
+            "The model name of word2vec: skipgram or cbow [default: skipgram]");
         return opts;
     }
 
@@ -128,6 +138,7 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
         int win = 5;
         int neg = 5;
         int iter = 5;
+        String modelName = "skipgram";
 
         if (argOIs.length >= 3) {
             String rawArgs = HiveUtils.getConstString(argOIs[3]);
@@ -147,11 +158,18 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
             if (iter <= 0) {
                 throw new UDFArgumentException("Argument `int iter` must be non-negative: " + iter);
             }
+
+            modelName = cl.getOptionValue("model", modelName);
+            if (!(modelName.equals("skipgram") || modelName.equals("cbow"))) {
+                throw new UDFArgumentException("Argument `string model` must be skipgram or cbow: "
+                        + modelName);
+            }
         }
 
         this.win = win;
         this.neg = neg;
         this.iter = iter;
+        this.skipgram = modelName.equals("skipgram");
         return cl;
     }
 
@@ -171,10 +189,14 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
             doc.add(PrimitiveObjectInspectorUtils.getString(rawDoc.get(i), wordOI));
         }
 
-        forwardSample(doc);
+        if (skipgram) {
+            forwardSkipGramSample(doc);
+        } else {
+            forwardCBoWSample(doc);
+        }
     }
 
-    private void forwardSample(@Nonnull final List<String> doc) throws HiveException {
+    private void forwardSkipGramSample(@Nonnull final List<String> doc) throws HiveException {
         final int numNegative = neg;
         final PRNG _rnd = rnd;
         final Int2FloatOpenHashTable _S = S;
@@ -205,7 +227,8 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
 
                 for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
                         + windowSize + 1; contextPosition++) {
-                    if (contextPosition == inputWordPosition || contextPosition < 0 || contextPosition >= docLength){
+                    if (contextPosition == inputWordPosition || contextPosition < 0
+                            || contextPosition >= docLength) {
                         continue;
                     }
 
@@ -228,6 +251,65 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
 
                     forward(forwardObjs);
                 }
+            }
+        }
+    }
+
+    private void forwardCBoWSample(@Nonnull final List<String> doc) throws HiveException {
+        final int numNegative = neg;
+        final PRNG _rnd = rnd;
+        final Int2FloatOpenHashTable _S = S;
+        final String[] _aliasIndex2Word = aliasIndex2Word;
+        final String[] _aliasIndex2OtherWord = aliasIndex2OtherWord;
+
+        final List<String> inWords = new ArrayList<>();
+        final Text posWord = new Text();
+        final String[] negWords = new String[numNegative];
+
+        final Object[] forwardObjs = new Object[4];
+        forwardObjs[0] = new IntWritable(previousNegativeSamplerId);
+        forwardObjs[1] = inWords;
+        forwardObjs[2] = posWord;
+        forwardObjs[3] = Arrays.asList(negWords);
+
+        // reuse instance
+        int windowSize, k;
+        String negSample;
+
+        int docLength = doc.size();
+        for (int positiveWordPosition = 0; positiveWordPosition < docLength; positiveWordPosition++) {
+            String positiveWord = doc.get(positiveWordPosition);
+            posWord.set(positiveWord);
+
+            for (int i = 0; i < iter; i++) {
+                windowSize = _rnd.nextInt(win) + 1;
+
+                // collect context words
+                for (int contextPosition = positiveWordPosition - windowSize; contextPosition < positiveWordPosition
+                        + windowSize + 1; contextPosition++) {
+                    if (contextPosition == positiveWordPosition || contextPosition < 0
+                            || contextPosition >= docLength) {
+                        continue;
+                    }
+                    inWords.add(doc.get(contextPosition));
+                }
+
+                // negative sampling
+                for (int d = 0; d < numNegative; d++) {
+                    do {
+                        k = _rnd.nextInt(_S.size());
+
+                        if (_S.get(k) > _rnd.nextDouble()) {
+                            negSample = _aliasIndex2Word[k];
+                        } else {
+                            negSample = _aliasIndex2OtherWord[k];
+                        }
+                    } while (negSample.equals(positiveWord));
+                    negWords[d] = negSample;
+                }
+
+                forward(forwardObjs);
+                inWords.clear();
             }
         }
     }
