@@ -71,8 +71,7 @@ public abstract class AbstractWord2VecModel {
         this.contextWeights.defaultReturnValue(0.f);
     }
 
-    private static float[] initSigmoidTable(final int maxSigmoid,
-            final int sigmoidTableSize) {
+    private static float[] initSigmoidTable(final int maxSigmoid, final int sigmoidTableSize) {
         float[] sigmoidTable = new float[sigmoidTableSize];
         for (int i = 0; i < sigmoidTableSize; i++) {
             float x = ((float) i / sigmoidTableSize * 2 - 1) * (float) maxSigmoid;
@@ -115,8 +114,8 @@ public abstract class AbstractWord2VecModel {
             wordCountActual += wordCount - lastWordCount;
             lastWordCount = wordCount;
 
-            this.lr = startingLR * Math.max((1.f - (float) wordCountActual / (numTrainWords + 1L)),
-                                             0.0001f);
+            this.lr = startingLR
+                    * Math.max((1.f - (float) wordCountActual / (numTrainWords + 1L)), 0.0001f);
         }
     }
 

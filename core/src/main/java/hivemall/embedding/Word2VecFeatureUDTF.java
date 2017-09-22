@@ -164,9 +164,9 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
 
         List<?> rawDoc = docOI.getList(args[2]);
 
-        // parse doc
+        // parse rawDoc
         List<String> doc = new ArrayList<>(rawDoc.size());
-        for(int i = 0; i < rawDoc.size(); i++){
+        for (int i = 0; i < rawDoc.size(); i++) {
             doc.add(PrimitiveObjectInspectorUtils.getString(rawDoc.get(i), wordOI));
         }
 
@@ -193,40 +193,40 @@ public class Word2VecFeatureUDTF extends UDTFWithOptions {
         forwardObjs[2] = posWord;
         forwardObjs[3] = negWords;
 
+        // reuse instance
+        int windowSize, k;
+        String negSample;
+
         int docLength = doc.size();
         for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
             String inputWord = doc.get(inputWordPosition);
             inWord.set(inputWord);
 
             for (int i = 0; i < iter; i++) {
-                int windowSize = _rnd.nextInt(win) + 1;
+                windowSize = _rnd.nextInt(win) + 1;
 
                 for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
                         + windowSize + 1; contextPosition++) {
-                    if (contextPosition == inputWordPosition)
+                    if (contextPosition == inputWordPosition || contextPosition < 0 || contextPosition >= docLength){
                         continue;
-                    if (contextPosition < 0)
-                        continue;
-                    if (contextPosition >= docLength)
-                        continue;
+                    }
 
                     String contextWord = doc.get(contextPosition);
                     posWord.set(contextWord);
 
                     // negative sampling
                     for (int d = 0; d < numNegative; d++) {
-                        String sample;
                         do {
-                            int k = _rnd.nextInt(_S.size());
+                            k = _rnd.nextInt(_S.size());
 
                             if (_S.get(k) > _rnd.nextDouble()) {
-                                sample = _aliasIndex2Word[k];
+                                negSample = _aliasIndex2Word[k];
                             } else {
-                                sample = _aliasIndex2OtherWord[k];
+                                negSample = _aliasIndex2OtherWord[k];
                             }
-                        } while (sample.equals(contextWord));
+                        } while (negSample.equals(contextWord));
 
-                        negWords[d].set(sample);
+                        negWords[d].set(negSample);
                     }
 
                     forward(forwardObjs);
