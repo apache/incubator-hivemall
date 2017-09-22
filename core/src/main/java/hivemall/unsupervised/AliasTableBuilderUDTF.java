@@ -148,15 +148,26 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
 
     @Override
     public void close() throws HiveException {
+        IntWritable aliasId = new IntWritable();
+        Text word = new Text();
+        FloatWritable pro = new FloatWritable();
+        Text otherWord = new Text();
+
+        Object[] res = new Object[4];
+        res[0] = aliasId;
+        res[1] = word;
+        res[2] = pro;
+        res[3] = otherWord;
+
+
         for (int i = 0; i < numVocab; i++) {
-            Object[] res = new Object[4];
-            res[0] = new IntWritable(i % numSplit);
-            res[1] = new Text(index2word.get(i));
-            res[2] = new FloatWritable(S.get(i));
+            aliasId.set(i % numSplit);
+            word.set(index2word.get(i));
+            pro.set(S.get(i));
             if (A.get(i) == -1) {
-                res[3] = new Text();
+                otherWord.set("");
             } else {
-                res[3] = new Text(index2word.get(A.get(i)));
+                otherWord.set(index2word.get(A.get(i)));
             }
             forward(res);
         }

@@ -29,7 +29,7 @@ public abstract class AbstractWord2vecModel {
     // cached sigmoid function parameters
     private final int MAX_SIGMOID = 6;
     private final int SIGMOID_TABLE_SIZE = 1000;
-    private Int2FloatOpenHashTable sigmoidTable;
+    private float[] sigmoidTable;
 
     // learning rate parameters
     @Nonnegative
@@ -71,12 +71,12 @@ public abstract class AbstractWord2vecModel {
         this.contextWeights.defaultReturnValue(0.f);
     }
 
-    private static Int2FloatOpenHashTable initSigmoidTable(final int maxSigmoid,
+    private static float[] initSigmoidTable(final int maxSigmoid,
             final int sigmoidTableSize) {
-        Int2FloatOpenHashTable sigmoidTable = new Int2FloatOpenHashTable(sigmoidTableSize);
+        float[] sigmoidTable = new float[sigmoidTableSize];
         for (int i = 0; i < sigmoidTableSize; i++) {
             float x = ((float) i / sigmoidTableSize * 2 - 1) * (float) maxSigmoid;
-            sigmoidTable.put(i, 1.f / ((float) Math.exp(-x) + 1.f));
+            sigmoidTable[i] = 1.f / ((float) Math.exp(-x) + 1.f);
         }
         return sigmoidTable;
     }
@@ -98,13 +98,13 @@ public abstract class AbstractWord2vecModel {
     }
 
     private static float sigmoid(final float v, final int MAX_SIGMOID,
-            final int SIGMOID_TABLE_SIZE, final Int2FloatOpenHashTable sigmoidTable) {
+            final int SIGMOID_TABLE_SIZE, final float[] sigmoidTable) {
         if (v > MAX_SIGMOID) {
             return 1.f;
         } else if (v < -MAX_SIGMOID) {
             return 0.f;
         } else {
-            return sigmoidTable.get((int) ((v + MAX_SIGMOID) * (SIGMOID_TABLE_SIZE / MAX_SIGMOID / 2)));
+            return sigmoidTable[(int) ((v + MAX_SIGMOID) * (SIGMOID_TABLE_SIZE / MAX_SIGMOID / 2))];
         }
     }
 
