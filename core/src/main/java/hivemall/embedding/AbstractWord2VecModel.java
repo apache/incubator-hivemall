@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.unsupervised;
+package hivemall.embedding;
 
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
@@ -25,7 +25,7 @@ import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public abstract class AbstractWord2vecModel {
+public abstract class AbstractWord2VecModel {
     // cached sigmoid function parameters
     private final int MAX_SIGMOID = 6;
     private final int SIGMOID_TABLE_SIZE = 1000;
@@ -52,7 +52,7 @@ public abstract class AbstractWord2vecModel {
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
 
-    protected AbstractWord2vecModel(final int dim, final float startingLR, final long numTrainWords) {
+    protected AbstractWord2VecModel(final int dim, final float startingLR, final long numTrainWords) {
         this.dim = dim;
         this.startingLR = this.lr = startingLR;
         this.numTrainWords = numTrainWords;

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.unsupervised;
+package hivemall.embedding;
 
 import hivemall.UDTFWithOptions;
 import hivemall.utils.hadoop.HiveUtils;
@@ -33,8 +33,8 @@ import org.apache.hadoop.io.Text;
 
 import java.util.Map;
 
-public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
-    protected transient AbstractWord2vecModel model;
+public abstract class Word2VecBaseUDTF extends UDTFWithOptions {
+    protected transient AbstractWord2VecModel model;
 
     protected int dim;
     protected Map<String, Integer> word2index;
@@ -105,5 +105,5 @@ public abstract class Word2vecBaseUDTF extends UDTFWithOptions {
         }
     }
 
-    protected abstract AbstractWord2vecModel createModel();
+    protected abstract AbstractWord2VecModel createModel();
 }

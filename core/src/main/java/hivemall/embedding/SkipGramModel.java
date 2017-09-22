@@ -16,11 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.unsupervised;
+package hivemall.embedding;
 
 import javax.annotation.Nonnull;
 
-public final class SkipGramModel extends AbstractWord2vecModel {
+public final class SkipGramModel extends AbstractWord2VecModel {
 
     protected SkipGramModel(final int dim, final float startingLR, final long numTrainWords) {
         super(dim, startingLR, numTrainWords);

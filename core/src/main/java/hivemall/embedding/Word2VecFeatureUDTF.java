@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.unsupervised;
+package hivemall.embedding;
 
 import hivemall.UDTFWithOptions;
 import hivemall.math.random.PRNG;
@@ -46,7 +46,7 @@ import org.apache.hadoop.io.Text;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public class Word2vecFeatureUDTF extends UDTFWithOptions {
+public class Word2VecFeatureUDTF extends UDTFWithOptions {
     private PRNG rnd;
 
     // parameters for skip-gram with negative sampling
@@ -112,7 +112,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("win", "window", true, "Range for context word [default: 5]");
+        opts.addOption("win", "window", true, "Context window size [default: 5]");
         opts.addOption("neg", "negative", true,
             "The number of negative sampled words per word [default: 5]");
         opts.addOption("iter", "iteration", true,
@@ -143,7 +143,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
             }
 
             iter = Primitives.parseInt(cl.getOptionValue("iter"), iter);
-            if (iter < 0) {
+            if (iter <= 0) {
                 throw new UDFArgumentException("Argument `int iter` must be non-negative: " + iter);
             }
         }
@@ -162,14 +162,20 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
             previousNegativeSamplerId = negativeSamplerId;
         }
 
-        List<?> doc = docOI.getList(args[2]);
+        List<?> rawDoc = docOI.getList(args[2]);
+
+        // parse doc
+        List<String> doc = new ArrayList<>(rawDoc.size());
+        for(int i = 0; i < rawDoc.size(); i++){
+            doc.add(PrimitiveObjectInspectorUtils.getString(rawDoc.get(i), wordOI));
+        }
+
         forwardSample(doc);
     }
 
-    private void forwardSample(@Nonnull final List<?> doc) throws HiveException {
+    private void forwardSample(@Nonnull final List<String> doc) throws HiveException {
         final int numNegative = neg;
         final PRNG _rnd = rnd;
-        final PrimitiveObjectInspector _wordOI = wordOI;
         final Int2FloatOpenHashTable _S = S;
         final String[] _aliasIndex2Word = aliasIndex2Word;
         final String[] _aliasIndex2OtherWord = aliasIndex2OtherWord;
@@ -189,8 +195,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
 
         int docLength = doc.size();
         for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
-            String inputWord = PrimitiveObjectInspectorUtils.getString(doc.get(inputWordPosition),
-                _wordOI);
+            String inputWord = doc.get(inputWordPosition);
             inWord.set(inputWord);
 
             for (int i = 0; i < iter; i++) {
@@ -205,8 +210,7 @@ public class Word2vecFeatureUDTF extends UDTFWithOptions {
                     if (contextPosition >= docLength)
                         continue;
 
-                    String contextWord = PrimitiveObjectInspectorUtils.getString(
-                        doc.get(contextPosition), _wordOI);
+                    String contextWord = doc.get(contextPosition);
                     posWord.set(contextWord);
 
                     // negative sampling

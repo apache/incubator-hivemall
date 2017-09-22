@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.unsupervised;
+package hivemall.embedding;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
@@ -39,7 +39,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-public class SkipGramUDTF extends Word2vecBaseUDTF {
+public class SkipGramUDTF extends Word2VecBaseUDTF {
     @Nonnegative
     private float startingLR;
     @Nonnegative
@@ -134,7 +134,7 @@ public class SkipGramUDTF extends Word2vecBaseUDTF {
         model.onlineTrain(inWord, posWord, negWords);
     }
 
-    protected AbstractWord2vecModel createModel() {
+    protected AbstractWord2VecModel createModel() {
         return new SkipGramModel(dim, startingLR, numTrainWords);
     }
 }
