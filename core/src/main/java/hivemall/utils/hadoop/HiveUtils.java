@@ -545,6 +545,13 @@ public final class HiveUtils {
         return PrimitiveObjectInspectorUtils.getInt(o, oi);
     }
 
+    public static double getDouble(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
+        if (o == null) {
+            return 0.d;
+        }
+        return PrimitiveObjectInspectorUtils.getDouble(o, oi);
+    }
+
     /**
      * @return the number of true bits
      */

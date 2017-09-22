@@ -152,6 +152,7 @@ create temporary function lon2tilex as 'hivemall.geospatial.Lon2TileXUDF';
 create temporary function tilex2lon as 'hivemall.geospatial.TileX2LonUDF';
 create temporary function tiley2lat as 'hivemall.geospatial.TileY2LatUDF';
 create temporary function haversine_distance as 'hivemall.geospatial.HaversineDistanceUDF';
+create temporary function auc as 'hivemall.evaluation.AUCUDAF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

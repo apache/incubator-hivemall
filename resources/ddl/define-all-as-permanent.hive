@@ -528,6 +528,9 @@ CREATE FUNCTION ndcg as 'hivemall.evaluation.NDCGUDAF' USING JAR '${hivemall_jar
 DROP FUNCTION IF EXISTS logloss;
 CREATE FUNCTION logloss as 'hivemall.evaluation.LogarithmicLossUDAF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS auc;
+CREATE FUNCTION auc as 'hivemall.evaluation.AUCUDAF' USING JAR '${hivemall_jar}';
+
 --------------------------
 -- Matrix Factorization --
 --------------------------

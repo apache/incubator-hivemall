@@ -524,6 +524,9 @@ create temporary function ndcg as 'hivemall.evaluation.NDCGUDAF';
 drop temporary function logloss;
 create temporary function logloss as 'hivemall.evaluation.LogarithmicLossUDAF';
 
+drop temporary function if exists auc;
+create temporary function auc as 'hivemall.evaluation.AUCUDAF';
+
 --------------------------
 -- Matrix Factorization --
 --------------------------
