@@ -168,7 +168,7 @@ create table negative_table as
 Negative sampling is an approximate function of [softmax function](https://en.wikipedia.org/wiki/Softmax_function) by sampling from noise distribution.
 Negative sampling table is stored all valid words and its probabilities.
 
-To avoid using this huge memory splace like original implementation and sample fastly from this distribution,
+To avoid using this huge memory space like original implementation and sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 
 And then, this alias sampler is split into N tables for next query.
