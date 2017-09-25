@@ -75,6 +75,7 @@ public final class SkipGramModel extends AbstractWord2VecModel {
             dotValue += inputWeights.get(w * dim + i) * contextWeights.get(c * dim + i);
         }
 
-        return (label - sigmoid(dotValue, MAX_SIGMOID, SIGMOID_TABLE_SIZE, sigmoidTable));
+        return (label - sigmoid(dotValue, sigmoidTable));
+
     }
 }

@@ -85,6 +85,6 @@ public final class CBoWModel extends AbstractWord2VecModel {
             dotValue += w[i] * contextWeights.get(c * dim + i);
         }
 
-        return (label - sigmoid(dotValue, MAX_SIGMOID, SIGMOID_TABLE_SIZE, sigmoidTable));
+        return (label - sigmoid(dotValue, sigmoidTable));
     }
 }

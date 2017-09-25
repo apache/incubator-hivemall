@@ -27,8 +27,8 @@ import javax.annotation.Nonnull;
 
 public abstract class AbstractWord2VecModel {
     // cached sigmoid function parameters
-    protected final int MAX_SIGMOID = 6;
-    protected final int SIGMOID_TABLE_SIZE = 1000;
+    protected static final int MAX_SIGMOID = 6;
+    protected static final int SIGMOID_TABLE_SIZE = 1000;
     protected float[] sigmoidTable;
 
     // learning rate parameters
@@ -47,7 +47,7 @@ public abstract class AbstractWord2VecModel {
 
     @Nonnegative
     protected int dim;
-    private PRNG _rnd;
+    private PRNG rnd;
 
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
@@ -60,13 +60,13 @@ public abstract class AbstractWord2VecModel {
         this.wordCount = 0L;
         this.lastWordCount = 0L;
         this.wordCountActual = 0L;
-        this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
+        this.rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         this.sigmoidTable = initSigmoidTable(MAX_SIGMOID, SIGMOID_TABLE_SIZE);
 
         // TODO how to estimate size
         this.inputWeights = new Int2FloatOpenHashTable(10578 * dim);
-        this.inputWeights.defaultReturnValue(-0.f);
+        this.inputWeights.defaultReturnValue(0.f);
         this.contextWeights = new Int2FloatOpenHashTable(10578 * dim);
         this.contextWeights.defaultReturnValue(0.f);
     }
@@ -82,12 +82,11 @@ public abstract class AbstractWord2VecModel {
 
     protected void initWordWeights(final int wordId) {
         for (int i = 0; i < dim; i++) {
-            inputWeights.put(wordId * dim + i, ((float) _rnd.nextDouble() - 0.5f) / dim);
+            inputWeights.put(wordId * dim + i, ((float) rnd.nextDouble() - 0.5f) / dim);
         }
     }
 
-    protected static float sigmoid(final float v, final int MAX_SIGMOID,
-            final int SIGMOID_TABLE_SIZE, final float[] sigmoidTable) {
+    protected static float sigmoid(final float v, final float[] sigmoidTable) {
         if (v > MAX_SIGMOID) {
             return 1.f;
         } else if (v < -MAX_SIGMOID) {
