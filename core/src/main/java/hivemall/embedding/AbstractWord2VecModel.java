@@ -121,4 +121,7 @@ public abstract class AbstractWord2VecModel {
 
     protected abstract void onlineTrain(final int inWord, final int posWord,
             @Nonnull final int[] negWords);
+
+    protected abstract void onlineTrain(final int[] inWords, final int posWord,
+            @Nonnull final int[] negWords);
 }

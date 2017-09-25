@@ -667,9 +667,8 @@ drop temporary function if exists alias_table;
 create temporary function alias_table as 'hivemall.embedding.AliasTableBuilderUDTF';
 drop temporary function if exists word2vec_feature;
 create temporary function word2vec_feature as 'hivemall.embedding.Word2VecFeatureUDTF';
-drop temporary function if exists train_skipgram;
-create temporary function train_skipgram as 'hivemall.embedding.SkipGramUDTF';
-
+drop temporary function if exists train_word2vec;
+create temporary function train_word2vec as 'hivemall.embedding.Word2VecUDTF';
 
 ---------------------------
 -- Geo-Spatial functions --

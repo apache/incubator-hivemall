@@ -68,4 +68,9 @@ public final class SkipGramModel extends AbstractWord2VecModel {
 
         wordCount++;
     }
+
+    protected void onlineTrain(final int[] inWords, final int posWord, @Nonnull final int[] negWords) {
+        throw new UnsupportedOperationException();
+    }
+
 }
