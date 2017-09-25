@@ -53,7 +53,7 @@ select * FROM docs;
 |   0   | "Alice was beginning to get very tired of sitting by her sister on the bank ..." |
 |  ...  | ... |
 
-Then, each document is split into words: an array of string.
+First, each document is split into words by tokenize function like a `tokenize`.
 
 ```sql
 drop table docs_words;
@@ -66,13 +66,13 @@ create table docs_words as
 ;
 ```
 
-
 | docId | doc |
 |:----: |:----|
 |   0   | "alice", "was", "beginning", "to", "get", "very", "tired", "of", "sitting", "by", "her", "sister", "on", "the", "bank", ... |
 |  ...  | ... |
 
-Then, you count all word frequency and remove low frequency words.
+Then, you count all word frequency and remove low frequency words from vocabulary.
+Removing low frequency words is optinal, but it is better for getting word vector fastly.
 
 ```sql
 set hivevar:mincount=5;
@@ -89,14 +89,14 @@ from (
     from
       docs_words
     LATERAL VIEW explode(words) lTable as word
-    group by 
+    group by
       word
 ) t
 where freq >= ${mincount}
 ;
 ```
 
-`numTrainWords` variable is set the number of training words.
+`numTrainWords` is set the number of words in corpus exclude low frequency words.
 
 ```sql
 select sum(freq) FROM freq;
@@ -109,8 +109,10 @@ set hivevar:numTrainWords=750105;
 
 Sub-sampling table is stored a not deleted probability per word.
 During word2vec training,
-sub-sampled words are ignored in the corpus.
+sub-sampled words are ignored.
 It works to train fastly and to consider the imbalance the rare words and frequent words by reducing frequent words.
+If you want to know detail, 
+please check Eq.5 in the [original paper](http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf).
 
 ```sql
 set hivevar:sample=1e-4;
@@ -128,10 +130,9 @@ create table subsampling_table as
 
 # Delete low frequency words and high frequency words from `docs_words`
 
-To reduce useless words from documents, 
+To reduce useless words from corpus,
 low frequency words and high frequency words are deleted.
-And to avoid loading on memory, a long document is split into some sub-documents.
-
+And, to avoid loading on memory, a long document is split into some sub-documents.
 
 ```sql
 set hivevar:maxlength=1500;
@@ -168,7 +169,7 @@ Negative sampling is an approximate function of [softmax function](https://en.wi
 Here, `negative_table` is used to store word sampling probability for negative sampling.
 `noisePower` is a hyperparameter of noise distribution for negative sampling.
 During word2vec training,
-words sampled this distribution are used for negative example.
+words sampled this distribution are used for negative examples.
 
 ```sql
 set hivevar:noisePower=3/4;
@@ -185,7 +186,7 @@ create table negative_table as
 
 ## Split negative sampling table
 
-To avoid using this huge memory space like original implementation and sample fastly from this distribution,
+To avoid using huge memory space for negative sampling like original implementation and sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 
 And then, this alias sampler is split into `numSplit` tables in the next query.
@@ -213,27 +214,40 @@ group by k
 
 # Train word2vec
 
-Hivemall provides `word2vec_feature` function to prepare the input of word2vec train.
-The return record shows 
+## Create feature
+
+Hivemall provides `word2vec_feature` function to prepare the input of word2vec training.
+Default feature is skip-gram.
+In this case, `word2vec_feature` function returns the records below.
 
 | inWord | posWord | negWords|
 |---- |----|----|
 | "alice" | "was" | ["queen", "a", ...] |
 |  ...  | ... | ... |
 
+By passing `-model cbow` to `word2vec_feature` argument,
+Hivemall creates CBoW feature:
+
+| inWords | posWord | negWords|
+|---- |----|----|
+| ["alice", "beginning", "to" | "was" | ["queen", "a", ...] |
+|  ...  | ... | ... |
+
+
+### Skip-Gram features
+
 ```sql
-set hivevar:numSplit=8;
 drop table skipgram_features;
-create table skipgram_features as 
-select 
-  word2vec_feature(k, negative_table, words, "-win 5 -neg 2 -iter 1 -model skipgram")
+create table skipgram_features as
+select
+  word2vec_feature(k, negative_table, words, "-win 5 -neg 15 -iter 5")
 from(
     select
       r.k,
       negative_table,
       words
-    from 
-      train_docs l      
+    from
+      train_docs l
     join split_negative_table r on
       l.docid % ${numSplit} = r.k
     CLUSTER BY r.k
@@ -241,17 +255,44 @@ from(
 ;
 ```
 
-```sql
-# numTrainWords decreases?
-select COUNT(*) from skipgram_features;
-set hivevar:numSamples=14911314;
+### CBoW features
 
-drop table w2v;
-create table w2v as 
+```sql
+drop table cbow_features;
+create table cbow_features as
+select
+  word2vec_feature(k, negative_table, words, "-win 5 -neg 15 -iter 5 -model cbow")
+from(
+    select
+      r.k,
+      negative_table,
+      words
+    from
+      train_docs l
+    join split_negative_table r on
+      l.docid % ${numSplit} = r.k
+    CLUSTER BY r.k
+) t
+;
+```
+
+## Train Word2Vec
+
+In the same way,
+`train_word2vec` function is enable to train word vector based on both types features by passing `"-model"`.
+
+### Train Skip-Gram
+
+```sql
+select COUNT(*) from skipgram_features;
+set hivevar:numSamples=2981487;
+
+drop table w2v_skgram;
+create table w2v_skgram as
 select word, i, avg(wi) as wi
 from (
   select
-    train_skipgram(
+    train_word2vec(
         inword,
         posword,
         negwords,
@@ -259,6 +300,34 @@ from (
     )
     from (
       select * from skipgram_features
+      CLUSTER by k
+    ) t
+) t1
+group by
+    word, i
+;
+
+```
+
+### Train CBoW
+
+```sql
+select COUNT(*) from cbow_features;
+set hivevar:numSamples=499157;
+drop table w2v_cbow;
+create table w2v_cbow as
+select word, i, avg(wi) as wi
+from (
+  select
+    train_word2vec(
+        inwords,
+        posword,
+        negwords,
+        ${numSamples},
+        "-model cbow"
+    )
+    from (
+      select * from cbow_features
       CLUSTER by k
     ) t
 ) t1

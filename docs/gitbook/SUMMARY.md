@@ -171,7 +171,7 @@
 
 ## Part XII - Word Embeddings
 
-* [Word2vec: Skip-Gram with Negative Sampling Algorithm](unsupervised/word2vec.md)
+* [Word2vec: Skip-Gram & CBoW with Negative Sampling](embedding/word2vec.md)
 
 ## Part XIII - GeoSpatial functions
 
