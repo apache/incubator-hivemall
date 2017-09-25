@@ -32,5 +32,59 @@ public final class CBoWModel extends AbstractWord2VecModel {
 
     protected void onlineTrain(final int[] inWords, final int posWord, @Nonnull final int[] negWords) {
 
+        final int vecDim = dim;
+
+        updateLearningRate();
+
+        float[] gradVec = new float[vecDim];
+        float[] averageVec = new float[vecDim];
+
+        // average vector of input word vectors
+        for (int inWord : inWords) {
+            if (!inputWeights.containsKey(inWord * vecDim)) {
+                initWordWeights(inWord);
+            }
+
+            for (int i = 0; i < vecDim; i++) {
+                averageVec[i] += inputWeights.get(inWord * vecDim + i) / inWords.length;
+            }
+        }
+
+        // positive word
+        float gradient = grad(1.f, averageVec, posWord) * lr;
+        for (int i = 0; i < vecDim; i++) {
+            gradVec[i] += gradient * contextWeights.get(posWord * vecDim + i);
+            contextWeights.put(posWord * vecDim + i, contextWeights.get(posWord * vecDim + i)
+                    + gradient * averageVec[i]);
+        }
+
+        // negative words
+        for (int negWord : negWords) {
+            gradient = grad(0.f, averageVec, negWord) * lr;
+            for (int i = 0; i < vecDim; i++) {
+                gradVec[i] += gradient * contextWeights.get(negWord * vecDim + i);
+                contextWeights.put(negWord * vecDim + i, contextWeights.get(negWord * vecDim + i)
+                        + gradient * averageVec[i]);
+            }
+        }
+
+        // update inWord vector
+        for (int inWord : inWords) {
+            for (int i = 0; i < vecDim; i++) {
+                inputWeights.put(inWord * vecDim + i, inputWeights.get(inWord * vecDim + i)
+                        + gradVec[i]);
+            }
+        }
+
+        wordCount++;
+    }
+
+    private float grad(final float label, final float[] w, final int c) {
+        float dotValue = 0.f;
+        for (int i = 0; i < dim; i++) {
+            dotValue += w[i] * contextWeights.get(c * dim + i);
+        }
+
+        return (label - sigmoid(dotValue, MAX_SIGMOID, SIGMOID_TABLE_SIZE, sigmoidTable));
     }
 }

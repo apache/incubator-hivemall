@@ -26,7 +26,11 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.FloatWritable;
@@ -122,7 +126,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
         } else {
             int[] inWords = new int[inWordsOI.getListLength(args[0])];
             for (int i = 0; i < inWords.length; i++) {
-                getWordId(PrimitiveObjectInspectorUtils.getString(
+                inWords[i] = getWordId(PrimitiveObjectInspectorUtils.getString(
                     inWordsOI.getListElement(args[0], i), inWordOI));
             }
             model.onlineTrain(inWords, posWord, negWords);
@@ -219,7 +223,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
         }
     }
 
-    protected AbstractWord2VecModel createModel() {
+    private AbstractWord2VecModel createModel() {
         if (skipgram) {
             return new SkipGramModel(dim, startingLR, numTrainWords);
         } else {

@@ -27,9 +27,9 @@ import javax.annotation.Nonnull;
 
 public abstract class AbstractWord2VecModel {
     // cached sigmoid function parameters
-    private final int MAX_SIGMOID = 6;
-    private final int SIGMOID_TABLE_SIZE = 1000;
-    private float[] sigmoidTable;
+    protected final int MAX_SIGMOID = 6;
+    protected final int SIGMOID_TABLE_SIZE = 1000;
+    protected float[] sigmoidTable;
 
     // learning rate parameters
     @Nonnegative
@@ -66,7 +66,7 @@ public abstract class AbstractWord2VecModel {
 
         // TODO how to estimate size
         this.inputWeights = new Int2FloatOpenHashTable(10578 * dim);
-        this.inputWeights.defaultReturnValue(0.f);
+        this.inputWeights.defaultReturnValue(-0.f);
         this.contextWeights = new Int2FloatOpenHashTable(10578 * dim);
         this.contextWeights.defaultReturnValue(0.f);
     }
@@ -86,17 +86,7 @@ public abstract class AbstractWord2VecModel {
         }
     }
 
-    // cannot use for CBoW
-    protected float grad(final float label, final int w, final int c) {
-        float dotValue = 0.f;
-        for (int i = 0; i < dim; i++) {
-            dotValue += inputWeights.get(w * dim + i) * contextWeights.get(c * dim + i);
-        }
-
-        return (label - sigmoid(dotValue, MAX_SIGMOID, SIGMOID_TABLE_SIZE, sigmoidTable));
-    }
-
-    private static float sigmoid(final float v, final int MAX_SIGMOID,
+    protected static float sigmoid(final float v, final int MAX_SIGMOID,
             final int SIGMOID_TABLE_SIZE, final float[] sigmoidTable) {
         if (v > MAX_SIGMOID) {
             return 1.f;

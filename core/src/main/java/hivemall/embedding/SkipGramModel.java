@@ -38,14 +38,12 @@ public final class SkipGramModel extends AbstractWord2VecModel {
 
         float[] gradVec = new float[vecDim];
 
-        // positive words
+        // positive word
         float gradient = grad(1.f, inWord, posWord) * lr;
         for (int i = 0; i < vecDim; i++) {
             gradVec[i] += gradient * contextWeights.get(posWord * vecDim + i);
-            contextWeights.put(
-                posWord * vecDim + i,
-                gradient * inputWeights.get(inWord * vecDim + i)
-                        + contextWeights.get(posWord * vecDim + i));
+            contextWeights.put(posWord * vecDim + i, contextWeights.get(posWord * vecDim + i)
+                    + gradient * inputWeights.get(inWord * vecDim + i));
         }
 
         // negative words
@@ -53,17 +51,15 @@ public final class SkipGramModel extends AbstractWord2VecModel {
             gradient = grad(0.f, inWord, negWord) * lr;
             for (int i = 0; i < vecDim; i++) {
                 gradVec[i] += gradient * contextWeights.get(negWord * vecDim + i);
-                contextWeights.put(
-                    negWord * vecDim + i,
-                    gradient * inputWeights.get(inWord * vecDim + i)
-                            + contextWeights.get(negWord * vecDim + i));
+                contextWeights.put(negWord * vecDim + i, contextWeights.get(negWord * vecDim + i)
+                        + gradient * inputWeights.get(inWord * vecDim + i));
             }
         }
 
         // update inWord vector
         for (int i = 0; i < vecDim; i++) {
-            inputWeights.put(inWord * vecDim + i,
-                gradVec[i] + inputWeights.get(inWord * vecDim + i));
+            inputWeights.put(inWord * vecDim + i, inputWeights.get(inWord * vecDim + i)
+                    + gradVec[i]);
         }
 
         wordCount++;
@@ -73,4 +69,12 @@ public final class SkipGramModel extends AbstractWord2VecModel {
         throw new UnsupportedOperationException();
     }
 
+    protected float grad(final float label, final int w, final int c) {
+        float dotValue = 0.f;
+        for (int i = 0; i < dim; i++) {
+            dotValue += inputWeights.get(w * dim + i) * contextWeights.get(c * dim + i);
+        }
+
+        return (label - sigmoid(dotValue, MAX_SIGMOID, SIGMOID_TABLE_SIZE, sigmoidTable));
+    }
 }
