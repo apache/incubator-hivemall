@@ -62,7 +62,7 @@ public abstract class AbstractWord2VecModel {
         this.wordCountActual = 0L;
         this.rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
-        this.sigmoidTable = initSigmoidTable(MAX_SIGMOID, SIGMOID_TABLE_SIZE);
+        this.sigmoidTable = initSigmoidTable();
 
         // TODO how to estimate size
         this.inputWeights = new Int2FloatOpenHashTable(10578 * dim);
@@ -71,10 +71,10 @@ public abstract class AbstractWord2VecModel {
         this.contextWeights.defaultReturnValue(0.f);
     }
 
-    private static float[] initSigmoidTable(final int maxSigmoid, final int sigmoidTableSize) {
-        float[] sigmoidTable = new float[sigmoidTableSize];
-        for (int i = 0; i < sigmoidTableSize; i++) {
-            float x = ((float) i / sigmoidTableSize * 2 - 1) * (float) maxSigmoid;
+    private static float[] initSigmoidTable() {
+        float[] sigmoidTable = new float[SIGMOID_TABLE_SIZE];
+        for (int i = 0; i < SIGMOID_TABLE_SIZE; i++) {
+            float x = ((float) i / SIGMOID_TABLE_SIZE * 2 - 1) * (float) MAX_SIGMOID;
             sigmoidTable[i] = 1.f / ((float) Math.exp(-x) + 1.f);
         }
         return sigmoidTable;
