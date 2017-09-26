@@ -33,6 +33,11 @@ import hivemall.utils.lang.Primitives;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
+/**
+ * Dictionary Of Keys based sparse matrix.
+ *
+ * This is an efficient structure for constructing a sparse matrix incrementally.
+ */
 @Experimental
 public final class DoKMatrix extends AbstractMatrix {
 
@@ -164,8 +169,6 @@ public final class DoKMatrix extends AbstractMatrix {
     @Override
     public double get(@Nonnegative final int row, @Nonnegative final int col,
             final double defaultValue) {
-        checkIndex(row, col, numRows, numColumns);
-
         long index = index(row, col);
         return elements.get(index, defaultValue);
     }
@@ -174,25 +177,6 @@ public final class DoKMatrix extends AbstractMatrix {
     public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         checkIndex(row, col);
 
-        if (value == 0.d) {
-            return;
-        }
-
-        long index = index(row, col);
-        if (elements.put(index, value, 0.d) == 0.d) {
-            nnz++;
-            this.numRows = Math.max(numRows, row + 1);
-            this.numColumns = Math.max(numColumns, col + 1);
-        }
-    }
-
-    public double unsafeGet(@Nonnegative final int row, @Nonnegative final int col,
-            final double defaultValue) {
-        long index = index(row, col);
-        return elements.get(index, defaultValue);
-    }
-
-    public void unsafeSet(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         if (value == 0.d) {
             return;
         }
