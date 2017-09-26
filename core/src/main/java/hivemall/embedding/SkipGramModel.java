@@ -31,7 +31,7 @@ public final class SkipGramModel extends AbstractWord2VecModel {
         super(dim, win, neg, iter, startingLR, numTrainWords, S, aliasWordId);
     }
 
-    protected void trainOnDoc(@Nonnull List<Integer> doc) {
+    protected void trainOnDoc(@Nonnull final int[] doc) {
         final int vecDim = dim;
         final int numNegative = neg;
         final PRNG _rnd = rnd;
@@ -46,10 +46,10 @@ public final class SkipGramModel extends AbstractWord2VecModel {
 
         updateLearningRate();
 
-        final int docLength = doc.size();
+        final int docLength = doc.length;
         for (int t = 0; t < iter; t++) {
             for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
-                inputWord = doc.get(inputWordPosition);
+                inputWord = doc[inputWordPosition];
 
                 if (!inputWeights.containsKey(inputWord * vecDim)) {
                     initWordWeights(inputWord);
@@ -64,7 +64,7 @@ public final class SkipGramModel extends AbstractWord2VecModel {
                         continue;
                     }
 
-                    contextWord = doc.get(contextPosition);
+                    contextWord = doc[contextPosition];
                     float[] gradVec = new float[vecDim];
 
                     // negative sampling

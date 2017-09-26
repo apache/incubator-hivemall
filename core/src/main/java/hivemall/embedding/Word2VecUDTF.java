@@ -62,6 +62,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
     @Nonnegative
     private int iter;
     private boolean skipgram;
+    private boolean isStringInput;
 
     private Int2FloatOpenHashTable S;
     private int[] aliasWordId;
@@ -87,9 +88,17 @@ public class Word2VecUDTF extends UDTFWithOptions {
 
         this.negativeTableOI = HiveUtils.asListOI(argOIs[0]);
         this.negativeTableElementListOI = HiveUtils.asListOI(negativeTableOI.getListElementObjectInspector());
-        this.negativeTableElementOI = HiveUtils.asStringOI(negativeTableElementListOI.getListElementObjectInspector());
         this.docOI = HiveUtils.asListOI(argOIs[1]);
-        this.wordOI = HiveUtils.asStringOI(docOI.getListElementObjectInspector());
+
+        this.isStringInput = HiveUtils.isStringListOI(negativeTableOI);
+
+        if (isStringInput){
+            this.negativeTableElementOI = HiveUtils.asStringOI(negativeTableElementListOI.getListElementObjectInspector());
+            this.wordOI = HiveUtils.asStringOI(docOI.getListElementObjectInspector());
+        }else{
+            this.negativeTableElementOI = HiveUtils.asFloatingPointOI(negativeTableElementListOI.getListElementObjectInspector());
+            this.wordOI = HiveUtils.asIntCompatibleOI(docOI.getListElementObjectInspector());
+        }
 
         List<String> fieldNames = new ArrayList<>();
         List<ObjectInspector> fieldOIs = new ArrayList<>();
@@ -98,7 +107,12 @@ public class Word2VecUDTF extends UDTFWithOptions {
         fieldNames.add("i");
         fieldNames.add("wi");
 
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        if (isStringInput){
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        }else{
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        }
+
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
@@ -120,9 +134,16 @@ public class Word2VecUDTF extends UDTFWithOptions {
         List<?> rawDoc = docOI.getList(args[1]);
 
         // parse rawDoc
-        List<Integer> doc = new ArrayList<>(rawDoc.size());
-        for (int i = 0; i < rawDoc.size(); i++) {
-            doc.add(getWordId(PrimitiveObjectInspectorUtils.getString(rawDoc.get(i), wordOI)));
+        final int docLength = rawDoc.size();
+        final int[] doc = new int[docLength];
+        if(isStringInput){
+            for (int i = 0; i < docLength; i++) {
+                doc[i] = getWordId(PrimitiveObjectInspectorUtils.getString(rawDoc.get(i), wordOI));
+            }
+        }else{
+            for (int i = 0; i < docLength; i++) {
+                doc[i] = PrimitiveObjectInspectorUtils.getInt(rawDoc.get(i), wordOI);
+            }
         }
 
         model.trainOnDoc(doc);
@@ -142,7 +163,6 @@ public class Word2VecUDTF extends UDTFWithOptions {
             "The model name of word2vec: skipgram or cbow [default: skipgram]");
         opts.addOption("lr", "learningRate", true,
             "initial learning rate of SGD [default: 0.025 (skipgram) or 0.05 (cbow)]");
-
 
         return opts;
     }
@@ -224,24 +244,44 @@ public class Word2VecUDTF extends UDTFWithOptions {
     }
 
     private void forwardModel() throws HiveException {
-        final Text word = new Text();
-        final IntWritable dimIndex = new IntWritable();
-        final FloatWritable value = new FloatWritable();
+        if (isStringInput){
+            final Text word = new Text();
+            final IntWritable dimIndex = new IntWritable();
+            final FloatWritable value = new FloatWritable();
 
-        final Object[] result = new Object[3];
-        result[0] = word;
-        result[1] = dimIndex;
-        result[2] = value;
+            final Object[] result = new Object[3];
+            result[0] = word;
+            result[1] = dimIndex;
+            result[2] = value;
 
-        IMapIterator<String, Integer> iter = word2index.entries();
-        while (iter.next() != -1) {
-            int wordId = iter.getValue();
-            word.set(iter.getKey());
+            IMapIterator<String, Integer> iter = word2index.entries();
+            while (iter.next() != -1) {
+                int wordId = iter.getValue();
+                word.set(iter.getKey());
 
-            for (int i = 0; i < dim; i++) {
-                dimIndex.set(i);
-                value.set(model.inputWeights.get(wordId * dim + i));
-                forward(result);
+                for (int i = 0; i < dim; i++) {
+                    dimIndex.set(i);
+                    value.set(model.inputWeights.get(wordId * dim + i));
+                    forward(result);
+                }
+            }
+        } else {
+            final IntWritable word = new IntWritable();
+            final IntWritable dimIndex = new IntWritable();
+            final FloatWritable value = new FloatWritable();
+
+            final Object[] result = new Object[3];
+            result[0] = word;
+            result[1] = dimIndex;
+            result[2] = value;
+
+            for (int wordId = 0; wordId < aliasWordId.length; wordId++){
+                word.set(wordId);
+                for (int i = 0; i < dim; i++) {
+                    dimIndex.set(i);
+                    value.set(model.inputWeights.get(wordId * dim + i));
+                    forward(result);
+                }
             }
         }
     }
@@ -261,22 +301,34 @@ public class Word2VecUDTF extends UDTFWithOptions {
         Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(aliasSize);
         int[] aliasWordId = new int[aliasSize];
 
-        this.word2index = new OpenHashTable<>(aliasSize);
+        if(isStringInput){
+            this.word2index = new OpenHashTable<>(aliasSize);
 
-        for (int i = 0; i < aliasSize; i++) {
-            List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
-                listObj, i));
-            getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(0),
-                negativeTableElementOI));
-            S.put(i, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
-                negativeTableElementOI)));
-        }
+            for (int i = 0; i < aliasSize; i++) {
+                List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
+                        listObj, i));
+                getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(0),
+                        negativeTableElementOI));
+                S.put(i, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
+                        negativeTableElementOI)));
+            }
 
-        for (int i = 0; i < aliasSize; i++) {
-            List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
-                listObj, i));
-            aliasWordId[i] = getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(2),
-                negativeTableElementOI));
+            for (int i = 0; i < aliasSize; i++) {
+                List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
+                        listObj, i));
+                aliasWordId[i] = getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(2),
+                        negativeTableElementOI));
+            }
+        }else{
+            for (int i = 0; i < aliasSize; i++) {
+                List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
+                        listObj, i));
+                int wordId = PrimitiveObjectInspectorUtils.getInt(aliasBin.get(0), negativeTableElementOI);
+                S.put(wordId, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
+                        negativeTableElementOI)));
+                aliasWordId[wordId] = PrimitiveObjectInspectorUtils.getInt(aliasBin.get(2),
+                        negativeTableElementOI);
+            }
         }
 
         this.S = S;

@@ -31,7 +31,7 @@ public final class CBoWModel extends AbstractWord2VecModel {
         super(dim, win, neg, iter, startingLR, numTrainWords, S, aliasWordId);
     }
 
-    protected void trainOnDoc(@Nonnull List<Integer> doc) {
+    protected void trainOnDoc(@Nonnull final int[] doc) {
         final int vecDim = dim;
         final int numNegative = neg;
         final PRNG _rnd = rnd;
@@ -44,7 +44,7 @@ public final class CBoWModel extends AbstractWord2VecModel {
 
         updateLearningRate();
 
-        int docLength = doc.size();
+        int docLength = doc.length;
         for (int t = 0; t < iter; t++) {
             for (int positiveWordPosition = 0; positiveWordPosition < docLength; positiveWordPosition++) {
                 windowSize = _rnd.nextInt(win) + 1;
@@ -63,7 +63,7 @@ public final class CBoWModel extends AbstractWord2VecModel {
                         continue;
                     }
 
-                    inWord = doc.get(contextPosition);
+                    inWord = doc[contextPosition];
 
                     // average vector of input word vectors
                     if (!inputWeights.containsKey(inWord * vecDim)) {
@@ -74,7 +74,7 @@ public final class CBoWModel extends AbstractWord2VecModel {
                         averageVec[i] += inputWeights.get(inWord * vecDim + i) / numContext;
                     }
                 }
-                positiveWord = doc.get(positiveWordPosition);
+                positiveWord = doc[positiveWordPosition];
                 // negative sampling
                 for (int d = 0; d < numNegative + 1; d++) {
                     if (d == 0) {
@@ -108,7 +108,7 @@ public final class CBoWModel extends AbstractWord2VecModel {
                         continue;
                     }
 
-                    inWord = doc.get(contextPosition);
+                    inWord = doc[contextPosition];
                     for (int i = 0; i < vecDim; i++) {
                         inputWeights.put(inWord * vecDim + i, inputWeights.get(inWord * vecDim + i)
                                 + gradVec[i]);

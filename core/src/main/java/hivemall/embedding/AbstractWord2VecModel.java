@@ -121,5 +121,5 @@ public abstract class AbstractWord2VecModel {
         }
     }
 
-    protected abstract void trainOnDoc(@Nonnull List<Integer> doc);
+    protected abstract void trainOnDoc(@Nonnull int[] doc);
 }

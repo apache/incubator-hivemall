@@ -177,6 +177,7 @@ create table train_docs as
 select
   l.docid,
   to_ordered_list(r2.wordid, l.pos) as words
+  -- to_ordered_list(l.word, l.pos) as words
 from
   docs_exploded l
   LEFT SEMI join freq r on (l.word = r.word)
@@ -232,7 +233,7 @@ set hivevar:noisePower=3/4;
 drop table negative_table;
 create table negative_table as
 select
-  collect_list(array(word, p, other)) as negative_table
+  collect_list(array(wordid, p, other)) as negative_table
 from (
   select
     alias_table(to_map(wordid, negative)) as (wordid, p, other)
