@@ -83,26 +83,17 @@ select
   word,
   freq
 from (
-    select
-      word,
-      COUNT(*) as freq
-    from
-      docs_words
-    LATERAL VIEW explode(words) lTable as word
-    group by
-      word
+  select
+    word,
+    COUNT(*) as freq
+  from
+    docs_words
+  LATERAL VIEW explode(words) lTable as word
+  group by
+    word
 ) t
 where freq >= ${mincount}
 ;
-```
-
-`numTrainWords` is set the number of words in corpus exclude low frequency words.
-
-```sql
-select sum(freq) FROM freq;
-
--- set variable query above result
-set hivevar:numTrainWords=750105;
 ```
 
 # Create sub-sampling table
@@ -111,7 +102,7 @@ Sub-sampling table is stored a not deleted probability per word.
 During word2vec training,
 sub-sampled words are ignored.
 It works to train fastly and to consider the imbalance the rare words and frequent words by reducing frequent words.
-If you want to know detail, 
+If you want to know detail,
 please check Eq.5 in the [original paper](http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf).
 
 ```sql
@@ -119,13 +110,21 @@ set hivevar:sample=1e-4;
 
 drop table subsampling_table;
 create table subsampling_table as
-  select * FROM (
-    select
-        word,
-        sqrt(${sample}/(freq/${numTrainWords})) + ${sample}/(freq/${numTrainWords}) as p
-    from freq
-) t
+with stats as (
+  select
+    sum(freq) as numTrainWords
+  FROM
+    freq
+)
+select
+  l.word,
+  sqrt(${sample}/(l.freq/r.numTrainWords)) + ${sample}/(l.freq/r.numTrainWords) as p
+from
+  freq l
+cross join
+  stats r
 ;
+
 ```
 
 # Delete low frequency words and high frequency words from `docs_words`
@@ -151,13 +150,14 @@ create table train_docs as
       docs_words LATERAL VIEW posexplode(words) t as pos, word
   )
 select
-    docid,
-    to_ordered_list(l.word, pos) as words
+  docid,
+  to_ordered_list(l.word, pos) as words
 from
   docs_exploded l
 join freq r on (l.word = r.word)
 join subsampling_table r2 on (l.word = r2.word)
-where r2.p > l.rnd
+where
+  r2.p > l.rnd
 group by
   docid, splitid
 ;
@@ -225,7 +225,7 @@ drop table skipgram_features;
 create table skipgram_features as
 select
   word2vec_feature(r.negative_table, l.words, "-win 5 -neg 15 -iter 5")
-from 
+from
   train_docs l
   cross join negative_table r
 ;
@@ -240,7 +240,7 @@ select
   word2vec_feature(r.negative_table, l.words, "-win 5 -neg 15 -iter 5 -model cbow")
 from
   train_docs l
-  cross join negative_table r 
+  cross join negative_table r
 ;
 ```
 
@@ -261,10 +261,10 @@ select word, i, avg(wi) as wi
 from (
   select
     train_word2vec(
-        inword,
-        posword,
-        negwords,
-        ${numSamples}
+      inword,
+      posword,
+      negwords,
+      ${numSamples}
     )
     from
       skipgram_features
@@ -286,13 +286,14 @@ select word, i, avg(wi) as wi
 from (
   select
     train_word2vec(
-        inwords,
-        posword,
-        negwords,
-        ${numSamples},
-        "-model cbow"
+      inwords,
+      posword,
+      negwords,
+      ${numSamples},
+      "-model cbow"
     )
-    from cbow_features
+    from
+      cbow_features
 ) t
 group by
     word, i
