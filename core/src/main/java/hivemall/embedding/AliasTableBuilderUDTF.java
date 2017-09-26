@@ -42,6 +42,8 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
+import javax.annotation.Nonnull;
+
 public final class AliasTableBuilderUDTF extends GenericUDTF {
     private MapObjectInspector negativeTableOI;
     private PrimitiveObjectInspector negativeTableKeyOI;
@@ -51,6 +53,7 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
     private List<String> index2word;
     private Int2IntOpenHashTable A;
     private Int2FloatOpenHashTable S;
+    private boolean isIntElement;
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -60,48 +63,68 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
         }
 
         this.negativeTableOI = HiveUtils.asMapOI(argOIs[0]);
-        this.negativeTableKeyOI = HiveUtils.asStringOI(negativeTableOI.getMapKeyObjectInspector());
         this.negativeTableValueOI = HiveUtils.asFloatingPointOI(negativeTableOI.getMapValueObjectInspector());
+
+        boolean isIntEmelentOI = HiveUtils.isIntOI((negativeTableOI.getMapKeyObjectInspector()));
+
+        if (isIntEmelentOI) {
+            this.negativeTableKeyOI = HiveUtils.asIntCompatibleOI(negativeTableOI.getMapKeyObjectInspector());
+        } else {
+            this.negativeTableKeyOI = HiveUtils.asStringOI(negativeTableOI.getMapKeyObjectInspector());
+        }
 
         List<String> fieldNames = new ArrayList<>();
         List<ObjectInspector> fieldOIs = new ArrayList<>();
-
         fieldNames.add("word");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+
+        if (isIntEmelentOI) {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        } else {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        }
 
         fieldNames.add("p");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
         fieldNames.add("other");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        if (isIntEmelentOI) {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        } else {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        }
 
+        this.isIntElement = isIntEmelentOI;
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
     @Override
     public void process(Object[] args) throws HiveException {
+        if (!isIntElement) {
+            index2word = new ArrayList<>();
+        }
 
-        final List<String> index2word = new ArrayList<>();
         final List<Float> unnormalizedProb = new ArrayList<>();
-
-        float denom = 0;
+        int numVocab = 0;
+        float denom = 0.f;
         for (Map.Entry<?, ?> entry : negativeTableOI.getMap(args[0]).entrySet()) {
-            String word = PrimitiveObjectInspectorUtils.getString(entry.getKey(),
-                negativeTableKeyOI);
-            index2word.add(word);
+            if (!isIntElement) {
+                String word = PrimitiveObjectInspectorUtils.getString(entry.getKey(),
+                    negativeTableKeyOI);
+                index2word.add(word);
+            }
 
             float v = PrimitiveObjectInspectorUtils.getFloat(entry.getValue(), negativeTableValueOI);
             unnormalizedProb.add(v);
             denom += v;
+            numVocab++;
         }
 
-        this.numVocab = index2word.size();
-        this.index2word = index2word;
-
+        this.numVocab = numVocab;
         createAliasTable(numVocab, denom, unnormalizedProb);
     }
 
-    private void createAliasTable(final int V, final float denom, final List<Float> unnormalizedProb) {
+    private void createAliasTable(final int V, final float denom,
+            final @Nonnull List<Float> unnormalizedProb) {
         Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(V);
         Int2IntOpenHashTable A = new Int2IntOpenHashTable(V);
 
@@ -135,25 +158,46 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
 
     @Override
     public void close() throws HiveException {
-        Text word = new Text();
-        FloatWritable pro = new FloatWritable();
-        Text otherWord = new Text();
+        if (isIntElement) {
+            IntWritable word = new IntWritable();
+            FloatWritable pro = new FloatWritable();
+            IntWritable otherWord = new IntWritable();
 
-        Object[] res = new Object[3];
-        res[0] = word;
-        res[1] = pro;
-        res[2] = otherWord;
+            Object[] res = new Object[3];
+            res[0] = word;
+            res[1] = pro;
+            res[2] = otherWord;
 
-
-        for (int i = 0; i < numVocab; i++) {
-            word.set(index2word.get(i));
-            pro.set(S.get(i));
-            if (A.get(i) == -1) {
-                otherWord.set("");
-            } else {
-                otherWord.set(index2word.get(A.get(i)));
+            for (int i = 0; i < numVocab; i++) {
+                word.set(i);
+                pro.set(S.get(i));
+                if (A.get(i) == -1) {
+                    otherWord.set(0);
+                } else {
+                    otherWord.set(A.get(i));
+                }
+                forward(res);
             }
-            forward(res);
+        } else {
+            Text word = new Text();
+            FloatWritable pro = new FloatWritable();
+            Text otherWord = new Text();
+
+            Object[] res = new Object[3];
+            res[0] = word;
+            res[1] = pro;
+            res[2] = otherWord;
+
+            for (int i = 0; i < numVocab; i++) {
+                word.set(index2word.get(i));
+                pro.set(S.get(i));
+                if (A.get(i) == -1) {
+                    otherWord.set("");
+                } else {
+                    otherWord.set(index2word.get(A.get(i)));
+                }
+                forward(res);
+            }
         }
     }
 }

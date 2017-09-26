@@ -81,6 +81,7 @@ set hivevar:mincount=5;
 drop table freq;
 create table freq as
 select
+  row_number() over () - 1 as wordid,
   word,
   freq
 from (
@@ -118,6 +119,7 @@ with stats as (
     freq
 )
 select
+  l.wordid,
   l.word,
   sqrt(${sample}/(l.freq/r.numTrainWords)) + ${sample}/(l.freq/r.numTrainWords) as p
 from
@@ -174,7 +176,7 @@ create table train_docs as
   )
 select
   l.docid,
-  to_ordered_list(l.word, l.pos) as words
+  to_ordered_list(r2.wordid, l.pos) as words
 from
   docs_exploded l
   LEFT SEMI join freq r on (l.word = r.word)
@@ -197,6 +199,8 @@ words sampled this distribution are used for negative examples.
 To avoid using huge memory space for negative sampling like original implementation and sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 
+## String case
+
 ```sql
 set hivevar:noisePower=3/4;
 
@@ -211,6 +215,31 @@ from (
     (
       select
         word,
+        pow(freq, ${noisePower}) as negative
+      from
+        freq
+    ) t
+) t1
+;
+```
+
+
+## Int case
+
+```sql
+set hivevar:noisePower=3/4;
+
+drop table negative_table;
+create table negative_table as
+select
+  collect_list(array(word, p, other)) as negative_table
+from (
+  select
+    alias_table(to_map(wordid, negative)) as (wordid, p, other)
+  from
+    (
+      select
+        wordid,
         pow(freq, ${noisePower}) as negative
       from
         freq
