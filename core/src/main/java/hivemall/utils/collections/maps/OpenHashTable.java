@@ -59,7 +59,10 @@ public final class OpenHashTable<K, V> implements Externalizable {
     protected V[] _values;
     protected byte[] _states;
 
-    public OpenHashTable() {} // for Externalizable
+    /**
+     * Only for {@link Externalizable}
+     */
+    public OpenHashTable() {}
 
     public OpenHashTable(int size) {
         this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR);

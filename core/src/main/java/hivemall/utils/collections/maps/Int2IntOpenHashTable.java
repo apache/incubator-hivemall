@@ -77,7 +77,10 @@ public final class Int2IntOpenHashTable implements Externalizable {
         this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR, true);
     }
 
-    public Int2IntOpenHashTable() {// required for serialization
+    /**
+     * Only for {@link Externalizable}
+     */
+    public Int2IntOpenHashTable() {
         this._loadFactor = DEFAULT_LOAD_FACTOR;
         this._growFactor = DEFAULT_GROW_FACTOR;
     }

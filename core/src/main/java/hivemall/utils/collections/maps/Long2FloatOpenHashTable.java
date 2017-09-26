@@ -78,7 +78,10 @@ public final class Long2FloatOpenHashTable implements Externalizable {
         this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR, true);
     }
 
-    public Long2FloatOpenHashTable() {// required for serialization
+    /**
+     * Only for {@link Externalizable}
+     */
+    public Long2FloatOpenHashTable() {
         this._loadFactor = DEFAULT_LOAD_FACTOR;
         this._growFactor = DEFAULT_GROW_FACTOR;
     }
