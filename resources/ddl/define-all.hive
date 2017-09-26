@@ -716,6 +716,7 @@ create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAt
 --------------------
 -- Recommendation --
 --------------------
+
 drop temporary function if exists train_slim;
 create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
 
