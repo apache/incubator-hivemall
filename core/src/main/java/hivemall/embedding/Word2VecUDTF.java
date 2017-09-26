@@ -19,6 +19,9 @@
 package hivemall.embedding;
 
 import hivemall.UDTFWithOptions;
+import hivemall.utils.collections.IMapIterator;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
+import hivemall.utils.collections.maps.OpenHashTable;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
 
@@ -39,10 +42,8 @@ import org.apache.hadoop.io.Text;
 
 import javax.annotation.Nonnegative;
 import java.util.List;
-import java.util.Map;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Word2VecUDTF extends UDTFWithOptions {
     protected transient AbstractWord2VecModel model;
@@ -50,40 +51,45 @@ public class Word2VecUDTF extends UDTFWithOptions {
     private float startingLR;
     @Nonnegative
     private long numTrainWords;
+    private OpenHashTable<String, Integer> word2index;
+
+    @Nonnegative
     private int dim;
-    private Map<String, Integer> word2index;
+    @Nonnegative
+    private int win;
+    @Nonnegative
+    private int neg;
+    @Nonnegative
+    private int iter;
     private boolean skipgram;
 
-    private PrimitiveObjectInspector inWordOI;
-    private ListObjectInspector inWordsOI;
-    private PrimitiveObjectInspector posWordOI;
-    private ListObjectInspector negWordsOI;
-    private PrimitiveObjectInspector negWordOI;
-    private PrimitiveObjectInspector numTrainWordsOI;
+    private Int2FloatOpenHashTable S;
+    private int[] aliasWordId;
+
+    private ListObjectInspector negativeTableOI;
+    private ListObjectInspector negativeTableElementListOI;
+    private PrimitiveObjectInspector negativeTableElementOI;
+
+    private ListObjectInspector docOI;
+    private PrimitiveObjectInspector wordOI;
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int numArgs = argOIs.length;
 
-        if (numArgs != 4 && numArgs != 5) {
+        if (numArgs != 3) {
             throw new UDFArgumentException(getClass().getSimpleName()
-                    + " takes 4 or 5 arguments:  [, constant string options]: "
+                    + " takes 3 arguments:  [, constant string options]: "
                     + Arrays.toString(argOIs));
         }
 
         processOptions(argOIs);
 
-        if (skipgram) {
-            this.inWordOI = HiveUtils.asStringOI(argOIs[0]);
-        } else {
-            this.inWordsOI = HiveUtils.asListOI(argOIs[0]);
-            this.inWordOI = HiveUtils.asStringOI(inWordsOI.getListElementObjectInspector());
-        }
-
-        this.posWordOI = HiveUtils.asStringOI(argOIs[1]);
-        this.negWordsOI = HiveUtils.asListOI(argOIs[2]);
-        this.negWordOI = HiveUtils.asStringOI(negWordsOI.getListElementObjectInspector());
-        this.numTrainWordsOI = HiveUtils.asLongCompatibleOI(argOIs[3]);
+        this.negativeTableOI = HiveUtils.asListOI(argOIs[0]);
+        this.negativeTableElementListOI = HiveUtils.asListOI(negativeTableOI.getListElementObjectInspector());
+        this.negativeTableElementOI = HiveUtils.asStringOI(negativeTableElementListOI.getListElementObjectInspector());
+        this.docOI = HiveUtils.asListOI(argOIs[1]);
+        this.wordOI = HiveUtils.asStringOI(docOI.getListElementObjectInspector());
 
         List<String> fieldNames = new ArrayList<>();
         List<ObjectInspector> fieldOIs = new ArrayList<>();
@@ -98,6 +104,8 @@ public class Word2VecUDTF extends UDTFWithOptions {
 
         this.model = null;
         this.word2index = null;
+        this.S = null;
+        this.aliasWordId = null;
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -105,42 +113,36 @@ public class Word2VecUDTF extends UDTFWithOptions {
     @Override
     public void process(Object[] args) throws HiveException {
         if (model == null) {
-            this.numTrainWords = PrimitiveObjectInspectorUtils.getLong(args[3], numTrainWordsOI);
+            parseNegativeTable(args[0]);
             this.model = createModel();
-            this.word2index = new HashMap<>();
         }
 
-        int posWord = getWordId(PrimitiveObjectInspectorUtils.getString(args[1], posWordOI));
+        List<?> rawDoc = docOI.getList(args[1]);
 
-        List<?> negWordsList = negWordsOI.getList(args[2]);
-        final int[] negWords = new int[negWordsList.size()];
-        for (int i = 0; i < negWords.length; i++) {
-            negWords[i] = getWordId(PrimitiveObjectInspectorUtils.getString(negWordsList.get(i),
-                negWordOI));
+        // parse rawDoc
+        List<Integer> doc = new ArrayList<>(rawDoc.size());
+        for (int i = 0; i < rawDoc.size(); i++) {
+            doc.add(getWordId(PrimitiveObjectInspectorUtils.getString(rawDoc.get(i), wordOI)));
         }
 
-
-        if (skipgram) {
-            int inWord = getWordId(PrimitiveObjectInspectorUtils.getString(args[0], inWordOI));
-            model.onlineTrain(inWord, posWord, negWords);
-        } else {
-            int[] inWords = new int[inWordsOI.getListLength(args[0])];
-            for (int i = 0; i < inWords.length; i++) {
-                inWords[i] = getWordId(PrimitiveObjectInspectorUtils.getString(
-                    inWordsOI.getListElement(args[0], i), inWordOI));
-            }
-            model.onlineTrain(inWords, posWord, negWords);
-        }
+        model.trainOnDoc(doc);
     }
 
     @Override
     protected Options getOptions() {
         Options opts = new Options();
+        opts.addOption("n", "numTrainWords", true, "the number of words in document");
         opts.addOption("dim", "dimension", true, "the number of vector dimension [default: 100]");
+        opts.addOption("win", "window", true, "Context window size [default: 5]");
+        opts.addOption("neg", "negative", true,
+            "The number of negative sampled words per word [default: 5]");
+        opts.addOption("iter", "iteration", true,
+            "The number of skip-gram per word. It is equivalent to the epoch of word2vec [default: 5]");
         opts.addOption("model", "modelName", true,
             "The model name of word2vec: skipgram or cbow [default: skipgram]");
         opts.addOption("lr", "learningRate", true,
             "initial learning rate of SGD [default: 0.025 (skipgram) or 0.05 (cbow)]");
+
 
         return opts;
     }
@@ -148,17 +150,42 @@ public class Word2VecUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = null;
+        int win = 5;
+        int neg = 5;
+        int iter = 5;
         int dim = 100;
+        long numTrainWords = 0L;
         String modelName = "skipgram";
         float lr = 0.025f;
 
-        if (argOIs.length >= 5) {
-            String rawArgs = HiveUtils.getConstString(argOIs[4]);
+        if (argOIs.length >= 3) {
+            String rawArgs = HiveUtils.getConstString(argOIs[2]);
             cl = parseOptions(rawArgs);
+
+            numTrainWords = Primitives.parseLong(cl.getOptionValue("n"), numTrainWords);
+            if (numTrainWords <= 0) {
+                throw new UDFArgumentException("Argument `int numTrainWords` must be positive: "
+                        + numTrainWords);
+            }
 
             dim = Primitives.parseInt(cl.getOptionValue("dim"), dim);
             if (dim <= 0.d) {
                 throw new UDFArgumentException("Argument `int dim` must be positive: " + dim);
+            }
+
+            win = Primitives.parseInt(cl.getOptionValue("win"), win);
+            if (win <= 0) {
+                throw new UDFArgumentException("Argument `int win` must be positive: " + win);
+            }
+
+            neg = Primitives.parseInt(cl.getOptionValue("neg"), neg);
+            if (neg < 0) {
+                throw new UDFArgumentException("Argument `int neg` must be non-negative: " + neg);
+            }
+
+            iter = Primitives.parseInt(cl.getOptionValue("iter"), iter);
+            if (iter <= 0) {
+                throw new UDFArgumentException("Argument `int iter` must be non-negative: " + iter);
             }
 
             modelName = cl.getOptionValue("model", modelName);
@@ -177,6 +204,10 @@ public class Word2VecUDTF extends UDTFWithOptions {
             }
         }
 
+        this.numTrainWords = numTrainWords;
+        this.win = win;
+        this.neg = neg;
+        this.iter = iter;
         this.dim = dim;
         this.skipgram = modelName.equals("skipgram");
         this.startingLR = lr;
@@ -186,8 +217,9 @@ public class Word2VecUDTF extends UDTFWithOptions {
     public void close() throws HiveException {
         if (model != null) {
             forwardModel();
-            model = null;
-            word2index = null;
+            this.model = null;
+            this.word2index = null;
+            this.S = null;
         }
     }
 
@@ -201,9 +233,10 @@ public class Word2VecUDTF extends UDTFWithOptions {
         result[1] = dimIndex;
         result[2] = value;
 
-        for (Map.Entry<String, Integer> entry : word2index.entrySet()) {
-            int wordId = entry.getValue();
-            word.set(entry.getKey());
+        IMapIterator<String, Integer> iter = word2index.entries();
+        while (iter.next() != -1) {
+            int wordId = iter.getValue();
+            word.set(iter.getKey());
 
             for (int i = 0; i < dim; i++) {
                 dimIndex.set(i);
@@ -223,11 +256,40 @@ public class Word2VecUDTF extends UDTFWithOptions {
         }
     }
 
+    private void parseNegativeTable(Object listObj) {
+        int aliasSize = negativeTableOI.getListLength(listObj);
+        Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(aliasSize);
+        int[] aliasWordId = new int[aliasSize];
+
+        this.word2index = new OpenHashTable<>(aliasSize);
+
+        for (int i = 0; i < aliasSize; i++) {
+            List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
+                listObj, i));
+            getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(0),
+                negativeTableElementOI));
+            S.put(i, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
+                negativeTableElementOI)));
+        }
+
+        for (int i = 0; i < aliasSize; i++) {
+            List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
+                listObj, i));
+            aliasWordId[i] = getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(2),
+                negativeTableElementOI));
+        }
+
+        this.S = S;
+        this.aliasWordId = aliasWordId;
+    }
+
     private AbstractWord2VecModel createModel() {
         if (skipgram) {
-            return new SkipGramModel(dim, startingLR, numTrainWords);
+            return new SkipGramModel(dim, win, neg, iter, startingLR, iter * numTrainWords, S,
+                aliasWordId);
         } else {
-            return new CBoWModel(dim, startingLR, numTrainWords);
+            return new CBoWModel(dim, win, neg, iter, startingLR, iter * numTrainWords, S,
+                aliasWordId);
         }
     }
 }

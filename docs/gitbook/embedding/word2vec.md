@@ -125,7 +125,6 @@ from
 cross join
   stats r
 ;
-
 ```
 
 
@@ -222,37 +221,21 @@ from (
 
 # Train word2vec
 
-## Create feature
+Hivemall provides `train_word2vec` function to prepare the input of word2vec training.
+Default model is `"skipgram"`.
 
-Hivemall provides `word2vec_feature` function to prepare the input of word2vec training.
-Default feature is `"skipgram"`.
-In this case, `word2vec_feature` function returns the records below.
-
-| inWord | posWord | negWords|
-|---- |----|----|
-| "alice" | "was" | ["queen", "a", ...] |
-|  ...  | ... | ... |
-
-By passing `-model cbow` to `word2vec_feature` argument,
-Hivemall creates CBoW feature, like this:
-
-| inWords | posWord | negWords|
-|---- |----|----|
-| ["alice", "beginning", "to" | "was" | ["queen", "a", ...] |
-|  ...  | ... | ... |
-
-
-### Skip-Gram features
+### Skip-Gram
 
 ```sql
-drop table skipgram_features;
+select sum(size(words)) from train_docs;
 
-create table skipgram_features as
+drop table skipgram;
+create table skipgram as
 select
-  word2vec_feature(
+  train_word2vec(
     r.negative_table,
     l.words,
-    "-win 5 -neg 15 -iter 5"
+    "-n 418953 -win 5 -neg 15 -iter 5 -dim 100 -model skipgram"
   )
 from
   train_docs l
@@ -260,78 +243,20 @@ from
 ;
 ```
 
-### CBoW features
+### CBoW
 
 ```sql
-drop table cbow_features;
+drop table cbow;
 
-create table cbow_features as
+create table cbow as
 select
-  word2vec_feature(
+  train_word2vec(
     r.negative_table,
     l.words,
-    "-win 5 -neg 15 -iter 5 -model cbow"
+    "-n 418953 -win 5 -neg 15 -iter 5 -model cbow"
   )
 from
   train_docs l
   cross join negative_table r
-;
-```
-
-## Train Word2Vec
-
-In the same way,
-`train_word2vec` function is enable to train word vector based on both types features by passing `"-model"`.
-If you omit the `"-model"` argument,
-Hivemall uses default model: `"skipgram"`.
-
-### Train word vectors for Skip-Gram feature
-
-```sql
-select COUNT(1) from skipgram_features;
-set hivevar:numSamples=738947196;
-
-drop table w2v_skgram;
-create table w2v_skgram as
-select word, i, avg(wi) as wi
-from (
-  select
-    train_word2vec(
-      inword,
-      posword,
-      negwords,
-      ${numSamples}
-    )
-  from
-    skipgram_features
-) t
-group by
-    word, i
-;
-```
-
-### Train word vectors for CBoW feature
-
-```sql
-select COUNT(1) from cbow_features;
-set hivevar:numSamples=2495785;
-
-drop table w2v_cbow;
-create table w2v_cbow as
-select word, i, avg(wi) as wi
-from (
-  select
-    train_word2vec(
-      inwords,
-      posword,
-      negwords,
-      ${numSamples},
-      "-model cbow"
-    )
-  from
-    cbow_features
-) t
-group by
-    word, i
 ;
 ```

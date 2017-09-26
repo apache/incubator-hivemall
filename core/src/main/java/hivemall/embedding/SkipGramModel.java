@@ -18,55 +18,94 @@
  */
 package hivemall.embedding;
 
+import hivemall.math.random.PRNG;
+import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
+
 import javax.annotation.Nonnull;
+import java.util.List;
 
 public final class SkipGramModel extends AbstractWord2VecModel {
-
-    protected SkipGramModel(final int dim, final float startingLR, final long numTrainWords) {
-        super(dim, startingLR, numTrainWords);
+    protected SkipGramModel(final int dim, final int win, final int neg, final int iter,
+            final float startingLR, final long numTrainWords, final Int2FloatOpenHashTable S,
+            final int[] aliasWordId) {
+        super(dim, win, neg, iter, startingLR, numTrainWords, S, aliasWordId);
     }
 
-    protected void onlineTrain(final int inWord, final int posWord, @Nonnull final int[] negWords) {
-
+    protected void trainOnDoc(@Nonnull List<Integer> doc) {
         final int vecDim = dim;
+        final int numNegative = neg;
+        final PRNG _rnd = rnd;
+
+        // alias sampler for negative sampling
+        final Int2FloatOpenHashTable _S = S;
+        final int[] _aliasWordId = aliasWordId;
+
+        // reuse variable
+        int windowSize, k, targetWord, inputWord, contextWord;
+        float label, gradient;
 
         updateLearningRate();
 
-        if (!inputWeights.containsKey(inWord * vecDim)) {
-            initWordWeights(inWord);
-        }
+        final int docLength = doc.size();
+        for (int t = 0; t < iter; t++) {
+            for (int inputWordPosition = 0; inputWordPosition < docLength; inputWordPosition++) {
+                inputWord = doc.get(inputWordPosition);
 
-        float[] gradVec = new float[vecDim];
+                if (!inputWeights.containsKey(inputWord * vecDim)) {
+                    initWordWeights(inputWord);
+                }
 
-        // positive word
-        float gradient = grad(1.f, inWord, posWord) * lr;
-        for (int i = 0; i < vecDim; i++) {
-            gradVec[i] += gradient * contextWeights.get(posWord * vecDim + i);
-            contextWeights.put(posWord * vecDim + i, contextWeights.get(posWord * vecDim + i)
-                    + gradient * inputWeights.get(inWord * vecDim + i));
-        }
+                windowSize = _rnd.nextInt(win) + 1;
 
-        // negative words
-        for (int negWord : negWords) {
-            gradient = grad(0.f, inWord, negWord) * lr;
-            for (int i = 0; i < vecDim; i++) {
-                gradVec[i] += gradient * contextWeights.get(negWord * vecDim + i);
-                contextWeights.put(negWord * vecDim + i, contextWeights.get(negWord * vecDim + i)
-                        + gradient * inputWeights.get(inWord * vecDim + i));
+                for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
+                        + windowSize + 1; contextPosition++) {
+                    if (contextPosition == inputWordPosition || contextPosition < 0
+                            || contextPosition >= docLength) {
+                        continue;
+                    }
+
+                    contextWord = doc.get(contextPosition);
+                    float[] gradVec = new float[vecDim];
+
+                    // negative sampling
+                    for (int d = 0; d < numNegative + 1; d++) {
+                        // positive
+                        if (d == 0) {
+                            targetWord = contextWord;
+                            label = 1.f;
+                        } else {
+                            do {
+                                k = _rnd.nextInt(_S.size());
+
+                                if (_S.get(k) > _rnd.nextDouble()) {
+                                    targetWord = k;
+                                } else {
+                                    targetWord = _aliasWordId[k];
+                                }
+                            } while (targetWord == contextWord);
+                            label = 0.f;
+                        }
+
+                        // update context vector
+                        gradient = grad(label, inputWord, targetWord) * lr;
+                        for (int i = 0; i < vecDim; i++) {
+                            gradVec[i] += gradient * contextWeights.get(targetWord * vecDim + i);
+                            contextWeights.put(targetWord * vecDim + i,
+                                contextWeights.get(targetWord * vecDim + i) + gradient
+                                        * inputWeights.get(inputWord * vecDim + i));
+                        }
+                    }
+
+                    // update inWord vector
+                    for (int i = 0; i < vecDim; i++) {
+                        inputWeights.put(inputWord * vecDim + i,
+                            inputWeights.get(inputWord * vecDim + i) + gradVec[i]);
+                    }
+                }
             }
         }
 
-        // update inWord vector
-        for (int i = 0; i < vecDim; i++) {
-            inputWeights.put(inWord * vecDim + i, inputWeights.get(inWord * vecDim + i)
-                    + gradVec[i]);
-        }
-
-        wordCount++;
-    }
-
-    protected void onlineTrain(final int[] inWords, final int posWord, @Nonnull final int[] negWords) {
-        throw new UnsupportedOperationException();
+        wordCount += docLength * iter;
     }
 
     protected float grad(final float label, final int w, final int c) {
@@ -76,6 +115,5 @@ public final class SkipGramModel extends AbstractWord2VecModel {
         }
 
         return (label - sigmoid(dotValue, sigmoidTable));
-
     }
 }

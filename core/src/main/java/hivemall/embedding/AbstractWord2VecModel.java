@@ -24,12 +24,20 @@ import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import java.util.List;
 
 public abstract class AbstractWord2VecModel {
     // cached sigmoid function parameters
     protected static final int MAX_SIGMOID = 6;
     protected static final int SIGMOID_TABLE_SIZE = 1000;
     protected float[] sigmoidTable;
+
+
+    @Nonnegative
+    protected int dim;
+    protected int win;
+    protected int neg;
+    protected int iter;
 
     // learning rate parameters
     @Nonnegative
@@ -43,17 +51,26 @@ public abstract class AbstractWord2VecModel {
     @Nonnegative
     private long lastWordCount;
 
-    @Nonnegative
-    protected int dim;
-    private PRNG rnd;
+    protected PRNG rnd;
 
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
+    protected Int2FloatOpenHashTable S;
+    protected int[] aliasWordId;
 
-    protected AbstractWord2VecModel(final int dim, final float startingLR, final long numTrainWords) {
+    protected AbstractWord2VecModel(final int dim, final int win, final int neg, final int iter,
+            final float startingLR, final long numTrainWords, final Int2FloatOpenHashTable S,
+            final int[] aliasWordId) {
+        this.win = win;
+        this.neg = neg;
+        this.iter = iter;
         this.dim = dim;
         this.startingLR = this.lr = startingLR;
         this.numTrainWords = numTrainWords;
+
+        // alias sampler for negative sampling
+        this.S = S;
+        this.aliasWordId = aliasWordId;
 
         this.wordCount = 0L;
         this.lastWordCount = 0L;
@@ -104,9 +121,5 @@ public abstract class AbstractWord2VecModel {
         }
     }
 
-    protected abstract void onlineTrain(final int inWord, final int posWord,
-            @Nonnull final int[] negWords);
-
-    protected abstract void onlineTrain(final int[] inWords, final int posWord,
-            @Nonnull final int[] negWords);
+    protected abstract void trainOnDoc(@Nonnull List<Integer> doc);
 }
