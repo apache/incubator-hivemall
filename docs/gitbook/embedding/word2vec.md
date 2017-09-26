@@ -171,44 +171,28 @@ Here, `negative_table` is used to store word sampling probability for negative s
 During word2vec training,
 words sampled this distribution are used for negative examples.
 
+To avoid using huge memory space for negative sampling like original implementation and sample fastly from this distribution,
+Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
+
 ```sql
 set hivevar:noisePower=3/4;
 
 drop table negative_table;
 create table negative_table as
-  select
-    word,
-    pow(freq, ${noisePower}) as negative
-  from
-    freq
-;
-```
-
-## Split negative sampling table
-
-To avoid using huge memory space for negative sampling like original implementation and sample fastly from this distribution,
-Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
-
-And then, this alias sampler is split into `numSplit` tables in the next query.
-
-```sql
-set hivevar:numSplit=8;
-
-drop table split_negative_table;
-create table split_negative_table as
-with alias_bins as (
 select
-    alias_table(to_map(word, negative), ${numSplit})
-    as (k, word, p, other)
-from
-    negative_table
-)
-select
-  k,
   collect_list(array(word, p, other)) as negative_table
-from
-  alias_bins
-group by k
+from (
+  select
+    alias_table(to_map(word, negative)) as (word, p, other)
+  from
+    (
+      select
+        word,
+        pow(freq, ${noisePower}) as negative
+      from
+        freq
+    ) t
+) t1
 ;
 ```
 
@@ -240,18 +224,10 @@ Hivemall creates CBoW feature:
 drop table skipgram_features;
 create table skipgram_features as
 select
-  word2vec_feature(k, negative_table, words, "-win 5 -neg 15 -iter 5")
-from(
-    select
-      r.k,
-      negative_table,
-      words
-    from
-      train_docs l
-    join split_negative_table r on
-      l.docid % ${numSplit} = r.k
-    CLUSTER BY r.k
-) t
+  word2vec_feature(r.negative_table, l.words, "-win 5 -neg 15 -iter 5")
+from 
+  train_docs l
+  cross join negative_table r
 ;
 ```
 
@@ -261,18 +237,10 @@ from(
 drop table cbow_features;
 create table cbow_features as
 select
-  word2vec_feature(k, negative_table, words, "-win 5 -neg 15 -iter 5 -model cbow")
-from(
-    select
-      r.k,
-      negative_table,
-      words
-    from
-      train_docs l
-    join split_negative_table r on
-      l.docid % ${numSplit} = r.k
-    CLUSTER BY r.k
-) t
+  word2vec_feature(r.negative_table, l.words, "-win 5 -neg 15 -iter 5 -model cbow")
+from
+  train_docs l
+  cross join negative_table r 
 ;
 ```
 
@@ -285,7 +253,7 @@ In the same way,
 
 ```sql
 select COUNT(*) from skipgram_features;
-set hivevar:numSamples=2981487;
+set hivevar:numSamples=14911314;
 
 drop table w2v_skgram;
 create table w2v_skgram as
@@ -298,22 +266,20 @@ from (
         negwords,
         ${numSamples}
     )
-    from (
-      select * from skipgram_features
-      CLUSTER by k
-    ) t
-) t1
+    from
+      skipgram_features
+) t
 group by
     word, i
 ;
-
 ```
 
 ### Train CBoW
 
 ```sql
 select COUNT(*) from cbow_features;
-set hivevar:numSamples=499157;
+set hivevar:numSamples=2495785;
+
 drop table w2v_cbow;
 create table w2v_cbow as
 select word, i, avg(wi) as wi
@@ -326,11 +292,8 @@ from (
         ${numSamples},
         "-model cbow"
     )
-    from (
-      select * from cbow_features
-      CLUSTER by k
-    ) t
-) t1
+    from cbow_features
+) t
 group by
     word, i
 ;

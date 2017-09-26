@@ -46,9 +46,7 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
     private MapObjectInspector negativeTableOI;
     private PrimitiveObjectInspector negativeTableKeyOI;
     private PrimitiveObjectInspector negativeTableValueOI;
-    private PrimitiveObjectInspector numSplitOI;
 
-    private int numSplit;
     private int numVocab;
     private List<String> index2word;
     private Int2IntOpenHashTable A;
@@ -56,22 +54,17 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (!(argOIs.length >= 2)) {
+        if (!(argOIs.length >= 1)) {
             throw new UDFArgumentException(
-                "_FUNC_(map<string, double>, int) takes at least two arguments");
+                "_FUNC_(map<string, double>) takes at least one argument");
         }
 
         this.negativeTableOI = HiveUtils.asMapOI(argOIs[0]);
         this.negativeTableKeyOI = HiveUtils.asStringOI(negativeTableOI.getMapKeyObjectInspector());
         this.negativeTableValueOI = HiveUtils.asFloatingPointOI(negativeTableOI.getMapValueObjectInspector());
 
-        this.numSplitOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
-
         List<String> fieldNames = new ArrayList<>();
         List<ObjectInspector> fieldOIs = new ArrayList<>();
-
-        fieldNames.add("k");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
 
         fieldNames.add("word");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
@@ -87,12 +80,6 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
 
     @Override
     public void process(Object[] args) throws HiveException {
-
-        this.numSplit = PrimitiveObjectInspectorUtils.getInt(args[1], numSplitOI);
-        if (numSplit < 1) {
-            throw new UDFArgumentException("Argument `int numSplit` must be positive: " + numSplit);
-
-        }
 
         final List<String> index2word = new ArrayList<>();
         final List<Float> unnormalizedProb = new ArrayList<>();
@@ -148,20 +135,17 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
 
     @Override
     public void close() throws HiveException {
-        IntWritable aliasId = new IntWritable();
         Text word = new Text();
         FloatWritable pro = new FloatWritable();
         Text otherWord = new Text();
 
-        Object[] res = new Object[4];
-        res[0] = aliasId;
-        res[1] = word;
-        res[2] = pro;
-        res[3] = otherWord;
+        Object[] res = new Object[3];
+        res[0] = word;
+        res[1] = pro;
+        res[2] = otherWord;
 
 
         for (int i = 0; i < numVocab; i++) {
-            aliasId.set(i % numSplit);
             word.set(index2word.get(i));
             pro.set(S.get(i));
             if (A.get(i) == -1) {
