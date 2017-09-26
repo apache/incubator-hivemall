@@ -610,7 +610,7 @@ public class SlimUDTF extends UDTFWithOptions {
         final int itemI = buf.getInt();
         final int knnSize = buf.getInt();
 
-        final IntOpenHashTable<Int2FloatOpenHashTable> knnItems = new IntOpenHashTable<>();
+        final IntOpenHashTable<Int2FloatOpenHashTable> knnItems = new IntOpenHashTable<>(1024);
         final Set<Integer> pairItems = new HashSet<>();
         for (int i = 0; i < knnSize; i++) {
             int user = buf.getInt();
@@ -676,7 +676,7 @@ public class SlimUDTF extends UDTFWithOptions {
             @Nullable IntOpenHashTable<Int2FloatOpenHashTable> knnItems,
             @Nonnull final MutableInt nnzKNNi) {
         if (knnItems == null) {
-            knnItems = new IntOpenHashTable<>();
+            knnItems = new IntOpenHashTable<>(1024);
         } else {
             knnItems.clear();
         }
