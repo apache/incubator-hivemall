@@ -42,8 +42,6 @@ public abstract class AbstractWord2VecModel {
     protected long wordCount;
     @Nonnegative
     private long lastWordCount;
-    @Nonnegative
-    private long wordCountActual;
 
     @Nonnegative
     protected int dim;
@@ -59,7 +57,6 @@ public abstract class AbstractWord2VecModel {
 
         this.wordCount = 0L;
         this.lastWordCount = 0L;
-        this.wordCountActual = 0L;
         this.rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         this.sigmoidTable = initSigmoidTable();
@@ -100,11 +97,10 @@ public abstract class AbstractWord2VecModel {
         // TODO: valid lr?
 
         if (wordCount - lastWordCount > 10000) {
-            wordCountActual += wordCount - lastWordCount;
             lastWordCount = wordCount;
 
             this.lr = startingLR
-                    * Math.max((1.f - (float) wordCountActual / (numTrainWords + 1L)), 0.0001f);
+                    * Math.max((1.f - (float) wordCount / (numTrainWords + 1L)), 0.0001f);
         }
     }
 

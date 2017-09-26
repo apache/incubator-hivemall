@@ -16,13 +16,14 @@
   specific language governing permissions and limitations
   under the License.
 -->
+
 Word Embedding is a powerful tool for many tasks,
 e.g. finding similar words,
-features for supervised machine learning task and word analogy,
+feature vector for supervised machine learning task and word analogy,
 such as `king - man + woman =~ queen`.
 In word embedding,
-each word represents a low dimension and dense vector representation.
-**Skip-gram** and **Continuous Bag-of-words** (a.k.a word2vec) are the most popular algorithms to obtain good word embeddings.
+each word represents a low dimension and dense vector.
+**Skip-Gram** and **Continuous Bag-of-words** (CBoW) are the most popular algorithms to obtain good word embeddings (a.k.a word2vec).
 
 The papers introduce the method are as follows:
 
@@ -30,7 +31,7 @@ The papers introduce the method are as follows:
 ](http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf). NIPS, 2013.
 - T. Mikolov, et al., [Efficient Estimation of Word Representations in Vector Space](https://arxiv.org/abs/1301.3781). ICLR, 2013.
 
-Hivemall provides two type algorithms: Skip-gram and Continuous Bag-of-words (CBoW) with negative sampling.
+Hivemall provides two type algorithms: Skip-gram and CBoW with negative sampling.
 Hivemall enables you to train your sequence data such as,
 but not limited to, documents based on word2vec.
 This article gives usage instructions of the feature.
@@ -102,7 +103,7 @@ Sub-sampling table is stored a not deleted probability per word.
 During word2vec training,
 sub-sampled words are ignored.
 It works to train fastly and to consider the imbalance the rare words and frequent words by reducing frequent words.
-If you want to know detail,
+If you want to know detail of Sub-sampling,
 please check Eq.5 in the [original paper](http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf).
 
 ```sql
@@ -127,6 +128,29 @@ cross join
 
 ```
 
+
+```sql
+select * FROM subsampling_table order by p;
+```
+
+| word | p |
+|:----: |:----:|
+| the | 0.04013665 |
+| of | 0.052463654 |
+| and | 0.06555538 |
+| 00 | 0.068162076 |
+| in | 0.071441144 |
+| 0 | 0.07528994 |
+| a | 0.07559573 |
+| to | 0.07953133 |
+| 0000 | 0.08779001 |
+| is | 0.09049763 |
+| 000 | 0.11748954 |
+|  ...  | ... |
+
+In this case, 
+`the` is used only 4% in the documents during training.
+
 # Delete low frequency words and high frequency words from `docs_words`
 
 To reduce useless words from corpus,
@@ -150,16 +174,16 @@ create table train_docs as
       docs_words LATERAL VIEW posexplode(words) t as pos, word
   )
 select
-  docid,
-  to_ordered_list(l.word, pos) as words
+  l.docid,
+  to_ordered_list(l.word, l.pos) as words
 from
   docs_exploded l
-join freq r on (l.word = r.word)
-join subsampling_table r2 on (l.word = r2.word)
+  LEFT SEMI join freq r on (l.word = r.word)
+  join subsampling_table r2 on (l.word = r2.word)
 where
   r2.p > l.rnd
 group by
-  docid, splitid
+  l.docid, l.splitid
 ;
 ```
 
@@ -201,7 +225,7 @@ from (
 ## Create feature
 
 Hivemall provides `word2vec_feature` function to prepare the input of word2vec training.
-Default feature is skip-gram.
+Default feature is `"skipgram"`.
 In this case, `word2vec_feature` function returns the records below.
 
 | inWord | posWord | negWords|
@@ -210,7 +234,7 @@ In this case, `word2vec_feature` function returns the records below.
 |  ...  | ... | ... |
 
 By passing `-model cbow` to `word2vec_feature` argument,
-Hivemall creates CBoW feature:
+Hivemall creates CBoW feature, like this:
 
 | inWords | posWord | negWords|
 |---- |----|----|
@@ -222,9 +246,14 @@ Hivemall creates CBoW feature:
 
 ```sql
 drop table skipgram_features;
+
 create table skipgram_features as
 select
-  word2vec_feature(r.negative_table, l.words, "-win 5 -neg 15 -iter 5")
+  word2vec_feature(
+    r.negative_table,
+    l.words,
+    "-win 5 -neg 15 -iter 5"
+  )
 from
   train_docs l
   cross join negative_table r
@@ -235,9 +264,14 @@ from
 
 ```sql
 drop table cbow_features;
+
 create table cbow_features as
 select
-  word2vec_feature(r.negative_table, l.words, "-win 5 -neg 15 -iter 5 -model cbow")
+  word2vec_feature(
+    r.negative_table,
+    l.words,
+    "-win 5 -neg 15 -iter 5 -model cbow"
+  )
 from
   train_docs l
   cross join negative_table r
@@ -248,12 +282,14 @@ from
 
 In the same way,
 `train_word2vec` function is enable to train word vector based on both types features by passing `"-model"`.
+If you omit the `"-model"` argument,
+Hivemall uses default model: `"skipgram"`.
 
-### Train Skip-Gram
+### Train word vectors for Skip-Gram feature
 
 ```sql
-select COUNT(*) from skipgram_features;
-set hivevar:numSamples=14911314;
+select COUNT(1) from skipgram_features;
+set hivevar:numSamples=738947196;
 
 drop table w2v_skgram;
 create table w2v_skgram as
@@ -266,18 +302,18 @@ from (
       negwords,
       ${numSamples}
     )
-    from
-      skipgram_features
+  from
+    skipgram_features
 ) t
 group by
     word, i
 ;
 ```
 
-### Train CBoW
+### Train word vectors for CBoW feature
 
 ```sql
-select COUNT(*) from cbow_features;
+select COUNT(1) from cbow_features;
 set hivevar:numSamples=2495785;
 
 drop table w2v_cbow;
@@ -292,8 +328,8 @@ from (
       ${numSamples},
       "-model cbow"
     )
-    from
-      cbow_features
+  from
+    cbow_features
 ) t
 group by
     word, i
