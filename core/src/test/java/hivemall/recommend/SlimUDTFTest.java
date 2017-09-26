@@ -18,17 +18,15 @@
  */
 package hivemall.recommend;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.*;
 
 public class SlimUDTFTest {
     @Test
@@ -98,29 +96,4 @@ public class SlimUDTFTest {
         slim.finalizeTraining();
     }
 
-    @Test(expected = HiveException.class)
-    public void testInvalidL1() throws Exception {
-        SlimUDTF slim = new SlimUDTF();
-        ObjectInspector itemIOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ObjectInspector itemJOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-
-        ObjectInspector itemIRatesOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
-        ObjectInspector itemJRatesOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
-        ObjectInspector knnOfIOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-            ObjectInspectorFactory.getStandardMapObjectInspector(
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector));
-        ObjectInspector argumentOI = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-l1 2.");
-
-        ObjectInspector[] argOIs = {itemIOI, itemIRatesOI, knnOfIOI, itemJOI, itemJRatesOI,
-                argumentOI};
-
-        slim.initialize(argOIs);
-    }
 }
