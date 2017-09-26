@@ -561,7 +561,7 @@ WITH ordered_result as (
     predicted_test_matrix
   order by
     u, predicted desc
-), 
+),
 rec_items as (
   select
     u as userid,
@@ -570,7 +570,7 @@ rec_items as (
     ordered_result
   group by
     u
-), 
+),
 truth_data as (
   select
     userid,
