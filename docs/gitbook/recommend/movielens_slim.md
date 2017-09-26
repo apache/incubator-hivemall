@@ -25,10 +25,7 @@ _Caution: SLIM is supported from Hivemall v0.xxx or later._
 
 ## Rating binarization
 
-In this article,
-each user-movie matrix element is binarized to reduce training samples and consider only high rated movies,
-which rating is 4 or 5.
-So, all matrix elements, which have the lower rating than 4, aren't used during training.
+In this article, each user-movie matrix element is binarized to reduce training samples and consider only high rated movies whose rating is 4 or 5. So, every matrix element having a lower rating than 4 is not used for training.
 
 ```sql
 SET hivevar:seed=31;
@@ -46,10 +43,9 @@ where rating >= 4.
 ;
 ```
 
-`rnd` field is inserted into each record since the dataset is split into training and testing data.
+`rnd` field is appended for each record to split `ratings2` into training and testing data later.
 
-Binarization is an optional preprocessing, you can also use raw rating value to train slim model.
-And threshold value can be set any value depending on your use case.
+Binarization is an optional step, and you can use raw rating values to train a SLIM model.
 
 ## Splitting dataset
 
@@ -63,13 +59,11 @@ and the latter is used in [Mendeley's slide](slideshare.net/MarkLevy/efficient-s
 
 ### Leave-one-out cross validation
 
-For leave-one-out cross validation,
-the dataset is split into a training set and a testing set by randomly selecting one of the non-zero entries of each user and placing it into the testing set.
-In the following query, the movie has the smallest `rnd` value is used as test data (`testing` table)  per user.
+For leave-one-out cross validation, the dataset is split into a training set and a testing set by randomly selecting one of the non-zero entries of each user and placing it into the testing set.
+In the following query, the movie has the smallest `rnd` value is used as test data (`testing` table) per a user.
 And, the others are used as training data (`training` table).
 
-When we select slim's best hyperparameters,
-different test data is used in [evaluation section](#evaluation) several times.
+When we select slim's best hyperparameters, different test data is used in [evaluation section](#evaluation) several times.
 
 ``` sql
 drop table testing;
@@ -103,13 +97,10 @@ select
 from
   ratings2 l
 where
-  l.itemid not in
-    (select
-       r.itemid
-    from
-      testing r
-    where
-      l.userid=r.userid)
+  l.itemid not in (
+    select r.itemid from testing r
+    where l.userid=r.userid
+  )
 ;
 ```
 
@@ -118,8 +109,7 @@ where
 When $$K=2$$, the dataset is divided into training data and testing dataset.
 The number of training and testing samples are roughly the same.
 
-When we select slim's best hyperparameters,
-first, you train a slim model on training data and evaluate on testing data.
+When we select slim's best hyperparameters, first, you train a slim model on training data and evaluate on testing data.
 And then, after you switch training data with testing data, you train on it and evaluate again.
 You can choose the best parameters based on the average of two evaluation values.
 
@@ -128,14 +118,14 @@ drop table testing;
 create table testing
 as
 select * from ratings2
-    where rnd >= 0.5
+where rnd >= 0.5
 ;
 
 drop table training;
 create table training
 as
 select * from ratings2
-    where rnd < 0.5
+where rnd < 0.5
 ;
 ```
 
@@ -151,11 +141,9 @@ SLIM needs top-$$k$$ most similar movies for each movie to the approximate user-
 Here, we particularly focus on [DIMSUM](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation),
 an efficient and approximated similarity computation scheme.
 
-Because we set `k=20`,
-the output has 20 most-similar movies per `itemid`.
+Because we set `k=20`, the output has 20 most-similar movies per `itemid`.
 We can adjust trade-off between training and prediction time and precision of matrix approximation by varying `k`.
-Larger `k` is the better approximation for raw user-item matrix,
-but training time and memory usage tend to increase.
+Larger `k` is the better approximation for raw user-item matrix, but training time and memory usage tend to increase.
 
 [As we explained in the general introduction of item-based CF](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation.md),
 following query finds top-$$k$$ nearest-neighborhood movies for each movie:
@@ -196,17 +184,17 @@ partial_result as (
       as (itemid, other, s)
   from
     item_features f
-  left outer join item_magnitude m
+    left outer join item_magnitude m
 ),
 similarity as (
-    select
-      itemid,
-      other,
-      sum(s) as similarity
-    from
-      partial_result
-    group by
-      itemid, other
+  select
+    itemid,
+    other,
+    sum(s) as similarity
+  from
+    partial_result
+  group by
+    itemid, other
 ),
 topk as (
   select
@@ -247,24 +235,24 @@ set hive.mapred.mode=nonstrict;
 
 Here, we create the feature table to train slim model.
 
-Slim input features are:
+SLIM input features are:
 
 - `i`: axis item id
-- `Ri`: rating map of axis item. It has user id as key and rating as value, `map<userid, rating>`
-- `j`: one of the top-$$K$$ similar item ids
-- `Rj`: rating map of a similar item, which has user id as key and rating as value, `map<userid, rating>`
-- `knn_i`: all top-$$K$$ similar items rating map: it has user id as key and map as value. Map of value has item id as key and rating as value: `map<userid, map<itemid, rating>>`
+- `Ri`: the user-rating vector of the axis item $$i$$ expressed as `map<userid, rating>`.
+- `knn_i`: top-$$K$$ similar item matrix of item $$i$$; the user-item rating matrix is expressed as `map<userid, map<itemid, rating>>`.
+- `j`: an item id in `knn_i`.
+- `Rj`: the user-rating vector of the item $$j$$ expressed as `map<userid, rating>`.
 
 ```sql
 DROP TABLE item_matrix;
 CREATE table item_matrix as
-  select
-    itemid as i,
-    to_map(userid, rating) as R_i
-  from
-    training
-  group by
-    itemid;
+select
+  itemid as i,
+  to_map(userid, rating) as R_i
+from
+  training
+group by
+  itemid;
 
 -- Create SLIM input features
 DROP TABLE slim_training_item;
@@ -277,8 +265,10 @@ with knn_item_user_matrix as (
   from
     knn_train l
     JOIN training r ON (l.other = r.itemid)
-  group by l.itemid, r.userid
-), knn_item_matrix as (
+  group by
+    l.itemid, r.userid
+),
+knn_item_matrix as (
   select
     itemid as i,
     to_map(userid, ratings) as KNN_i -- map<userid, map<itemid, rating>>
@@ -295,9 +285,9 @@ select
   r3.R_i as R_j
 from
   knn_train l
-    JOIN item_matrix r1 ON (l.itemid = r1.i)
-    JOIN knn_item_matrix r2 ON (l.itemid = r2.i)
-    JOIN item_matrix r3 ON (l.other = r3.i)
+  JOIN item_matrix r1 ON (l.itemid = r1.i)
+  JOIN knn_item_matrix r2 ON (l.itemid = r2.i)
+  JOIN item_matrix r3 ON (l.other = r3.i)
 ;
 ```
 
@@ -323,7 +313,8 @@ from (
       knn_i,
       other as j,
       r_j
-    from slim_training_item
+    from
+      slim_training_item
     CLUSTER BY i
   ) t1
 ) t2
@@ -338,7 +329,6 @@ You can obtain information about `train_slim` function and its arguments by givi
 ``` sql
 select train_slim("-help");
 ```
-
 
 ``` sql
 usage: train_slim( int i, map<int, double> r_i, map<int, map<int, double>> topKRatesOfI,
@@ -368,7 +358,7 @@ we can recommend the movie to the user since he or she will be likely to highly 
 ## Set hyperparameters
 
 ```sql
-set hivevar:mu=0.;
+set hivevar:mu=0.0;
 ```
 
 > #### Caution
@@ -378,12 +368,9 @@ set hivevar:mu=0.;
 Mean value of item rating may be also one good choice to replace `null` element.
 Next, we predict rating of user-movie pairs based on top-$$K$$ similar items.
 
-
 ## Predict unknown value of user-item matrix
 
-
-Based on known rating values and slim's weight matrix,
-we can predict unknown values in the user-item matrix: `predicted_test_matrix`.
+Based on known rating values and slim's weight matrix, we can predict unknown values in the user-item matrix: `predicted_test_matrix`.
 `predict_pair` table is stored user-movie pairs, not including training dataset.
 
 ```sql
@@ -392,18 +379,19 @@ create table predict_pair
 as
 with testing_user as (
   select DISTINCT(userid) from testing
-), cross_table as (
+), 
+cross_table as (
   select
     l.userid as u,
     t.itemid as i
   from
     testing l
-  CROSS JOIN (
-    select
-      DISTINCT(itemid)
-    from
-      training
-  ) t
+    CROSS JOIN (
+      select
+        DISTINCT(itemid)
+      from
+        training
+    ) t
 )
 select
   u as userid,
@@ -429,10 +417,10 @@ with knn_exploded as (
     r2.rating as r_uk
   from
     predict_pair l
-  LEFT OUTER JOIN knn_train r1
-    ON (l.itemid = r1.itemid)
-  JOIN training r2
-    ON (r1.other = r2.itemid and l.userid = r2.userid)
+    LEFT OUTER JOIN knn_train r1
+      ON (l.itemid = r1.itemid)
+    JOIN training r2
+      ON (r1.other = r2.itemid and l.userid = r2.userid)
 )
 select
   l.u,
@@ -440,27 +428,26 @@ select
   coalesce(sum(l.r_uk*r.w), ${mu}) as predicted
 from
   knn_exploded l
-LEFT OUTER JOIN slim_w r
-  ON (l.i = r.i and l.k = r.nn)
+  LEFT OUTER JOIN slim_w r ON (l.i = r.i and l.k = r.nn)
 group by
   l.u, l.i
 ;
 ```
 
-## Top-$$N$$ item recommendation for each user
+## Top-$$K$$ item recommendation for each user
 
-Here, we recommend top-$$N$$ items for each user based on predicted values.
-`N=3` in the following query.
+Here, we recommend top-$$K$$ items for each user based on predicted values.
+`k=3` in the following query.
 
 ```sql
-SET hivevar:n=3;
+SET hivevar:k=3;
 
 DROP TABLE if exists recommend;
 create table recommend
 as
 WITH top_n as (
   select
-     each_top_k(${n}, u, predicted, u, i)
+     each_top_k(${k}, u, predicted, u, i)
       as (rank, predicted, userid, i)
   from (
     select
@@ -494,11 +481,11 @@ select * from recommend limit 5;
 
 # Evaluation
 
-## TOP-$$N$$ item evaluations: Hit Rate, ARHR, and Precision@N
+## Top-$$K$$ item evaluations: Hit Rate@K, MRR@K, and Precision@K
 
-Those evaluation measures are calculated based on top-$$N$$ items per user.
-[`Precision@N`](../eval/rank.html#precision-at-k) is a good evaluation measure for $$K$$-hold cross validation to reproduce the experimental result.
-On the other hand, `Hit Rate` and `ARHR` are good evaluation measure for leave-one-out cross validation.
+Those evaluation measures are calculated based on top-$$k$$ items per user.
+[`Precision@K`](../eval/rank.html#precision-at-k) is a good evaluation measure for $$K$$-hold cross validation to reproduce the experimental result.
+On the other hand, `Hit Rate` and [`Mean Reciprocal Rank`](https://en.wikipedia.org/wiki/Mean_reciprocal_rank) (i.e., Average Reciprocal Hit-Rate) are good evaluation measure for leave-one-out cross validation.
 
 ```sql
 SET hivevar:n=10;
@@ -514,15 +501,17 @@ WITH top_k as (
       predicted_test_matrix
     CLUSTER BY u
   ) t
-), rec_items as (
-select
-  userid,
-  collect_list(i) as items
-from
-  top_k
-group by
-  userid
-), truth_data as (
+),
+rec_items as (
+  select
+    userid,
+    collect_list(i) as items
+  from
+    top_k
+  group by
+    userid
+),
+truth_data as (
   select
     userid,
     collect_list(itemid) as truth
@@ -530,33 +519,30 @@ group by
     testing
   group by
     userid
-) select
-    hitrate(r.items, l.truth) as HITRATE,
-    arhr(r.items, l.truth) as ARHR,
-    precision_at(r.items, l.truth) as prec
+)
+select
+  hitrate(r.items, l.truth) as hitrate,
+  mrr(r.items, l.truth) as mrr,
+  precision_at(r.items, l.truth) as prec
 from
   truth_data l
-join
-  rec_items r on (l.userid=r.userid)
+  join rec_items r on (l.userid=r.userid)
 ;
 ```
 
 ### Leave-one-out result
 
-``` sql
-hitrate                 arhr                    prec
-0.21517309922146763     0.09377752536606271     0.021517309922146725
-```
+| hitrate | mrr | prec |
+|:-------:|:---:|:----:|
+| 0.21517309922146763 | 0.09377752536606271 | 0.021517309922146725 |
 
-Hit Rate and AHRH are similar to [the result of Table II in Slim's paper](http://glaros.dtc.umn.edu/gkhome/fetch/papers/SLIM2011icdm.pdf)
-
+Hit Rate and MRR are similar to ones in [the result of Table II in Slim's paper](http://glaros.dtc.umn.edu/gkhome/fetch/papers/SLIM2011icdm.pdf)
 
 ### $$K$$-hold result
 
-```sql
-hitrate                 arhr                    prec
-0.8952775476387739      1.1751514972186057      0.3564871582435789
-```
+| hitrate | mrr | prec |
+|:-------:|:---:|:----:|
+| 0.8952775476387739 | 1.1751514972186057 | 0.3564871582435789 |
 
 Precision value is similar to [the result of Mendeley's slide](https://www.slideshare.net/MarkLevy/efficient-slides/13).
 
@@ -575,34 +561,34 @@ WITH ordered_result as (
     predicted_test_matrix
   order by
     u, predicted desc
-), rec_items as (
-select
-  u as userid,
-  collect_list(i) as items
-from
-  ordered_result
-group by
-  u
-), truth_data as (
-select
-  userid,
-  collect_list(itemid) as truth
-from
-  testing
-group by
-  userid
+), 
+rec_items as (
+  select
+    u as userid,
+    collect_list(i) as items
+  from
+    ordered_result
+  group by
+    u
+), 
+truth_data as (
+  select
+    userid,
+    collect_list(itemid) as truth
+  from
+    testing
+  group by
+    userid
 )
 select
   mrr(r.items, l.truth) as mrr
 from
   truth_data l
-join
-  rec_items r on (l.userid=r.userid)
+  join rec_items r on (l.userid=r.userid)
 ;
 ```
 
 ### Leave-one-out result
-
 
 ``` sql
 mrr
@@ -610,7 +596,6 @@ mrr
 ```
 
 ### $$K$$-hold result
-
 
 ```sql
 mrr
