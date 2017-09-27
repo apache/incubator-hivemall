@@ -278,7 +278,7 @@ public class SlimUDTF extends UDTFWithOptions {
             // cache Ri and kNNi
             this._ri = int2floatMap(itemI, riOI.getMap(args[1]), riKeyOI, riValueOI, _dataMatrix,
                 _ri);
-            this._kNNi = getKNNi(args[2], knnItemsOI, knnItemsKeyOI, knnItemsValueOI,
+            this._kNNi = kNNentries(args[2], knnItemsOI, knnItemsKeyOI, knnItemsValueOI,
                 knnItemsValueKeyOI, knnItemsValueValueOI, _kNNi, _nnzKNNi);
 
             final int numKNNItems = _nnzKNNi.getValue();
@@ -471,8 +471,21 @@ public class SlimUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
-        runIterativeTraining();
+        finalizeTraining();
         forwardModel();
+        this._weightMatrix = null;
+    }
+
+    @VisibleForTesting
+    void finalizeTraining() throws HiveException {
+        if (numIterations > 1) {
+            this._ri = null;
+            this._kNNi = null;
+
+            runIterativeTraining();
+
+            this._dataMatrix = null;
+        }
     }
 
     private void runIterativeTraining() throws HiveException {
@@ -499,7 +512,7 @@ public class SlimUDTF extends UDTFWithOptions {
                     while (buf.remaining() > 0) {
                         int recordBytes = buf.getInt();
                         assert (recordBytes > 0) : recordBytes;
-                        trainFromBuffer(buf);
+                        replayTrain(buf);
                     }
                     buf.rewind();
                     if (_cvState.isConverged(_observedTrainingExamples)) {
@@ -573,7 +586,7 @@ public class SlimUDTF extends UDTFWithOptions {
                                 break;
                             }
 
-                            trainFromBuffer(buf);
+                            replayTrain(buf);
                             remain -= recordBytes;
                         }
                         buf.compact();
@@ -606,7 +619,7 @@ public class SlimUDTF extends UDTFWithOptions {
         }
     }
 
-    private void trainFromBuffer(@Nonnull final ByteBuffer buf) {
+    private void replayTrain(@Nonnull final ByteBuffer buf) {
         final int itemI = buf.getInt();
         final int knnSize = buf.getInt();
 
@@ -659,16 +672,9 @@ public class SlimUDTF extends UDTFWithOptions {
         logger.info("Forwarded SLIM's weights matrix");
     }
 
-    @VisibleForTesting
-    void finalizeTraining() throws HiveException {
-        if (numIterations > 1) {
-            runIterativeTraining();
-        }
-    }
-
     @Nonnull
-    private static IntOpenHashTable<Int2FloatOpenHashTable> getKNNi(@Nonnull final Object kNNiObj,
-            @Nonnull final MapObjectInspector knnItemsOI,
+    private static IntOpenHashTable<Int2FloatOpenHashTable> kNNentries(
+            @Nonnull final Object kNNiObj, @Nonnull final MapObjectInspector knnItemsOI,
             @Nonnull final PrimitiveObjectInspector knnItemsKeyOI,
             @Nonnull final MapObjectInspector knnItemsValueOI,
             @Nonnull final PrimitiveObjectInspector knnItemsValueKeyOI,
