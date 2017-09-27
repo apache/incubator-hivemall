@@ -120,7 +120,7 @@ public final class CBoWModel extends AbstractWord2VecModel {
         wordCount += docLength * iter;
     }
 
-    private float grad(final float label, final float[] w, final int c) {
+    private float grad(final float label, @Nonnull final float[] w, final int c) {
         float dotValue = 0.f;
         for (int i = 0; i < dim; i++) {
             dotValue += w[i] * contextWeights.get(c * dim + i);

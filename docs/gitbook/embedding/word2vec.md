@@ -110,12 +110,21 @@ because it saves memory during training.
 
 # Create sub-sampling table
 
-Sub-sampling table is stored a not deleted probability per word.
+Sub-sampling table is stored a sub-sampling probability per word.
+
+The sub-sampling probability of word $$w_i$$ is computed by the following equation:
+
+$$
+\begin{aligned}
+f(w_i) = \sqrt{\frac{\mathrm{sample}}{freq(w_i)/\sum freq(w)}} + \frac{\mathrm{sample}}{freq(w_i)/\sum freq(w)}
+\end{aligned}
+$$
+
 During word2vec training,
-sub-sampled words are ignored.
+not sub-sampled words are ignored.
 It works to train fastly and to consider the imbalance the rare words and frequent words by reducing frequent words.
-If you want to know detail of sub-sampling,
-please check Eq.5 in the [original paper](http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf).
+The smaller `sample` value set,
+the fewer words are used during training.
 
 ```sql
 set hivevar:sample=1e-4;
@@ -197,15 +206,22 @@ group by
 ```
 
 If you store string word in `train_docs` table,
-please replace `to_ordered_list(r2.wordid, l.pos) as words,` with  `to_ordered_list(l.word, l.pos) as words,`.
+please replace `to_ordered_list(r2.wordid, l.pos) as words` with  `to_ordered_list(l.word, l.pos) as words`.
 
 # Create negative sampling table
 
 Negative sampling is an approximate function of [softmax function](https://en.wikipedia.org/wiki/Softmax_function).
 Here, `negative_table` is used to store word sampling probability for negative sampling.
-`noisePower` is a hyperparameter of noise distribution for negative sampling.
+`z` is a hyperparameter of noise distribution for negative sampling.
 During word2vec training,
 words sampled from this distribution are used for negative examples.
+Noise distribution is the unigram distribution raised to the 3/4rd power.
+
+$$
+\begin{aligned}
+p(w_i) = \frac{freq(w_i)^{\mathrm{z}}}{\sum freq(w)^{\mathrm{z}}}
+\end{aligned}
+$$
 
 To avoid using huge memory space for negative sampling like original implementation and remain to sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
@@ -216,7 +232,7 @@ This method has proposed in papers below:
 - A. J. Walker, An Efficient Method for Generating Discrete Random Variables with General Distributions. ACM Transactions on Mathematical Software 3, no. 3, pp. 253-256, 1977.
 
 ```sql
-set hivevar:noisePower=3/4;
+set hivevar:z=3/4;
 
 drop table negative_table;
 create table negative_table as
@@ -230,13 +246,38 @@ from (
       select
         word,
         -- wordid as word,
-        pow(freq, ${noisePower}) as negative
+        pow(freq, ${z}) as negative
       from
         freq
     ) t
 ) t1
 ;
 ```
+
+`alias_table` function returns the records like following.
+
+| word | p | other |
+|:----: | :----: |:----:|
+| leopold | 0.6556492 | 0000 |
+| slep | 0.09060383 | leopold |
+| valentinian | 0.76077825 | belarusian |
+| slew | 0.90569097 | colin |
+| lucien | 0.86329675 | overland |
+| equitable | 0.7270946 | farms |
+| insurers | 0.2367955 | israel |
+| lucier | 0.14855136 | supplements |
+| lieve | 0.12075222 | separatist |
+| skyhawks | 0.14079945 | steamed |
+| ... | ... | ... |
+
+To sample negative word from this `negative_table`,
+
+1. Sample record int index `i` from $$[0 \ldots \mathrm{num\_alias\_table\_records}]$$.
+2. Sample float value `r` from $$[0.0 \ldots 1.0]$$ .
+3. If `r` < `p` of `i` th record, return `word` `i` th record, else return `other` of `i` th record.
+
+Here, to use it in training function of word2vec, 
+`alias_table`'s return records are stored into one list in the `negative_table`.
 
 # Train word2vec
 
@@ -248,8 +289,14 @@ The default model is `"skipgram"`.
 
 ## Train Skip-Gram
 
+In skip-gram model,
+word vectors are trained to predict the nearby words.
+For example, given a sentence like a `"alice", "was", "beginning", "to"`,
+`"was"` vector is learnt to predict `"alice"` ,`"beginning"` and `"to"`.
+
 ```sql
 select sum(size(words)) from train_docs;
+set hivevar:n=418953; -- previous query return value
 
 drop table skipgram;
 create table skipgram as
@@ -257,7 +304,7 @@ select
   train_word2vec(
     r.negative_table,
     l.words,
-    "-n 418953 -win 5 -neg 15 -iter 5 -dim 100 -model skipgram"
+    "-n ${n} -win 5 -neg 15 -iter 5 -dim 100 -model skipgram"
   )
 from
   train_docs l
@@ -291,6 +338,11 @@ join freq r on (t.wordid = r.wordid)
 ```
 
 ## Train CBoW
+
+In CBoW model,
+word vectors are trained to be predicted the nearby words.
+For example, given a sentence like a `"alice", "was", "beginning", "to"`,
+`"alice"` ,`"beginning"` and `"to"` vectors are learnt to predict `"was"` vector.
 
 ```sql
 drop table cbow;

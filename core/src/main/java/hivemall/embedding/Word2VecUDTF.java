@@ -265,6 +265,10 @@ public class Word2VecUDTF extends UDTFWithOptions {
             IMapIterator<String, Integer> iter = word2index.entries();
             while (iter.next() != -1) {
                 int wordId = iter.getValue();
+                if (!model.inputWeights.containsKey(wordId * dim)){
+                    continue;
+                }
+
                 word.set(iter.getKey());
 
                 for (int i = 0; i < dim; i++) {
@@ -284,6 +288,9 @@ public class Word2VecUDTF extends UDTFWithOptions {
             result[2] = value;
 
             for (int wordId = 0; wordId < aliasWordIds.length; wordId++) {
+                if (!model.inputWeights.containsKey(wordId * dim)){
+                    break;
+                }
                 word.set(wordId);
                 for (int i = 0; i < dim; i++) {
                     dimIndex.set(i);
