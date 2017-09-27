@@ -644,6 +644,16 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS plsa_predict")
 sqlContext.sql("CREATE TEMPORARY FUNCTION plsa_predict AS 'hivemall.topicmodel.PLSAPredictUDAF'")
 
 /**
+ * Word2Vec
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS alias_table")
+sqlContext.sql("CREATE TEMPORARY FUNCTION alias_table AS 'hivemall.embedding.AliasTableBuilderUDTF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_word2vec")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_word2vec AS 'hivemall.embedding.Word2VecUDTF'")
+
+/**
  * Geo Spatial Functions
  */
 

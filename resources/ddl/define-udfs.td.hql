@@ -163,6 +163,8 @@ create temporary function train_lda as 'hivemall.topicmodel.LDAUDTF';
 create temporary function lda_predict as 'hivemall.topicmodel.LDAPredictUDAF';
 create temporary function train_plsa as 'hivemall.topicmodel.PLSAUDTF';
 create temporary function plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF';
+create temporary function alias_table as 'hivemall.embedding.AliasTableBuilderUDTF';
+create temporary function train_word2vec as 'hivemall.embedding.Word2VecUDTF';
 create temporary function tile as 'hivemall.geospatial.TileUDF';
 create temporary function map_url as 'hivemall.geospatial.MapURLUDF';
 create temporary function lat2tiley as 'hivemall.geospatial.Lat2TileYUDF';
