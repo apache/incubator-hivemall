@@ -157,7 +157,7 @@ select * FROM subsampling_table order by p;
 | 58246 | is   | 0.09049763|
 |  ...  | ...  |... |
 
-The first row shows that `the` is used 4% in the documents during training.
+The first row shows that 4% of `the` are used in the documents during training.
 
 # Delete low frequency words and high frequency words from `docs_words`
 
@@ -209,6 +209,11 @@ words sampled from this distribution are used for negative examples.
 
 To avoid using huge memory space for negative sampling like original implementation and remain to sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
+
+This method has proposed in papers below:
+
+- A. J. Walker, New Fast Method for Generating Discrete Random Numbers with Arbitrary Frequency Distributions, in Electronics Letters 10, no. 8, pp. 127-128, 1974.
+- A. J. Walker, An Efficient Method for Generating Discrete Random Variables with General Distributions. ACM Transactions on Mathematical Software 3, no. 3, pp. 253-256, 1977.
 
 ```sql
 set hivevar:noisePower=3/4;
