@@ -177,11 +177,11 @@ public final class DoKMatrix extends AbstractMatrix {
     public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         checkIndex(row, col);
 
-        if (value == 0.d) {
+        final long index = index(row, col);
+        if (value == 0.d && elements.containsKey(index) == false) {
             return;
         }
 
-        long index = index(row, col);
         if (elements.put(index, value, 0.d) == 0.d) {
             nnz++;
             this.numRows = Math.max(numRows, row + 1);
@@ -194,8 +194,12 @@ public final class DoKMatrix extends AbstractMatrix {
             final double value) {
         checkIndex(row, col);
 
-        long index = index(row, col);
-        double old = elements.put(index, value, 0.d);
+        final long index = index(row, col);
+        if (value == 0.d && elements.containsKey(index) == false) {
+            return 0.d;
+        }
+
+        final double old = elements.put(index, value, 0.d);
         if (old == 0.d) {
             nnz++;
             this.numRows = Math.max(numRows, row + 1);
