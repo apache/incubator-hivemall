@@ -157,16 +157,19 @@ public class Word2VecUDTF extends UDTFWithOptions {
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("n", "numTrainWords", true, "The number of words in the documents. It is used to update learning rate");
+        opts.addOption("n", "numTrainWords", true,
+            "The number of words in the documents. It is used to update learning rate");
         opts.addOption("dim", "dimension", true, "The number of vector dimension [default: 100]");
         opts.addOption("win", "window", true, "Context window size [default: 5]");
         opts.addOption("neg", "negative", true,
             "The number of negative sampled words per word [default: 5]");
-        opts.addOption("iter", "iteration", true,
-            "The number of iterations [default: 5]");
+        opts.addOption("iter", "iteration", true, "The number of iterations [default: 5]");
         opts.addOption("model", "modelName", true,
             "The model name of word2vec: skipgram or cbow [default: skipgram]");
-        opts.addOption("lr", "learningRate", true,
+        opts.addOption(
+            "lr",
+            "learningRate",
+            true,
             "Initial learning rate of SGD. The default value depends on model [default: 0.025 (skipgram), 0.05 (cbow)]");
 
         return opts;
@@ -249,7 +252,6 @@ public class Word2VecUDTF extends UDTFWithOptions {
     }
 
     private void forwardModel() throws HiveException {
-        if (isStringInput){
         if (isStringInput) {
             final Text word = new Text();
             final IntWritable dimIndex = new IntWritable();
