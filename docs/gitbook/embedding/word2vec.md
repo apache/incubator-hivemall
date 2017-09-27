@@ -19,7 +19,7 @@
 
 Word Embedding is a powerful tool for many tasks,
 e.g. finding similar words,
-feature vector for supervised machine learning task and word analogy,
+feature vectors for supervised machine learning task and word analogy,
 such as `king - man + woman =~ queen`.
 In word embedding,
 each word represents a low dimension and dense vector.
@@ -43,7 +43,7 @@ This article gives usage instructions of the feature.
 
 # Prepare document data
 
-Assume that you already have a table `docs` which contains many documents as string format:
+Assume that you already have `docs` table which contains many documents as string format with unique index:
 
 ```sql
 select * FROM docs;
@@ -54,7 +54,7 @@ select * FROM docs;
 |   0   | "Alice was beginning to get very tired of sitting by her sister on the bank ..." |
 |  ...  | ... |
 
-First, each document is split into words by tokenize function like a `tokenize`.
+First, each document is split into words by tokenize function like a [`tokenize`](../misc/tokenizer.html).
 
 ```sql
 drop table docs_words;
@@ -67,13 +67,15 @@ create table docs_words as
 ;
 ```
 
+This table shows tokenized document.
+
 | docId | doc |
 |:----: |:----|
-|   0   | "alice", "was", "beginning", "to", "get", "very", "tired", "of", "sitting", "by", "her", "sister", "on", "the", "bank", ... |
+|   0   | ["alice", "was", "beginning", "to", "get", "very", "tired", "of", "sitting", "by", "her", "sister", "on", "the", "bank", ...] |
 |  ...  | ... |
 
-Then, you count all word frequency and remove low frequency words from vocabulary.
-Removing low frequency words is optinal, but it is better for getting word vector fastly.
+Then, you count frequency up per word and remove low frequency words from the vocabulary.
+To remove low frequency words is optional preprocessing, but this process is effective to train word vector fastly.
 
 ```sql
 set hivevar:mincount=5;
@@ -98,13 +100,21 @@ where freq >= ${mincount}
 ;
 ```
 
+Hivemall's word2vec supports two type words; string and int.
+String type tends to use huge memory during training.
+On the other hand, int type tends to use less memory.
+If you train on small dataset, we recommend using string type,
+because memory usage can be ignored and HiveQL is more simple.
+If you train on large dataset, we recommend using int type,
+because it saves memory during training.
+
 # Create sub-sampling table
 
 Sub-sampling table is stored a not deleted probability per word.
 During word2vec training,
 sub-sampled words are ignored.
 It works to train fastly and to consider the imbalance the rare words and frequent words by reducing frequent words.
-If you want to know detail of Sub-sampling,
+If you want to know detail of sub-sampling,
 please check Eq.5 in the [original paper](http://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf).
 
 ```sql
@@ -129,34 +139,31 @@ cross join
 ;
 ```
 
-
 ```sql
 select * FROM subsampling_table order by p;
 ```
 
-| word | p |
-|:----: |:----:|
-| the | 0.04013665 |
-| of | 0.052463654 |
-| and | 0.06555538 |
-| 00 | 0.068162076 |
-| in | 0.071441144 |
-| 0 | 0.07528994 |
-| a | 0.07559573 |
-| to | 0.07953133 |
-| 0000 | 0.08779001 |
-| is | 0.09049763 |
-| 000 | 0.11748954 |
-|  ...  | ... |
+| wordid | word | p |
+|:----: | :----: |:----:|
+| 48645 | the  | 0.04013665|
+| 11245 | of   | 0.052463654|
+| 16368 | and  | 0.06555538|
+| 61938 | 00   | 0.068162076|
+| 19977 | in   | 0.071441144|
+| 83599 | 0    | 0.07528994|
+| 95017 | a    | 0.07559573|
+| 1225  | to   | 0.07953133|
+| 37062 | 0000 | 0.08779001|
+| 58246 | is   | 0.09049763|
+|  ...  | ...  |... |
 
-In this case, 
-`the` is used only 4% in the documents during training.
+The first row shows that `the` is used 4% in the documents during training.
 
 # Delete low frequency words and high frequency words from `docs_words`
 
 To reduce useless words from corpus,
 low frequency words and high frequency words are deleted.
-And, to avoid loading on memory, a long document is split into some sub-documents.
+And, to avoid loading long document on memory, a  document is split into some sub-documents.
 
 ```sql
 set hivevar:maxlength=1500;
@@ -176,8 +183,8 @@ create table train_docs as
   )
 select
   l.docid,
-  to_ordered_list(r2.wordid, l.pos) as words
   -- to_ordered_list(l.word, l.pos) as words
+  to_ordered_list(r2.wordid, l.pos) as words,
 from
   docs_exploded l
   LEFT SEMI join freq r on (l.word = r.word)
@@ -189,18 +196,19 @@ group by
 ;
 ```
 
+If you store string word in `train_docs` table,
+please replace `to_ordered_list(r2.wordid, l.pos) as words,` with  `to_ordered_list(l.word, l.pos) as words,`.
+
 # Create negative sampling table
 
 Negative sampling is an approximate function of [softmax function](https://en.wikipedia.org/wiki/Softmax_function).
 Here, `negative_table` is used to store word sampling probability for negative sampling.
 `noisePower` is a hyperparameter of noise distribution for negative sampling.
 During word2vec training,
-words sampled this distribution are used for negative examples.
+words sampled from this distribution are used for negative examples.
 
-To avoid using huge memory space for negative sampling like original implementation and sample fastly from this distribution,
+To avoid using huge memory space for negative sampling like original implementation and remain to sample fastly from this distribution,
 Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
-
-## String case
 
 ```sql
 set hivevar:noisePower=3/4;
@@ -216,31 +224,7 @@ from (
     (
       select
         word,
-        pow(freq, ${noisePower}) as negative
-      from
-        freq
-    ) t
-) t1
-;
-```
-
-
-## Int case
-
-```sql
-set hivevar:noisePower=3/4;
-
-drop table negative_table;
-create table negative_table as
-select
-  collect_list(array(wordid, p, other)) as negative_table
-from (
-  select
-    alias_table(to_map(wordid, negative)) as (wordid, p, other)
-  from
-    (
-      select
-        wordid,
+        -- wordid as word,
         pow(freq, ${noisePower}) as negative
       from
         freq
@@ -251,10 +235,13 @@ from (
 
 # Train word2vec
 
-Hivemall provides `train_word2vec` function to prepare the input of word2vec training.
-Default model is `"skipgram"`.
+Hivemall provides `train_word2vec` function to train word vector by word2vec algorithms.
+The default model is `"skipgram"`.
 
-### Skip-Gram
+> #### Note
+> You must pass `n` argumet to the number of words in training documents: `select sum(size(words)) from train_docs;`.
+
+## Train Skip-Gram
 
 ```sql
 select sum(size(words)) from train_docs;
@@ -273,7 +260,32 @@ from
 ;
 ```
 
-### CBoW
+When word is treated as int istead of string,
+you may need to transform wordid of int to word of string by `join` statement.
+
+```sql
+drop table skipgram;
+
+create table skipgram as
+select
+  r.word, t.i, t.wi
+from (
+  select
+    train_word2vec(
+      r.negative_table,
+      l.wordsint,
+      "-n 418953 -win 5 -neg 15 -iter 5"
+    ) as (wordid, i, wi)
+  from
+    train_docs l
+  cross join
+    negative_table r
+) t
+join freq r on (t.wordid = r.wordid)
+;
+```
+
+## Train CBoW
 
 ```sql
 drop table cbow;
@@ -290,3 +302,41 @@ from
   cross join negative_table r
 ;
 ```
+
+## Usage of `train_word2vec`
+
+You can get usages of `train_word2vec` by giving `-help` option as follows:
+
+```sql
+select
+  train_word2vec(
+    r.negative_table,
+    l.words,
+    "-help"
+  )
+from
+  train_docs l
+cross join
+  negative_table r
+;
+```
+
+```
+usage: train_word2vec(array<array<float | string>> negative_table,
+       array<int | string> doc [, const string options]) - Returns a
+       prediction model [-dim <arg>] [-help] [-iter <arg>] [-lr <arg>]
+       [-model <arg>] [-n <arg>] [-neg <arg>] [-win <arg>]
+ -dim,--dimension <arg>     The number of vector dimension [default: 100]
+ -help                      Show function help
+ -iter,--iteration <arg>    The number of iterations [default: 5]
+ -lr,--learningRate <arg>   Initial learning rate of SGD. The default
+                            value depends on model [default: 0.025
+                            (skipgram), 0.05 (cbow)]
+ -model,--modelName <arg>   The model name of word2vec: skipgram or cbow
+                            [default: skipgram]
+ -n,--numTrainWords <arg>   The number of words in the documents. It is
+                            used to update learning rate
+ -neg,--negative <arg>      The number of negative sampled words per word
+                            [default: 5]
+ -win,--window <arg>        Context window size [default: 5]
+ ```

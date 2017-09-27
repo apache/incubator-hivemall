@@ -27,6 +27,7 @@ import hivemall.utils.lang.Primitives;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
@@ -41,10 +42,14 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
 import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Arrays;
 import java.util.ArrayList;
 
+@Description(
+        name = "train_word2vec",
+        value = "_FUNC_(array<array<float | string>> negative_table, array<int | string> doc [, const string options]) - Returns a prediction model")
 public class Word2VecUDTF extends UDTFWithOptions {
     protected transient AbstractWord2VecModel model;
     @Nonnegative
@@ -65,7 +70,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
     private boolean isStringInput;
 
     private Int2FloatOpenHashTable S;
-    private int[] aliasWordId;
+    private int[] aliasWordIds;
 
     private ListObjectInspector negativeTableOI;
     private ListObjectInspector negativeTableElementListOI;
@@ -90,12 +95,12 @@ public class Word2VecUDTF extends UDTFWithOptions {
         this.negativeTableElementListOI = HiveUtils.asListOI(negativeTableOI.getListElementObjectInspector());
         this.docOI = HiveUtils.asListOI(argOIs[1]);
 
-        this.isStringInput = HiveUtils.isStringListOI(negativeTableOI);
+        this.isStringInput = HiveUtils.isStringListOI(argOIs[1]);
 
-        if (isStringInput){
+        if (isStringInput) {
             this.negativeTableElementOI = HiveUtils.asStringOI(negativeTableElementListOI.getListElementObjectInspector());
             this.wordOI = HiveUtils.asStringOI(docOI.getListElementObjectInspector());
-        }else{
+        } else {
             this.negativeTableElementOI = HiveUtils.asFloatingPointOI(negativeTableElementListOI.getListElementObjectInspector());
             this.wordOI = HiveUtils.asIntCompatibleOI(docOI.getListElementObjectInspector());
         }
@@ -107,9 +112,9 @@ public class Word2VecUDTF extends UDTFWithOptions {
         fieldNames.add("i");
         fieldNames.add("wi");
 
-        if (isStringInput){
+        if (isStringInput) {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
-        }else{
+        } else {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         }
 
@@ -119,7 +124,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
         this.model = null;
         this.word2index = null;
         this.S = null;
-        this.aliasWordId = null;
+        this.aliasWordIds = null;
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -136,11 +141,11 @@ public class Word2VecUDTF extends UDTFWithOptions {
         // parse rawDoc
         final int docLength = rawDoc.size();
         final int[] doc = new int[docLength];
-        if(isStringInput){
+        if (isStringInput) {
             for (int i = 0; i < docLength; i++) {
                 doc[i] = getWordId(PrimitiveObjectInspectorUtils.getString(rawDoc.get(i), wordOI));
             }
-        }else{
+        } else {
             for (int i = 0; i < docLength; i++) {
                 doc[i] = PrimitiveObjectInspectorUtils.getInt(rawDoc.get(i), wordOI);
             }
@@ -152,17 +157,17 @@ public class Word2VecUDTF extends UDTFWithOptions {
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("n", "numTrainWords", true, "the number of words in document");
-        opts.addOption("dim", "dimension", true, "the number of vector dimension [default: 100]");
+        opts.addOption("n", "numTrainWords", true, "The number of words in the documents. It is used to update learning rate");
+        opts.addOption("dim", "dimension", true, "The number of vector dimension [default: 100]");
         opts.addOption("win", "window", true, "Context window size [default: 5]");
         opts.addOption("neg", "negative", true,
             "The number of negative sampled words per word [default: 5]");
         opts.addOption("iter", "iteration", true,
-            "The number of skip-gram per word. It is equivalent to the epoch of word2vec [default: 5]");
+            "The number of iterations [default: 5]");
         opts.addOption("model", "modelName", true,
             "The model name of word2vec: skipgram or cbow [default: skipgram]");
         opts.addOption("lr", "learningRate", true,
-            "initial learning rate of SGD [default: 0.025 (skipgram) or 0.05 (cbow)]");
+            "Initial learning rate of SGD. The default value depends on model [default: 0.025 (skipgram), 0.05 (cbow)]");
 
         return opts;
     }
@@ -245,6 +250,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
 
     private void forwardModel() throws HiveException {
         if (isStringInput){
+        if (isStringInput) {
             final Text word = new Text();
             final IntWritable dimIndex = new IntWritable();
             final FloatWritable value = new FloatWritable();
@@ -275,7 +281,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
             result[1] = dimIndex;
             result[2] = value;
 
-            for (int wordId = 0; wordId < aliasWordId.length; wordId++){
+            for (int wordId = 0; wordId < aliasWordIds.length; wordId++) {
                 word.set(wordId);
                 for (int i = 0; i < dim; i++) {
                     dimIndex.set(i);
@@ -286,7 +292,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
         }
     }
 
-    private int getWordId(String word) {
+    private int getWordId(@Nonnull final String word) {
         if (word2index.containsKey(word)) {
             return word2index.get(word);
         } else {
@@ -296,52 +302,54 @@ public class Word2VecUDTF extends UDTFWithOptions {
         }
     }
 
-    private void parseNegativeTable(Object listObj) {
+    private void parseNegativeTable(@Nonnull Object listObj) {
         int aliasSize = negativeTableOI.getListLength(listObj);
         Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(aliasSize);
-        int[] aliasWordId = new int[aliasSize];
+        int[] aliasWordIds = new int[aliasSize];
 
-        if(isStringInput){
+        if (isStringInput) {
             this.word2index = new OpenHashTable<>(aliasSize);
 
             for (int i = 0; i < aliasSize; i++) {
                 List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
-                        listObj, i));
+                    listObj, i));
                 getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(0),
-                        negativeTableElementOI));
+                    negativeTableElementOI));
                 S.put(i, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
-                        negativeTableElementOI)));
+                    negativeTableElementOI)));
             }
 
             for (int i = 0; i < aliasSize; i++) {
                 List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
-                        listObj, i));
-                aliasWordId[i] = getWordId(PrimitiveObjectInspectorUtils.getString(aliasBin.get(2),
-                        negativeTableElementOI));
+                    listObj, i));
+                aliasWordIds[i] = getWordId(PrimitiveObjectInspectorUtils.getString(
+                    aliasBin.get(2), negativeTableElementOI));
             }
-        }else{
+        } else {
             for (int i = 0; i < aliasSize; i++) {
                 List<?> aliasBin = negativeTableElementListOI.getList(negativeTableOI.getListElement(
-                        listObj, i));
-                int wordId = PrimitiveObjectInspectorUtils.getInt(aliasBin.get(0), negativeTableElementOI);
-                S.put(wordId, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(aliasBin.get(1),
-                        negativeTableElementOI)));
-                aliasWordId[wordId] = PrimitiveObjectInspectorUtils.getInt(aliasBin.get(2),
-                        negativeTableElementOI);
+                    listObj, i));
+                int wordId = PrimitiveObjectInspectorUtils.getInt(aliasBin.get(0),
+                    negativeTableElementOI);
+                S.put(wordId, Float.parseFloat(PrimitiveObjectInspectorUtils.getString(
+                    aliasBin.get(1), negativeTableElementOI)));
+                aliasWordIds[wordId] = PrimitiveObjectInspectorUtils.getInt(aliasBin.get(2),
+                    negativeTableElementOI);
             }
         }
 
         this.S = S;
-        this.aliasWordId = aliasWordId;
+        this.aliasWordIds = aliasWordIds;
     }
 
+    @Nonnull
     private AbstractWord2VecModel createModel() {
         if (skipgram) {
             return new SkipGramModel(dim, win, neg, iter, startingLR, iter * numTrainWords, S,
-                aliasWordId);
+                aliasWordIds);
         } else {
             return new CBoWModel(dim, win, neg, iter, startingLR, iter * numTrainWords, S,
-                aliasWordId);
+                aliasWordIds);
         }
     }
 }
