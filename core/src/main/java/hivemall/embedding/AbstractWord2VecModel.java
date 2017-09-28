@@ -32,11 +32,13 @@ public abstract class AbstractWord2VecModel {
     protected static final int SIGMOID_TABLE_SIZE = 1000;
     protected float[] sigmoidTable;
 
-
     @Nonnegative
     protected int dim;
+    @Nonnegative
     protected int win;
+    @Nonnegative
     protected int neg;
+    @Nonnegative
     protected int iter;
 
     // learning rate parameters
@@ -51,12 +53,12 @@ public abstract class AbstractWord2VecModel {
     @Nonnegative
     private long lastWordCount;
 
-    protected PRNG rnd;
+    protected PRNG _rnd;
 
     protected Int2FloatOpenHashTable contextWeights;
     protected Int2FloatOpenHashTable inputWeights;
-    protected Int2FloatOpenHashTable S;
-    protected int[] aliasWordId;
+    protected Int2FloatOpenHashTable _S;
+    protected int[] _aliasWordId;
 
     protected AbstractWord2VecModel(final int dim, final int win, final int neg, final int iter,
             final float startingLR, final long numTrainWords, final Int2FloatOpenHashTable S,
@@ -69,22 +71,23 @@ public abstract class AbstractWord2VecModel {
         this.numTrainWords = numTrainWords;
 
         // alias sampler for negative sampling
-        this.S = S;
-        this.aliasWordId = aliasWordId;
+        this._S = S;
+        this._aliasWordId = aliasWordId;
 
         this.wordCount = 0L;
         this.lastWordCount = 0L;
-        this.rnd = RandomNumberGeneratorFactory.createPRNG(1001);
+        this._rnd = RandomNumberGeneratorFactory.createPRNG(1001);
 
         this.sigmoidTable = initSigmoidTable();
 
         // TODO how to estimate size
-        this.inputWeights = new Int2FloatOpenHashTable(10578 * dim);
+        this.inputWeights = new Int2FloatOpenHashTable(1024 * 1024);
         this.inputWeights.defaultReturnValue(0.f);
-        this.contextWeights = new Int2FloatOpenHashTable(10578 * dim);
+        this.contextWeights = new Int2FloatOpenHashTable(1024 * 1024);
         this.contextWeights.defaultReturnValue(0.f);
     }
 
+    @Nonnull
     private static float[] initSigmoidTable() {
         float[] sigmoidTable = new float[SIGMOID_TABLE_SIZE];
         for (int i = 0; i < SIGMOID_TABLE_SIZE; i++) {
@@ -95,12 +98,13 @@ public abstract class AbstractWord2VecModel {
     }
 
     protected void initWordWeights(final int wordId) {
+        final PRNG rnd = RandomNumberGeneratorFactory.createPRNG(wordId);
         for (int i = 0; i < dim; i++) {
             inputWeights.put(wordId * dim + i, ((float) rnd.nextDouble() - 0.5f) / dim);
         }
     }
 
-    protected static float sigmoid(final float v, final float[] sigmoidTable) {
+    protected static float sigmoid(final float v, final @Nonnull float[] sigmoidTable) {
         if (v > MAX_SIGMOID) {
             return 1.f;
         } else if (v < -MAX_SIGMOID) {
@@ -111,8 +115,6 @@ public abstract class AbstractWord2VecModel {
     }
 
     protected void updateLearningRate() {
-        // TODO: valid lr?
-
         if (wordCount - lastWordCount > 10000) {
             lastWordCount = wordCount;
 

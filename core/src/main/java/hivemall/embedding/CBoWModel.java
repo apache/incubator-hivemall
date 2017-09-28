@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 public final class CBoWModel extends AbstractWord2VecModel {
+
     protected CBoWModel(final int dim, final int win, final int neg, final int iter,
             final float startingLR, final long numTrainWords, final Int2FloatOpenHashTable S,
             final int[] aliasWordId) {
@@ -34,9 +35,9 @@ public final class CBoWModel extends AbstractWord2VecModel {
     protected void trainOnDoc(@Nonnull final int[] doc) {
         final int vecDim = dim;
         final int numNegative = neg;
-        final PRNG _rnd = rnd;
-        final Int2FloatOpenHashTable _S = S;
-        final int[] _aliasWordId = aliasWordId;
+        final PRNG rnd = _rnd;
+        final Int2FloatOpenHashTable S = _S;
+        final int[] aliasWordId = _aliasWordId;
         float label, gradient;
 
         // reuse instance
@@ -44,16 +45,16 @@ public final class CBoWModel extends AbstractWord2VecModel {
 
         updateLearningRate();
 
-        int docLength = doc.length;
+        final int docLength = doc.length;
         for (int t = 0; t < iter; t++) {
             for (int positiveWordPosition = 0; positiveWordPosition < docLength; positiveWordPosition++) {
-                windowSize = _rnd.nextInt(win) + 1;
+                windowSize = rnd.nextInt(win) + 1;
 
                 numContext = windowSize * 2 + Math.min(0, positiveWordPosition - windowSize)
                         + Math.min(0, docLength - positiveWordPosition - windowSize - 1);
 
-                float[] gradVec = new float[vecDim];
-                float[] averageVec = new float[vecDim];
+                final float[] gradVec = new float[vecDim];
+                final float[] averageVec = new float[vecDim];
 
                 // collect context words
                 for (int contextPosition = positiveWordPosition - windowSize; contextPosition < positiveWordPosition
@@ -82,11 +83,11 @@ public final class CBoWModel extends AbstractWord2VecModel {
                         label = 1.f;
                     } else {
                         do {
-                            k = _rnd.nextInt(_S.size());
-                            if (_S.get(k) > _rnd.nextDouble()) {
+                            k = rnd.nextInt(S.size());
+                            if (S.get(k) > rnd.nextDouble()) {
                                 targetWord = k;
                             } else {
-                                targetWord = _aliasWordId[k];
+                                targetWord = aliasWordId[k];
                             }
                         } while (targetWord == positiveWord);
                         label = 0.f;
@@ -126,6 +127,6 @@ public final class CBoWModel extends AbstractWord2VecModel {
             dotValue += w[i] * contextWeights.get(c * dim + i);
         }
 
-        return (label - sigmoid(dotValue, sigmoidTable));
+        return label - sigmoid(dotValue, sigmoidTable);
     }
 }

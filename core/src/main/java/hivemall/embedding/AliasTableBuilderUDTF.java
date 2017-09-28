@@ -44,6 +44,14 @@ import org.apache.hadoop.io.Text;
 
 import javax.annotation.Nonnull;
 
+/**
+ * Alias Method
+ *
+ * <pre>
+ * - A. J. Walker, New Fast Method for Generating Discrete Random Numbers with Arbitrary Frequency Distributions, In Electronics Letters 10, no. 8, pp. 127-128, 1974.
+ * - A. J. Walker, An Efficient Method for Generating Discrete Random Variables with General Distributions. ACM Transactions on Mathematical Software 3, no. 3, pp. 253-256, 1977.
+ * </pre>
+ */
 public final class AliasTableBuilderUDTF extends GenericUDTF {
     private MapObjectInspector negativeTableOI;
     private PrimitiveObjectInspector negativeTableKeyOI;
@@ -159,11 +167,11 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
     @Override
     public void close() throws HiveException {
         if (isIntElement) {
-            IntWritable word = new IntWritable();
-            FloatWritable pro = new FloatWritable();
-            IntWritable otherWord = new IntWritable();
+            final IntWritable word = new IntWritable();
+            final FloatWritable pro = new FloatWritable();
+            final IntWritable otherWord = new IntWritable();
 
-            Object[] res = new Object[3];
+            final Object[] res = new Object[3];
             res[0] = word;
             res[1] = pro;
             res[2] = otherWord;
@@ -179,11 +187,11 @@ public final class AliasTableBuilderUDTF extends GenericUDTF {
                 forward(res);
             }
         } else {
-            Text word = new Text();
-            FloatWritable pro = new FloatWritable();
-            Text otherWord = new Text();
+            final Text word = new Text();
+            final FloatWritable pro = new FloatWritable();
+            final Text otherWord = new Text();
 
-            Object[] res = new Object[3];
+            final Object[] res = new Object[3];
             res[0] = word;
             res[1] = pro;
             res[2] = otherWord;

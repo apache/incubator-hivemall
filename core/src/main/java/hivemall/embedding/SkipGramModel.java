@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 public final class SkipGramModel extends AbstractWord2VecModel {
+
     protected SkipGramModel(final int dim, final int win, final int neg, final int iter,
             final float startingLR, final long numTrainWords, final Int2FloatOpenHashTable S,
             final int[] aliasWordId) {
@@ -34,11 +35,11 @@ public final class SkipGramModel extends AbstractWord2VecModel {
     protected void trainOnDoc(@Nonnull final int[] doc) {
         final int vecDim = dim;
         final int numNegative = neg;
-        final PRNG _rnd = rnd;
+        final PRNG rnd = _rnd;
 
         // alias sampler for negative sampling
-        final Int2FloatOpenHashTable _S = S;
-        final int[] _aliasWordId = aliasWordId;
+        final Int2FloatOpenHashTable S = _S;
+        final int[] aliasWordId = _aliasWordId;
 
         // reuse variable
         int windowSize, k, targetWord, inputWord, contextWord;
@@ -55,7 +56,7 @@ public final class SkipGramModel extends AbstractWord2VecModel {
                     initWordWeights(inputWord);
                 }
 
-                windowSize = _rnd.nextInt(win) + 1;
+                windowSize = rnd.nextInt(win) + 1;
 
                 for (int contextPosition = inputWordPosition - windowSize; contextPosition < inputWordPosition
                         + windowSize + 1; contextPosition++) {
@@ -65,7 +66,7 @@ public final class SkipGramModel extends AbstractWord2VecModel {
                     }
 
                     contextWord = doc[contextPosition];
-                    float[] gradVec = new float[vecDim];
+                    final float[] gradVec = new float[vecDim];
 
                     // negative sampling
                     for (int d = 0; d < numNegative + 1; d++) {
@@ -75,12 +76,12 @@ public final class SkipGramModel extends AbstractWord2VecModel {
                             label = 1.f;
                         } else {
                             do {
-                                k = _rnd.nextInt(_S.size());
+                                k = rnd.nextInt(S.size());
 
-                                if (_S.get(k) > _rnd.nextDouble()) {
+                                if (S.get(k) > rnd.nextDouble()) {
                                     targetWord = k;
                                 } else {
-                                    targetWord = _aliasWordId[k];
+                                    targetWord = aliasWordId[k];
                                 }
                             } while (targetWord == contextWord);
                             label = 0.f;

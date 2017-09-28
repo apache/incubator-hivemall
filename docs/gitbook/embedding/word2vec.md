@@ -32,14 +32,13 @@ The papers introduce the method are as follows:
 - T. Mikolov, et al., [Efficient Estimation of Word Representations in Vector Space](https://arxiv.org/abs/1301.3781). ICLR, 2013.
 
 Hivemall provides two type algorithms: Skip-gram and CBoW with negative sampling.
-Hivemall enables you to train your sequence data such as,
-but not limited to, documents based on word2vec.
+Hivemall enables you to train your sequence data such as, but not limited to, documents based on word2vec.
 This article gives usage instructions of the feature.
 
 <!-- toc -->
 
 > #### Note
-> This feature is supported from Hivemall v0.5-rc.? or later.
+> This feature is supported from Hivemall v0.5-rc.1 or later.
 
 # Prepare document data
 
@@ -103,10 +102,8 @@ where freq >= ${mincount}
 Hivemall's word2vec supports two type words; string and int.
 String type tends to use huge memory during training.
 On the other hand, int type tends to use less memory.
-If you train on small dataset, we recommend using string type,
-because memory usage can be ignored and HiveQL is more simple.
-If you train on large dataset, we recommend using int type,
-because it saves memory during training.
+If you train on small dataset, we recommend using string type, because memory usage can be ignored and HiveQL is more simple.
+If you train on large dataset, we recommend using int type, because it saves memory during training.
 
 # Create sub-sampling table
 
@@ -120,11 +117,9 @@ f(w_i) = \sqrt{\frac{\mathrm{sample}}{freq(w_i)/\sum freq(w)}} + \frac{\mathrm{s
 \end{aligned}
 $$
 
-During word2vec training,
-not sub-sampled words are ignored.
+During word2vec training not sub-sampled words are ignored.
 It works to train fastly and to consider the imbalance the rare words and frequent words by reducing frequent words.
-The smaller `sample` value set,
-the fewer words are used during training.
+The smaller `sample` value set, the fewer words are used during training.
 
 ```sql
 set hivevar:sample=1e-4;
@@ -170,8 +165,7 @@ The first row shows that 4% of `the` are used in the documents during training.
 
 # Delete low frequency words and high frequency words from `docs_words`
 
-To reduce useless words from corpus,
-low frequency words and high frequency words are deleted.
+To reduce useless words from corpus, low frequency words and high frequency words are deleted.
 And, to avoid loading long document on memory, a  document is split into some sub-documents.
 
 ```sql
@@ -213,8 +207,7 @@ please replace `to_ordered_list(r2.wordid, l.pos) as words` with  `to_ordered_li
 Negative sampling is an approximate function of [softmax function](https://en.wikipedia.org/wiki/Softmax_function).
 Here, `negative_table` is used to store word sampling probability for negative sampling.
 `z` is a hyperparameter of noise distribution for negative sampling.
-During word2vec training,
-words sampled from this distribution are used for negative examples.
+During word2vec training, words sampled from this distribution are used for negative examples.
 Noise distribution is the unigram distribution raised to the 3/4rd power.
 
 $$
@@ -223,12 +216,11 @@ p(w_i) = \frac{freq(w_i)^{\mathrm{z}}}{\sum freq(w)^{\mathrm{z}}}
 \end{aligned}
 $$
 
-To avoid using huge memory space for negative sampling like original implementation and remain to sample fastly from this distribution,
-Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
+To avoid using huge memory space for negative sampling like original implementation and remain to sample fastly from this distribution, Hivemall uses [Alias method](https://en.wikipedia.org/wiki/Alias_method).
 
 This method has proposed in papers below:
 
-- A. J. Walker, New Fast Method for Generating Discrete Random Numbers with Arbitrary Frequency Distributions, in Electronics Letters 10, no. 8, pp. 127-128, 1974.
+- A. J. Walker, New Fast Method for Generating Discrete Random Numbers with Arbitrary Frequency Distributions, In Electronics Letters 10, no. 8, pp. 127-128, 1974.
 - A. J. Walker, An Efficient Method for Generating Discrete Random Variables with General Distributions. ACM Transactions on Mathematical Software 3, no. 3, pp. 253-256, 1977.
 
 ```sql
@@ -289,8 +281,7 @@ The default model is `"skipgram"`.
 
 ## Train Skip-Gram
 
-In skip-gram model,
-word vectors are trained to predict the nearby words.
+In skip-gram model word vectors are trained to predict the nearby words.
 For example, given a sentence like a `"alice", "was", "beginning", "to"`,
 `"was"` vector is learnt to predict `"alice"` ,`"beginning"` and `"to"`.
 
@@ -304,7 +295,7 @@ select
   train_word2vec(
     r.negative_table,
     l.words,
-    "-n ${n} -win 5 -neg 15 -iter 5 -dim 100 -model skipgram"
+    "-n ${n} -win 5 -neg 15 -iters 5 -dim 100 -model skipgram"
   )
 from
   train_docs l
@@ -312,10 +303,12 @@ from
 ;
 ```
 
-When word is treated as int istead of string,
-you may need to transform wordid of int to word of string by `join` statement.
+When word is treated as int istead of string, you may need to transform wordid of int to word of string by `join` statement.
 
 ```sql
+select sum(size(words)) from train_docs;
+set hivevar:n=418953; -- previous query return value
+
 drop table skipgram;
 
 create table skipgram as
@@ -326,7 +319,7 @@ from (
     train_word2vec(
       r.negative_table,
       l.wordsint,
-      "-n 418953 -win 5 -neg 15 -iter 5"
+      "-n {n} -win 5 -neg 15 -iters 5"
     ) as (wordid, i, wi)
   from
     train_docs l
@@ -339,12 +332,14 @@ join freq r on (t.wordid = r.wordid)
 
 ## Train CBoW
 
-In CBoW model,
-word vectors are trained to be predicted the nearby words.
+In CBoW model word vectors are trained to predict current word from the nearby words.
 For example, given a sentence like a `"alice", "was", "beginning", "to"`,
 `"alice"` ,`"beginning"` and `"to"` vectors are learnt to predict `"was"` vector.
 
 ```sql
+select sum(size(words)) from train_docs;
+set hivevar:n=418953; -- previous query return value
+
 drop table cbow;
 
 create table cbow as
@@ -352,7 +347,7 @@ select
   train_word2vec(
     r.negative_table,
     l.words,
-    "-n 418953 -win 5 -neg 15 -iter 5 -model cbow"
+    "-n {n} -win 5 -neg 15 -iters 5 -model cbow"
   )
 from
   train_docs l
@@ -381,12 +376,12 @@ cross join
 ```
 usage: train_word2vec(array<array<float | string>> negative_table,
        array<int | string> doc [, const string options]) - Returns a
-       prediction model [-dim <arg>] [-help] [-iter <arg>] [-lr <arg>]
+       prediction model [-dim <arg>] [-help] [-iters <arg>] [-lr <arg>]
        [-model <arg>] [-n <arg>] [-neg <arg>] [-win <arg>]
  -dim,--dimension <arg>     The number of vector dimension [default: 100]
  -help                      Show function help
- -iter,--iteration <arg>    The number of iterations [default: 5]
- -lr,--learningRate <arg>   Initial learning rate of SGD. The default
+ -iters,--iterations <arg>  The number of iterations [default: 5]
+ -eta0,--learningRate <arg> Initial learning rate of SGD. The default
                             value depends on model [default: 0.025
                             (skipgram), 0.05 (cbow)]
  -model,--modelName <arg>   The model name of word2vec: skipgram or cbow

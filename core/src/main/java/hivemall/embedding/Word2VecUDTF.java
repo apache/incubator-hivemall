@@ -65,7 +65,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
     @Nonnegative
     private int neg;
     @Nonnegative
-    private int iter;
+    private int iters;
     private boolean skipgram;
     private boolean isStringInput;
 
@@ -163,11 +163,11 @@ public class Word2VecUDTF extends UDTFWithOptions {
         opts.addOption("win", "window", true, "Context window size [default: 5]");
         opts.addOption("neg", "negative", true,
             "The number of negative sampled words per word [default: 5]");
-        opts.addOption("iter", "iteration", true, "The number of iterations [default: 5]");
+        opts.addOption("iters", "iterations", true, "The number of iterations [default: 5]");
         opts.addOption("model", "modelName", true,
             "The model name of word2vec: skipgram or cbow [default: skipgram]");
         opts.addOption(
-            "lr",
+            "eta0",
             "learningRate",
             true,
             "Initial learning rate of SGD. The default value depends on model [default: 0.025 (skipgram), 0.05 (cbow)]");
@@ -211,9 +211,9 @@ public class Word2VecUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException("Argument `int neg` must be non-negative: " + neg);
             }
 
-            iter = Primitives.parseInt(cl.getOptionValue("iter"), iter);
+            iter = Primitives.parseInt(cl.getOptionValue("iters"), iter);
             if (iter <= 0) {
-                throw new UDFArgumentException("Argument `int iter` must be non-negative: " + iter);
+                throw new UDFArgumentException("Argument `int iters` must be non-negative: " + iter);
             }
 
             modelName = cl.getOptionValue("model", modelName);
@@ -226,16 +226,16 @@ public class Word2VecUDTF extends UDTFWithOptions {
                 lr = 0.05f;
             }
 
-            lr = Primitives.parseFloat(cl.getOptionValue("lr"), lr);
+            lr = Primitives.parseFloat(cl.getOptionValue("eta0"), lr);
             if (lr <= 0.f) {
-                throw new UDFArgumentException("Argument `float lr` must be positive: " + lr);
+                throw new UDFArgumentException("Argument `float eta0` must be positive: " + lr);
             }
         }
 
         this.numTrainWords = numTrainWords;
         this.win = win;
         this.neg = neg;
-        this.iter = iter;
+        this.iters = iter;
         this.dim = dim;
         this.skipgram = modelName.equals("skipgram");
         this.startingLR = lr;
@@ -265,7 +265,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
             IMapIterator<String, Integer> iter = word2index.entries();
             while (iter.next() != -1) {
                 int wordId = iter.getValue();
-                if (!model.inputWeights.containsKey(wordId * dim)){
+                if (!model.inputWeights.containsKey(wordId * dim)) {
                     continue;
                 }
 
@@ -288,7 +288,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
             result[2] = value;
 
             for (int wordId = 0; wordId < aliasWordIds.length; wordId++) {
-                if (!model.inputWeights.containsKey(wordId * dim)){
+                if (!model.inputWeights.containsKey(wordId * dim)) {
                     continue;
                 }
                 word.set(wordId);
@@ -312,9 +312,9 @@ public class Word2VecUDTF extends UDTFWithOptions {
     }
 
     private void parseNegativeTable(@Nonnull Object listObj) {
-        int aliasSize = negativeTableOI.getListLength(listObj);
-        Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(aliasSize);
-        int[] aliasWordIds = new int[aliasSize];
+        final int aliasSize = negativeTableOI.getListLength(listObj);
+        final Int2FloatOpenHashTable S = new Int2FloatOpenHashTable(aliasSize);
+        final int[] aliasWordIds = new int[aliasSize];
 
         if (isStringInput) {
             this.word2index = new OpenHashTable<>(aliasSize);
@@ -354,10 +354,10 @@ public class Word2VecUDTF extends UDTFWithOptions {
     @Nonnull
     private AbstractWord2VecModel createModel() {
         if (skipgram) {
-            return new SkipGramModel(dim, win, neg, iter, startingLR, iter * numTrainWords, S,
+            return new SkipGramModel(dim, win, neg, iters, startingLR, iters * numTrainWords, S,
                 aliasWordIds);
         } else {
-            return new CBoWModel(dim, win, neg, iter, startingLR, iter * numTrainWords, S,
+            return new CBoWModel(dim, win, neg, iters, startingLR, iters * numTrainWords, S,
                 aliasWordIds);
         }
     }
