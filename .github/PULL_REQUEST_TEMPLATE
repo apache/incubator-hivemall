@@ -23,3 +23,4 @@
 (Please remove this section if not needed; check `x` for YES, blank for NO)
 
 - [x] Did you apply source code formatter, i.e., `mvn formatter:format`, for your commit?
+- [ ] Did you run system tests on Hive (or Spark)?
