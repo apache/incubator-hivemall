@@ -207,7 +207,7 @@ public class SlimUDTF extends UDTFWithOptions {
         opts.addOption("l2", "l2coefficient", true,
             "Coefficient for l2 regularizer [default: 0.0005]");
         opts.addOption("iters", "iterations", true,
-            "The number of iterations for coordinate descent [default: 40]");
+            "The number of iterations for coordinate descent [default: 30]");
         opts.addOption("disable_cv", "disable_cvtest", false,
             "Whether to disable convergence check [default: enabled]");
         opts.addOption("cv_rate", "convergence_rate", true,
@@ -221,7 +221,7 @@ public class SlimUDTF extends UDTFWithOptions {
         CommandLine cl = null;
         double l1 = 0.001d;
         double l2 = 0.0005d;
-        int numIterations = 40;
+        int numIterations = 30;
         boolean conversionCheck = true;
         double cv_rate = 0.005d;
 
@@ -542,7 +542,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
                 if (logger.isInfoEnabled()) {
                     File tmpFile = dst.getFile();
-                    logger.info("Wrote KNN data of item i record to a temporary file for iterative training: "
+                    logger.info("Wrote KNN entries of axis items to a temporary file for iterative training: "
                             + tmpFile.getAbsolutePath()
                             + " ("
                             + FileUtils.prettyFileSize(tmpFile)
@@ -655,6 +655,9 @@ public class SlimUDTF extends UDTFWithOptions {
         _weightMatrix.eachNonZeroCell(new VectorProcedure() {
             @Override
             public void apply(int i, int j, float value) {
+                if (value == 0.f) {
+                    return;
+                }
                 f0.set(i);
                 f1.set(j);
                 f2.set(value);
