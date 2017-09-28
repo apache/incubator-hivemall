@@ -52,7 +52,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.StandardMapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableIntObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
@@ -430,7 +429,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
         private ListObjectInspector recommendListOI;
         private ListObjectInspector truthListOI;
-        private WritableIntObjectInspector recommendSizeOI;
+        private PrimitiveObjectInspector recommendSizeOI;
 
         private StructObjectInspector internalMergeOI;
         private StructField countField;
@@ -448,7 +447,7 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
                 this.recommendListOI = (ListObjectInspector) parameters[0];
                 this.truthListOI = (ListObjectInspector) parameters[1];
                 if (parameters.length == 3) {
-                    this.recommendSizeOI = (WritableIntObjectInspector) parameters[2];
+                    this.recommendSizeOI = HiveUtils.asIntegerOI(parameters[2]);
                 }
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
@@ -507,12 +506,12 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
-                recommendSize = recommendSizeOI.get(parameters[2]);
-            }
-            if (recommendSize < 0 || recommendSize > recommendList.size()) {
-                throw new UDFArgumentException(
-                    "The third argument `int recommendSize` must be in [0, " + recommendList.size()
-                            + "]");
+                recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
+                if (recommendSize < 0) {
+                    throw new UDFArgumentException(
+                        "The third argument `int recommendSize` must be in greather than or equals to 0: "
+                                + recommendSize);
+                }
             }
 
             myAggr.iterate(recommendList, truthList, recommendSize);

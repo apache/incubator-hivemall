@@ -16,6 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+/*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
 package hivemall.evaluation;
 
 import hivemall.utils.hadoop.HiveUtils;
@@ -24,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -33,7 +52,6 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -48,13 +66,13 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
 @Description(
-        name = "recall_at",
+        name = "hitrate",
         value = "_FUNC_(array rankItems, array correctItems [, const int recommendSize = rankItems.size])"
-                + " - Returns Recall")
-public final class RecallUDAF extends AbstractGenericUDAFResolver {
+                + " - Returns HitRate")
+public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
     // prevent instantiation
-    private RecallUDAF() {}
+    private HitRateUDAF() {}
 
     @Override
     public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
@@ -74,7 +92,7 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
                 "The second argument `array correctItems` is invalid form: " + typeInfo[1]);
         }
 
-        return new Evaluator();
+        return new HitRateUDAF.Evaluator();
     }
 
     public static class Evaluator extends GenericUDAFEvaluator {
@@ -131,8 +149,8 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public RecallAggregationBuffer getNewAggregationBuffer() throws HiveException {
-            RecallAggregationBuffer myAggr = new RecallAggregationBuffer();
+        public HitRateAggregationBuffer getNewAggregationBuffer() throws HiveException {
+            HitRateAggregationBuffer myAggr = new HitRateAggregationBuffer();
             reset(myAggr);
             return myAggr;
         }
@@ -140,14 +158,14 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
         @Override
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            RecallAggregationBuffer myAggr = (RecallAggregationBuffer) agg;
+            HitRateAggregationBuffer myAggr = (HitRateAggregationBuffer) agg;
             myAggr.reset();
         }
 
         @Override
         public void iterate(@SuppressWarnings("deprecation") AggregationBuffer agg,
                 Object[] parameters) throws HiveException {
-            RecallAggregationBuffer myAggr = (RecallAggregationBuffer) agg;
+            HitRateAggregationBuffer myAggr = (HitRateAggregationBuffer) agg;
 
             List<?> recommendList = recommendListOI.getList(parameters[0]);
             if (recommendList == null) {
@@ -174,7 +192,7 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
         @Override
         public Object terminatePartial(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            RecallAggregationBuffer myAggr = (RecallAggregationBuffer) agg;
+            HitRateAggregationBuffer myAggr = (HitRateAggregationBuffer) agg;
 
             Object[] partialResult = new Object[2];
             partialResult[0] = new DoubleWritable(myAggr.sum);
@@ -194,26 +212,27 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
             double sum = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(sumObj);
             long count = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(countObj);
 
-            RecallAggregationBuffer myAggr = (RecallAggregationBuffer) agg;
+            HitRateAggregationBuffer myAggr = (HitRateAggregationBuffer) agg;
             myAggr.merge(sum, count);
         }
 
         @Override
         public DoubleWritable terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            RecallAggregationBuffer myAggr = (RecallAggregationBuffer) agg;
+            HitRateAggregationBuffer myAggr = (HitRateAggregationBuffer) agg;
             double result = myAggr.get();
             return new DoubleWritable(result);
         }
 
     }
 
-    public static class RecallAggregationBuffer extends AbstractAggregationBuffer {
+    public static final class HitRateAggregationBuffer extends
+            GenericUDAFEvaluator.AbstractAggregationBuffer {
 
-        double sum;
-        long count;
+        private double sum;
+        private long count;
 
-        public RecallAggregationBuffer() {
+        public HitRateAggregationBuffer() {
             super();
         }
 
@@ -223,8 +242,8 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
         }
 
         void merge(double o_sum, long o_count) {
-            sum += o_sum;
-            count += o_count;
+            this.sum += o_sum;
+            this.count += o_count;
         }
 
         double get() {
@@ -235,10 +254,9 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
         }
 
         void iterate(@Nonnull List<?> recommendList, @Nonnull List<?> truthList,
-                @Nonnull int recommendSize) {
-            sum += BinaryResponsesMeasures.Recall(recommendList, truthList, recommendSize);
-            count++;
+                @Nonnegative int recommendSize) {
+            this.sum += BinaryResponsesMeasures.Hit(recommendList, truthList, recommendSize);
+            this.count++;
         }
     }
-
 }

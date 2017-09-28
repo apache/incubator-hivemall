@@ -325,7 +325,7 @@ similarity as (
     o.other,
     cosine_similarity(t1.feature_vector, t2.feature_vector) as similarity
   from
-    cooccurrence_top100 o　
+    cooccurrence_top100 o
     -- cooccurrence_upper_triangular o
     JOIN item_features t1 ON (o.itemid = t1.itemid)
     JOIN item_features t2 ON (o.other = t2.itemid)
@@ -652,7 +652,8 @@ partial_result as ( -- launch DIMSUM in a MapReduce fashion
     item_features f
   left outer join item_magnitude m
 ),
-similarity as ( -- reduce (i.e., sum up) mappers' partial results
+similarity as (
+  -- reduce (i.e., sum up) mappers' partial results
   select
     itemid, 
     other,
@@ -702,7 +703,8 @@ partial_result as (
     item_features f
   left outer join item_magnitude m
 ),
-similarity_upper_triangular as ( -- if similarity of (i1, i2) pair is in this table, (i2, i1)'s similarity is omitted
+similarity_upper_triangular as (
+  -- if similarity of (i1, i2) pair is in this table, (i2, i1)'s similarity is omitted
   select
     itemid, 
     other,

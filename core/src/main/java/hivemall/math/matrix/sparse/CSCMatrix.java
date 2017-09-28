@@ -31,6 +31,8 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
+ * Compressed Sparse Column matrix optimized for colum major access.
+ *
  * @link http://netlib.org/linalg/html_templates/node92.html#SECTION00931200000000000000
  */
 public final class CSCMatrix extends ColumnMajorMatrix {

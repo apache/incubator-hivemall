@@ -58,7 +58,10 @@ public final class IntOpenHashTable<V> implements Externalizable {
     protected V[] _values;
     protected byte[] _states;
 
-    public IntOpenHashTable() {} // for Externalizable    
+    /**
+     * Only for {@link Externalizable}
+     */
+    public IntOpenHashTable() {}
 
     public IntOpenHashTable(int size) {
         this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR, true);

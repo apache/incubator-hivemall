@@ -180,6 +180,8 @@ create temporary function ffm_predict as 'hivemall.fm.FFMPredictGenericUDAF';
 create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
 create temporary function to_ordered_list as 'hivemall.tools.list.UDAFToOrderedList';
 create temporary function singularize as 'hivemall.tools.text.SingularizeUDF';
+create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
+create temporary function hitrate as 'hivemall.evaluation.HitRateUDAF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
