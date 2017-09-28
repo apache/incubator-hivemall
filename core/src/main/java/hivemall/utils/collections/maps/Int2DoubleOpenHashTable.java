@@ -16,744 +16,412 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.recommend;
+package hivemall.utils.collections.maps;
 
-import hivemall.UDTFWithOptions;
-import hivemall.annotations.VisibleForTesting;
-import hivemall.common.ConversionState;
-import hivemall.math.matrix.sparse.DoKFloatMatrix;
-import hivemall.math.vector.VectorProcedure;
-import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
-import hivemall.utils.collections.maps.IntOpenHashTable;
-import hivemall.utils.collections.maps.IntOpenHashTable.IMapIterator;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.FileUtils;
-import hivemall.utils.io.NioStatefullSegment;
-import hivemall.utils.lang.NumberUtils;
-import hivemall.utils.lang.Primitives;
-import hivemall.utils.lang.SizeOf;
-import hivemall.utils.lang.mutable.MutableDouble;
-import hivemall.utils.lang.mutable.MutableInt;
-import hivemall.utils.lang.mutable.MutableObject;
+import hivemall.utils.math.Primes;
 
-import java.io.File;
+import java.io.Externalizable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Options;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.mapred.Counters;
-import org.apache.hadoop.mapred.Reporter;
 
 /**
- * Sparse Linear Methods (SLIM) for Top-N Recommender Systems.
+ * An open-addressing hash table using double hashing.
  *
  * <pre>
- * Xia Ning and George Karypis, SLIM: Sparse Linear Methods for Top-N Recommender Systems, Proc. ICDM, 2011.
+ * Primary hash function: h1(k) = k mod m
+ * Secondary hash function: h2(k) = 1 + (k mod(m-2))
  * </pre>
+ *
+ * @see http://en.wikipedia.org/wiki/Double_hashing
  */
-@Description(
-        name = "train_slim",
-        value = "_FUNC_( int i, map<int, double> r_i, map<int, map<int, double>> topKRatesOfI, int j, map<int, double> r_j [, constant string options]) "
-                + "- Returns row index, column index and non-zero weight value of prediction model")
-public class SlimUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(SlimUDTF.class);
+public class Int2DoubleOpenHashTable implements Externalizable {
 
-    //--------------------------------------------
-    // intput OIs
+    protected static final byte FREE = 0;
+    protected static final byte FULL = 1;
+    protected static final byte REMOVED = 2;
 
-    private PrimitiveObjectInspector itemIOI;
-    private PrimitiveObjectInspector itemJOI;
-    private MapObjectInspector riOI;
-    private MapObjectInspector rjOI;
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
+    private static final float DEFAULT_GROW_FACTOR = 2.0f;
 
-    private MapObjectInspector knnItemsOI;
-    private PrimitiveObjectInspector knnItemsKeyOI;
-    private MapObjectInspector knnItemsValueOI;
-    private PrimitiveObjectInspector knnItemsValueKeyOI;
-    private PrimitiveObjectInspector knnItemsValueValueOI;
+    protected final transient float _loadFactor;
+    protected final transient float _growFactor;
 
-    private PrimitiveObjectInspector riKeyOI;
-    private PrimitiveObjectInspector riValueOI;
+    protected int _used = 0;
+    protected int _threshold;
+    protected double defaultReturnValue = -1.d;
 
-    private PrimitiveObjectInspector rjKeyOI;
-    private PrimitiveObjectInspector rjValueOI;
+    protected int[] _keys;
+    protected double[] _values;
+    protected byte[] _states;
 
-    //--------------------------------------------
-    // hyperparameters
-
-    private double l1;
-    private double l2;
-    private int numIterations;
-
-    //--------------------------------------------
-    // model parameters and else
-
-    /** item-item weight matrix */
-    private transient DoKFloatMatrix _weightMatrix;
-
-    //--------------------------------------------
-    // caching for each item i
-
-    private int _previousItemId;
-
-    @Nullable
-    private transient Int2FloatOpenHashTable _ri;
-    @Nullable
-    private transient IntOpenHashTable<Int2FloatOpenHashTable> _kNNi;
-    /** The number of elements in kNNi */
-    @Nullable
-    private transient MutableInt _nnzKNNi;
-
-    //--------------------------------------------
-    // variables for iteration supports
-
-    /** item-user matrix holding the input data */
-    @Nullable
-    private transient DoKFloatMatrix _dataMatrix;
-
-    // used to store KNN data into temporary file for iterative training
-    private transient NioStatefullSegment _fileIO;
-    private transient ByteBuffer _inputBuf;
-
-    private ConversionState _cvState;
-    private long _observedTrainingExamples;
-
-    //--------------------------------------------
-
-    public SlimUDTF() {}
-
-    @Override
-    public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        final int numArgs = argOIs.length;
-
-        if (numArgs == 1 && HiveUtils.isConstString(argOIs[0])) {// for -help option
-            String rawArgs = HiveUtils.getConstString(argOIs[0]);
-            parseOptions(rawArgs);
+    protected Int2DoubleOpenHashTable(int size, float loadFactor, float growFactor,
+            boolean forcePrime) {
+        if (size < 1) {
+            throw new IllegalArgumentException();
         }
-
-        if (numArgs != 5 && numArgs != 6) {
-            throw new UDFArgumentException(
-                    "_FUNC_ takes 5 or 6 arguments: int i, map<int, double> r_i, map<int, map<int, double>> topKRatesOfI, int j, map<int, double> r_j [, constant string options]: "
-                            + Arrays.toString(argOIs));
-        }
-
-        this.itemIOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
-
-        this.riOI = HiveUtils.asMapOI(argOIs[1]);
-        this.riKeyOI = HiveUtils.asIntCompatibleOI((riOI.getMapKeyObjectInspector()));
-        this.riValueOI = HiveUtils.asPrimitiveObjectInspector((riOI.getMapValueObjectInspector()));
-
-        this.knnItemsOI = HiveUtils.asMapOI(argOIs[2]);
-        this.knnItemsKeyOI = HiveUtils.asIntCompatibleOI(knnItemsOI.getMapKeyObjectInspector());
-        this.knnItemsValueOI = HiveUtils.asMapOI(knnItemsOI.getMapValueObjectInspector());
-        this.knnItemsValueKeyOI = HiveUtils.asIntCompatibleOI(knnItemsValueOI.getMapKeyObjectInspector());
-        this.knnItemsValueValueOI = HiveUtils.asDoubleCompatibleOI(knnItemsValueOI.getMapValueObjectInspector());
-
-        this.itemJOI = HiveUtils.asIntCompatibleOI(argOIs[3]);
-
-        this.rjOI = HiveUtils.asMapOI(argOIs[4]);
-        this.rjKeyOI = HiveUtils.asIntCompatibleOI((rjOI.getMapKeyObjectInspector()));
-        this.rjValueOI = HiveUtils.asPrimitiveObjectInspector((rjOI.getMapValueObjectInspector()));
-
-        processOptions(argOIs);
-
-        this._observedTrainingExamples = 0L;
-        this._previousItemId = Integer.MIN_VALUE;
-        this._weightMatrix = null;
-        this._dataMatrix = null;
-
-        List<String> fieldNames = new ArrayList<>();
-        List<ObjectInspector> fieldOIs = new ArrayList<>();
-
-        fieldNames.add("j");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-        fieldNames.add("nn");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-        fieldNames.add("w");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
-
-        return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
+        this._loadFactor = loadFactor;
+        this._growFactor = growFactor;
+        int actualSize = forcePrime ? Primes.findLeastPrimeNumber(size) : size;
+        this._keys = new int[actualSize];
+        this._values = new double[actualSize];
+        this._states = new byte[actualSize];
+        this._threshold = (int) (actualSize * _loadFactor);
     }
 
-    @Override
-    protected Options getOptions() {
-        Options opts = new Options();
-        opts.addOption("l1", "l1coefficient", true,
-                "Coefficient for l1 regularizer [default: 0.001]");
-        opts.addOption("l2", "l2coefficient", true,
-                "Coefficient for l2 regularizer [default: 0.0005]");
-        opts.addOption("iters", "iterations", true,
-                "The number of iterations for coordinate descent [default: 30]");
-        opts.addOption("disable_cv", "disable_cvtest", false,
-                "Whether to disable convergence check [default: enabled]");
-        opts.addOption("cv_rate", "convergence_rate", true,
-                "Threshold to determine convergence [default: 0.005]");
-        return opts;
+    public Int2DoubleOpenHashTable(int size, float loadFactor, float growFactor) {
+        this(size, loadFactor, growFactor, true);
     }
 
-    @Override
-    protected CommandLine processOptions(@Nonnull ObjectInspector[] argOIs)
-            throws UDFArgumentException {
-        CommandLine cl = null;
-        double l1 = 0.001d;
-        double l2 = 0.0005d;
-        int numIterations = 30;
-        boolean conversionCheck = true;
-        double cv_rate = 0.005d;
-
-        if (argOIs.length >= 6) {
-            String rawArgs = HiveUtils.getConstString(argOIs[5]);
-            cl = parseOptions(rawArgs);
-
-            l1 = Primitives.parseDouble(cl.getOptionValue("l1"), l1);
-            if (l1 < 0.d) {
-                throw new UDFArgumentException("Argument `double l1` must be non-negative: " + l1);
-            }
-
-            l2 = Primitives.parseDouble(cl.getOptionValue("l2"), l2);
-            if (l2 < 0.d) {
-                throw new UDFArgumentException("Argument `double l2` must be non-negative: " + l2);
-            }
-
-            numIterations = Primitives.parseInt(cl.getOptionValue("iters"), numIterations);
-            if (numIterations <= 0) {
-                throw new UDFArgumentException("Argument `int iters` must be greater than 0: "
-                        + numIterations);
-            }
-
-            conversionCheck = !cl.hasOption("disable_cvtest");
-
-            cv_rate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), cv_rate);
-            if (cv_rate <= 0) {
-                throw new UDFArgumentException(
-                        "Argument `double cv_rate` must be greater than 0.0: " + cv_rate);
-            }
-        }
-
-        this.l1 = l1;
-        this.l2 = l2;
-        this.numIterations = numIterations;
-        this._cvState = new ConversionState(conversionCheck, cv_rate);
-
-        return cl;
+    public Int2DoubleOpenHashTable(int size) {
+        this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR, true);
     }
 
-    @Override
-    public void process(@Nonnull Object[] args) throws HiveException {
-        if (_weightMatrix == null) {// initialize variables
-            this._weightMatrix = new DoKFloatMatrix();
-            if (numIterations >= 2) {
-                this._dataMatrix = new DoKFloatMatrix();
-            }
-            this._nnzKNNi = new MutableInt();
-        }
-
-        final int itemI = PrimitiveObjectInspectorUtils.getInt(args[0], itemIOI);
-
-        if (itemI != _previousItemId || _ri == null) {
-            // cache Ri and kNNi
-            this._ri = int2floatMap(itemI, riOI.getMap(args[1]), riKeyOI, riValueOI, _dataMatrix,
-                    _ri);
-            this._kNNi = kNNentries(args[2], knnItemsOI, knnItemsKeyOI, knnItemsValueOI,
-                    knnItemsValueKeyOI, knnItemsValueValueOI, _kNNi, _nnzKNNi);
-
-            final int numKNNItems = _nnzKNNi.getValue();
-            if (numIterations >= 2 && numKNNItems >= 1) {
-                recordTrainingInput(itemI, _kNNi, numKNNItems);
-            }
-            this._previousItemId = itemI;
-        }
-
-        int itemJ = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
-        Int2FloatOpenHashTable rj = int2floatMap(itemJ, rjOI.getMap(args[4]), rjKeyOI, rjValueOI,
-                _dataMatrix);
-
-        train(itemI, _ri, _kNNi, itemJ, rj);
-        _observedTrainingExamples++;
+    /**
+     * Only for {@link Externalizable}
+     */
+    public Int2DoubleOpenHashTable() {// required for serialization
+        this._loadFactor = DEFAULT_LOAD_FACTOR;
+        this._growFactor = DEFAULT_GROW_FACTOR;
     }
 
-    private void recordTrainingInput(final int itemI,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems, final int numKNNItems)
-            throws HiveException {
-        ByteBuffer buf = this._inputBuf;
-        NioStatefullSegment dst = this._fileIO;
+    public void defaultReturnValue(double v) {
+        this.defaultReturnValue = v;
+    }
 
-        if (buf == null) {
-            // invoke only at task node (initialize is also invoked in compilation)
-            final File file;
-            try {
-                file = File.createTempFile("hivemall_slim", ".sgmt"); // to save KNN data
-                file.deleteOnExit();
-                if (!file.canWrite()) {
-                    throw new UDFArgumentException("Cannot write a temporary file: "
-                            + file.getAbsolutePath());
+    public boolean containsKey(final int key) {
+        return findKey(key) >= 0;
+    }
+
+    /**
+     * @return -1.d if not found
+     */
+    public double get(final int key) {
+        return get(key, defaultReturnValue);
+    }
+
+    public double get(final int key, final double defaultValue) {
+        final int i = findKey(key);
+        if (i < 0) {
+            return defaultValue;
+        }
+        return _values[i];
+    }
+
+    public double put(final int key, final double value) {
+        final int hash = keyHash(key);
+        int keyLength = _keys.length;
+        int keyIdx = hash % keyLength;
+
+        boolean expanded = preAddEntry(keyIdx);
+        if (expanded) {
+            keyLength = _keys.length;
+            keyIdx = hash % keyLength;
+        }
+
+        final int[] keys = _keys;
+        final double[] values = _values;
+        final byte[] states = _states;
+
+        if (states[keyIdx] == FULL) {// double hashing
+            if (keys[keyIdx] == key) {
+                double old = values[keyIdx];
+                values[keyIdx] = value;
+                return old;
+            }
+            // try second hash
+            final int decr = 1 + (hash % (keyLength - 2));
+            for (;;) {
+                keyIdx -= decr;
+                if (keyIdx < 0) {
+                    keyIdx += keyLength;
                 }
-            } catch (IOException ioe) {
-                throw new UDFArgumentException(ioe);
-            }
-
-            this._inputBuf = buf = ByteBuffer.allocateDirect(8 * 1024 * 1024); // 8MB
-            this._fileIO = dst = new NioStatefullSegment(file, false);
-        }
-
-        int recordBytes = SizeOf.INT + SizeOf.INT + SizeOf.INT * 2 * knnItems.size()
-                + (SizeOf.INT + SizeOf.FLOAT) * numKNNItems;
-        int requiredBytes = SizeOf.INT + recordBytes; // need to allocate space for "recordBytes" itself
-
-        int remain = buf.remaining();
-        if (remain < requiredBytes) {
-            writeBuffer(buf, dst);
-        }
-
-        buf.putInt(recordBytes);
-        buf.putInt(itemI);
-        buf.putInt(knnItems.size());
-
-        final IMapIterator<Int2FloatOpenHashTable> entries = knnItems.entries();
-        while (entries.next() != -1) {
-            int user = entries.getKey();
-            buf.putInt(user);
-
-            Int2FloatOpenHashTable ru = entries.getValue();
-            buf.putInt(ru.size());
-            final Int2FloatOpenHashTable.IMapIterator itor = ru.entries();
-            while (itor.next() != -1) {
-                buf.putInt(itor.getKey());
-                buf.putFloat(itor.getValue());
+                if (isFree(keyIdx, key)) {
+                    break;
+                }
+                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
+                    double old = values[keyIdx];
+                    values[keyIdx] = value;
+                    return old;
+                }
             }
         }
+        keys[keyIdx] = key;
+        values[keyIdx] = value;
+        states[keyIdx] = FULL;
+        ++_used;
+        return defaultReturnValue;
     }
 
-    private static void writeBuffer(@Nonnull final ByteBuffer srcBuf,
-            @Nonnull final NioStatefullSegment dst) throws HiveException {
-        srcBuf.flip();
-        try {
-            dst.write(srcBuf);
-        } catch (IOException e) {
-            throw new HiveException("Exception causes while writing a buffer to file", e);
+    /** Return weather the required slot is free for new entry */
+    protected boolean isFree(final int index, final int key) {
+        final byte stat = _states[index];
+        if (stat == FREE) {
+            return true;
         }
-        srcBuf.clear();
+        if (stat == REMOVED && _keys[index] == key) {
+            return true;
+        }
+        return false;
     }
 
-    private void train(final int itemI, @Nonnull final Int2FloatOpenHashTable ri,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> kNNi, final int itemJ,
-            @Nonnull final Int2FloatOpenHashTable rj) {
-        final DoKFloatMatrix W = _weightMatrix;
-
-        final int N = rj.size();
-        if (N == 0) {
-            return;
+    /** @return expanded or not */
+    protected boolean preAddEntry(final int index) {
+        if ((_used + 1) >= _threshold) {// too filled
+            int newCapacity = Math.round(_keys.length * _growFactor);
+            ensureCapacity(newCapacity);
+            return true;
         }
-
-        double gradSum = 0.d;
-        double rateSum = 0.d;
-        double lossSum = 0.d;
-
-        final Int2FloatOpenHashTable.IMapIterator itor = rj.entries();
-        while (itor.next() != -1) {
-            int user = itor.getKey();
-            double ruj = itor.getValue();
-            double rui = ri.get(user, 0.f);
-
-            double eui = rui - predict(user, itemI, kNNi, itemJ, W);
-            gradSum += ruj * eui;
-            rateSum += ruj * ruj;
-            lossSum += eui * eui;
-        }
-
-        gradSum /= N;
-        rateSum /= N;
-
-        double wij = W.get(itemI, itemJ, 0.d);
-        double loss = lossSum / N + 0.5d * l2 * wij * wij + l1 * wij;
-        _cvState.incrLoss(loss);
-
-        W.set(itemI, itemJ, getUpdateTerm(gradSum, rateSum, l1, l2));
+        return false;
     }
 
-    private void train(final int itemI,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems, final int itemJ) {
-        final DoKFloatMatrix A = _dataMatrix;
-        final DoKFloatMatrix W = _weightMatrix;
+    protected int findKey(final int key) {
+        final int[] keys = _keys;
+        final byte[] states = _states;
+        final int keyLength = keys.length;
 
-        final int N = A.numColumns(itemJ);
-        if (N == 0) {
-            return;
-        }
-
-        final MutableDouble mutableGradSum = new MutableDouble(0.d);
-        final MutableDouble mutableRateSum = new MutableDouble(0.d);
-        final MutableDouble mutableLossSum = new MutableDouble(0.d);
-
-        A.eachNonZeroInRow(itemJ, new VectorProcedure() {
-            @Override
-            public void apply(int user, double ruj) {
-                double rui = A.get(itemI, user, 0.d);
-                double eui = rui - predict(user, itemI, knnItems, itemJ, W);
-
-                mutableGradSum.addValue(ruj * eui);
-                mutableRateSum.addValue(ruj * ruj);
-                mutableLossSum.addValue(eui * eui);
+        final int hash = keyHash(key);
+        int keyIdx = hash % keyLength;
+        if (states[keyIdx] != FREE) {
+            if (states[keyIdx] == FULL && keys[keyIdx] == key) {
+                return keyIdx;
             }
-        });
-
-        double gradSum = mutableGradSum.getValue() / N;
-        double rateSum = mutableRateSum.getValue() / N;
-
-        double wij = W.get(itemI, itemJ, 0.d);
-        double loss = mutableLossSum.getValue() / N + 0.5 * l2 * wij * wij + l1 * wij;
-        _cvState.incrLoss(loss);
-
-        W.set(itemI, itemJ, getUpdateTerm(gradSum, rateSum, l1, l2));
+            // try second hash
+            final int decr = 1 + (hash % (keyLength - 2));
+            for (;;) {
+                keyIdx -= decr;
+                if (keyIdx < 0) {
+                    keyIdx += keyLength;
+                }
+                if (isFree(keyIdx, key)) {
+                    return -1;
+                }
+                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
+                    return keyIdx;
+                }
+            }
+        }
+        return -1;
     }
 
-    private static double predict(final int user, final int itemI,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems,
-            final int excludeIndex, @Nonnull final DoKFloatMatrix weightMatrix) {
-        final Int2FloatOpenHashTable kNNu = knnItems.get(user);
-        if (kNNu == null) {
-            return 0.d;
-        }
+    public double remove(final int key) {
+        final int[] keys = _keys;
+        final double[] values = _values;
+        final byte[] states = _states;
+        final int keyLength = keys.length;
 
-        double pred = 0.d;
-        final Int2FloatOpenHashTable.IMapIterator itor = kNNu.entries();
-        while (itor.next() != -1) {
-            final int itemK = itor.getKey();
-            if (itemK == excludeIndex) {
-                continue;
+        final int hash = keyHash(key);
+        int keyIdx = hash % keyLength;
+        if (states[keyIdx] != FREE) {
+            if (states[keyIdx] == FULL && keys[keyIdx] == key) {
+                double old = values[keyIdx];
+                states[keyIdx] = REMOVED;
+                --_used;
+                return old;
             }
-            float ruk = itor.getValue();
-            pred += ruk * weightMatrix.get(itemI, itemK, 0.d);
+            //  second hash
+            final int decr = 1 + (hash % (keyLength - 2));
+            for (;;) {
+                keyIdx -= decr;
+                if (keyIdx < 0) {
+                    keyIdx += keyLength;
+                }
+                if (states[keyIdx] == FREE) {
+                    return defaultReturnValue;
+                }
+                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
+                    double old = values[keyIdx];
+                    states[keyIdx] = REMOVED;
+                    --_used;
+                    return old;
+                }
+            }
         }
-        return pred;
+        return defaultReturnValue;
     }
 
-    private static double getUpdateTerm(final double gradSum, final double rateSum,
-            final double l1, final double l2) {
-        double update = 0.d;
-        if (Math.abs(gradSum) > l1) {
-            if (gradSum > 0.d) {
-                update = (gradSum - l1) / (rateSum + l2);
-            } else {
-                update = (gradSum + l1) / (rateSum + l2);
-            }
-            // non-negative constraints
-            if (update < 0.d) {
-                update = 0.d;
-            }
-        }
-        return update;
+    public int size() {
+        return _used;
+    }
+
+    public void clear() {
+        Arrays.fill(_states, FREE);
+        this._used = 0;
+    }
+
+    public IMapIterator entries() {
+        return new MapIterator();
     }
 
     @Override
-    public void close() throws HiveException {
-        finalizeTraining();
-        forwardModel();
-        this._weightMatrix = null;
-    }
-
-    @VisibleForTesting
-    void finalizeTraining() throws HiveException {
-        if (numIterations > 1) {
-            this._ri = null;
-            this._kNNi = null;
-
-            runIterativeTraining();
-
-            this._dataMatrix = null;
+    public String toString() {
+        int len = size() * 10 + 2;
+        StringBuilder buf = new StringBuilder(len);
+        buf.append('{');
+        IMapIterator i = entries();
+        while (i.next() != -1) {
+            buf.append(i.getKey());
+            buf.append('=');
+            buf.append(i.getValue());
+            if (i.hasNext()) {
+                buf.append(',');
+            }
         }
+        buf.append('}');
+        return buf.toString();
     }
 
-    private void runIterativeTraining() throws HiveException {
-        final ByteBuffer buf = this._inputBuf;
-        final NioStatefullSegment dst = this._fileIO;
-        assert (buf != null);
-        assert (dst != null);
+    protected void ensureCapacity(final int newCapacity) {
+        int prime = Primes.findLeastPrimeNumber(newCapacity);
+        rehash(prime);
+        this._threshold = Math.round(prime * _loadFactor);
+    }
 
-        final Reporter reporter = getReporter();
-        final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-                "hivemall.recommend.slim$Counter", "iteration");
-
-        try {
-            if (dst.getPosition() == 0L) {// run iterations w/o temporary file
-                if (buf.position() == 0) {
-                    return; // no training example
-                }
-                buf.flip();
-                for (int iter = 2; iter < numIterations; iter++) {
-                    _cvState.next();
-                    reportProgress(reporter);
-                    setCounterValue(iterCounter, iter);
-
-                    while (buf.remaining() > 0) {
-                        int recordBytes = buf.getInt();
-                        assert (recordBytes > 0) : recordBytes;
-                        replayTrain(buf);
+    private void rehash(final int newCapacity) {
+        int oldCapacity = _keys.length;
+        if (newCapacity <= oldCapacity) {
+            throw new IllegalArgumentException("new: " + newCapacity + ", old: " + oldCapacity);
+        }
+        final int[] newkeys = new int[newCapacity];
+        final double[] newValues = new double[newCapacity];
+        final byte[] newStates = new byte[newCapacity];
+        int used = 0;
+        for (int i = 0; i < oldCapacity; i++) {
+            if (_states[i] == FULL) {
+                used++;
+                final int k = _keys[i];
+                final double v = _values[i];
+                final int hash = keyHash(k);
+                int keyIdx = hash % newCapacity;
+                if (newStates[keyIdx] == FULL) {// second hashing
+                    int decr = 1 + (hash % (newCapacity - 2));
+                    while (newStates[keyIdx] != FREE) {
+                        keyIdx -= decr;
+                        if (keyIdx < 0) {
+                            keyIdx += newCapacity;
+                        }
                     }
-                    buf.rewind();
-                    if (_cvState.isConverged(_observedTrainingExamples)) {
+                }
+                newkeys[keyIdx] = k;
+                newValues[keyIdx] = v;
+                newStates[keyIdx] = FULL;
+            }
+        }
+        this._keys = newkeys;
+        this._values = newValues;
+        this._states = newStates;
+        this._used = used;
+    }
+
+    private static int keyHash(int key) {
+        return key & 0x7fffffff;
+    }
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(_threshold);
+        out.writeInt(_used);
+
+        out.writeInt(_keys.length);
+        IMapIterator i = entries();
+        while (i.next() != -1) {
+            out.writeInt(i.getKey());
+            out.writeDouble(i.getValue());
+        }
+    }
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        this._threshold = in.readInt();
+        this._used = in.readInt();
+
+        int keylen = in.readInt();
+        int[] keys = new int[keylen];
+        double[] values = new double[keylen];
+        byte[] states = new byte[keylen];
+        for (int i = 0; i < _used; i++) {
+            int k = in.readInt();
+            double v = in.readDouble();
+            int hash = keyHash(k);
+            int keyIdx = hash % keylen;
+            if (states[keyIdx] != FREE) {// second hash
+                int decr = 1 + (hash % (keylen - 2));
+                for (;;) {
+                    keyIdx -= decr;
+                    if (keyIdx < 0) {
+                        keyIdx += keylen;
+                    }
+                    if (states[keyIdx] == FREE) {
                         break;
                     }
                 }
-                logger.info("Performed "
-                        + _cvState.getCurrentIteration()
-                        + " iterations of "
-                        + NumberUtils.formatNumber(_observedTrainingExamples)
-                        + " training examples on memory (thus "
-                        + NumberUtils.formatNumber(_observedTrainingExamples
-                        * _cvState.getCurrentIteration()) + " training updates in total) ");
-
-            } else { // read training examples in the temporary file and invoke train for each example
-                // write KNNi in buffer to a temporary file
-                if (buf.remaining() > 0) {
-                    writeBuffer(buf, dst);
-                }
-
-                try {
-                    dst.flush();
-                } catch (IOException e) {
-                    throw new HiveException("Failed to flush a file: "
-                            + dst.getFile().getAbsolutePath(), e);
-                }
-
-                if (logger.isInfoEnabled()) {
-                    File tmpFile = dst.getFile();
-                    logger.info("Wrote KNN entries of axis items to a temporary file for iterative training: "
-                            + tmpFile.getAbsolutePath()
-                            + " ("
-                            + FileUtils.prettyFileSize(tmpFile)
-                            + ")");
-                }
-
-                // run iterations
-                for (int iter = 2; iter < numIterations; iter++) {
-                    _cvState.next();
-                    setCounterValue(iterCounter, iter);
-
-                    buf.clear();
-                    dst.resetPosition();
-                    while (true) {
-                        reportProgress(reporter);
-                        // load a KNNi to a buffer in the temporary file
-                        final int bytesRead;
-                        try {
-                            bytesRead = dst.read(buf);
-                        } catch (IOException e) {
-                            throw new HiveException("Failed to read a file: "
-                                    + dst.getFile().getAbsolutePath(), e);
-                        }
-                        if (bytesRead == 0) { // reached file EOF
-                            break;
-                        }
-                        assert (bytesRead > 0) : bytesRead;
-
-                        // reads training examples from a buffer
-                        buf.flip();
-                        int remain = buf.remaining();
-                        if (remain < SizeOf.INT) {
-                            throw new HiveException("Illegal file format was detected");
-                        }
-                        while (remain >= SizeOf.INT) {
-                            int pos = buf.position();
-                            int recordBytes = buf.getInt();
-                            remain -= SizeOf.INT;
-                            if (remain < recordBytes) {
-                                buf.position(pos);
-                                break;
-                            }
-
-                            replayTrain(buf);
-                            remain -= recordBytes;
-                        }
-                        buf.compact();
-                    }
-                    if (_cvState.isConverged(_observedTrainingExamples)) {
-                        break;
-                    }
-                }
-                logger.info("Performed "
-                        + _cvState.getCurrentIteration()
-                        + " iterations of "
-                        + NumberUtils.formatNumber(_observedTrainingExamples)
-                        + " training examples on memory and KNNi data on secondary storage (thus "
-                        + NumberUtils.formatNumber(_observedTrainingExamples
-                        * _cvState.getCurrentIteration()) + " training updates in total) ");
-
             }
-        } catch (Throwable e) {
-            throw new HiveException("Exception caused in the iterative training", e);
-        } finally {
-            // delete the temporary file and release resources
-            try {
-                dst.close(true);
-            } catch (IOException e) {
-                throw new HiveException("Failed to close a file: "
-                        + dst.getFile().getAbsolutePath(), e);
-            }
-            this._inputBuf = null;
-            this._fileIO = null;
+            states[keyIdx] = FULL;
+            keys[keyIdx] = k;
+            values[keyIdx] = v;
         }
+        this._keys = keys;
+        this._values = values;
+        this._states = states;
     }
 
-    private void replayTrain(@Nonnull final ByteBuffer buf) {
-        final int itemI = buf.getInt();
-        final int knnSize = buf.getInt();
+    public interface IMapIterator {
 
-        final IntOpenHashTable<Int2FloatOpenHashTable> knnItems = new IntOpenHashTable<>(1024);
-        final Set<Integer> pairItems = new HashSet<>();
-        for (int i = 0; i < knnSize; i++) {
-            int user = buf.getInt();
-            int ruSize = buf.getInt();
-            Int2FloatOpenHashTable ru = new Int2FloatOpenHashTable(ruSize);
-            ru.defaultReturnValue(0.f);
+        public boolean hasNext();
 
-            for (int j = 0; j < ruSize; j++) {
-                int itemK = buf.getInt();
-                pairItems.add(itemK);
-                float ruk = buf.getFloat();
-                ru.put(itemK, ruk);
-            }
-            knnItems.put(user, ru);
-        }
+        /**
+         * @return -1 if not found
+         */
+        public int next();
 
-        for (int itemJ : pairItems) {
-            train(itemI, knnItems, itemJ);
-        }
+        public int getKey();
+
+        public double getValue();
+
     }
 
-    private void forwardModel() throws HiveException {
-        final IntWritable f0 = new IntWritable(); // i
-        final IntWritable f1 = new IntWritable(); // nn
-        final FloatWritable f2 = new FloatWritable(); // w
-        final Object[] forwardObj = new Object[] {f0, f1, f2};
+    private final class MapIterator implements IMapIterator {
 
-        final MutableObject<HiveException> catched = new MutableObject<>();
-        _weightMatrix.eachNonZeroCell(new VectorProcedure() {
-            @Override
-            public void apply(int i, int j, float value) {
-                if (value == 0.f) {
-                    return;
-                }
-                f0.set(i);
-                f1.set(j);
-                f2.set(value);
-                try {
-                    forward(forwardObj);
-                } catch (HiveException e) {
-                    catched.setIfAbsent(e);
-                }
+        int nextEntry;
+        int lastEntry = -1;
+
+        MapIterator() {
+            this.nextEntry = nextEntry(0);
+        }
+
+        /** find the index of next full entry */
+        int nextEntry(int index) {
+            while (index < _keys.length && _states[index] != FULL) {
+                index++;
             }
-        });
-        HiveException ex = catched.get();
-        if (ex != null) {
-            throw ex;
-        }
-        logger.info("Forwarded SLIM's weights matrix");
-    }
-
-    @Nonnull
-    private static IntOpenHashTable<Int2FloatOpenHashTable> kNNentries(
-            @Nonnull final Object kNNiObj, @Nonnull final MapObjectInspector knnItemsOI,
-            @Nonnull final PrimitiveObjectInspector knnItemsKeyOI,
-            @Nonnull final MapObjectInspector knnItemsValueOI,
-            @Nonnull final PrimitiveObjectInspector knnItemsValueKeyOI,
-            @Nonnull final PrimitiveObjectInspector knnItemsValueValueOI,
-            @Nullable IntOpenHashTable<Int2FloatOpenHashTable> knnItems,
-            @Nonnull final MutableInt nnzKNNi) {
-        if (knnItems == null) {
-            knnItems = new IntOpenHashTable<>(1024);
-        } else {
-            knnItems.clear();
+            return index;
         }
 
-        int numElementOfKNNItems = 0;
-        for (Map.Entry<?, ?> entry : knnItemsOI.getMap(kNNiObj).entrySet()) {
-            int user = PrimitiveObjectInspectorUtils.getInt(entry.getKey(), knnItemsKeyOI);
-            Int2FloatOpenHashTable ru = int2floatMap(knnItemsValueOI.getMap(entry.getValue()),
-                    knnItemsValueKeyOI, knnItemsValueValueOI);
-            knnItems.put(user, ru);
-            numElementOfKNNItems += ru.size();
+        public boolean hasNext() {
+            return nextEntry < _keys.length;
         }
 
-        nnzKNNi.setValue(numElementOfKNNItems);
-        return knnItems;
-    }
-
-    @Nonnull
-    private static Int2FloatOpenHashTable int2floatMap(@Nonnull final Map<?, ?> map,
-            @Nonnull final PrimitiveObjectInspector keyOI,
-            @Nonnull final PrimitiveObjectInspector valueOI) {
-        final Int2FloatOpenHashTable result = new Int2FloatOpenHashTable(map.size());
-        result.defaultReturnValue(0.f);
-
-        for (Map.Entry<?, ?> entry : map.entrySet()) {
-            float v = PrimitiveObjectInspectorUtils.getFloat(entry.getValue(), valueOI);
-            if (v == 0.f) {
-                continue;
+        public int next() {
+            if (!hasNext()) {
+                return -1;
             }
-            int k = PrimitiveObjectInspectorUtils.getInt(entry.getKey(), keyOI);
-            result.put(k, v);
+            int curEntry = nextEntry;
+            this.lastEntry = curEntry;
+            this.nextEntry = nextEntry(curEntry + 1);
+            return curEntry;
         }
 
-        return result;
-    }
-
-    @Nonnull
-    private static Int2FloatOpenHashTable int2floatMap(final int item,
-            @Nonnull final Map<?, ?> map, @Nonnull final PrimitiveObjectInspector keyOI,
-            @Nonnull final PrimitiveObjectInspector valueOI,
-            @Nullable final DoKFloatMatrix dataMatrix) {
-        return int2floatMap(item, map, keyOI, valueOI, dataMatrix, null);
-    }
-
-    @Nonnull
-    private static Int2FloatOpenHashTable int2floatMap(final int item,
-            @Nonnull final Map<?, ?> map, @Nonnull final PrimitiveObjectInspector keyOI,
-            @Nonnull final PrimitiveObjectInspector valueOI,
-            @Nullable final DoKFloatMatrix dataMatrix, @Nullable Int2FloatOpenHashTable dst) {
-        if (dst == null) {
-            dst = new Int2FloatOpenHashTable(map.size());
-            dst.defaultReturnValue(0.f);
-        } else {
-            dst.clear();
-        }
-
-        for (Map.Entry<?, ?> entry : map.entrySet()) {
-            float rating = PrimitiveObjectInspectorUtils.getFloat(entry.getValue(), valueOI);
-            if (rating == 0.f) {
-                continue;
+        public int getKey() {
+            if (lastEntry == -1) {
+                throw new IllegalStateException();
             }
-            int user = PrimitiveObjectInspectorUtils.getInt(entry.getKey(), keyOI);
-            dst.put(user, rating);
-            if (dataMatrix != null) {
-                dataMatrix.set(item, user, rating);
-            }
+            return _keys[lastEntry];
         }
 
-        return dst;
+        public double getValue() {
+            if (lastEntry == -1) {
+                throw new IllegalStateException();
+            }
+            return _values[lastEntry];
+        }
     }
 }
