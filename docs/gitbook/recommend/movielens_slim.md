@@ -28,7 +28,7 @@ _Caution: SLIM is supported from Hivemall v0.5-rc.1 or later._
 
 # SLIM optimization objective
 
-The optimization objective of [SLIM]((http://glaros.dtc.umn.edu/gkhome/fetch/papers/SLIM2011icdm.pdf)) is similar to Elastic Net (L1+L2 regularization) with additional constraints as follows:
+The optimization objective of [SLIM](http://glaros.dtc.umn.edu/gkhome/fetch/papers/SLIM2011icdm.pdf) is similar to Elastic Net (L1+L2 regularization) with additional constraints as follows:
 
 $$
 \begin{aligned}
