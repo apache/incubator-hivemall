@@ -145,7 +145,7 @@ where rnd < 0.5
 > we will show the example of queries and its results based on $$K$$-hold cross validation case.
 > But, this article's queries are valid for leave-one-out cross validation.
 
-## Precompute movie-movie similarity
+## Pre-compute item-item similarity
 
 SLIM needs top-$$k$$ most similar movies for each movie to the approximate user-item matrix.
 Here, we particularly focus on [DIMSUM](item_based_cf.html#dimsum-approximated-all-pairs-cosine-similarity-computation),
@@ -364,12 +364,12 @@ Here, we predict ratng values of binarized user-item rating matrix of testing da
 
 Based on predicted rating scores, we can recommend top-k items for each user that he or she will be likely to put high scores.
 
-## Predict unknown value of user-item matrix
+## Predict unknown ratings of a user-item matrix
 
-Based on known ratings and SLIM weight matrix, we can predict unknown values in the user-item matrix in `predicted`.
+Based on known ratings and SLIM weight matrix, we predict unknown ratings in the user-item matrix.
 SLIM predicts ratings of user-item pairs based on top-$$K$$ similar items.
 
-The `predict_pair` table represents candidates for recommended user-movie pairs, excluding known ratings in training dataset.
+The `predict_pair` table represents candidates for recommended user-movie pairs, excluding known ratings in the training dataset.
 
 ```sql
 CREATE OR REPLACE VIEW predict_pair 
@@ -397,9 +397,9 @@ from
 where
   r.itemid IS NULL -- anti join
 ;
-``
-
 ```
+
+```sql
 -- optionally set the mean/default value of prediction
 set hivevar:mu=0.0;
 
@@ -578,7 +578,6 @@ from
 | mrr |
 |:---:|
 | 0.10782647321821472 |
-```
 
 ### $$K$$-hold result
 
