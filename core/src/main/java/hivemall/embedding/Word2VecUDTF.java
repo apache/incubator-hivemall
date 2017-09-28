@@ -289,7 +289,7 @@ public class Word2VecUDTF extends UDTFWithOptions {
 
             for (int wordId = 0; wordId < aliasWordIds.length; wordId++) {
                 if (!model.inputWeights.containsKey(wordId * dim)){
-                    break;
+                    continue;
                 }
                 word.set(wordId);
                 for (int i = 0; i < dim; i++) {
