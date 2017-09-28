@@ -33,10 +33,10 @@ import java.util.Arrays;
  * Primary hash function: h1(k) = k mod m
  * Secondary hash function: h2(k) = 1 + (k mod(m-2))
  * </pre>
- * 
+ *
  * @see http://en.wikipedia.org/wiki/Double_hashing
  */
-public final class Long2DoubleOpenHashTable implements Externalizable {
+public class Int2DoubleOpenHashTable implements Externalizable {
 
     protected static final byte FREE = 0;
     protected static final byte FULL = 1;
@@ -50,13 +50,13 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
 
     protected int _used = 0;
     protected int _threshold;
-    protected double defaultReturnValue = 0.d;
+    protected double defaultReturnValue = -1.d;
 
-    protected long[] _keys;
+    protected int[] _keys;
     protected double[] _values;
     protected byte[] _states;
 
-    protected Long2DoubleOpenHashTable(int size, float loadFactor, float growFactor,
+    protected Int2DoubleOpenHashTable(int size, float loadFactor, float growFactor,
             boolean forcePrime) {
         if (size < 1) {
             throw new IllegalArgumentException();
@@ -64,24 +64,24 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         this._loadFactor = loadFactor;
         this._growFactor = growFactor;
         int actualSize = forcePrime ? Primes.findLeastPrimeNumber(size) : size;
-        this._keys = new long[actualSize];
+        this._keys = new int[actualSize];
         this._values = new double[actualSize];
         this._states = new byte[actualSize];
         this._threshold = (int) (actualSize * _loadFactor);
     }
 
-    public Long2DoubleOpenHashTable(int size, int loadFactor, int growFactor) {
+    public Int2DoubleOpenHashTable(int size, float loadFactor, float growFactor) {
         this(size, loadFactor, growFactor, true);
     }
 
-    public Long2DoubleOpenHashTable(int size) {
+    public Int2DoubleOpenHashTable(int size) {
         this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR, true);
     }
 
     /**
      * Only for {@link Externalizable}
      */
-    public Long2DoubleOpenHashTable() {// required for serialization
+    public Int2DoubleOpenHashTable() {// required for serialization
         this._loadFactor = DEFAULT_LOAD_FACTOR;
         this._growFactor = DEFAULT_GROW_FACTOR;
     }
@@ -90,49 +90,26 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         this.defaultReturnValue = v;
     }
 
-    public boolean containsKey(final long key) {
-        return _findKey(key) >= 0;
+    public boolean containsKey(final int key) {
+        return findKey(key) >= 0;
     }
 
     /**
-     * @return defaultReturnValue if not found
+     * @return -1.d if not found
      */
-    public double get(final long key) {
+    public double get(final int key) {
         return get(key, defaultReturnValue);
     }
 
-    public double get(final long key, final double defaultValue) {
-        final int i = _findKey(key);
+    public double get(final int key, final double defaultValue) {
+        final int i = findKey(key);
         if (i < 0) {
             return defaultValue;
         }
         return _values[i];
     }
 
-    public double _get(final int index) {
-        if (index < 0) {
-            return defaultReturnValue;
-        }
-        return _values[index];
-    }
-
-    public double _set(final int index, final double value) {
-        double old = _values[index];
-        _values[index] = value;
-        return old;
-    }
-
-    public double _remove(final int index) {
-        _states[index] = REMOVED;
-        --_used;
-        return _values[index];
-    }
-
-    public double put(final long key, final double value) {
-        return put(key, value, defaultReturnValue);
-    }
-
-    public double put(final long key, final double value, final double defaultValue) {
+    public double put(final int key, final double value) {
         final int hash = keyHash(key);
         int keyLength = _keys.length;
         int keyIdx = hash % keyLength;
@@ -143,7 +120,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
             keyIdx = hash % keyLength;
         }
 
-        final long[] keys = _keys;
+        final int[] keys = _keys;
         final double[] values = _values;
         final byte[] states = _states;
 
@@ -154,7 +131,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
                 return old;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -174,11 +151,11 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         values[keyIdx] = value;
         states[keyIdx] = FULL;
         ++_used;
-        return defaultValue;
+        return defaultReturnValue;
     }
 
     /** Return weather the required slot is free for new entry */
-    protected boolean isFree(final int index, final long key) {
+    protected boolean isFree(final int index, final int key) {
         final byte stat = _states[index];
         if (stat == FREE) {
             return true;
@@ -199,11 +176,8 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         return false;
     }
 
-    /**
-     * @return -1 if not found
-     */
-    public int _findKey(final long key) {
-        final long[] keys = _keys;
+    protected int findKey(final int key) {
+        final int[] keys = _keys;
         final byte[] states = _states;
         final int keyLength = keys.length;
 
@@ -214,7 +188,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
                 return keyIdx;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -231,8 +205,8 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         return -1;
     }
 
-    public double remove(final long key) {
-        final long[] keys = _keys;
+    public double remove(final int key) {
+        final int[] keys = _keys;
         final double[] values = _values;
         final byte[] states = _states;
         final int keyLength = keys.length;
@@ -247,7 +221,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
                 return old;
             }
             //  second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -309,16 +283,16 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         if (newCapacity <= oldCapacity) {
             throw new IllegalArgumentException("new: " + newCapacity + ", old: " + oldCapacity);
         }
-        final long[] newkeys = new long[newCapacity];
+        final int[] newkeys = new int[newCapacity];
         final double[] newValues = new double[newCapacity];
         final byte[] newStates = new byte[newCapacity];
         int used = 0;
         for (int i = 0; i < oldCapacity; i++) {
             if (_states[i] == FULL) {
                 used++;
-                long k = _keys[i];
-                double v = _values[i];
-                int hash = keyHash(k);
+                final int k = _keys[i];
+                final double v = _values[i];
+                final int hash = keyHash(k);
                 int keyIdx = hash % newCapacity;
                 if (newStates[keyIdx] == FULL) {// second hashing
                     int decr = 1 + (hash % (newCapacity - 2));
@@ -340,8 +314,8 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         this._used = used;
     }
 
-    private static int keyHash(final long key) {
-        return (int) (key ^ (key >>> 32)) & 0x7FFFFFFF;
+    private static int keyHash(int key) {
+        return key & 0x7fffffff;
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -351,7 +325,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         out.writeInt(_keys.length);
         IMapIterator i = entries();
         while (i.next() != -1) {
-            out.writeLong(i.getKey());
+            out.writeInt(i.getKey());
             out.writeDouble(i.getValue());
         }
     }
@@ -360,12 +334,12 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         this._threshold = in.readInt();
         this._used = in.readInt();
 
-        final int keylen = in.readInt();
-        final long[] keys = new long[keylen];
-        final double[] values = new double[keylen];
-        final byte[] states = new byte[keylen];
+        int keylen = in.readInt();
+        int[] keys = new int[keylen];
+        double[] values = new double[keylen];
+        byte[] states = new byte[keylen];
         for (int i = 0; i < _used; i++) {
-            long k = in.readLong();
+            int k = in.readInt();
             double v = in.readDouble();
             int hash = keyHash(k);
             int keyIdx = hash % keylen;
@@ -399,7 +373,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
          */
         public int next();
 
-        public long getKey();
+        public int getKey();
 
         public double getValue();
 
@@ -436,7 +410,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
             return curEntry;
         }
 
-        public long getKey() {
+        public int getKey() {
             if (lastEntry == -1) {
                 throw new IllegalStateException();
             }

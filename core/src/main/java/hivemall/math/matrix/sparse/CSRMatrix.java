@@ -29,8 +29,8 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
- * Read-only CSR double Matrix.
- * 
+ * Compressed Sparse Row Matrix optimized for row major access.
+ *
  * @link http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
  * @link http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */

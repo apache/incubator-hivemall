@@ -103,7 +103,7 @@ public class BinaryResponsesMeasuresTest {
         List<Integer> groundTruth = Arrays.asList(1, 2, 4);
 
         double actual = BinaryResponsesMeasures.ReciprocalRank(rankedList, groundTruth,
-            rankedList.size());
+                rankedList.size());
         Assert.assertEquals(1.0d, actual, 0.0001d);
 
         Collections.reverse(rankedList);
@@ -113,6 +113,22 @@ public class BinaryResponsesMeasuresTest {
 
         actual = BinaryResponsesMeasures.ReciprocalRank(rankedList, groundTruth, 1);
         Assert.assertEquals(0.0d, actual, 0.0001d);
+    }
+
+    public void testHit() {
+        List<Integer> rankedList = Arrays.asList(1, 3, 2, 6);
+        List<Integer> groundTruth = Arrays.asList(1, 2, 4);
+
+        double actual = BinaryResponsesMeasures.Hit(rankedList, groundTruth, rankedList.size());
+        Assert.assertEquals(1.d, actual, 0.0001d);
+
+        actual = BinaryResponsesMeasures.Hit(rankedList, groundTruth, 2);
+        Assert.assertEquals(1.d, actual, 0.0001d);
+
+        // not hitting case
+        rankedList = Arrays.asList(5, 6);
+        actual = BinaryResponsesMeasures.Hit(rankedList, groundTruth, 2);
+        Assert.assertEquals(0.d, actual, 0.0001d);
     }
 
     @Test

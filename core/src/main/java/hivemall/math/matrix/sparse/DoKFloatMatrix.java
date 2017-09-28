@@ -25,8 +25,8 @@ import hivemall.math.matrix.RowMajorMatrix;
 import hivemall.math.matrix.builders.DoKMatrixBuilder;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.utils.collections.maps.Long2DoubleOpenHashTable;
-import hivemall.utils.collections.maps.Long2DoubleOpenHashTable.IMapIterator;
+import hivemall.utils.collections.maps.Long2FloatOpenHashTable;
+import hivemall.utils.collections.maps.Long2FloatOpenHashTable.IMapIterator;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 
@@ -39,10 +39,10 @@ import javax.annotation.Nonnull;
  * This is an efficient structure for constructing a sparse matrix incrementally.
  */
 @Experimental
-public final class DoKMatrix extends AbstractMatrix {
+public final class DoKFloatMatrix extends AbstractMatrix {
 
     @Nonnull
-    private final Long2DoubleOpenHashTable elements;
+    private final Long2FloatOpenHashTable elements;
     @Nonnegative
     private int numRows;
     @Nonnegative
@@ -50,31 +50,32 @@ public final class DoKMatrix extends AbstractMatrix {
     @Nonnegative
     private int nnz;
 
-    public DoKMatrix() {
+    public DoKFloatMatrix() {
         this(0, 0);
     }
 
-    public DoKMatrix(@Nonnegative int numRows, @Nonnegative int numCols) {
+    public DoKFloatMatrix(@Nonnegative int numRows, @Nonnegative int numCols) {
         this(numRows, numCols, 0.05f);
     }
 
-    public DoKMatrix(@Nonnegative int numRows, @Nonnegative int numCols, @Nonnegative float sparsity) {
+    public DoKFloatMatrix(@Nonnegative int numRows, @Nonnegative int numCols,
+            @Nonnegative float sparsity) {
         super();
         Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f, "Invalid Sparsity value: "
                 + sparsity);
         int initialCapacity = Math.max(16384, Math.round(numRows * numCols * sparsity));
-        this.elements = new Long2DoubleOpenHashTable(initialCapacity);
-        elements.defaultReturnValue(0.d);
+        this.elements = new Long2FloatOpenHashTable(initialCapacity);
+        elements.defaultReturnValue(0.f);
         this.numRows = numRows;
         this.numColumns = numCols;
         this.nnz = 0;
     }
 
-    public DoKMatrix(@Nonnegative int initSize) {
+    public DoKFloatMatrix(@Nonnegative int initSize) {
         super();
         int initialCapacity = Math.max(initSize, 16384);
-        this.elements = new Long2DoubleOpenHashTable(initialCapacity);
-        elements.defaultReturnValue(0.d);
+        this.elements = new Long2FloatOpenHashTable(initialCapacity);
+        elements.defaultReturnValue(0.f);
         this.numRows = 0;
         this.numColumns = 0;
         this.nnz = 0;
@@ -145,7 +146,7 @@ public final class DoKMatrix extends AbstractMatrix {
         final int end = Math.min(dst.length, numColumns);
         for (int col = 0; col < end; col++) {
             long k = index(row, col);
-            double v = elements.get(k);
+            float v = elements.get(k);
             dst[col] = v;
         }
 
@@ -159,8 +160,8 @@ public final class DoKMatrix extends AbstractMatrix {
 
         for (int col = 0; col < numColumns; col++) {
             long k = index(index, col);
-            final double v = elements.get(k, 0.d);
-            if (v != 0.d) {
+            final float v = elements.get(k, 0.f);
+            if (v != 0.f) {
                 row.set(col, v);
             }
         }
@@ -169,20 +170,29 @@ public final class DoKMatrix extends AbstractMatrix {
     @Override
     public double get(@Nonnegative final int row, @Nonnegative final int col,
             final double defaultValue) {
+        return get(row, col, (float) defaultValue);
+    }
+
+    public float get(@Nonnegative final int row, @Nonnegative final int col,
+            final float defaultValue) {
         long index = index(row, col);
         return elements.get(index, defaultValue);
     }
 
     @Override
     public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
+        set(row, col, (float) value);
+    }
+
+    public void set(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col);
 
         final long index = index(row, col);
-        if (value == 0.d && elements.containsKey(index) == false) {
+        if (value == 0.f && elements.containsKey(index) == false) {
             return;
         }
 
-        if (elements.put(index, value, 0.d) == 0.d) {
+        if (elements.put(index, value, 0.f) == 0.f) {
             nnz++;
             this.numRows = Math.max(numRows, row + 1);
             this.numColumns = Math.max(numColumns, col + 1);
@@ -192,15 +202,19 @@ public final class DoKMatrix extends AbstractMatrix {
     @Override
     public double getAndSet(@Nonnegative final int row, @Nonnegative final int col,
             final double value) {
+        return getAndSet(row, col, (float) value);
+    }
+
+    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col);
 
         final long index = index(row, col);
-        if (value == 0.d && elements.containsKey(index) == false) {
-            return 0.d;
+        if (value == 0.f && elements.containsKey(index) == false) {
+            return 0.f;
         }
 
-        final double old = elements.put(index, value, 0.d);
-        if (old == 0.d) {
+        final float old = elements.put(index, value, 0.f);
+        if (old == 0.f) {
             nnz++;
             this.numRows = Math.max(numRows, row + 1);
             this.numColumns = Math.max(numColumns, col + 1);
@@ -222,15 +236,15 @@ public final class DoKMatrix extends AbstractMatrix {
 
             if (k1 >= 0) {
                 if (k2 >= 0) {
-                    double v1 = elements._get(k1);
-                    double v2 = elements._set(k2, v1);
+                    float v1 = elements._get(k1);
+                    float v2 = elements._set(k2, v1);
                     elements._set(k1, v2);
                 } else {// k1>=0 and k2<0
-                    double v1 = elements._remove(k1);
+                    float v1 = elements._remove(k1);
                     elements.put(i2, v1);
                 }
             } else if (k2 >= 0) {// k2>=0 and k1 < 0
-                double v2 = elements._remove(k2);
+                float v2 = elements._remove(k2);
                 elements.put(i1, v2);
             } else {//k1<0 and k2<0
                 continue;
@@ -251,7 +265,7 @@ public final class DoKMatrix extends AbstractMatrix {
                     procedure.apply(col, 0.d);
                 }
             } else {
-                double v = elements._get(key);
+                float v = elements._get(key);
                 procedure.apply(col, v);
             }
         }
@@ -264,8 +278,8 @@ public final class DoKMatrix extends AbstractMatrix {
 
         for (int col = 0; col < numColumns; col++) {
             long i = index(row, col);
-            final double v = elements.get(i, 0.d);
-            if (v != 0.d) {
+            final float v = elements.get(i, 0.f);
+            if (v != 0.f) {
                 procedure.apply(col, v);
             }
         }
@@ -297,7 +311,7 @@ public final class DoKMatrix extends AbstractMatrix {
                     procedure.apply(row, 0.d);
                 }
             } else {
-                double v = elements._get(key);
+                float v = elements._get(key);
                 procedure.apply(row, v);
             }
         }
@@ -310,8 +324,8 @@ public final class DoKMatrix extends AbstractMatrix {
 
         for (int row = 0; row < numRows; row++) {
             long i = index(row, col);
-            final double v = elements.get(i, 0.d);
-            if (v != 0.d) {
+            final float v = elements.get(i, 0.f);
+            if (v != 0.f) {
                 procedure.apply(row, v);
             }
         }
@@ -326,7 +340,7 @@ public final class DoKMatrix extends AbstractMatrix {
             long k = itor.getKey();
             int row = Primitives.getHigh(k);
             int col = Primitives.getLow(k);
-            double value = itor.getValue();
+            float value = itor.getValue();
             procedure.apply(row, col, value);
         }
     }

@@ -567,6 +567,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION precision_at AS 'hivemall.evaluation.P
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS recall_at")
 sqlContext.sql("CREATE TEMPORARY FUNCTION recall_at AS 'hivemall.evaluation.RecallUDAF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS hitrate")
+sqlContext.sql("CREATE TEMPORARY FUNCTION hitrate AS 'hivemall.evaluation.HitRateUDAF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS mrr")
 sqlContext.sql("CREATE TEMPORARY FUNCTION mrr AS 'hivemall.evaluation.MRRUDAF'")
 
@@ -695,3 +698,10 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION guess_attribute_types AS 'hivemall.smi
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_gradient_tree_boosting_classifier")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_gradient_tree_boosting_classifier AS 'hivemall.smile.classification.GradientTreeBoostingClassifierUDTF'")
+
+/**
+ * Recommendation
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_slim")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_slim AS 'hivemall.recommend.SlimUDTF'")

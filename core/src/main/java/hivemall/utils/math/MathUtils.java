@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.math3.special.Gamma;
 
 public final class MathUtils {
-    private static final double LOG2 = Math.log(2);
+    public static final double LOG2 = Math.log(2);
 
     private MathUtils() {}
 

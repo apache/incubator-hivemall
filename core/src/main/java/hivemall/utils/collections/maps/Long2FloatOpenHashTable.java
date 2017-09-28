@@ -78,7 +78,10 @@ public final class Long2FloatOpenHashTable implements Externalizable {
         this(size, DEFAULT_LOAD_FACTOR, DEFAULT_GROW_FACTOR, true);
     }
 
-    public Long2FloatOpenHashTable() {// required for serialization
+    /**
+     * Only for {@link Externalizable}
+     */
+    public Long2FloatOpenHashTable() {
         this._loadFactor = DEFAULT_LOAD_FACTOR;
         this._growFactor = DEFAULT_GROW_FACTOR;
     }
@@ -113,7 +116,23 @@ public final class Long2FloatOpenHashTable implements Externalizable {
         return _values[index];
     }
 
+    public float _set(final int index, final float value) {
+        float old = _values[index];
+        _values[index] = value;
+        return old;
+    }
+
+    public float _remove(final int index) {
+        _states[index] = REMOVED;
+        --_used;
+        return _values[index];
+    }
+
     public float put(final long key, final float value) {
+        return put(key, value, defaultReturnValue);
+    }
+
+    public float put(final long key, final float value, final float defaultValue) {
         final int hash = keyHash(key);
         int keyLength = _keys.length;
         int keyIdx = hash % keyLength;
@@ -155,7 +174,7 @@ public final class Long2FloatOpenHashTable implements Externalizable {
         values[keyIdx] = value;
         states[keyIdx] = FULL;
         ++_used;
-        return defaultReturnValue;
+        return defaultValue;
     }
 
     /** Return weather the required slot is free for new entry */

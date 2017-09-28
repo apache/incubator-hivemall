@@ -225,7 +225,6 @@ public class MatrixBuilderTest {
         Assert.assertEquals(Double.NaN, csc2.get(5, 4, Double.NaN), 0.d);
     }
 
-
     @Test
     public void testDoKMatrixFromLibSVM() {
         Matrix matrix = dokMatrixFromLibSVM();
