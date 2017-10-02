@@ -182,6 +182,7 @@ create temporary function to_ordered_list as 'hivemall.tools.list.UDAFToOrderedL
 create temporary function singularize as 'hivemall.tools.text.SingularizeUDF';
 create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
 create temporary function hitrate as 'hivemall.evaluation.HitRateUDAF';
+create temporary function to_ngrams as 'hivemall.tools.text.NgramsUDF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

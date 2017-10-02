@@ -553,6 +553,9 @@ CREATE FUNCTION base91 as 'hivemall.tools.text.Base91UDF' USING JAR '${hivemall_
 DROP FUNCTION IF EXISTS unbase91;
 CREATE FUNCTION unbase91 as 'hivemall.tools.text.Unbase91UDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS to_ngrams;
+CREATE FUNCTION to_ngrams as 'hivemall.tools.text.NgramsUDF' USING JAR '${hivemall_jar}';
+
 ---------------------------------
 -- Dataset generator functions --
 ---------------------------------
