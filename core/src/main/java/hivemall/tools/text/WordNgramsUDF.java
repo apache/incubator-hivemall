@@ -32,10 +32,10 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-@Description(name = "to_ngrams", value = "_FUNC_(array<string> words, int minSize, int maxSize])"
+@Description(name = "word_ngrams", value = "_FUNC_(array<string> words, int minSize, int maxSize])"
         + " - Returns list of n-grams for given words, where `minSize <= n <= maxSize`")
 @UDFType(deterministic = true, stateful = false)
-public final class NgramsUDF extends UDF {
+public final class WordNgramsUDF extends UDF {
 
     @Nullable
     public List<Text> evaluate(@Nullable final List<Text> words, final int minSize,

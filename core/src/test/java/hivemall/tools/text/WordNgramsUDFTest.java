@@ -29,13 +29,13 @@ import org.apache.hadoop.io.Text;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NgramsUDFTest {
+public class WordNgramsUDFTest {
 
-    private NgramsUDF udf;
+    private WordNgramsUDF udf;
 
     @Before
     public void setUp() {
-        this.udf = new NgramsUDF();
+        this.udf = new WordNgramsUDF();
     }
 
     @Test
