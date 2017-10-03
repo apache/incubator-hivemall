@@ -64,7 +64,7 @@ public class WordNgramsUDFTest {
         Assert.assertTrue(ngrams.contains(new Text("machine learning")));
     }
 
-    @Test(expected = HiveException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testWordsWithNull() throws HiveException {
         final List<Text> words = new ArrayList<Text>();
         words.add(new Text("machine"));

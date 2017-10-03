@@ -68,7 +68,7 @@ public final class WordNgramsUDF extends UDF {
                 for (int j = i; j < end; j++) {
                     final Text word = words.get(j);
                     if (word == null) {
-                        throw new HiveException(
+                        throw new UDFArgumentException(
                             "`array<string> words` must not contain NULL element");
                     }
                     if (j > i) { // insert single whitespace between elements
