@@ -18,6 +18,8 @@
  */
 package hivemall.tools.text;
 
+import hivemall.utils.lang.StringUtils;
+
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -57,6 +59,8 @@ public final class WordNgramsUDF extends UDF {
     private static List<Text> getNgrams(@Nonnull final List<Text> words,
             @Nonnegative final int minSize, @Nonnegative final int maxSize) throws HiveException {
         final List<Text> ngrams = new ArrayList<Text>();
+        final StringBuilder ngram = new StringBuilder();
+
         for (int i = 0, numWords = words.size(); i < numWords; i++) {
             for (int ngramSize = minSize; ngramSize <= maxSize; ngramSize++) {
                 final int end = i + ngramSize;
@@ -64,7 +68,7 @@ public final class WordNgramsUDF extends UDF {
                     continue;
                 }
 
-                final StringBuilder ngram = new StringBuilder();
+                StringUtils.clear(ngram);
                 for (int j = i; j < end; j++) {
                     final Text word = words.get(j);
                     if (word == null) {
@@ -79,6 +83,7 @@ public final class WordNgramsUDF extends UDF {
                 ngrams.add(new Text(ngram.toString()));
             }
         }
+
         return ngrams;
     }
 
