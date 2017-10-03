@@ -29,6 +29,7 @@ import org.apache.hadoop.io.Text;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,8 @@ import java.util.List;
 @UDFType(deterministic = true, stateful = false)
 public final class NgramsUDF extends UDF {
 
-    public List<Text> evaluate(final List<Text> words, final int minSize, final int maxSize)
+    @Nullable
+    public List<Text> evaluate(@Nullable final List<Text> words, final int minSize, final int maxSize)
             throws HiveException {
         if (words == null) {
             return null;
