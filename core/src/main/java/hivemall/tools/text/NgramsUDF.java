@@ -56,7 +56,7 @@ public final class NgramsUDF extends UDF {
     }
 
     @Nonnull
-    private List<Text> getNgrams(@Nonnull final List<Text> words, @Nonnegative final int minSize,
+    private static List<Text> getNgrams(@Nonnull final List<Text> words, @Nonnegative final int minSize,
             @Nonnegative final int maxSize) {
         final List<Text> ngrams = new ArrayList<Text>();
         for (int i = 0, numWords = words.size(); i < numWords; i++) {
