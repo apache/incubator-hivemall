@@ -18,8 +18,6 @@
  */
 package hivemall.tools.text;
 
-import hivemall.utils.lang.StringUtils;
-
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -40,8 +38,8 @@ import java.util.List;
 public final class NgramsUDF extends UDF {
 
     @Nullable
-    public List<Text> evaluate(@Nullable final List<Text> words, final int minSize, final int maxSize)
-            throws HiveException {
+    public List<Text> evaluate(@Nullable final List<Text> words, final int minSize,
+            final int maxSize) throws HiveException {
         if (words == null) {
             return null;
         }
@@ -56,20 +54,29 @@ public final class NgramsUDF extends UDF {
     }
 
     @Nonnull
-    private static List<Text> getNgrams(@Nonnull final List<Text> words, @Nonnegative final int minSize,
-            @Nonnegative final int maxSize) {
+    private static List<Text> getNgrams(@Nonnull final List<Text> words,
+            @Nonnegative final int minSize, @Nonnegative final int maxSize) throws HiveException {
         final List<Text> ngrams = new ArrayList<Text>();
         for (int i = 0, numWords = words.size(); i < numWords; i++) {
             for (int ngramSize = minSize; ngramSize <= maxSize; ngramSize++) {
-                if (i + ngramSize > numWords) { // exceeds the final element
+                final int end = i + ngramSize;
+                if (end > numWords) { // exceeds the final element
                     continue;
                 }
 
-                final List<String> ngram = new ArrayList<String>();
-                for (int j = i; j < i + ngramSize; j++) {
-                    ngram.add(words.get(j).toString());
+                final StringBuilder ngram = new StringBuilder();
+                for (int j = i; j < end; j++) {
+                    final Text word = words.get(j);
+                    if (word == null) {
+                        throw new HiveException(
+                            "`array<string> words` must not contain NULL element");
+                    }
+                    if (j > i) { // insert single whitespace between elements
+                        ngram.append(" ");
+                    }
+                    ngram.append(word.toString());
                 }
-                ngrams.add(new Text(StringUtils.join(ngram, " ")));
+                ngrams.add(new Text(ngram.toString()));
             }
         }
         return ngrams;

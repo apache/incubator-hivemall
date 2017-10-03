@@ -64,6 +64,16 @@ public class NgramsUDFTest {
         Assert.assertTrue(ngrams.contains(new Text("machine learning")));
     }
 
+    @Test(expected = HiveException.class)
+    public void testWordsWithNull() throws HiveException {
+        final List<Text> words = new ArrayList<Text>();
+        words.add(new Text("machine"));
+        words.add(null);
+        words.add(new Text("learning"));
+
+        udf.evaluate(words, 1, 2);
+    }
+
     @Test(expected = UDFArgumentException.class)
     public void testInvalidMinSize() throws HiveException {
         udf.evaluate(new ArrayList<Text>(), 0, 2);
