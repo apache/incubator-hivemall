@@ -46,6 +46,12 @@ Contributing
 
 If you are planning to contribute to this repository, we first request you to create an issue at [our JIRA page](https://issues.apache.org/jira/projects/HIVEMALL) even if the topic is not related to source code itself (e.g., documentation, new idea and proposal).
 
+All Hivemall functions are defined under [resources/ddl](resources/ddl). In order to update the definition files, the following script helps inserting function name and class path of your new UDF:
+
+```
+$ ./bin/update_ddls.sh
+```
+
 Note that, before creating a pull request including Java code, please make sure your code follows our coding conventions by applying formatter:
 
 ```
