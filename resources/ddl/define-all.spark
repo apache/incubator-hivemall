@@ -529,6 +529,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION base91 AS 'hivemall.tools.text.Base91U
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS unbase91")
 sqlContext.sql("CREATE TEMPORARY FUNCTION unbase91 AS 'hivemall.tools.text.Unbase91UDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS word_ngrams")
+sqlContext.sql("CREATE TEMPORARY FUNCTION word_ngrams AS 'hivemall.tools.text.WordNgramsUDF'")
+
 /**
  * Dataset generator functions
  */

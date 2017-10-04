@@ -257,6 +257,14 @@ The compression level must be in range [-1,9]
     > ["kuromoji","使う","分かち書き","テスト","第","二","引数","normal","search","extended","指定","デフォルト","normal"," モード"]
     ```
 
+- `word_ngrams(array<string> words, int minSize, int maxSize)` - Returns list of n-grams where `minSize <= n <= maxSize`
+
+    ```sql
+    select word_ngrams(tokenize('Machine learning is fun!', true), 1, 2);
+
+    > ["machine","machine learning","learning","learning is","is","is fun","fun"]
+    ```
+
 # Other functions
 
 - `convert_label(const int|const float)` - Convert from -1|1 to 0.0f|1.0f, or from 0.0f|1.0f to -1|1
