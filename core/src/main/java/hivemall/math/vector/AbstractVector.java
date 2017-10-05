@@ -29,6 +29,16 @@ public abstract class AbstractVector implements Vector {
         return get(index, 0.d);
     }
 
+    @Override
+    public float get(@Nonnegative final int index, final float defaultValue) {
+        return (float) get(index, (double) defaultValue);
+    }
+
+    @Override
+    public void set(@Nonnegative final int index, final float value) {
+        set(index, (double) value);
+    }
+
     protected static final void checkIndex(final int index) {
         if (index < 0) {
             throw new IndexOutOfBoundsException("Invalid index " + index);

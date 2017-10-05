@@ -16,9 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.matrix.sparse;
+package hivemall.math.matrix.sparse.floats;
 
 import hivemall.math.matrix.ColumnMajorMatrix;
+import hivemall.math.matrix.FloatMatrix;
 import hivemall.math.matrix.builders.CSCMatrixBuilder;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
@@ -35,21 +36,21 @@ import javax.annotation.Nonnull;
  *
  * @link http://netlib.org/linalg/html_templates/node92.html#SECTION00931200000000000000
  */
-public final class CSCMatrix extends ColumnMajorMatrix {
+public final class CSCFloatMatrix extends ColumnMajorMatrix implements FloatMatrix {
 
     @Nonnull
     private final int[] columnPointers;
     @Nonnull
     private final int[] rowIndicies;
     @Nonnull
-    private final double[] values;
+    private final float[] values;
 
     private final int numRows;
     private final int numColumns;
     private final int nnz;
 
-    public CSCMatrix(@Nonnull int[] columnPointers, @Nonnull int[] rowIndicies,
-            @Nonnull double[] values, int numRows, int numColumns) {
+    public CSCFloatMatrix(@Nonnull int[] columnPointers, @Nonnull int[] rowIndicies,
+            @Nonnull float[] values, int numRows, int numColumns) {
         super();
         Preconditions.checkArgument(columnPointers.length >= 1,
             "rowPointers must be greather than 0: " + columnPointers.length);
@@ -140,6 +141,27 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     }
 
     @Override
+    public float[] getRow(final int index, @Nonnull final float[] dst) {
+        checkRowIndex(index, numRows);
+
+        final int last = Math.min(dst.length, columnPointers.length - 1);
+        for (int j = 0; j < last; j++) {
+            final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
+                columnPointers[j + 1], index);
+            if (k >= 0) {
+                dst[j] = values[k];
+            } else {
+                dst[j] = 0.f;
+            }
+        }
+        for (int j = last; j < dst.length; j++) {
+            dst[j] = 0.f;
+        }
+
+        return dst;
+    }
+
+    @Override
     public void getRow(final int index, @Nonnull final Vector row) {
         checkRowIndex(index, numRows);
         row.clear();
@@ -148,14 +170,14 @@ public final class CSCMatrix extends ColumnMajorMatrix {
             final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
                 columnPointers[j + 1], index);
             if (k >= 0) {
-                double v = values[k];
+                float v = values[k];
                 row.set(j, v);
             }
         }
     }
 
     @Override
-    public double get(final int row, final int col, final double defaultValue) {
+    public float get(final int row, final int col, final float defaultValue) {
         checkIndex(row, col, numRows, numColumns);
 
         int index = getIndex(row, col);
@@ -166,7 +188,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     }
 
     @Override
-    public double getAndSet(final int row, final int col, final double value) {
+    public float getAndSet(final int row, final int col, final float value) {
         checkIndex(row, col, numRows, numColumns);
 
         final int index = getIndex(row, col);
@@ -175,13 +197,13 @@ public final class CSCMatrix extends ColumnMajorMatrix {
                     + col);
         }
 
-        double old = values[index];
+        float old = values[index];
         values[index] = value;
         return old;
     }
 
     @Override
-    public void set(final int row, final int col, final double value) {
+    public void set(final int row, final int col, final float value) {
         checkIndex(row, col, numRows, numColumns);
 
         final int index = getIndex(row, col);
@@ -219,16 +241,16 @@ public final class CSCMatrix extends ColumnMajorMatrix {
         if (nullOutput) {
             for (int row = 0, i = startIn; row < numRows; row++) {
                 if (i < endEx && row == rowIndicies[i]) {
-                    double v = values[i++];
+                    float v = values[i++];
                     procedure.apply(row, v);
                 } else {
-                    procedure.apply(row, 0.d);
+                    procedure.apply(row, 0.f);
                 }
             }
         } else {
             for (int j = startIn; j < endEx; j++) {
                 int row = rowIndicies[j];
-                double v = values[j];
+                float v = values[j];
                 procedure.apply(row, v);
             }
         }
@@ -242,18 +264,18 @@ public final class CSCMatrix extends ColumnMajorMatrix {
         final int endEx = columnPointers[col + 1];
         for (int j = startIn; j < endEx; j++) {
             int row = rowIndicies[j];
-            final double v = values[j];
-            if (v != 0.d) {
+            final float v = values[j];
+            if (v != 0.f) {
                 procedure.apply(row, v);
             }
         }
     }
 
     @Override
-    public CSRMatrix toRowMajorMatrix() {
+    public CSRFloatMatrix toRowMajorMatrix() {
         final int[] rowPointers = new int[numRows + 1];
         final int[] colIndicies = new int[nnz];
-        final double[] csrValues = new double[nnz];
+        final float[] csrValues = new float[nnz];
 
         // compute nnz per for each row
         for (int i = 0; i < rowIndicies.length; i++) {
@@ -285,7 +307,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
             last = tmp;
         }
 
-        return new CSRMatrix(rowPointers, colIndicies, csrValues, numColumns);
+        return new CSRFloatMatrix(rowPointers, colIndicies, csrValues, numColumns);
     }
 
     @Override

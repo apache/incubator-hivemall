@@ -16,11 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.matrix.sparse;
+package hivemall.math.matrix.sparse.floats;
 
 import hivemall.annotations.Experimental;
 import hivemall.math.matrix.AbstractMatrix;
 import hivemall.math.matrix.ColumnMajorMatrix;
+import hivemall.math.matrix.FloatMatrix;
 import hivemall.math.matrix.RowMajorMatrix;
 import hivemall.math.matrix.builders.DoKMatrixBuilder;
 import hivemall.math.vector.Vector;
@@ -39,7 +40,7 @@ import javax.annotation.Nonnull;
  * This is an efficient structure for constructing a sparse matrix incrementally.
  */
 @Experimental
-public final class DoKFloatMatrix extends AbstractMatrix {
+public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix {
 
     @Nonnull
     private final Long2FloatOpenHashTable elements;
@@ -154,6 +155,20 @@ public final class DoKFloatMatrix extends AbstractMatrix {
     }
 
     @Override
+    public float[] getRow(@Nonnegative final int row, @Nonnull final float[] dst) {
+        checkRowIndex(row, numRows);
+
+        final int end = Math.min(dst.length, numColumns);
+        for (int col = 0; col < end; col++) {
+            long k = index(row, col);
+            float v = elements.get(k);
+            dst[col] = v;
+        }
+
+        return dst;
+    }
+
+    @Override
     public void getRow(@Nonnegative final int index, @Nonnull final Vector row) {
         checkRowIndex(index, numRows);
         row.clear();
@@ -168,11 +183,6 @@ public final class DoKFloatMatrix extends AbstractMatrix {
     }
 
     @Override
-    public double get(@Nonnegative final int row, @Nonnegative final int col,
-            final double defaultValue) {
-        return get(row, col, (float) defaultValue);
-    }
-
     public float get(@Nonnegative final int row, @Nonnegative final int col,
             final float defaultValue) {
         long index = index(row, col);
@@ -180,10 +190,6 @@ public final class DoKFloatMatrix extends AbstractMatrix {
     }
 
     @Override
-    public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
-        set(row, col, (float) value);
-    }
-
     public void set(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col);
 
@@ -200,11 +206,6 @@ public final class DoKFloatMatrix extends AbstractMatrix {
     }
 
     @Override
-    public double getAndSet(@Nonnegative final int row, @Nonnegative final int col,
-            final double value) {
-        return getAndSet(row, col, (float) value);
-    }
-
     public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col);
 
@@ -262,7 +263,7 @@ public final class DoKFloatMatrix extends AbstractMatrix {
             final int key = elements._findKey(i);
             if (key < 0) {
                 if (nullOutput) {
-                    procedure.apply(col, 0.d);
+                    procedure.apply(col, 0.f);
                 }
             } else {
                 float v = elements._get(key);
@@ -308,7 +309,7 @@ public final class DoKFloatMatrix extends AbstractMatrix {
             final int key = elements._findKey(i);
             if (key < 0) {
                 if (nullOutput) {
-                    procedure.apply(row, 0.d);
+                    procedure.apply(row, 0.f);
                 }
             } else {
                 float v = elements._get(key);
@@ -331,6 +332,7 @@ public final class DoKFloatMatrix extends AbstractMatrix {
         }
     }
 
+    @Override
     public void eachNonZeroCell(@Nonnull final VectorProcedure procedure) {
         if (nnz == 0) {
             return;

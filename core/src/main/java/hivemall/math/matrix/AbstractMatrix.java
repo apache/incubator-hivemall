@@ -102,4 +102,9 @@ public abstract class AbstractMatrix implements Matrix {
         eachInColumn(col, procedure, false);
     }
 
+    @Override
+    public void eachNonZeroCell(VectorProcedure procedure) {
+        throw new UnsupportedOperationException("Not yet supported");
+    }
+
 }

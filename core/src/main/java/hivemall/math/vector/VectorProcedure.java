@@ -30,6 +30,10 @@ public abstract class VectorProcedure {
 
     public void apply(@Nonnegative int i, @Nonnegative int j, double value) {}
 
+    public void apply(@Nonnegative int i, float value) {
+        apply(i, (double) value);
+    }
+
     public void apply(@Nonnegative int i, double value) {}
 
     public void apply(@Nonnegative int i, int value) {}

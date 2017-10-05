@@ -21,7 +21,7 @@ package hivemall.recommend;
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
-import hivemall.math.matrix.sparse.DoKFloatMatrix;
+import hivemall.math.matrix.sparse.floats.DoKFloatMatrix;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
 import hivemall.utils.collections.maps.IntOpenHashTable;

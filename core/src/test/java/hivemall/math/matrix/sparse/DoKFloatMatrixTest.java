@@ -18,6 +18,8 @@
  */
 package hivemall.math.matrix.sparse;
 
+import hivemall.math.matrix.sparse.floats.DoKFloatMatrix;
+
 import java.util.Random;
 
 import org.junit.Assert;

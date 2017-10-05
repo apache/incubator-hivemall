@@ -241,8 +241,8 @@
 	</modules>
 
 	<properties>
-		<java.source.version>1.7</java.source.version>
-		<java.target.version>1.7</java.target.version>
+		<java.source.version>1.8</java.source.version>
+		<java.target.version>1.8</java.target.version>
 		<scala.version>2.11.8</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>
 		<maven.build.timestamp.format>yyyy</maven.build.timestamp.format>

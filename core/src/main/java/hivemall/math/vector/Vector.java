@@ -25,12 +25,19 @@ public interface Vector {
 
     public double get(@Nonnegative int index);
 
+    public float get(@Nonnegative int index, float defaultValue);
+
     public double get(@Nonnegative int index, double defaultValue);
 
     /**
      * @throws UnsupportedOperationException
      */
     public void set(@Nonnegative int index, double value);
+
+    /**
+     * @throws UnsupportedOperationException
+     */
+    public void set(@Nonnegative int index, float value);
 
     public void incr(@Nonnegative int index, double delta);
 
