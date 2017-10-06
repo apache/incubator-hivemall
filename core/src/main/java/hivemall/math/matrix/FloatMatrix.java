@@ -64,4 +64,10 @@ public interface FloatMatrix extends Matrix {
         return getAndSet(row, col, (float) value);
     }
 
+    @Override
+    public RowMajorFloatMatrix toRowMajorMatrix();
+
+    @Override
+    public ColumnMajorFloatMatrix toColumnMajorMatrix();
+
 }

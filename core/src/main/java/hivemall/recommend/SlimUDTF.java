@@ -21,6 +21,8 @@ package hivemall.recommend;
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
+import hivemall.math.matrix.FloatMatrix;
+import hivemall.math.matrix.RowMajorFloatMatrix;
 import hivemall.math.matrix.sparse.floats.DoKFloatMatrix;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
@@ -133,7 +135,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
     /** item-user matrix holding the input data */
     @Nullable
-    private transient DoKFloatMatrix _dataMatrix;
+    private transient FloatMatrix _dataMatrix;
 
     // used to store KNN data into temporary file for iterative training
     private transient NioStatefullSegment _fileIO;
@@ -362,7 +364,7 @@ public class SlimUDTF extends UDTFWithOptions {
     private void train(final int itemI, @Nonnull final Int2FloatOpenHashTable ri,
             @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> kNNi, final int itemJ,
             @Nonnull final Int2FloatOpenHashTable rj) {
-        final DoKFloatMatrix W = _weightMatrix;
+        final FloatMatrix W = _weightMatrix;
 
         final int N = rj.size();
         if (N == 0) {
@@ -397,8 +399,9 @@ public class SlimUDTF extends UDTFWithOptions {
 
     private void train(final int itemI,
             @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems, final int itemJ) {
-        final DoKFloatMatrix A = _dataMatrix;
-        final DoKFloatMatrix W = _weightMatrix;
+        final RowMajorFloatMatrix A = _dataMatrix.toRowMajorMatrix();
+        this._dataMatrix = A;
+        final FloatMatrix W = _weightMatrix;
 
         final int N = A.numColumns(itemJ);
         if (N == 0) {
@@ -433,7 +436,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
     private static double predict(final int user, final int itemI,
             @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems,
-            final int excludeIndex, @Nonnull final DoKFloatMatrix weightMatrix) {
+            final int excludeIndex, @Nonnull final FloatMatrix weightMatrix) {
         final Int2FloatOpenHashTable kNNu = knnItems.get(user);
         if (kNNu == null) {
             return 0.d;
@@ -725,8 +728,7 @@ public class SlimUDTF extends UDTFWithOptions {
     @Nonnull
     private static Int2FloatOpenHashTable int2floatMap(final int item,
             @Nonnull final Map<?, ?> map, @Nonnull final PrimitiveObjectInspector keyOI,
-            @Nonnull final PrimitiveObjectInspector valueOI,
-            @Nullable final DoKFloatMatrix dataMatrix) {
+            @Nonnull final PrimitiveObjectInspector valueOI, @Nullable final FloatMatrix dataMatrix) {
         return int2floatMap(item, map, keyOI, valueOI, dataMatrix, null);
     }
 
@@ -734,7 +736,7 @@ public class SlimUDTF extends UDTFWithOptions {
     private static Int2FloatOpenHashTable int2floatMap(final int item,
             @Nonnull final Map<?, ?> map, @Nonnull final PrimitiveObjectInspector keyOI,
             @Nonnull final PrimitiveObjectInspector valueOI,
-            @Nullable final DoKFloatMatrix dataMatrix, @Nullable Int2FloatOpenHashTable dst) {
+            @Nullable final FloatMatrix dataMatrix, @Nullable Int2FloatOpenHashTable dst) {
         if (dst == null) {
             dst = new Int2FloatOpenHashTable(map.size());
             dst.defaultReturnValue(0.f);

@@ -18,8 +18,7 @@
  */
 package hivemall.math.matrix.sparse.floats;
 
-import hivemall.math.matrix.FloatMatrix;
-import hivemall.math.matrix.RowMajorMatrix;
+import hivemall.math.matrix.RowMajorFloatMatrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.lang.Preconditions;
@@ -35,7 +34,7 @@ import javax.annotation.Nonnull;
  * @link http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
  * @link http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */
-public final class CSRFloatMatrix extends RowMajorMatrix implements FloatMatrix {
+public final class CSRFloatMatrix extends RowMajorFloatMatrix {
 
     @Nonnull
     private final int[] rowPointers;
@@ -138,7 +137,7 @@ public final class CSRFloatMatrix extends RowMajorMatrix implements FloatMatrix 
         });
         return dst;
     }
-    
+
     @Override
     public float get(@Nonnegative final int row, @Nonnegative final int col,
             final float defaultValue) {
@@ -152,8 +151,7 @@ public final class CSRFloatMatrix extends RowMajorMatrix implements FloatMatrix 
     }
 
     @Override
-    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col,
-            final float value) {
+    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col, numRows, numColumns);
 
         final int index = getIndex(row, col);

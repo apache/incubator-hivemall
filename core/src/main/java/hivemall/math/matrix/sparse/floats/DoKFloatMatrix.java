@@ -20,9 +20,8 @@ package hivemall.math.matrix.sparse.floats;
 
 import hivemall.annotations.Experimental;
 import hivemall.math.matrix.AbstractMatrix;
-import hivemall.math.matrix.ColumnMajorMatrix;
 import hivemall.math.matrix.FloatMatrix;
-import hivemall.math.matrix.RowMajorMatrix;
+import hivemall.math.matrix.MatrixUtils;
 import hivemall.math.matrix.builders.DoKMatrixBuilder;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
@@ -348,13 +347,45 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
     }
 
     @Override
-    public RowMajorMatrix toRowMajorMatrix() {
-        throw new UnsupportedOperationException("Not yet supported");
+    public CSRFloatMatrix toRowMajorMatrix() {
+        final int nnz = elements.size();
+        final int[] rows = new int[nnz];
+        final int[] cols = new int[nnz];
+        final float[] data = new float[nnz];
+
+        final IMapIterator itor = elements.entries();
+        for (int i = 0; i < nnz; i++) {
+            if (itor.next() == -1) {
+                throw new IllegalStateException("itor.next() returns -1 where i=" + i);
+            }
+            long k = itor.getKey();
+            rows[i] = Primitives.getHigh(k);
+            cols[i] = Primitives.getLow(k);
+            data[i] = itor.getValue();
+        }
+
+        return MatrixUtils.coo2csr(rows, cols, data, numRows, numColumns, true);
     }
 
     @Override
-    public ColumnMajorMatrix toColumnMajorMatrix() {
-        throw new UnsupportedOperationException("Not yet supported");
+    public CSCFloatMatrix toColumnMajorMatrix() {
+        final int nnz = elements.size();
+        final int[] rows = new int[nnz];
+        final int[] cols = new int[nnz];
+        final float[] data = new float[nnz];
+
+        final IMapIterator itor = elements.entries();
+        for (int i = 0; i < nnz; i++) {
+            if (itor.next() == -1) {
+                throw new IllegalStateException("itor.next() returns -1 where i=" + i);
+            }
+            long k = itor.getKey();
+            rows[i] = Primitives.getHigh(k);
+            cols[i] = Primitives.getLow(k);
+            data[i] = itor.getValue();
+        }
+
+        return MatrixUtils.coo2csc(rows, cols, data, numRows, numColumns, true);
     }
 
     @Override

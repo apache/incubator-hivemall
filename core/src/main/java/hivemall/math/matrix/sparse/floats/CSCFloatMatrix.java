@@ -18,8 +18,7 @@
  */
 package hivemall.math.matrix.sparse.floats;
 
-import hivemall.math.matrix.ColumnMajorMatrix;
-import hivemall.math.matrix.FloatMatrix;
+import hivemall.math.matrix.ColumnMajorFloatMatrix;
 import hivemall.math.matrix.builders.CSCMatrixBuilder;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
@@ -36,7 +35,7 @@ import javax.annotation.Nonnull;
  *
  * @link http://netlib.org/linalg/html_templates/node92.html#SECTION00931200000000000000
  */
-public final class CSCFloatMatrix extends ColumnMajorMatrix implements FloatMatrix {
+public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
 
     @Nonnull
     private final int[] columnPointers;
