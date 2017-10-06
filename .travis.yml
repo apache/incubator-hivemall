@@ -1,5 +1,7 @@
+## Revert the following 3 lines after oraclejdk9 is production in Travis
 sudo: true
 dist: trusty
+group: edge
 
 env:
   global:
@@ -30,8 +32,9 @@ branches:
     - develop
 
 before_install:
-  - export MAVEN_SKIP_RC=true
   - mvn validate -Pxgboost
+  # Revert the following line after oraclejdk9 is production in Travis
+  - export MAVEN_SKIP_RC=true
 
 notifications:
   email: false
