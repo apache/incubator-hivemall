@@ -140,7 +140,6 @@ public final class MatrixUtils {
         if (sortRows) {
             sortIndicies(columnPointers, rowIndicies, values);
         }
-
         return new CSCMatrix(columnPointers, rowIndicies, values, numRows, numCols);
     }
 
@@ -243,7 +242,11 @@ public final class MatrixUtils {
             final int rowEnd = rowPointers[i + 1];
 
             final int numCols = rowEnd - rowStart;
-            Preconditions.checkArgument(numCols > 0);
+            if (numCols <= 0) {
+                throw new IllegalArgumentException(
+                    "numCols SHOULD be greater than zero. numCols = rowEnd - rowStart = " + rowEnd
+                            + " - " + rowStart + " = " + numCols + " at i=" + i);
+            }
 
             final IntDoublePair[] pairs = new IntDoublePair[numCols];
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
@@ -277,7 +280,11 @@ public final class MatrixUtils {
             final int rowEnd = rowPointers[i + 1];
 
             final int numCols = rowEnd - rowStart;
-            Preconditions.checkArgument(numCols > 0);
+            if (numCols <= 0) {
+                throw new IllegalArgumentException(
+                    "numCols SHOULD be greater than zero. numCols = rowEnd - rowStart = " + rowEnd
+                            + " - " + rowStart + " = " + numCols + " at i=" + i);
+            }
 
             final IntFloatPair[] pairs = new IntFloatPair[numCols];
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
