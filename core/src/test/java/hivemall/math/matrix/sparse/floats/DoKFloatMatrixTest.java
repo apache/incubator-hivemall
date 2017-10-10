@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.matrix.sparse;
+package hivemall.math.matrix.sparse.floats;
 
 import hivemall.math.matrix.sparse.floats.DoKFloatMatrix;
 
@@ -35,11 +35,26 @@ public class DoKFloatMatrixTest {
         for (int i = 0; i < 1000; i++) {
             int row = Math.abs(rnd.nextInt());
             int col = Math.abs(rnd.nextInt());
-            double v = rnd.nextDouble();
+            float v = rnd.nextFloat();
             matrix.set(row, col, v);
-            Assert.assertEquals(v, matrix.get(row, col), 0.00001d);
+            Assert.assertEquals(v, matrix.get(row, col), 0.00001f);
         }
+    }
+    
+    @Test
+    public void testToRowMajorMatrix() {        
+        DoKFloatMatrix matrix = new DoKFloatMatrix();
+        Random rnd = new Random(43);
 
+        for (int i = 0; i < 10; i++) {
+            int row = Math.abs(rnd.nextInt(100));
+            int col = Math.abs(rnd.nextInt(100));
+            float v = rnd.nextFloat();
+            matrix.set(row, col, v);
+        }
+        
+        CSRFloatMatrix csr = matrix.toRowMajorMatrix();
+        Assert.assertEquals(10, csr.nnz());
     }
 
 }

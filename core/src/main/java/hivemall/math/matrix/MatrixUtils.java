@@ -242,7 +242,9 @@ public final class MatrixUtils {
             final int rowEnd = rowPointers[i + 1];
 
             final int numCols = rowEnd - rowStart;
-            if (numCols <= 0) {
+            if (numCols == 0) {
+                continue;
+            } else if (numCols < 0) {
                 throw new IllegalArgumentException(
                     "numCols SHOULD be greater than zero. numCols = rowEnd - rowStart = " + rowEnd
                             + " - " + rowStart + " = " + numCols + " at i=" + i);
@@ -280,10 +282,12 @@ public final class MatrixUtils {
             final int rowEnd = rowPointers[i + 1];
 
             final int numCols = rowEnd - rowStart;
-            if (numCols <= 0) {
+            if (numCols == 0) {
+                continue;
+            } else if (numCols < 0) {
                 throw new IllegalArgumentException(
-                    "numCols SHOULD be greater than zero. numCols = rowEnd - rowStart = " + rowEnd
-                            + " - " + rowStart + " = " + numCols + " at i=" + i);
+                    "numCols SHOULD be greater than or equal to zero. numCols = rowEnd - rowStart = "
+                            + rowEnd + " - " + rowStart + " = " + numCols + " at i=" + i);
             }
 
             final IntFloatPair[] pairs = new IntFloatPair[numCols];
