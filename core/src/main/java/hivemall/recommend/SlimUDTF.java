@@ -22,7 +22,6 @@ import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
 import hivemall.math.matrix.FloatMatrix;
-import hivemall.math.matrix.RowMajorFloatMatrix;
 import hivemall.math.matrix.sparse.floats.DoKFloatMatrix;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
@@ -399,8 +398,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
     private void train(final int itemI,
             @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems, final int itemJ) {
-        final RowMajorFloatMatrix A = _dataMatrix.toRowMajorMatrix();
-        this._dataMatrix = A;
+        final FloatMatrix A = _dataMatrix;
         final FloatMatrix W = _weightMatrix;
 
         final int N = A.numColumns(itemJ);
