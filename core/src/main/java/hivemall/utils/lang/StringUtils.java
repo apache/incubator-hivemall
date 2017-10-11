@@ -290,24 +290,4 @@ public final class StringUtils {
         return o1.compareTo(o2);
     }
 
-    @Nonnull
-    public static String toBitString(@Nonnull final byte[] b) {
-        final char[] bits = new char[8 * b.length];
-        for (int i = 0; i < b.length; i++) {
-            final byte byteval = b[i];
-            int bytei = i << 3;
-            int mask = 0x1;
-            for (int j = 7; j >= 0; j--) {
-                final int bitval = byteval & mask;
-                if (bitval == 0) {
-                    bits[bytei + j] = '0';
-                } else {
-                    bits[bytei + j] = '1';
-                }
-                mask <<= 1;
-            }
-        }
-        return String.valueOf(bits);
-    }
-
 }
