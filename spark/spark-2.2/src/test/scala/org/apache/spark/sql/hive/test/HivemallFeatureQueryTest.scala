@@ -36,17 +36,6 @@ abstract class HivemallFeatureQueryTest extends QueryTest with SQLTestUtils with
 
   import hiveContext.implicits._
 
-  /**
-   * TODO: spark-2.0 does not support literals for some types (e.g., Seq[_] and Array[_]).
-   * So, it provides that functionality here.
-   * This helper function will be removed in future releases.
-   */
-  protected def lit2[T : TypeTag](v: T): Column = {
-    val ScalaReflection.Schema(dataType, _) = ScalaReflection.schemaFor[T]
-    val convert = CatalystTypeConverters.createToCatalystConverter(dataType)
-    Column(Literal(convert(v), dataType))
-  }
-
   protected val DummyInputData = Seq((0, 0)).toDF("c0", "c1")
 
   protected val IntList2Data =
