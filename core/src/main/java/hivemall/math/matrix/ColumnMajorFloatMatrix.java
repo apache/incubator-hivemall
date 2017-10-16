@@ -16,28 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.matrix.sparse;
+package hivemall.math.matrix;
 
-import java.util.Random;
+public abstract class ColumnMajorFloatMatrix extends ColumnMajorMatrix implements FloatMatrix {
 
-import org.junit.Assert;
-import org.junit.Test;
+    public ColumnMajorFloatMatrix() {
+        super();
+    }
 
-public class DoKFloatMatrixTest {
-
-    @Test
-    public void testGetSet() {
-        DoKFloatMatrix matrix = new DoKFloatMatrix();
-        Random rnd = new Random(43);
-
-        for (int i = 0; i < 1000; i++) {
-            int row = Math.abs(rnd.nextInt());
-            int col = Math.abs(rnd.nextInt());
-            double v = rnd.nextDouble();
-            matrix.set(row, col, v);
-            Assert.assertEquals(v, matrix.get(row, col), 0.00001d);
-        }
-
+    @Override
+    public ColumnMajorFloatMatrix toColumnMajorMatrix() {
+        return this;
     }
 
 }

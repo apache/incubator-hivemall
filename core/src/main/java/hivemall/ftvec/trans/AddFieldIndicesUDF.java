@@ -37,8 +37,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(name = "add_field_indicies", value = "_FUNC_(array<string> features) "
-        + "- Returns arrays of string that field indicies (<field>:<feature>)* are argumented")
+@Description(name = "add_field_indices", value = "_FUNC_(array<string> features) "
+        + "- Returns arrays of string that field indices (<field>:<feature>)* are argumented")
 @UDFType(deterministic = true, stateful = false)
 public final class AddFieldIndicesUDF extends GenericUDF {
 
@@ -82,7 +82,7 @@ public final class AddFieldIndicesUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] args) {
-        return "add_field_indicies( " + Arrays.toString(args) + " )";
+        return "add_field_indices( " + Arrays.toString(args) + " )";
     }
 
 

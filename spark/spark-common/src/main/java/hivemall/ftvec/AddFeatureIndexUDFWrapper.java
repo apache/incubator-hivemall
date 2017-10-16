@@ -41,7 +41,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
  */
 @Description(
         name = "add_feature_index",
-        value = "_FUNC_(dense features in array<double>) - Returns a feature vector with feature indicies")
+        value = "_FUNC_(dense features in array<double>) - Returns a feature vector with feature indices")
 @UDFType(deterministic = true, stateful = false)
 public class AddFeatureIndexUDFWrapper extends GenericUDF {
     private AddFeatureIndexUDF udf = new AddFeatureIndexUDF();

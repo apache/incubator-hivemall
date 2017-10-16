@@ -60,7 +60,7 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
     private boolean _mhash = true;
     private int _numFeatures = Feature.DEFAULT_NUM_FEATURES;
     private int _numFields = Feature.DEFAULT_NUM_FIELDS;
-    private boolean _emitIndicies = false;
+    private boolean _emitIndices = false;
 
     @Override
     protected Options getOptions() {
@@ -72,7 +72,7 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         opts.addOption("hash", "feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default:21]");
         opts.addOption("fields", "num_fields", true, "The number of fields [default:1024]");
-        opts.addOption("emit_indicies", false, "Emit indicies for fields [default: false]");
+        opts.addOption("emit_indices", false, "Emit indices for fields [default: false]");
         return opts;
     }
 
@@ -100,7 +100,7 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         }
         this._numFields = numFields;
 
-        this._emitIndicies = cl.hasOption("emit_indicies");
+        this._emitIndices = cl.hasOption("emit_indices");
 
         return cl;
     }
@@ -189,14 +189,14 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
             // categorical feature representation 
             final String fv;
             if (_mhash) {
-                int field = _emitIndicies ? i : MurmurHash3.murmurhash3(_featureNames[i],
+                int field = _emitIndices ? i : MurmurHash3.murmurhash3(_featureNames[i],
                     _numFields);
                 // +NUM_FIELD to avoid conflict to quantitative features
                 int index = MurmurHash3.murmurhash3(feature, _numFeatures) + _numFields;
                 fv = builder.append(field).append(':').append(index).append(":1").toString();
                 StringUtils.clear(builder);
             } else {
-                if (_emitIndicies) {
+                if (_emitIndices) {
                     builder.append(i);
                 } else {
                     builder.append(featureName);
