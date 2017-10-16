@@ -202,7 +202,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
         @Override
         public ObjectInspector init(Mode mode, ObjectInspector[] parameters) throws HiveException {
-            assert (parameters.length == 4 || parameters.length == 5);
+            assert (parameters.length == 1 || parameters.length == 4 || parameters.length == 5);
             super.init(mode, parameters);
 
             // initialize input

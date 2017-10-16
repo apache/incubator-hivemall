@@ -53,9 +53,6 @@ import org.apache.hadoop.io.LongWritable;
                 + " - Returns Recall")
 public final class RecallUDAF extends AbstractGenericUDAFResolver {
 
-    // prevent instantiation
-    private RecallUDAF() {}
-
     @Override
     public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
@@ -91,7 +88,7 @@ public final class RecallUDAF extends AbstractGenericUDAFResolver {
 
         @Override
         public ObjectInspector init(Mode mode, ObjectInspector[] parameters) throws HiveException {
-            assert (parameters.length == 2 || parameters.length == 3) : parameters.length;
+            assert (0 < parameters.length && parameters.length <= 3) : parameters.length;
             super.init(mode, parameters);
 
             // initialize input
