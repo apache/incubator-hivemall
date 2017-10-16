@@ -230,16 +230,16 @@ public final class MatrixUtils {
         }
     }
 
-    private static void sortIndices(@Nonnull final int[] rowPointers,
-            @Nonnull final int[] colIndices, @Nonnull final double[] values) {
-        final int numRows = rowPointers.length - 1;
+    private static void sortIndices(@Nonnull final int[] majorAxisPointers,
+            @Nonnull final int[] minorAxisIndices, @Nonnull final double[] values) {
+        final int numRows = majorAxisPointers.length - 1;
         if (numRows <= 1) {
             return;
         }
 
         for (int i = 0; i < numRows; i++) {
-            final int rowStart = rowPointers[i];
-            final int rowEnd = rowPointers[i + 1];
+            final int rowStart = majorAxisPointers[i];
+            final int rowEnd = majorAxisPointers[i + 1];
 
             final int numCols = rowEnd - rowStart;
             if (numCols == 0) {
@@ -252,7 +252,7 @@ public final class MatrixUtils {
 
             final IntDoublePair[] pairs = new IntDoublePair[numCols];
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
-                pairs[n] = new IntDoublePair(colIndices[jj], values[jj]);
+                pairs[n] = new IntDoublePair(minorAxisIndices[jj], values[jj]);
             }
 
             Arrays.sort(pairs, new Comparator<IntDoublePair>() {
@@ -264,22 +264,22 @@ public final class MatrixUtils {
 
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
                 IntDoublePair tmp = pairs[n];
-                colIndices[jj] = tmp.key;
+                minorAxisIndices[jj] = tmp.key;
                 values[jj] = tmp.value;
             }
         }
     }
 
-    private static void sortIndices(@Nonnull final int[] rowPointers,
-            @Nonnull final int[] colIndices, @Nonnull final float[] values) {
-        final int numRows = rowPointers.length - 1;
+    private static void sortIndices(@Nonnull final int[] majorAxisPointers,
+            @Nonnull final int[] minorAxisIndices, @Nonnull final float[] values) {
+        final int numRows = majorAxisPointers.length - 1;
         if (numRows <= 1) {
             return;
         }
 
         for (int i = 0; i < numRows; i++) {
-            final int rowStart = rowPointers[i];
-            final int rowEnd = rowPointers[i + 1];
+            final int rowStart = majorAxisPointers[i];
+            final int rowEnd = majorAxisPointers[i + 1];
 
             final int numCols = rowEnd - rowStart;
             if (numCols == 0) {
@@ -292,7 +292,7 @@ public final class MatrixUtils {
 
             final IntFloatPair[] pairs = new IntFloatPair[numCols];
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
-                pairs[n] = new IntFloatPair(colIndices[jj], values[jj]);
+                pairs[n] = new IntFloatPair(minorAxisIndices[jj], values[jj]);
             }
 
             Arrays.sort(pairs, new Comparator<IntFloatPair>() {
@@ -304,7 +304,7 @@ public final class MatrixUtils {
 
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
                 IntFloatPair tmp = pairs[n];
-                colIndices[jj] = tmp.key;
+                minorAxisIndices[jj] = tmp.key;
                 values[jj] = tmp.value;
             }
         }
