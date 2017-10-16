@@ -40,7 +40,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     @Nonnull
     private final int[] columnPointers;
     @Nonnull
-    private final int[] rowIndicies;
+    private final int[] rowIndices;
     @Nonnull
     private final double[] values;
 
@@ -48,15 +48,15 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     private final int numColumns;
     private final int nnz;
 
-    public CSCMatrix(@Nonnull int[] columnPointers, @Nonnull int[] rowIndicies,
+    public CSCMatrix(@Nonnull int[] columnPointers, @Nonnull int[] rowIndices,
             @Nonnull double[] values, int numRows, int numColumns) {
         super();
         Preconditions.checkArgument(columnPointers.length >= 1,
             "rowPointers must be greather than 0: " + columnPointers.length);
-        Preconditions.checkArgument(rowIndicies.length == values.length, "#rowIndicies ("
-                + rowIndicies.length + ") must be equals to #values (" + values.length + ")");
+        Preconditions.checkArgument(rowIndices.length == values.length, "#rowIndices ("
+                + rowIndices.length + ") must be equals to #values (" + values.length + ")");
         this.columnPointers = columnPointers;
-        this.rowIndicies = rowIndicies;
+        this.rowIndices = rowIndices;
         this.values = values;
         this.numRows = numRows;
         this.numColumns = numColumns;
@@ -97,7 +97,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     public int numColumns(final int row) {
         checkRowIndex(row, numRows);
 
-        return ArrayUtils.count(rowIndicies, row);
+        return ArrayUtils.count(rowIndices, row);
     }
 
     @Override
@@ -108,7 +108,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
 
         final int numCols = columnPointers.length - 1;
         for (int j = 0; j < numCols; j++) {
-            final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
+            final int k = Arrays.binarySearch(rowIndices, columnPointers[j],
                 columnPointers[j + 1], index);
             if (k >= 0) {
                 row[j] = values[k];
@@ -124,7 +124,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
 
         final int last = Math.min(dst.length, columnPointers.length - 1);
         for (int j = 0; j < last; j++) {
-            final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
+            final int k = Arrays.binarySearch(rowIndices, columnPointers[j],
                 columnPointers[j + 1], index);
             if (k >= 0) {
                 dst[j] = values[k];
@@ -145,7 +145,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
         row.clear();
 
         for (int j = 0, last = columnPointers.length - 1; j < last; j++) {
-            final int k = Arrays.binarySearch(rowIndicies, columnPointers[j],
+            final int k = Arrays.binarySearch(rowIndices, columnPointers[j],
                 columnPointers[j + 1], index);
             if (k >= 0) {
                 double v = values[k];
@@ -195,7 +195,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     private int getIndex(@Nonnegative final int row, @Nonnegative final int col) {
         int leftIn = columnPointers[col];
         int rightEx = columnPointers[col + 1];
-        final int index = Arrays.binarySearch(rowIndicies, leftIn, rightEx, row);
+        final int index = Arrays.binarySearch(rowIndices, leftIn, rightEx, row);
         if (index >= 0 && index >= values.length) {
             throw new IndexOutOfBoundsException("Value index " + index + " out of range "
                     + values.length);
@@ -218,7 +218,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
 
         if (nullOutput) {
             for (int row = 0, i = startIn; row < numRows; row++) {
-                if (i < endEx && row == rowIndicies[i]) {
+                if (i < endEx && row == rowIndices[i]) {
                     double v = values[i++];
                     procedure.apply(row, v);
                 } else {
@@ -227,7 +227,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
             }
         } else {
             for (int j = startIn; j < endEx; j++) {
-                int row = rowIndicies[j];
+                int row = rowIndices[j];
                 double v = values[j];
                 procedure.apply(row, v);
             }
@@ -241,7 +241,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
         final int startIn = columnPointers[col];
         final int endEx = columnPointers[col + 1];
         for (int j = startIn; j < endEx; j++) {
-            int row = rowIndicies[j];
+            int row = rowIndices[j];
             final double v = values[j];
             if (v != 0.d) {
                 procedure.apply(row, v);
@@ -252,12 +252,12 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     @Override
     public CSRMatrix toRowMajorMatrix() {
         final int[] rowPointers = new int[numRows + 1];
-        final int[] colIndicies = new int[nnz];
+        final int[] colIndices = new int[nnz];
         final double[] csrValues = new double[nnz];
 
         // compute nnz per for each row
-        for (int i = 0; i < rowIndicies.length; i++) {
-            rowPointers[rowIndicies[i]]++;
+        for (int i = 0; i < rowIndices.length; i++) {
+            rowPointers[rowIndices[i]]++;
         }
         for (int i = 0, sum = 0; i < numRows; i++) {
             int curr = rowPointers[i];
@@ -268,10 +268,10 @@ public final class CSCMatrix extends ColumnMajorMatrix {
 
         for (int j = 0; j < numColumns; j++) {
             for (int i = columnPointers[j], last = columnPointers[j + 1]; i < last; i++) {
-                int col = rowIndicies[i];
+                int col = rowIndices[i];
                 int dst = rowPointers[col];
 
-                colIndicies[dst] = j;
+                colIndices[dst] = j;
                 csrValues[dst] = values[i];
 
                 rowPointers[col]++;
@@ -285,7 +285,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
             last = tmp;
         }
 
-        return new CSRMatrix(rowPointers, colIndicies, csrValues, numColumns);
+        return new CSRMatrix(rowPointers, colIndices, csrValues, numColumns);
     }
 
     @Override

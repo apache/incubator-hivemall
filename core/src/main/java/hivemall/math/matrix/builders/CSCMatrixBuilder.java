@@ -70,19 +70,19 @@ public final class CSCMatrixBuilder extends MatrixBuilder {
         }
 
         final int[] columnIndices = cols.toArray(true);
-        final int[] rowsIndicies = rows.toArray(true);
+        final int[] rowsIndices = rows.toArray(true);
         final double[] valuesArray = values.toArray(true);
 
         // convert to column major
         final int nnz = valuesArray.length;
         SortObj[] sortObjs = new SortObj[nnz];
         for (int i = 0; i < nnz; i++) {
-            sortObjs[i] = new SortObj(columnIndices[i], rowsIndicies[i], valuesArray[i]);
+            sortObjs[i] = new SortObj(columnIndices[i], rowsIndices[i], valuesArray[i]);
         }
         Arrays.sort(sortObjs);
         for (int i = 0; i < nnz; i++) {
             columnIndices[i] = sortObjs[i].columnIndex;
-            rowsIndicies[i] = sortObjs[i].rowsIndex;
+            rowsIndices[i] = sortObjs[i].rowsIndex;
             valuesArray[i] = sortObjs[i].value;
         }
         sortObjs = null;
@@ -98,7 +98,7 @@ public final class CSCMatrixBuilder extends MatrixBuilder {
         }
         columnPointers[maxNumColumns] = nnz; // nnz
 
-        return new CSCMatrix(columnPointers, rowsIndicies, valuesArray, row, maxNumColumns);
+        return new CSCMatrix(columnPointers, rowsIndices, valuesArray, row, maxNumColumns);
     }
 
     private static final class SortObj implements Comparable<SortObj> {

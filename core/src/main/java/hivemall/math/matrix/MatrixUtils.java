@@ -41,7 +41,7 @@ public final class MatrixUtils {
     @Nonnull
     public static Matrix shuffle(@Nonnull final Matrix m, @Nonnull final int[] indices) {
         Preconditions.checkArgument(m.numRows() <= indices.length, "m.numRow() `" + m.numRows()
-                + "` MUST be equals to or less than |swapIndicies| `" + indices.length + "`");
+                + "` MUST be equals to or less than |swapIndices| `" + indices.length + "`");
 
         final MatrixBuilder builder = m.builder();
         final VectorProcedure proc = new VectorProcedure() {
@@ -89,15 +89,15 @@ public final class MatrixUtils {
         Preconditions.checkArgument(cols.length == nnz);
 
         final int[] rowPointers = new int[numRows + 1];
-        final int[] colIndicies = new int[nnz];
+        final int[] colIndices = new int[nnz];
         final double[] values = new double[nnz];
 
-        coo2csr(rows, cols, data, rowPointers, colIndicies, values, numRows, numCols, nnz);
+        coo2csr(rows, cols, data, rowPointers, colIndices, values, numRows, numCols, nnz);
 
         if (sortColumns) {
-            sortIndicies(rowPointers, colIndicies, values);
+            sortIndices(rowPointers, colIndices, values);
         }
-        return new CSRMatrix(rowPointers, colIndicies, values, numCols);
+        return new CSRMatrix(rowPointers, colIndices, values, numCols);
     }
 
     /**
@@ -112,15 +112,15 @@ public final class MatrixUtils {
         Preconditions.checkArgument(cols.length == nnz);
 
         final int[] rowPointers = new int[numRows + 1];
-        final int[] colIndicies = new int[nnz];
+        final int[] colIndices = new int[nnz];
         final float[] values = new float[nnz];
 
-        coo2csr(rows, cols, data, rowPointers, colIndicies, values, numRows, numCols, nnz);
+        coo2csr(rows, cols, data, rowPointers, colIndices, values, numRows, numCols, nnz);
 
         if (sortColumns) {
-            sortIndicies(rowPointers, colIndicies, values);
+            sortIndices(rowPointers, colIndices, values);
         }
-        return new CSRFloatMatrix(rowPointers, colIndicies, values, numCols);
+        return new CSRFloatMatrix(rowPointers, colIndices, values, numCols);
     }
 
     @Nonnull
@@ -132,15 +132,15 @@ public final class MatrixUtils {
         Preconditions.checkArgument(cols.length == nnz);
 
         final int[] columnPointers = new int[numCols + 1];
-        final int[] rowIndicies = new int[nnz];
+        final int[] rowIndices = new int[nnz];
         final double[] values = new double[nnz];
 
-        coo2csr(cols, rows, data, columnPointers, rowIndicies, values, numCols, numRows, nnz);
+        coo2csr(cols, rows, data, columnPointers, rowIndices, values, numCols, numRows, nnz);
 
         if (sortRows) {
-            sortIndicies(columnPointers, rowIndicies, values);
+            sortIndices(columnPointers, rowIndices, values);
         }
-        return new CSCMatrix(columnPointers, rowIndicies, values, numRows, numCols);
+        return new CSCMatrix(columnPointers, rowIndices, values, numRows, numCols);
     }
 
     @Nonnull
@@ -152,21 +152,21 @@ public final class MatrixUtils {
         Preconditions.checkArgument(cols.length == nnz);
 
         final int[] columnPointers = new int[numCols + 1];
-        final int[] rowIndicies = new int[nnz];
+        final int[] rowIndices = new int[nnz];
         final float[] values = new float[nnz];
 
-        coo2csr(cols, rows, data, columnPointers, rowIndicies, values, numCols, numRows, nnz);
+        coo2csr(cols, rows, data, columnPointers, rowIndices, values, numCols, numRows, nnz);
 
         if (sortRows) {
-            sortIndicies(columnPointers, rowIndicies, values);
+            sortIndices(columnPointers, rowIndices, values);
         }
 
-        return new CSCFloatMatrix(columnPointers, rowIndicies, values, numRows, numCols);
+        return new CSCFloatMatrix(columnPointers, rowIndices, values, numRows, numCols);
     }
 
     private static void coo2csr(@Nonnull final int[] rows, @Nonnull final int[] cols,
             @Nonnull final double[] data, @Nonnull final int[] rowPointers,
-            @Nonnull final int[] colIndicies, @Nonnull final double[] values,
+            @Nonnull final int[] colIndices, @Nonnull final double[] values,
             @Nonnegative final int numRows, @Nonnegative final int numCols, final int nnz) {
         // compute nnz per for each row to get rowPointers
         for (int n = 0; n < nnz; n++) {
@@ -179,12 +179,12 @@ public final class MatrixUtils {
         }
         rowPointers[numRows] = nnz;
 
-        // copy cols, data to colIndicies, csrValues
+        // copy cols, data to colIndices, csrValues
         for (int n = 0; n < nnz; n++) {
             int row = rows[n];
             int dst = rowPointers[row];
 
-            colIndicies[dst] = cols[n];
+            colIndices[dst] = cols[n];
             values[dst] = data[n];
 
             rowPointers[row]++;
@@ -199,7 +199,7 @@ public final class MatrixUtils {
 
     private static void coo2csr(@Nonnull final int[] rows, @Nonnull final int[] cols,
             @Nonnull final float[] data, @Nonnull final int[] rowPointers,
-            @Nonnull final int[] colIndicies, @Nonnull final float[] values,
+            @Nonnull final int[] colIndices, @Nonnull final float[] values,
             @Nonnegative final int numRows, @Nonnegative final int numCols, final int nnz) {
         // compute nnz per for each row to get rowPointers
         for (int n = 0; n < nnz; n++) {
@@ -212,12 +212,12 @@ public final class MatrixUtils {
         }
         rowPointers[numRows] = nnz;
 
-        // copy cols, data to colIndicies, csrValues
+        // copy cols, data to colIndices, csrValues
         for (int n = 0; n < nnz; n++) {
             int row = rows[n];
             int dst = rowPointers[row];
 
-            colIndicies[dst] = cols[n];
+            colIndices[dst] = cols[n];
             values[dst] = data[n];
 
             rowPointers[row]++;
@@ -230,8 +230,8 @@ public final class MatrixUtils {
         }
     }
 
-    private static void sortIndicies(@Nonnull final int[] rowPointers,
-            @Nonnull final int[] colIndicies, @Nonnull final double[] values) {
+    private static void sortIndices(@Nonnull final int[] rowPointers,
+            @Nonnull final int[] colIndices, @Nonnull final double[] values) {
         final int numRows = rowPointers.length - 1;
         if (numRows <= 1) {
             return;
@@ -252,7 +252,7 @@ public final class MatrixUtils {
 
             final IntDoublePair[] pairs = new IntDoublePair[numCols];
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
-                pairs[n] = new IntDoublePair(colIndicies[jj], values[jj]);
+                pairs[n] = new IntDoublePair(colIndices[jj], values[jj]);
             }
 
             Arrays.sort(pairs, new Comparator<IntDoublePair>() {
@@ -264,14 +264,14 @@ public final class MatrixUtils {
 
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
                 IntDoublePair tmp = pairs[n];
-                colIndicies[jj] = tmp.key;
+                colIndices[jj] = tmp.key;
                 values[jj] = tmp.value;
             }
         }
     }
 
-    private static void sortIndicies(@Nonnull final int[] rowPointers,
-            @Nonnull final int[] colIndicies, @Nonnull final float[] values) {
+    private static void sortIndices(@Nonnull final int[] rowPointers,
+            @Nonnull final int[] colIndices, @Nonnull final float[] values) {
         final int numRows = rowPointers.length - 1;
         if (numRows <= 1) {
             return;
@@ -292,7 +292,7 @@ public final class MatrixUtils {
 
             final IntFloatPair[] pairs = new IntFloatPair[numCols];
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
-                pairs[n] = new IntFloatPair(colIndicies[jj], values[jj]);
+                pairs[n] = new IntFloatPair(colIndices[jj], values[jj]);
             }
 
             Arrays.sort(pairs, new Comparator<IntFloatPair>() {
@@ -304,7 +304,7 @@ public final class MatrixUtils {
 
             for (int jj = rowStart, n = 0; jj < rowEnd; jj++, n++) {
                 IntFloatPair tmp = pairs[n];
-                colIndicies[jj] = tmp.key;
+                colIndices[jj] = tmp.key;
                 values[jj] = tmp.value;
             }
         }

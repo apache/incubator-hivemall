@@ -238,7 +238,7 @@ public final class CSRMatrix extends RowMajorMatrix {
     @Nonnull
     public CSCMatrix toColumnMajorMatrix() {
         final int[] columnPointers = new int[numColumns + 1];
-        final int[] rowIndicies = new int[nnz];
+        final int[] rowIndices = new int[nnz];
         final double[] cscValues = new double[nnz];
 
         // compute nnz per for each column
@@ -257,7 +257,7 @@ public final class CSRMatrix extends RowMajorMatrix {
                 int col = columnIndices[j];
                 int dst = columnPointers[col];
 
-                rowIndicies[dst] = i;
+                rowIndices[dst] = i;
                 cscValues[dst] = values[j];
 
                 columnPointers[col]++;
@@ -271,7 +271,7 @@ public final class CSRMatrix extends RowMajorMatrix {
             last = tmp;
         }
 
-        return new CSCMatrix(columnPointers, rowIndicies, cscValues, numRows, numColumns);
+        return new CSCMatrix(columnPointers, rowIndices, cscValues, numRows, numColumns);
     }
 
     @Override

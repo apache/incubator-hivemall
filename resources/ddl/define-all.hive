@@ -309,6 +309,10 @@ create temporary function binarize_label as 'hivemall.ftvec.trans.BinarizeLabelU
 drop temporary function if exists onehot_encoding;
 create temporary function onehot_encoding as 'hivemall.ftvec.trans.OnehotEncodingUDAF';
 
+drop temporary function if exists add_field_indices;
+create temporary function add_field_indices as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
+
+-- alias for backward compatibility
 drop temporary function if exists add_field_indicies;
 create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
 

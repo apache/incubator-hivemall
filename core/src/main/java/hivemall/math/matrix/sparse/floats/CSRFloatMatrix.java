@@ -249,7 +249,7 @@ public final class CSRFloatMatrix extends RowMajorFloatMatrix {
     @Nonnull
     public CSCFloatMatrix toColumnMajorMatrix() {
         final int[] columnPointers = new int[numColumns + 1];
-        final int[] rowIndicies = new int[nnz];
+        final int[] rowIndices = new int[nnz];
         final float[] cscValues = new float[nnz];
 
         // compute nnz per for each column
@@ -268,7 +268,7 @@ public final class CSRFloatMatrix extends RowMajorFloatMatrix {
                 int col = columnIndices[j];
                 int dst = columnPointers[col];
 
-                rowIndicies[dst] = i;
+                rowIndices[dst] = i;
                 cscValues[dst] = values[j];
 
                 columnPointers[col]++;
@@ -282,7 +282,7 @@ public final class CSRFloatMatrix extends RowMajorFloatMatrix {
             last = tmp;
         }
 
-        return new CSCFloatMatrix(columnPointers, rowIndicies, cscValues, numRows, numColumns);
+        return new CSCFloatMatrix(columnPointers, rowIndices, cscValues, numRows, numColumns);
     }
 
     @Override
