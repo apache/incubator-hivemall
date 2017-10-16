@@ -1843,10 +1843,10 @@ object HivemallOps {
    * @see [[hivemall.ftvec.trans.AddFieldIndicesUDF]]
    * @group ftvec.trans
    */
-  def add_field_indicies(features: Column): Column = withExpr {
+  def add_field_indices(features: Column): Column = withExpr {
     planHiveGenericUDF(
       "hivemall.ftvec.trans.AddFieldIndicesUDF",
-      "add_field_indicies",
+      "add_field_indices",
       features :: Nil
     )
   }

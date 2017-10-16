@@ -345,7 +345,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       Row(Seq("190:140405:1", "111:1058718:1"))
     )
     checkAnswer(
-      DummyInputData.select(add_field_indicies(typedLit(Seq("0.5", "0.1")))),
+      DummyInputData.select(add_field_indices(typedLit(Seq("0.5", "0.1")))),
       Row(Seq("1:0.5", "2:0.1"))
     )
 
