@@ -115,6 +115,8 @@ public interface Matrix {
 
     public void eachNonZeroInColumn(@Nonnegative int col, @Nonnull VectorProcedure procedure);
 
+    public void eachNonZeroCell(@Nonnull final VectorProcedure procedure);
+
     @Nonnull
     public RowMajorMatrix toRowMajorMatrix();
 

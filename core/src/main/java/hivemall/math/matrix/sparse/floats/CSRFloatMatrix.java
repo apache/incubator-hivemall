@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.matrix.sparse;
+package hivemall.math.matrix.sparse.floats;
 
-import hivemall.math.matrix.RowMajorMatrix;
+import hivemall.math.matrix.RowMajorFloatMatrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.lang.Preconditions;
@@ -34,14 +34,14 @@ import javax.annotation.Nonnull;
  * @link http://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
  * @link http://www.cs.colostate.edu/~mcrob/toolbox/c++/sparseMatrix/sparse_matrix_compression.html
  */
-public final class CSRMatrix extends RowMajorMatrix {
+public final class CSRFloatMatrix extends RowMajorFloatMatrix {
 
     @Nonnull
     private final int[] rowPointers;
     @Nonnull
     private final int[] columnIndices;
     @Nonnull
-    private final double[] values;
+    private final float[] values;
 
     @Nonnegative
     private final int numRows;
@@ -50,8 +50,8 @@ public final class CSRMatrix extends RowMajorMatrix {
     @Nonnegative
     private final int nnz;
 
-    public CSRMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
-            @Nonnull double[] values, @Nonnegative int numColumns) {
+    public CSRFloatMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
+            @Nonnull float[] values, @Nonnegative int numColumns) {
         super();
         Preconditions.checkArgument(rowPointers.length >= 1,
             "rowPointers must be greather than 0: " + rowPointers.length);
@@ -107,7 +107,7 @@ public final class CSRMatrix extends RowMajorMatrix {
     public double[] getRow(@Nonnegative final int index) {
         final double[] row = new double[numColumns];
         eachNonZeroInRow(index, new VectorProcedure() {
-            public void apply(int col, double value) {
+            public void apply(int col, float value) {
                 row[col] = value;
             }
         });
@@ -118,7 +118,7 @@ public final class CSRMatrix extends RowMajorMatrix {
     public double[] getRow(@Nonnegative final int index, @Nonnull final double[] dst) {
         Arrays.fill(dst, 0.d);
         eachNonZeroInRow(index, new VectorProcedure() {
-            public void apply(int col, double value) {
+            public void apply(int col, float value) {
                 checkColIndex(col, numColumns);
                 dst[col] = value;
             }
@@ -127,8 +127,20 @@ public final class CSRMatrix extends RowMajorMatrix {
     }
 
     @Override
-    public double get(@Nonnegative final int row, @Nonnegative final int col,
-            final double defaultValue) {
+    public float[] getRow(@Nonnegative final int index, @Nonnull final float[] dst) {
+        Arrays.fill(dst, 0.f);
+        eachNonZeroInRow(index, new VectorProcedure() {
+            public void apply(int col, float value) {
+                checkColIndex(col, numColumns);
+                dst[col] = value;
+            }
+        });
+        return dst;
+    }
+
+    @Override
+    public float get(@Nonnegative final int row, @Nonnegative final int col,
+            final float defaultValue) {
         checkIndex(row, col, numRows, numColumns);
 
         final int index = getIndex(row, col);
@@ -139,8 +151,7 @@ public final class CSRMatrix extends RowMajorMatrix {
     }
 
     @Override
-    public double getAndSet(@Nonnegative final int row, @Nonnegative final int col,
-            final double value) {
+    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col, numRows, numColumns);
 
         final int index = getIndex(row, col);
@@ -149,13 +160,13 @@ public final class CSRMatrix extends RowMajorMatrix {
                     + col);
         }
 
-        double old = values[index];
+        float old = values[index];
         values[index] = value;
         return old;
     }
 
     @Override
-    public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
+    public void set(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col, numRows, numColumns);
 
         final int index = getIndex(row, col);
@@ -193,10 +204,10 @@ public final class CSRMatrix extends RowMajorMatrix {
         if (nullOutput) {
             for (int col = 0, j = startIn; col < numColumns; col++) {
                 if (j < endEx && col == columnIndices[j]) {
-                    double v = values[j++];
+                    float v = values[j++];
                     procedure.apply(col, v);
                 } else {
-                    procedure.apply(col, 0.d);
+                    procedure.apply(col, 0.f);
                 }
             }
         } else {
@@ -215,8 +226,8 @@ public final class CSRMatrix extends RowMajorMatrix {
         final int endEx = rowPointers[row + 1];
         for (int i = startIn; i < endEx; i++) {
             int col = columnIndices[i];
-            final double v = values[i];
-            if (v != 0.d) {
+            final float v = values[i];
+            if (v != 0.f) {
                 procedure.apply(col, v);
             }
         }
@@ -236,10 +247,10 @@ public final class CSRMatrix extends RowMajorMatrix {
     }
 
     @Nonnull
-    public CSCMatrix toColumnMajorMatrix() {
+    public CSCFloatMatrix toColumnMajorMatrix() {
         final int[] columnPointers = new int[numColumns + 1];
         final int[] rowIndices = new int[nnz];
-        final double[] cscValues = new double[nnz];
+        final float[] cscValues = new float[nnz];
 
         // compute nnz per for each column
         for (int j = 0; j < columnIndices.length; j++) {
@@ -271,7 +282,7 @@ public final class CSRMatrix extends RowMajorMatrix {
             last = tmp;
         }
 
-        return new CSCMatrix(columnPointers, rowIndices, cscValues, numRows, numColumns);
+        return new CSCFloatMatrix(columnPointers, rowIndices, cscValues, numRows, numColumns);
     }
 
     @Override

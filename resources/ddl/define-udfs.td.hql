@@ -177,7 +177,7 @@ create temporary function train_regressor as 'hivemall.regression.GeneralRegress
 create temporary function tree_export as 'hivemall.smile.tools.TreeExportUDF';
 create temporary function train_ffm as 'hivemall.fm.FieldAwareFactorizationMachineUDTF';
 create temporary function ffm_predict as 'hivemall.fm.FFMPredictGenericUDAF';
-create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
+create temporary function add_field_indices as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
 create temporary function to_ordered_list as 'hivemall.tools.list.UDAFToOrderedList';
 create temporary function singularize as 'hivemall.tools.text.SingularizeUDF';
 create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
@@ -194,3 +194,4 @@ create temporary function pa2a_regress as 'hivemall.regression.PassiveAggressive
 create temporary function arow_regress as 'hivemall.regression.AROWRegressionUDTF';
 create temporary function addBias as 'hivemall.ftvec.AddBiasUDF';
 create temporary function tree_predict_v1 as 'hivemall.smile.tools.TreePredictUDFv1';
+create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';

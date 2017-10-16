@@ -16,28 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.vector;
+package hivemall.math.matrix.sparse;
 
-import javax.annotation.Nonnegative;
+import java.util.Random;
 
-public abstract class VectorProcedure {
+import org.junit.Assert;
+import org.junit.Test;
 
-    public VectorProcedure() {}
+public class DoKMatrixTest {
 
-    public void apply(@Nonnegative int i, @Nonnegative int j, float value) {
-        apply(i, j, (double) value);
+    @Test
+    public void testGetSet() {
+        DoKMatrix matrix = new DoKMatrix();
+        Random rnd = new Random(43);
+
+        for (int i = 0; i < 1000; i++) {
+            int row = Math.abs(rnd.nextInt());
+            int col = Math.abs(rnd.nextInt());
+            double v = rnd.nextDouble();
+            matrix.set(row, col, v);
+            Assert.assertEquals(v, matrix.get(row, col), 0.00001d);
+        }
+
     }
-
-    public void apply(@Nonnegative int i, @Nonnegative int j, double value) {}
-
-    public void apply(@Nonnegative int i, float value) {
-        apply(i, (double) value);
-    }
-
-    public void apply(@Nonnegative int i, double value) {}
-
-    public void apply(@Nonnegative int i, int value) {}
-
-    public void apply(@Nonnegative int i) {}
 
 }

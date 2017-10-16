@@ -16,28 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.vector;
+package hivemall.math.matrix;
 
-import javax.annotation.Nonnegative;
+public abstract class RowMajorFloatMatrix extends RowMajorMatrix implements FloatMatrix {
 
-public abstract class VectorProcedure {
-
-    public VectorProcedure() {}
-
-    public void apply(@Nonnegative int i, @Nonnegative int j, float value) {
-        apply(i, j, (double) value);
+    public RowMajorFloatMatrix() {
+        super();
     }
 
-    public void apply(@Nonnegative int i, @Nonnegative int j, double value) {}
-
-    public void apply(@Nonnegative int i, float value) {
-        apply(i, (double) value);
+    @Override
+    public RowMajorFloatMatrix toRowMajorMatrix() {
+        return this;
     }
-
-    public void apply(@Nonnegative int i, double value) {}
-
-    public void apply(@Nonnegative int i, int value) {}
-
-    public void apply(@Nonnegative int i) {}
 
 }
