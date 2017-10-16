@@ -61,8 +61,6 @@ import org.apache.hadoop.io.IntWritable;
         + " in which each element is the mean of a set of numbers")
 public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
 
-    private ArrayAvgGenericUDAF() {}// prevent instantiation
-
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 1) {

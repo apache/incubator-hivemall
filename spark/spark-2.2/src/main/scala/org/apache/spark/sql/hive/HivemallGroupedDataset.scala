@@ -34,25 +34,61 @@ import org.apache.spark.sql.types._
 /**
  * Groups the [[DataFrame]] using the specified columns, so we can run aggregation on them.
  *
+ * @groupname classifier
  * @groupname ensemble
- * @groupname ftvec.trans
  * @groupname evaluation
+ * @groupname topicmodel
+ * @groupname ftvec.selection
+ * @groupname ftvec.text
+ * @groupname ftvec.trans
+ * @groupname tools.array
+ * @groupname tools.bits
+ * @groupname tools.list
+ * @groupname tools.map
+ * @groupname tools.matrix
+ * @groupname tools.math
+ *
+ * A list of unsupported functions is as follows:
+ *  * ftvec.conv
+ *   - conv2dense
+ *   - build_bins
  */
 final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
+
+  /**
+   * @see hivemall.classifier.KPAPredictUDAF
+   * @group classifier
+   */
+  def kpa_predict(xh: String, xk: String, w0: String, w1: String, w2: String, w3: String)
+    : DataFrame = {
+    checkType(xh, DoubleType)
+    checkType(xk, DoubleType)
+    checkType(w0, FloatType)
+    checkType(w1, FloatType)
+    checkType(w2, FloatType)
+    checkType(w3, FloatType)
+    val udaf = HiveUDAFFunction(
+        "kpa_predict",
+        new HiveFunctionWrapper("hivemall.classifier.KPAPredictUDAF"),
+        Seq(xh, xk, w0, w1, w2, w3).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
 
   /**
    * @see hivemall.ensemble.bagging.VotedAvgUDAF
    * @group ensemble
    */
   def voted_avg(weight: String): DataFrame = {
-    // checkType(weight, NumericType)
+    checkType(weight, DoubleType)
     val udaf = HiveUDAFFunction(
         "voted_avg",
         new HiveFunctionWrapper("hivemall.ensemble.bagging.WeightVotedAvgUDAF"),
-        Seq(weight).map(df.col(_).expr),
+        Seq(weight).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -60,14 +96,14 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group ensemble
    */
   def weight_voted_avg(weight: String): DataFrame = {
-    // checkType(weight, NumericType)
+    checkType(weight, DoubleType)
     val udaf = HiveUDAFFunction(
         "weight_voted_avg",
         new HiveFunctionWrapper("hivemall.ensemble.bagging.WeightVotedAvgUDAF"),
-        Seq(weight).map(df.col(_).expr),
+        Seq(weight).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -75,15 +111,15 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group ensemble
    */
   def argmin_kld(weight: String, conv: String): DataFrame = {
-    // checkType(weight, NumericType)
-    // checkType(conv, NumericType)
+    checkType(weight, FloatType)
+    checkType(conv, FloatType)
     val udaf = HiveUDAFFunction(
         "argmin_kld",
         new HiveFunctionWrapper("hivemall.ensemble.ArgminKLDistanceUDAF"),
-        Seq(weight, conv).map(df.col(_).expr),
+        Seq(weight, conv).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -91,15 +127,15 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group ensemble
    */
   def max_label(score: String, label: String): DataFrame = {
-    // checkType(score, NumericType)
+    checkType(score, DoubleType)
     checkType(label, StringType)
     val udaf = HiveUDAFFunction(
         "max_label",
         new HiveFunctionWrapper("hivemall.ensemble.MaxValueLabelUDAF"),
-        Seq(score, label).map(df.col(_).expr),
+        Seq(score, label).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -107,70 +143,31 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group ensemble
    */
   def maxrow(score: String, label: String): DataFrame = {
-    // checkType(score, NumericType)
+    checkType(score, DoubleType)
     checkType(label, StringType)
     val udaf = HiveUDAFFunction(
         "maxrow",
         new HiveFunctionWrapper("hivemall.ensemble.MaxRowUDAF"),
-        Seq(score, label).map(df.col(_).expr),
+        Seq(score, label).map(df(_).expr),
         isUDAFBridgeRequired = false)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
    * @see hivemall.smile.tools.RandomForestEnsembleUDAF
    * @group ensemble
    */
-  def rf_ensemble(predict: String): DataFrame = {
-    // checkType(predict, NumericType)
+  @scala.annotation.varargs
+  def rf_ensemble(yhat: String, others: String*): DataFrame = {
+    checkType(yhat, IntegerType)
     val udaf = HiveUDAFFunction(
         "rf_ensemble",
         new HiveFunctionWrapper("hivemall.smile.tools.RandomForestEnsembleUDAF"),
-        Seq(predict).map(df.col(_).expr),
+        (yhat +: others).map(df(_).expr),
         isUDAFBridgeRequired = false)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
-  }
-
-  /**
-   * @see hivemall.tools.matrix.TransposeAndDotUDAF
-   */
-  def transpose_and_dot(X: String, Y: String): DataFrame = {
-    val udaf = HiveUDAFFunction(
-        "transpose_and_dot",
-        new HiveFunctionWrapper("hivemall.tools.matrix.TransposeAndDotUDAF"),
-        Seq(X, Y).map(df.col(_).expr),
-        isUDAFBridgeRequired = false)
-      .toAggregateExpression()
-    toDF(Seq(Alias(udaf, udaf.prettyName)()))
-  }
-
-  /**
-   * @see hivemall.ftvec.trans.OnehotEncodingUDAF
-   * @group ftvec.trans
-   */
-  def onehot_encoding(cols: String*): DataFrame = {
-    val udaf = HiveUDAFFunction(
-        "onehot_encoding",
-        new HiveFunctionWrapper("hivemall.ftvec.trans.OnehotEncodingUDAF"),
-        cols.map(df.col(_).expr),
-        isUDAFBridgeRequired = false)
-      .toAggregateExpression()
-    toDF(Seq(Alias(udaf, udaf.prettyName)()))
-  }
-
-  /**
-   * @see hivemall.ftvec.selection.SignalNoiseRatioUDAF
-   */
-  def snr(X: String, Y: String): DataFrame = {
-    val udaf = HiveUDAFFunction(
-        "snr",
-        new HiveFunctionWrapper("hivemall.ftvec.selection.SignalNoiseRatioUDAF"),
-        Seq(X, Y).map(df.col(_).expr),
-        isUDAFBridgeRequired = false)
-      .toAggregateExpression()
-    toDF(Seq(Alias(udaf, udaf.prettyName)()))
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -178,15 +175,15 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group evaluation
    */
   def mae(predict: String, target: String): DataFrame = {
-    checkType(predict, FloatType)
-    checkType(target, FloatType)
+    checkType(predict, DoubleType)
+    checkType(target, DoubleType)
     val udaf = HiveUDAFFunction(
         "mae",
         new HiveFunctionWrapper("hivemall.evaluation.MeanAbsoluteErrorUDAF"),
-        Seq(predict, target).map(df.col(_).expr),
+        Seq(predict, target).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -194,15 +191,15 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group evaluation
    */
   def mse(predict: String, target: String): DataFrame = {
-    checkType(predict, FloatType)
-    checkType(target, FloatType)
+    checkType(predict, DoubleType)
+    checkType(target, DoubleType)
     val udaf = HiveUDAFFunction(
         "mse",
         new HiveFunctionWrapper("hivemall.evaluation.MeanSquaredErrorUDAF"),
-        Seq(predict, target).map(df.col(_).expr),
+        Seq(predict, target).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -210,15 +207,47 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group evaluation
    */
   def rmse(predict: String, target: String): DataFrame = {
-    checkType(predict, FloatType)
-    checkType(target, FloatType)
+    checkType(predict, DoubleType)
+    checkType(target, DoubleType)
     val udaf = HiveUDAFFunction(
-      "rmse",
-      new HiveFunctionWrapper("hivemall.evaluation.RootMeanSquaredErrorUDAF"),
-        Seq(predict, target).map(df.col(_).expr),
+        "rmse",
+        new HiveFunctionWrapper("hivemall.evaluation.RootMeanSquaredErrorUDAF"),
+        Seq(predict, target).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.R2UDAF
+   * @group evaluation
+   */
+  def r2(predict: String, target: String): DataFrame = {
+    checkType(predict, DoubleType)
+    checkType(target, DoubleType)
+    val udaf = HiveUDAFFunction(
+        "r2",
+        new HiveFunctionWrapper("hivemall.evaluation.R2UDAF"),
+        Seq(predict, target).map(df(_).expr),
+        isUDAFBridgeRequired = true)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.LogarithmicLossUDAF
+   * @group evaluation
+   */
+  def logloss(predict: String, target: String): DataFrame = {
+    checkType(predict, DoubleType)
+    checkType(target, DoubleType)
+    val udaf = HiveUDAFFunction(
+        "logloss",
+        new HiveFunctionWrapper("hivemall.evaluation.LogarithmicLossUDAF"),
+        Seq(predict, target).map(df(_).expr),
+        isUDAFBridgeRequired = true)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
@@ -226,15 +255,318 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group evaluation
    */
   def f1score(predict: String, target: String): DataFrame = {
-    // checkType(target, ArrayType(IntegerType))
-    // checkType(predict, ArrayType(IntegerType))
+    // checkType(target, ArrayType(IntegerType, false))
+    // checkType(predict, ArrayType(IntegerType, false))
     val udaf = HiveUDAFFunction(
         "f1score",
         new HiveFunctionWrapper("hivemall.evaluation.F1ScoreUDAF"),
-        Seq(predict, target).map(df.col(_).expr),
+        Seq(predict, target).map(df(_).expr),
         isUDAFBridgeRequired = true)
       .toAggregateExpression()
-    toDF((Alias(udaf, udaf.prettyName)() :: Nil).toSeq)
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.NDCGUDAF
+   * @group evaluation
+   */
+  @scala.annotation.varargs
+  def ndcg(rankItems: String, correctItems: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "ndcg",
+        new HiveFunctionWrapper("hivemall.evaluation.NDCGUDAF"),
+        (rankItems +: correctItems +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.PrecisionUDAF
+   * @group evaluation
+   */
+  @scala.annotation.varargs
+  def precision_at(rankItems: String, correctItems: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "precision_at",
+        new HiveFunctionWrapper("hivemall.evaluation.PrecisionUDAF"),
+        (rankItems +: correctItems +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.RecallUDAF
+   * @group evaluation
+   */
+  @scala.annotation.varargs
+  def recall_at(rankItems: String, correctItems: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "recall_at",
+        new HiveFunctionWrapper("hivemall.evaluation.RecallUDAF"),
+        (rankItems +: correctItems +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.HitRateUDAF
+   * @group evaluation
+   */
+  @scala.annotation.varargs
+  def hitrate(rankItems: String, correctItems: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "hitrate",
+        new HiveFunctionWrapper("hivemall.evaluation.HitRateUDAF"),
+        (rankItems +: correctItems +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.MRRUDAF
+   * @group evaluation
+   */
+  @scala.annotation.varargs
+  def mrr(rankItems: String, correctItems: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "mrr",
+        new HiveFunctionWrapper("hivemall.evaluation.MRRUDAF"),
+        (rankItems +: correctItems +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.MAPUDAF
+   * @group evaluation
+   */
+  @scala.annotation.varargs
+  def average_precision(rankItems: String, correctItems: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "average_precision",
+        new HiveFunctionWrapper("hivemall.evaluation.MAPUDAF"),
+        (rankItems +: correctItems +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.evaluation.AUCUDAF
+   * @group evaluation
+   */
+  @scala.annotation.varargs
+  def auc(args: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "auc",
+        new HiveFunctionWrapper("hivemall.evaluation.AUCUDAF"),
+        args.map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.topicmodel.LDAPredictUDAF
+   * @group topicmodel
+   */
+  @scala.annotation.varargs
+  def lda_predict(word: String, value: String, label: String, lambda: String, others: String*)
+    : DataFrame = {
+    checkType(word, StringType)
+    checkType(value, DoubleType)
+    checkType(label, IntegerType)
+    checkType(lambda, DoubleType)
+    val udaf = HiveUDAFFunction(
+        "lda_predict",
+        new HiveFunctionWrapper("hivemall.topicmodel.LDAPredictUDAF"),
+        (word +: value +: label +: lambda +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.topicmodel.PLSAPredictUDAF
+   * @group topicmodel
+   */
+  @scala.annotation.varargs
+  def plsa_predict(word: String, value: String, label: String, prob: String, others: String*)
+    : DataFrame = {
+    checkType(word, StringType)
+    checkType(value, DoubleType)
+    checkType(label, IntegerType)
+    checkType(prob, DoubleType)
+    val udaf = HiveUDAFFunction(
+        "plsa_predict",
+        new HiveFunctionWrapper("hivemall.topicmodel.PLSAPredictUDAF"),
+        (word +: value +: label +: prob +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.ftvec.text.TermFrequencyUDAF
+   * @group ftvec.text
+   */
+  def tf(text: String): DataFrame = {
+    checkType(text, StringType)
+    val udaf = HiveUDAFFunction(
+        "tf",
+        new HiveFunctionWrapper("hivemall.ftvec.text.TermFrequencyUDAF"),
+        Seq(text).map(df(_).expr),
+        isUDAFBridgeRequired = true)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.ftvec.trans.OnehotEncodingUDAF
+   * @group ftvec.trans
+   */
+  @scala.annotation.varargs
+  def onehot_encoding(feature: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "onehot_encoding",
+        new HiveFunctionWrapper("hivemall.ftvec.trans.OnehotEncodingUDAF"),
+        (feature +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.ftvec.selection.SignalNoiseRatioUDAF
+   * @group ftvec.selection
+   */
+  def snr(feature: String, label: String): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "snr",
+        new HiveFunctionWrapper("hivemall.ftvec.selection.SignalNoiseRatioUDAF"),
+        Seq(feature, label).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.array.ArrayAvgGenericUDAF
+   * @group tools.array
+   */
+  def array_avg(ar: String): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "array_avg",
+        new HiveFunctionWrapper("hivemall.tools.array.ArrayAvgGenericUDAF"),
+        Seq(ar).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.array.ArraySumUDAF
+   * @group tools.array
+   */
+  def array_sum(ar: String): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "array_sum",
+        new HiveFunctionWrapper("hivemall.tools.array.ArraySumUDAF"),
+        Seq(ar).map(df(_).expr),
+        isUDAFBridgeRequired = true)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.bits.BitsCollectUDAF
+   * @group tools.bits
+   */
+  def bits_collect(x: String): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "bits_collect",
+        new HiveFunctionWrapper("hivemall.tools.bits.BitsCollectUDAF"),
+        Seq(x).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.list.UDAFToOrderedList
+   * @group tools.list
+   */
+  @scala.annotation.varargs
+  def to_ordered_list(value: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "to_ordered_list",
+        new HiveFunctionWrapper("hivemall.tools.list.UDAFToOrderedList"),
+        (value +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.map.UDAFToMap
+   * @group tools.map
+   */
+  def to_map(key: String, value: String): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "to_map",
+        new HiveFunctionWrapper("hivemall.tools.map.UDAFToMap"),
+        Seq(key, value).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.map.UDAFToOrderedMap
+   * @group tools.map
+   */
+  @scala.annotation.varargs
+  def to_ordered_map(key: String, value: String, others: String*): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "to_ordered_map",
+        new HiveFunctionWrapper("hivemall.tools.map.UDAFToOrderedMap"),
+        (key +: value +: others).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.matrix.TransposeAndDotUDAF
+   * @group tools.matrix
+   */
+  def transpose_and_dot(matrix0_row: String, matrix1_row: String): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "transpose_and_dot",
+        new HiveFunctionWrapper("hivemall.tools.matrix.TransposeAndDotUDAF"),
+        Seq(matrix0_row, matrix1_row).map(df(_).expr),
+        isUDAFBridgeRequired = false)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
+  }
+
+  /**
+   * @see hivemall.tools.math.L2NormUDAF
+   * @group tools.math
+   */
+  def l2_norm(xi: String): DataFrame = {
+    val udaf = HiveUDAFFunction(
+        "l2_norm",
+        new HiveFunctionWrapper("hivemall.tools.math.L2NormUDAF"),
+        Seq(xi).map(df(_).expr),
+        isUDAFBridgeRequired = true)
+      .toAggregateExpression()
+    toDF(Alias(udaf, udaf.prettyName)() :: Nil)
   }
 
   /**
