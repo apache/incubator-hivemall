@@ -88,7 +88,7 @@ public final class MRRUDAF extends AbstractGenericUDAFResolver {
 
         @Override
         public ObjectInspector init(Mode mode, ObjectInspector[] parameters) throws HiveException {
-            assert (0 < parameters.length && parameters.length <= 3) : parameters.length;
+            assert (parameters.length >=1 && parameters.length <= 3) : parameters.length;
             super.init(mode, parameters);
 
             // initialize input
