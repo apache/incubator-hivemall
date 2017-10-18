@@ -189,8 +189,8 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
             // categorical feature representation 
             final String fv;
             if (_mhash) {
-                int field = _emitIndices ? i : MurmurHash3.murmurhash3(_featureNames[i],
-                    _numFields);
+                int field = _emitIndices ? i
+                        : MurmurHash3.murmurhash3(_featureNames[i], _numFields);
                 // +NUM_FIELD to avoid conflict to quantitative features
                 int index = MurmurHash3.murmurhash3(feature, _numFeatures) + _numFields;
                 fv = builder.append(field).append(':').append(index).append(":1").toString();

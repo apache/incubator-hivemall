@@ -103,7 +103,7 @@ public class BinaryResponsesMeasuresTest {
         List<Integer> groundTruth = Arrays.asList(1, 2, 4);
 
         double actual = BinaryResponsesMeasures.ReciprocalRank(rankedList, groundTruth,
-                rankedList.size());
+            rankedList.size());
         Assert.assertEquals(1.0d, actual, 0.0001d);
 
         Collections.reverse(rankedList);

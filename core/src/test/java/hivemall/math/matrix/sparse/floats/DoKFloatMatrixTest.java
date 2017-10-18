@@ -40,9 +40,9 @@ public class DoKFloatMatrixTest {
             Assert.assertEquals(v, matrix.get(row, col), 0.00001f);
         }
     }
-    
+
     @Test
-    public void testToRowMajorMatrix() {        
+    public void testToRowMajorMatrix() {
         DoKFloatMatrix matrix = new DoKFloatMatrix();
         Random rnd = new Random(43);
 
@@ -52,7 +52,7 @@ public class DoKFloatMatrixTest {
             float v = rnd.nextFloat();
             matrix.set(row, col, v);
         }
-        
+
         CSRFloatMatrix csr = matrix.toRowMajorMatrix();
         Assert.assertEquals(10, csr.nnz());
     }

@@ -88,7 +88,7 @@ public final class MAPUDAF extends AbstractGenericUDAFResolver {
 
         @Override
         public ObjectInspector init(Mode mode, ObjectInspector[] parameters) throws HiveException {
-            assert (parameters.length >=1 && parameters.length <= 3) : parameters.length;
+            assert (parameters.length >= 1 && parameters.length <= 3) : parameters.length;
             super.init(mode, parameters);
 
             // initialize input

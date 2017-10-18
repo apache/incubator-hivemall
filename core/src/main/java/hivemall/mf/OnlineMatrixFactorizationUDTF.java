@@ -147,8 +147,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
             initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.1d);
             this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
             if (iterations < 1) {
-                throw new UDFArgumentException(
-                    "'-iterations' must be greater than or equal to 1: " + iterations);
+                throw new UDFArgumentException("'-iterations' must be greater than or equal to 1: "
+                        + iterations);
             }
             conversionCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
@@ -506,7 +506,7 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
                 if (inputBuf.position() > 0) {
                     writeBuffer(inputBuf, fileIO, lastWritePos);
                 }
-                
+
                 try {
                     fileIO.flush();
                 } catch (IOException e) {

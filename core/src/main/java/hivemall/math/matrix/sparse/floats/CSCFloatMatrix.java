@@ -108,8 +108,8 @@ public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
 
         final int numCols = columnPointers.length - 1;
         for (int j = 0; j < numCols; j++) {
-            final int k = Arrays.binarySearch(rowIndices, columnPointers[j],
-                columnPointers[j + 1], index);
+            final int k = Arrays.binarySearch(rowIndices, columnPointers[j], columnPointers[j + 1],
+                index);
             if (k >= 0) {
                 row[j] = values[k];
             }
@@ -124,8 +124,8 @@ public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
 
         final int last = Math.min(dst.length, columnPointers.length - 1);
         for (int j = 0; j < last; j++) {
-            final int k = Arrays.binarySearch(rowIndices, columnPointers[j],
-                columnPointers[j + 1], index);
+            final int k = Arrays.binarySearch(rowIndices, columnPointers[j], columnPointers[j + 1],
+                index);
             if (k >= 0) {
                 dst[j] = values[k];
             } else {
@@ -145,8 +145,8 @@ public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
 
         final int last = Math.min(dst.length, columnPointers.length - 1);
         for (int j = 0; j < last; j++) {
-            final int k = Arrays.binarySearch(rowIndices, columnPointers[j],
-                columnPointers[j + 1], index);
+            final int k = Arrays.binarySearch(rowIndices, columnPointers[j], columnPointers[j + 1],
+                index);
             if (k >= 0) {
                 dst[j] = values[k];
             } else {
@@ -166,8 +166,8 @@ public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
         row.clear();
 
         for (int j = 0, last = columnPointers.length - 1; j < last; j++) {
-            final int k = Arrays.binarySearch(rowIndices, columnPointers[j],
-                columnPointers[j + 1], index);
+            final int k = Arrays.binarySearch(rowIndices, columnPointers[j], columnPointers[j + 1],
+                index);
             if (k >= 0) {
                 float v = values[k];
                 row.set(j, v);

@@ -30,8 +30,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "feature_index",
+@Description(name = "feature_index",
         value = "_FUNC_(feature_vector in array<string>) - Returns feature indices in array<index>")
 @UDFType(deterministic = true, stateful = false)
 public final class FeatureIndexUDF extends UDF {
