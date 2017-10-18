@@ -18,21 +18,6 @@
  */
 package hivemall.fm;
 
-import hivemall.UDTFWithOptions;
-import hivemall.common.ConversionState;
-import hivemall.fm.FMStringFeatureMapModel.Entry;
-import hivemall.optimizer.EtaEstimator;
-import hivemall.optimizer.LossFunctions;
-import hivemall.optimizer.LossFunctions.LossFunction;
-import hivemall.optimizer.LossFunctions.LossType;
-import hivemall.utils.collections.IMapIterator;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.FileUtils;
-import hivemall.utils.io.NioStatefullSegment;
-import hivemall.utils.lang.NumberUtils;
-import hivemall.utils.lang.SizeOf;
-import hivemall.utils.math.MathUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -62,6 +47,22 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
+
+import hivemall.UDTFWithOptions;
+import hivemall.annotations.VisibleForTesting;
+import hivemall.common.ConversionState;
+import hivemall.fm.FMStringFeatureMapModel.Entry;
+import hivemall.optimizer.EtaEstimator;
+import hivemall.optimizer.LossFunctions;
+import hivemall.optimizer.LossFunctions.LossFunction;
+import hivemall.optimizer.LossFunctions.LossType;
+import hivemall.utils.collections.IMapIterator;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.lang.SizeOf;
+import hivemall.utils.math.MathUtils;
 
 @Description(
         name = "train_fm",
@@ -434,6 +435,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
         forwardModel();
         this._model = null;
+    }
+
+    @VisibleForTesting
+    void finalizeTraining() throws HiveException {
+        if (_iterations > 1) {
+            runTrainingIteration(_iterations);
+        }
     }
 
     protected void forwardModel() throws HiveException {
