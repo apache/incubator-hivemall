@@ -94,7 +94,7 @@ public final class IntFeature extends Feature {
         if (field == -1) {
             return index + ":" + value;
         } else {
-            return index + ":" + field + ":" + value;
+            return field + ":" + index + ":" + value;
         }
     }
 
