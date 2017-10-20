@@ -20,6 +20,7 @@ package hivemall.fm;
 
 import hivemall.utils.hashing.MurmurHash3;
 import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.math.FastMath;
 
 import java.nio.ByteBuffer;
 
@@ -363,6 +364,22 @@ public abstract class Feature {
             @Nonnegative final int numFields) {
         int index = x.getFeatureIndex();
         return index * numFields + yField;
+    }
+
+    public static void l2normalize(@Nonnull final Feature[] features) {
+        double squaredSum = 0.d;
+        for (Feature f : features) {
+            double v = f.value;
+            squaredSum += (v * v);
+        }
+        if (squaredSum == 0.d) {
+            return;
+        }
+
+        final double invNorm = FastMath.invSqrt(squaredSum);
+        for (Feature f : features) {
+            f.value *= invNorm;
+        }
     }
 
 }
