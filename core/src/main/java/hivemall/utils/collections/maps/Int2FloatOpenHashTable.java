@@ -36,7 +36,7 @@ import java.util.Arrays;
  *
  * @see http://en.wikipedia.org/wiki/Double_hashing
  */
-public class Int2FloatOpenHashTable implements Externalizable {
+public final class Int2FloatOpenHashTable implements Externalizable {
 
     protected static final byte FREE = 0;
     protected static final byte FULL = 1;
