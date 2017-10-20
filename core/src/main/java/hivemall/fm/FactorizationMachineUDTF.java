@@ -18,6 +18,22 @@
  */
 package hivemall.fm;
 
+import hivemall.UDTFWithOptions;
+import hivemall.annotations.VisibleForTesting;
+import hivemall.common.ConversionState;
+import hivemall.fm.FMStringFeatureMapModel.Entry;
+import hivemall.optimizer.EtaEstimator;
+import hivemall.optimizer.LossFunctions;
+import hivemall.optimizer.LossFunctions.LossFunction;
+import hivemall.optimizer.LossFunctions.LossType;
+import hivemall.utils.collections.IMapIterator;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.lang.SizeOf;
+import hivemall.utils.math.MathUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -48,24 +64,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
-import hivemall.UDTFWithOptions;
-import hivemall.annotations.VisibleForTesting;
-import hivemall.common.ConversionState;
-import hivemall.fm.FMStringFeatureMapModel.Entry;
-import hivemall.optimizer.EtaEstimator;
-import hivemall.optimizer.LossFunctions;
-import hivemall.optimizer.LossFunctions.LossFunction;
-import hivemall.optimizer.LossFunctions.LossType;
-import hivemall.utils.collections.IMapIterator;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.FileUtils;
-import hivemall.utils.io.NioStatefullSegment;
-import hivemall.utils.lang.NumberUtils;
-import hivemall.utils.lang.SizeOf;
-import hivemall.utils.math.MathUtils;
-
-@Description(
-        name = "train_fm",
+@Description(name = "train_fm",
         value = "_FUNC_(array<string> x, double y [, const string options]) - Returns a prediction model")
 public class FactorizationMachineUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(FactorizationMachineUDTF.class);
@@ -163,6 +162,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         // feature representation
         opts.addOption("int_feature", "feature_as_integer", false,
             "Parse a feature as integer [default: OFF]");
+        // normalization
+        opts.addOption("enable_norm", "l2norm", false, "Enable instance-wise L2 normalization");
         return opts;
     }
 
@@ -201,10 +202,9 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(
-                getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: array<string> x, double y [, CONSTANT STRING options]: "
-                        + Arrays.toString(argOIs));
+            throw new UDFArgumentException(getClass().getSimpleName()
+                    + " takes 2 or 3 arguments: array<string> x, double y [, CONSTANT STRING options]: "
+                    + Arrays.toString(argOIs));
         }
         this._xOI = HiveUtils.asListOI(argOIs[0]);
         HiveUtils.validateFeatureOI(_xOI.getListElementObjectInspector());
@@ -241,7 +241,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         fieldNames.add("W_i");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
         fieldNames.add("V_if");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -288,7 +289,14 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
     @Nullable
     protected Feature[] parseFeatures(@Nonnull final Object arg) throws HiveException {
-        return Feature.parseFeatures(arg, _xOI, _probes, _parseFeatureAsInt);
+        Feature[] features = Feature.parseFeatures(arg, _xOI, _probes, _parseFeatureAsInt);
+        if (_params.l2norm) {
+            // TODO
+            throw new UDFArgumentException(
+                "`-enable_norm` is not supported yet for Factorization Machine");
+            // Feature.l2normalize(features);
+        }
+        return features;
     }
 
     protected void recordTrain(@Nonnull final Feature[] x, final double y) throws HiveException {
@@ -304,8 +312,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 file = File.createTempFile("hivemall_fm", ".sgmt");
                 file.deleteOnExit();
                 if (!file.canWrite()) {
-                    throw new UDFArgumentException("Cannot write a temporary file: "
-                            + file.getAbsolutePath());
+                    throw new UDFArgumentException(
+                        "Cannot write a temporary file: " + file.getAbsolutePath());
                 }
                 LOG.info("Record training examples to a file: " + file.getAbsolutePath());
             } catch (IOException ioe) {
@@ -537,8 +545,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         final boolean adaregr = _va_rand != null;
 
         final Reporter reporter = getReporter();
-        final Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-            "hivemall.fm.FactorizationMachines$Counter", "iteration");
+        final Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.fm.FactorizationMachines$Counter", "iteration");
 
         try {
             if (fileIO.getPosition() == 0L) {// run iterations w/o temporary file
@@ -583,8 +591,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 try {
                     fileIO.flush();
                 } catch (IOException e) {
-                    throw new HiveException("Failed to flush a file: "
-                            + fileIO.getFile().getAbsolutePath(), e);
+                    throw new HiveException(
+                        "Failed to flush a file: " + fileIO.getFile().getAbsolutePath(), e);
                 }
                 if (LOG.isInfoEnabled()) {
                     File tmpFile = fileIO.getFile();
@@ -609,8 +617,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         try {
                             bytesRead = fileIO.read(inputBuf);
                         } catch (IOException e) {
-                            throw new HiveException("Failed to read a file: "
-                                    + fileIO.getFile().getAbsolutePath(), e);
+                            throw new HiveException(
+                                "Failed to read a file: " + fileIO.getFile().getAbsolutePath(), e);
                         }
                         if (bytesRead == 0) { // reached file EOF
                             break;
@@ -661,8 +669,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             try {
                 fileIO.close(true);
             } catch (IOException e) {
-                throw new HiveException("Failed to close a file: "
-                        + fileIO.getFile().getAbsolutePath(), e);
+                throw new HiveException(
+                    "Failed to close a file: " + fileIO.getFile().getAbsolutePath(), e);
             }
             this._inputBuf = null;
             this._fileIO = null;

@@ -46,7 +46,8 @@ public class FactorizationMachineUDTFTest {
         println("SGD test");
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
@@ -54,6 +55,8 @@ public class FactorizationMachineUDTFTest {
 
         udtf.initialize(argOIs);
         FactorizationMachineModel model = udtf.initModel(udtf._params);
+
+        Assert.assertFalse(udtf._params.l2norm);
         Assert.assertTrue("Actual class: " + model.getClass().getName(),
             model instanceof FMStringFeatureMapModel);
 
@@ -78,11 +81,28 @@ public class FactorizationMachineUDTFTest {
             }
             cumul = udtf._cvState.getCumulativeLoss();
             loss = (cumul - loss) / trExamples;
-            println(trainingIteration + " " + loss + " " + cumul / (trainingIteration * trExamples));
+            println(
+                trainingIteration + " " + loss + " " + cumul / (trainingIteration * trExamples));
             data.close();
         }
 
         Assert.assertTrue("Loss was greater than 0.1: " + loss, loss <= 0.1);
+    }
+
+    @Test
+    public void testEnableL2Norm() throws HiveException, IOException {
+        FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-factors 5 -min 1 -max 5 -iters 1 -init_v gaussian -eta0 0.01 -seed 31 -l2norm")};
+
+        udtf.initialize(argOIs);
+        udtf.initModel(udtf._params);
+        Assert.assertTrue(udtf._params.l2norm);
     }
 
     @Nonnull

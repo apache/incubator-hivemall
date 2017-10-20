@@ -20,7 +20,6 @@ package hivemall.fm;
 
 import hivemall.utils.hashing.MurmurHash3;
 import hivemall.utils.lang.NumberUtils;
-import hivemall.utils.math.FastMath;
 
 import java.nio.ByteBuffer;
 
@@ -376,7 +375,7 @@ public abstract class Feature {
             return;
         }
 
-        final double invNorm = FastMath.invSqrt(squaredSum);
+        final double invNorm = 1.d / Math.sqrt(squaredSum);
         for (Feature f : features) {
             f.value *= invNorm;
         }

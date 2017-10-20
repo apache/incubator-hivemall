@@ -18,6 +18,9 @@
  */
 package hivemall.common;
 
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -61,6 +64,13 @@ public final class ConversionState {
         return currLosses;
     }
 
+    public double getAverageLoss(@Nonnegative final long numInstances) {
+        if (numInstances == 0) {
+            return 0.d;
+        }
+        return currLosses / numInstances;
+    }
+
     public double getPreviousLoss() {
         return prevLosses;
     }
@@ -88,41 +98,40 @@ public final class ConversionState {
 
         if (currLosses > prevLosses) {
             if (logger.isInfoEnabled()) {
-                logger.info("Iteration #" + curIter + " currLoss `" + currLosses
-                        + "` > prevLosses `" + prevLosses + '`');
+                logger.info("Iteration #" + curIter + " current cumulative loss `" + currLosses
+                        + "` > previous cumulative loss `" + prevLosses + '`');
             }
             this.readyToFinishIterations = false;
             return false;
         }
 
-        final double changeRate = (prevLosses - currLosses) / prevLosses;
+        final double changeRate = getChangeRate();
         if (changeRate < convergenceRate) {
             if (readyToFinishIterations) {
                 // NOTE: never be true at the first iteration where prevLosses == Double.POSITIVE_INFINITY
                 if (logger.isInfoEnabled()) {
-                    logger.info("Training converged at " + curIter + "-th iteration. [curLosses="
-                            + currLosses + ", prevLosses=" + prevLosses + ", changeRate="
-                            + changeRate + ']');
+                    logger.info("Training converged at " + curIter + "-th iteration!\n"
+                            + getInfo(observedTrainingExamples));
                 }
                 return true;
             } else {
                 if (logger.isInfoEnabled()) {
-                    logger.info("Iteration #" + curIter + " [curLosses=" + currLosses
-                            + ", prevLosses=" + prevLosses + ", changeRate=" + changeRate
-                            + ", #trainingExamples=" + observedTrainingExamples + ']');
+                    logger.info(getInfo(observedTrainingExamples));
                 }
                 this.readyToFinishIterations = true;
             }
         } else {
             if (logger.isInfoEnabled()) {
-                logger.info("Iteration #" + curIter + " [curLosses=" + currLosses + ", prevLosses="
-                        + prevLosses + ", changeRate=" + changeRate + ", #trainingExamples="
-                        + observedTrainingExamples + ']');
+                logger.info(getInfo(observedTrainingExamples));
             }
             this.readyToFinishIterations = false;
         }
 
         return false;
+    }
+
+    double getChangeRate() {
+        return (prevLosses - currLosses) / prevLosses;
     }
 
     public void next() {
@@ -133,6 +142,18 @@ public final class ConversionState {
 
     public int getCurrentIteration() {
         return curIter;
+    }
+
+    @Nonnull
+    public String getInfo(@Nonnegative final long observedTrainingExamples) {
+        final StringBuilder buf = new StringBuilder();
+        buf.append("Iteration #").append(curIter).append(" | ");
+        buf.append("average loss=").append(getAverageLoss(observedTrainingExamples)).append(", ");
+        buf.append("current cumulative loss=").append(currLosses).append(", ");
+        buf.append("previous cumulative loss=").append(prevLosses).append(", ");
+        buf.append("change rate=").append(getChangeRate()).append(", ");
+        buf.append("#trainingExamples=").append(observedTrainingExamples);
+        return buf.toString();
     }
 
 }
