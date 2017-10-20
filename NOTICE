@@ -33,6 +33,17 @@ o hivemall/core/src/main/java/hivemall/utils/collections/OpenHashMap.java
     https://github.com/slipperyseal/atomicobjects/
     Licensed under the Apache License, Version 2.0
 
+o hivemall/core/src/main/java/hivemall/utils/math/FastMath.java
+
+     Copyright 2012-2015 Jeff Hain
+     
+     https://github.com/jeffhain/jafama/
+     Licensed under the Apache License, Version 2.0
+     
+     Copyright (C) 1993 by Sun Microsystems, Inc.
+     
+     Permission to use, copy, modify, and distribute this software is freely granted, provided that this notice is preserved.
+
 ------------------------------------------------------------------------------------------------------
 Copyright notifications which have been relocated from ASF projects
 
@@ -50,7 +61,7 @@ o hivemall/core/src/main/java/hivemall/utils/buffer/DynamicByteArray.java
     https://orc.apache.org/
     Licensed under the Apache License, Version 2.0
 
-  hivemall/spark/spark-2.0/extra-src/hive/src/main/scala/org/apache/spark/sql/hive/HiveShim.scala
+o hivemall/spark/spark-2.0/extra-src/hive/src/main/scala/org/apache/spark/sql/hive/HiveShim.scala
   hivemall/spark/spark-2.0/src/test/scala/org/apache/spark/sql/QueryTest.scala
   hivemall/spark/spark-2.0/src/test/scala/org/apache/spark/sql/catalyst/plans/PlanTest.scala
   hivemall/spark/spark-2.0/src/test/scala/org/apache/spark/sql/hive/test/TestHiveSingleton.scala
@@ -66,3 +77,4 @@ o hivemall/core/src/main/java/hivemall/utils/buffer/DynamicByteArray.java
 
     http://spark.apache.org/
     Licensed under the Apache License, Version 2.0
+ 
