@@ -72,9 +72,7 @@ class FMHyperParameters {
     int validationThreshold = 1000;
     boolean parseFeatureAsInt = false;
 
-    FMHyperParameters() {
-        this.l2norm = false;
-    }
+    FMHyperParameters() {}
 
     @Override
     public String toString() {
@@ -106,9 +104,7 @@ class FMHyperParameters {
         this.maxTarget = Primitives.parseDouble(cl.getOptionValue("max_target"), maxTarget);
         this.eta = EtaEstimator.get(cl, DEFAULT_ETA0);
         this.numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), numFeatures);
-        if (l2norm == false) {
-            this.l2norm = cl.hasOption("enable_norm");
-        }
+        this.l2norm = cl.hasOption("enable_norm");
         this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
         this.conversionCheck = !cl.hasOption("disable_cvtest");
         this.convergenceRate =
@@ -163,14 +159,11 @@ class FMHyperParameters {
 
         FFMHyperParameters() {
             super();
-            this.l2norm = true;
         }
 
         @Override
         void processOptions(@Nonnull CommandLine cl) throws UDFArgumentException {
             super.processOptions(cl);
-
-            this.l2norm = !cl.hasOption("disable_norm");
 
             if (cl.hasOption("int_feature")) {
                 throw new UDFArgumentException("int_feature option is not supported yet for FFM");

@@ -88,11 +88,11 @@ public class FieldAwareFactorizationMachineUDTFTest {
             "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43", 0.01f);
     }
 
-    @Test
-    public void testSampleDisableNorm() throws IOException, HiveException {
+    // TODO @Test
+    public void testSampleEnableNorm() throws IOException, HiveException {
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -disable_norm",
+            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -enable_norm",
             0.01f);
     }
 

@@ -291,10 +291,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     protected Feature[] parseFeatures(@Nonnull final Object arg) throws HiveException {
         Feature[] features = Feature.parseFeatures(arg, _xOI, _probes, _parseFeatureAsInt);
         if (_params.l2norm) {
-            // TODO
-            throw new UDFArgumentException(
-                "`-enable_norm` is not supported yet for Factorization Machine");
-            // Feature.l2normalize(features);
+            Feature.l2normalize(features);
         }
         return features;
     }
