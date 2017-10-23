@@ -26,7 +26,6 @@ import hivemall.optimizer.EtaEstimator;
 import hivemall.optimizer.LossFunctions;
 import hivemall.optimizer.LossFunctions.LossFunction;
 import hivemall.optimizer.LossFunctions.LossType;
-import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
@@ -39,6 +38,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
@@ -514,13 +514,12 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         // Wi, Vif (i starts from 1..P)
         forwardObjs[2] = Arrays.asList(f_Vi);
 
-        final IMapIterator<String, Entry> itor = model.entries();
-        while (itor.next() != -1) {
-            String i = itor.getKey();
+        for (Map.Entry<String, Entry> e : model.entries()) {
+            String i = e.getKey();
             assert (i != null);
             // set i
             feature.set(i);
-            Entry entry = itor.getValue();
+            Entry entry = e.getValue();
             // set Wi
             f_Wi.set(entry.W);
             // set Vif

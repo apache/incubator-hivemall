@@ -18,8 +18,8 @@
  */
 package hivemall.fm;
 
-import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
-import hivemall.utils.collections.maps.IntOpenHashTable;
+import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.util.Arrays;
 
@@ -32,17 +32,17 @@ public final class FMIntFeatureMapModel extends FactorizationMachineModel {
 
     // LEARNING PARAMS
     private float _w0;
-    private final Int2FloatOpenHashTable _w;
-    private final IntOpenHashTable<float[]> _V;
+    private final Int2FloatOpenHashMap _w;
+    private final Int2ObjectOpenHashMap<float[]> _V;
 
     private int _minIndex, _maxIndex;
 
     public FMIntFeatureMapModel(@Nonnull FMHyperParameters params) {
         super(params);
         this._w0 = 0.f;
-        this._w = new Int2FloatOpenHashTable(DEFAULT_MAPSIZE);
+        this._w = new Int2FloatOpenHashMap(DEFAULT_MAPSIZE);
         _w.defaultReturnValue(0.f);
-        this._V = new IntOpenHashTable<float[]>(DEFAULT_MAPSIZE);
+        this._V = new Int2ObjectOpenHashMap<float[]>(DEFAULT_MAPSIZE);
         this._minIndex = 0;
         this._maxIndex = 0;
     }
@@ -134,8 +134,8 @@ public final class FMIntFeatureMapModel extends FactorizationMachineModel {
             }
             final int idx = e.getFeatureIndex();
             if (idx < 1) {
-                throw new HiveException("Index of x should be greater than or equals to 1: "
-                        + Arrays.toString(x));
+                throw new HiveException(
+                    "Index of x should be greater than or equals to 1: " + Arrays.toString(x));
             }
             if (!_w.containsKey(idx)) {
                 _w.put(idx, 0.f);

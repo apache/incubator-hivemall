@@ -18,8 +18,9 @@
  */
 package hivemall.mf;
 
-import hivemall.utils.collections.maps.IntOpenHashTable;
 import hivemall.utils.math.MathUtils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.util.Random;
 
@@ -42,10 +43,10 @@ public final class FactorizedModel {
     private int minIndex, maxIndex;
     @Nonnull
     private Rating meanRating;
-    private IntOpenHashTable<Rating[]> users;
-    private IntOpenHashTable<Rating[]> items;
-    private IntOpenHashTable<Rating> userBias;
-    private IntOpenHashTable<Rating> itemBias;
+    private Int2ObjectMap<Rating[]> users;
+    private Int2ObjectMap<Rating[]> items;
+    private Int2ObjectMap<Rating> userBias;
+    private Int2ObjectMap<Rating> itemBias;
 
     private final Random[] randU, randI;
 
@@ -67,10 +68,10 @@ public final class FactorizedModel {
         this.minIndex = 0;
         this.maxIndex = 0;
         this.meanRating = ratingInitializer.newRating(meanRating);
-        this.users = new IntOpenHashTable<Rating[]>(expectedSize);
-        this.items = new IntOpenHashTable<Rating[]>(expectedSize);
-        this.userBias = new IntOpenHashTable<Rating>(expectedSize);
-        this.itemBias = new IntOpenHashTable<Rating>(expectedSize);
+        this.users = new Int2ObjectOpenHashMap<Rating[]>(expectedSize);
+        this.items = new Int2ObjectOpenHashMap<Rating[]>(expectedSize);
+        this.userBias = new Int2ObjectOpenHashMap<Rating>(expectedSize);
+        this.itemBias = new Int2ObjectOpenHashMap<Rating>(expectedSize);
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
     }
@@ -152,8 +153,8 @@ public final class FactorizedModel {
                     gaussianFill(v, randU, initScheme.initStdDev, ratingInitializer);
                     break;
                 default:
-                    throw new IllegalStateException("Unsupported rank initialization scheme: "
-                            + initScheme);
+                    throw new IllegalStateException(
+                        "Unsupported rank initialization scheme: " + initScheme);
 
             }
             users.put(u, v);
@@ -181,8 +182,8 @@ public final class FactorizedModel {
                     gaussianFill(v, randI, initScheme.initStdDev, ratingInitializer);
                     break;
                 default:
-                    throw new IllegalStateException("Unsupported rank initialization scheme: "
-                            + initScheme);
+                    throw new IllegalStateException(
+                        "Unsupported rank initialization scheme: " + initScheme);
 
             }
             items.put(i, v);
