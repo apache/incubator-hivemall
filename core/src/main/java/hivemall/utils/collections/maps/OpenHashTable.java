@@ -115,7 +115,7 @@ public final class OpenHashTable<K, V> implements Externalizable {
     }
 
     public V put(final K key, final V value) {
-        int hash = keyHash(key);
+        final int hash = keyHash(key);
         int keyLength = _keys.length;
         int keyIdx = hash % keyLength;
 
@@ -125,9 +125,9 @@ public final class OpenHashTable<K, V> implements Externalizable {
             keyIdx = hash % keyLength;
         }
 
-        K[] keys = _keys;
-        V[] values = _values;
-        byte[] states = _states;
+        final K[] keys = _keys;
+        final V[] values = _values;
+        final byte[] states = _states;
 
         if (states[keyIdx] == FULL) {
             if (equals(keys[keyIdx], key)) {
@@ -136,7 +136,7 @@ public final class OpenHashTable<K, V> implements Externalizable {
                 return old;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -164,12 +164,12 @@ public final class OpenHashTable<K, V> implements Externalizable {
     }
 
     /** Return weather the required slot is free for new entry */
-    protected boolean isFree(int index, K key) {
-        byte stat = _states[index];
-        if (stat == FREE) {
+    protected boolean isFree(final int index, final K key) {
+        final byte state = _states[index];
+        if (state == FREE) {
             return true;
         }
-        if (stat == REMOVED && equals(_keys[index], key)) {
+        if (state == REMOVED && equals(_keys[index], key)) {
             return true;
         }
         return false;
@@ -186,18 +186,18 @@ public final class OpenHashTable<K, V> implements Externalizable {
     }
 
     protected int findKey(final K key) {
-        K[] keys = _keys;
-        byte[] states = _states;
-        int keyLength = keys.length;
+        final K[] keys = _keys;
+        final byte[] states = _states;
+        final int keyLength = keys.length;
 
-        int hash = keyHash(key);
+        final int hash = keyHash(key);
         int keyIdx = hash % keyLength;
         if (states[keyIdx] != FREE) {
             if (states[keyIdx] == FULL && equals(keys[keyIdx], key)) {
                 return keyIdx;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
@@ -236,10 +236,11 @@ public final class OpenHashTable<K, V> implements Externalizable {
                 if (keyIdx < 0) {
                     keyIdx += keyLength;
                 }
-                if (states[keyIdx] == FREE) {
+                final byte state = states[keyIdx];
+                if (state == FREE) {
                     return null;
                 }
-                if (states[keyIdx] == FULL && equals(keys[keyIdx], key)) {
+                if (state == FULL && equals(keys[keyIdx], key)) {
                     V old = values[keyIdx];
                     states[keyIdx] = REMOVED;
                     --_used;
@@ -260,7 +261,11 @@ public final class OpenHashTable<K, V> implements Externalizable {
     }
 
     public IMapIterator<K, V> entries() {
-        return new MapIterator();
+        return new MapIterator(false);
+    }
+
+    public IMapIterator<K, V> entries(boolean releaseSeen) {
+        return new MapIterator(releaseSeen);
     }
 
     @Override
@@ -332,10 +337,12 @@ public final class OpenHashTable<K, V> implements Externalizable {
 
     private final class MapIterator implements IMapIterator<K, V> {
 
+        final boolean releaseSeen;
         int nextEntry;
         int lastEntry = -1;
 
-        MapIterator() {
+        MapIterator(boolean releaseSeen) {
+            this.releaseSeen = releaseSeen;
             this.nextEntry = nextEntry(0);
         }
 
@@ -352,12 +359,15 @@ public final class OpenHashTable<K, V> implements Externalizable {
         }
 
         public int next() {
+            if (releaseSeen) {
+                free(lastEntry);
+            }
             if (!hasNext()) {
                 return -1;
             }
             int curEntry = nextEntry;
-            this.lastEntry = nextEntry;
-            this.nextEntry = nextEntry(nextEntry + 1);
+            this.lastEntry = curEntry;
+            this.nextEntry = nextEntry(curEntry + 1);
             return curEntry;
         }
 
@@ -378,6 +388,15 @@ public final class OpenHashTable<K, V> implements Externalizable {
         @Override
         public <T extends Copyable<V>> void getValue(T probe) {
             probe.copyFrom(getValue());
+        }
+
+        private void free(int index) {
+            if (index < 0) {
+                return; // should not happen
+            }
+            _keys[index] = null;
+            _values[index] = null;
+            _states[index] = FREE;
         }
     }
 

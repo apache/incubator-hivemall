@@ -20,7 +20,7 @@ package hivemall.optimizer;
 
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
-import hivemall.utils.collections.maps.OpenHashMap;
+import hivemall.utils.collections.maps.OpenHashTable;
 
 import java.util.Map;
 
@@ -67,8 +67,8 @@ public final class SparseOptimizerFactory {
         }
 
         if (LOG.isInfoEnabled()) {
-            LOG.info("Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: "
-                    + options);
+            LOG.info(
+                "Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: " + options);
         }
 
         return optimizerImpl;
@@ -78,15 +78,16 @@ public final class SparseOptimizerFactory {
     static final class AdaDelta extends Optimizer.AdaDelta {
 
         @Nonnull
-        private final OpenHashMap<Object, IWeightValue> auxWeights;
+        private final OpenHashTable<Object, IWeightValue> auxWeights;
 
         public AdaDelta(int size, Map<String, String> options) {
             super(options);
-            this.auxWeights = new OpenHashMap<Object, IWeightValue>(size);
+            this.auxWeights = new OpenHashTable<Object, IWeightValue>(size);
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
@@ -103,15 +104,16 @@ public final class SparseOptimizerFactory {
     static final class AdaGrad extends Optimizer.AdaGrad {
 
         @Nonnull
-        private final OpenHashMap<Object, IWeightValue> auxWeights;
+        private final OpenHashTable<Object, IWeightValue> auxWeights;
 
         public AdaGrad(int size, Map<String, String> options) {
             super(options);
-            this.auxWeights = new OpenHashMap<Object, IWeightValue>(size);
+            this.auxWeights = new OpenHashTable<Object, IWeightValue>(size);
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
@@ -128,15 +130,16 @@ public final class SparseOptimizerFactory {
     static final class Adam extends Optimizer.Adam {
 
         @Nonnull
-        private final OpenHashMap<Object, IWeightValue> auxWeights;
+        private final OpenHashTable<Object, IWeightValue> auxWeights;
 
         public Adam(int size, Map<String, String> options) {
             super(options);
-            this.auxWeights = new OpenHashMap<Object, IWeightValue>(size);
+            this.auxWeights = new OpenHashTable<Object, IWeightValue>(size);
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
@@ -153,16 +156,17 @@ public final class SparseOptimizerFactory {
     static final class AdagradRDA extends Optimizer.AdagradRDA {
 
         @Nonnull
-        private final OpenHashMap<Object, IWeightValue> auxWeights;
+        private final OpenHashTable<Object, IWeightValue> auxWeights;
 
         public AdagradRDA(int size, @Nonnull Optimizer.AdaGrad optimizerImpl,
                 @Nonnull Map<String, String> options) {
             super(optimizerImpl, options);
-            this.auxWeights = new OpenHashMap<Object, IWeightValue>(size);
+            this.auxWeights = new OpenHashTable<Object, IWeightValue>(size);
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
