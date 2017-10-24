@@ -55,6 +55,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(LearnerBaseUDTF.class);
+    private static final int DEFAULT_SPARSE_DIMS = 16384;
+    private static final int DEFAULT_DENSE_DIMS = 16777216;
 
     protected final boolean enableNewModel;
     protected boolean dense_model;
@@ -120,22 +122,23 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
 
             denseModel = cl.hasOption("dense");
             if (denseModel) {
-                modelDims = Primitives.parseInt(cl.getOptionValue("dims"), 16777216);
+                modelDims = Primitives.parseInt(cl.getOptionValue("dims"), DEFAULT_DENSE_DIMS);
             }
             disableHalfFloat = cl.hasOption("disable_halffloat");
 
-            miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), miniBatchSize);
+            miniBatchSize =
+                    Primitives.parseInt(cl.getOptionValue("mini_batch_size"), miniBatchSize);
             if (miniBatchSize <= 0) {
-                throw new UDFArgumentException("mini_batch_size must be greater than 0: "
-                        + miniBatchSize);
+                throw new UDFArgumentException(
+                    "mini_batch_size must be greater than 0: " + miniBatchSize);
             }
 
             mixConnectInfo = cl.getOptionValue("mix");
             mixSessionName = cl.getOptionValue("mix_session");
             mixThreshold = Primitives.parseInt(cl.getOptionValue("mix_threshold"), 3);
             if (mixThreshold > Byte.MAX_VALUE) {
-                throw new UDFArgumentException("mix_threshold must be in range (0,127]: "
-                        + mixThreshold);
+                throw new UDFArgumentException(
+                    "mix_threshold must be in range (0,127]: " + mixThreshold);
             }
             mixCancel = cl.hasOption("mix_cancel");
             ssl = cl.hasOption("ssl");
@@ -168,7 +171,7 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {
-            if (disable_halffloat == false && model_dims > 16777216) {
+            if (disable_halffloat == false && model_dims > DEFAULT_DENSE_DIMS) {
                 logger.info("Build a space efficient dense model with " + model_dims
                         + " initial dimensions" + (useCovar ? " w/ covariances" : ""));
                 model = new SpaceEfficientDenseModel(model_dims, useCovar);
@@ -179,8 +182,8 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
             }
         } else {
             int initModelSize = getInitialModelSize();
-            logger.info("Build a sparse model with initial with " + initModelSize
-                    + " initial dimensions");
+            logger.info(
+                "Build a sparse model with initial with " + initModelSize + " initial dimensions");
             model = new SparseModel(initModelSize, useCovar);
         }
         if (mixConnectInfo != null) {
@@ -199,7 +202,7 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {
-            if (disable_halffloat == false && model_dims > 16777216) {
+            if (disable_halffloat == false && model_dims > DEFAULT_DENSE_DIMS) {
                 logger.info("Build a space efficient dense model with " + model_dims
                         + " initial dimensions" + (useCovar ? " w/ covariances" : ""));
                 model = new NewSpaceEfficientDenseModel(model_dims, useCovar);
@@ -210,8 +213,8 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
             }
         } else {
             int initModelSize = getInitialModelSize();
-            logger.info("Build a sparse model with initial with " + initModelSize
-                    + " initial dimensions");
+            logger.info(
+                "Build a sparse model with initial with " + initModelSize + " initial dimensions");
             model = new NewSparseModel(initModelSize, useCovar);
         }
         if (mixConnectInfo != null) {
@@ -229,9 +232,11 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     protected final Optimizer createOptimizer(@CheckForNull Map<String, String> options) {
         Preconditions.checkNotNull(options);
         if (dense_model) {
-            return DenseOptimizerFactory.create(model_dims, options);
+            return DenseOptimizerFactory.create(model_dims < 0 ? DEFAULT_DENSE_DIMS : model_dims,
+                options);
         } else {
-            return SparseOptimizerFactory.create(model_dims, options);
+            return SparseOptimizerFactory.create(model_dims < 0 ? DEFAULT_SPARSE_DIMS : model_dims,
+                options);
         }
     }
 

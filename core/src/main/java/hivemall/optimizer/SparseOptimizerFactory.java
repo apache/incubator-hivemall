@@ -25,6 +25,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 import java.util.Map;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -35,7 +36,8 @@ public final class SparseOptimizerFactory {
     private static final Log LOG = LogFactory.getLog(SparseOptimizerFactory.class);
 
     @Nonnull
-    public static Optimizer create(int ndims, @Nonnull Map<String, String> options) {
+    public static Optimizer create(@Nonnull final int ndims,
+            @Nonnull final Map<String, String> options) {
         final String optimizerName = options.get("optimizer");
         if (optimizerName == null) {
             throw new IllegalArgumentException("`optimizer` not defined");
@@ -81,7 +83,7 @@ public final class SparseOptimizerFactory {
         @Nonnull
         private final Object2ObjectMap<Object, IWeightValue> auxWeights;
 
-        public AdaDelta(int size, Map<String, String> options) {
+        public AdaDelta(@Nonnegative int size, @Nonnull Map<String, String> options) {
             super(options);
             this.auxWeights = new Object2ObjectOpenHashMap<Object, IWeightValue>(size);
         }
@@ -107,7 +109,7 @@ public final class SparseOptimizerFactory {
         @Nonnull
         private final Object2ObjectMap<Object, IWeightValue> auxWeights;
 
-        public AdaGrad(int size, Map<String, String> options) {
+        public AdaGrad(@Nonnegative int size, @Nonnull Map<String, String> options) {
             super(options);
             this.auxWeights = new Object2ObjectOpenHashMap<Object, IWeightValue>(size);
         }
@@ -133,7 +135,7 @@ public final class SparseOptimizerFactory {
         @Nonnull
         private final Object2ObjectMap<Object, IWeightValue> auxWeights;
 
-        public Adam(int size, Map<String, String> options) {
+        public Adam(@Nonnegative int size, @Nonnull Map<String, String> options) {
             super(options);
             this.auxWeights = new Object2ObjectOpenHashMap<Object, IWeightValue>(size);
         }
@@ -159,7 +161,7 @@ public final class SparseOptimizerFactory {
         @Nonnull
         private final Object2ObjectMap<Object, IWeightValue> auxWeights;
 
-        public AdagradRDA(int size, @Nonnull Optimizer.AdaGrad optimizerImpl,
+        public AdagradRDA(@Nonnegative int size, @Nonnull Optimizer.AdaGrad optimizerImpl,
                 @Nonnull Map<String, String> options) {
             super(optimizerImpl, options);
             this.auxWeights = new Object2ObjectOpenHashMap<Object, IWeightValue>(size);

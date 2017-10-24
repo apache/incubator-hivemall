@@ -26,6 +26,7 @@ import hivemall.utils.math.MathUtils;
 import java.util.Arrays;
 import java.util.Map;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -36,7 +37,8 @@ public final class DenseOptimizerFactory {
     private static final Log LOG = LogFactory.getLog(DenseOptimizerFactory.class);
 
     @Nonnull
-    public static Optimizer create(int ndims, @Nonnull Map<String, String> options) {
+    public static Optimizer create(@Nonnegative final int ndims,
+            @Nonnull final Map<String, String> options) {
         final String optimizerName = options.get("optimizer");
         if (optimizerName == null) {
             throw new IllegalArgumentException("`optimizer` not defined");
@@ -69,8 +71,8 @@ public final class DenseOptimizerFactory {
         }
 
         if (LOG.isInfoEnabled()) {
-            LOG.info("Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: "
-                    + options);
+            LOG.info(
+                "Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: " + options);
         }
 
         return optimizerImpl;
@@ -95,7 +97,8 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -133,7 +136,8 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -172,7 +176,8 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -212,7 +217,8 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);

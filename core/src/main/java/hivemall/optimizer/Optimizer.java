@@ -90,7 +90,7 @@ public interface Optimizer {
 
         private final IWeightValue weightValueReused;
 
-        public SGD(final Map<String, String> options) {
+        public SGD(@Nonnull Map<String, String> options) {
             super(options);
             this.weightValueReused = new WeightValue(0.f);
         }
@@ -114,7 +114,7 @@ public interface Optimizer {
         private final float eps;
         private final float scale;
 
-        public AdaGrad(Map<String, String> options) {
+        public AdaGrad(@Nonnull Map<String, String> options) {
             super(options);
             this.eps = Primitives.parseFloat(options.get("eps"), 1.0f);
             this.scale = Primitives.parseFloat(options.get("scale"), 100.0f);
@@ -141,7 +141,7 @@ public interface Optimizer {
         private final float eps;
         private final float scale;
 
-        public AdaDelta(Map<String, String> options) {
+        public AdaDelta(@Nonnull Map<String, String> options) {
             super(options);
             this.decay = Primitives.parseFloat(options.get("decay"), 0.95f);
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-6f);
@@ -184,7 +184,7 @@ public interface Optimizer {
         private final float gamma;
         private final float eps_hat;
 
-        public Adam(Map<String, String> options) {
+        public Adam(@Nonnull Map<String, String> options) {
             super(options);
             this.beta = Primitives.parseFloat(options.get("beta"), 0.9f);
             this.gamma = Primitives.parseFloat(options.get("gamma"), 0.999f);
