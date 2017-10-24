@@ -49,15 +49,26 @@ public final class OpenHashTable<K, V> implements Externalizable {
     public static final float DEFAULT_LOAD_FACTOR = 0.75f;
     public static final float DEFAULT_GROW_FACTOR = 2.0f;
 
+    private static final float SHRINK_FACTOR = 0.1f; // at least 10% of table must be FREE
+    private static final float GROW_FACTOR_AT_SHRINK = 1.7f;
+
     protected static final byte FREE = 0;
     protected static final byte FULL = 1;
     protected static final byte REMOVED = 2;
 
-    protected/* final */float _loadFactor;
-    protected/* final */float _growFactor;
+    protected /* final */ float _loadFactor;
+    protected /* final */ float _growFactor;
 
-    protected int _used = 0;
-    protected int _threshold;
+    protected int _used;
+    protected int _freeEntries;
+
+    /** Used entry threshold to grow table */
+    protected int _growThreshold;
+    /**
+     * Free entry threshold to shrink table. Shrink threshold will be set in the first expansion to
+     * avoid shrink at very early remove().
+     */
+    protected int _shrinkThreshold;
 
     protected K[] _keys;
     protected V[] _values;
@@ -83,15 +94,10 @@ public final class OpenHashTable<K, V> implements Externalizable {
         this._keys = (K[]) new Object[actualSize];
         this._values = (V[]) new Object[actualSize];
         this._states = new byte[actualSize];
-        this._threshold = Math.round(actualSize * _loadFactor);
-    }
-
-    public OpenHashTable(@Nonnull K[] keys, @Nonnull V[] values, @Nonnull byte[] states, int used) {
-        this._used = used;
-        this._threshold = keys.length;
-        this._keys = keys;
-        this._values = values;
-        this._states = states;
+        this._used = 0;
+        this._freeEntries = actualSize;
+        this._growThreshold = Math.round(actualSize * _loadFactor);
+        this._shrinkThreshold = Math.round(actualSize * SHRINK_FACTOR);
     }
 
     public Object[] getKeys() {
@@ -112,7 +118,7 @@ public final class OpenHashTable<K, V> implements Externalizable {
 
     public V get(@CheckForNull final K key) {
         final int i = findKey(key);
-        if (i < 0) {
+        if (i == -1) {
             return null;
         }
         return _values[i];
@@ -135,7 +141,8 @@ public final class OpenHashTable<K, V> implements Externalizable {
         final V[] values = _values;
         final byte[] states = _states;
 
-        if (states[keyIdx] == FULL) {// double hashing
+        byte state = states[keyIdx];
+        if (state == FULL) {// double hashing
             if (equals(keys[keyIdx], key)) {
                 V old = values[keyIdx];
                 values[keyIdx] = value;
@@ -154,12 +161,12 @@ public final class OpenHashTable<K, V> implements Externalizable {
                         "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
                 }
 
-                final byte state = states[keyIdx];
+                state = states[keyIdx];
                 if (state == FREE) {
                     break;
                 }
                 if (equals(keys[keyIdx], key)) {
-                    if (states[keyIdx] == FULL) {
+                    if (state == FULL) {
                         V old = values[keyIdx];
                         values[keyIdx] = value;
                         return old;
@@ -170,10 +177,20 @@ public final class OpenHashTable<K, V> implements Externalizable {
                 }
             }
         }
+
         keys[keyIdx] = key;
         values[keyIdx] = value;
         states[keyIdx] = FULL;
         ++_used;
+
+        if (state == FREE) {
+            _freeEntries--;
+            if (_freeEntries < _shrinkThreshold) {
+                int newCapacity = Math.max(keys.length, Math.round(_used * GROW_FACTOR_AT_SHRINK));
+                ensureCapacity(newCapacity);
+            }
+        }
+
         return null;
     }
 
@@ -183,7 +200,7 @@ public final class OpenHashTable<K, V> implements Externalizable {
 
     /** @return expanded or not */
     protected boolean preAddEntry(int index) {
-        if ((_used + 1) >= _threshold) {// filled enough
+        if ((_used + 1) >= _growThreshold) {// filled enough
             int newCapacity = Math.round(_keys.length * _growFactor);
             ensureCapacity(newCapacity);
             return true;
@@ -245,6 +262,7 @@ public final class OpenHashTable<K, V> implements Externalizable {
     public void clear() {
         Arrays.fill(_states, FREE);
         this._used = 0;
+        this._freeEntries = _states.length;
     }
 
     public IMapIterator<K, V> entries() {
@@ -277,7 +295,6 @@ public final class OpenHashTable<K, V> implements Externalizable {
     protected void ensureCapacity(@Nonnegative int newCapacity) {
         int prime = Primes.findLeastPrimeNumber(newCapacity);
         rehash(prime);
-        this._threshold = Math.round(prime * _loadFactor);
     }
 
     @SuppressWarnings("unchecked")
@@ -285,46 +302,46 @@ public final class OpenHashTable<K, V> implements Externalizable {
         final K[] oldKeys = _keys;
         final V[] oldValues = _values;
         final byte[] oldStates = _states;
-
         final int oldCapacity = oldKeys.length;
-        if (newCapacity <= oldCapacity) {
-            throw new IllegalArgumentException("new: " + newCapacity + ", old: " + oldCapacity);
-        }
 
         final K[] newkeys = (K[]) new Object[newCapacity];
         final V[] newValues = (V[]) new Object[newCapacity];
         final byte[] newStates = new byte[newCapacity];
         int used = 0;
         for (int i = 0; i < oldCapacity; i++) {
-            if (oldStates[i] == FULL) {
-                used++;
-                final K k = oldKeys[i];
-                final V v = oldValues[i];
-                final int hash = keyHash(k);
-                int keyIdx = hash % newCapacity;
-                if (newStates[keyIdx] == FULL) {// second hashing
-                    final int decr = 1 + (hash % (newCapacity - 2));
-                    final int loopIndex = keyIdx;
-                    while (newStates[keyIdx] != FREE) {
-                        keyIdx -= decr;
-                        if (keyIdx < 0) {
-                            keyIdx += newCapacity;
-                        }
-                        if (keyIdx == loopIndex) {
-                            throw new IllegalStateException(
-                                "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
-                        }
-                    }
-                }
-                newkeys[keyIdx] = k;
-                newValues[keyIdx] = v;
-                newStates[keyIdx] = FULL;
+            if (oldStates[i] != FULL) {
+                continue;
             }
+            final K k = oldKeys[i];
+            final V v = oldValues[i];
+            final int hash = keyHash(k);
+            int keyIdx = hash % newCapacity;
+            if (newStates[keyIdx] == FULL) {// second hashing
+                final int decr = 1 + (hash % (newCapacity - 2));
+                final int loopIndex = keyIdx;
+                do {
+                    keyIdx -= decr;
+                    if (keyIdx < 0) {
+                        keyIdx += newCapacity;
+                    }
+                    if (keyIdx == loopIndex) {
+                        throw new IllegalStateException(
+                            "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
+                    }
+                } while (newStates[keyIdx] != FREE);
+            }
+            newkeys[keyIdx] = k;
+            newValues[keyIdx] = v;
+            newStates[keyIdx] = FULL;
+            used++;
         }
         this._keys = newkeys;
         this._values = newValues;
         this._states = newStates;
         this._used = used;
+        this._freeEntries = newCapacity - used;
+        this._growThreshold = Math.round(newCapacity * _loadFactor);
+        this._shrinkThreshold = Math.round(newCapacity * SHRINK_FACTOR);
     }
 
     private static int keyHash(@Nonnull final Object key) {
@@ -403,13 +420,10 @@ public final class OpenHashTable<K, V> implements Externalizable {
         out.writeFloat(_growFactor);
         out.writeInt(_used);
 
-        final int size = _keys.length;
-        out.writeInt(size);
-
-        for (int i = 0; i < size; i++) {
-            out.writeObject(_keys[i]);
-            out.writeObject(_values[i]);
-            out.writeByte(_states[i]);
+        final IMapIterator<K, V> itor = entries();
+        while (itor.next() != -1) {
+            out.writeObject(itor.getKey());
+            out.writeObject(itor.getValue());
         }
     }
 
@@ -418,21 +432,42 @@ public final class OpenHashTable<K, V> implements Externalizable {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this._loadFactor = in.readFloat();
         this._growFactor = in.readFloat();
-        this._used = in.readInt();
+        final int used = in.readInt();
 
-        final int size = in.readInt();
-        final Object[] keys = new Object[size];
-        final Object[] values = new Object[size];
-        final byte[] states = new byte[size];
-        for (int i = 0; i < size; i++) {
-            keys[i] = in.readObject();
-            values[i] = in.readObject();
-            states[i] = in.readByte();
+        final int newCapacity = Primes.findLeastPrimeNumber(Math.round(used * 1.7f));
+        final K[] keys = (K[]) new Object[newCapacity];
+        final V[] values = (V[]) new Object[newCapacity];
+        final byte[] states = new byte[newCapacity];
+        for (int i = 0; i < used; i++) {
+            final K k = (K) in.readObject();
+            final V v = (V) in.readObject();
+            final int hash = keyHash(k);
+            int keyIdx = hash % newCapacity;
+            if (states[keyIdx] == FULL) {// second hashing
+                final int decr = 1 + (hash % (newCapacity - 2));
+                final int loopIndex = keyIdx;
+                do {
+                    keyIdx -= decr;
+                    if (keyIdx < 0) {
+                        keyIdx += newCapacity;
+                    }
+                    if (keyIdx == loopIndex) {
+                        throw new IllegalStateException(
+                            "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
+                    }
+                } while (states[keyIdx] != FREE);
+            }
+            keys[keyIdx] = k;
+            values[keyIdx] = v;
+            states[keyIdx] = FULL;
         }
-        this._threshold = size;
-        this._keys = (K[]) keys;
-        this._values = (V[]) values;
+        this._keys = keys;
+        this._values = values;
         this._states = states;
+        this._used = used;
+        this._freeEntries = newCapacity - used;
+        this._growThreshold = Math.round(newCapacity * _loadFactor);
+        this._shrinkThreshold = Math.round(newCapacity * SHRINK_FACTOR);
     }
 
 }
