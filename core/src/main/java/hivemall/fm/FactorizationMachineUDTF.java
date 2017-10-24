@@ -32,6 +32,7 @@ import hivemall.utils.io.NioStatefullSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.SizeOf;
 import hivemall.utils.math.MathUtils;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 
 import java.io.File;
 import java.io.IOException;
@@ -514,7 +515,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         // Wi, Vif (i starts from 1..P)
         forwardObjs[2] = Arrays.asList(f_Vi);
 
-        for (Map.Entry<String, Entry> e : model.entries()) {
+        for (Map.Entry<String, Entry> e : Object2ObjectMaps.fastIterable(model.getMap())) {
             String i = e.getKey();
             assert (i != null);
             // set i

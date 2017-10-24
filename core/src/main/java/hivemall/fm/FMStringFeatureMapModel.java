@@ -20,9 +20,6 @@ package hivemall.fm;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
-
-import java.util.Map;
 
 import javax.annotation.Nonnull;
 
@@ -46,8 +43,8 @@ public final class FMStringFeatureMapModel extends FactorizationMachineModel {
     }
 
     @Nonnull
-    ObjectSet<Map.Entry<String, Entry>> entries() {
-        return _map.entrySet();
+    Object2ObjectMap<String, Entry> getMap() {
+        return _map;
     }
 
     @Override
