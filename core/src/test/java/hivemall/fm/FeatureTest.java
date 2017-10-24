@@ -65,8 +65,7 @@ public class FeatureTest {
     public void testParseFFMFeatureProbe() throws HiveException {
         IntFeature probe = Feature.parseFFMFeature("dummyField:dummyFeature:-1");
         Assert.assertEquals(MurmurHash3.murmurhash3("dummyFeature", Feature.DEFAULT_NUM_FEATURES)
-                + Feature.DEFAULT_NUM_FIELDS,
-            probe.getFeatureIndex());
+                + Feature.DEFAULT_NUM_FIELDS, probe.getFeatureIndex());
         Feature.parseFFMFeature("2:1163:0.3651", probe, -1, Feature.DEFAULT_NUM_FIELDS);
         Assert.assertEquals(2, probe.getField());
         Assert.assertEquals(1163, probe.getFeatureIndex());

@@ -159,12 +159,12 @@ public final class FastMath {
         static final int EXP_LO_TAB_SIZE = (1 << EXP_LO_TAB_SIZE_POT) + 1;
         static final int EXP_LO_TAB_MID_INDEX = ((EXP_LO_TAB_SIZE - 1) / 2);
         static final int EXP_LO_INDEXING = EXP_LO_TAB_MID_INDEX / EXP_LO_DISTANCE_TO_ZERO;
-        static final int EXP_LO_INDEXING_DIV_SHIFT =
-                EXP_LO_TAB_SIZE_POT - 1 - EXP_LO_DISTANCE_TO_ZERO_POT;
+        static final int EXP_LO_INDEXING_DIV_SHIFT = EXP_LO_TAB_SIZE_POT - 1
+                - EXP_LO_DISTANCE_TO_ZERO_POT;
 
         static final class MyTExp {
-            static final double[] expHiTab =
-                    new double[1 + (int) EXP_OVERFLOW_LIMIT - (int) EXP_UNDERFLOW_LIMIT];
+            static final double[] expHiTab = new double[1 + (int) EXP_OVERFLOW_LIMIT
+                    - (int) EXP_UNDERFLOW_LIMIT];
             static final double[] expLoPosTab = new double[EXP_LO_TAB_SIZE];
             static final double[] expLoNegTab = new double[EXP_LO_TAB_SIZE];
 
@@ -255,8 +255,8 @@ public final class FastMath {
             final double z = zIndex * (1.0 / EXP_LO_INDEXING);
             final double eps = y - z;
             final double expZ = MyTExp.expLoPosTab[zIndex + EXP_LO_TAB_MID_INDEX];
-            final double expEps =
-                    (1 + eps * (1 + eps * (1.0 / 2 + eps * (1.0 / 6 + eps * (1.0 / 24)))));
+            final double expEps = (1 + eps
+                    * (1 + eps * (1.0 / 2 + eps * (1.0 / 6 + eps * (1.0 / 24)))));
             final double loTerm = expZ * expEps;
 
             return hiTerm * loTerm;
@@ -283,10 +283,12 @@ public final class FastMath {
                 // Taking int part instead of rounding, which takes too long.
                 int i = (int) (value * EXP_LO_INDEXING);
                 double delta = value - i * (1.0 / EXP_LO_INDEXING);
-                return MyTExp.expLoPosTab[i + EXP_LO_TAB_MID_INDEX] * (MyTExp.expLoNegTab[i
-                        + EXP_LO_TAB_MID_INDEX]
-                        + delta * (1 + delta * (1.0 / 2
-                                + delta * (1.0 / 6 + delta * (1.0 / 24 + delta * (1.0 / 120))))));
+                return MyTExp.expLoPosTab[i + EXP_LO_TAB_MID_INDEX]
+                        * (MyTExp.expLoNegTab[i + EXP_LO_TAB_MID_INDEX] + delta
+                                * (1 + delta
+                                        * (1.0 / 2 + delta
+                                                * (1.0 / 6 + delta
+                                                        * (1.0 / 24 + delta * (1.0 / 120))))));
             } else {
                 return exp(value) - 1;
             }
@@ -325,8 +327,12 @@ public final class FastMath {
                     if (value < 1.14) {
                         double z = (value - 1.0) / (value + 1.0);
                         double z2 = z * z;
-                        return z * (2 + z2 * ((2.0 / 3) + z2 * ((2.0 / 5)
-                                + z2 * ((2.0 / 7) + z2 * ((2.0 / 9) + z2 * ((2.0 / 11)))))));
+                        return z
+                                * (2 + z2
+                                        * ((2.0 / 3) + z2
+                                                * ((2.0 / 5) + z2
+                                                        * ((2.0 / 7) + z2
+                                                                * ((2.0 / 9) + z2 * ((2.0 / 11)))))));
                     }
                     h = 0.0;
                 } else if (value < DOUBLE_MIN_NORMAL) {
@@ -390,12 +396,15 @@ public final class FastMath {
                 } else if (Math.abs(value) < 0.15) {
                     double z = value / (value + 2.0);
                     double z2 = z * z;
-                    return z * (2 + z2 * ((2.0 / 3) + z2 * ((2.0 / 5)
-                            + z2 * ((2.0 / 7) + z2 * ((2.0 / 9) + z2 * ((2.0 / 11)))))));
+                    return z
+                            * (2 + z2
+                                    * ((2.0 / 3) + z2
+                                            * ((2.0 / 5) + z2
+                                                    * ((2.0 / 7) + z2
+                                                            * ((2.0 / 9) + z2 * ((2.0 / 11)))))));
                 }
 
-                int valuePlusOneBitsHi =
-                        (int) (Double.doubleToRawLongBits(valuePlusOne) >> 32) & 0x7FFFFFFF;
+                int valuePlusOneBitsHi = (int) (Double.doubleToRawLongBits(valuePlusOne) >> 32) & 0x7FFFFFFF;
                 int valuePlusOneExp = (valuePlusOneBitsHi >> 20) - MAX_DOUBLE_EXPONENT;
                 // Getting the first LOG_BITS bits of the mantissa.
                 int xIndex = ((valuePlusOneBitsHi << 12) >>> (32 - LOG_BITS));
@@ -425,8 +434,7 @@ public final class FastMath {
          */
         private static double twoPowNormalOrSubnormal(final int power) {
             if (power <= -MAX_DOUBLE_EXPONENT) { // Not normal.
-                return Double.longBitsToDouble(
-                    0x0008000000000000L >> (-(power + MAX_DOUBLE_EXPONENT)));
+                return Double.longBitsToDouble(0x0008000000000000L >> (-(power + MAX_DOUBLE_EXPONENT)));
             } else { // Normal.
                 return Double.longBitsToDouble(((long) (power + MAX_DOUBLE_EXPONENT)) << 52);
             }
@@ -442,8 +450,7 @@ public final class FastMath {
         private static double twoPow(final int power) {
             if (power <= -MAX_DOUBLE_EXPONENT) { // Not normal.
                 if (power >= MIN_DOUBLE_EXPONENT) { // Subnormal.
-                    return Double.longBitsToDouble(
-                        0x0008000000000000L >> (-(power + MAX_DOUBLE_EXPONENT)));
+                    return Double.longBitsToDouble(0x0008000000000000L >> (-(power + MAX_DOUBLE_EXPONENT)));
                 } else { // Underflow.
                     return 0.0;
                 }

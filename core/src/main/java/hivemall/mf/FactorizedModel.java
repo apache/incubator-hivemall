@@ -154,8 +154,8 @@ public final class FactorizedModel {
                     gaussianFill(v, randU, initScheme.initStdDev, ratingInitializer);
                     break;
                 default:
-                    throw new IllegalStateException(
-                        "Unsupported rank initialization scheme: " + initScheme);
+                    throw new IllegalStateException("Unsupported rank initialization scheme: "
+                            + initScheme);
 
             }
             users.put(u, v);
@@ -183,8 +183,8 @@ public final class FactorizedModel {
                     gaussianFill(v, randI, initScheme.initStdDev, ratingInitializer);
                     break;
                 default:
-                    throw new IllegalStateException(
-                        "Unsupported rank initialization scheme: " + initScheme);
+                    throw new IllegalStateException("Unsupported rank initialization scheme: "
+                            + initScheme);
 
             }
             items.put(i, v);

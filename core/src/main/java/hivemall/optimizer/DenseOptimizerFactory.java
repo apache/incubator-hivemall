@@ -71,8 +71,8 @@ public final class DenseOptimizerFactory {
         }
 
         if (LOG.isInfoEnabled()) {
-            LOG.info(
-                "Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: " + options);
+            LOG.info("Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: "
+                    + options);
         }
 
         return optimizerImpl;
@@ -97,8 +97,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -136,8 +135,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -176,8 +174,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);
@@ -217,8 +214,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
             weightValueReused.set(weight);

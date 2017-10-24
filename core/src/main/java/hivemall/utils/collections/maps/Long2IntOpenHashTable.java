@@ -48,8 +48,8 @@ public final class Long2IntOpenHashTable implements Externalizable {
     private static final float SHRINK_FACTOR = 0.1f; // at least 10% of table must be FREE
     private static final float GROW_FACTOR_AT_SHRINK = 1.7f;
 
-    protected /* final */ float _loadFactor;
-    protected /* final */ float _growFactor;
+    protected/* final */float _loadFactor;
+    protected/* final */float _growFactor;
 
     protected int _used;
     protected int _freeEntries;
@@ -68,8 +68,7 @@ public final class Long2IntOpenHashTable implements Externalizable {
     protected int[] _values;
     protected byte[] _states;
 
-    protected Long2IntOpenHashTable(int size, float loadFactor, float growFactor,
-            boolean forcePrime) {
+    protected Long2IntOpenHashTable(int size, float loadFactor, float growFactor, boolean forcePrime) {
         if (size < 1) {
             throw new IllegalArgumentException();
         }
@@ -162,8 +161,8 @@ public final class Long2IntOpenHashTable implements Externalizable {
                     keyIdx += keyLength;
                 }
                 if (keyIdx == loopIndex) {
-                    throw new IllegalStateException(
-                        "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
+                    throw new IllegalStateException("Detected infinite loop where key=" + key
+                            + ", keyIdx=" + keyIdx);
                 }
 
                 state = states[keyIdx];
@@ -229,8 +228,8 @@ public final class Long2IntOpenHashTable implements Externalizable {
                     keyIdx += keyLength;
                 }
                 if (keyIdx == loopIndex) {
-                    throw new IllegalStateException(
-                        "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
+                    throw new IllegalStateException("Detected infinite loop where key=" + key
+                            + ", keyIdx=" + keyIdx);
                 }
 
                 state = states[keyIdx];
@@ -305,8 +304,8 @@ public final class Long2IntOpenHashTable implements Externalizable {
                 keyIdx += keyLength;
             }
             if (keyIdx == startIndex) {
-                throw new IllegalStateException(
-                    "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
+                throw new IllegalStateException("Detected infinite loop where key=" + key
+                        + ", keyIdx=" + keyIdx);
             }
         }
     }
@@ -388,8 +387,8 @@ public final class Long2IntOpenHashTable implements Externalizable {
                         keyIdx += newCapacity;
                     }
                     if (keyIdx == loopIndex) {
-                        throw new IllegalStateException(
-                            "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
+                        throw new IllegalStateException("Detected infinite loop where key=" + k
+                                + ", keyIdx=" + keyIdx);
                     }
                 } while (newStates[keyIdx] != FREE);
             }
@@ -509,8 +508,8 @@ public final class Long2IntOpenHashTable implements Externalizable {
                         keyIdx += newCapacity;
                     }
                     if (keyIdx == loopIndex) {
-                        throw new IllegalStateException(
-                            "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
+                        throw new IllegalStateException("Detected infinite loop where key=" + k
+                                + ", keyIdx=" + keyIdx);
                     }
                 } while (states[keyIdx] != FREE);
             }

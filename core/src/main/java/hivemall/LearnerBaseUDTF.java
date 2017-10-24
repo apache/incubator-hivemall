@@ -126,19 +126,18 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
             }
             disableHalfFloat = cl.hasOption("disable_halffloat");
 
-            miniBatchSize =
-                    Primitives.parseInt(cl.getOptionValue("mini_batch_size"), miniBatchSize);
+            miniBatchSize = Primitives.parseInt(cl.getOptionValue("mini_batch_size"), miniBatchSize);
             if (miniBatchSize <= 0) {
-                throw new UDFArgumentException(
-                    "mini_batch_size must be greater than 0: " + miniBatchSize);
+                throw new UDFArgumentException("mini_batch_size must be greater than 0: "
+                        + miniBatchSize);
             }
 
             mixConnectInfo = cl.getOptionValue("mix");
             mixSessionName = cl.getOptionValue("mix_session");
             mixThreshold = Primitives.parseInt(cl.getOptionValue("mix_threshold"), 3);
             if (mixThreshold > Byte.MAX_VALUE) {
-                throw new UDFArgumentException(
-                    "mix_threshold must be in range (0,127]: " + mixThreshold);
+                throw new UDFArgumentException("mix_threshold must be in range (0,127]: "
+                        + mixThreshold);
             }
             mixCancel = cl.hasOption("mix_cancel");
             ssl = cl.hasOption("ssl");
@@ -182,8 +181,8 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
             }
         } else {
             int initModelSize = getInitialModelSize();
-            logger.info(
-                "Build a sparse model with initial with " + initModelSize + " initial dimensions");
+            logger.info("Build a sparse model with initial with " + initModelSize
+                    + " initial dimensions");
             model = new SparseModel(initModelSize, useCovar);
         }
         if (mixConnectInfo != null) {
@@ -213,8 +212,8 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
             }
         } else {
             int initModelSize = getInitialModelSize();
-            logger.info(
-                "Build a sparse model with initial with " + initModelSize + " initial dimensions");
+            logger.info("Build a sparse model with initial with " + initModelSize
+                    + " initial dimensions");
             model = new NewSparseModel(initModelSize, useCovar);
         }
         if (mixConnectInfo != null) {

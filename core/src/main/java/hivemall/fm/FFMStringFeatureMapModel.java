@@ -313,8 +313,9 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     @Nonnull
     String getStatistics() {
         final NumberFormat fmt = NumberFormat.getIntegerInstance(Locale.US);
-        return "FFMStringFeatureMapModel [bytesAllocated=" + NumberUtils.prettySize(_bytesAllocated)
-                + ", bytesUsed=" + NumberUtils.prettySize(_bytesUsed) + ", numAllocatedW="
+        return "FFMStringFeatureMapModel [bytesAllocated="
+                + NumberUtils.prettySize(_bytesAllocated) + ", bytesUsed="
+                + NumberUtils.prettySize(_bytesUsed) + ", numAllocatedW="
                 + fmt.format(_numAllocatedW) + ", numReusedW=" + fmt.format(_numReusedW)
                 + ", numRemovedW=" + fmt.format(_numRemovedW) + ", numAllocatedV="
                 + fmt.format(_numAllocatedV) + ", numReusedV=" + fmt.format(_numReusedV)

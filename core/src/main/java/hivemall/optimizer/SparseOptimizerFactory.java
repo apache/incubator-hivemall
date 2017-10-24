@@ -70,8 +70,8 @@ public final class SparseOptimizerFactory {
         }
 
         if (LOG.isInfoEnabled()) {
-            LOG.info(
-                "Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: " + options);
+            LOG.info("Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: "
+                    + options);
         }
 
         return optimizerImpl;
@@ -89,8 +89,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
@@ -115,8 +114,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
@@ -141,8 +139,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
@@ -168,8 +165,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
                 auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);

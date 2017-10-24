@@ -80,8 +80,7 @@ public final class NewSparseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public <T extends IWeightValue> void set(@Nonnull final Object feature,
-            @Nonnull final T value) {
+    public <T extends IWeightValue> void set(@Nonnull final Object feature, @Nonnull final T value) {
         final IWeightValue wrapperValue = wrapIfRequired(value);
 
         if (clockEnabled && value.isTouched()) {
