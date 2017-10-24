@@ -25,38 +25,40 @@ import java.io.IOException;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class Long2IntOpenHashTableTest {
+public class Long2DoubleOpenHashTableTest {
 
     @Test
     public void testSize() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(16384);
         map.put(1L, 3);
-        Assert.assertEquals(3, map.get(1L));
+        Assert.assertEquals(3, map.get(1L), 1E-15);
         map.put(1L, 5);
-        Assert.assertEquals(5, map.get(1L));
+        Assert.assertEquals(5, map.get(1L), 1E-15);
         Assert.assertEquals(1, map.size());
     }
 
     @Test
     public void testDefaultReturnValue() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(16384);
+        map.defaultReturnValue(-1);
         Assert.assertEquals(0, map.size());
-        Assert.assertEquals(-1, map.get(1L));
+        Assert.assertEquals(-1, map.get(1L), 1E-15);
         int ret = Integer.MAX_VALUE;
         map.defaultReturnValue(ret);
-        Assert.assertEquals(ret, map.get(1L));
+        Assert.assertEquals(ret, map.get(1L), 1E-15);
     }
 
     @Test
     public void testPutAndGet() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(16384);
+        map.defaultReturnValue(-1);
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1L, map.put(i, i));
+            Assert.assertEquals(-1L, map.put(i, i), 1E-15);
         }
         Assert.assertEquals(numEntries, map.size());
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(i, map.get(i));
+            Assert.assertEquals(i, map.get(i), 1E-15);
         }
 
         map.clear();
@@ -67,65 +69,39 @@ public class Long2IntOpenHashTableTest {
         Assert.assertEquals(i, map.size());
         i = 0;
         for (long j = 1L + Integer.MAX_VALUE; i < 10000; j += 99L, i++) {
-            Assert.assertEquals(i, map.get(j));
-        }
-    }
-
-    @Test
-    public void testIncr() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
-        final int numEntries = 1000000;
-        for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1L, map.put(i, i));
-            if (i % 2 == 0) {
-                Assert.assertEquals(i, map.remove(i));
-            }
-        }
-        Assert.assertEquals(numEntries / 2, map.size());
-        for (int i = 0; i < numEntries; i++) {
-            if (i % 2 == 0) {
-                Assert.assertEquals(-1, map.incr(i, 10));
-            } else {
-                Assert.assertEquals(i, map.incr(i, 10));
-            }
-        }
-        Assert.assertEquals(numEntries, map.size());
-        for (int i = 0; i < numEntries; i++) {
-            if (i % 2 == 0) {
-                Assert.assertEquals(10, map.get(i));
-            } else {
-                Assert.assertEquals(i + 10, map.get(i));
-            }
+            Assert.assertEquals(i, map.get(j), 1E-15);
         }
     }
 
     @Test
     public void testSerde() throws IOException, ClassNotFoundException {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(16384);
+        map.defaultReturnValue(-1);
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1, map.put(i, i));
+            Assert.assertEquals(-1, map.put(i, i), 1E-15);
         }
 
         byte[] b = ObjectUtils.toCompressedBytes(map);
-        map = new Long2IntOpenHashTable(16384);
+        map = new Long2DoubleOpenHashTable(16384);
         ObjectUtils.readCompressedObject(b, map);
 
         Assert.assertEquals(numEntries, map.size());
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(i, map.get(i));
+            Assert.assertEquals(i, map.get(i), 1E-15);
         }
     }
 
     @Test
     public void testIterator() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(1000);
-        Long2IntOpenHashTable.IMapIterator itor = map.entries();
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(1000);
+        map.defaultReturnValue(-1);
+        Long2DoubleOpenHashTable.IMapIterator itor = map.entries();
         Assert.assertFalse(itor.hasNext());
 
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1, map.put(i, i));
+            Assert.assertEquals(-1, map.put(i, i), 1E-15);
         }
         Assert.assertEquals(numEntries, map.size());
 
@@ -134,74 +110,77 @@ public class Long2IntOpenHashTableTest {
         while (itor.hasNext()) {
             Assert.assertFalse(itor.next() == -1);
             long k = itor.getKey();
-            int v = itor.getValue();
-            Assert.assertEquals(k, v);
+            double v = itor.getValue();
+            Assert.assertEquals(k, v, 1E-15);
         }
         Assert.assertEquals(-1, itor.next());
     }
 
     @Test
     public void testPutRemoveGet() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(16384);
+        map.defaultReturnValue(-1);
         map.defaultReturnValue(-2);
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-2, map.put(i, i));
+            Assert.assertEquals(-2, map.put(i, i), 1E-15);
         }
         Assert.assertEquals(numEntries, map.size());
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(i, map.remove(i));
+            Assert.assertEquals(i, map.remove(i), 1E-15);
         }
         Assert.assertEquals(0, map.size());
         map.defaultReturnValue(-1);
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1, map.get(i));
+            Assert.assertEquals(-1, map.get(i), 1E-15);
         }
         map.put(1, Integer.MAX_VALUE);
-        Assert.assertEquals(Integer.MAX_VALUE, map.get(1));
+        Assert.assertEquals(Integer.MAX_VALUE, map.get(1), 1E-15);
     }
 
     @Test
     public void testPutRemoveGet2() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(16384);
+        map.defaultReturnValue(-1);
         map.defaultReturnValue(-2);
         final int numEntries = 1000000;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-2, map.put(i, i));
+            Assert.assertEquals(-2, map.put(i, i), 1E-15);
         }
         Assert.assertEquals(numEntries, map.size());
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(i, map.remove(i));
+            Assert.assertEquals(i, map.remove(i), 1E-15);
         }
         Assert.assertEquals(0, map.size());
         map.defaultReturnValue(-1);
         for (int i = numEntries, len = numEntries + (numEntries / 2); i < len; i++) {
-            Assert.assertEquals(-1, map.put(i, i));
+            Assert.assertEquals(-1, map.put(i, i), 1E-15);
         }
         Assert.assertEquals(numEntries / 2, map.size());
         for (int i = numEntries, len = numEntries + (numEntries / 2); i < len; i++) {
-            Assert.assertEquals(i, map.get(i));
+            Assert.assertEquals(i, map.get(i), 1E-15);
         }
         for (int i = numEntries + (numEntries / 2), j = 0; j < numEntries; i++, j++) {
-            Assert.assertEquals(-1, map.put(i, i));
+            Assert.assertEquals(-1, map.put(i, i), 1E-15);
         }
         for (int i = numEntries + (numEntries / 2), j = 0; j < numEntries; i++, j++) {
-            Assert.assertEquals(i, map.get(i));
+            Assert.assertEquals(i, map.get(i), 1E-15);
         }
     }
 
     @Test
     public void testShrink() {
-        Long2IntOpenHashTable map = new Long2IntOpenHashTable(16384);
+        Long2DoubleOpenHashTable map = new Long2DoubleOpenHashTable(16384);
+        map.defaultReturnValue(-1);
         final int numEntries = 65536;
         for (int i = 0; i < numEntries; i++) {
-            Assert.assertEquals(-1, map.put(i, i));
-            Assert.assertEquals(i, map.remove(i));
+            Assert.assertEquals(-1, map.put(i, i), 1E-15);
+            Assert.assertEquals(i, map.remove(i), 1E-15);
         }
         Assert.assertEquals(0, map.size());
         map.defaultReturnValue(-2);
         for (int i = 0, len = 2 * numEntries; i < len; i++) {
-            Assert.assertEquals(-2, map.put(i, i));
+            Assert.assertEquals(-2, map.put(i, i), 1E-15);
         }
         Assert.assertEquals(numEntries * 2, map.size());
     }

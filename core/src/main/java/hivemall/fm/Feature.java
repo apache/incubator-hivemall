@@ -222,23 +222,10 @@ public abstract class Feature {
         final String lead = fv.substring(0, pos1);
         final String rest = fv.substring(pos1 + 1);
         final int pos2 = rest.indexOf(':');
-        if (pos2 == -1) {// e.g., i1:1.0 (quantitative features)
-            final int index;
-            if (NumberUtils.isDigits(lead)) {
-                index = parseFeatureIndex(lead);
-                if (index < 0 || index >= numFields) {
-                    throw new HiveException("Invalid index value '" + index
-                            + "' for a quantative features: " + fv + ", expecting index less than "
-                            + numFields);
-                }
-            } else {
-                index = MurmurHash3.murmurhash3(lead, numFields);
-            }
-            short field = NumberUtils.castToShort(index);
-            double value = parseFeatureValue(rest);
-            return new IntFeature(index, field, value);
+        if (pos2 == -1) {
+            throw new HiveException(
+                "Invalid FFM feature repsentation. Expected <field>:<index>:<value> but got " + fv);
         }
-
 
         final short field;
         if (NumberUtils.isDigits(lead)) {
@@ -306,23 +293,9 @@ public abstract class Feature {
         final String lead = fv.substring(0, pos1);
         final String rest = fv.substring(pos1 + 1);
         final int pos2 = rest.indexOf(':');
-        if (pos2 == -1) {// e.g., i1:1.0 (quantitative features) expecting |feature| less than 1024
-            final int index;
-            if (NumberUtils.isDigits(lead)) {
-                index = parseFeatureIndex(lead);
-                if (index < 0 || index >= numFields) {
-                    throw new HiveException("Invalid index value '" + index
-                            + "' for a quantative features: " + fv + ", expecting index less than "
-                            + numFields);
-                }
-            } else {
-                index = MurmurHash3.murmurhash3(lead, numFields);
-            }
-            short field = NumberUtils.castToShort(index);
-            probe.setField(field);
-            probe.setFeatureIndex(index);
-            probe.value = parseFeatureValue(rest);
-            return;
+        if (pos2 == -1) {
+            throw new HiveException(
+                "Invalid FFM feature repsentation. Expected <field>:<index>:<value> but got " + fv);
         }
 
         final short field;
@@ -390,6 +363,22 @@ public abstract class Feature {
             @Nonnegative final int numFields) {
         int index = x.getFeatureIndex();
         return index * numFields + yField;
+    }
+
+    public static void l2normalize(@Nonnull final Feature[] features) {
+        double squaredSum = 0.d;
+        for (Feature f : features) {
+            double v = f.value;
+            squaredSum += (v * v);
+        }
+        if (squaredSum == 0.d) {
+            return;
+        }
+
+        final double invNorm = 1.d / Math.sqrt(squaredSum);
+        for (Feature f : features) {
+            f.value *= invNorm;
+        }
     }
 
 }

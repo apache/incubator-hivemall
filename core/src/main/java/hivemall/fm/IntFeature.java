@@ -18,6 +18,8 @@
  */
 package hivemall.fm;
 
+import hivemall.utils.lang.SizeOf;
+
 import java.nio.ByteBuffer;
 
 import javax.annotation.Nonnegative;
@@ -72,7 +74,7 @@ public final class IntFeature extends Feature {
 
     @Override
     public int bytes() {
-        return (Integer.SIZE + Short.SIZE + Double.SIZE) / Byte.SIZE;
+        return SizeOf.INT + SizeOf.SHORT + SizeOf.DOUBLE;
     }
 
     @Override
@@ -94,7 +96,7 @@ public final class IntFeature extends Feature {
         if (field == -1) {
             return index + ":" + value;
         } else {
-            return index + ":" + field + ":" + value;
+            return field + ":" + index + ":" + value;
         }
     }
 

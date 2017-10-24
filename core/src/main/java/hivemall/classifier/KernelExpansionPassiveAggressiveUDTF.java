@@ -23,11 +23,12 @@ import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
 import hivemall.model.PredictionModel;
 import hivemall.model.PredictionResult;
-import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
-import hivemall.utils.collections.maps.Int2FloatOpenHashTable.IMapIterator;
 import hivemall.optimizer.LossFunctions;
 import hivemall.utils.hashing.HashFunction;
 import hivemall.utils.lang.Preconditions;
+import it.unimi.dsi.fastutil.ints.Int2FloatMap;
+import it.unimi.dsi.fastutil.ints.Int2FloatMaps;
+import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,9 +73,9 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
     // Model parameters
 
     private float _w0;
-    private Int2FloatOpenHashTable _w1;
-    private Int2FloatOpenHashTable _w2;
-    private Int2FloatOpenHashTable _w3;
+    private Int2FloatMap _w1;
+    private Int2FloatMap _w2;
+    private Int2FloatMap _w3;
 
     // ------------------------------------
 
@@ -182,11 +183,11 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
     @Override
     protected PredictionModel createModel() {
         this._w0 = 0.f;
-        this._w1 = new Int2FloatOpenHashTable(16384);
+        this._w1 = new Int2FloatOpenHashMap(16384);
         _w1.defaultReturnValue(0.f);
-        this._w2 = new Int2FloatOpenHashTable(16384);
+        this._w2 = new Int2FloatOpenHashMap(16384);
         _w2.defaultReturnValue(0.f);
-        this._w3 = new Int2FloatOpenHashTable(16384);
+        this._w3 = new Int2FloatOpenHashMap(16384);
         _w3.defaultReturnValue(0.f);
 
         return null;
@@ -351,13 +352,12 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
 
         row[2] = w1;
         row[3] = w2;
-        final Int2FloatOpenHashTable w2map = _w2;
-        final IMapIterator w1itor = _w1.entries();
-        while (w1itor.next() != -1) {
-            int k = w1itor.getKey();
+        final Int2FloatMap w2map = _w2;
+        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(_w1)) {
+            int k = e.getIntKey();
             Preconditions.checkArgument(k > 0, HiveException.class);
             h.set(k);
-            w1.set(w1itor.getValue());
+            w1.set(e.getFloatValue());
             w2.set(w2map.get(k));
             forward(row); // h(f), w1, w2
         }
@@ -369,12 +369,12 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
         row[3] = null;
         row[4] = hk;
         row[5] = w3;
-        final IMapIterator w3itor = _w3.entries();
-        while (w3itor.next() != -1) {
-            int k = w3itor.getKey();
+
+        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(_w3)) {
+            int k = e.getIntKey();
             Preconditions.checkArgument(k > 0, HiveException.class);
             hk.set(k);
-            w3.set(w3itor.getValue());
+            w3.set(e.getFloatValue());
             forward(row); // hk(f), w3
         }
         this._w3 = null;

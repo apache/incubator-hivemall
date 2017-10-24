@@ -60,6 +60,8 @@ class FMHyperParameters {
     // -------------------------------------
     // non-model parameters
 
+    boolean l2norm; // enable by default for FFM. disabled by default for FM.
+
     int iters = 1;
     boolean conversionCheck = true;
     double convergenceRate = 0.005d;
@@ -78,8 +80,8 @@ class FMHyperParameters {
                 + ", lambda=" + lambda + ", lambdaW0=" + lambdaW0 + ", lambdaW=" + lambdaW
                 + ", lambdaV=" + lambdaV + ", sigma=" + sigma + ", seed=" + seed + ", vInit="
                 + vInit + ", minTarget=" + minTarget + ", maxTarget=" + maxTarget + ", eta=" + eta
-                + ", numFeatures=" + numFeatures + ", iters=" + iters + ", conversionCheck="
-                + conversionCheck + ", convergenceRate=" + convergenceRate
+                + ", numFeatures=" + numFeatures + ", l2norm=" + l2norm + ", iters=" + iters
+                + ", conversionCheck=" + conversionCheck + ", convergenceRate=" + convergenceRate
                 + ", adaptiveReglarization=" + adaptiveReglarization + ", validationRatio="
                 + validationRatio + ", validationThreshold=" + validationThreshold
                 + ", parseFeatureAsInt=" + parseFeatureAsInt + "]";
@@ -102,6 +104,7 @@ class FMHyperParameters {
         this.maxTarget = Primitives.parseDouble(cl.getOptionValue("max_target"), maxTarget);
         this.eta = EtaEstimator.get(cl, DEFAULT_ETA0);
         this.numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), numFeatures);
+        this.l2norm = cl.hasOption("enable_norm");
         this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
         this.conversionCheck = !cl.hasOption("disable_cvtest");
         this.convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);

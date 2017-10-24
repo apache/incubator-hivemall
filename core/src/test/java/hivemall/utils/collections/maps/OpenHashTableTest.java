@@ -19,7 +19,6 @@
 package hivemall.utils.collections.maps;
 
 import hivemall.utils.collections.IMapIterator;
-import hivemall.utils.collections.maps.OpenHashTable;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.mutable.MutableInt;
 
@@ -45,6 +44,67 @@ public class OpenHashTableTest {
         map.put(Integer.toString(1), Integer.MAX_VALUE);
         Assert.assertEquals(Integer.MAX_VALUE, map.get(Integer.toString(1)));
         Assert.assertEquals(numEntries, map.size());
+    }
+
+    @Test
+    public void testPutRemoveGet() {
+        OpenHashTable<Object, Object> map = new OpenHashTable<Object, Object>(16384);
+        final int numEntries = 1000000;
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertNull(map.put(Integer.toString(i), i));
+        }
+        Assert.assertEquals(numEntries, map.size());
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertEquals(i, map.remove(Integer.toString(i)));
+        }
+        Assert.assertEquals(0, map.size());
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertNull(map.get(Integer.toString(i)));
+        }
+        map.put(Integer.toString(1), Integer.MAX_VALUE);
+        Assert.assertEquals(Integer.MAX_VALUE, map.get(Integer.toString(1)));
+    }
+
+    @Test
+    public void testPutRemoveGet2() {
+        OpenHashTable<Object, Object> map = new OpenHashTable<Object, Object>(16384);
+        final int numEntries = 1000000;
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertNull(map.put(Integer.toString(i), i));
+        }
+        Assert.assertEquals(numEntries, map.size());
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertEquals(i, map.remove(Integer.toString(i)));
+        }
+        Assert.assertEquals(0, map.size());
+        for (int i = numEntries, len = numEntries + (numEntries / 2); i < len; i++) {
+            Assert.assertNull(map.put(Integer.toString(i), i));
+        }
+        Assert.assertEquals(numEntries / 2, map.size());
+        for (int i = numEntries, len = numEntries + (numEntries / 2); i < len; i++) {
+            Assert.assertEquals(i, map.get(Integer.toString(i)));
+        }
+        for (int i = numEntries + (numEntries / 2), j = 0; j < numEntries; i++, j++) {
+            Assert.assertNull(map.put(Integer.toString(i), i));
+        }
+        for (int i = numEntries + (numEntries / 2), j = 0; j < numEntries; i++, j++) {
+            Assert.assertEquals(i, map.get(Integer.toString(i)));
+        }
+    }
+
+    @Test
+    public void testShrink() {
+        OpenHashTable<Object, Object> map = new OpenHashTable<Object, Object>(16384);
+        final int numEntries = 65536;
+        for (int i = 0; i < numEntries; i++) {
+            Assert.assertNull(map.put(Integer.toString(i), i));
+            Assert.assertEquals(i, map.remove(Integer.toString(i)));
+        }
+        Assert.assertEquals(0, map.size());
+        for (int i = 0, len = 2 * numEntries; i < len; i++) {
+            Assert.assertNull(map.put(Integer.toString(i), i));
+        }
+        Assert.assertEquals(numEntries * 2, map.size());
     }
 
     @Test
