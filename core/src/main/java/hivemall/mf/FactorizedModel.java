@@ -106,6 +106,7 @@ public final class FactorizedModel {
 
     }
 
+    @Nonnull
     private static Random[] newRandoms(@Nonnull final int size, final long seed) {
         final Random[] rand = new Random[size];
         for (int i = 0, len = rand.length; i < len; i++) {
@@ -131,17 +132,17 @@ public final class FactorizedModel {
         return meanRating.getWeight();
     }
 
-    public void setMeanRating(float rating) {
+    public void setMeanRating(final float rating) {
         meanRating.setWeight(rating);
     }
 
     @Nullable
-    public Rating[] getUserVector(int u) {
+    public Rating[] getUserVector(final int u) {
         return getUserVector(u, false);
     }
 
     @Nullable
-    public Rating[] getUserVector(int u, boolean init) {
+    public Rating[] getUserVector(final int u, final boolean init) {
         Rating[] v = users.get(u);
         if (init && v == null) {
             v = new Rating[factor];
@@ -165,7 +166,7 @@ public final class FactorizedModel {
     }
 
     @Nullable
-    public Rating[] getItemVector(int i) {
+    public Rating[] getItemVector(final int i) {
         return getItemVector(i, false);
     }
 
@@ -194,7 +195,7 @@ public final class FactorizedModel {
     }
 
     @Nonnull
-    public Rating userBias(int u) {
+    public Rating userBias(final int u) {
         Rating b = userBias.get(u);
         if (b == null) {
             b = ratingInitializer.newRating(0.f); // dummy
@@ -203,15 +204,15 @@ public final class FactorizedModel {
         return b;
     }
 
-    public float getUserBias(int u) {
-        Rating b = userBias.get(u);
+    public float getUserBias(final int u) {
+        final Rating b = userBias.get(u);
         if (b == null) {
             return 0.f;
         }
         return b.getWeight();
     }
 
-    public void setUserBias(int u, float value) {
+    public void setUserBias(final int u, final float value) {
         Rating b = userBias.get(u);
         if (b == null) {
             b = ratingInitializer.newRating(value);
@@ -221,7 +222,7 @@ public final class FactorizedModel {
     }
 
     @Nonnull
-    public Rating itemBias(int i) {
+    public Rating itemBias(final int i) {
         Rating b = itemBias.get(i);
         if (b == null) {
             b = ratingInitializer.newRating(0.f); // dummy
@@ -231,19 +232,19 @@ public final class FactorizedModel {
     }
 
     @Nullable
-    public Rating getItemBiasObject(int i) {
+    public Rating getItemBiasObject(final int i) {
         return itemBias.get(i);
     }
 
-    public float getItemBias(int i) {
-        Rating b = itemBias.get(i);
+    public float getItemBias(final int i) {
+        final Rating b = itemBias.get(i);
         if (b == null) {
             return 0.f;
         }
         return b.getWeight();
     }
 
-    public void setItemBias(int i, float value) {
+    public void setItemBias(final int i, final float value) {
         Rating b = itemBias.get(i);
         if (b == null) {
             b = ratingInitializer.newRating(value);

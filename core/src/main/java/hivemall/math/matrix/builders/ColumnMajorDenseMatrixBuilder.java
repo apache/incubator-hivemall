@@ -21,6 +21,7 @@ package hivemall.math.matrix.builders;
 import hivemall.math.matrix.dense.ColumnMajorDenseMatrix2d;
 import hivemall.utils.collections.arrays.SparseDoubleArray;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import javax.annotation.Nonnegative;
@@ -29,7 +30,7 @@ import javax.annotation.Nonnull;
 public final class ColumnMajorDenseMatrixBuilder extends MatrixBuilder {
 
     @Nonnull
-    private final Int2ObjectOpenHashMap<SparseDoubleArray> col2rows;
+    private final Int2ObjectMap<SparseDoubleArray> col2rows;
     private int row;
     private int maxNumColumns;
     private int nnz;
@@ -69,7 +70,7 @@ public final class ColumnMajorDenseMatrixBuilder extends MatrixBuilder {
     public ColumnMajorDenseMatrix2d buildMatrix() {
         final double[][] data = new double[maxNumColumns][];
 
-        for (Int2ObjectMap.Entry<SparseDoubleArray> e : col2rows.int2ObjectEntrySet()) {
+        for (Int2ObjectMap.Entry<SparseDoubleArray> e : Int2ObjectMaps.fastIterable(col2rows)) {
             int col = e.getIntKey();
             SparseDoubleArray rows = e.getValue();
             data[col] = rows.toArray();

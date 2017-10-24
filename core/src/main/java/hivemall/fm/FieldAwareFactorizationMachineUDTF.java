@@ -25,7 +25,7 @@ import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.math.MathUtils;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.ints.Int2LongMaps;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -291,13 +291,11 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         Wi.set(_ffmModel.getW0());
         forward(forwardObjs);
 
-        final ObjectIterator<Int2LongMap.Entry> itor = _ffmModel._map.int2LongEntrySet().iterator();
         final Entry entryW = new Entry(_ffmModel._buf, 1);
         final Entry entryV = new Entry(_ffmModel._buf, _ffmModel._factor);
         final float[] Vf = new float[factors];
-        while (itor.hasNext()) {
-            Int2LongMap.Entry e = itor.next();
 
+        for (Int2LongMap.Entry e : Int2LongMaps.fastIterable(_ffmModel._map)) {
             // set i
             final int i = e.getIntKey();
             idx.set(i);

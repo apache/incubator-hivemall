@@ -18,8 +18,6 @@
  */
 package hivemall.classifier;
 
-import static hivemall.utils.lambda.Throwing.rethrow;
-
 import hivemall.annotations.Experimental;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.model.FeatureValue;
@@ -28,6 +26,8 @@ import hivemall.model.PredictionResult;
 import hivemall.optimizer.LossFunctions;
 import hivemall.utils.hashing.HashFunction;
 import hivemall.utils.lang.Preconditions;
+import it.unimi.dsi.fastutil.ints.Int2FloatMap;
+import it.unimi.dsi.fastutil.ints.Int2FloatMaps;
 import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 
 import java.util.ArrayList;
@@ -73,9 +73,9 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
     // Model parameters
 
     private float _w0;
-    private Int2FloatOpenHashMap _w1;
-    private Int2FloatOpenHashMap _w2;
-    private Int2FloatOpenHashMap _w3;
+    private Int2FloatMap _w1;
+    private Int2FloatMap _w2;
+    private Int2FloatMap _w3;
 
     // ------------------------------------
 
@@ -353,15 +353,15 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
 
         row[2] = w1;
         row[3] = w2;
-        final Int2FloatOpenHashMap w2map = _w2;
-        _w1.int2FloatEntrySet().fastForEach(rethrow(e -> {
+        final Int2FloatMap w2map = _w2;
+        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(_w1)) {
             int k = e.getIntKey();
             Preconditions.checkArgument(k > 0, HiveException.class);
             h.set(k);
             w1.set(e.getFloatValue());
             w2.set(w2map.get(k));
             forward(row); // h(f), w1, w2
-        }));
+        }
         this._w1 = null;
         this._w2 = null;
 
@@ -371,13 +371,13 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
         row[4] = hk;
         row[5] = w3;
 
-        _w3.int2FloatEntrySet().fastForEach(rethrow(e -> {
+        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(_w3)) {
             int k = e.getIntKey();
             Preconditions.checkArgument(k > 0, HiveException.class);
             hk.set(k);
             w3.set(e.getFloatValue());
             forward(row); // hk(f), w3
-        }));
+        }
         this._w3 = null;
     }
 

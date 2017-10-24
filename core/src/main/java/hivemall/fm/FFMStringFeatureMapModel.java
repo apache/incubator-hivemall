@@ -24,6 +24,7 @@ import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.buffer.HeapBuffer;
 import hivemall.utils.collections.lists.LongArrayList;
 import hivemall.utils.lang.NumberUtils;
+import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 
 import java.text.NumberFormat;
@@ -41,7 +42,7 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     // LEARNING PARAMS
     private float _w0;
     @Nonnull
-    final Int2LongOpenHashMap _map;
+    final Int2LongMap _map;
     @Nonnull
     final HeapBuffer _buf;
 
