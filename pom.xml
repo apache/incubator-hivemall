@@ -161,7 +161,7 @@
 			<organization>Treasure Data, Inc.</organization>
 			<organizationUrl>https://www.treasuredata.com/</organizationUrl>
 			<roles>
-				<role>Committer</role>
+				<role>PPMC Member</role>
 			</roles>
 			<timezone>+9</timezone>
 		</developer>
@@ -172,6 +172,18 @@
 			<url>https://github.com/amaya382</url>
 			<organization>Osaka University</organization>
 			<organizationUrl>http://www.osaka-u.ac.jp/</organizationUrl>
+			<roles>
+				<role>Committer</role>
+			</roles>
+			<timezone>+9</timezone>
+		</developer>
+		<developer>
+			<id>nzw</id>
+			<name>Kento Nozawa</name>
+			<email>nzw[at]apache.org</email>
+			<url>http://nzw0301.github.io/</url>
+			<organization>Tsukuba University</organization>
+			<organizationUrl>http://www.tsukuba.ac.jp/</organizationUrl>
 			<roles>
 				<role>Committer</role>
 			</roles>
