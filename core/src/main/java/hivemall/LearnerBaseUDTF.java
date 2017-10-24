@@ -55,6 +55,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(LearnerBaseUDTF.class);
+    private static final int DEFAULT_SPARSE_DIMS = 16384;
+    private static final int DEFAULT_DENSE_DIMS = 16777216;
 
     protected final boolean enableNewModel;
     protected boolean dense_model;
@@ -120,7 +122,7 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
 
             denseModel = cl.hasOption("dense");
             if (denseModel) {
-                modelDims = Primitives.parseInt(cl.getOptionValue("dims"), 16777216);
+                modelDims = Primitives.parseInt(cl.getOptionValue("dims"), DEFAULT_DENSE_DIMS);
             }
             disableHalfFloat = cl.hasOption("disable_halffloat");
 
@@ -168,7 +170,7 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {
-            if (disable_halffloat == false && model_dims > 16777216) {
+            if (disable_halffloat == false && model_dims > DEFAULT_DENSE_DIMS) {
                 logger.info("Build a space efficient dense model with " + model_dims
                         + " initial dimensions" + (useCovar ? " w/ covariances" : ""));
                 model = new SpaceEfficientDenseModel(model_dims, useCovar);
@@ -199,7 +201,7 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
         PredictionModel model;
         final boolean useCovar = useCovariance();
         if (dense_model) {
-            if (disable_halffloat == false && model_dims > 16777216) {
+            if (disable_halffloat == false && model_dims > DEFAULT_DENSE_DIMS) {
                 logger.info("Build a space efficient dense model with " + model_dims
                         + " initial dimensions" + (useCovar ? " w/ covariances" : ""));
                 model = new NewSpaceEfficientDenseModel(model_dims, useCovar);
@@ -229,9 +231,11 @@ public abstract class LearnerBaseUDTF extends UDTFWithOptions {
     protected final Optimizer createOptimizer(@CheckForNull Map<String, String> options) {
         Preconditions.checkNotNull(options);
         if (dense_model) {
-            return DenseOptimizerFactory.create(model_dims, options);
+            return DenseOptimizerFactory.create(model_dims < 0 ? DEFAULT_DENSE_DIMS : model_dims,
+                options);
         } else {
-            return SparseOptimizerFactory.create(model_dims, options);
+            return SparseOptimizerFactory.create(model_dims < 0 ? DEFAULT_SPARSE_DIMS : model_dims,
+                options);
         }
     }
 

@@ -18,13 +18,14 @@
  */
 package hivemall.fm;
 
-import hivemall.fm.FFMStringFeatureMapModel.EntryIterator;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.collections.arrays.DoubleArray3D;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.math.MathUtils;
+import it.unimi.dsi.fastutil.ints.Int2LongMap;
+import it.unimi.dsi.fastutil.ints.Int2LongMaps;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -173,7 +174,11 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
     @Override
     protected Feature[] parseFeatures(@Nonnull final Object arg) throws HiveException {
-        return Feature.parseFFMFeatures(arg, _xOI, _probes, _numFeatures, _numFields);
+        Feature[] features = Feature.parseFFMFeatures(arg, _xOI, _probes, _numFeatures, _numFields);
+        if (_params.l2norm) {
+            Feature.l2normalize(features);
+        }
+        return features;
     }
 
     @Override
@@ -288,17 +293,18 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         Wi.set(_ffmModel.getW0());
         forward(forwardObjs);
 
-        final EntryIterator itor = _ffmModel.entries();
-        final Entry entryW = itor.getEntryProbeW();
-        final Entry entryV = itor.getEntryProbeV();
+        final Entry entryW = new Entry(_ffmModel._buf, 1);
+        final Entry entryV = new Entry(_ffmModel._buf, _ffmModel._factor);
         final float[] Vf = new float[factors];
-        while (itor.next()) {
+
+        for (Int2LongMap.Entry e : Int2LongMaps.fastIterable(_ffmModel._map)) {
             // set i
-            int i = itor.getEntryIndex();
+            final int i = e.getIntKey();
             idx.set(i);
 
+            final long offset = e.getLongValue();
             if (Entry.isEntryW(i)) {// set Wi
-                itor.getEntry(entryW);
+                entryW.setOffset(offset);
                 float w = entryV.getW();
                 if (w == 0.f) {
                     continue; // skip w_i=0
@@ -307,7 +313,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
                 forwardObjs[2] = Wi;
                 forwardObjs[3] = null;
             } else {// set Vif
-                itor.getEntry(entryV);
+                entryV.setOffset(offset);
                 entryV.getV(Vf);
                 for (int f = 0; f < factors; f++) {
                     Vi[f].set(Vf[f]);

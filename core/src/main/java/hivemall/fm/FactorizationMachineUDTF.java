@@ -18,11 +18,28 @@
  */
 package hivemall.fm;
 
+import hivemall.UDTFWithOptions;
+import hivemall.annotations.VisibleForTesting;
+import hivemall.common.ConversionState;
+import hivemall.fm.FMStringFeatureMapModel.Entry;
+import hivemall.optimizer.EtaEstimator;
+import hivemall.optimizer.LossFunctions;
+import hivemall.optimizer.LossFunctions.LossFunction;
+import hivemall.optimizer.LossFunctions.LossType;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.lang.NumberUtils;
+import hivemall.utils.lang.SizeOf;
+import hivemall.utils.math.MathUtils;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
@@ -47,22 +64,6 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
-
-import hivemall.UDTFWithOptions;
-import hivemall.annotations.VisibleForTesting;
-import hivemall.common.ConversionState;
-import hivemall.fm.FMStringFeatureMapModel.Entry;
-import hivemall.optimizer.EtaEstimator;
-import hivemall.optimizer.LossFunctions;
-import hivemall.optimizer.LossFunctions.LossFunction;
-import hivemall.optimizer.LossFunctions.LossType;
-import hivemall.utils.collections.IMapIterator;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.FileUtils;
-import hivemall.utils.io.NioStatefullSegment;
-import hivemall.utils.lang.NumberUtils;
-import hivemall.utils.lang.SizeOf;
-import hivemall.utils.math.MathUtils;
 
 @Description(
         name = "train_fm",
@@ -163,6 +164,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         // feature representation
         opts.addOption("int_feature", "feature_as_integer", false,
             "Parse a feature as integer [default: OFF]");
+        // normalization
+        opts.addOption("enable_norm", "l2norm", false, "Enable instance-wise L2 normalization");
         return opts;
     }
 
@@ -288,7 +291,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
     @Nullable
     protected Feature[] parseFeatures(@Nonnull final Object arg) throws HiveException {
-        return Feature.parseFeatures(arg, _xOI, _probes, _parseFeatureAsInt);
+        Feature[] features = Feature.parseFeatures(arg, _xOI, _probes, _parseFeatureAsInt);
+        if (_params.l2norm) {
+            Feature.l2normalize(features);
+        }
+        return features;
     }
 
     protected void recordTrain(@Nonnull final Feature[] x, final double y) throws HiveException {
@@ -509,13 +516,12 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         // Wi, Vif (i starts from 1..P)
         forwardObjs[2] = Arrays.asList(f_Vi);
 
-        final IMapIterator<String, Entry> itor = model.entries();
-        while (itor.next() != -1) {
-            String i = itor.getKey();
+        for (Map.Entry<String, Entry> e : Object2ObjectMaps.fastIterable(model.getMap())) {
+            String i = e.getKey();
             assert (i != null);
             // set i
             feature.set(i);
-            Entry entry = itor.getValue();
+            Entry entry = e.getValue();
             // set Wi
             f_Wi.set(entry.W);
             // set Vif

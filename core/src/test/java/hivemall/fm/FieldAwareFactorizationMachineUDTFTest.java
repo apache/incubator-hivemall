@@ -18,6 +18,8 @@
  */
 package hivemall.fm;
 
+import hivemall.utils.lang.NumberUtils;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +38,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
-
-import hivemall.utils.lang.NumberUtils;
 
 public class FieldAwareFactorizationMachineUDTFTest {
 
@@ -85,7 +85,14 @@ public class FieldAwareFactorizationMachineUDTFTest {
     public void testSample() throws IOException, HiveException {
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43", 0.1f);
+            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43", 0.01f);
+    }
+
+    // TODO @Test
+    public void testSampleEnableNorm() throws IOException, HiveException {
+        run("[Sample.ffm] default option",
+            "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
+            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -enable_norm", 0.01f);
     }
 
     private static void run(String testName, String testFile, String testOptions,
@@ -104,7 +111,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
         Assert.assertTrue("Actual class: " + model.getClass().getName(),
             model instanceof FFMStringFeatureMapModel);
 
-
+        int lines = 0;
         BufferedReader data = readFile(testFile);
         while (true) {
             //gather features in current line
@@ -112,6 +119,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
             if (input == null) {
                 break;
             }
+            lines++;
             String[] featureStrings = input.split(" ");
 
             double y = Double.parseDouble(featureStrings[0]);
@@ -140,7 +148,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
 
         println("model size=" + udtf._model.getSize());
 
-        double avgLoss = udtf._cvState.getCumulativeLoss() / udtf._t;
+        double avgLoss = udtf._cvState.getAverageLoss(lines);
         Assert.assertTrue("Last loss was greater than expected: " + avgLoss,
             avgLoss < lossThreshold);
     }

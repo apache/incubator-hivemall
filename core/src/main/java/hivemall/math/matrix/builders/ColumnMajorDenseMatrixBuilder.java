@@ -20,8 +20,9 @@ package hivemall.math.matrix.builders;
 
 import hivemall.math.matrix.dense.ColumnMajorDenseMatrix2d;
 import hivemall.utils.collections.arrays.SparseDoubleArray;
-import hivemall.utils.collections.maps.IntOpenHashTable;
-import hivemall.utils.collections.maps.IntOpenHashTable.IMapIterator;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -29,13 +30,13 @@ import javax.annotation.Nonnull;
 public final class ColumnMajorDenseMatrixBuilder extends MatrixBuilder {
 
     @Nonnull
-    private final IntOpenHashTable<SparseDoubleArray> col2rows;
+    private final Int2ObjectMap<SparseDoubleArray> col2rows;
     private int row;
     private int maxNumColumns;
     private int nnz;
 
     public ColumnMajorDenseMatrixBuilder(int initSize) {
-        this.col2rows = new IntOpenHashTable<SparseDoubleArray>(initSize);
+        this.col2rows = new Int2ObjectOpenHashMap<SparseDoubleArray>(initSize);
         this.row = 0;
         this.maxNumColumns = 0;
         this.nnz = 0;
@@ -68,10 +69,9 @@ public final class ColumnMajorDenseMatrixBuilder extends MatrixBuilder {
     public ColumnMajorDenseMatrix2d buildMatrix() {
         final double[][] data = new double[maxNumColumns][];
 
-        final IMapIterator<SparseDoubleArray> itor = col2rows.entries();
-        while (itor.next() != -1) {
-            int col = itor.getKey();
-            SparseDoubleArray rows = itor.getValue();
+        for (Int2ObjectMap.Entry<SparseDoubleArray> e : Int2ObjectMaps.fastIterable(col2rows)) {
+            int col = e.getIntKey();
+            SparseDoubleArray rows = e.getValue();
             data[col] = rows.toArray();
         }
 

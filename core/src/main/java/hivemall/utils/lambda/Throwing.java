@@ -16,26 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.utils.collections.maps;
+package hivemall.utils.lambda;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.function.Consumer;
 
-public class LRUMap<K, V> extends LinkedHashMap<K, V> {
-    private static final long serialVersionUID = -7708264099645977733L;
+import javax.annotation.Nonnull;
 
-    private final int cacheSize;
+public final class Throwing {
 
-    public LRUMap(int cacheSize) {
-        this(cacheSize, 0.75f, cacheSize);
+    private Throwing() {}
+
+    @Nonnull
+    public static <T> Consumer<T> rethrow(@Nonnull final ThrowingConsumer<T> consumer) {
+        return consumer;
     }
 
-    public LRUMap(int capacity, float loadFactor, int cacheSize) {
-        super(capacity, loadFactor, true);
-        this.cacheSize = cacheSize;
+    /**
+     * The compiler sees the signature with the throws T inferred to a RuntimeException type, so it
+     * allows the unchecked exception to propagate.
+     * 
+     * http://www.baeldung.com/java-sneaky-throws
+     */
+    @SuppressWarnings("unchecked")
+    @Nonnull
+    public static <E extends Throwable> void sneakyThrow(@Nonnull Throwable ex) throws E {
+        throw (E) ex;
     }
 
-    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-        return size() > cacheSize;
-    }
 }

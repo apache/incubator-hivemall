@@ -24,9 +24,6 @@ import hivemall.common.ConversionState;
 import hivemall.math.matrix.FloatMatrix;
 import hivemall.math.matrix.sparse.floats.DoKFloatMatrix;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
-import hivemall.utils.collections.maps.IntOpenHashTable;
-import hivemall.utils.collections.maps.IntOpenHashTable.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
@@ -36,16 +33,22 @@ import hivemall.utils.lang.SizeOf;
 import hivemall.utils.lang.mutable.MutableDouble;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.lang.mutable.MutableObject;
+import it.unimi.dsi.fastutil.ints.Int2FloatMap;
+import it.unimi.dsi.fastutil.ints.Int2FloatMaps;
+import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -122,9 +125,9 @@ public class SlimUDTF extends UDTFWithOptions {
     private int _previousItemId;
 
     @Nullable
-    private transient Int2FloatOpenHashTable _ri;
+    private transient Int2FloatMap _ri;
     @Nullable
-    private transient IntOpenHashTable<Int2FloatOpenHashTable> _kNNi;
+    private transient Int2ObjectMap<Int2FloatMap> _kNNi;
     /** The number of elements in kNNi */
     @Nullable
     private transient MutableInt _nnzKNNi;
@@ -290,15 +293,14 @@ public class SlimUDTF extends UDTFWithOptions {
         }
 
         int itemJ = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
-        Int2FloatOpenHashTable rj = int2floatMap(itemJ, rjOI.getMap(args[4]), rjKeyOI, rjValueOI,
-            _dataMatrix);
+        Int2FloatMap rj = int2floatMap(itemJ, rjOI.getMap(args[4]), rjKeyOI, rjValueOI, _dataMatrix);
 
         train(itemI, _ri, _kNNi, itemJ, rj);
         _observedTrainingExamples++;
     }
 
     private void recordTrainingInput(final int itemI,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems, final int numKNNItems)
+            @Nonnull final Int2ObjectMap<Int2FloatMap> knnItems, final int numKNNItems)
             throws HiveException {
         ByteBuffer buf = this._inputBuf;
         NioStatefullSegment dst = this._fileIO;
@@ -334,17 +336,15 @@ public class SlimUDTF extends UDTFWithOptions {
         buf.putInt(itemI);
         buf.putInt(knnItems.size());
 
-        final IMapIterator<Int2FloatOpenHashTable> entries = knnItems.entries();
-        while (entries.next() != -1) {
-            int user = entries.getKey();
+        for (Int2ObjectMap.Entry<Int2FloatMap> e1 : Int2ObjectMaps.fastIterable(knnItems)) {
+            int user = e1.getIntKey();
             buf.putInt(user);
 
-            Int2FloatOpenHashTable ru = entries.getValue();
+            Int2FloatMap ru = e1.getValue();
             buf.putInt(ru.size());
-            final Int2FloatOpenHashTable.IMapIterator itor = ru.entries();
-            while (itor.next() != -1) {
-                buf.putInt(itor.getKey());
-                buf.putFloat(itor.getValue());
+            for (Int2FloatMap.Entry e2 : Int2FloatMaps.fastIterable(ru)) {
+                buf.putInt(e2.getIntKey());
+                buf.putFloat(e2.getFloatValue());
             }
         }
     }
@@ -360,9 +360,9 @@ public class SlimUDTF extends UDTFWithOptions {
         srcBuf.clear();
     }
 
-    private void train(final int itemI, @Nonnull final Int2FloatOpenHashTable ri,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> kNNi, final int itemJ,
-            @Nonnull final Int2FloatOpenHashTable rj) {
+    private void train(final int itemI, @Nonnull final Int2FloatMap ri,
+            @Nonnull final Int2ObjectMap<Int2FloatMap> kNNi, final int itemJ,
+            @Nonnull final Int2FloatMap rj) {
         final FloatMatrix W = _weightMatrix;
 
         final int N = rj.size();
@@ -374,11 +374,10 @@ public class SlimUDTF extends UDTFWithOptions {
         double rateSum = 0.d;
         double lossSum = 0.d;
 
-        final Int2FloatOpenHashTable.IMapIterator itor = rj.entries();
-        while (itor.next() != -1) {
-            int user = itor.getKey();
-            double ruj = itor.getValue();
-            double rui = ri.get(user, 0.f);
+        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(rj)) {
+            int user = e.getIntKey();
+            double ruj = e.getFloatValue();
+            double rui = ri.getOrDefault(user, 0.f);
 
             double eui = rui - predict(user, itemI, kNNi, itemJ, W);
             gradSum += ruj * eui;
@@ -396,8 +395,8 @@ public class SlimUDTF extends UDTFWithOptions {
         W.set(itemI, itemJ, getUpdateTerm(gradSum, rateSum, l1, l2));
     }
 
-    private void train(final int itemI,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems, final int itemJ) {
+    private void train(final int itemI, @Nonnull final Int2ObjectMap<Int2FloatMap> knnItems,
+            final int itemJ) {
         final FloatMatrix A = _dataMatrix;
         final FloatMatrix W = _weightMatrix;
 
@@ -433,21 +432,20 @@ public class SlimUDTF extends UDTFWithOptions {
     }
 
     private static double predict(final int user, final int itemI,
-            @Nonnull final IntOpenHashTable<Int2FloatOpenHashTable> knnItems,
-            final int excludeIndex, @Nonnull final FloatMatrix weightMatrix) {
-        final Int2FloatOpenHashTable kNNu = knnItems.get(user);
+            @Nonnull final Int2ObjectMap<Int2FloatMap> knnItems, final int excludeIndex,
+            @Nonnull final FloatMatrix weightMatrix) {
+        final Int2FloatMap kNNu = knnItems.get(user);
         if (kNNu == null) {
             return 0.d;
         }
 
         double pred = 0.d;
-        final Int2FloatOpenHashTable.IMapIterator itor = kNNu.entries();
-        while (itor.next() != -1) {
-            final int itemK = itor.getKey();
+        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(kNNu)) {
+            final int itemK = e.getIntKey();
             if (itemK == excludeIndex) {
                 continue;
             }
-            float ruk = itor.getValue();
+            float ruk = e.getFloatValue();
             pred += ruk * weightMatrix.get(itemI, itemK, 0.d);
         }
         return pred;
@@ -624,12 +622,12 @@ public class SlimUDTF extends UDTFWithOptions {
         final int itemI = buf.getInt();
         final int knnSize = buf.getInt();
 
-        final IntOpenHashTable<Int2FloatOpenHashTable> knnItems = new IntOpenHashTable<>(1024);
-        final Set<Integer> pairItems = new HashSet<>();
+        final Int2ObjectMap<Int2FloatMap> knnItems = new Int2ObjectOpenHashMap<>(1024);
+        final IntSet pairItems = new IntOpenHashSet();
         for (int i = 0; i < knnSize; i++) {
             int user = buf.getInt();
             int ruSize = buf.getInt();
-            Int2FloatOpenHashTable ru = new Int2FloatOpenHashTable(ruSize);
+            Int2FloatMap ru = new Int2FloatOpenHashMap(ruSize);
             ru.defaultReturnValue(0.f);
 
             for (int j = 0; j < ruSize; j++) {
@@ -677,16 +675,15 @@ public class SlimUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
-    private static IntOpenHashTable<Int2FloatOpenHashTable> kNNentries(
-            @Nonnull final Object kNNiObj, @Nonnull final MapObjectInspector knnItemsOI,
+    private static Int2ObjectMap<Int2FloatMap> kNNentries(@Nonnull final Object kNNiObj,
+            @Nonnull final MapObjectInspector knnItemsOI,
             @Nonnull final PrimitiveObjectInspector knnItemsKeyOI,
             @Nonnull final MapObjectInspector knnItemsValueOI,
             @Nonnull final PrimitiveObjectInspector knnItemsValueKeyOI,
             @Nonnull final PrimitiveObjectInspector knnItemsValueValueOI,
-            @Nullable IntOpenHashTable<Int2FloatOpenHashTable> knnItems,
-            @Nonnull final MutableInt nnzKNNi) {
+            @Nullable Int2ObjectMap<Int2FloatMap> knnItems, @Nonnull final MutableInt nnzKNNi) {
         if (knnItems == null) {
-            knnItems = new IntOpenHashTable<>(1024);
+            knnItems = new Int2ObjectOpenHashMap<>(1024);
         } else {
             knnItems.clear();
         }
@@ -694,7 +691,7 @@ public class SlimUDTF extends UDTFWithOptions {
         int numElementOfKNNItems = 0;
         for (Map.Entry<?, ?> entry : knnItemsOI.getMap(kNNiObj).entrySet()) {
             int user = PrimitiveObjectInspectorUtils.getInt(entry.getKey(), knnItemsKeyOI);
-            Int2FloatOpenHashTable ru = int2floatMap(knnItemsValueOI.getMap(entry.getValue()),
+            Int2FloatMap ru = int2floatMap(knnItemsValueOI.getMap(entry.getValue()),
                 knnItemsValueKeyOI, knnItemsValueValueOI);
             knnItems.put(user, ru);
             numElementOfKNNItems += ru.size();
@@ -705,10 +702,10 @@ public class SlimUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
-    private static Int2FloatOpenHashTable int2floatMap(@Nonnull final Map<?, ?> map,
+    private static Int2FloatMap int2floatMap(@Nonnull final Map<?, ?> map,
             @Nonnull final PrimitiveObjectInspector keyOI,
             @Nonnull final PrimitiveObjectInspector valueOI) {
-        final Int2FloatOpenHashTable result = new Int2FloatOpenHashTable(map.size());
+        final Int2FloatMap result = new Int2FloatOpenHashMap(map.size());
         result.defaultReturnValue(0.f);
 
         for (Map.Entry<?, ?> entry : map.entrySet()) {
@@ -724,19 +721,19 @@ public class SlimUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
-    private static Int2FloatOpenHashTable int2floatMap(final int item,
-            @Nonnull final Map<?, ?> map, @Nonnull final PrimitiveObjectInspector keyOI,
+    private static Int2FloatMap int2floatMap(final int item, @Nonnull final Map<?, ?> map,
+            @Nonnull final PrimitiveObjectInspector keyOI,
             @Nonnull final PrimitiveObjectInspector valueOI, @Nullable final FloatMatrix dataMatrix) {
         return int2floatMap(item, map, keyOI, valueOI, dataMatrix, null);
     }
 
     @Nonnull
-    private static Int2FloatOpenHashTable int2floatMap(final int item,
-            @Nonnull final Map<?, ?> map, @Nonnull final PrimitiveObjectInspector keyOI,
+    private static Int2FloatMap int2floatMap(final int item, @Nonnull final Map<?, ?> map,
+            @Nonnull final PrimitiveObjectInspector keyOI,
             @Nonnull final PrimitiveObjectInspector valueOI,
-            @Nullable final FloatMatrix dataMatrix, @Nullable Int2FloatOpenHashTable dst) {
+            @Nullable final FloatMatrix dataMatrix, @Nullable Int2FloatMap dst) {
         if (dst == null) {
-            dst = new Int2FloatOpenHashTable(map.size());
+            dst = new Int2FloatOpenHashMap(map.size());
             dst.defaultReturnValue(0.f);
         } else {
             dst.clear();

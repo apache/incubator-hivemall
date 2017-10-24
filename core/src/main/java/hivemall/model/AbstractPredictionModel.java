@@ -22,8 +22,10 @@ import hivemall.annotations.InternalAPI;
 import hivemall.mix.MixedWeight;
 import hivemall.mix.MixedWeight.WeightWithCovar;
 import hivemall.mix.MixedWeight.WeightWithDelta;
-import hivemall.utils.collections.maps.IntOpenHashTable;
-import hivemall.utils.collections.maps.OpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -37,8 +39,8 @@ public abstract class AbstractPredictionModel implements PredictionModel {
     private long numMixed;
     private boolean cancelMixRequest;
 
-    private IntOpenHashTable<MixedWeight> mixedRequests_i;
-    private OpenHashMap<Object, MixedWeight> mixedRequests_o;
+    private Int2ObjectMap<MixedWeight> mixedRequests_i;
+    private Object2ObjectMap<Object, MixedWeight> mixedRequests_o;
 
     public AbstractPredictionModel() {
         this.numMixed = 0L;
@@ -58,9 +60,9 @@ public abstract class AbstractPredictionModel implements PredictionModel {
         this.cancelMixRequest = cancelMixRequest;
         if (cancelMixRequest) {
             if (isDenseModel()) {
-                this.mixedRequests_i = new IntOpenHashTable<MixedWeight>(327680);
+                this.mixedRequests_i = new Int2ObjectOpenHashMap<MixedWeight>(327680);
             } else {
-                this.mixedRequests_o = new OpenHashMap<Object, MixedWeight>(327680);
+                this.mixedRequests_o = new Object2ObjectOpenHashMap<Object, MixedWeight>(327680);
             }
         }
     }

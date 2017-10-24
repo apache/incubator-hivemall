@@ -18,8 +18,10 @@
  */
 package hivemall.fm;
 
-import hivemall.utils.collections.maps.Int2FloatOpenHashTable;
-import hivemall.utils.collections.maps.IntOpenHashTable;
+import it.unimi.dsi.fastutil.ints.Int2FloatMap;
+import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.util.Arrays;
 
@@ -32,17 +34,17 @@ public final class FMIntFeatureMapModel extends FactorizationMachineModel {
 
     // LEARNING PARAMS
     private float _w0;
-    private final Int2FloatOpenHashTable _w;
-    private final IntOpenHashTable<float[]> _V;
+    private final Int2FloatMap _w;
+    private final Int2ObjectMap<float[]> _V;
 
     private int _minIndex, _maxIndex;
 
     public FMIntFeatureMapModel(@Nonnull FMHyperParameters params) {
         super(params);
         this._w0 = 0.f;
-        this._w = new Int2FloatOpenHashTable(DEFAULT_MAPSIZE);
+        this._w = new Int2FloatOpenHashMap(DEFAULT_MAPSIZE);
         _w.defaultReturnValue(0.f);
-        this._V = new IntOpenHashTable<float[]>(DEFAULT_MAPSIZE);
+        this._V = new Int2ObjectOpenHashMap<float[]>(DEFAULT_MAPSIZE);
         this._minIndex = 0;
         this._maxIndex = 0;
     }

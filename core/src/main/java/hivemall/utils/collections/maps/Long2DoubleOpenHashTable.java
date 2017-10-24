@@ -26,6 +26,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 
+import javax.annotation.Nonnull;
+
 /**
  * An open-addressing hash table using double hashing.
  *
@@ -45,12 +47,24 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
     private static final float DEFAULT_GROW_FACTOR = 2.0f;
 
-    protected final transient float _loadFactor;
-    protected final transient float _growFactor;
+    private static final float SHRINK_FACTOR = 0.1f; // at least 10% of table must be FREE
+    private static final float GROW_FACTOR_AT_SHRINK = 1.7f;
 
-    protected int _used = 0;
-    protected int _threshold;
-    protected double defaultReturnValue = 0.d;
+    protected/* final */float _loadFactor;
+    protected/* final */float _growFactor;
+
+    protected int _used;
+    protected int _freeEntries;
+
+    /** Used entry threshold to grow table */
+    protected int _growThreshold;
+    /**
+     * Free entry threshold to shrink table. Shrink threshold will be set in the first expansion to
+     * avoid shrink at very early remove().
+     */
+    protected int _shrinkThreshold;
+
+    protected double _defaultReturnValue = 0.d;
 
     protected long[] _keys;
     protected double[] _values;
@@ -67,7 +81,10 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         this._keys = new long[actualSize];
         this._values = new double[actualSize];
         this._states = new byte[actualSize];
-        this._threshold = (int) (actualSize * _loadFactor);
+        this._used = 0;
+        this._freeEntries = actualSize;
+        this._growThreshold = Math.round(actualSize * _loadFactor);
+        this._shrinkThreshold = Math.round(actualSize * SHRINK_FACTOR);
     }
 
     public Long2DoubleOpenHashTable(int size, int loadFactor, int growFactor) {
@@ -87,7 +104,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
     }
 
     public void defaultReturnValue(double v) {
-        this.defaultReturnValue = v;
+        this._defaultReturnValue = v;
     }
 
     public boolean containsKey(final long key) {
@@ -98,12 +115,12 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
      * @return defaultReturnValue if not found
      */
     public double get(final long key) {
-        return get(key, defaultReturnValue);
+        return get(key, _defaultReturnValue);
     }
 
     public double get(final long key, final double defaultValue) {
         final int i = _findKey(key);
-        if (i < 0) {
+        if (i == -1) {
             return defaultValue;
         }
         return _values[i];
@@ -111,7 +128,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
 
     public double _get(final int index) {
         if (index < 0) {
-            return defaultReturnValue;
+            return _defaultReturnValue;
         }
         return _values[index];
     }
@@ -129,7 +146,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
     }
 
     public double put(final long key, final double value) {
-        return put(key, value, defaultReturnValue);
+        return put(key, value, _defaultReturnValue);
     }
 
     public double put(final long key, final double value, final double defaultValue) {
@@ -147,26 +164,39 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         final double[] values = _values;
         final byte[] states = _states;
 
-        if (states[keyIdx] == FULL) {// double hashing
+        byte state = states[keyIdx];
+        if (state == FULL) {// double hashing
             if (keys[keyIdx] == key) {
                 double old = values[keyIdx];
                 values[keyIdx] = value;
                 return old;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int loopIndex = keyIdx;
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
                     keyIdx += keyLength;
                 }
-                if (isFree(keyIdx, key)) {
+                if (keyIdx == loopIndex) {
+                    throw new IllegalStateException("Detected infinite loop where key=" + key
+                            + ", keyIdx=" + keyIdx);
+                }
+
+                state = states[keyIdx];
+                if (state == FREE) {
                     break;
                 }
-                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                    double old = values[keyIdx];
-                    values[keyIdx] = value;
-                    return old;
+                if (keys[keyIdx] == key) {
+                    if (state == FULL) {
+                        double old = values[keyIdx];
+                        values[keyIdx] = value;
+                        return old;
+                    } else {
+                        assert (state == REMOVED);
+                        break;
+                    }
                 }
             }
         }
@@ -174,24 +204,21 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         values[keyIdx] = value;
         states[keyIdx] = FULL;
         ++_used;
-        return defaultValue;
-    }
 
-    /** Return weather the required slot is free for new entry */
-    protected boolean isFree(final int index, final long key) {
-        final byte stat = _states[index];
-        if (stat == FREE) {
-            return true;
+        if (state == FREE) {
+            _freeEntries--;
+            if (_freeEntries < _shrinkThreshold) {
+                int newCapacity = Math.max(keys.length, Math.round(_used * GROW_FACTOR_AT_SHRINK));
+                ensureCapacity(newCapacity);
+            }
         }
-        if (stat == REMOVED && _keys[index] == key) {
-            return true;
-        }
-        return false;
+
+        return defaultValue;
     }
 
     /** @return expanded or not */
     protected boolean preAddEntry(final int index) {
-        if ((_used + 1) >= _threshold) {// too filled
+        if ((_used + 1) >= _growThreshold) {// too filled
             int newCapacity = Math.round(_keys.length * _growFactor);
             ensureCapacity(newCapacity);
             return true;
@@ -207,64 +234,44 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
         final byte[] states = _states;
         final int keyLength = keys.length;
 
+        // double hashing
         final int hash = keyHash(key);
-        int keyIdx = hash % keyLength;
-        if (states[keyIdx] != FREE) {
-            if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                return keyIdx;
+        final int decr = 1 + (hash % (keyLength - 2));
+        final int startIndex = hash % keyLength;
+        for (int keyIdx = startIndex;;) {
+            final byte state = states[keyIdx];
+            if (state == FREE) {
+                return -1;
             }
-            // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
-            for (;;) {
-                keyIdx -= decr;
-                if (keyIdx < 0) {
-                    keyIdx += keyLength;
-                }
-                if (isFree(keyIdx, key)) {
+            if (keys[keyIdx] == key) {
+                if (state == FULL) {
+                    return keyIdx;
+                } else {
+                    assert (state == REMOVED);
                     return -1;
                 }
-                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                    return keyIdx;
-                }
+            }
+            keyIdx -= decr;
+            if (keyIdx < 0) {
+                keyIdx += keyLength;
+            }
+            if (keyIdx == startIndex) {
+                throw new IllegalStateException("Detected infinite loop where key=" + key
+                        + ", keyIdx=" + keyIdx);
             }
         }
-        return -1;
     }
 
     public double remove(final long key) {
-        final long[] keys = _keys;
-        final double[] values = _values;
-        final byte[] states = _states;
-        final int keyLength = keys.length;
-
-        final int hash = keyHash(key);
-        int keyIdx = hash % keyLength;
-        if (states[keyIdx] != FREE) {
-            if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                double old = values[keyIdx];
-                states[keyIdx] = REMOVED;
-                --_used;
-                return old;
-            }
-            //  second hash
-            int decr = 1 + (hash % (keyLength - 2));
-            for (;;) {
-                keyIdx -= decr;
-                if (keyIdx < 0) {
-                    keyIdx += keyLength;
-                }
-                if (states[keyIdx] == FREE) {
-                    return defaultReturnValue;
-                }
-                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                    double old = values[keyIdx];
-                    states[keyIdx] = REMOVED;
-                    --_used;
-                    return old;
-                }
-            }
+        final int keyIdx = _findKey(key);
+        if (keyIdx == -1) {
+            return _defaultReturnValue;
         }
-        return defaultReturnValue;
+
+        double old = _values[keyIdx];
+        _states[keyIdx] = REMOVED;
+        --_used;
+        return old;
     }
 
     public int size() {
@@ -274,6 +281,7 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
     public void clear() {
         Arrays.fill(_states, FREE);
         this._used = 0;
+        this._freeEntries = _states.length;
     }
 
     public IMapIterator entries() {
@@ -301,93 +309,56 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
     protected void ensureCapacity(final int newCapacity) {
         int prime = Primes.findLeastPrimeNumber(newCapacity);
         rehash(prime);
-        this._threshold = Math.round(prime * _loadFactor);
     }
 
     private void rehash(final int newCapacity) {
-        int oldCapacity = _keys.length;
-        if (newCapacity <= oldCapacity) {
-            throw new IllegalArgumentException("new: " + newCapacity + ", old: " + oldCapacity);
-        }
+        final long[] oldKeys = _keys;
+        final double[] oldValues = _values;
+        final byte[] oldStates = _states;
+        final int oldCapacity = _keys.length;
+
         final long[] newkeys = new long[newCapacity];
         final double[] newValues = new double[newCapacity];
         final byte[] newStates = new byte[newCapacity];
         int used = 0;
         for (int i = 0; i < oldCapacity; i++) {
-            if (_states[i] == FULL) {
-                used++;
-                long k = _keys[i];
-                double v = _values[i];
-                int hash = keyHash(k);
-                int keyIdx = hash % newCapacity;
-                if (newStates[keyIdx] == FULL) {// second hashing
-                    int decr = 1 + (hash % (newCapacity - 2));
-                    while (newStates[keyIdx] != FREE) {
-                        keyIdx -= decr;
-                        if (keyIdx < 0) {
-                            keyIdx += newCapacity;
-                        }
-                    }
-                }
-                newkeys[keyIdx] = k;
-                newValues[keyIdx] = v;
-                newStates[keyIdx] = FULL;
+            if (oldStates[i] != FULL) {
+                continue;
             }
+            final long k = oldKeys[i];
+            final double v = oldValues[i];
+            final int hash = keyHash(k);
+            int keyIdx = hash % newCapacity;
+            if (newStates[keyIdx] == FULL) {// second hashing
+                final int decr = 1 + (hash % (newCapacity - 2));
+                final int loopIndex = keyIdx;
+                do {
+                    keyIdx -= decr;
+                    if (keyIdx < 0) {
+                        keyIdx += newCapacity;
+                    }
+                    if (keyIdx == loopIndex) {
+                        throw new IllegalStateException("Detected infinite loop where key=" + k
+                                + ", keyIdx=" + keyIdx);
+                    }
+                } while (newStates[keyIdx] != FREE);
+            }
+            newkeys[keyIdx] = k;
+            newValues[keyIdx] = v;
+            newStates[keyIdx] = FULL;
+            used++;
         }
         this._keys = newkeys;
         this._values = newValues;
         this._states = newStates;
         this._used = used;
+        this._freeEntries = newCapacity - used;
+        this._growThreshold = Math.round(newCapacity * _loadFactor);
+        this._shrinkThreshold = Math.round(newCapacity * SHRINK_FACTOR);
     }
 
     private static int keyHash(final long key) {
         return (int) (key ^ (key >>> 32)) & 0x7FFFFFFF;
-    }
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(_threshold);
-        out.writeInt(_used);
-
-        out.writeInt(_keys.length);
-        IMapIterator i = entries();
-        while (i.next() != -1) {
-            out.writeLong(i.getKey());
-            out.writeDouble(i.getValue());
-        }
-    }
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        this._threshold = in.readInt();
-        this._used = in.readInt();
-
-        final int keylen = in.readInt();
-        final long[] keys = new long[keylen];
-        final double[] values = new double[keylen];
-        final byte[] states = new byte[keylen];
-        for (int i = 0; i < _used; i++) {
-            long k = in.readLong();
-            double v = in.readDouble();
-            int hash = keyHash(k);
-            int keyIdx = hash % keylen;
-            if (states[keyIdx] != FREE) {// second hash
-                int decr = 1 + (hash % (keylen - 2));
-                for (;;) {
-                    keyIdx -= decr;
-                    if (keyIdx < 0) {
-                        keyIdx += keylen;
-                    }
-                    if (states[keyIdx] == FREE) {
-                        break;
-                    }
-                }
-            }
-            states[keyIdx] = FULL;
-            keys[keyIdx] = k;
-            values[keyIdx] = v;
-        }
-        this._keys = keys;
-        this._values = values;
-        this._states = states;
     }
 
     public interface IMapIterator {
@@ -450,4 +421,62 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
             return _values[lastEntry];
         }
     }
+
+    @Override
+    public void writeExternal(@Nonnull ObjectOutput out) throws IOException {
+        out.writeFloat(_loadFactor);
+        out.writeFloat(_growFactor);
+        out.writeInt(_used);
+        out.writeDouble(_defaultReturnValue);
+
+        final IMapIterator i = entries();
+        while (i.next() != -1) {
+            out.writeLong(i.getKey());
+            out.writeDouble(i.getValue());
+        }
+    }
+
+    @Override
+    public void readExternal(@Nonnull ObjectInput in) throws IOException, ClassNotFoundException {
+        this._loadFactor = in.readFloat();
+        this._growFactor = in.readFloat();
+        final int used = in.readInt();
+        this._defaultReturnValue = in.readDouble();
+
+        final int newCapacity = Primes.findLeastPrimeNumber(Math.round(used * 1.7f));
+        final long[] keys = new long[newCapacity];
+        final double[] values = new double[newCapacity];
+        final byte[] states = new byte[newCapacity];
+        for (int i = 0; i < used; i++) {
+            final long k = in.readLong();
+            final double v = in.readDouble();
+            final int hash = keyHash(k);
+            int keyIdx = hash % newCapacity;
+            if (states[keyIdx] != FREE) {// second hashing
+                final int decr = 1 + (hash % (newCapacity - 2));
+                final int loopIndex = keyIdx;
+                do {
+                    keyIdx -= decr;
+                    if (keyIdx < 0) {
+                        keyIdx += newCapacity;
+                    }
+                    if (keyIdx == loopIndex) {
+                        throw new IllegalStateException("Detected infinite loop where key=" + k
+                                + ", keyIdx=" + keyIdx);
+                    }
+                } while (states[keyIdx] != FREE);
+            }
+            keys[keyIdx] = k;
+            values[keyIdx] = v;
+            states[keyIdx] = FULL;
+        }
+        this._keys = keys;
+        this._values = values;
+        this._states = states;
+        this._used = used;
+        this._freeEntries = newCapacity - used;
+        this._growThreshold = Math.round(newCapacity * _loadFactor);
+        this._shrinkThreshold = Math.round(newCapacity * SHRINK_FACTOR);
+    }
+
 }
