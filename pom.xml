@@ -230,7 +230,6 @@
 		</contributor>
 	</contributors>
 	-->
-
 	<packaging>pom</packaging>
 
 	<modules>
@@ -291,18 +290,18 @@
 									<goal>enforce</goal>
 								</goals>
 								<configuration>
-								<rules>
-									<requireProperty>
-										<property>java.source.version</property>
-										<regex>1.8</regex>
-										<regexMessage>When -Pspark-2.2 set, java.source.version must be 1.8</regexMessage>
-									</requireProperty>
-									<requireProperty>
-										<property>java.target.version</property>
-										<regex>1.8</regex>
-										<regexMessage>When -Pspark-2.2 set, java.target.version must be 1.8</regexMessage>
-									</requireProperty>
-								</rules>
+									<rules>
+										<requireProperty>
+											<property>java.source.version</property>
+											<regex>1.8</regex>
+											<regexMessage>When -Pspark-2.2 set, java.source.version must be 1.8</regexMessage>
+										</requireProperty>
+										<requireProperty>
+											<property>java.target.version</property>
+											<regex>1.8</regex>
+											<regexMessage>When -Pspark-2.2 set, java.target.version must be 1.8</regexMessage>
+										</requireProperty>
+									</rules>
 								</configuration>
 							</execution>
 						</executions>
@@ -460,7 +459,7 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-				    <!-- mvn formatter:format -->
+					<!-- mvn formatter:format -->
 					<groupId>net.revelc.code</groupId>
 					<artifactId>formatter-maven-plugin</artifactId>
 					<version>0.5.2</version>
@@ -471,7 +470,7 @@
 					</configuration>
 				</plugin>
 				<plugin>
-				    <!-- mvn license:check; mvn license:format -->
+					<!-- mvn license:check; mvn license:format -->
 					<groupId>com.mycila</groupId>
 					<artifactId>license-maven-plugin</artifactId>
 					<version>3.0</version>
@@ -521,7 +520,7 @@
 				<artifactId>formatter-maven-plugin</artifactId>
 			</plugin>
 			<plugin>
-			    <!-- mvn license:check; mvn license:format -->
+				<!-- mvn license:check; mvn license:format -->
 				<groupId>com.mycila</groupId>
 				<artifactId>license-maven-plugin</artifactId>
 			</plugin>
@@ -569,21 +568,39 @@
 			<plugin>
 				<groupId>org.eluder.coveralls</groupId>
 				<artifactId>coveralls-maven-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>4.3.0</version>
 				<configuration>
 					<repoToken>UhHBKJx1qjSDccp9RmlRXhXUoRrdAr150</repoToken>
 				</configuration>
 			</plugin>
+			<!-- 
+			  Cobertura does not support Java 8 yet
+			  https://github.com/cobertura/cobertura/issues/166
+			-->
+			<!--
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>cobertura-maven-plugin</artifactId>
-				<version>2.6</version>
+				<version>2.7</version>
 				<configuration>
 					<format>xml</format>
 					<maxmem>256m</maxmem>
-					<!-- aggregated reports for multi-module projects -->
 					<aggregate>true</aggregate>
 				</configuration>
+			</plugin>
+			-->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.7.6.201602180812</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<!-- end overalls -->
 			<!-- start sonatype deploy -->
