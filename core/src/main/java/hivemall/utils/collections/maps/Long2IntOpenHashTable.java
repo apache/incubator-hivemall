@@ -56,7 +56,8 @@ public final class Long2IntOpenHashTable implements Externalizable {
     protected int[] _values;
     protected byte[] _states;
 
-    protected Long2IntOpenHashTable(int size, float loadFactor, float growFactor, boolean forcePrime) {
+    protected Long2IntOpenHashTable(int size, float loadFactor, float growFactor,
+            boolean forcePrime) {
         if (size < 1) {
             throw new IllegalArgumentException();
         }
@@ -137,19 +138,31 @@ public final class Long2IntOpenHashTable implements Externalizable {
                 return old;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int loopIndex = keyIdx;
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
                     keyIdx += keyLength;
                 }
-                if (isFree(keyIdx, key)) {
+                if (keyIdx == loopIndex) {
+                    throw new IllegalStateException(
+                        "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
+                }
+
+                final byte state = states[keyIdx];
+                if (state == FREE) {
                     break;
                 }
-                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                    int old = values[keyIdx];
-                    values[keyIdx] = value;
-                    return old;
+                if (keys[keyIdx] == key) {
+                    if (state == FULL) {
+                        int old = values[keyIdx];
+                        values[keyIdx] = value;
+                        return old;
+                    } else {
+                        assert (state == REMOVED);
+                        break;
+                    }
                 }
             }
         }
@@ -182,19 +195,31 @@ public final class Long2IntOpenHashTable implements Externalizable {
                 return old;
             }
             // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
+            final int loopIndex = keyIdx;
+            final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
                     keyIdx += keyLength;
                 }
-                if (isFree(keyIdx, key)) {
+                if (keyIdx == loopIndex) {
+                    throw new IllegalStateException(
+                        "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
+                }
+
+                final byte state = states[keyIdx];
+                if (state == FREE) {
                     break;
                 }
-                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                    int old = values[keyIdx];
-                    values[keyIdx] += delta;
-                    return old;
+                if (keys[keyIdx] == key) {
+                    if (state == FULL) {
+                        int old = values[keyIdx];
+                        values[keyIdx] += delta;
+                        return old;
+                    } else {
+                        assert (state == REMOVED);
+                        break;
+                    }
                 }
             }
         }
@@ -203,18 +228,6 @@ public final class Long2IntOpenHashTable implements Externalizable {
         states[keyIdx] = FULL;
         ++_used;
         return defaultReturnValue;
-    }
-
-    /** Return weather the required slot is free for new entry */
-    protected boolean isFree(final int index, final long key) {
-        final byte stat = _states[index];
-        if (stat == FREE) {
-            return true;
-        }
-        if (stat == REMOVED && _keys[index] == key) {
-            return true;
-        }
-        return false;
     }
 
     /** @return expanded or not */
@@ -235,64 +248,44 @@ public final class Long2IntOpenHashTable implements Externalizable {
         final byte[] states = _states;
         final int keyLength = keys.length;
 
+        // double hashing
         final int hash = keyHash(key);
-        int keyIdx = hash % keyLength;
-        if (states[keyIdx] != FREE) {
-            if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                return keyIdx;
+        final int decr = 1 + (hash % (keyLength - 2));
+        final int startIndex = hash % keyLength;
+        for (int keyIdx = startIndex;;) {
+            final byte state = states[keyIdx];
+            if (state == FREE) {
+                return -1;
             }
-            // try second hash
-            int decr = 1 + (hash % (keyLength - 2));
-            for (;;) {
-                keyIdx -= decr;
-                if (keyIdx < 0) {
-                    keyIdx += keyLength;
-                }
-                if (isFree(keyIdx, key)) {
+            if (keys[keyIdx] == key) {
+                if (state == FULL) {
+                    return keyIdx;
+                } else {
+                    assert (state == REMOVED);
                     return -1;
                 }
-                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                    return keyIdx;
-                }
+            }
+            keyIdx -= decr;
+            if (keyIdx < 0) {
+                keyIdx += keyLength;
+            }
+            if (keyIdx == startIndex) {
+                throw new IllegalStateException(
+                    "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
             }
         }
-        return -1;
     }
 
     public int remove(final long key) {
-        final long[] keys = _keys;
-        final int[] values = _values;
-        final byte[] states = _states;
-        final int keyLength = keys.length;
-
-        final int hash = keyHash(key);
-        int keyIdx = hash % keyLength;
-        if (states[keyIdx] != FREE) {
-            if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                int old = values[keyIdx];
-                states[keyIdx] = REMOVED;
-                --_used;
-                return old;
-            }
-            //  second hash
-            int decr = 1 + (hash % (keyLength - 2));
-            for (;;) {
-                keyIdx -= decr;
-                if (keyIdx < 0) {
-                    keyIdx += keyLength;
-                }
-                if (states[keyIdx] == FREE) {
-                    return defaultReturnValue;
-                }
-                if (states[keyIdx] == FULL && keys[keyIdx] == key) {
-                    int old = values[keyIdx];
-                    states[keyIdx] = REMOVED;
-                    --_used;
-                    return old;
-                }
-            }
+        final int keyIdx = _findKey(key);
+        if (keyIdx == -1) {
+            return defaultReturnValue;
         }
-        return defaultReturnValue;
+
+        int old = _values[keyIdx];
+        _states[keyIdx] = REMOVED;
+        --_used;
+        return old;
     }
 
     public int size() {
@@ -333,27 +326,37 @@ public final class Long2IntOpenHashTable implements Externalizable {
     }
 
     private void rehash(final int newCapacity) {
-        int oldCapacity = _keys.length;
+        final long[] oldKeys = _keys;
+        final int[] oldValues = _values;
+        final byte[] oldStates = _states;
+
+        final int oldCapacity = oldKeys.length;
         if (newCapacity <= oldCapacity) {
             throw new IllegalArgumentException("new: " + newCapacity + ", old: " + oldCapacity);
         }
+
         final long[] newkeys = new long[newCapacity];
         final int[] newValues = new int[newCapacity];
         final byte[] newStates = new byte[newCapacity];
         int used = 0;
         for (int i = 0; i < oldCapacity; i++) {
-            if (_states[i] == FULL) {
+            if (oldStates[i] == FULL) {
                 used++;
-                long k = _keys[i];
-                int v = _values[i];
-                int hash = keyHash(k);
+                final long k = oldKeys[i];
+                final int v = oldValues[i];
+                final int hash = keyHash(k);
                 int keyIdx = hash % newCapacity;
                 if (newStates[keyIdx] == FULL) {// second hashing
                     int decr = 1 + (hash % (newCapacity - 2));
+                    final int loopIndex = keyIdx;
                     while (newStates[keyIdx] != FREE) {
                         keyIdx -= decr;
                         if (keyIdx < 0) {
                             keyIdx += newCapacity;
+                        }
+                        if (keyIdx == loopIndex) {
+                            throw new IllegalStateException(
+                                "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
                         }
                     }
                 }
@@ -393,12 +396,12 @@ public final class Long2IntOpenHashTable implements Externalizable {
         final int[] values = new int[keylen];
         final byte[] states = new byte[keylen];
         for (int i = 0; i < _used; i++) {
-            long k = in.readLong();
-            int v = in.readInt();
-            int hash = keyHash(k);
+            final long k = in.readLong();
+            final int v = in.readInt();
+            final int hash = keyHash(k);
             int keyIdx = hash % keylen;
             if (states[keyIdx] != FREE) {// second hash
-                int decr = 1 + (hash % (keylen - 2));
+                final int decr = 1 + (hash % (keylen - 2));
                 for (;;) {
                     keyIdx -= decr;
                     if (keyIdx < 0) {

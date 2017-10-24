@@ -20,6 +20,7 @@ package hivemall.utils.collections.maps;
 
 import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.lang.Copyable;
+import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.Primes;
 
 import java.io.Externalizable;
@@ -28,7 +29,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * An open-addressing hash table using double-hashing.
@@ -102,11 +106,11 @@ public final class OpenHashTable<K, V> implements Externalizable {
         return _states;
     }
 
-    public boolean containsKey(final K key) {
+    public boolean containsKey(@CheckForNull final K key) {
         return findKey(key) >= 0;
     }
 
-    public V get(final K key) {
+    public V get(@CheckForNull final K key) {
         final int i = findKey(key);
         if (i < 0) {
             return null;
@@ -114,7 +118,9 @@ public final class OpenHashTable<K, V> implements Externalizable {
         return _values[i];
     }
 
-    public V put(final K key, final V value) {
+    public V put(@CheckForNull final K key, @Nullable final V value) {
+        Preconditions.checkNotNull(key);
+
         final int hash = keyHash(key);
         int keyLength = _keys.length;
         int keyIdx = hash % keyLength;
@@ -129,26 +135,38 @@ public final class OpenHashTable<K, V> implements Externalizable {
         final V[] values = _values;
         final byte[] states = _states;
 
-        if (states[keyIdx] == FULL) {
+        if (states[keyIdx] == FULL) {// double hashing
             if (equals(keys[keyIdx], key)) {
                 V old = values[keyIdx];
                 values[keyIdx] = value;
                 return old;
             }
             // try second hash
+            final int loopIndex = keyIdx;
             final int decr = 1 + (hash % (keyLength - 2));
             for (;;) {
                 keyIdx -= decr;
                 if (keyIdx < 0) {
                     keyIdx += keyLength;
                 }
-                if (isFree(keyIdx, key)) {
+                if (keyIdx == loopIndex) {
+                    throw new IllegalStateException(
+                        "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
+                }
+
+                final byte state = states[keyIdx];
+                if (state == FREE) {
                     break;
                 }
-                if (states[keyIdx] == FULL && equals(keys[keyIdx], key)) {
-                    V old = values[keyIdx];
-                    values[keyIdx] = value;
-                    return old;
+                if (equals(keys[keyIdx], key)) {
+                    if (states[keyIdx] == FULL) {
+                        V old = values[keyIdx];
+                        values[keyIdx] = value;
+                        return old;
+                    } else {
+                        assert (state == REMOVED);
+                        break;
+                    }
                 }
             }
         }
@@ -159,20 +177,8 @@ public final class OpenHashTable<K, V> implements Externalizable {
         return null;
     }
 
-    private static boolean equals(final Object k1, final Object k2) {
+    private static boolean equals(@Nonnull final Object k1, @Nonnull final Object k2) {
         return k1 == k2 || k1.equals(k2);
-    }
-
-    /** Return weather the required slot is free for new entry */
-    protected boolean isFree(final int index, final K key) {
-        final byte state = _states[index];
-        if (state == FREE) {
-            return true;
-        }
-        if (state == REMOVED && equals(_keys[index], key)) {
-            return true;
-        }
-        return false;
     }
 
     /** @return expanded or not */
@@ -185,70 +191,51 @@ public final class OpenHashTable<K, V> implements Externalizable {
         return false;
     }
 
-    protected int findKey(final K key) {
+    protected int findKey(@CheckForNull final K key) {
+        Preconditions.checkNotNull(key);
+
         final K[] keys = _keys;
         final byte[] states = _states;
         final int keyLength = keys.length;
 
+        // double hashing
         final int hash = keyHash(key);
-        int keyIdx = hash % keyLength;
-        if (states[keyIdx] != FREE) {
-            if (states[keyIdx] == FULL && equals(keys[keyIdx], key)) {
-                return keyIdx;
+        final int decr = 1 + (hash % (keyLength - 2));
+        final int startIndex = hash % keyLength;
+        for (int keyIdx = startIndex;;) {
+            final byte state = states[keyIdx];
+            if (state == FREE) {
+                return -1;
             }
-            // try second hash
-            final int decr = 1 + (hash % (keyLength - 2));
-            for (;;) {
-                keyIdx -= decr;
-                if (keyIdx < 0) {
-                    keyIdx += keyLength;
-                }
-                if (isFree(keyIdx, key)) {
+            if (equals(keys[keyIdx], key)) {
+                if (state == FULL) {
+                    return keyIdx;
+                } else {
+                    assert (state == REMOVED);
                     return -1;
                 }
-                if (states[keyIdx] == FULL && equals(keys[keyIdx], key)) {
-                    return keyIdx;
-                }
+            }
+            keyIdx -= decr;
+            if (keyIdx < 0) {
+                keyIdx += keyLength;
+            }
+            if (keyIdx == startIndex) {
+                throw new IllegalStateException(
+                    "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
             }
         }
-        return -1;
     }
 
-    public V remove(final K key) {
-        K[] keys = _keys;
-        V[] values = _values;
-        byte[] states = _states;
-        int keyLength = keys.length;
-
-        int hash = keyHash(key);
-        int keyIdx = hash % keyLength;
-        if (states[keyIdx] != FREE) {
-            if (states[keyIdx] == FULL && equals(keys[keyIdx], key)) {
-                V old = values[keyIdx];
-                states[keyIdx] = REMOVED;
-                --_used;
-                return old;
-            }
-            //  second hash
-            int decr = 1 + (hash % (keyLength - 2));
-            for (;;) {
-                keyIdx -= decr;
-                if (keyIdx < 0) {
-                    keyIdx += keyLength;
-                }
-                final byte state = states[keyIdx];
-                if (state == FREE) {
-                    return null;
-                }
-                if (state == FULL && equals(keys[keyIdx], key)) {
-                    V old = values[keyIdx];
-                    states[keyIdx] = REMOVED;
-                    --_used;
-                    return old;
-                }
-            }
+    public V remove(@CheckForNull final K key) {
+        final int keyIdx = findKey(key);
+        if (keyIdx == -1) {
+            return null;
         }
-        return null;
+
+        V old = _values[keyIdx];
+        _states[keyIdx] = REMOVED;
+        --_used;
+        return old;
     }
 
     public int size() {
@@ -287,41 +274,51 @@ public final class OpenHashTable<K, V> implements Externalizable {
         return buf.toString();
     }
 
-    protected void ensureCapacity(int newCapacity) {
+    protected void ensureCapacity(@Nonnegative int newCapacity) {
         int prime = Primes.findLeastPrimeNumber(newCapacity);
         rehash(prime);
         this._threshold = Math.round(prime * _loadFactor);
     }
 
     @SuppressWarnings("unchecked")
-    private void rehash(int newCapacity) {
-        int oldCapacity = _keys.length;
+    private void rehash(@Nonnegative final int newCapacity) {
+        final K[] oldKeys = _keys;
+        final V[] oldValues = _values;
+        final byte[] oldStates = _states;
+
+        final int oldCapacity = oldKeys.length;
         if (newCapacity <= oldCapacity) {
             throw new IllegalArgumentException("new: " + newCapacity + ", old: " + oldCapacity);
         }
+
         final K[] newkeys = (K[]) new Object[newCapacity];
         final V[] newValues = (V[]) new Object[newCapacity];
         final byte[] newStates = new byte[newCapacity];
         int used = 0;
         for (int i = 0; i < oldCapacity; i++) {
-            if (_states[i] == FULL) {
+            if (oldStates[i] == FULL) {
                 used++;
-                K k = _keys[i];
-                V v = _values[i];
-                int hash = keyHash(k);
+                final K k = oldKeys[i];
+                final V v = oldValues[i];
+                final int hash = keyHash(k);
                 int keyIdx = hash % newCapacity;
                 if (newStates[keyIdx] == FULL) {// second hashing
-                    int decr = 1 + (hash % (newCapacity - 2));
+                    final int decr = 1 + (hash % (newCapacity - 2));
+                    final int loopIndex = keyIdx;
                     while (newStates[keyIdx] != FREE) {
                         keyIdx -= decr;
                         if (keyIdx < 0) {
                             keyIdx += newCapacity;
                         }
+                        if (keyIdx == loopIndex) {
+                            throw new IllegalStateException(
+                                "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
+                        }
                     }
                 }
-                newStates[keyIdx] = FULL;
                 newkeys[keyIdx] = k;
                 newValues[keyIdx] = v;
+                newStates[keyIdx] = FULL;
             }
         }
         this._keys = newkeys;
@@ -330,7 +327,7 @@ public final class OpenHashTable<K, V> implements Externalizable {
         this._used = used;
     }
 
-    private static int keyHash(final Object key) {
+    private static int keyHash(@Nonnull final Object key) {
         int hash = key.hashCode();
         return hash & 0x7fffffff;
     }
