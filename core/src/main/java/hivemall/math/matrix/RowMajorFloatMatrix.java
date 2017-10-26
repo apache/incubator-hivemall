@@ -18,6 +18,8 @@
  */
 package hivemall.math.matrix;
 
+import javax.annotation.Nonnegative;
+
 public abstract class RowMajorFloatMatrix extends RowMajorMatrix implements FloatMatrix {
 
     public RowMajorFloatMatrix() {
@@ -27,6 +29,23 @@ public abstract class RowMajorFloatMatrix extends RowMajorMatrix implements Floa
     @Override
     public RowMajorFloatMatrix toRowMajorMatrix() {
         return this;
+    }
+
+    @Override
+    public double get(@Nonnegative final int row, @Nonnegative final int col,
+            final double defaultValue) {
+        return get(row, col, (float) defaultValue);
+    }
+
+    @Override
+    public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
+        set(row, col, (float) value);
+    }
+
+    @Override
+    public double getAndSet(@Nonnegative final int row, @Nonnegative final int col,
+            final double value) {
+        return getAndSet(row, col, (float) value);
     }
 
 }

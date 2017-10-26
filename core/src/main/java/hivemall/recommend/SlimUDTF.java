@@ -24,6 +24,7 @@ import hivemall.common.ConversionState;
 import hivemall.math.matrix.FloatMatrix;
 import hivemall.math.matrix.sparse.floats.DoKFloatMatrix;
 import hivemall.math.vector.VectorProcedure;
+import hivemall.utils.collections.Fastutil;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefullSegment;
@@ -34,10 +35,8 @@ import hivemall.utils.lang.mutable.MutableDouble;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.lang.mutable.MutableObject;
 import it.unimi.dsi.fastutil.ints.Int2FloatMap;
-import it.unimi.dsi.fastutil.ints.Int2FloatMaps;
 import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -79,8 +78,7 @@ import org.apache.hadoop.mapred.Reporter;
  * Xia Ning and George Karypis, SLIM: Sparse Linear Methods for Top-N Recommender Systems, Proc. ICDM, 2011.
  * </pre>
  */
-@Description(
-        name = "train_slim",
+@Description(name = "train_slim",
         value = "_FUNC_( int i, map<int, double> r_i, map<int, map<int, double>> topKRatesOfI, int j, map<int, double> r_j [, constant string options]) "
                 + "- Returns row index, column index and non-zero weight value of prediction model")
 public class SlimUDTF extends UDTFWithOptions {
@@ -174,8 +172,10 @@ public class SlimUDTF extends UDTFWithOptions {
         this.knnItemsOI = HiveUtils.asMapOI(argOIs[2]);
         this.knnItemsKeyOI = HiveUtils.asIntCompatibleOI(knnItemsOI.getMapKeyObjectInspector());
         this.knnItemsValueOI = HiveUtils.asMapOI(knnItemsOI.getMapValueObjectInspector());
-        this.knnItemsValueKeyOI = HiveUtils.asIntCompatibleOI(knnItemsValueOI.getMapKeyObjectInspector());
-        this.knnItemsValueValueOI = HiveUtils.asDoubleCompatibleOI(knnItemsValueOI.getMapValueObjectInspector());
+        this.knnItemsValueKeyOI =
+                HiveUtils.asIntCompatibleOI(knnItemsValueOI.getMapKeyObjectInspector());
+        this.knnItemsValueValueOI =
+                HiveUtils.asDoubleCompatibleOI(knnItemsValueOI.getMapValueObjectInspector());
 
         this.itemJOI = HiveUtils.asIntCompatibleOI(argOIs[3]);
 
@@ -245,8 +245,8 @@ public class SlimUDTF extends UDTFWithOptions {
 
             numIterations = Primitives.parseInt(cl.getOptionValue("iters"), numIterations);
             if (numIterations <= 0) {
-                throw new UDFArgumentException("Argument `int iters` must be greater than 0: "
-                        + numIterations);
+                throw new UDFArgumentException(
+                    "Argument `int iters` must be greater than 0: " + numIterations);
             }
 
             conversionCheck = !cl.hasOption("disable_cvtest");
@@ -280,8 +280,8 @@ public class SlimUDTF extends UDTFWithOptions {
 
         if (itemI != _previousItemId || _ri == null) {
             // cache Ri and kNNi
-            this._ri = int2floatMap(itemI, riOI.getMap(args[1]), riKeyOI, riValueOI, _dataMatrix,
-                _ri);
+            this._ri =
+                    int2floatMap(itemI, riOI.getMap(args[1]), riKeyOI, riValueOI, _dataMatrix, _ri);
             this._kNNi = kNNentries(args[2], knnItemsOI, knnItemsKeyOI, knnItemsValueOI,
                 knnItemsValueKeyOI, knnItemsValueValueOI, _kNNi, _nnzKNNi);
 
@@ -293,7 +293,8 @@ public class SlimUDTF extends UDTFWithOptions {
         }
 
         int itemJ = PrimitiveObjectInspectorUtils.getInt(args[3], itemJOI);
-        Int2FloatMap rj = int2floatMap(itemJ, rjOI.getMap(args[4]), rjKeyOI, rjValueOI, _dataMatrix);
+        Int2FloatMap rj =
+                int2floatMap(itemJ, rjOI.getMap(args[4]), rjKeyOI, rjValueOI, _dataMatrix);
 
         train(itemI, _ri, _kNNi, itemJ, rj);
         _observedTrainingExamples++;
@@ -312,8 +313,8 @@ public class SlimUDTF extends UDTFWithOptions {
                 file = File.createTempFile("hivemall_slim", ".sgmt"); // to save KNN data
                 file.deleteOnExit();
                 if (!file.canWrite()) {
-                    throw new UDFArgumentException("Cannot write a temporary file: "
-                            + file.getAbsolutePath());
+                    throw new UDFArgumentException(
+                        "Cannot write a temporary file: " + file.getAbsolutePath());
                 }
             } catch (IOException ioe) {
                 throw new UDFArgumentException(ioe);
@@ -336,13 +337,13 @@ public class SlimUDTF extends UDTFWithOptions {
         buf.putInt(itemI);
         buf.putInt(knnItems.size());
 
-        for (Int2ObjectMap.Entry<Int2FloatMap> e1 : Int2ObjectMaps.fastIterable(knnItems)) {
+        for (Int2ObjectMap.Entry<Int2FloatMap> e1 : Fastutil.fastIterable(knnItems)) {
             int user = e1.getIntKey();
             buf.putInt(user);
 
             Int2FloatMap ru = e1.getValue();
             buf.putInt(ru.size());
-            for (Int2FloatMap.Entry e2 : Int2FloatMaps.fastIterable(ru)) {
+            for (Int2FloatMap.Entry e2 : Fastutil.fastIterable(ru)) {
                 buf.putInt(e2.getIntKey());
                 buf.putFloat(e2.getFloatValue());
             }
@@ -374,10 +375,10 @@ public class SlimUDTF extends UDTFWithOptions {
         double rateSum = 0.d;
         double lossSum = 0.d;
 
-        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(rj)) {
+        for (Int2FloatMap.Entry e : Fastutil.fastIterable(rj)) {
             int user = e.getIntKey();
             double ruj = e.getFloatValue();
-            double rui = ri.getOrDefault(user, 0.f);
+            double rui = ri.get(user); // ri.getOrDefault(user, 0.f);
 
             double eui = rui - predict(user, itemI, kNNi, itemJ, W);
             gradSum += ruj * eui;
@@ -440,7 +441,7 @@ public class SlimUDTF extends UDTFWithOptions {
         }
 
         double pred = 0.d;
-        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(kNNu)) {
+        for (Int2FloatMap.Entry e : Fastutil.fastIterable(kNNu)) {
             final int itemK = e.getIntKey();
             if (itemK == excludeIndex) {
                 continue;
@@ -451,8 +452,8 @@ public class SlimUDTF extends UDTFWithOptions {
         return pred;
     }
 
-    private static double getUpdateTerm(final double gradSum, final double rateSum,
-            final double l1, final double l2) {
+    private static double getUpdateTerm(final double gradSum, final double rateSum, final double l1,
+            final double l2) {
         double update = 0.d;
         if (Math.abs(gradSum) > l1) {
             if (gradSum > 0.d) {
@@ -494,8 +495,8 @@ public class SlimUDTF extends UDTFWithOptions {
         assert (dst != null);
 
         final Reporter reporter = getReporter();
-        final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-            "hivemall.recommend.slim$Counter", "iteration");
+        final Counters.Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.recommend.slim$Counter", "iteration");
 
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file
@@ -518,13 +519,12 @@ public class SlimUDTF extends UDTFWithOptions {
                         break;
                     }
                 }
-                logger.info("Performed "
-                        + _cvState.getCurrentIteration()
-                        + " iterations of "
+                logger.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(_observedTrainingExamples)
                         + " training examples on memory (thus "
-                        + NumberUtils.formatNumber(_observedTrainingExamples
-                                * _cvState.getCurrentIteration()) + " training updates in total) ");
+                        + NumberUtils.formatNumber(
+                            _observedTrainingExamples * _cvState.getCurrentIteration())
+                        + " training updates in total) ");
 
             } else { // read training examples in the temporary file and invoke train for each example
                 // write KNNi in buffer to a temporary file
@@ -535,17 +535,16 @@ public class SlimUDTF extends UDTFWithOptions {
                 try {
                     dst.flush();
                 } catch (IOException e) {
-                    throw new HiveException("Failed to flush a file: "
-                            + dst.getFile().getAbsolutePath(), e);
+                    throw new HiveException(
+                        "Failed to flush a file: " + dst.getFile().getAbsolutePath(), e);
                 }
 
                 if (logger.isInfoEnabled()) {
                     File tmpFile = dst.getFile();
-                    logger.info("Wrote KNN entries of axis items to a temporary file for iterative training: "
-                            + tmpFile.getAbsolutePath()
-                            + " ("
-                            + FileUtils.prettyFileSize(tmpFile)
-                            + ")");
+                    logger.info(
+                        "Wrote KNN entries of axis items to a temporary file for iterative training: "
+                                + tmpFile.getAbsolutePath() + " ("
+                                + FileUtils.prettyFileSize(tmpFile) + ")");
                 }
 
                 // run iterations
@@ -562,8 +561,8 @@ public class SlimUDTF extends UDTFWithOptions {
                         try {
                             bytesRead = dst.read(buf);
                         } catch (IOException e) {
-                            throw new HiveException("Failed to read a file: "
-                                    + dst.getFile().getAbsolutePath(), e);
+                            throw new HiveException(
+                                "Failed to read a file: " + dst.getFile().getAbsolutePath(), e);
                         }
                         if (bytesRead == 0) { // reached file EOF
                             break;
@@ -594,13 +593,12 @@ public class SlimUDTF extends UDTFWithOptions {
                         break;
                     }
                 }
-                logger.info("Performed "
-                        + _cvState.getCurrentIteration()
-                        + " iterations of "
+                logger.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(_observedTrainingExamples)
                         + " training examples on memory and KNNi data on secondary storage (thus "
-                        + NumberUtils.formatNumber(_observedTrainingExamples
-                                * _cvState.getCurrentIteration()) + " training updates in total) ");
+                        + NumberUtils.formatNumber(
+                            _observedTrainingExamples * _cvState.getCurrentIteration())
+                        + " training updates in total) ");
 
             }
         } catch (Throwable e) {
@@ -610,8 +608,8 @@ public class SlimUDTF extends UDTFWithOptions {
             try {
                 dst.close(true);
             } catch (IOException e) {
-                throw new HiveException("Failed to close a file: "
-                        + dst.getFile().getAbsolutePath(), e);
+                throw new HiveException(
+                    "Failed to close a file: " + dst.getFile().getAbsolutePath(), e);
             }
             this._inputBuf = null;
             this._fileIO = null;
@@ -723,15 +721,16 @@ public class SlimUDTF extends UDTFWithOptions {
     @Nonnull
     private static Int2FloatMap int2floatMap(final int item, @Nonnull final Map<?, ?> map,
             @Nonnull final PrimitiveObjectInspector keyOI,
-            @Nonnull final PrimitiveObjectInspector valueOI, @Nullable final FloatMatrix dataMatrix) {
+            @Nonnull final PrimitiveObjectInspector valueOI,
+            @Nullable final FloatMatrix dataMatrix) {
         return int2floatMap(item, map, keyOI, valueOI, dataMatrix, null);
     }
 
     @Nonnull
     private static Int2FloatMap int2floatMap(final int item, @Nonnull final Map<?, ?> map,
             @Nonnull final PrimitiveObjectInspector keyOI,
-            @Nonnull final PrimitiveObjectInspector valueOI,
-            @Nullable final FloatMatrix dataMatrix, @Nullable Int2FloatMap dst) {
+            @Nonnull final PrimitiveObjectInspector valueOI, @Nullable final FloatMatrix dataMatrix,
+            @Nullable Int2FloatMap dst) {
         if (dst == null) {
             dst = new Int2FloatOpenHashMap(map.size());
             dst.defaultReturnValue(0.f);

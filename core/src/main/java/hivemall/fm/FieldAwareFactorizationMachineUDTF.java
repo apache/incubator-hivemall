@@ -19,13 +19,13 @@
 package hivemall.fm;
 
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
+import hivemall.utils.collections.Fastutil;
 import hivemall.utils.collections.arrays.DoubleArray3D;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.math.MathUtils;
 import it.unimi.dsi.fastutil.ints.Int2LongMap;
-import it.unimi.dsi.fastutil.ints.Int2LongMaps;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -56,8 +56,7 @@ import org.apache.hadoop.io.Text;
  * @link https://www.csie.ntu.edu.tw/~cjlin/libffm/
  * @since v0.5-rc.1
  */
-@Description(
-        name = "train_ffm",
+@Description(name = "train_ffm",
         value = "_FUNC_(array<string> x, double y [, const string options]) - Returns a prediction model")
 public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachineUDTF {
     private static final Log LOG = LogFactory.getLog(FieldAwareFactorizationMachineUDTF.class);
@@ -86,7 +85,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         Options opts = super.getOptions();
         opts.addOption("w0", "global_bias", false,
             "Whether to include global bias term w0 [default: OFF]");
-        opts.addOption("disable_wi", "no_coeff", false, "Not to include linear term [default: OFF]");
+        opts.addOption("disable_wi", "no_coeff", false,
+            "Not to include linear term [default: OFF]");
         // feature hashing
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default: -1]. No feature hashing for -1.");
@@ -101,10 +101,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             "Alpha value (learning rate) of Follow-The-Regularized-Reader [default: 0.2]");
         opts.addOption("beta", "betaFTRL", true,
             "Beta value (a learning smoothing parameter) of Follow-The-Regularized-Reader [default: 1.0]");
-        opts.addOption(
-            "l1",
-            "lambda1",
-            true,
+        opts.addOption("l1", "lambda1", true,
             "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.001]");
         opts.addOption("l2", "lambda2", true,
             "L2 regularization value of Follow-The-Regularized-Reader [default: 0.0001]");
@@ -157,7 +154,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
         fieldNames.add("Vi");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -297,7 +295,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         final Entry entryV = new Entry(_ffmModel._buf, _ffmModel._factor);
         final float[] Vf = new float[factors];
 
-        for (Int2LongMap.Entry e : Int2LongMaps.fastIterable(_ffmModel._map)) {
+        for (Int2LongMap.Entry e : Fastutil.fastIterable(_ffmModel._map)) {
             // set i
             final int i = e.getIntKey();
             idx.set(i);

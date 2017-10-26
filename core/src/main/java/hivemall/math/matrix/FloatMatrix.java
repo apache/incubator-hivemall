@@ -39,7 +39,8 @@ public interface FloatMatrix extends Matrix {
      * @throws IndexOutOfBoundsException
      * @throws UnsupportedOperationException
      */
-    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value);
+    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col,
+            final float value);
 
     /**
      * @return returns dst
@@ -47,22 +48,24 @@ public interface FloatMatrix extends Matrix {
     @Nonnull
     public float[] getRow(@Nonnegative int index, @Nonnull float[] dst);
 
+    /*
     @Override
     default double get(@Nonnegative final int row, @Nonnegative final int col,
             final double defaultValue) {
         return get(row, col, (float) defaultValue);
     }
-
+    
     @Override
     default void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         set(row, col, (float) value);
     }
-
+    
     @Override
     default double getAndSet(@Nonnegative final int row, @Nonnegative final int col,
             final double value) {
         return getAndSet(row, col, (float) value);
     }
+    */
 
     @Override
     public RowMajorFloatMatrix toRowMajorMatrix();

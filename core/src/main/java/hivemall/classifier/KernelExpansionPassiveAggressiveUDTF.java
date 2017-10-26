@@ -24,10 +24,10 @@ import hivemall.model.FeatureValue;
 import hivemall.model.PredictionModel;
 import hivemall.model.PredictionResult;
 import hivemall.optimizer.LossFunctions;
+import hivemall.utils.collections.Fastutil;
 import hivemall.utils.hashing.HashFunction;
 import hivemall.utils.lang.Preconditions;
 import it.unimi.dsi.fastutil.ints.Int2FloatMap;
-import it.unimi.dsi.fastutil.ints.Int2FloatMaps;
 import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 
 import java.util.ArrayList;
@@ -116,7 +116,8 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
             if (c_str != null) {
                 c = Float.parseFloat(c_str);
                 if (c <= 0.f) {
-                    throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: " + c);
+                    throw new UDFArgumentException(
+                        "Aggressiveness parameter C must be C > 0: " + c);
                 }
             }
             algo = cl.getOptionValue("algo", algo);
@@ -353,7 +354,7 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
         row[2] = w1;
         row[3] = w2;
         final Int2FloatMap w2map = _w2;
-        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(_w1)) {
+        for (Int2FloatMap.Entry e : Fastutil.fastIterable(_w1)) {
             int k = e.getIntKey();
             Preconditions.checkArgument(k > 0, HiveException.class);
             h.set(k);
@@ -370,7 +371,8 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
         row[4] = hk;
         row[5] = w3;
 
-        for (Int2FloatMap.Entry e : Int2FloatMaps.fastIterable(_w3)) {
+        _w3.int2FloatEntrySet();
+        for (Int2FloatMap.Entry e : Fastutil.fastIterable(_w3)) {
             int k = e.getIntKey();
             Preconditions.checkArgument(k > 0, HiveException.class);
             hk.set(k);

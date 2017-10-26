@@ -22,7 +22,7 @@ Prerequisites
 
 * Hadoop v2.4.0 or later
 * Hive v0.13 or later
-* Java 8 or later (Java 7 in v0.4.2 or before)
+* Java 7 or later
 * [hivemall-core-xxx-with-dependencies.jar](https://github.com/myui/hivemall/releases)
 * [define-all.hive](https://github.com/myui/hivemall/releases)
 

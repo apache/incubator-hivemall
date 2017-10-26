@@ -61,8 +61,8 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
     public DoKFloatMatrix(@Nonnegative int numRows, @Nonnegative int numCols,
             @Nonnegative float sparsity) {
         super();
-        Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f, "Invalid Sparsity value: "
-                + sparsity);
+        Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f,
+            "Invalid Sparsity value: " + sparsity);
         int initialCapacity = Math.max(16384, Math.round(numRows * numCols * sparsity));
         this.elements = new Long2FloatOpenHashTable(initialCapacity);
         elements.defaultReturnValue(0.f);
@@ -205,7 +205,8 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
     }
 
     @Override
-    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value) {
+    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col,
+            final float value) {
         checkIndex(row, col);
 
         final long index = index(row, col);
@@ -396,6 +397,23 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
     @Nonnegative
     private static long index(@Nonnegative final int row, @Nonnegative final int col) {
         return Primitives.toLong(row, col);
+    }
+
+    @Override
+    public double get(@Nonnegative final int row, @Nonnegative final int col,
+            final double defaultValue) {
+        return get(row, col, (float) defaultValue);
+    }
+
+    @Override
+    public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
+        set(row, col, (float) value);
+    }
+
+    @Override
+    public double getAndSet(@Nonnegative final int row, @Nonnegative final int col,
+            final double value) {
+        return getAndSet(row, col, (float) value);
     }
 
 }
