@@ -406,6 +406,11 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
             @Nonnull
             Pair<List<Object>, List<Object>> drainQueue() {
+                if (queueHandler == null) {
+                    return Pair.of((List<Object>) new ArrayList<Object>(),
+                        (List<Object>) new ArrayList<Object>());
+                }
+
                 int n = queueHandler.size();
                 final Object[] keys = new Object[n];
                 final Object[] values = new Object[n];
