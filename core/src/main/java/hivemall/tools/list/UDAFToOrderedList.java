@@ -311,11 +311,11 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
 
             Pair<List<Object>, List<Object>> tuples = myagg.drainQueue();
-            List<Object> keyList = tuples.getKey();
-            List<Object> valueList = tuples.getValue();
-            if (valueList.isEmpty()) {
+            if (tuples == null) {
                 return null;
             }
+            List<Object> keyList = tuples.getKey();
+            List<Object> valueList = tuples.getValue();
 
             Object[] partialResult = new Object[4];
             partialResult[0] = valueList;
@@ -363,6 +363,9 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 throws HiveException {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
             Pair<List<Object>, List<Object>> tuples = myagg.drainQueue();
+            if (tuples == null) {
+                return null;
+            }
             return tuples.getValue();
         }
 
@@ -404,8 +407,12 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 }
             }
 
-            @Nonnull
+            @Nullable
             Pair<List<Object>, List<Object>> drainQueue() {
+                if (queueHandler == null) {
+                    return null;
+                }
+
                 int n = queueHandler.size();
                 final Object[] keys = new Object[n];
                 final Object[] values = new Object[n];

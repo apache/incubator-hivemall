@@ -339,4 +339,43 @@ public class UDAFToOrderedListTest {
         Assert.assertEquals("banana", res.get(1));
     }
 
+    @Test
+    public void testNullOnly() throws Exception {
+        ObjectInspector[] inputOIs = new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
+
+        final String[] values = new String[] {null, null, null};
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i]});
+        }
+
+        List<Object> res = evaluator.terminate(agg);
+
+        Assert.assertNull(res);
+    }
+
+    @Test
+    public void testNullMixed() throws Exception {
+        ObjectInspector[] inputOIs = new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
+
+        final String[] values = new String[] {"banana", "apple", null, "candy"};
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i]});
+        }
+
+        List<Object> res = evaluator.terminate(agg);
+
+        Assert.assertEquals(3, res.size());
+        Assert.assertEquals("apple", res.get(0));
+        Assert.assertEquals("banana", res.get(1));
+        Assert.assertEquals("candy", res.get(2));
+    }
+
 }
