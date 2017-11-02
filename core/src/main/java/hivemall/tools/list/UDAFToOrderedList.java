@@ -407,6 +407,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 }
             }
 
+            @Nullable
             Pair<List<Object>, List<Object>> drainQueue() {
                 if (queueHandler == null) {
                     return null;
