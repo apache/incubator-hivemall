@@ -243,6 +243,37 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- mvn com.google.code.maven-replacer-plugin:replacer:replace -->
+			<plugin>
+				<groupId>com.google.code.maven-replacer-plugin</groupId>
+				<artifactId>replacer</artifactId>
+				<version>1.5.3</version>
+				<executions>
+					<execution>
+						<id>replace-version-number</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>replace</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<basedir>${project.basedir}</basedir>
+					<includes>
+						<include>src/main/java/hivemall/HivemallConstants.java</include>
+					</includes>
+					<preserveDir>true</preserveDir>
+					<regex>true</regex>
+					<replacements>
+						<replacement>
+							<token>VERSION = ".*"</token>
+							<value>VERSION = "${project.version}"</value>
+						</replacement>
+					</replacements>
+				</configuration>
+			</plugin>
+
 		</plugins>
 	</build>
 
