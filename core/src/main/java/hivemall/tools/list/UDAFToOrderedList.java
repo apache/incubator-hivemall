@@ -364,7 +364,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
             Pair<List<Object>, List<Object>> tuples = myagg.drainQueue();
             if (tuples == null) {
-                return new ArrayList<Object>();
+                return null;
             }
             return tuples.getValue();
         }
