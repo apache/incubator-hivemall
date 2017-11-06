@@ -152,7 +152,7 @@ Use pientry to omit typing a passphrase for each commit.
 
 	```sh
 	$ echo "pinentry-program /usr/local/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
-	$ echo "no-tty" >> ~/.gnupg/gpg.conf
+	$ echo -e "use-agent\nno-tty" >> ~/.gnupg/gpg.conf
 	```
 
 Tip: You may get an error about a passphrase not being provided when signing with git.  If this happens try running the command below, which should case the passphrase prompt to show in the terminal.
