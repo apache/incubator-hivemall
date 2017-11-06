@@ -36,7 +36,7 @@
 	<licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
-			<url>http://opensource.org/licenses/Apache-2.0</url>
+			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
@@ -522,6 +522,12 @@
 						</execution>
 					</executions>
 				</plugin>
+				<!-- mvn apache-rat:check -->
+				<plugin>
+					<groupId>org.apache.rat</groupId>
+					<artifactId>apache-rat-plugin</artifactId>
+					<version>0.12</version>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 
@@ -666,6 +672,22 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<!-- mvn apache-rat:check -->
+			<plugin>
+			  <groupId>org.apache.rat</groupId>
+			  <artifactId>apache-rat-plugin</artifactId>
+			  <configuration>
+			    <excludesFile>.rat-excludes</excludesFile>
+			  </configuration>
+			  <executions>
+			    <execution>
+			      <phase>verify</phase>
+			      <goals>
+			        <goal>check</goal>
+			      </goals>
+			    </execution>
+			  </executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -1,0 +1,27 @@
+# Dotfiles
+.*/**
+**/.*
+**/.*/**
+
+**/*.txt
+**/*.csv
+**/*.tsv
+**/*.css
+**/*.svg
+**/*.avro
+**/*.seq
+**/*.json
+
+# eclipse
+**/*.prefs
+
+VERSION
+**/target/**
+**/META-INF/**
+
+# hivemall specific entries
+conf/MIXSERV_LIST
+resources/eclipse-style.xml
+**/*.hive
+**/*.spark
+**/*.hql
