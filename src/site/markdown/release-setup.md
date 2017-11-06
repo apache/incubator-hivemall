@@ -39,7 +39,7 @@ You would need the following softwares for building and making a release:
 
 	```sh
 	# on Mac
-	brew install gpg gpg-agent
+	brew install gpg gpg-agent pinentry-mac
 	brew intall svn
 	brew install maven
 	```
@@ -147,6 +147,13 @@ If you are using gpg, you'll then need to tell git to use it.
 You can enable GPG signing always true on the particular git repository by:
 
 	`$ git config commit.gpgsign true`
+
+Use pientry to omit typing a passphrase for each commit.
+
+	```sh
+	$ echo "pinentry-program /usr/local/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
+	$ echo "no-tty" >> ~/.gnupg/gpg.conf
+	```
 
 Tip: You may get an error about a passphrase not being provided when signing with git.  If this happens try running the command below, which should case the passphrase prompt to show in the terminal.
 
