@@ -80,8 +80,6 @@ public class SortByFeatureUDFWrapper extends GenericUDF {
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         assert (arguments.length == 1);
-        final Object arrayObject = arguments[0].get();
-        final MapObjectInspector arrayOI = argumentOI;
         @SuppressWarnings("unchecked")
         final Map<IntWritable, FloatWritable> input = (Map<IntWritable, FloatWritable>) argumentOI.getMap(arguments[0].get());
         return udf.evaluate(input);

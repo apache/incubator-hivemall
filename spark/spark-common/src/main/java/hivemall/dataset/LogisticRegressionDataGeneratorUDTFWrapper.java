@@ -18,6 +18,8 @@
  */
 package hivemall.dataset;
 
+import hivemall.UDTFWithOptions;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Random;
@@ -32,8 +34,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
-import hivemall.UDTFWithOptions;
-
 /**
  * A wrapper of [[hivemall.dataset.LogisticRegressionDataGeneratorUDTF]]. This wrapper is needed
  * because Spark cannot handle HadoopUtils#getTaskId() correctly.
@@ -41,7 +41,8 @@ import hivemall.UDTFWithOptions;
 @Description(name = "lr_datagen",
         value = "_FUNC_(options string) - Generates a logistic regression dataset")
 public final class LogisticRegressionDataGeneratorUDTFWrapper extends UDTFWithOptions {
-    private transient LogisticRegressionDataGeneratorUDTF udtf = new LogisticRegressionDataGeneratorUDTF();
+    private transient LogisticRegressionDataGeneratorUDTF udtf =
+            new LogisticRegressionDataGeneratorUDTF();
 
     @Override
     protected Options getOptions() {
@@ -56,6 +57,7 @@ public final class LogisticRegressionDataGeneratorUDTFWrapper extends UDTFWithOp
         return options;
     }
 
+    @SuppressWarnings("all")
     @Override
     protected CommandLine processOptions(ObjectInspector[] objectInspectors)
             throws UDFArgumentException {
