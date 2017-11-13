@@ -236,12 +236,6 @@
 		</developer>
 	</developers>
 
-	<!--
-	<contributors>
-		<contributor>
-		</contributor>
-	</contributors>
-	-->
 	<packaging>pom</packaging>
 
 	<modules>
@@ -275,6 +269,15 @@
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
+
+	<issueManagement>
+		<url>https://issues.apache.org/jira/browse/HIVEMALL/</url>
+		<system>JIRA</system>
+	</issueManagement>
+	<ciManagement>
+		<system>Travis CI</system>
+		<url>https://travis-ci.org/apache/incubator-hivemall</url>
+	</ciManagement>
 
 	<profiles>
 		<profile>
@@ -343,24 +346,24 @@
 				<spark.binary.version>2.0</spark.binary.version>
 			</properties>
 		</profile>
-        <profile>
-            <id>java7</id>
-            <properties>
-                <spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:PermSize=128m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
-            </properties>
-            <activation>
-                <jdk>[,1.8)</jdk> <!-- version < 1.8 -->
-            </activation>
-        </profile>
-        <profile>
-            <id>java8</id>
-            <properties>
-                <spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
-            </properties>
-            <activation>
-                <jdk>[1.8,)</jdk> <!-- version >= 1.8 -->
-            </activation>
-        </profile>
+		<profile>
+			<id>java7</id>
+			<properties>
+				<spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:PermSize=128m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
+			</properties>
+			<activation>
+				<jdk>[,1.8)</jdk> <!-- version < 1.8 -->
+			</activation>
+		</profile>
+		<profile>
+			<id>java8</id>
+			<properties>
+				<spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
+			</properties>
+			<activation>
+				<jdk>[1.8,)</jdk> <!-- version >= 1.8 -->
+			</activation>
+		</profile>
 		<profile>
 			<id>compile-xgboost</id>
 			<build>
@@ -675,49 +678,21 @@
 			</plugin>
 			<!-- mvn apache-rat:check -->
 			<plugin>
-			  <groupId>org.apache.rat</groupId>
-			  <artifactId>apache-rat-plugin</artifactId>
-			  <configuration>
-			    <excludesFile>.rat-excludes</excludesFile>
-			  </configuration>
-			  <executions>
-			    <execution>
-			      <phase>verify</phase>
-			      <goals>
-			        <goal>check</goal>
-			      </goals>
-			    </execution>
-			  </executions>
+				<groupId>org.apache.rat</groupId>
+				<artifactId>apache-rat-plugin</artifactId>
+				<configuration>
+					<excludesFile>.rat-excludes</excludesFile>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
-
-    <!-- 
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-changes-plugin</artifactId>
-				<version>2.12</version>
-				<reportSets>
-					<reportSet>
-						<reports>
-							<report>changes-report</report>
-						</reports>
-					</reportSet>
-				</reportSets>
-			</plugin>
-		</plugins>
-	</reporting>
-    -->
-
-	<issueManagement>
-		<url>https://issues.apache.org/jira/browse/HIVEMALL/</url>
-		<system>JIRA</system>
-	</issueManagement>
-	<ciManagement>
-		<system>Travis CI</system>
-		<url>https://travis-ci.org/apache/incubator-hivemall</url>
-	</ciManagement>
 
 </project>
