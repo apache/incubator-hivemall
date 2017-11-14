@@ -17,8 +17,6 @@
   under the License.
 -->
 
-<!-- toc -->
-
 # Release Prerequisites
 
 This document describes the initial setup procedures for making a release of Apache Hivemall.
@@ -33,22 +31,21 @@ You would need the following softwares for building and making a release:
 - git client
 - svn client (_svn is still mandatory in the ASF distribution process. Don't ask me why._)
 - JDK 7 (_not JDK 8 nor 9 to support Java 7 or later_)
-- maven
+- maven (>=v3.3.1)
 
 ### Installation
 
-	```sh
 	# on Mac
-	brew install gpg gpg-agent pinentry-mac
-	brew intall svn
-	brew install maven
-	```
+	$ brew install gpg gpg-agent pinentry-mac
+	$ brew intall svn
+	$ brew install maven
+	$ brew install npm
+	$ npm install gitbook-cli -g
 
 ### Java 7 setup (Optional)
 
 We recommend to use [jEnv](http://www.jenv.be/) for Java 7 environment setup on Mac OS X.
 
-	```sh
 	$ /usr/libexec/java_home -v 1.7
 	  /Library/Java/JavaVirtualMachines/jdk1.7.0_80.jdk/Contents/Home
 	$ jenv add `/usr/libexec/java_home -v 1.7`
@@ -63,7 +60,6 @@ We recommend to use [jEnv](http://www.jenv.be/) for Java 7 environment setup on 
 	$ jenv local 1.7
 	$ java -version
 	  java version "1.7.0_80"
-	```
 
 ## PGP signing
 
@@ -74,34 +70,31 @@ In a nutshell, you'll need to follow the instructions at [How To OpenPGP](http:/
 
 ### Setting up signing keys
 
-1. Generate a key-pair with gpg using [this instruction](http://www.apache.org/dev/openpgp.html#key-gen-generate-key). The program's default values should be fine. Please use a signing key with an ASF email address (i.e. your-alias@apache.org). Generated Keys should be RSA with at least 4096 bits.
+1). Generate a key-pair with gpg using [this instruction](http://www.apache.org/dev/openpgp.html#key-gen-generate-key). The program's default values should be fine. Please use a signing key with an ASF email address (i.e. your-alias@apache.org). Generated Keys should be RSA with at least 4096 bits.
 
-	`$ gpg --full-generate-key`
+	$ gpg --full-generate-key
 
-	Here is my key.
+Here is my key.
 
-	```
 	$ gpg --list-key --keyid-format LONG
 	
 	pub   rsa4096/93F4D08DC8CE801B 2017-11-01 [SC]
 	      7A6BA1A10CC6ABF47159152193F4D08DC8CE801B
 	uid                 [ultimate] Makoto Yui (CODE SIGNING KEY) <myui@apache.org>
 	sub   rsa4096/C3F1C8E219A64221 2017-11-01 [E]
-	```
 
-	Public key is `93F4D08DC8CE801B` in the above case.
+Public key is `93F4D08DC8CE801B` in the above case.
 
-2. Send your public PGP key to a public keyserver.
+2). Send your public PGP key to a public keyserver.
 
-	`$ gpg --keyserver pgp.mit.edu --send-keys <your-public-pgp-key>`
+	$ gpg --keyserver pgp.mit.edu --send-keys <your-public-pgp-key>
 
-3. Update the PGP key fingerprint of your account on [id.apache.org](http://id.apache.org). Find your PGP key fingerprint by 
+3). Update the PGP key fingerprint of your account on [id.apache.org](http://id.apache.org). Find your PGP key fingerprint by 
 
-	`$ gpg --fingerprint`
+	$ gpg --fingerprint
 
-4. Update KEYS file in the git repo to your public key be listed in it.
+4). Update KEYS file in the git repo to your public key be listed in it.
 
-	```sh
 	$ export YOUR_NAME="Makoto Yui"
 	$ (gpg --list-sigs ${YOUR_NAME} && gpg --armor --export ${YOUR_NAME} && echo) >> KEYS
 	
@@ -109,13 +102,12 @@ In a nutshell, you'll need to follow the instructions at [How To OpenPGP](http:/
 	$ git add KEYS
 	$ git commit -m "Added the public key of YOUR NAME"
 	$ git push origin master
-	```
-5. Add your public key to KEYS file in the subversion repository:
+
+5). Add your public key to KEYS file in the subversion repository:
 
 	- dev: https://dist.apache.org/repos/dist/dev/hivemall/KEYS
 	- release: https://dist.apache.org/repos/dist/release/hivemall/KEYS
 
-	```sh
 	# checkout dist repos
 	$ svn co --depth immediates https://dist.apache.org/repos/dist dist
 	$ cd dist
@@ -125,9 +117,8 @@ In a nutshell, you'll need to follow the instructions at [How To OpenPGP](http:/
 	# edit KEYS files
 	$ svn add * --force
 	$ svn ci -m "Updated KEYS file of Incubator Hivemall" && svn up
-	```
 
-6. Once you have followed these instructions, you should have:
+6). Once you have followed these instructions, you should have:
 
 	* Your public key viewable at https://people.apache.org/keys/committer/your-asf-id.asc
 	* Your public key also viewable at https://people.apache.org/keys/group/hivemall.asc
@@ -138,24 +129,22 @@ After completing this, you should also [configure git](https://git-scm.com/book/
 
 If your signing key is identified by `01234567`, then you can configure git with:
 
-    `$ git config --global user.signingkey 01234567`
+    $ git config --global user.signingkey 01234567
 
 If you are using gpg, you'll then need to tell git to use it.
 
-    `$ git config --global gpg.program gpg`
+    $ git config --global gpg.program gpg
 
 You can enable GPG signing always true on the particular git repository by:
 
-	`$ git config commit.gpgsign true`
+	$ git config commit.gpgsign true
 
 Use pientry to omit typing a passphrase for each commit.
 
-	```sh
 	$ echo "pinentry-program /usr/local/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
 	$ echo -e "use-agent\nno-tty" >> ~/.gnupg/gpg.conf
-	```
 
-Tip: You may get an error about a passphrase not being provided when signing with git.  If this happens try running the command below, which should case the passphrase prompt to show in the terminal.
+Tips: You may get an error about a passphrase not being provided when signing with git.  If this happens try running the command below, which should case the passphrase prompt to show in the terminal.
 
     export GPG_TTY=`tty`
 

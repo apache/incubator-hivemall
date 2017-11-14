@@ -25,7 +25,7 @@
 	<skin>
 		<groupId>org.apache.maven.skins</groupId>
 		<artifactId>maven-fluido-skin</artifactId>
-		<version>1.5</version>
+		<version>1.6</version>
 	</skin>
 
 	<custom>
@@ -42,7 +42,7 @@
 			</topBarIcon>
 			-->
 			<sideBarEnabled>false</sideBarEnabled>
-			<sourceLineNumbersEnabled>true</sourceLineNumbersEnabled>
+			<sourceLineNumbersEnabled>false</sourceLineNumbersEnabled>
 			<gitHub>
 				<projectId>apache/incubator-hivemall</projectId>
 				<ribbonOrientation>right</ribbonOrientation>
@@ -96,6 +96,7 @@
             <item name="Source (Git)" href="/repository.html" />
             <item name="Travis CI" href="https://travis-ci.org/apache/incubator-hivemall" target="_blank" />
             <item name="Contributing" href="/contributing.html" />
+            <item name="Release Guide" href="/release-guide.html" />
 		</menu>
 
 		<!-- <menu ref="reports" inherit="top" /> -->

@@ -17,6 +17,23 @@
   under the License.
 -->
 
-No release in Apache Incubator yet.
+# Release History
 
-Past releases of Hivemall can be found in [this page](https://github.com/myui/hivemall/releases).
+Detailed ChangeLog of each version can be found in the JIRA link.
+
+| RELEASE | DATE | DESCRIPTION | COMMIT | DOWNLOAD |
+|:-|:-|:-|:-|
+| [0.5.0](https://issues.apache.org/jira/secure/ReleaseNote.jspa?projectId=12320630&amp;version=12342155) | 2017-11-xx | The first Apache release. There are tremendous changes since [v0.4.2-rc.2](https://github.com/myui/hivemall/releases/tag/v0.4.2-rc.2) which is the last release before entering Apache Incubator. | xxxxxxx | tar (digest pgp)<br/>zip (digest pgp) |
+| .. | .. | .. | .. | .. |
+
+Past releases of Apache Hivemall can be found in [this page](https://github.com/myui/hivemall/releases).
+
+# Release plan
+
+Here is the release plan of Apache Hivemall. Date of release subject to change though.
+
+| Version | Date       | Description |
+|:-------:|:----------:|:-----------|
+| 0.5.2   | 2017-12-xx | • Support [Field-aware Factorization Machines](https://github.com/apache/incubator-hivemall/pull/105)<br/> • Support [Word2Vec](https://github.com/apache/incubator-hivemall/pull/116) |
+| 0.6     | 2018-02-xx (Q1) | • Make [experimental xgboost support](https://github.com/apache/incubator-hivemall/pull/95) official <br/> • Support [Multi-nominal Logistic Regression](https://github.com/apache/incubator-hivemall/pull/93)<br/> and more |
+| 0.7     | 2018-xx-xx (Q2~Q3) | • Prediction server with REST APIs |
