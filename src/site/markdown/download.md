@@ -22,7 +22,7 @@
 Detailed ChangeLog of each version can be found in the JIRA link.
 
 | RELEASE | DATE | DESCRIPTION | COMMIT | DOWNLOAD |
-|:-|:-|:-|:-|
+|:--------|:-----|:------------|:-------|:---------|
 | [0.5.0](https://issues.apache.org/jira/secure/ReleaseNote.jspa?projectId=12320630&amp;version=12342155) | 2017-11-xx | The first Apache release. There are tremendous changes since [v0.4.2-rc.2](https://github.com/myui/hivemall/releases/tag/v0.4.2-rc.2) which is the last release before entering Apache Incubator. | xxxxxxx | tar (digest pgp)<br/>zip (digest pgp) |
 | .. | .. | .. | .. | .. |
 
