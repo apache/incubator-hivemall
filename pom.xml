@@ -24,6 +24,12 @@
 	<artifactId>hivemall</artifactId>
 	<version>0.4.2-rc.2</version>
 
+	<parent>
+	  <groupId>org.apache</groupId>
+	  <artifactId>apache</artifactId>
+	  <version>18</version>
+	</parent>
+
 	<name>Apache Hivemall</name>
 	<description>Scalable Machine Learning Library for Apache Hive, Apache Spark, and Apache Pig</description>
 	<url>http://hivemall.incubator.apache.org/</url>
@@ -248,11 +254,14 @@
 	<properties>
 		<java.source.version>1.7</java.source.version>
 		<java.target.version>1.7</java.target.version>
+		<maven.compiler.source>1.7</maven.compiler.source>
+		<maven.compiler.target>1.7</maven.compiler.target>
 		<scala.version>2.11.8</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>
 		<maven.build.timestamp.format>yyyy</maven.build.timestamp.format>
 		<build.year>${maven.build.timestamp}</build.year>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<protobuf.version>2.5.0</protobuf.version>
 		<protoc.path>${env.PROTOC_PATH}</protoc.path>
 		<hadoop.version>2.4.0</hadoop.version>
@@ -262,14 +271,38 @@
 		<dependency.locations.enabled>false</dependency.locations.enabled>
 		<main.basedir>${project.basedir}</main.basedir>
 		<maven-enforcer-plugin.version>3.0.0-M1</maven-enforcer-plugin.version>
+		<surefire.version>2.19.1</surefire.version>
 	</properties>
 
 	<distributionManagement>
+		<repository>
+			<id>apache.releases.https</id>
+			<name>Apache Release Distribution Repository</name>
+			<url>https://repository.apache.org/service/local/staging/deploy/maven2</url>
+		</repository>
+		<snapshotRepository>
+			<id>apache.snapshots.https</id>
+			<name>Apache Development Snapshot Repository</name>
+			<url>https://repository.apache.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<!--
 		<snapshotRepository>
 			<id>ossrh</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
+		-->
 	</distributionManagement>
+
+	<repositories>
+		<repository>
+			<id>apache.snapshots</id>
+			<name>Apache Snapshot Repository</name>
+			<url>https://repository.apache.org/snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+	</repositories>
 
 	<issueManagement>
 		<url>https://issues.apache.org/jira/browse/HIVEMALL/</url>
@@ -539,7 +572,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>${maven-enforcer-plugin.version}</version>
 				<executions>
 					<execution>
 						<id>enforce-maven</id>
@@ -569,7 +601,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
-				<version>2.17</version>
 				<configuration>
 					<skipTests>${skipTests}</skipTests>
 				</configuration>
@@ -577,7 +608,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
 				<configuration>
 					<source>${java.source.version}</source>
 					<target>${java.target.version}</target>
@@ -589,7 +619,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.14.1</version>
 				<configuration>
 					<enableAssertions>true</enableAssertions>
 					<forkCount>1</forkCount>
@@ -663,7 +692,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
-				<version>3.5.1</version>
 				<dependencies>
 					<dependency>
 						<groupId>org.apache.maven.doxia</groupId>

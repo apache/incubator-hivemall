@@ -25,3 +25,5 @@ resources/eclipse-style.xml
 **/*.hive
 **/*.spark
 **/*.hql
+docs/gitbook/_book/**
+docs/gitbook/node_modules/**
