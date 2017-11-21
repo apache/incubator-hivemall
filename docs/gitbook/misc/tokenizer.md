@@ -16,7 +16,9 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
+
+<!-- toc -->
+
 # Tokenizer for English Texts
 
 Hivemall provides simple English text tokenizer UDF that has following syntax:
