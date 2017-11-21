@@ -712,3 +712,11 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION train_gradient_tree_boosting_classifie
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_slim")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_slim AS 'hivemall.recommend.SlimUDTF'")
+
+/**
+ * Data Sketch
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS approx_count_distinct")
+sqlContext.sql("CREATE TEMPORARY FUNCTION approx_count_distinct AS 'hivemall.sketch.hll.ApproxCountDistinctUDAF'")
+
