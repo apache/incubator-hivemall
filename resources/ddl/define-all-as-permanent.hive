@@ -735,6 +735,13 @@ CREATE FUNCTION guess_attribute_types as 'hivemall.smile.tools.GuessAttributesUD
 DROP FUNCTION IF EXISTS train_slim;
 CREATE FUNCTION train_slim as 'hivemall.recommend.SlimUDTF' USING JAR '${hivemall_jar}';
 
+-----------------
+-- Data Sketch --
+-----------------
+
+DROP FUNCTION IF EXISTS approx_count_distinct;
+CREATE FUNCTION approx_count_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF' USING JAR '${hivemall_jar}';
+
 ------------------------------
 -- XGBoost related features --
 ------------------------------
@@ -753,4 +760,3 @@ CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.tools.XGBoostPredictUDTF' U
 
 DROP FUNCTION xgboost_multiclass_predict;
 CREATE FUNCTION xgboost_multiclass_predict AS 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF' USING JAR '${hivemall_jar}';
-=======
