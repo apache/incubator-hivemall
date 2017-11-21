@@ -50,6 +50,7 @@
 * [List of generic Hivemall functions](misc/generic_funcs.md)
 * [Efficient Top-K query processing](misc/topk.md)
 * [Text Tokenizer](misc/tokenizer.md)
+* [Approximate Aggregate Functions](misc/approx.md)
 
 ## Part III - Feature Engineering
 

@@ -82,7 +82,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 "The second argument `array/int/boolean predicted` is invalid form: " + typeInfo[1]);
         }
 
-        if (typeInfo[0] != typeInfo[1]) {
+        if (!typeInfo[0].equals(typeInfo[1])) {
             throw new UDFArgumentTypeException(1, "The first argument `actual`'s type is "
                     + typeInfo[0] + ", but the second argument `predicted`'s type is not match: "
                     + typeInfo[1]);
@@ -158,7 +158,7 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
-                this.processOptions(parameters);
+                processOptions(parameters);
                 this.actualOI = parameters[0];
                 this.predictedOI = parameters[1];
             } else {// from partial aggregation

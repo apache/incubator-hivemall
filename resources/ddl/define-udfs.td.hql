@@ -156,7 +156,7 @@ create temporary function train_randomforest_regr as 'hivemall.smile.regression.
 create temporary function tree_predict as 'hivemall.smile.tools.TreePredictUDF';
 create temporary function rf_ensemble as 'hivemall.smile.tools.RandomForestEnsembleUDAF';
 create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAttributesUDF';
--- since Hivemall v0.5-rc.1
+-- since Hivemall v0.5
 create temporary function changefinder as 'hivemall.anomaly.ChangeFinderUDF';
 create temporary function sst as 'hivemall.anomaly.SingularSpectrumTransformUDF';
 create temporary function train_lda as 'hivemall.topicmodel.LDAUDTF';
@@ -183,6 +183,7 @@ create temporary function singularize as 'hivemall.tools.text.SingularizeUDF';
 create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
 create temporary function hitrate as 'hivemall.evaluation.HitRateUDAF';
 create temporary function word_ngrams as 'hivemall.tools.text.WordNgramsUDF';
+create temporary function approx_count_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
@@ -195,3 +196,6 @@ create temporary function arow_regress as 'hivemall.regression.AROWRegressionUDT
 create temporary function addBias as 'hivemall.ftvec.AddBiasUDF';
 create temporary function tree_predict_v1 as 'hivemall.smile.tools.TreePredictUDFv1';
 create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
+
+-- alias for TD
+create temporary function approx_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF';
