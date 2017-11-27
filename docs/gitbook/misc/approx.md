@@ -21,7 +21,7 @@
 
 # Approximate Counting using HyperLogLog
 
-`count(distinct value)` can often cause memory exhausted errors where input data and the cardinarity of value are large.
+`count(distinct value)` can often cause memory exhausted errors where input data and the cardinality of value are large.
 
 [HyperLogLog](https://en.wikipedia.org/wiki/HyperLogLog) is an efficient algorithm for approximating the number of distinct elements in a [multiset](https://en.wikipedia.org/wiki/Multiset). 
 Hivemall implements [HyperLogLog++](https://en.wikipedia.org/wiki/HyperLogLog#HLL.2B.2B) in `approx_count_distinct`.

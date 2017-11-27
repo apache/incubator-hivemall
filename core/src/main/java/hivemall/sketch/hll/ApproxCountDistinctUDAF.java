@@ -217,8 +217,8 @@ public final class ApproxCountDistinctUDAF extends AbstractGenericUDAFResolver {
         public LongWritable terminate(@Nonnull AggregationBuffer agg) throws HiveException {
             HLLBuffer buf = (HLLBuffer) agg;
 
-            long cardinarity = (buf.hll == null) ? 0L : buf.hll.cardinality();
-            return new LongWritable(cardinarity);
+            long cardinality = (buf.hll == null) ? 0L : buf.hll.cardinality();
+            return new LongWritable(cardinality);
         }
 
     }
