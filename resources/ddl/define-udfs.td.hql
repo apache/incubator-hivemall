@@ -49,6 +49,7 @@ create temporary function polynomial_features as 'hivemall.ftvec.pairing.Polynom
 create temporary function powered_features as 'hivemall.ftvec.pairing.PoweredFeaturesUDF';
 create temporary function rescale as 'hivemall.ftvec.scaling.RescaleUDF';
 create temporary function zscore as 'hivemall.ftvec.scaling.ZScoreUDF';
+create temporary function l1_normalize as 'hivemall.ftvec.scaling.L1NormalizationUDF';
 create temporary function l2_normalize as 'hivemall.ftvec.scaling.L2NormalizationUDF';
 create temporary function chi2 as 'hivemall.ftvec.selection.ChiSquareUDF';
 create temporary function snr as 'hivemall.ftvec.selection.SignalNoiseRatioUDAF';

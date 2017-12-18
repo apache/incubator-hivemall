@@ -18,22 +18,22 @@
  */
 package hivemall.ftvec.scaling;
 
-import static org.junit.Assert.assertEquals;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.math.MathUtils;
-
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.io.Text;
 import org.junit.Test;
 
-public class L2NormalizationUDFTest {
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+
+public class L1NormalizationUDFTest {
 
     @Test
     public void test() throws HiveException {
-        L2NormalizationUDF udf = new L2NormalizationUDF();
+        L1NormalizationUDF udf = new L1NormalizationUDF();
 
         assertEquals(null, udf.evaluate(null));
 
@@ -49,14 +49,14 @@ public class L2NormalizationUDFTest {
         assertEquals(WritableUtils.val(new String[] {"aaa:1.0"}),
             udf.evaluate(WritableUtils.val(new String[] {"aaa:1.0"})));
 
-        float l2norm = MathUtils.l2norm(new float[] {1.0f, 0.5f});
+        float[] normalized = MathUtils.l1normalize(new float[] {1.0f, 0.5f});
         assertEquals(
-            WritableUtils.val(new String[] {"aaa:" + 1.0f / l2norm, "bbb:" + 0.5f / l2norm}),
+            WritableUtils.val(new String[] {"aaa:" + normalized[0], "bbb:" + normalized[1]}),
             udf.evaluate(WritableUtils.val(new String[] {"aaa:1.0", "bbb:0.5"})));
 
-        l2norm = MathUtils.l2norm(new float[] {1.0f, -0.5f});
+        normalized = MathUtils.l1normalize(new float[] {1.0f, -0.5f});
         assertEquals(
-            WritableUtils.val(new String[] {"aaa:" + 1.0f / l2norm, "bbb:" + -0.5f / l2norm}),
+            WritableUtils.val(new String[] {"aaa:" + normalized[0], "bbb:" + normalized[1]}),
             udf.evaluate(WritableUtils.val(new String[] {"aaa:1.0", "bbb:-0.5"})));
 
         List<Text> expected = udf.evaluate(WritableUtils.val(new String[] {"bbb:-0.5", "aaa:1.0"}));

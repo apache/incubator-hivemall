@@ -207,6 +207,9 @@ create temporary function rescale as 'hivemall.ftvec.scaling.RescaleUDF';
 drop temporary function if exists zscore;
 create temporary function zscore as 'hivemall.ftvec.scaling.ZScoreUDF';
 
+drop temporary function if exists l1_normalize;
+create temporary function l1_normalize as 'hivemall.ftvec.scaling.L1NormalizationUDF';
+
 drop temporary function if exists l2_normalize;
 create temporary function l2_normalize as 'hivemall.ftvec.scaling.L2NormalizationUDF';
 

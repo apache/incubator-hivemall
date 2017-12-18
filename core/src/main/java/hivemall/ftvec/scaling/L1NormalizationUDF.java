@@ -18,27 +18,24 @@
  */
 package hivemall.ftvec.scaling;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.Text;
 
-/**
- * @see http://mathworld.wolfram.com/NormalizedVector.html
- */
-@Description(name = "l2_normalize", value = "_FUNC_(ftvec string) - Returned a L2 normalized value")
+import java.util.Arrays;
+import java.util.List;
+
+@Description(name = "l1_normalize", value = "_FUNC_(ftvec string) - Returned a L1 normalized value")
 @UDFType(deterministic = true, stateful = false)
-public final class L2NormalizationUDF extends UDF {
+public final class L1NormalizationUDF extends UDF {
 
     public List<Text> evaluate(final List<Text> ftvecs) throws HiveException {
         if (ftvecs == null) {
             return null;
         }
-        double squaredSum = 0.d;
+        double absoluteSum = 0.d;
         final int numFeatures = ftvecs.size();
         final String[] features = new String[numFeatures];
         final float[] weights = new float[numFeatures];
@@ -53,17 +50,17 @@ public final class L2NormalizationUDF extends UDF {
             if (ftlen == 1) {
                 features[i] = ft[0];
                 weights[i] = 1.f;
-                squaredSum += 1.d;
+                absoluteSum += 1.d;
             } else if (ftlen == 2) {
                 features[i] = ft[0];
                 float v = Float.parseFloat(ft[1]);
                 weights[i] = v;
-                squaredSum += (v * v);
+                absoluteSum += Math.abs(v);
             } else {
                 throw new HiveException("Invalid feature value representation: " + s);
             }
         }
-        final float norm = (float) Math.sqrt(squaredSum);
+        final float norm = (float) absoluteSum;
         final Text[] t = new Text[numFeatures];
         if (norm == 0.f) {
             for (int i = 0; i < numFeatures; i++) {
