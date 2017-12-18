@@ -39,11 +39,20 @@ If it is your first time doing an Apache release, then there is some initial set
 
 1. Create a release note in JIRA following [this instructions](https://confluence.atlassian.com/adminjiraserver071/creating-release-notes-802592502.html).
 
+## TEST YOUR SETTINGS
 
+Try installing locally artifacts with activation apache-release profile. The following command will build artifacts, sources and sign. 
 
-## Code Validation
+**Note:** _Apache Hivemall keeps compatibility to Java 7._
 
-	$ mvn apache-rat:check
+```sh
+$ export JAVA_HOME=`/usr/libexec/java_home -v 1.7`
+$ mvn validate -Pcompile-xgboost
+$ mvn clean install -Papache-release
+```
+
+License check by Apache RAT (`mvn apache-rat:check`) will be ran by the above command.
+
 
 ## Create a branch for release
 
