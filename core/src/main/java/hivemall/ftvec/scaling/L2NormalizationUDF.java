@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.Text;
 
@@ -33,7 +34,7 @@ import org.apache.hadoop.io.Text;
 @UDFType(deterministic = true, stateful = false)
 public final class L2NormalizationUDF extends UDF {
 
-    public List<Text> evaluate(final List<Text> ftvecs) {
+    public List<Text> evaluate(final List<Text> ftvecs) throws HiveException {
         if (ftvecs == null) {
             return null;
         }
@@ -59,7 +60,7 @@ public final class L2NormalizationUDF extends UDF {
                 weights[i] = v;
                 squaredSum += (v * v);
             } else {
-                throw new IllegalArgumentException("Invalid feature value representation: " + s);
+                throw new HiveException("Invalid feature value representation: " + s);
             }
         }
         final float norm = (float) Math.sqrt(squaredSum);

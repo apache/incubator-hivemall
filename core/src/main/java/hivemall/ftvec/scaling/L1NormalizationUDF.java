@@ -20,6 +20,7 @@ package hivemall.ftvec.scaling;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.Text;
 
@@ -30,7 +31,7 @@ import java.util.List;
 @UDFType(deterministic = true, stateful = false)
 public final class L1NormalizationUDF extends UDF {
 
-    public List<Text> evaluate(final List<Text> ftvecs) {
+    public List<Text> evaluate(final List<Text> ftvecs) throws HiveException {
         if (ftvecs == null) {
             return null;
         }
@@ -56,7 +57,7 @@ public final class L1NormalizationUDF extends UDF {
                 weights[i] = v;
                 absoluteSum += Math.abs(v);
             } else {
-                throw new IllegalArgumentException("Invalid feature value representation: " + s);
+                throw new HiveException("Invalid feature value representation: " + s);
             }
         }
         final float norm = (float) absoluteSum;
