@@ -65,7 +65,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
-@Description(name = "train_fm",
+@Description(
+        name = "train_fm",
         value = "_FUNC_(array<string> x, double y [, const string options]) - Returns a prediction model")
 public class FactorizationMachineUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(FactorizationMachineUDTF.class);
@@ -203,9 +204,10 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(getClass().getSimpleName()
-                    + " takes 2 or 3 arguments: array<string> x, double y [, CONSTANT STRING options]: "
-                    + Arrays.toString(argOIs));
+            throw new UDFArgumentException(
+                getClass().getSimpleName()
+                        + " takes 2 or 3 arguments: array<string> x, double y [, CONSTANT STRING options]: "
+                        + Arrays.toString(argOIs));
         }
         this._xOI = HiveUtils.asListOI(argOIs[0]);
         HiveUtils.validateFeatureOI(_xOI.getListElementObjectInspector());
@@ -242,8 +244,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         fieldNames.add("W_i");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
         fieldNames.add("V_if");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -310,8 +311,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 file = File.createTempFile("hivemall_fm", ".sgmt");
                 file.deleteOnExit();
                 if (!file.canWrite()) {
-                    throw new UDFArgumentException(
-                        "Cannot write a temporary file: " + file.getAbsolutePath());
+                    throw new UDFArgumentException("Cannot write a temporary file: "
+                            + file.getAbsolutePath());
                 }
                 LOG.info("Record training examples to a file: " + file.getAbsolutePath());
             } catch (IOException ioe) {
@@ -542,8 +543,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         final boolean adaregr = _va_rand != null;
 
         final Reporter reporter = getReporter();
-        final Counter iterCounter = (reporter == null) ? null
-                : reporter.getCounter("hivemall.fm.FactorizationMachines$Counter", "iteration");
+        final Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
+            "hivemall.fm.FactorizationMachines$Counter", "iteration");
 
         try {
             if (fileIO.getPosition() == 0L) {// run iterations w/o temporary file
@@ -588,8 +589,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 try {
                     fileIO.flush();
                 } catch (IOException e) {
-                    throw new HiveException(
-                        "Failed to flush a file: " + fileIO.getFile().getAbsolutePath(), e);
+                    throw new HiveException("Failed to flush a file: "
+                            + fileIO.getFile().getAbsolutePath(), e);
                 }
                 if (LOG.isInfoEnabled()) {
                     File tmpFile = fileIO.getFile();
@@ -614,8 +615,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         try {
                             bytesRead = fileIO.read(inputBuf);
                         } catch (IOException e) {
-                            throw new HiveException(
-                                "Failed to read a file: " + fileIO.getFile().getAbsolutePath(), e);
+                            throw new HiveException("Failed to read a file: "
+                                    + fileIO.getFile().getAbsolutePath(), e);
                         }
                         if (bytesRead == 0) { // reached file EOF
                             break;
@@ -666,8 +667,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             try {
                 fileIO.close(true);
             } catch (IOException e) {
-                throw new HiveException(
-                    "Failed to close a file: " + fileIO.getFile().getAbsolutePath(), e);
+                throw new HiveException("Failed to close a file: "
+                        + fileIO.getFile().getAbsolutePath(), e);
             }
             this._inputBuf = null;
             this._fileIO = null;

@@ -39,8 +39,7 @@ public interface FloatMatrix extends Matrix {
      * @throws IndexOutOfBoundsException
      * @throws UnsupportedOperationException
      */
-    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col,
-            final float value);
+    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value);
 
     /**
      * @return returns dst

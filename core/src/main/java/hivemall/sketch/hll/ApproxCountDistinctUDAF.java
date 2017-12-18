@@ -55,8 +55,7 @@ import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 public final class ApproxCountDistinctUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
-            throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
         if (typeInfo.length != 1 && typeInfo.length != 2) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes one or two arguments");
@@ -120,13 +119,13 @@ public final class ApproxCountDistinctUDAF extends AbstractGenericUDAFResolver {
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
                 processOptions(parameters);
                 this.origInputOI = parameters[0];
-            } else {// from partial aggregation               
+            } else {// from partial aggregation
                 this.mergeInputOI = HiveUtils.asBinaryOI(parameters[0]);
             }
 
             // initialize output
             final ObjectInspector outputOI;
-            if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial                
+            if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
                 outputOI = PrimitiveObjectInspectorFactory.javaByteArrayObjectInspector;
             } else {// terminate
                 outputOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
@@ -163,8 +162,7 @@ public final class ApproxCountDistinctUDAF extends AbstractGenericUDAFResolver {
             }
 
             HLLBuffer buf = (HLLBuffer) agg;
-            Object value =
-                    ObjectInspectorUtils.copyToStandardJavaObject(parameters[0], origInputOI);
+            Object value = ObjectInspectorUtils.copyToStandardJavaObject(parameters[0], origInputOI);
             Preconditions.checkNotNull(buf.hll, HiveException.class);
             buf.hll.offer(value);
         }

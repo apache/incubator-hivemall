@@ -116,8 +116,7 @@ public final class KernelExpansionPassiveAggressiveUDTF extends BinaryOnlineClas
             if (c_str != null) {
                 c = Float.parseFloat(c_str);
                 if (c <= 0.f) {
-                    throw new UDFArgumentException(
-                        "Aggressiveness parameter C must be C > 0: " + c);
+                    throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: " + c);
                 }
             }
             algo = cl.getOptionValue("algo", algo);
