@@ -29,7 +29,7 @@ branches:
     - develop
 
 before_install:
-  - mvn validate -Pxgboost
+  - mvn validate -Pcompile-xgboost
 
 notifications:
   email: false
