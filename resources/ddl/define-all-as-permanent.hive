@@ -211,6 +211,9 @@ CREATE FUNCTION rescale as 'hivemall.ftvec.scaling.RescaleUDF' USING JAR '${hive
 DROP FUNCTION IF EXISTS zscore;
 CREATE FUNCTION zscore as 'hivemall.ftvec.scaling.ZScoreUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS l1_normalize;
+CREATE FUNCTION l1_normalize as 'hivemall.ftvec.scaling.L1NormalizationUDF' USING JAR '${hivemall_jar}';
+
 DROP FUNCTION IF EXISTS l2_normalize;
 CREATE FUNCTION l2_normalize as 'hivemall.ftvec.scaling.L2NormalizationUDF' USING JAR '${hivemall_jar}';
 

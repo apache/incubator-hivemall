@@ -212,6 +212,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION rescale AS 'hivemall.ftvec.scaling.Res
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS zscore")
 sqlContext.sql("CREATE TEMPORARY FUNCTION zscore AS 'hivemall.ftvec.scaling.ZScoreUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS l1_normalize")
+sqlContext.sql("CREATE TEMPORARY FUNCTION l1_normalize AS 'hivemall.ftvec.scaling.L1NormalizationUDF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS l2_normalize")
 sqlContext.sql("CREATE TEMPORARY FUNCTION l2_normalize AS 'hivemall.ftvec.scaling.L2NormalizationUDF'")
 

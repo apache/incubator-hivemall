@@ -19,6 +19,22 @@
 
 <!-- toc -->
 
+# L1/L2 Normalization
+
+[L1](http://mathworld.wolfram.com/L1-Norm.html) and [L2](http://mathworld.wolfram.com/L2-Norm.html) normalization ensures that each feature vector has unit length:
+
+```sql
+select l1_normalize(array('apple:1.0', 'banana:0.5'))
+```
+
+> ["apple:0.6666667","banana:0.33333334"]
+
+```sql
+select l2_normalize(array('apple:1.0', 'banana:0.5'))
+```
+
+> ["apple:0.8944272","banana:0.4472136"]
+
 # Min-Max Normalization
 http://en.wikipedia.org/wiki/Feature_scaling#Rescaling
 ```sql
