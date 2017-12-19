@@ -24,3 +24,4 @@ spark/bin/zinc-*
 metastore_db
 .java-version
 *.bak
+release.properties
