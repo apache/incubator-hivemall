@@ -75,7 +75,7 @@ select tokenize_ja("日本経済新聞＆関西国際空港", "normal", null, nu
 
 > ["日本","経済","新聞","関西","国際","空港"]
 
-Note that you can pass `null` to each of the third and fourth argument to explicitly use Kuromoji's default stop words and stop tags. 
+Note that you can pass `null` to each of the third and fourth argument to explicitly use Kuromoji's [default stop words](https://github.com/apache/lucene-solr/blob/master/lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis/ja/stopwords.txt) and [stop tags](https://github.com/apache/lucene-solr/blob/master/lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis/ja/stoptags.txt).
 
 If you have a large custom dictionary as an external file, `userDict` can also be `const string userDictURL` which indicates URL of the external file on somewhere like Amazon S3:
 

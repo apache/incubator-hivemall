@@ -28,7 +28,7 @@
 $ cd hivemall
 
 # This is a workaround for resolving xgboost dependencies.
-$ mvn validate -Pxgboost
+$ mvn validate -Pcompile-xgboost
  
 $ mvn clean package
 ```

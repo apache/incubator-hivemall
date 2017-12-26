@@ -29,7 +29,7 @@
             "split": false
         },
         "edit-link": {
-            "base": "https://github.com/apache/incubator-hivemall/docs/gitbook",
+            "base": "https://github.com/apache/incubator-hivemall/tree/master/docs/gitbook",
             "label": "Edit"
         },
         "github": {

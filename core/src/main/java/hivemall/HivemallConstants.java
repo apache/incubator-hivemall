@@ -18,7 +18,6 @@
  */
 package hivemall;
 
-
 public final class HivemallConstants {
 
     public static final String VERSION = "0.4.2-rc.2";

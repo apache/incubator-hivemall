@@ -21,7 +21,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>io.github.myui</groupId>
+		<groupId>org.apache.hivemall</groupId>
 		<artifactId>hivemall</artifactId>
 		<version>0.4.2-rc.2</version>
 		<relativePath>../../pom.xml</relativePath>
@@ -41,19 +41,19 @@
 	<dependencies>
 		<!-- hivemall dependencies -->
 		<dependency>
-			<groupId>io.github.myui</groupId>
+			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-core</artifactId>
 			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>io.github.myui</groupId>
+			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-xgboost</artifactId>
 			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>io.github.myui</groupId>
+			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-spark-common</artifactId>
 			<version>${project.version}</version>
 			<scope>compile</scope>
@@ -107,7 +107,7 @@
 
 		<!-- test dependencies -->
 		<dependency>
-			<groupId>io.github.myui</groupId>
+			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-mixserv</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
@@ -201,9 +201,9 @@
 							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<artifactSet>
 								<includes>
-									<include>io.github.myui:hivemall-core</include>
-									<include>io.github.myui:hivemall-xgboost</include>
-									<include>io.github.myui:hivemall-spark-common</include>
+									<include>org.apache.hivemall:hivemall-core</include>
+									<include>org.apache.hivemall:hivemall-xgboost</include>
+									<include>org.apache.hivemall:hivemall-spark-common</include>
 									<include>com.github.haifengl:smile-core</include>
 									<include>com.github.haifengl:smile-math</include>
 									<include>com.github.haifengl:smile-data</include>
