@@ -295,7 +295,7 @@ final class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   }
 
   test("misc - hivemall_version") {
-    checkAnswer(DummyInputData.select(hivemall_version()), Row("0.4.2-rc.2"))
+    checkAnswer(DummyInputData.select(hivemall_version()), Row("0.5.0-incubating-SNAPSHOT"))
   }
 
   test("misc - rowid") {

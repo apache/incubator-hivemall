@@ -36,7 +36,7 @@ final class HiveUdfWithFeatureSuite extends HivemallFeatureQueryTest {
 
     checkAnswer(
       sql(s"SELECT DISTINCT hivemall_version()"),
-      Row("0.4.2-rc.2")
+      Row("0.5.0-incubating-SNAPSHOT")
     )
 
     // sql("DROP TEMPORARY FUNCTION IF EXISTS hivemall_version")
