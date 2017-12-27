@@ -249,6 +249,7 @@
 		<module>nlp</module>
 		<module>xgboost</module>
 		<module>mixserv</module>
+		<module>build-tools</module>
 	</modules>
 
 	<properties>
@@ -694,6 +695,13 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-remote-resources-plugin</artifactId>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.hivemall</groupId>
+						<artifactId>hivemall-build-tools</artifactId>
+						<version>${project.version}</version>
+					</dependency>
+				</dependencies>
 				<executions>
 					<execution>
 						<goals>
@@ -701,8 +709,8 @@
 						</goals>
 						<configuration>
 							<resourceBundles>
-								<!-- Will generate META-INF/DEPENDENCIES META-INF/LICENSE META-INF/NOTICE -->
-								<resourceBundle>org.apache.apache.resources:apache-jar-resource-bundle:1.5-SNAPSHOT</resourceBundle>
+								<!-- Will bundle LICENSE and NOTICE -->
+								<resourceBundle>org.apache.hivemall:hivemall-build-tools:${project.version}</resourceBundle>
 								<!-- Will generate META-INF/DISCLAIMER  -->
 								<resourceBundle>org.apache.apache.resources:apache-incubator-disclaimer-resource-bundle:1.2-SNAPSHOT</resourceBundle>
 							</resourceBundles>
