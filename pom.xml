@@ -522,6 +522,40 @@
 						</execution>
 					</executions>
 				</plugin>
+				<!-- Copy LICENSE/NOTICE/DISCLAIMER to jar -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-remote-resources-plugin</artifactId>
+					<configuration>
+						<skip>true</skip>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<executions>
+						<execution>
+						<id>copy-resources</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.basedir}/target/classes/META-INF</outputDirectory>
+							<resources>
+								<resource>
+								<directory>${main.basedir}/</directory>
+								<includes>
+									<include>LICENSE</include>
+									<include>NOTICE</include>
+									<include>DISCLAIMER</include>
+								</includes>
+								</resource>
+							</resources>
+						</configuration>
+						</execution>
+					</executions>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 
@@ -690,25 +724,6 @@
 				<configuration>
 					<tagNameFormat>v@{project.version}</tagNameFormat>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-remote-resources-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<goal>process</goal>
-						</goals>
-						<configuration>
-							<resourceBundles>
-								<!-- Will generate META-INF/DEPENDENCIES META-INF/LICENSE META-INF/NOTICE -->
-								<resourceBundle>org.apache.apache.resources:apache-jar-resource-bundle:1.5-SNAPSHOT</resourceBundle>
-								<!-- Will generate META-INF/DISCLAIMER  -->
-								<resourceBundle>org.apache.apache.resources:apache-incubator-disclaimer-resource-bundle:1.2-SNAPSHOT</resourceBundle>
-							</resourceBundles>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>
