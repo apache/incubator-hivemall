@@ -25,3 +25,6 @@ metastore_db
 .java-version
 *.bak
 release.properties
+*.releaseBackup
+.python-version
+\#*#
