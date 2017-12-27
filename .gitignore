@@ -28,3 +28,5 @@ release.properties
 *.releaseBackup
 .python-version
 \#*#
+pom.xml.next
+pom.xml.tag
