@@ -178,6 +178,13 @@
 								this issue as described in the URL below http://stackoverflow.com/questions/8817257/minimize-an-uber-jar-correctly-using-shade-plugin -->
 							<filters>
 								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/LICENSE.txt</exclude>
+										<exclude>META-INF/NOTICE.txt</exclude>
+									</excludes>
+								</filter>
+								<filter>
 									<artifact>commons-logging:commons-logging</artifact>
 									<includes>
 										<include>**</include>
