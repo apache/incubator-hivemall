@@ -168,6 +168,14 @@
 									<include>ml.dmlc:xgboost4j</include>
 								</includes>
 							</artifactSet>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>tracker.py</exclude>
+									</excludes>
+								</filter>
+							</filters>
 						</configuration>
 					</execution>
 					<!-- hivemall-xgboost_xx-xx-with-dependencies.jar including minimum dependencies -->
@@ -194,6 +202,15 @@
 									<include>com.esotericsoftware.kryo:kryo</include>
 								</includes>
 							</artifactSet>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>*.jar</exclude>
+										<exclude>tracker.py</exclude>
+									</excludes>
+								</filter>
+							</filters>
 						</configuration>
 					</execution>
 				</executions>
