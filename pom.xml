@@ -522,6 +522,16 @@
 						</execution>
 					</executions>
 				</plugin>
+				<!-- Disable git push during mvn release:prepare -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<configuration>
+						<goals>deploy</goals>
+						<pushChanges>false</pushChanges>
+						<localCheckout>true</localCheckout>
+					</configuration>
+				</plugin>
 				<!-- Copy LICENSE/NOTICE/DISCLAIMER to jar -->
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
