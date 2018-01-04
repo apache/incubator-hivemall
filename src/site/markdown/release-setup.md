@@ -139,6 +139,10 @@ You can enable GPG signing always true on the particular git repository by:
 
 	$ git config commit.gpgsign true
 
+To sign all commits by default in any local repository on your computer, run
+
+	$ git config --global commit.gpgsign true
+
 Use pientry to omit typing a passphrase for each commit.
 
 	$ echo "pinentry-program /usr/local/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
