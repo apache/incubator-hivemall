@@ -47,25 +47,54 @@ function yes_or_no() {
   done
 }
 
+usage() {
+    echo "./set_version.sh [--pom --version <ARG>]"
+    echo
+    echo "Option:"
+    echo "  -h, --help       | show usage"
+    echo "  --version <ARG>  | set version"
+    echo "  --pom            | "
+    echo
+}
+
 update_pom=1
 for opt in "$@"; do
   case "${opt}" in
     '--pom' )
-	update_pom=0; shift
+	update_pom=0
+	shift
+	;;
+    '--version' )
+	if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]]; then
+	    echo "$0: $1 option MUST have a version string as the argument" 1>&2
+	    exit 1
+	fi
+	new_version="$2"
+	shift 2
+	;;
+    '-h'|'--help' )
+	usage
+	exit 1
 	;;
   esac
 done
 
 old_version=`cat VERSION`
 echo "Current version number is ${old_version}"
-echo
 
-echo "This script will update the version string of Hivemall."
-echo
-echo "Please input a version string (e.g., 0.4.3-rc.2)"
-echo -n ">>"
-read new_version
-echo
+if [ -z "$new_version" ]; then
+  echo
+  echo "This script will update the version string of Hivemall."
+  echo
+  echo "Please input a version string (e.g., 0.4.3-rc.2)"
+  echo -n ">>"
+  read new_version
+  echo
+else
+  echo "New version number is ${new_version}"
+  echo
+fi
+
 
 #if [ $update_pom -eq 1 ]; then
 #  echo "Do you want update pom.xml as well?"
