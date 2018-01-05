@@ -23,7 +23,7 @@ Detailed ChangeLog of each version can be found in the JIRA link.
 
 | RELEASE | DATE | DESCRIPTION | COMMIT | DOWNLOAD |
 |:--------|:-----|:------------|:-------|:---------|
-| [0.5.0](https://issues.apache.org/jira/secure/ReleaseNote.jspa?projectId=12320630&amp;version=12342155) | 2017-11-xx | The first Apache release. There are tremendous changes since [v0.4.2-rc.2](https://github.com/myui/hivemall/releases/tag/v0.4.2-rc.2) which is the last release before entering Apache Incubator. | xxxxxxx | tar (digest pgp)<br/>zip (digest pgp) |
+| [0.5.0-rc1](https://issues.apache.org/jira/secure/ReleaseNote.jspa?projectId=12320630&amp;version=12342155) | 2018-01-xx | The first Apache release. There are tremendous changes since [v0.4.2-rc.2](https://github.com/myui/hivemall/releases/tag/v0.4.2-rc.2) which is the last release before entering Apache Incubator. | [e13c0b3](https://github.com/apache/incubator-hivemall/tree/v0.5.0-rc1) | [zip](https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip)<br/>( [md5](https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip.md5) / [pgp](https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip.asc) ) |
 | .. | .. | .. | .. | .. |
 
 Past releases of Apache Hivemall can be found in [this page](https://github.com/myui/hivemall/releases).
