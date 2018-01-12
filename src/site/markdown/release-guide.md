@@ -411,4 +411,4 @@ Update [download page](http://hivemall.incubator.apache.org/download.html) etc.
 
 ### Announcing the release
 
-Make an announcement about the release on the `user@hivemall.incubator.apache.org`, `dev@hivemall.incubator.apache.org`, `private@hivemall.incubator.apache.org`, and `announce@apache.org` list as per the Apache Announcement Mailing Lists page.
+Make an announcement about the release on the `user@hivemall.incubator.apache.org`, `dev@hivemall.incubator.apache.org`, `general@incubator.apache.org`, and `announce@apache.org` list as per the Apache Announcement Mailing Lists page.
