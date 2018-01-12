@@ -56,7 +56,19 @@ $ mvn -Pcompile-xgboost validate
 $ mvn -Papache-release clean install
 ```
 
-Ensure that all unit tests passes. License check by Apache RAT (`mvn apache-rat:check`) will be ran by the above command.
+For the spark modules, you run commands below.
+
+**Note:** _Since Spark-v2.2 supports Java 8 only, we need to compile the module with Java 8_
+
+```sh
+for extraParams in '1.7,-Pspark-2.0' '1.7,-Pspark-2.1' '1.8,-Pspark-2.2 -Djava.source.version=1.8 -Djava.target.version=1.8'; do
+  params=(`echo $extraParams | tr -s ',' ' '`)
+  export JAVA_HOME=`/usr/libexec/java_home -v ${params[0]}`
+  mvn -Papache-release ${params[@]:1} clean install
+done
+```
+
+Ensure that all unit tests passes. License check by Apache RAT (`mvn apache-rat:check`) will be ran by the above commands.
 
 ### Verify Signatures of Release Artifacts
 
@@ -113,6 +125,19 @@ $ mvn -Papache-release release:prepare \
 -DautoVersionSubmodules=true -DdryRun=true \
 -Darguments='-Dmaven.test.skip.exec=true' -DskipTests=true -Dmaven.test.skip=true \
 -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating-rc${rc} -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
+```
+
+For the spark modules, you run commands below.
+
+```sh
+for extraParams in '1.7,-Pspark-2.0' '1.7,-Pspark-2.1' '1.8,-Pspark-2.2 -Djava.source.version=1.8 -Djava.target.version=1.8'; do
+  params=(`echo $extraParams | tr -s ',' ' '`)
+  export JAVA_HOME=`/usr/libexec/java_home -v ${params[0]}`
+  mvn -Papache-release release:prepare ${params[@]:1} \
+    -DautoVersionSubmodules=true -DdryRun=true \
+    -Darguments='-Dmaven.test.skip.exec=true' -DskipTests=true -Dmaven.test.skip=true \
+    -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating-rc${rc} -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
+done
 ```
 
 Please provide the next SNAPSHOT version for next release WITHOUT `-rcX` e.g., as follows:
@@ -187,6 +212,19 @@ $ mvn -Papache-release release:clean release:prepare \
 -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating-rc${rc} -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
 ```
 
+For the spark modules, you run commands below.
+
+```sh
+for extraParams in '1.7,-Pspark-2.0' '1.7,-Pspark-2.1' '1.8,-Pspark-2.2 -Djava.source.version=1.8 -Djava.target.version=1.8'; do
+  params=(`echo $extraParams | tr -s ',' ' '`)
+  export JAVA_HOME=`/usr/libexec/java_home -v ${params[0]}`
+  mvn -Papache-release release:clean release:prepare ${params[@]:1} \
+    -DautoVersionSubmodules=true -DdryRun=false \
+    -Darguments='-Dmaven.test.skip.exec=true' -DskipTests=true -Dmaven.test.skip=true \
+    -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating-rc${rc} -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
+done
+```
+
 **4)** Update version strings for the development deversion
 
 ```sh
@@ -215,6 +253,18 @@ The release will automatically be inserted into a temporary staging repository f
 $ mvn -Papache-release release:perform \
 -Darguments='-Dmaven.test.skip.exec=true' -DskipTests=true -Dmaven.test.skip=true \
 -Dgoals=deploy -DlocalRepoDirectory=. -DlocalCheckout=true
+```
+
+For the spark modules, you run commands below.
+
+```sh
+for extraParams in '1.7,-Pspark-2.0' '1.7,-Pspark-2.1' '1.8,-Pspark-2.2 -Djava.source.version=1.8 -Djava.target.version=1.8'; do
+  params=(`echo $extraParams | tr -s ',' ' '`)
+  export JAVA_HOME=`/usr/libexec/java_home -v ${params[0]}`
+  mvn -Papache-release release:perform ${params[@]:1} \
+    -Darguments='-Dmaven.test.skip.exec=true' -DskipTests=true -Dmaven.test.skip=true \
+    -Dgoals=deploy -DlocalRepoDirectory=. -DlocalCheckout=true
+done
 ```
 
 ### Verify nexus release artifacts
