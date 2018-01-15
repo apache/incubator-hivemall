@@ -240,6 +240,7 @@
 						<SPARK_SCALA_VERSION>${scala.binary.version}</SPARK_SCALA_VERSION>
 						<SPARK_TESTING>1</SPARK_TESTING>
 						<JAVA_HOME>${env.JAVA_HOME}</JAVA_HOME>
+						<PATH>${env.JAVA_HOME}/bin:${env.PATH}</PATH>
 					</environmentVariables>
 					<systemProperties>
 						<log4j.configuration>file:src/test/resources/log4j.properties</log4j.configuration>
