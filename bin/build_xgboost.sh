@@ -21,30 +21,60 @@
 # xgboost requires g++-4.6 or higher (https://github.com/dmlc/xgboost/blob/master/doc/build.md),
 # so we need to first check if the requirement is satisfied.
 COMPILER_REQUIRED_VERSION="4.6"
-COMPILER_VERSION=`g++ --version 2> /dev/null`
-
-# Check if GNU g++ installed
-if [ $? = 127 ]; then
-  echo "First, you need to install g++"
-  exit 1
-elif [[ "$COMPILER_VERSION" = *LLVM* ]]; then
-  echo "You must use GNU g++, but the detected compiler was clang++"
-  exit 1
-fi
-
-COMPILER_VERSION_NUMBER=`echo $COMPILER_VERSION | grep ^g++ | \
-  awk 'match($0, /[0-9]+\.[0-9]+\.[0-9]+/) {print substr($0, RSTART, RLENGTH)}'`
 
 # See simple version normalization: http://stackoverflow.com/questions/16989598/bash-comparing-version-numbers
-function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
-if [ $(version $COMPILER_VERSION_NUMBER) -lt $(version $COMPILER_REQUIRED_VERSION) ]; then
-  echo "You must compile xgboost with GNU g++-$COMPILER_REQUIRED_VERSION or higher," \
-    "but the detected compiler was g++-$COMPILER_VERSION_NUMBER"
-  exit 1
-fi
+function compiler_version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
 
-# Target commit hash value
-XGBOOST_HASHVAL='7ab15a0b31c870c7779691639f521df3ccd4a56e'
+arch=$(uname -s)
+if [ $arch = 'Darwin' ]; then
+  if [ -z $CC ]; then
+    if [ -x `which gcc-5` ]; then
+      export CC=`which gcc-5`
+    elif [ -x `which gcc-6` ]; then
+      export CC=`which gcc-6`
+    else
+      echo 'export CC=`which gcc-X`; is required.'
+      echo 'Run `brew install gcc-5; export CC=gcc-5;`'
+      exit 1
+    fi
+  fi
+  if [ -z $CXX ]; then
+    if [ -x `which g++-5` ]; then
+       export CXX=`which g++-5`
+    elif [ -x `which g++-6` ]; then
+       export CXX=`which gcc-6`
+    else
+       echo 'export CXX=`which g++-X`; is required.'
+       echo 'Run `brew install g++-5; export CXX=g++-5;`'
+       exit 1
+    fi
+  fi
+else
+    # linux defaults
+    if [ -z $CC ]; then
+		if [ -x `which gcc` ]; then
+		  export CC=`which gcc`
+		else
+		  echo 'gcc does not find. export CC=`which gcc-X`; is required.'
+		  exit 1
+		fi
+    fi
+    if [ -z $CXX ]; then
+		if [ -x `which g++` ]; then
+		  export CC=`which g++`
+		  COMPILER_VERSION_NUMBER=`g++ --version 2> /dev/null | grep ^g++ | \
+		    awk 'match($0, /[0-9]+\.[0-9]+\.[0-9]+/) {print substr($0, RSTART, RLENGTH)}'`
+		  if [ $(compiler_version $COMPILER_VERSION_NUMBER) -lt $COMPILER_REQUIRED_VERSION ]; then
+			echo "You must compile xgboost with GNU g++-$COMPILER_REQUIRED_VERSION or higher," \
+				 "but the detected compiler was g++-$COMPILER_VERSION_NUMBER"
+			exit 1
+		  fi
+		else
+		  echo 'g++ does not find. export CXX=`which g++-X`; is required.'
+		  exit 1
+		fi
+    fi
+fi
 
 # Move to a top directory
 if [ "$HIVEMALL_HOME" = "" ]; then
@@ -65,6 +95,9 @@ HIVEMALL_LIB_DIR="$HIVEMALL_HOME/xgboost/src/main/resources/lib/"
 rm -rf $HIVEMALL_LIB_DIR >> /dev/null
 mkdir -p $HIVEMALL_LIB_DIR
 
+# Target commit hash value
+XGBOOST_HASHVAL='2471e70f2436fbb6a76a0ca0121b96c07d994c4a'
+
 # Move to an output directory
 XGBOOST_OUT="$HIVEMALL_HOME/target/xgboost-$XGBOOST_HASHVAL"
 rm -rf $XGBOOST_OUT >> /dev/null
@@ -72,7 +105,9 @@ mkdir -p $XGBOOST_OUT
 cd $XGBOOST_OUT
 
 # Fetch xgboost sources
-git clone --progress https://github.com/maropu/xgboost.git
+git clone --progress \
+  --depth 5 --branch xgboost_v0.60_with_portable_binaries --single-branch \
+  https://github.com/myui/xgboost.git
 cd xgboost
 git checkout $XGBOOST_HASHVAL
 
@@ -82,6 +117,6 @@ git submodule update
 
 # Copy a built binary to the output
 cd jvm-packages
-ENABLE_STATIC_LINKS=1 ./create_jni.sh
+ENABLE_STATIC_LINKS=1 CC=${CC} CXX=${CXX} ./create_jni.sh
 cp ./lib/libxgboost4j.* "$HIVEMALL_LIB_DIR"
 
