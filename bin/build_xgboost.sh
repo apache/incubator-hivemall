@@ -20,28 +20,18 @@
 
 # xgboost requires g++-4.6 or higher (https://github.com/dmlc/xgboost/blob/master/doc/build.md),
 # so we need to first check if the requirement is satisfied.
-COMPILER_REQUIRED_VERSION="4.6"
+# g++-4.7 or higher is required when building on Ubuntu 14.04 on Docker.
+COMPILER_REQUIRED_VERSION=4.7
 
 # See simple version normalization: http://stackoverflow.com/questions/16989598/bash-comparing-version-numbers
 function compiler_version { echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'; }
 
 arch=$(uname -s)
 if [ $arch = 'Darwin' ]; then
-  if [ -z $CC ]; then
-    if [ -x `which gcc-5` ]; then
-      export CC=`which gcc-5`
-    elif [ -x `which gcc-6` ]; then
-      export CC=`which gcc-6`
-    else
-      echo 'export CC=`which gcc-X`; is required.'
-      echo 'Run `brew install gcc-5; export CC=gcc-5;`'
-      exit 1
-    fi
-  fi
   if [ -z $CXX ]; then
-    if [ -x `which g++-5` ]; then
+    if type "g++-5" > /dev/null 2>&1; then
        export CXX=`which g++-5`
-    elif [ -x `which g++-6` ]; then
+    elif type "g++-6" > /dev/null 2>&1; then
        export CXX=`which gcc-6`
     else
        echo 'export CXX=`which g++-X`; is required.'
@@ -50,30 +40,22 @@ if [ $arch = 'Darwin' ]; then
     fi
   fi
 else
-    # linux defaults
-    if [ -z $CC ]; then
-		if [ -x `which gcc` ]; then
-		  export CC=`which gcc`
-		else
-		  echo 'gcc does not find. export CC=`which gcc-X`; is required.'
-		  exit 1
-		fi
-    fi
-    if [ -z $CXX ]; then
-		if [ -x `which g++` ]; then
-		  export CC=`which g++`
-		  COMPILER_VERSION_NUMBER=`g++ --version 2> /dev/null | grep ^g++ | \
-		    awk 'match($0, /[0-9]+\.[0-9]+\.[0-9]+/) {print substr($0, RSTART, RLENGTH)}'`
-		  if [ $(compiler_version $COMPILER_VERSION_NUMBER) -lt $COMPILER_REQUIRED_VERSION ]; then
-			echo "You must compile xgboost with GNU g++-$COMPILER_REQUIRED_VERSION or higher," \
-				 "but the detected compiler was g++-$COMPILER_VERSION_NUMBER"
-			exit 1
-		  fi
-		else
-		  echo 'g++ does not find. export CXX=`which g++-X`; is required.'
-		  exit 1
-		fi
-    fi
+   # linux defaults
+   if [ -z $CXX ]; then
+     if type "g++" > /dev/null 2>&1; then
+       export CXX=`which g++`
+       COMPILER_VERSION_NUMBER=`${CXX} --version 2> /dev/null | grep ^g++ | \
+         awk 'match($0, /[0-9]+\.[0-9]+\.[0-9]+/) {print substr($0, RSTART, RLENGTH)}'`
+       if [ $(compiler_version $COMPILER_VERSION_NUMBER) -lt $COMPILER_REQUIRED_VERSION ]; then
+         echo "You must compile xgboost with GNU g++-$COMPILER_REQUIRED_VERSION or higher," \
+              "but the detected compiler was g++-$COMPILER_VERSION_NUMBER"
+         exit 1
+       fi
+     else
+       echo 'g++ does not find. export CXX=`which g++-X`; is required.'
+       exit 1
+     fi
+  fi
 fi
 
 # Move to a top directory
