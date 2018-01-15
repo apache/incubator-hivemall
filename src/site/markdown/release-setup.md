@@ -28,6 +28,7 @@ If it is your first time doing an Apache release, then there is some initial set
 You would need the following softwares for building and making a release:
 
 - gpg2
+- md5sum, sha1sum
 - git client
 - svn client (_svn is still mandatory in the ASF distribution process. Don't ask me why._)
 - JDK 7 (_not JDK 8 nor 9 to support Java 7 or later_)
@@ -37,6 +38,7 @@ You would need the following softwares for building and making a release:
 
 	# on Mac
 	$ brew install gpg gpg-agent pinentry-mac
+	$ brew instal md5sha1sum
 	$ brew intall svn
 	$ brew install maven
 	$ brew install npm
