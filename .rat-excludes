@@ -27,3 +27,5 @@ resources/eclipse-style.xml
 **/*.hql
 docs/gitbook/_book/**
 docs/gitbook/node_modules/**
+**/release.properties
+**/derby.log
