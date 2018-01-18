@@ -48,7 +48,9 @@ public final class XGBoostUtils {
                 values[i] = Float.parseFloat(str.substring(pos + 1));
             }
         }
-        return LabeledPoint.fromSparseVector((float) target, indices, values);
+
+
+        return new LabeledPoint((float) target, indices, values);
     }
 
 }
