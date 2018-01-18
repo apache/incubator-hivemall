@@ -18,12 +18,20 @@
  */
 package hivemall.nlp.tokenizer;
 
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.HttpUtils;
+import hivemall.utils.io.IOUtils;
+import hivemall.utils.lang.ExceptionUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,11 +58,6 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.HttpUtils;
-import hivemall.utils.io.IOUtils;
-import hivemall.utils.lang.ExceptionUtils;
 
 @Description(name = "tokenize_ja",
         value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
@@ -266,12 +269,17 @@ public final class KuromojiUDF extends GenericUDF {
                     + userDictURL + '\n' + ExceptionUtils.prettyPrintStackTrace(e));
         }
 
-        final Reader reader = new InputStreamReader(is);
+        CharsetDecoder decoder =
+                StandardCharsets.UTF_8.newDecoder()
+                                      .onMalformedInput(CodingErrorAction.REPORT)
+                                      .onUnmappableCharacter(CodingErrorAction.REPORT);
+        final Reader reader = new InputStreamReader(is, decoder);
         try {
             return UserDictionary.open(reader); // return null if empty
         } catch (Throwable e) {
-            throw new UDFArgumentException("Failed to parse the file in CSV format: " + userDictURL
-                    + '\n' + ExceptionUtils.prettyPrintStackTrace(e));
+            throw new UDFArgumentException(
+                "Failed to parse the file in CSV format (UTF-8 encoding is expected): "
+                        + userDictURL + '\n' + ExceptionUtils.prettyPrintStackTrace(e));
         }
     }
 
