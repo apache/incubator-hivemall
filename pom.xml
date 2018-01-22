@@ -249,6 +249,7 @@
 		<module>nlp</module>
 		<module>xgboost</module>
 		<module>mixserv</module>
+		<module>spark</module>
 	</modules>
 
 	<properties>
@@ -256,8 +257,6 @@
 		<java.target.version>1.7</java.target.version>
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
-		<scala.version>2.11.8</scala.version>
-		<scala.binary.version>2.11</scala.binary.version>
 		<maven.build.timestamp.format>yyyy</maven.build.timestamp.format>
 		<build.year>${maven.build.timestamp}</build.year>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -315,50 +314,6 @@
 
 	<profiles>
 		<profile>
-			<id>spark-2.2</id>
-			<modules>
-				<module>spark/spark-2.2</module>
-				<module>spark/spark-common</module>
-			</modules>
-			<properties>
-				<spark.version>2.2.0</spark.version>
-				<spark.binary.version>2.2</spark.binary.version>
-			</properties>
-			<build>
-				<plugins>
-					<!-- Spark-2.2 only supports Java 8 -->
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>${maven-enforcer-plugin.version}</version>
-						<executions>
-							<execution>
-								<id>enforce-versions</id>
-								<phase>validate</phase>
-								<goals>
-									<goal>enforce</goal>
-								</goals>
-								<configuration>
-									<rules>
-										<requireProperty>
-											<property>java.source.version</property>
-											<regex>1.8</regex>
-											<regexMessage>When -Pspark-2.2 set, java.source.version must be 1.8</regexMessage>
-										</requireProperty>
-										<requireProperty>
-											<property>java.target.version</property>
-											<regex>1.8</regex>
-											<regexMessage>When -Pspark-2.2 set, java.target.version must be 1.8</regexMessage>
-										</requireProperty>
-									</rules>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
 			<id>spark-2.1</id>
 			<modules>
 				<module>spark/spark-2.1</module>
@@ -409,6 +364,110 @@
 		</profile>
 	</profiles>
 
+	<dependencyManagement>
+		<dependencies>
+			<!-- provided scope -->
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-common</artifactId>
+				<version>${hadoop.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-mapreduce-client-core</artifactId>
+				<version>${hadoop.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hive</groupId>
+				<artifactId>hive-exec</artifactId>
+				<version>${hive.version}</version>
+				<scope>provided</scope>
+				<exclusions>
+					<exclusion>
+						<artifactId>jetty</artifactId>
+						<groupId>org.mortbay.jetty</groupId>
+					</exclusion>
+					<exclusion>
+						<groupId>javax.jdo</groupId>
+						<artifactId>jdo2-api</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>asm-parent</groupId>
+						<artifactId>asm-parent</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>asm</groupId>
+						<artifactId>asm</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>commons-cli</groupId>
+				<artifactId>commons-cli</artifactId>
+				<version>1.2</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>commons-logging</groupId>
+				<artifactId>commons-logging</artifactId>
+				<version>1.0.4</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>log4j</groupId>
+				<artifactId>log4j</artifactId>
+				<version>1.2.17</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>javax.jdo</groupId>
+				<artifactId>jdo2-api</artifactId>
+				<version>2.3-eb</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>${guava.version}</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- test scope -->
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-all</artifactId>
+				<version>1.10.19</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>1.10.19</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.powermock</groupId>
+				<artifactId>powermock-module-junit4</artifactId>
+				<version>1.6.3</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.powermock</groupId>
+				<artifactId>powermock-api-mockito</artifactId>
+				<version>1.6.3</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<build>
 		<directory>target</directory>
 		<outputDirectory>target/classes</outputDirectory>
@@ -417,6 +476,19 @@
 
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.0.2</version>
+					<configuration>
+						<finalName>${project.artifactId}-${project.version}</finalName>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
 				<plugin>
 					<!-- mvn formatter:format -->
 					<groupId>net.revelc.code</groupId>
@@ -677,7 +749,7 @@
 					<failOnWarning>false</failOnWarning>
 					<sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
 					<testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-					<configLocation>spark/spark-common/scalastyle-config.xml</configLocation>
+					<configLocation>spark/scalastyle-config.xml</configLocation>
 					<outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
 					<inputEncoding>${project.build.sourceEncoding}</inputEncoding>
 					<outputEncoding>${project.reporting.outputEncoding}</outputEncoding>

@@ -24,106 +24,116 @@
 		<groupId>org.apache.hivemall</groupId>
 		<artifactId>hivemall</artifactId>
 		<version>0.5.1-incubating-SNAPSHOT</version>
-		<relativePath>../../pom.xml</relativePath>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>hivemall-spark-common</artifactId>
-	<name>Hivemall on Spark Common</name>
-	<packaging>jar</packaging>
+	<artifactId>hivemall-spark</artifactId>
+	<packaging>pom</packaging>
+	<name>Hivemall on Apache Spark</name>
+
+	<modules>
+		<module>common</module>
+		<module>spark-2.0</module>
+		<module>spark-2.1</module>
+		<module>spark-2.2</module>
+	</modules>
 
 	<properties>
 		<main.basedir>${project.parent.basedir}</main.basedir>
+		<scala.version>2.11.8</scala.version>
+		<scala.binary.version>2.11</scala.binary.version>
 	</properties>
 
-	<dependencies>
-		<!-- hivemall dependencies -->
-		<dependency>
-			<groupId>org.apache.hivemall</groupId>
-			<artifactId>hivemall-core</artifactId>
-			<version>${project.version}</version>
-			<scope>compile</scope>
-		</dependency>
+	<dependencyManagement>
+		<dependencies>
+			<!-- compile scope -->
+			<dependency>
+				<groupId>org.apache.hivemall</groupId>
+				<artifactId>hivemall-core</artifactId>
+				<version>${project.version}</version>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hivemall</groupId>
+				<artifactId>hivemall-xgboost</artifactId>
+				<version>${project.version}</version>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-compress</artifactId>
+				<version>1.8</version>
+				<scope>compile</scope>
+			</dependency>
 
-		<!-- other provided dependencies -->
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-sql_${scala.binary.version}</artifactId>
-			<version>${spark.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-hive_${scala.binary.version}</artifactId>
-			<version>${spark.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.spark</groupId>
-			<artifactId>spark-streaming_${scala.binary.version}</artifactId>
-			<version>${spark.version}</version>
-			<scope>provided</scope>
-		</dependency>
+			<!-- provided scope -->
+			<dependency>
+				<groupId>org.scala-lang</groupId>
+				<artifactId>scala-library</artifactId>
+				<version>${scala.version}</version>
+				<scope>provided</scope>
+			</dependency>
 
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-common</artifactId>
-			<version>${hadoop.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-mapreduce-client-core</artifactId>
-			<version>${hadoop.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.hive</groupId>
-			<artifactId>hive-exec</artifactId>
-			<version>${hive.version}</version>
-			<scope>provided</scope>
-		</dependency>
-	</dependencies>
+			<!-- test dependencies -->
+			<dependency>
+				<groupId>org.apache.hivemall</groupId>
+				<artifactId>hivemall-mixserv</artifactId>
+				<version>${project.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.xerial</groupId>
+				<artifactId>xerial-core</artifactId>
+				<version>3.2.3</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.scalatest</groupId>
+				<artifactId>scalatest_${scala.binary.version}</artifactId>
+				<version>2.2.4</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<directory>target</directory>
 		<outputDirectory>target/classes</outputDirectory>
 		<finalName>${project.artifactId}-${project.version}</finalName>
 		<testOutputDirectory>target/test-classes</testOutputDirectory>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>net.alchim31.maven</groupId>
+					<artifactId>scala-maven-plugin</artifactId>
+					<version>3.2.2</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
 		<plugins>
-			<!-- For resolving spark binary incompatibility -->
-			<plugin>
-				<artifactId>maven-clean-plugin</artifactId>
-				<version>3.0.0</version>
-				<executions>
-					<execution>
-						<phase>initialize</phase>
-						<goals>
-							<goal>clean</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<!-- For incremental compilation -->
 			<plugin>
 				<groupId>net.alchim31.maven</groupId>
 				<artifactId>scala-maven-plugin</artifactId>
-				<version>3.2.2</version>
 				<executions>
 					<execution>
 						<id>scala-compile-first</id>
 						<phase>process-resources</phase>
 						<goals>
+							<goal>add-source</goal>
 							<goal>compile</goal>
 						</goals>
 					</execution>
 					<execution>
-						<id>scala-test-compile-first</id>
+						<id>scala-test-compile</id>
 						<phase>process-test-resources</phase>
 						<goals>
 							<goal>testCompile</goal>
 						</goals>
 					</execution>
 				</executions>
+				<!-- For incremental compilation -->
 				<configuration>
 					<scalaVersion>${scala.version}</scalaVersion>
 					<recompileMode>incremental</recompileMode>
@@ -137,10 +147,13 @@
 					<jvmArgs>
 						<jvmArg>-Xms512m</jvmArg>
 						<jvmArg>-Xmx1024m</jvmArg>
+						<jvmArg>-XX:PermSize=64m</jvmArg>
+						<jvmArg>-XX:MaxPermSize=512m</jvmArg>
+						<jvmArg>-XX:ReservedCodeCacheSize=512m</jvmArg>
 					</jvmArgs>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
-</project>
 
+</project>
