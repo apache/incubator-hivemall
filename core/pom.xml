@@ -195,11 +195,6 @@
 										<Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
 									</manifestEntries>
 								</transformer>
-								<!--
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-									<addHeader>false</addHeader>
-								</transformer>
-								-->
 							</transformers>
 							<filters>
 								<filter>
