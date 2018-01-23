@@ -27,7 +27,7 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>hivemall-spark_2.2</artifactId>
+	<artifactId>hivemall-spark2.2</artifactId>
 	<name>Hivemall on Spark 2.2</name>
 	<packaging>jar</packaging>
 
@@ -35,6 +35,7 @@
 		<main.basedir>${project.parent.parent.basedir}</main.basedir>
 		<spark.version>2.2.0</spark.version>
 		<spark.binary.version>2.2</spark.binary.version>
+		<scalatest.jvm.opts>-ea -Xms768m -Xmx2g -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</scalatest.jvm.opts>
 		<java.source.version>1.8</java.source.version>
 		<java.target.version>1.8</java.target.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
@@ -166,34 +167,6 @@
 			<plugin>
 				<groupId>org.scalatest</groupId>
 				<artifactId>scalatest-maven-plugin</artifactId>
-				<version>1.0</version>
-				<configuration>
-					<reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-					<junitxml>.</junitxml>
-					<filereports>SparkTestSuite.txt</filereports>
-					<argLine>-ea -Xmx2g -XX:MaxPermSize=${MaxPermGen} -XX:ReservedCodeCacheSize=${CodeCacheSize}</argLine>
-					<stderr />
-					<environmentVariables>
-						<SPARK_PREPEND_CLASSES>1</SPARK_PREPEND_CLASSES>
-						<SPARK_SCALA_VERSION>${scala.binary.version}</SPARK_SCALA_VERSION>
-						<SPARK_TESTING>1</SPARK_TESTING>
-						<JAVA_HOME>${env.JAVA_HOME}</JAVA_HOME>
-						<PATH>${env.JAVA_HOME}/bin:${env.PATH}</PATH>
-					</environmentVariables>
-					<systemProperties>
-						<log4j.configuration>file:src/test/resources/log4j.properties</log4j.configuration>
-						<derby.system.durability>test</derby.system.durability>
-						<java.awt.headless>true</java.awt.headless>
-						<java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
-						<spark.testing>1</spark.testing>
-						<spark.ui.enabled>false</spark.ui.enabled>
-						<spark.ui.showConsoleProgress>false</spark.ui.showConsoleProgress>
-						<spark.unsafe.exceptionOnMemoryLeak>true</spark.unsafe.exceptionOnMemoryLeak>
-						<!-- Needed by sql/hive tests. -->
-						<test.src.tables>__not_used__</test.src.tables>
-					</systemProperties>
-					<tagsToExclude>${test.exclude.tags}</tagsToExclude>
-				</configuration>
 				<executions>
 					<execution>
 						<id>test</id>
