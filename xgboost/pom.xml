@@ -67,14 +67,14 @@
 			<artifactId>log4j</artifactId>
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- compile scope -->
 		<dependency>
 			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-core</artifactId>
 			<version>${project.version}</version>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
-
-		<!-- compile scope -->
 		<dependency>
 			<groupId>io.github.myui</groupId>
 			<artifactId>xgboost4j</artifactId>
@@ -91,10 +91,6 @@
 	</dependencies>
 
 	<build>
-		<directory>target</directory>
-		<outputDirectory>target/classes</outputDirectory>
-		<finalName>${project.artifactId}-${project.version}</finalName>
-		<testOutputDirectory>target/test-classes</testOutputDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -115,13 +111,7 @@
 							<artifactSet>
 								<includes>
 									<include>org.apache.hivemall:hivemall-core</include>
-									<include>io.netty:netty-all</include>
-									<include>com.github.haifengl:smile-core</include>
-									<include>com.github.haifengl:smile-math</include>
-									<include>com.github.haifengl:smile-data</include>
-									<include>org.tukaani:xz</include>
 									<include>io.github.myui:xgboost4j</include>
-									<include>com.esotericsoftware.kryo:kryo</include>
 								</includes>
 							</artifactSet>
 							<filters>

@@ -113,10 +113,6 @@
 	</dependencies>
 
 	<build>
-		<directory>target</directory>
-		<outputDirectory>target/classes</outputDirectory>
-		<finalName>${project.artifactId}-${project.version}</finalName>
-		<testOutputDirectory>target/test-classes</testOutputDirectory>
 		<plugins>
 			<!-- hivemall-mixserv-xx-fat.jar including all dependencies -->
 			<plugin>
@@ -140,7 +136,6 @@
 									<include>commons-cli:commons-cli</include>
 									<include>commons-logging:commons-logging</include>
 									<include>log4j:log4j</include>
-									<include>io.netty:netty-all</include>
 								</includes>
 							</artifactSet>
 							<!-- maven-shade-plugin cannot handle the dependency of log4j because 

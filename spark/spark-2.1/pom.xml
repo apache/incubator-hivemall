@@ -55,11 +55,6 @@
 			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-compress</artifactId>
-			<scope>compile</scope>
-		</dependency>
 
 		<!-- provided scope -->
 		<dependency>
@@ -139,11 +134,6 @@
 									<include>org.apache.hivemall:hivemall-core</include>
 									<include>org.apache.hivemall:hivemall-xgboost</include>
 									<include>org.apache.hivemall:hivemall-spark-common</include>
-									<include>com.github.haifengl:smile-core</include>
-									<include>com.github.haifengl:smile-math</include>
-									<include>com.github.haifengl:smile-data</include>
-									<include>ml.dmlc:xgboost4j</include>
-									<include>com.esotericsoftware.kryo:kryo</include>
 								</includes>
 							</artifactSet>
 						</configuration>

@@ -153,10 +153,6 @@
 	</dependencies>
 
 	<build>
-		<directory>target</directory>
-		<outputDirectory>target/classes</outputDirectory>
-		<finalName>${project.artifactId}-${project.version}</finalName>
-		<testOutputDirectory>target/test-classes</testOutputDirectory>
 		<plugins>
 			<!-- hivemall-core-xx-with-dependencies.jar including minimum dependencies -->
 			<plugin>

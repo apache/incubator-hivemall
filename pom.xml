@@ -253,8 +253,7 @@
 	</modules>
 
 	<properties>
-		<java.source.version>1.7</java.source.version>
-		<java.target.version>1.7</java.target.version>
+		<main.basedir>${project.basedir}</main.basedir>
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
 		<maven.build.timestamp.format>yyyy</maven.build.timestamp.format>
@@ -268,8 +267,7 @@
 		<guava.version>11.0.2</guava.version>
 		<junit.version>4.12</junit.version>
 		<dependency.locations.enabled>false</dependency.locations.enabled>
-		<main.basedir>${project.basedir}</main.basedir>
-		<maven-enforcer-plugin.version>3.3.1</maven-enforcer-plugin.version>
+		<maven-enforcer.requireMavenVersion>[3.3.1,)</maven-enforcer.requireMavenVersion>
 		<surefire.version>2.19.1</surefire.version>
 	</properties>
 
@@ -442,7 +440,7 @@
 					<version>3.0.2</version>
 					<configuration>
 						<finalName>${project.artifactId}-${project.version}</finalName>
-						<outputDirectory>${main.basedir}</outputDirectory>
+						<outputDirectory>${main.basedir}/target</outputDirectory>
 					</configuration>
 				</plugin>
 				<plugin>
@@ -584,16 +582,45 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.0.0-M1</version>
 				<executions>
 					<execution>
-						<id>enforce-maven</id>
+						<id>enforce-JAVA_HOME-is-set</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireEnvironmentVariable>
+									<variableName>JAVA_HOME</variableName>
+								</requireEnvironmentVariable>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+					<execution>
+						<id>enforce-JAVA8_HOME-is-set</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireEnvironmentVariable>
+									<variableName>JAVA8_HOME</variableName>
+								</requireEnvironmentVariable>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+					<execution>
+						<id>required-maven-version</id>
 						<goals>
 							<goal>enforce</goal>
 						</goals>
 						<configuration>
 							<rules>
 								<requireMavenVersion>
-									<version>[3.3.1,)</version>
+									<version>${maven-enforcer.requireMavenVersion}</version>
 								</requireMavenVersion>
 							</rules>
 						</configuration>
@@ -621,8 +648,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>${java.source.version}</source>
-					<target>${java.target.version}</target>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
 					<debug>true</debug>
 					<debuglevel>lines,vars,source</debuglevel>
 					<encoding>UTF-8</encoding>

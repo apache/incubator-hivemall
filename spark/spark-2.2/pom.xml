@@ -36,8 +36,6 @@
 		<spark.version>2.2.0</spark.version>
 		<spark.binary.version>2.2</spark.binary.version>
 		<scalatest.jvm.opts>-ea -Xms768m -Xmx2g -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</scalatest.jvm.opts>
-		<java.source.version>1.8</java.source.version>
-		<java.target.version>1.8</java.target.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
@@ -58,11 +56,6 @@
 			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-spark-common</artifactId>
 			<version>${project.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-compress</artifactId>
 			<scope>compile</scope>
 		</dependency>
 
@@ -144,11 +137,6 @@
 									<include>org.apache.hivemall:hivemall-core</include>
 									<include>org.apache.hivemall:hivemall-xgboost</include>
 									<include>org.apache.hivemall:hivemall-spark-common</include>
-									<include>com.github.haifengl:smile-core</include>
-									<include>com.github.haifengl:smile-math</include>
-									<include>com.github.haifengl:smile-data</include>
-									<include>ml.dmlc:xgboost4j</include>
-									<include>com.esotericsoftware.kryo:kryo</include>
 								</includes>
 							</artifactSet>
 						</configuration>
@@ -175,6 +163,16 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.scalatest</groupId>
+				<artifactId>scalatest-maven-plugin</artifactId>
+				<configuration>
+					<environmentVariables>
+						<JAVA_HOME>${env.JAVA8_HOME}</JAVA_HOME>
+						<PATH>${env.JAVA8_HOME}/bin:${env.PATH}</PATH>
+					</environmentVariables>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
