@@ -30,3 +30,4 @@ release.properties
 \#*#
 pom.xml.next
 pom.xml.tag
+.cache-main
