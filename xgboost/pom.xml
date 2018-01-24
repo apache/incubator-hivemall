@@ -31,7 +31,6 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<xgboost.version>0.7-rc1</xgboost.version>
 		<main.basedir>${project.parent.basedir}</main.basedir>
 	</properties>
 
