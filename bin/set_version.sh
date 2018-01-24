@@ -109,7 +109,6 @@ if [ $update_pom -eq 0 ]; then
   find . -type f \( -name 'VERSION' -o -name 'pom.xml' -o -name 'HivemallConstants.java' -o -name 'HivemallOpsSuite.scala' -o -name 'HiveUdfSuite.scala' \)  | xargs grep ${old_version}
 else
   find . -type f \( -name 'VERSION' -o -name 'HivemallConstants.java' -o -name 'HivemallOpsSuite.scala' -o -name 'HiveUdfSuite.scala' \)  | xargs grep ${old_version}
-  find ./spark -type f \( -name 'pom.xml' \) | xargs grep ${old_version}
 fi
 echo "--------------------------------------------------------------------------"
 echo
@@ -128,7 +127,6 @@ if [ $update_pom -eq 0 ]; then
   find . -type f \( -name 'VERSION' -o -name 'pom.xml' -o -name 'HivemallConstants.java' -o -name 'HivemallOpsSuite.scala' -o -name 'HiveUdfSuite.scala' \) | xargs sed -i '' -e "s/${old_version}/${new_version}/g"
 else
   find . -type f \( -name 'VERSION' -o -name 'HivemallConstants.java' -o -name 'HivemallOpsSuite.scala' -o -name 'HiveUdfSuite.scala' \) | xargs sed -i '' -e "s/${old_version}/${new_version}/g"
-  find ./spark -type f \( -name 'pom.xml' \) | xargs sed -i '' -e "s/${old_version}/${new_version}/g"
 fi
 
 echo "Done!"
