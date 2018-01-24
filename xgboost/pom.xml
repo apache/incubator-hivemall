@@ -90,44 +90,4 @@
 		</dependency>
 	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<executions>
-					<!-- hivemall-xgboost-xx-with-dependencies.jar including minimum dependencies -->
-					<execution>
-						<id>jar-with-dependencies</id>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<finalName>${project.artifactId}-${project.version}-with-dependencies</finalName>
-							<outputDirectory>${project.parent.build.directory}</outputDirectory>
-							<minimizeJar>true</minimizeJar>
-							<createDependencyReducedPom>false</createDependencyReducedPom>
-							<artifactSet>
-								<includes>
-									<include>org.apache.hivemall:hivemall-core</include>
-									<include>io.github.myui:xgboost4j</include>
-								</includes>
-							</artifactSet>
-							<filters>
-								<filter>
-									<artifact>*:*</artifact>
-									<excludes>
-										<exclude>*.jar</exclude>
-										<exclude>tracker.py</exclude>
-									</excludes>
-								</filter>
-							</filters>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
-
 </project>

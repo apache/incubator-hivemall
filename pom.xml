@@ -250,6 +250,7 @@
 		<module>xgboost</module>
 		<module>mixserv</module>
 		<module>spark</module>
+		<module>dist</module>
 	</modules>
 
 	<properties>
@@ -449,6 +450,11 @@
 					<version>3.1.0</version>
 				</plugin>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-enforcer-plugin</artifactId>
+					<version>3.0.0-M1</version>
+				</plugin>
+				<plugin>
 					<!-- mvn formatter:format -->
 					<groupId>net.revelc.code</groupId>
 					<artifactId>formatter-maven-plugin</artifactId>
@@ -582,7 +588,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.0.0-M1</version>
 				<executions>
 					<execution>
 						<id>enforce-JAVA_HOME-is-set</id>
@@ -726,30 +731,6 @@
 				</dependencies>
 			</plugin>
 			<!-- end mvn site -->
-			<plugin>
-				<groupId>org.scalastyle</groupId>
-				<artifactId>scalastyle-maven-plugin</artifactId>
-				<version>0.8.0</version>
-				<configuration>
-					<verbose>false</verbose>
-					<failOnViolation>true</failOnViolation>
-					<includeTestSourceDirectory>true</includeTestSourceDirectory>
-					<failOnWarning>false</failOnWarning>
-					<sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-					<testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-					<configLocation>spark/scalastyle-config.xml</configLocation>
-					<outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
-					<inputEncoding>${project.build.sourceEncoding}</inputEncoding>
-					<outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 			<!-- mvn apache-rat:check -->
 			<plugin>
 				<groupId>org.apache.rat</groupId>
