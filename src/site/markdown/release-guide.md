@@ -287,7 +287,7 @@ Create a VOTE email thread on `dev@hivemall.i.a.o` to record votes as replies.
 ```
 To: dev@hivemall.incubator.apache.org
 CC: private@hivemall.incubator.apache.org
-Subject: [VOTE] Apache Hivemall <release version> Release
+Subject: [VOTE] Release Apache Hivemall (Incubating) <release version>
 
 Hi all,
 
@@ -310,12 +310,16 @@ Links to various release artifacts are given below. Please review and cast your 
     - For information about the contents of this release, see:
       https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/ChangeLog.html
 
-You can find Podling releases policies in
-  https://incubator.apache.org/policy/incubation.html#releases
-  http://www.apache.org/legal/release-policy.html
+Find Podling releases policies in
+    https://incubator.apache.org/policy/incubation.html#releases
+    http://www.apache.org/legal/release-policy.html
+
+Artifacts verification how-to can be found in
+    http://hivemall.incubator.apache.org/verify_artifacts.html
 
 The vote will be open for at least 72 hours and until necessary number of votes are reached.
-At lease three +1 from PPMC members are required and we welcome your vote.
+
+At lease three +1 from PPMC members are required and we welcome your vote!
 
 [ ] +1  approve (Release this package as Apache Hivemall 0.5.0-incubating-rc1)
 [ ] +0  no opinion
@@ -323,7 +327,7 @@ At lease three +1 from PPMC members are required and we welcome your vote.
 
 Here is my +1 (binding).
 
-Thanks,
+Regards,
 Makoto
 ```
 
@@ -333,7 +337,7 @@ What if vote succeed, then vote in `general@incubator.apache.org`.
 
 ```
 To: general@incubator.apache.org
-Subject: [VOTE] Apache Hivemall <release version> Release
+Subject: [VOTE] Release Apache Hivemall (Incubating) <release version>
 
 Hi all,
 
@@ -357,6 +361,9 @@ Links to various release artifacts are given below.
     - For information about the contents of this release, see:
       https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/ChangeLog.html
 
+Artifacts verification how-to can be found in
+    http://hivemall.incubator.apache.org/verify_artifacts.html
+
 Please vote accordingly:
 
 [ ] +1  approve (Release this package as Apache Hivemall 0.5.0-incubating-rc1)
@@ -364,7 +371,7 @@ Please vote accordingly:
 
 The vote will be open for at least 72 hours.
 
-Thanks,
+Regards,
 Makoto
 on behalf of Apache Hivemall PPMC
 ```
@@ -373,7 +380,7 @@ Once 72 hours has passed (which is generally preferred) and/or at least three +1
 
 ```
 To: dev@hivemall.incubator.apache.org
-Subject: [RESULT][VOTE]: Apache Hivemall <release version> Release
+Subject: [RESULT][VOTE]: Release Apache Hivemall (Incubating) <release version>
 
 Hi all,
 
