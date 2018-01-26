@@ -36,7 +36,8 @@ public final class NativeLibLoader {
     private static final Log logger = LogFactory.getLog(NativeLibLoader.class);
 
     private static final String keyUserDefinedLib = "hivemall.xgboost.lib";
-    private static final String libPath = "/lib/";
+    private static final String sp = File.separator;
+    private static final String libPath = sp + "lib" + sp + OSInfo.getOSName() + "-" + OSInfo.getArchName() + sp;
 
     private static boolean initialized = false;
 
@@ -58,18 +59,12 @@ public final class NativeLibLoader {
     private static boolean hasResource(String path) {
         return NativeLibLoader.class.getResource(path) != null;
     }
-
-    @Nonnull
-    private static String getOSName() {
-        return System.getProperty("os.name");
-    }
-
     private static void tryLoadNativeLibFromResource(final String libName) {
         // Resolve the library file name with a suffix (e.g., dll, .so, etc.)
         String resolvedLibName = System.mapLibraryName(libName);
 
-        if (!hasResource(libPath + resolvedLibName)) {
-            if (!getOSName().equals("Mac")) {
+        if(!hasResource(libPath + resolvedLibName)) {
+            if(!OSInfo.getOSName().startsWith("darwin")) {
                 return;
             }
             // Fix for openjdk7 for Mac
