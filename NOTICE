@@ -17,15 +17,3 @@ This software contains code derived from the following projects:
 * Copyright 2000-2006 Joachim Henke
 * Copyright 2012-2015 Jeff Hain
 * Copyright 1993 Sun Microsystems, Inc.
-
-------------------------------------------------------------------------------------------------------
-The project site uses the following open source softwares:
-
-* Copyright (c) 2013 Dave Gandy
-
-  hivemall/src/site/resources/css/font-awesome*
-  hivemall/src/site/resources/fonts/fontawesome*
-  
-  Project site uses Icons provided by Font Awesome 4.6.3, which can be obtained at:
-
-    http://fontawesome.io/
