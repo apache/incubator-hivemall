@@ -43,37 +43,6 @@ This software contains code derived from the following projects:
   It partially contain a modified version of fdlibm, developed at Sun Microsystems, Inc.
 
 ------------------------------------------------------------------------------------------------------
-This software contains code derived from the following ASF projects:
-
-* hivemall/core/src/main/java/hivemall/utils/math/MathUtils.java#erfInv()
-
-  contains a modified version of Apache Commons Math, which can be obtained at:
-
-     http://commons.apache.org/proper/commons-math/
-
-* hivemall/core/src/main/java/hivemall/utils/buffer/DynamicByteArray.java
-
-  contains a modified version of Apache ORC, which can be obtained at:
-
-     https://orc.apache.org/
-
-* hivemall/spark/spark-2.0/extra-src/hive/src/main/scala/org/apache/spark/sql/hive/HiveShim.scala
-  hivemall/spark/spark-2.0/src/test/scala/org/apache/spark/sql/QueryTest.scala
-  hivemall/spark/spark-2.0/src/test/scala/org/apache/spark/sql/catalyst/plans/PlanTest.scala
-  hivemall/spark/spark-2.0/src/test/scala/org/apache/spark/sql/hive/test/TestHiveSingleton.scala
-  hivemall/spark/spark-2.1/extra-src/hive/src/main/scala/org/apache/spark/sql/hive/HiveShim.scala
-  hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/QueryTest.scala
-  hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/catalyst/plans/PlanTest.scala
-  hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/hive/test/TestHiveSingleton.scala
-  hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/test/SQLTestUtils.scala
-  hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala
-  hivemall/spark/spark-2.1/src/test/scala/org/apache/spark/sql/execution/benchmark/BenchmarkBase.scala
-
-  contains a modified version of Apache Spark, which can be obtained at:
-
-     http://spark.apache.org/
-
-------------------------------------------------------------------------------------------------------
 The project site uses the following open source softwares:
 
 * Copyright (c) 2013 Dave Gandy
