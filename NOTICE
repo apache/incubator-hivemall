@@ -11,36 +11,12 @@ AIST and Treasure Data, Inc. and others.
 * Copyright 2015-2016 Makoto Yui
 * Copyright 2015-2016 Treasure Data, Inc.
 
-------------------------------------------------------------------------------------------------------
 This software contains code derived from the following projects:
 
 * Copyright 2010 Haifeng Li
-
-  hivemall/core/src/main/java/hivemall/smile/classification/DecisionTree.java
-  hivemall/core/src/main/java/hivemall/smile/regression/RegressionTree.java
-
-  contains a modified version of Smile's RandomForest, which can be obtained at:
-
-    https://github.com/haifengl/smile
-
 * Copyright 2000-2006 Joachim Henke
-
-  hivemall/core/src/main/java/hivemall/utils/codec/Base91.java
-
-  contains a modified version of Base91 encoder/decoder, which can be obtained at:
-
-    https://github.com/bwaldvogel/base91
-
 * Copyright 2012-2015 Jeff Hain
-* Copyright 1993 by Sun Microsystems, Inc.
-
-  hivemall/core/src/main/java/hivemall/utils/math/FastMath.java
-
-  contains a modified version FastMath code, which can be obtained at:
-
-     https://github.com/jeffhain/jafama/
-
-  It partially contains a modified version of fdlibm, developed at Sun Microsystems, Inc.
+* Copyright 1993 Sun Microsystems, Inc.
 
 ------------------------------------------------------------------------------------------------------
 The project site uses the following open source softwares:
