@@ -369,8 +369,8 @@ public final class DecisionTree implements Classifier<Vector> {
 
         public void exportGraphviz(@Nonnull final StringBuilder builder,
                 @Nullable final String[] featureNames, @Nullable final String[] classNames,
-                @Nonnull final String outputName, @Nullable double[] colorBrew,
-                final @Nonnull MutableInt nodeIdGenerator, final int parentNodeId) {
+                @Nonnull final String outputName, @Nullable final double[] colorBrew,
+                @Nonnull final MutableInt nodeIdGenerator, final int parentNodeId) {
             final int myNodeId = nodeIdGenerator.getValue();
 
             if (trueChild == null && falseChild == null) {

@@ -40,7 +40,7 @@ This software contains code derived from the following projects:
 
      https://github.com/jeffhain/jafama/
 
-  It partially contain a modified version of fdlibm, developed at Sun Microsystems, Inc.
+  It partially contains a modified version of fdlibm, developed at Sun Microsystems, Inc.
 
 ------------------------------------------------------------------------------------------------------
 The project site uses the following open source softwares:
