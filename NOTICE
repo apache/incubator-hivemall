@@ -4,16 +4,9 @@ Copyright 2016-2018 The Apache Software Foundation
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
-This product is based on source code originally developed by 
-AIST and Treasure Data, Inc. and others.
+This product is based on source code originally developed by
+AIST and Treasure Data, Inc.
 
 * Copyright 2013-2015 National Institute of Advanced Industrial Science and Technology (AIST)
 * Copyright 2015-2016 Makoto Yui
 * Copyright 2015-2016 Treasure Data, Inc.
-
-This software contains code derived from the following projects:
-
-* Copyright 2010 Haifeng Li
-* Copyright 2000-2006 Joachim Henke
-* Copyright 2012-2015 Jeff Hain
-* Copyright 1993 Sun Microsystems, Inc.
