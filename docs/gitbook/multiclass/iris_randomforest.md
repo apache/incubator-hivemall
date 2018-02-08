@@ -206,7 +206,7 @@ from
 # Prediction
 
 ```sql
-set hivevar:classification=true;
+-- set hivevar:classification=true;
 set hive.auto.convert.join=true;
 set hive.mapjoin.optimized.hashtable=false;
 
@@ -225,7 +225,8 @@ FROM (
     -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
     -- hivemall v0.5-rc.1 or later
     p.model_weight,
-    tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
+    tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
+    -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
     -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
   FROM
     model p
@@ -265,7 +266,8 @@ FROM (
     -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
     -- hivemall v0.5-rc.1 or later
     p.model_weight,
-    tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
+    tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
+    -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
     -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted as predicted -- to use the old model in v0.5-rc.1 or later
   FROM (
     SELECT 

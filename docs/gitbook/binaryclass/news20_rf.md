@@ -47,7 +47,7 @@ from
 ## Prediction
 
 ```sql
-SET hivevar:classification=true;
+-- SET hivevar:classification=true;
 
 drop table rf_predicted;
 create table rf_predicted
@@ -60,7 +60,8 @@ FROM (
   SELECT
     rowid, 
     m.model_weight,
-    tree_predict(m.model_id, m.model, t.features, ${classification}) as predicted
+    tree_predict(m.model_id, m.model, t.features, "-classification") as predicted
+    -- tree_predict(m.model_id, m.model, t.features, ${classification}) as predicted
   FROM
     rf_model m
     LEFT OUTER JOIN -- CROSS JOIN

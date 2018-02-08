@@ -175,7 +175,7 @@ from
 # Prediction
 
 ```sql
-SET hivevar:classification=true;
+-- SET hivevar:classification=true;
 set hive.auto.convert.join=true;
 SET hive.mapjoin.optimized.hashtable=false;
 SET mapred.reduce.tasks=16;
@@ -202,7 +202,8 @@ FROM (
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
       -- hivemall v0.5-rc.1 or later
       p.model_weight,
-      tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
+	  tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
+	  -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
       -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
     FROM (
       SELECT 
@@ -319,7 +320,7 @@ from
 > [116.12055542977338,960.8569891444097,291.08765260103837,469.74671636586226,163.721292772701,120.784769882858,847.9769298113661,554.4617571355476,346.3500941757221,97.42593940113392]    0.1838351822503962
 
 ```sql
-SET hivevar:classification=true;
+-- SET hivevar:classification=true;
 SET hive.mapjoin.optimized.hashtable=false;
 SET mapred.reduce.tasks=16;
 
@@ -345,7 +346,8 @@ FROM (
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
       -- hivemall v0.5-rc.1 or later
       p.model_weight,
-      tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
+      tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
+      -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
       -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
     FROM (
       SELECT 

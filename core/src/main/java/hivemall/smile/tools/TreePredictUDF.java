@@ -18,6 +18,7 @@
  */
 package hivemall.smile.tools;
 
+import hivemall.UDFWithOptions;
 import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
@@ -37,11 +38,12 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -53,12 +55,12 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspe
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "tree_predict",
-        value = "_FUNC_(string modelId, string model, array<double|string> features [, const boolean classification])"
-                + " - Returns a prediction result of a random forest")
+@Description(name = "tree_predict",
+        value = "_FUNC_(string modelId, string model, array<double|string> features [, const string options | const boolean classification=false])"
+                + " - Returns a prediction result of a random forest"
+                + " in <int value, array<double> posteriori> for classification and <double> for regression")
 @UDFType(deterministic = true, stateful = false)
-public final class TreePredictUDF extends GenericUDF {
+public final class TreePredictUDF extends UDFWithOptions {
 
     private boolean classification;
     private StringObjectInspector modelOI;
@@ -72,9 +74,25 @@ public final class TreePredictUDF extends GenericUDF {
     private transient Evaluator evaluator;
 
     @Override
+    protected Options getOptions() {
+        Options opts = new Options();
+        opts.addOption("c", "classification", false,
+            "Predict as classification [default: not enabled]");
+        return opts;
+    }
+
+    @Override
+    protected CommandLine processOptions(@Nonnull String optionValue) throws UDFArgumentException {
+        CommandLine cl = parseOptions(optionValue);
+
+        this.classification = cl.hasOption("classification");
+        return cl;
+    }
+
+    @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 3 && argOIs.length != 4) {
-            throw new UDFArgumentException("_FUNC_ takes 3 or 4 arguments");
+            throw new UDFArgumentException("tree_predict takes 3 or 4 arguments");
         }
 
         this.modelOI = HiveUtils.asStringOI(argOIs[1]);
@@ -89,15 +107,25 @@ public final class TreePredictUDF extends GenericUDF {
             this.denseInput = false;
         } else {
             throw new UDFArgumentException(
-                "_FUNC_ takes array<double> or array<string> for the second argument: "
+                "tree_predict takes array<double> or array<string> for the second argument: "
                         + listOI.getTypeName());
         }
 
-        boolean classification = false;
         if (argOIs.length == 4) {
-            classification = HiveUtils.getConstBoolean(argOIs[3]);
+            ObjectInspector argOI3 = argOIs[3];
+            if (HiveUtils.isConstBoolean(argOI3)) {
+                this.classification = HiveUtils.getConstBoolean(argOI3);
+            } else if (HiveUtils.isConstString(argOI3)) {
+                String opts = HiveUtils.getConstString(argOI3);
+                processOptions(opts);
+            } else {
+                throw new UDFArgumentException(
+                    "tree_predict expects <const boolean> or <const string> for the fourth argument: "
+                            + argOI3.getTypeName());
+            }
+        } else {
+            this.classification = false;
         }
-        this.classification = classification;
 
         if (classification) {
             List<String> fieldNames = new ArrayList<String>(2);
@@ -105,7 +133,8 @@ public final class TreePredictUDF extends GenericUDF {
             fieldNames.add("value");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
             fieldNames.add("posteriori");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         } else {
             return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
@@ -116,7 +145,7 @@ public final class TreePredictUDF extends GenericUDF {
     public Object evaluate(@Nonnull DeferredObject[] arguments) throws HiveException {
         Object arg0 = arguments[0].get();
         if (arg0 == null) {
-            throw new HiveException("ModelId was null");
+            throw new HiveException("modelId should not be null");
         }
         // Not using string OI for backward compatibilities
         String modelId = arg0.toString();
@@ -134,8 +163,8 @@ public final class TreePredictUDF extends GenericUDF {
         this.featuresProbe = parseFeatures(arg2, featuresProbe);
 
         if (evaluator == null) {
-            this.evaluator = classification ? new ClassificationEvaluator()
-                    : new RegressionEvaluator();
+            this.evaluator =
+                    classification ? new ClassificationEvaluator() : new RegressionEvaluator();
         }
         return evaluator.evaluate(modelId, model, featuresProbe);
     }
@@ -192,8 +221,8 @@ public final class TreePredictUDF extends GenericUDF {
                 }
 
                 if (feature.indexOf(':') != -1) {
-                    throw new UDFArgumentException("Invaliad feature format `<index>:<value>`: "
-                            + col);
+                    throw new UDFArgumentException(
+                        "Invaliad feature format `<index>:<value>`: " + col);
                 }
 
                 final int colIndex = Integer.parseInt(feature);
