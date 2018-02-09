@@ -28,6 +28,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+// This file contains a modified version of Jochaim Henke's Base91:
+// https://github.com/bwaldvogel/base91/blob/master/src/main/java/de/bwaldvogel/base91/Base91.java
 package hivemall.utils.codec;
 
 import hivemall.utils.io.FastByteArrayOutputStream;

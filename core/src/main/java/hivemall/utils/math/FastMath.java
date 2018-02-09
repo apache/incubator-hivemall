@@ -25,6 +25,8 @@
  * is preserved.
  * =============================================================================
  */
+// This file contains a modified version of Jafama's FastMath:
+// https://github.com/jeffhain/jafama/blob/master/src/main/java/net/jafama/FastMath.java
 package hivemall.utils.math;
 
 import hivemall.annotations.Experimental;

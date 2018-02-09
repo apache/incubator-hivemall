@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// This file includes a modified version of Smile:
+// https://github.com/haifengl/smile/blob/master/core/src/main/java/smile/regression/RegressionTree.java
 package hivemall.smile.regression;
 
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
