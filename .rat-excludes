@@ -29,3 +29,5 @@ docs/gitbook/_book/**
 docs/gitbook/node_modules/**
 **/release.properties
 **/derby.log
+**/LICENSE-*.txt
+**/Base91.java
