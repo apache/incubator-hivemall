@@ -76,8 +76,6 @@ git pull # or, git reset --hard asf/master
 
 ```sh
 version=X.Y.Z
-# RC should start at 1 and increment if early release candidates fail to release
-rc=1
 # echo "${version}-incubating-SNAPSHOT"
 
 ./bin/set_version.sh --pom --version "${version}-incubating-SNAPSHOT"
@@ -99,14 +97,16 @@ rc=1
 next_version=X.(Y+1).Z
 
 # Confirm that version and rc is defined.
-echo "Release version: ${version}-incubating-rc${rc}"
+echo "Release version: ${version}-incubating"
 echo "Development version: ${next_version}-incubating-SNAPSHOT"
 
 mvn -Papache-release release:prepare \
   -DautoVersionSubmodules=true -DdryRun=true \
   -Darguments='-Dmaven.test.skip.exec=true' -DskipTests=true -Dmaven.test.skip=true \
-  -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating-rc${rc} -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
+  -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
 ```
+
+**Note:** `-rcX` is only used for git tag. Release candidates do NOT have `-rcX` for artifact versions in pom. Release candidates are just for voting.
 
 ### PUBLISH A SNAPSHOT
 
@@ -155,18 +155,18 @@ rc=1
 next_version=X.(Y+1).Z
 
 # Confirm that version and rc is defined.
-echo ${version}-incubating-rc${rc}
-# X.Y.Z-incubating-rc1
+echo "${version}-incubating (Release Candidates ${rc})"
+# 0.5.0-incubating (Release Candidates 3)
 ```
 
 **2)** Update version strings in source codes.
 
 ```sh
-./bin/set_version.sh --version "${version}-incubating-rc${rc}"
+./bin/set_version.sh --version "${version}-incubating"
 
 # Check list of files to be committed.
-git stauts
-git commit -a -m "Bumped version string to ${version}-incubating-rc${rc}"
+git status
+git commit -a -m "Bumped version string to ${version}-incubating"
 ```
 
 **3)** Prepare sets the version numbers in POM and creates a tag.
@@ -175,7 +175,7 @@ git commit -a -m "Bumped version string to ${version}-incubating-rc${rc}"
 mvn -Papache-release release:clean release:prepare \
   -DautoVersionSubmodules=true -DdryRun=false \
   -Darguments='-Dmaven.test.skip.exec=true' -DskipTests=true -Dmaven.test.skip=true \
-  -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating-rc${rc} -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
+  -Dtag=v${version}-rc${rc} -DreleaseVersion=${version}-incubating -DdevelopmentVersion=${next_version}-incubating-SNAPSHOT
 ```
 
 **4)** Update version strings for the development iteration
@@ -254,7 +254,10 @@ cd hivemall
 # Download release artifacts
 wget -e robots=off --no-check-certificate \
  -r -np --reject=html,txt,tmp -nH --cut-dirs=7 \
- https://repository.apache.org/content/repositories/orgapachehivemall-1001/org/apache/hivemall/hivemall/${version}-incubating-rc${rc}/
+ https://repository.apache.org/content/repositories/orgapachehivemall-1001/org/apache/hivemall/hivemall/${version}-incubating/
+
+# Rename directory for RC
+mv ${version}-incubating ${version}-incubating-rc${rc}
 
 # Put ChangeLog
 cd ${version}-incubating-rc${rc}
@@ -282,16 +285,16 @@ svn commit -m "Put hivemall version ${version}-incubating-rc${rc} artifacts"
 
 ## PPMC voting
 
-Create a VOTE email thread on `dev@hivemall.i.a.o` to record votes as replies.
+Create a VOTE email thread on [dev@hivemall.incubator.apache.org](mailto:dev@hivemall.incubator.apache.org) to record votes as replies.
 
 ```
 To: dev@hivemall.incubator.apache.org
 CC: private@hivemall.incubator.apache.org
-Subject: [VOTE] Release Apache Hivemall (Incubating) <release version>
+Subject: [VOTE] Release Apache Hivemall (Incubating) v0.5.0 Release Candidate #3
 
 Hi all,
 
-Apache Hivmeall 0.5.0 release candidate #1 (the first Apache release!) is now available for a vote within dev community.
+Apache Hivmeall 0.5.0 release candidate #1 is now available for a vote within dev community.
 
 Links to various release artifacts are given below. Please review and cast your vote.
 
@@ -331,42 +334,81 @@ Regards,
 Makoto
 ```
 
-## IPMC Voting
-
-What if vote succeed, then vote in `general@incubator.apache.org`.
+Once 72 hours has passed (which is generally preferred) and/or at least three +1 (binding) votes have been cast with no -1 (binding) votes, send an email closing the vote and pronouncing the release candidate a success.
 
 ```
-To: general@incubator.apache.org
-Subject: [VOTE] Release Apache Hivemall (Incubating) <release version>
+To: dev@hivemall.incubator.apache.org
+Subject: [RESULT][VOTE]: Release Apache Hivemall (Incubating) <release version>
 
 Hi all,
 
-The Apache Hivemall community has voted on and approved a proposal to release Apache Hivemall 0.5.0-rc1 (the first Apache release). Apache Hivemall is a library for machine learning for Apache Hive/Spark/Pig, incubating since 2016-09-13.
+The Apache Hivemall <release version> vote is now closed and has passed as follows:
+
+From PPMC members:
++1 myui (Makoto)
++1 maropu (Takeshi)
++1 lewuathe (Kai)
++1 takuti (Takuya)
++1 ozawa (Tsuyoshi)
+
+From Mentors:
++1 daniel (IPMC)
+
+Other non-binding votes:
++1 Kento (committer)
+
+I will send a vote mail to incubator-general mail list to collect three IPMC +1's votes.
+https://incubator.apache.org/policy/incubation.html#releases.
+
+If voting succeeds, v0.5.0 will be released based on v0.5.0-rc2 with removing rc2.
+
+Thanks all of the voters.
+
+Thanks,
+Makoto
+on behalf of Apache Hivemall PPMC
+```
+
+## IPMC Voting
+
+What if vote succeed, then vote in [general@incubator.apache.org](mailto:general@incubator.apache.org). 
+Three +1 Incubator PMC votes are required as described in [this page](https://incubator.apache.org/policy/incubation.html#releases).
+
+```
+To: general@incubator.apache.org
+Subject: [VOTE] Release Apache Hivemall (Incubating) v0.5.0-RC2
+
+Hi all,
+
+The Apache Hivemall community has approved a proposal to release Apache Hivemall v0.5.0 by v0.5.0-RC2.
 
 We now kindly request that the Incubator PMC members review and vote on this incubator release candidate.
 
 The PPMC vote thread is located here:
-    <link to the dev voting thread>
+    https://www.mail-archive.com/dev@hivemall.incubator.apache.org/msg00450.html (vote)
+	https://www.mail-archive.com/dev@hivemall.incubator.apache.org/msg00460.html (vote result)
 
 Links to various release artifacts are given below.
 
     - The source tarball, including signatures, digests, ChangeLog, etc.:
-      https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/
+      https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc2/
+    - Sources for the release:
+      https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc2/hivemall-0.5.0-incubating-rc2-source-release.zip
+    - Git tag for the release:
+      https://git-wip-us.apache.org/repos/asf?p=incubator-hivemall.git;a=shortlog;h=refs/tags/v0.5.0-rc2
+    - The Nexus Staging URL:
+      https://repository.apache.org/content/repositories/orgapachehivemall-1002/
     - KEYS file for verification:
       https://dist.apache.org/repos/dist/dev/incubator/hivemall/KEYS
-    - Git tag for the release:
-      https://git-wip-us.apache.org/repos/asf?p=incubator-hivemall.git;a=shortlog;h=refs/tags/v0.5.0-rc1
-    - The Nexus Staging URL:
-      https://repository.apache.org/content/repositories/orgapachehivemall-1001/
     - For information about the contents of this release, see:
-      https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/ChangeLog.html
+      https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc2/ChangeLog.html
 
 Artifacts verification how-to can be found in
     http://hivemall.incubator.apache.org/verify_artifacts.html
 
 Please vote accordingly:
 
-[ ] +1  approve (Release this package as Apache Hivemall 0.5.0-incubating-rc1)
+[ ] +1  approve
 [ ] -1  disapprove (and reason why)
 
 The vote will be open for at least 72 hours.
