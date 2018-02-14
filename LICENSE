@@ -283,3 +283,15 @@ For details, see http://www.netlib.org/fdlibm/fdlibm.h
    Permission to use, copy, modify, and distribute this
    software is freely granted, provided that this notice
    is preserved.
+
+---------------------------------------------------------------------------
+ The SIL Open Font License (https://opensource.org/licenses/OFL-1.1)
+---------------------------------------------------------------------------
+
+This product bundles `Font-awesome` fonts which is licensed under the
+SIL Open Font License (OFL) 1.1, specifically for the project site.
+For details, see http://fontawesome.io/
+
+   You can find a copy of the License at
+
+       src/site/resources/LICENSE-font_awesome.txt
