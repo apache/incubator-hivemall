@@ -491,6 +491,10 @@
 						<excludes>
 							<exclude>docs/gitbook/node_modules/**</exclude>
 							<exclude>target/</exclude>
+							<exclude>src/main/java/hivemall/utils/codec/Base91.java</exclude>
+							<exclude>src/main/java/hivemall/utils/math/FastMath.java</exclude>
+							<exclude>src/main/java/hivemall/smile/classification/DecisionTree.java</exclude>
+							<exclude>src/main/java/hivemall/smile/regression/RegressionTree.java</exclude>
 						</excludes>
 						<encoding>UTF-8</encoding>
 						<headerDefinitions>
