@@ -46,7 +46,7 @@ public class LDAUDTFTest {
                     "-topics 2 -num_docs 2 -s 1 -iter 32 -eps 1e-3")};
 
         udtf.initialize(argOIs);
-
+      
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
         String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
                 "oranges:1"};

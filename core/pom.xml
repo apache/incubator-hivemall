@@ -103,6 +103,12 @@
 			<version>${guava.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+    		<groupId>opennlp</groupId>
+    		<artifactId>maxent</artifactId>
+    		<version>3.0.0</version>
+    		<scope>provided</scope>
+		</dependency>
 
 		<!-- compile scope -->
 		<dependency>
@@ -259,5 +265,13 @@
 			</plugin>
 		</plugins>
 	</build>
+	
+	<repositories>
+	<repository>
+	<id>clojars</id>
+	<name>clojars</name>
+	<url>http://clojars.org/repo</url>
+	</repository>
+	</repositories>
 
 </project>

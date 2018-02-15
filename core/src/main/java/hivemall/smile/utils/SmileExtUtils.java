@@ -78,6 +78,43 @@ public final class SmileExtUtils {
         return attr;
     }
 
+/**
+     * Q for {@link NumericAttribute}, C for {@link NominalAttribute}.
+     */
+    @Nullable
+    public static String resolveAttributes(@Nullable final Attribute[] opt)
+            throws UDFArgumentException {
+        if (opt == null) {
+            return null;
+        }
+        
+        final int size = opt.length;
+        final String[] opts = new String[size];
+        final NumericAttribute immutableNumAttr = new NumericAttribute();
+        
+        for (int i = 0; i < size; i++) {
+            final Attribute type = opt[i];
+            if (type.type == AttributeType.NUMERIC){
+                opts[i] = "Q";
+            } else if (type.type == AttributeType.NOMINAL) {
+            	opts[i] = "C";
+            } else {
+                throw new UDFArgumentException("Unexpected type: " + type);
+            }
+        }
+        
+        StringBuilder strBuilder = new StringBuilder();
+        for (int i = 0; i < opts.length; i++) {
+           if (!strBuilder.toString().isEmpty()){
+        	   strBuilder.append(",");
+           }
+ 
+           strBuilder.append(opts[i]);
+        }
+        String opts_str = strBuilder.toString(); 
+        return opts_str;
+    }
+
     @Nonnull
     public static Attribute[] attributeTypes(@Nullable final Attribute[] attributes,
             @Nonnull final Matrix x) {

@@ -60,7 +60,7 @@ create temporary function train_multiclass_pa as 'hivemall.classifier.multiclass
 
 drop temporary function if exists train_multiclass_pa1;
 create temporary function train_multiclass_pa1 as 'hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF$PA1';
-
+aggregate_classifier
 drop temporary function if exists train_multiclass_pa2;
 create temporary function train_multiclass_pa2 as 'hivemall.classifier.multiclass.MulticlassPassiveAggressiveUDTF$PA2';
 
@@ -78,6 +78,19 @@ create temporary function train_multiclass_scw as 'hivemall.classifier.multiclas
 
 drop temporary function if exists train_multiclass_scw2;
 create temporary function train_multiclass_scw2 as 'hivemall.classifier.multiclass.MulticlassSoftConfidenceWeightedUDTF$SCW2';
+
+--------------------------------
+--  MaxEnt classification --
+--------------------------------
+
+drop temporary function if exists train_maxent_classifier;
+create temporary function train_maxent_classifier as 'hivemall.smile.classification.MaxEntUDTF';
+
+drop temporary function if exists predict_maxent_classifier;
+create temporary function predict_maxent_classifier as 'hivemall.smile.tools.MaxEntPredictUDF';
+
+drop temporary function if exists aggregate_classifiers; 
+create temporary function aggregate_classifiers as 'hivemall.smile.tools.MaxEntMixtureWeightUDAF';
 
 --------------------------
 -- similarity functions --
