@@ -31,17 +31,19 @@ fi
 
 set -ev
 
-cd $HIVEMALL_HOME
+cd $HIVEMALL_HOME/spark
 
-mvn -q scalastyle:check test -Pspark-2.1
+export MAVEN_OPTS="-XX:MaxPermSize=256m"
 
-# Tests the spark-2.2/spark-2.0 modules only in the following runs
+mvn -q scalastyle:check -Pspark-2.0 -pl spark-2.0 -am test -Dtest=none
+
+mvn -q scalastyle:check clean -Pspark-2.1 -pl spark-2.1 -am test -Dtest=none
+
+# spark-2.2 runs on Java 8+
 if [[ ! -z "$(java -version 2>&1 | grep 1.8)" ]]; then
   mvn -q scalastyle:check clean -Djava.source.version=1.8 -Djava.target.version=1.8 \
-    -Pspark-2.2 -pl spark/spark-2.2 -am test -Dtest=none
+    -Pspark-2.2 -pl spark-2.2 -am test -Dtest=none
 fi
-
-mvn -q scalastyle:check clean -Pspark-2.0 -pl spark/spark-2.0 -am test -Dtest=none
 
 exit 0
 
