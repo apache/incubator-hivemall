@@ -27,7 +27,7 @@ import hivemall.math.vector.VectorProcedure;
 import hivemall.utils.collections.Fastutil;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
-import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
@@ -139,7 +139,7 @@ public class SlimUDTF extends UDTFWithOptions {
     private transient FloatMatrix _dataMatrix;
 
     // used to store KNN data into temporary file for iterative training
-    private transient NioStatefullSegment _fileIO;
+    private transient NioStatefulSegment _fileIO;
     private transient ByteBuffer _inputBuf;
 
     private ConversionState _cvState;
@@ -302,7 +302,7 @@ public class SlimUDTF extends UDTFWithOptions {
             @Nonnull final Int2ObjectMap<Int2FloatMap> knnItems, final int numKNNItems)
             throws HiveException {
         ByteBuffer buf = this._inputBuf;
-        NioStatefullSegment dst = this._fileIO;
+        NioStatefulSegment dst = this._fileIO;
 
         if (buf == null) {
             // invoke only at task node (initialize is also invoked in compilation)
@@ -319,7 +319,7 @@ public class SlimUDTF extends UDTFWithOptions {
             }
 
             this._inputBuf = buf = ByteBuffer.allocateDirect(8 * 1024 * 1024); // 8MB
-            this._fileIO = dst = new NioStatefullSegment(file, false);
+            this._fileIO = dst = new NioStatefulSegment(file, false);
         }
 
         int recordBytes = SizeOf.INT + SizeOf.INT + SizeOf.INT * 2 * knnItems.size()
@@ -349,7 +349,7 @@ public class SlimUDTF extends UDTFWithOptions {
     }
 
     private static void writeBuffer(@Nonnull final ByteBuffer srcBuf,
-            @Nonnull final NioStatefullSegment dst) throws HiveException {
+            @Nonnull final NioStatefulSegment dst) throws HiveException {
         srcBuf.flip();
         try {
             dst.write(srcBuf);
@@ -488,7 +488,7 @@ public class SlimUDTF extends UDTFWithOptions {
 
     private void runIterativeTraining() throws HiveException {
         final ByteBuffer buf = this._inputBuf;
-        final NioStatefullSegment dst = this._fileIO;
+        final NioStatefulSegment dst = this._fileIO;
         assert (buf != null);
         assert (dst != null);
 

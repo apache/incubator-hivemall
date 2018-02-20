@@ -34,7 +34,7 @@ import hivemall.utils.collections.IMapIterator;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NIOUtils;
-import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.FloatAccumulator;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
@@ -106,7 +106,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     // for iterations
 
     @Nullable
-    protected transient NioStatefullSegment fileIO;
+    protected transient NioStatefulSegment fileIO;
     @Nullable
     protected transient ByteBuffer inputBuf;
     private int iterations;
@@ -304,7 +304,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         }
 
         ByteBuffer buf = inputBuf;
-        NioStatefullSegment dst = fileIO;
+        NioStatefulSegment dst = fileIO;
 
         if (buf == null) {
             final File file;
@@ -322,7 +322,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 throw new UDFArgumentException(e);
             }
             this.inputBuf = buf = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB
-            this.fileIO = dst = new NioStatefullSegment(file, false);
+            this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
         int featureVectorBytes = 0;
@@ -416,7 +416,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         return featureVector;
     }
 
-    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
+    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
             throws HiveException {
         srcBuf.flip();
         try {
@@ -536,7 +536,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     protected final void runIterativeTraining(@Nonnegative final int iterations)
             throws HiveException {
         final ByteBuffer buf = this.inputBuf;
-        final NioStatefullSegment dst = this.fileIO;
+        final NioStatefulSegment dst = this.fileIO;
         assert (buf != null);
         assert (dst != null);
         final long numTrainingExamples = count;

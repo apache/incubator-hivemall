@@ -26,15 +26,15 @@ import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
 @NotThreadSafe
-public final class NioStatefullSegment extends NioSegment {
+public final class NioStatefulSegment extends NioSegment {
 
     private long curPos;
 
-    public NioStatefullSegment(File file) {
+    public NioStatefulSegment(File file) {
         this(file, false);
     }
 
-    public NioStatefullSegment(File file, boolean readOnly) {
+    public NioStatefulSegment(File file, boolean readOnly) {
         super(file, readOnly);
         this.curPos = 0L;
     }

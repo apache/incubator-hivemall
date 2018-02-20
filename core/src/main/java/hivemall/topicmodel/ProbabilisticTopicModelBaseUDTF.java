@@ -23,7 +23,7 @@ import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NIOUtils;
-import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
@@ -76,7 +76,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
     protected ListObjectInspector wordCountsOI;
 
     // for iterations
-    protected NioStatefullSegment fileIO;
+    protected NioStatefulSegment fileIO;
     protected ByteBuffer inputBuf;
 
     private float cumPerplexity;
@@ -188,7 +188,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
         }
 
         ByteBuffer buf = inputBuf;
-        NioStatefullSegment dst = fileIO;
+        NioStatefulSegment dst = fileIO;
 
         if (buf == null) {
             final File file;
@@ -206,7 +206,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException(e);
             }
             this.inputBuf = buf = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB
-            this.fileIO = dst = new NioStatefullSegment(file, false);
+            this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
         // wordCounts length, wc1 length, wc1 string, wc2 length, wc2 string, ...
@@ -254,7 +254,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
         miniBatchCount = 0;
     }
 
-    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
+    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
             throws HiveException {
         srcBuf.flip();
         try {
@@ -289,7 +289,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
     protected final void runIterativeTraining(@Nonnegative final int iterations)
             throws HiveException {
         final ByteBuffer buf = this.inputBuf;
-        final NioStatefullSegment dst = this.fileIO;
+        final NioStatefulSegment dst = this.fileIO;
         assert (buf != null);
         assert (dst != null);
         final long numTrainingExamples = model.getDocCount();

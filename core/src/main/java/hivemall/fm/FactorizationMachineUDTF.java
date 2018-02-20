@@ -29,7 +29,7 @@ import hivemall.optimizer.LossFunctions.LossType;
 import hivemall.utils.collections.Fastutil;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
-import hivemall.utils.io.NioStatefullSegment;
+import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.SizeOf;
 import hivemall.utils.math.MathUtils;
@@ -111,7 +111,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
     // file IO
     private ByteBuffer _inputBuf;
-    private NioStatefullSegment _fileIO;
+    private NioStatefulSegment _fileIO;
 
     @Override
     protected Options getOptions() {
@@ -304,7 +304,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
 
         ByteBuffer inputBuf = _inputBuf;
-        NioStatefullSegment dst = _fileIO;
+        NioStatefulSegment dst = _fileIO;
         if (inputBuf == null) {
             final File file;
             try {
@@ -322,7 +322,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             }
 
             this._inputBuf = inputBuf = ByteBuffer.allocateDirect(1024 * 1024); // 1 MiB
-            this._fileIO = dst = new NioStatefullSegment(file, false);
+            this._fileIO = dst = new NioStatefulSegment(file, false);
         }
 
         int xBytes = Feature.requiredBytes(x);
@@ -341,7 +341,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         inputBuf.putDouble(y);
     }
 
-    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefullSegment dst)
+    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
             throws HiveException {
         srcBuf.flip();
         try {
@@ -404,7 +404,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
     /**
      * Update regularization parameters `lambda` as follows:
-     * 
+     *
      * <pre>
      *      grad_lambdaw0 = (grad l(p,y)) * (-2 * alpha * w_0)
      *      grad_lambdawg = (grad l(p,y)) * (-2 * alpha * (\sum_{l \in group(g)} x_l * w_l))
@@ -536,7 +536,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
     protected void runTrainingIteration(int iterations) throws HiveException {
         final ByteBuffer inputBuf = this._inputBuf;
-        final NioStatefullSegment fileIO = this._fileIO;
+        final NioStatefulSegment fileIO = this._fileIO;
         assert (inputBuf != null);
         assert (fileIO != null);
         final long numTrainingExamples = _t;
