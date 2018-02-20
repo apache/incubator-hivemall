@@ -127,7 +127,7 @@ final class HivemallGroupedDataset(groupBy: RelationalGroupedDataset) {
    * @group ensemble
    */
   def max_label(score: String, label: String): DataFrame = {
-    checkType(score, DoubleType)
+    // checkType(score, DoubleType)
     checkType(label, StringType)
     val udaf = HiveUDAFFunction(
         "max_label",

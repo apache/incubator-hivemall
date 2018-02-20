@@ -30,5 +30,4 @@ if [ "$HIVEMALL_HOME" = "" ]; then
 fi
 
 cd $HIVEMALL_HOME
-mvn validate -Pxgboost
 mvn clean package -Dskiptests=true -Dmaven.test.skip=true

@@ -16,13 +16,12 @@
   specific language governing permissions and limitations
   under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.apache.hivemall</groupId>
 	<artifactId>hivemall</artifactId>
-	<version>0.5.0-incubating-SNAPSHOT</version>
+	<version>0.5.1-incubating-SNAPSHOT</version>
 
 	<parent>
 	  <groupId>org.apache</groupId>
@@ -51,7 +50,8 @@
 		<url>https://git-wip-us.apache.org/repos/asf/incubator-hivemall.git</url>
 		<connection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-hivemall.git</connection>
 		<developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-hivemall.git</developerConnection>
-	</scm>
+	  <tag>v0.5.0-rc1</tag>
+  </scm>
 
 	<mailingLists>
 		<mailingList>
@@ -152,8 +152,8 @@
 			<name>Tsuyoshi Ozawa</name>
 			<email>ozawa[at]apache.org</email>
 			<url>https://people.apache.org/~ozawa/</url>
-			<organization></organization>
-			<organizationUrl></organizationUrl>
+			<organization />
+			<organizationUrl />
 			<roles>
 				<role>PPMC Member</role>
 			</roles>
@@ -249,15 +249,14 @@
 		<module>nlp</module>
 		<module>xgboost</module>
 		<module>mixserv</module>
+		<module>spark</module>
+		<module>dist</module>
 	</modules>
 
 	<properties>
-		<java.source.version>1.7</java.source.version>
-		<java.target.version>1.7</java.target.version>
+		<main.basedir>${project.basedir}</main.basedir>
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
-		<scala.version>2.11.8</scala.version>
-		<scala.binary.version>2.11</scala.binary.version>
 		<maven.build.timestamp.format>yyyy</maven.build.timestamp.format>
 		<build.year>${maven.build.timestamp}</build.year>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -269,9 +268,9 @@
 		<guava.version>11.0.2</guava.version>
 		<junit.version>4.12</junit.version>
 		<dependency.locations.enabled>false</dependency.locations.enabled>
-		<main.basedir>${project.basedir}</main.basedir>
-		<maven-enforcer-plugin.version>3.0.0-M1</maven-enforcer-plugin.version>
+		<maven-enforcer.requireMavenVersion>[3.3.1,)</maven-enforcer.requireMavenVersion>
 		<surefire.version>2.19.1</surefire.version>
+		<xgboost.version>0.7-rc2</xgboost.version>
 	</properties>
 
 	<distributionManagement>
@@ -315,113 +314,6 @@
 
 	<profiles>
 		<profile>
-			<id>spark-2.2</id>
-			<modules>
-				<module>spark/spark-2.2</module>
-				<module>spark/spark-common</module>
-			</modules>
-			<properties>
-				<spark.version>2.2.0</spark.version>
-				<spark.binary.version>2.2</spark.binary.version>
-			</properties>
-			<build>
-				<plugins>
-					<!-- Spark-2.2 only supports Java 8 -->
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>${maven-enforcer-plugin.version}</version>
-						<executions>
-							<execution>
-								<id>enforce-versions</id>
-								<phase>validate</phase>
-								<goals>
-									<goal>enforce</goal>
-								</goals>
-								<configuration>
-									<rules>
-										<requireProperty>
-											<property>java.source.version</property>
-											<regex>1.8</regex>
-											<regexMessage>When -Pspark-2.2 set, java.source.version must be 1.8</regexMessage>
-										</requireProperty>
-										<requireProperty>
-											<property>java.target.version</property>
-											<regex>1.8</regex>
-											<regexMessage>When -Pspark-2.2 set, java.target.version must be 1.8</regexMessage>
-										</requireProperty>
-									</rules>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>spark-2.1</id>
-			<modules>
-				<module>spark/spark-2.1</module>
-				<module>spark/spark-common</module>
-			</modules>
-			<properties>
-				<spark.version>2.1.1</spark.version>
-				<spark.binary.version>2.1</spark.binary.version>
-			</properties>
-		</profile>
-		<profile>
-			<id>spark-2.0</id>
-			<modules>
-				<module>spark/spark-2.0</module>
-				<module>spark/spark-common</module>
-			</modules>
-			<properties>
-				<spark.version>2.0.2</spark.version>
-				<spark.binary.version>2.0</spark.binary.version>
-			</properties>
-		</profile>
-		<profile>
-			<id>java7</id>
-			<properties>
-				<spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:PermSize=128m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
-			</properties>
-			<activation>
-				<jdk>[,1.8)</jdk> <!-- version < 1.8 -->
-			</activation>
-		</profile>
-		<profile>
-			<id>java8</id>
-			<properties>
-				<spark.test.jvm.opts>-ea -Xms768m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</spark.test.jvm.opts>
-			</properties>
-			<activation>
-				<jdk>[1.8,)</jdk> <!-- version >= 1.8 -->
-			</activation>
-		</profile>
-		<profile>
-			<id>compile-xgboost</id>
-			<build>
-				<plugins>
-					<plugin>
-						<artifactId>exec-maven-plugin</artifactId>
-						<groupId>org.codehaus.mojo</groupId>
-						<executions>
-							<execution>
-								<id>native</id>
-								<phase>generate-sources</phase>
-								<goals>
-									<goal>exec</goal>
-								</goals>
-								<configuration>
-									<executable>./bin/build_xgboost.sh</executable>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
 			<id>doclint-java8-disable</id>
 			<activation>
 				<jdk>[1.8,)</jdk>
@@ -432,6 +324,110 @@
 		</profile>
 	</profiles>
 
+	<dependencyManagement>
+		<dependencies>
+			<!-- provided scope -->
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-common</artifactId>
+				<version>${hadoop.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hadoop</groupId>
+				<artifactId>hadoop-mapreduce-client-core</artifactId>
+				<version>${hadoop.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hive</groupId>
+				<artifactId>hive-exec</artifactId>
+				<version>${hive.version}</version>
+				<scope>provided</scope>
+				<exclusions>
+					<exclusion>
+						<artifactId>jetty</artifactId>
+						<groupId>org.mortbay.jetty</groupId>
+					</exclusion>
+					<exclusion>
+						<groupId>javax.jdo</groupId>
+						<artifactId>jdo2-api</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>asm-parent</groupId>
+						<artifactId>asm-parent</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>asm</groupId>
+						<artifactId>asm</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>commons-cli</groupId>
+				<artifactId>commons-cli</artifactId>
+				<version>1.2</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>commons-logging</groupId>
+				<artifactId>commons-logging</artifactId>
+				<version>1.0.4</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>log4j</groupId>
+				<artifactId>log4j</artifactId>
+				<version>1.2.17</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>javax.jdo</groupId>
+				<artifactId>jdo2-api</artifactId>
+				<version>2.3-eb</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>${guava.version}</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- test scope -->
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-all</artifactId>
+				<version>1.10.19</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>1.10.19</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.powermock</groupId>
+				<artifactId>powermock-module-junit4</artifactId>
+				<version>1.6.3</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.powermock</groupId>
+				<artifactId>powermock-api-mockito</artifactId>
+				<version>1.6.3</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<build>
 		<directory>target</directory>
 		<outputDirectory>target/classes</outputDirectory>
@@ -440,6 +436,25 @@
 
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.0.2</version>
+					<configuration>
+						<finalName>${project.artifactId}-${project.version}</finalName>
+						<outputDirectory>${main.basedir}/target</outputDirectory>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>3.1.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-enforcer-plugin</artifactId>
+					<version>3.0.0-M1</version>
+				</plugin>
 				<plugin>
 					<!-- mvn formatter:format -->
 					<groupId>net.revelc.code</groupId>
@@ -475,6 +490,11 @@
 						<useDefaultExcludes>false</useDefaultExcludes>
 						<excludes>
 							<exclude>docs/gitbook/node_modules/**</exclude>
+							<exclude>target/</exclude>
+							<exclude>src/main/java/hivemall/utils/codec/Base91.java</exclude>
+							<exclude>src/main/java/hivemall/utils/math/FastMath.java</exclude>
+							<exclude>src/main/java/hivemall/smile/classification/DecisionTree.java</exclude>
+							<exclude>src/main/java/hivemall/smile/regression/RegressionTree.java</exclude>
 						</excludes>
 						<encoding>UTF-8</encoding>
 						<headerDefinitions>
@@ -575,14 +595,42 @@
 				<artifactId>maven-enforcer-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>enforce-maven</id>
+						<id>enforce-JAVA_HOME-is-set</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireEnvironmentVariable>
+									<variableName>JAVA_HOME</variableName>
+								</requireEnvironmentVariable>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+					<execution>
+						<id>enforce-JAVA8_HOME-is-set</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireEnvironmentVariable>
+									<variableName>JAVA8_HOME</variableName>
+								</requireEnvironmentVariable>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+					<execution>
+						<id>required-maven-version</id>
 						<goals>
 							<goal>enforce</goal>
 						</goals>
 						<configuration>
 							<rules>
 								<requireMavenVersion>
-									<version>[3.3.1,)</version>
+									<version>${maven-enforcer.requireMavenVersion}</version>
 								</requireMavenVersion>
 							</rules>
 						</configuration>
@@ -610,8 +658,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>${java.source.version}</source>
-					<target>${java.target.version}</target>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
 					<debug>true</debug>
 					<debuglevel>lines,vars,source</debuglevel>
 					<encoding>UTF-8</encoding>
@@ -688,30 +736,6 @@
 				</dependencies>
 			</plugin>
 			<!-- end mvn site -->
-			<plugin>
-				<groupId>org.scalastyle</groupId>
-				<artifactId>scalastyle-maven-plugin</artifactId>
-				<version>0.8.0</version>
-				<configuration>
-					<verbose>false</verbose>
-					<failOnViolation>true</failOnViolation>
-					<includeTestSourceDirectory>true</includeTestSourceDirectory>
-					<failOnWarning>false</failOnWarning>
-					<sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-					<testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-					<configLocation>spark/spark-common/scalastyle-config.xml</configLocation>
-					<outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
-					<inputEncoding>${project.build.sourceEncoding}</inputEncoding>
-					<outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 			<!-- mvn apache-rat:check -->
 			<plugin>
 				<groupId>org.apache.rat</groupId>

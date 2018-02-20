@@ -16,37 +16,36 @@
   specific language governing permissions and limitations
   under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
 		<groupId>org.apache.hivemall</groupId>
-		<artifactId>hivemall</artifactId>
-		<version>0.5.0-incubating-SNAPSHOT</version>
-		<relativePath>../../pom.xml</relativePath>
+		<artifactId>hivemall-spark</artifactId>
+		<version>0.5.1-incubating-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>hivemall-spark</artifactId>
+	<artifactId>hivemall-spark2.0</artifactId>
 	<name>Hivemall on Spark 2.0</name>
 	<packaging>jar</packaging>
 
 	<properties>
-		<main.basedir>${project.parent.basedir}</main.basedir>
+		<main.basedir>${project.parent.parent.basedir}</main.basedir>
+		<spark.version>2.0.2</spark.version>
+		<spark.binary.version>2.0</spark.binary.version>
 	</properties>
 
 	<dependencies>
-		<!-- hivemall dependencies -->
+		<!-- compile scope -->
 		<dependency>
 			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-core</artifactId>
-			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-xgboost</artifactId>
-			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -56,21 +55,12 @@
 			<scope>compile</scope>
 		</dependency>
 
-		<!-- third-party dependencies -->
+		<!-- provided scope -->
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>
-			<version>${scala.version}</version>
-			<scope>compile</scope>
+			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-compress</artifactId>
-			<version>1.8</version>
-			<scope>compile</scope>
-		</dependency>
-
-		<!-- other provided dependencies -->
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-core_${scala.binary.version}</artifactId>
@@ -106,114 +96,26 @@
 		<dependency>
 			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-mixserv</artifactId>
-			<version>${project.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.xerial</groupId>
-			<artifactId>xerial-core</artifactId>
-			<version>3.2.3</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.scalatest</groupId>
 			<artifactId>scalatest_${scala.binary.version}</artifactId>
-			<version>2.2.4</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
 	<build>
-		<directory>target</directory>
-		<outputDirectory>target/classes</outputDirectory>
-		<finalName>${project.artifactId}-${spark.binary.version}_${scala.binary.version}-${project.version}</finalName>
-		<testOutputDirectory>target/test-classes</testOutputDirectory>
 		<plugins>
-			<!-- For incremental compilation -->
-			<plugin>
-				<groupId>net.alchim31.maven</groupId>
-				<artifactId>scala-maven-plugin</artifactId>
-				<version>3.2.2</version>
-				<executions>
-					<execution>
-						<id>scala-compile-first</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>scala-test-compile-first</id>
-						<phase>process-test-resources</phase>
-						<goals>
-							<goal>testCompile</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<scalaVersion>${scala.version}</scalaVersion>
-					<recompileMode>incremental</recompileMode>
-					<useZincServer>true</useZincServer>
-					<args>
-						<arg>-unchecked</arg>
-						<arg>-deprecation</arg>
-						<!-- TODO: To enable this option, we need to fix many wornings -->
-						<!-- <arg>-feature</arg> -->
-					</args>
-					<jvmArgs>
-						<jvmArg>-Xms512m</jvmArg>
-						<jvmArg>-Xmx1024m</jvmArg>
-					</jvmArgs>
-				</configuration>
-			</plugin>
-			<!-- hivemall-spark_xx-xx.jar -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.5</version>
-				<configuration>
-					<finalName>${project.artifactId}-${spark.binary.version}_${scala.binary.version}-${project.version}</finalName>
-					<outputDirectory>${project.parent.build.directory}</outputDirectory>
-				</configuration>
-			</plugin>
 			<!-- hivemall-spark_xx-xx-with-dependencies.jar including minimum dependencies -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.1.0</version>
-				<executions>
-					<execution>
-						<id>jar-with-dependencies</id>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<finalName>${project.artifactId}-${spark.binary.version}_${scala.binary.version}-${project.version}-with-dependencies</finalName>
-							<outputDirectory>${project.parent.build.directory}</outputDirectory>
-							<minimizeJar>false</minimizeJar>
-							<createDependencyReducedPom>false</createDependencyReducedPom>
-							<artifactSet>
-								<includes>
-									<include>org.apache.hivemall:hivemall-core</include>
-									<include>org.apache.hivemall:hivemall-xgboost</include>
-									<include>org.apache.hivemall:hivemall-spark-common</include>
-									<include>com.github.haifengl:smile-core</include>
-									<include>com.github.haifengl:smile-math</include>
-									<include>com.github.haifengl:smile-data</include>
-									<include>ml.dmlc:xgboost4j</include>
-									<include>com.esotericsoftware.kryo:kryo</include>
-								</includes>
-							</artifactSet>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 			<!-- disable surefire because there is no java test -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.7</version>
 				<configuration>
 					<skipTests>true</skipTests>
 				</configuration>
@@ -222,33 +124,6 @@
 			<plugin>
 				<groupId>org.scalatest</groupId>
 				<artifactId>scalatest-maven-plugin</artifactId>
-				<version>1.0</version>
-				<configuration>
-					<reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-					<junitxml>.</junitxml>
-					<filereports>SparkTestSuite.txt</filereports>
-					<argLine>${spark.test.jvm.opts}</argLine>
-					<stderr />
-					<environmentVariables>
-						<SPARK_PREPEND_CLASSES>1</SPARK_PREPEND_CLASSES>
-						<SPARK_SCALA_VERSION>${scala.binary.version}</SPARK_SCALA_VERSION>
-						<SPARK_TESTING>1</SPARK_TESTING>
-						<JAVA_HOME>${env.JAVA_HOME}</JAVA_HOME>
-					</environmentVariables>
-					<systemProperties>
-						<log4j.configuration>file:src/test/resources/log4j.properties</log4j.configuration>
-						<derby.system.durability>test</derby.system.durability>
-						<java.awt.headless>true</java.awt.headless>
-						<java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
-						<spark.testing>1</spark.testing>
-						<spark.ui.enabled>false</spark.ui.enabled>
-						<spark.ui.showConsoleProgress>false</spark.ui.showConsoleProgress>
-						<spark.unsafe.exceptionOnMemoryLeak>true</spark.unsafe.exceptionOnMemoryLeak>
-						<!-- Needed by sql/hive tests. -->
-						<test.src.tables>__not_used__</test.src.tables>
-					</systemProperties>
-					<tagsToExclude>${test.exclude.tags}</tagsToExclude>
-				</configuration>
 				<executions>
 					<execution>
 						<id>test</id>

@@ -1,0 +1,295 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.apache.hivemall</groupId>
+		<artifactId>hivemall</artifactId>
+		<version>0.5.1-incubating-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>hivemall-spark</artifactId>
+	<packaging>pom</packaging>
+	<name>Hivemall on Apache Spark</name>
+
+	<modules>
+		<module>common</module>
+		<module>spark-2.0</module>
+		<module>spark-2.1</module>
+		<module>spark-2.2</module>
+	</modules>
+
+	<properties>
+		<main.basedir>${project.parent.basedir}</main.basedir>
+		<scala.version>2.11.8</scala.version>
+		<scala.binary.version>2.11</scala.binary.version>
+		<scalatest.jvm.opts>-ea -Xms768m -Xmx1024m -XX:PermSize=128m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m</scalatest.jvm.opts>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- compile scope -->
+			<dependency>
+				<groupId>org.apache.hivemall</groupId>
+				<artifactId>hivemall-core</artifactId>
+				<version>${project.version}</version>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.hivemall</groupId>
+				<artifactId>hivemall-xgboost</artifactId>
+				<version>${project.version}</version>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-compress</artifactId>
+				<version>1.8</version>
+				<scope>compile</scope>
+			</dependency>
+
+			<!-- provided scope -->
+			<dependency>
+				<groupId>org.scala-lang</groupId>
+				<artifactId>scala-library</artifactId>
+				<version>${scala.version}</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- test dependencies -->
+			<dependency>
+				<groupId>org.apache.hivemall</groupId>
+				<artifactId>hivemall-mixserv</artifactId>
+				<version>${project.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.scalatest</groupId>
+				<artifactId>scalatest_${scala.binary.version}</artifactId>
+				<version>2.2.4</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<directory>target</directory>
+		<outputDirectory>target/classes</outputDirectory>
+		<finalName>${project.artifactId}-${project.version}</finalName>
+		<testOutputDirectory>target/test-classes</testOutputDirectory>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>net.alchim31.maven</groupId>
+					<artifactId>scala-maven-plugin</artifactId>
+					<version>3.2.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.scalatest</groupId>
+					<artifactId>scalatest-maven-plugin</artifactId>
+					<version>1.0</version>
+					<configuration>
+						<reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+						<junitxml>.</junitxml>
+						<filereports>SparkTestSuite.txt</filereports>
+						<argLine>${scalatest.jvm.opts}</argLine>
+						<stderr />
+						<environmentVariables>
+							<SPARK_PREPEND_CLASSES>1</SPARK_PREPEND_CLASSES>
+							<SPARK_SCALA_VERSION>${scala.binary.version}</SPARK_SCALA_VERSION>
+							<SPARK_TESTING>1</SPARK_TESTING>
+							<JAVA_HOME>${env.JAVA_HOME}</JAVA_HOME>
+							<PATH>${env.JAVA_HOME}/bin:${env.PATH}</PATH>
+						</environmentVariables>
+						<systemProperties>
+							<log4j.configuration>file:src/test/resources/log4j.properties</log4j.configuration>
+							<derby.system.durability>test</derby.system.durability>
+							<java.awt.headless>true</java.awt.headless>
+							<java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
+							<spark.testing>1</spark.testing>
+							<spark.ui.enabled>false</spark.ui.enabled>
+							<spark.ui.showConsoleProgress>false</spark.ui.showConsoleProgress>
+							<spark.unsafe.exceptionOnMemoryLeak>true</spark.unsafe.exceptionOnMemoryLeak>
+							<!-- Needed by sql/hive tests. -->
+							<test.src.tables>__not_used__</test.src.tables>
+						</systemProperties>
+						<tagsToExclude>${test.exclude.tags}</tagsToExclude>
+					</configuration>
+				</plugin>
+				<!-- hivemall-spark_xx-xx-with-dependencies.jar including minimum dependencies -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<executions>
+						<execution>
+							<id>jar-with-dependencies</id>
+							<phase>package</phase>
+							<goals>
+								<goal>shade</goal>
+							</goals>
+							<configuration>
+								<finalName>${project.artifactId}-${project.version}-with-dependencies</finalName>
+								<outputDirectory>${main.basedir}/target</outputDirectory>
+								<minimizeJar>false</minimizeJar>
+								<createDependencyReducedPom>false</createDependencyReducedPom>
+								<createSourcesJar>true</createSourcesJar>
+								<artifactSet>
+									<includes>
+										<include>org.apache.hivemall:hivemall-spark-common</include>
+										<!-- hivemall-core -->
+										<include>org.apache.hivemall:hivemall-core</include>
+										<include>io.netty:netty-all</include>
+										<include>com.github.haifengl:smile-core</include>
+										<include>com.github.haifengl:smile-math</include>
+										<include>com.github.haifengl:smile-data</include>
+										<include>org.tukaani:xz</include>
+										<include>org.apache.commons:commons-math3</include>
+										<include>org.roaringbitmap:RoaringBitmap</include>
+										<include>it.unimi.dsi:fastutil</include>
+										<include>com.clearspring.analytics:stream</include>
+										<!-- hivemall-nlp -->
+										<include>org.apache.hivemall:hivemall-nlp</include>
+										<include>org.apache.lucene:lucene-analyzers-kuromoji</include>
+										<include>org.apache.lucene:lucene-analyzers-smartcn</include>
+										<include>org.apache.lucene:lucene-analyzers-common</include>
+										<include>org.apache.lucene:lucene-core</include>
+										<!-- hivemall-xgboost -->
+										<include>org.apache.hivemall:hivemall-xgboost</include>
+										<include>io.github.myui:xgboost4j</include>
+										<include>com.esotericsoftware.kryo:kryo</include>
+									</includes>
+								</artifactSet>
+								<transformers>
+									<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+										<manifestEntries>
+											<Implementation-Title>${project.name}</Implementation-Title>
+											<Implementation-Version>${project.version}</Implementation-Version>
+											<Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
+										</manifestEntries>
+									</transformer>
+								</transformers>
+								<filters>
+									<filter>
+										<artifact>org.apache.lucene:*</artifact>
+										<includes>
+											<include>**</include>
+										</includes>
+									</filter>
+									<filter>
+										<artifact>com.esotericsoftware.kryo:kryo</artifact>
+										<includes>
+											<include>**</include>
+										</includes>
+									</filter>
+									<filter>
+										<artifact>*:*</artifact>
+										<excludes>
+											<exclude>META-INF/LICENSE.txt</exclude>
+											<exclude>META-INF/NOTICE.txt</exclude>
+											<exclude>META-INF/*.SF</exclude>
+											<exclude>META-INF/*.DSA</exclude>
+											<exclude>META-INF/*.RSA</exclude>
+											<exclude>*.jar</exclude>
+											<exclude>tracker.py</exclude>
+										</excludes>
+									</filter>
+								</filters>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.scalastyle</groupId>
+					<artifactId>scalastyle-maven-plugin</artifactId>
+					<version>0.8.0</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
+		<plugins>
+			<plugin>
+				<groupId>org.scalastyle</groupId>
+				<artifactId>scalastyle-maven-plugin</artifactId>
+				<configuration>
+					<verbose>false</verbose>
+					<failOnViolation>true</failOnViolation>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<failOnWarning>false</failOnWarning>
+					<sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
+					<testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
+					<configLocation>spark/scalastyle-config.xml</configLocation>
+					<outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
+					<inputEncoding>${project.build.sourceEncoding}</inputEncoding>
+					<outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>net.alchim31.maven</groupId>
+				<artifactId>scala-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>scala-compile-first</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>add-source</goal>
+							<goal>compile</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>scala-test-compile</id>
+						<phase>process-test-resources</phase>
+						<goals>
+							<goal>testCompile</goal>
+						</goals>
+					</execution>
+				</executions>
+				<!-- For incremental compilation -->
+				<configuration>
+					<scalaVersion>${scala.version}</scalaVersion>
+					<recompileMode>incremental</recompileMode>
+					<useZincServer>true</useZincServer>
+					<args>
+						<arg>-unchecked</arg>
+						<arg>-deprecation</arg>
+						<!-- TODO: To enable this option, we need to fix many wornings -->
+						<!-- <arg>-feature</arg> -->
+					</args>
+					<jvmArgs>
+						<jvmArg>-Xms768m</jvmArg>
+						<jvmArg>-Xmx1024m</jvmArg>
+						<jvmArg>-XX:PermSize=128m</jvmArg>
+						<jvmArg>-XX:MaxPermSize=512m</jvmArg>
+						<jvmArg>-XX:ReservedCodeCacheSize=512m</jvmArg>
+					</jvmArgs>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

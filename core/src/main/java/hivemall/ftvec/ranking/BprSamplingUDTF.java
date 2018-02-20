@@ -18,12 +18,6 @@
  */
 package hivemall.ftvec.ranking;
 
-import hivemall.UDTFWithOptions;
-import hivemall.utils.collections.lists.IntArrayList;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.lang.BitUtils;
-import hivemall.utils.lang.Primitives;
-
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Random;
@@ -45,6 +39,12 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.IntWritable;
 
+import hivemall.UDTFWithOptions;
+import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.BitUtils;
+import hivemall.utils.lang.Primitives;
+
 @Description(name = "bpr_sampling",
         value = "_FUNC_(int userId, List<int> posItems [, const string options])"
                 + "- Returns a relation consists of <int userId, int itemId>")
@@ -54,9 +54,13 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
     private ListObjectInspector itemListOI;
     private PrimitiveObjectInspector itemElemOI;
 
-    private PositiveOnlyFeedback feedback;
+    // Need to avoid
+    // org.apache.hive.com.esotericsoftware.kryo.KryoException: java.lang.ArrayIndexOutOfBoundsException: 1
+    @Nullable
+    private transient PositiveOnlyFeedback feedback;
 
     // sampling options
+    private int maxItemId;
     private float samplingRate;
     private boolean withoutReplacement;
     private boolean pairSampling;
@@ -106,8 +110,7 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
             }
         }
 
-        this.feedback = pairSampling ? new PerEventPositiveOnlyFeedback(maxItemId)
-                : new PositiveOnlyFeedback(maxItemId);
+        this.maxItemId = maxItemId;
         this.samplingRate = samplingRate;
         this.withoutReplacement = withoutReplacement;
         this.pairSampling = pairSampling;
@@ -147,6 +150,11 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
 
     @Override
     public void process(@Nonnull Object[] args) throws HiveException {
+        if (feedback == null) {
+            this.feedback = pairSampling ? new PerEventPositiveOnlyFeedback(maxItemId)
+                    : new PositiveOnlyFeedback(maxItemId);
+        }
+
         int userId = PrimitiveObjectInspectorUtils.getInt(args[0], userOI);
         validateIndex(userId);
 
@@ -202,7 +210,8 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
         }
     }
 
-    private void forward(final int user, final int posItem, final int negItem) throws HiveException {
+    private void forward(final int user, final int posItem, final int negItem)
+            throws HiveException {
         assert (user >= 0) : user;
         assert (posItem >= 0) : posItem;
         assert (negItem >= 0) : negItem;
@@ -260,9 +269,8 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
      * Caution: This is not a perfect 'without sampling' but it does 'without sampling' for positive
      * feedbacks.
      */
-    private void uniformUserSamplingWithoutReplacement(
-            @Nonnull final PositiveOnlyFeedback feedback, final int numSamples)
-            throws HiveException {
+    private void uniformUserSamplingWithoutReplacement(@Nonnull final PositiveOnlyFeedback feedback,
+            final int numSamples) throws HiveException {
         int numUsers = feedback.getNumUsers();
         if (numUsers == 0) {
             return;
@@ -280,8 +288,8 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
             int nthUser = rand.nextInt(numUsers);
             int user = BitUtils.indexOfSetBit(userBits, nthUser);
             if (user == -1) {
-                throw new HiveException("Cannot find " + nthUser + "-th user among " + numUsers
-                        + " users");
+                throw new HiveException(
+                    "Cannot find " + nthUser + "-th user among " + numUsers + " users");
             }
 
             IntArrayList posItems = feedback.getItems(user, true);

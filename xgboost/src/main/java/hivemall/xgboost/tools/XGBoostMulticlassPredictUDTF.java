@@ -18,8 +18,6 @@
  */
 package hivemall.xgboost.tools;
 
-import hivemall.utils.lang.Preconditions;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,10 +30,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(
-        name = "xgboost_multiclass_predict",
+import hivemall.utils.lang.Preconditions;
+
+@Description(name = "xgboost_multiclass_predict",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<byte> pred_model [, string options]) "
-                + "- Returns a prediction result as (string rowid, int label, float probability)")
+                + "- Returns a prediction result as (string rowid, string label, float probability)")
 public final class XGBoostMulticlassPredictUDTF extends hivemall.xgboost.XGBoostPredictUDTF {
 
     public XGBoostMulticlassPredictUDTF() {
@@ -65,14 +64,14 @@ public final class XGBoostMulticlassPredictUDTF extends hivemall.xgboost.XGBoost
         final Object[] forwardObj = new Object[3];
         for (int i = 0, size = testData.size(); i < size; i++) {
             final float[] predicted_i = predicted[i];
-            final String rowId = testData.get(i).getRowId();
+            String rowId = testData.get(i).getRowId();
             forwardObj[0] = rowId;
 
             assert (predicted_i.length > 1);
             for (int j = 0; j < predicted_i.length; j++) {
-                forwardObj[1] = j;
+                forwardObj[1] = String.valueOf(j);
                 float prob = predicted_i[j];
-                forwardObj[2] = prob;
+                forwardObj[2] = Float.valueOf(prob);
                 forward(forwardObj);
             }
         }
