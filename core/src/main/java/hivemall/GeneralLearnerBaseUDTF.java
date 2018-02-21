@@ -209,7 +209,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         this.iterations = iterations;
         this.cvState = new ConversionState(conversionCheck, convergenceRate);
 
-        OptimizerOptions.propcessOptions(cl, optimizerOptions);
+        OptimizerOptions.processOptions(cl, optimizerOptions);
 
         return cl;
     }
