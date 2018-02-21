@@ -30,7 +30,6 @@ branches:
 
 before_install:
   - export JAVA8_HOME=$(jdk_switcher home oraclejdk8)
-  - mvn validate -Pcompile-xgboost
 
 notifications:
   email: false
