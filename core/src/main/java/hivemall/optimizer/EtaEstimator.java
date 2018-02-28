@@ -44,7 +44,7 @@ public abstract class EtaEstimator {
 
     public abstract float eta(long t);
 
-    public void update(@Nonnegative float multipler) {}
+    public void update(@Nonnegative float multiplier) {}
 
     public static final class FixedEtaEstimator extends EtaEstimator {
 
@@ -115,8 +115,8 @@ public abstract class EtaEstimator {
         }
 
         @Override
-        public void update(@Nonnegative float multipler) {
-            float newEta = eta * multipler;
+        public void update(@Nonnegative float multiplier) {
+            float newEta = eta * multiplier;
             if (!NumberUtils.isFinite(newEta)) {
                 // avoid NaN or INFINITY
                 return;
