@@ -408,7 +408,7 @@ Artifacts verification how-to can be found in
 
 Please vote accordingly:
 
-[ ] +1  approve
+[ ] +1  approve (Release this package as Apache Hivemall 0.5.0-incubating)
 [ ] -1  disapprove (and reason why)
 
 The vote will be open for at least 72 hours.
@@ -421,24 +421,35 @@ on behalf of Apache Hivemall PPMC
 Once 72 hours has passed (which is generally preferred) and/or at least three +1 (binding) votes have been cast with no -1 (binding) votes, send an email closing the vote and pronouncing the release candidate a success.
 
 ```
-To: dev@hivemall.incubator.apache.org
+To: general@incubator.apache.org
+CC: dev@hivemall.incubator.apache.org
 Subject: [RESULT][VOTE]: Release Apache Hivemall (Incubating) <release version>
 
 Hi all,
 
-The Apache Hivemall <release version> vote is now closed and has passed as follows:
+The vote to release Apache Hivemall (incubating) version v0.5.0
+Release Candidate 3 has passed with 3 +1 binding votes and no other votes.
 
- [number] +1 (binding) votes
- [number] -1 (binding) votes
++1 binding:
+ ..
+ ..
+ ..
 
-The Apache Hivemall (incubating) community will proceed with the release.
+Vote thread:
+ https://lists.apache.org/thread.html/86a0d8df057c6c7b0675f8bbdb211fe6602545c68de2bf9b7b8204c1@%3Cgeneral.incubator.apache.org%3E
 
-Thanks,
+I'd like to thank all voters who helped verifying the release.
+
+The Apache Hivemall community will proceed to publish the 0.5.0-incubating release and send announcements.
+
+Best,
 Makoto
 on behalf of Apache Hivemall PPMC
 ```
 
 ## Finalize release
+
+Once the Incubator general vote has passed, we can publish the source release and artifacts.
 
 ### Publish to Maven Central in Nexus
 
@@ -452,6 +463,33 @@ on behalf of Apache Hivemall PPMC
 
 Update the JIRA versions page to close all issues, mark the version as `released`, and set the date to the date that the release was approved. You may also need to make a new release entry for the next release.
 
+### Source Release
+
+The Hivemall source release are checked into SVN under: [https://dist.apache.org/repos/dist/release/incubator/hivemall](https://dist.apache.org/repos/dist/release/incubator/hivemall)
+
+```sh
+# cd ~/work/dist
+# mkdir -p release/incubator
+# cd release/incubator
+# svn co https://dist.apache.org/repos/dist/release/incubator/hivemall/
+# cd hivemall
+
+# Put release artifacts to release directory
+mkdir 0.5.0-incubating
+cp ../../../dev/incubator/hivemall/0.5.0-incubating-rc3/ChangeLog.html 0.5.0-incubating/
+cp ../../../dev/incubator/hivemall/0.5.0-incubating-rc3/hivemall-0.5.0-incubating*.zip* 0.5.0-incubating/
+cp ../../../dev/incubator/hivemall/0.5.0-incubating-rc3/hivemall*.jar* 0.5.0-incubating/
+ls 0.5.0-incubating/
+
+# Commit to SVN
+svn add 0.5.0-incubating/
+svn commit -m "Put hivemall version 0.5.0-incubating release artifacts"
+```
+
+Check release artifacts in the SVN repository:
+ [https://dist.apache.org/repos/dist/release/incubator/hivemall/0.5.0-incubating/](https://dist.apache.org/repos/dist/release/incubator/hivemall/0.5.0-incubating/) 
+ ([Mirror](https://www.apache.org/dyn/closer.cgi/incubator/hivemall))
+
 ### Merge release branch for the next development iteration
 
 If IPMC vote succeed, then merge the release branch into the master branch.
@@ -463,3 +501,52 @@ Update [download page](http://hivemall.incubator.apache.org/download.html) etc.
 ### Announcing the release
 
 Make an announcement about the release on the `user@hivemall.incubator.apache.org`, `dev@hivemall.incubator.apache.org`, `general@incubator.apache.org`, and `announce@apache.org` list as per the Apache Announcement Mailing Lists page.
+
+```
+[ANNOUNCE] Apache Hivemall 0.5.0-incubating released
+
+The Apache Hivemall (incubating) Project Team is proud to announce 
+Apache Hivemall 0.5.0-incubating has been released.
+This is the first Apache release as an Apache Incubator project.
+
+Apache Hivemall is a scalable machine learning library implemented as
+Hive UDFs/UDAFs/UDTFs. Hivemall runs on Hadoop-based data processing 
+frameworks, specifically on Apache Hive, Apache Spark, and Apache Pig.
+
+The release artifacts is available at:
+
+ http://www.apache.org/dyn/closer.cgi/incubator/hivemall/0.5.0-incubating/
+
+Signatures of the release artifacts can be found at:
+
+ http://www.apache.org/dist/incubator/hivemall/0.5.0-incubating/
+
+ChangeLog of this release can be found at:
+
+ http://www.apache.org/dist/incubator/hivemall/0.5.0-incubating/ChangeLog.html
+
+Release artifacts in Maven Central:
+
+ https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.apache.hivemall%22%20AND%20v%3A%220.5.0-incubating%22
+
+Find more about our project at:
+ - Project Site: http://hivemall.incubator.apache.org/
+ - Github mirror: https://github.com/apache/incubator-hivemall
+ - Mailing list(s): dev@hivemall.incubator.apache.org
+                    user@hivemall.incubator.apache.org
+
+Thanks,
+Makoto
+on behalf of Apache Hivemall PPMC
+
+=====
+*Disclaimer*
+Apache Hivemall (incubating) is an effort undergoing incubation at 
+The Apache Software Foundation (ASF), sponsored by the name of Apache
+Incubator PMC. Incubation is required of all newly accepted projects 
+until a further review indicates that the infrastructure, communications, 
+and decision making process have stabilized in a manner consistent 
+with other successful ASF projects. While incubation status is not 
+necessarily a reflection of the completeness or stability of the code, 
+it does indicate that the project has yet to be fully endorsed by the ASF.
+```
