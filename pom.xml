@@ -201,8 +201,8 @@
 			<name>Roman Shaposhnik</name>
 			<email>rvs[at]apache.org</email>
 			<url>http://github.com/rvs</url>
-			<organization>Pivotal Inc.</organization>
-			<organizationUrl>https://pivotal.io/</organizationUrl>
+			<organization>ZEDEDA Inc.</organization>
+			<organizationUrl>https://www.zededa.com/</organizationUrl>
 			<roles>
 				<role>Champion</role>
 			</roles>
@@ -219,17 +219,6 @@
 			</roles>
 		</developer>
 		<developer>
-			<id>weimer</id>
-			<name>Markus Weimer</name>
-			<email>markus[at]weimo.de</email>
-			<url>http://www.markusweimer.com/</url>
-			<organization>Microsoft Corporation</organization>
-			<organizationUrl>https://www.microsoft.com/</organizationUrl>
-			<roles>
-				<role>Mentor</role>
-			</roles>
-		</developer>
-		<developer>
 			<id>meng</id>
 			<name>Xiangrui Meng</name>
 			<email>meng[at]databricks.com</email>
@@ -238,6 +227,17 @@
 			<organizationUrl>https://databricks.com/</organizationUrl>
 			<roles>
 				<role>Mentor</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>weimer</id>
+			<name>Markus Weimer</name>
+			<email>markus[at]weimo.de</email>
+			<url>http://www.markusweimer.com/</url>
+			<organization>Microsoft Corporation</organization>
+			<organizationUrl>https://www.microsoft.com/</organizationUrl>
+			<roles>
+				<role>Past Mentor (resigned on Mar 1, 2018)</role>
 			</roles>
 		</developer>
 	</developers>
