@@ -82,9 +82,9 @@ import org.apache.hadoop.mapred.Reporter;
 
 @Description(
         name = "train_randomforest_classifier",
-        value = "_FUNC_(array<double|string> features, int label [, const array<double> classWeights, const string options]) - "
-                + "Returns a relation consists of "
-                + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests, double weight>")
+        value = "_FUNC_(array<double|string> features, int label [, const string options, const array<double> classWeights])"
+                + "- Returns a relation consists of "
+                + "<string model_id, double model_weight, string model, array<double> var_importance, int oob_errors, int oob_tests>")
 public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(RandomForestClassifierUDTF.class);
 
@@ -150,7 +150,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY]");
         opts.addOption("stratified", "stratified_sampling", false,
             "Enable Stratified sampling for unbalanced data");
-        opts.addOption("subsample", true, "Sampling rate in range (0.0,1.0]");
+        opts.addOption("subsample", true, "Sampling rate in range (0.0,1.0]. [default: 1.0]");
         return opts;
     }
 
