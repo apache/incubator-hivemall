@@ -256,7 +256,38 @@ set hive.auto.convert.join=true;
 SET hive.mapjoin.optimized.hashtable=false;
 SET mapred.reduce.tasks=8;
 
-
+drop table predicted;
+create table predicted
+as
+SELECT
+  rowid,
+  -- rf_ensemble(predicted) as predicted
+  -- v0.5.0 or later
+  rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
+  -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
+FROM (
+  SELECT
+    t.rowid, 
+    -- from v0.4.1 to v0.4.2-rc4
+    -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
+    -- v0.5.0 or later
+    p.model_weight,
+    tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
+    -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
+    -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted as predicted -- to use the old model in v0.5.0 or later
+  FROM (
+    SELECT 
+      -- from v0.4.1 to v0.4.2-rc4
+      -- model_id, model_type, pred_model
+      -- v0.5.0 or later
+      model_id, model_weight, model
+    FROM model
+    DISTRIBUTE BY rand(1)
+  ) p 
+  LEFT OUTER JOIN training t
+) t1
+group by
+  rowid;
 ```
 
 # Evaluation
