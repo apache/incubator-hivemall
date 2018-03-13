@@ -27,7 +27,7 @@
     </head>
     <body>
         <div class="alert alert-info" role="alert">
-            <strong>Info:</strong> We are planning the initial Apache release on Q4, 2017. <a href="/userguide/index.html"><button class="btn btn-primary" type="button">Learn more</button></a>.
+            <strong>Info:</strong> The first Apache release v0.5.0 has been <a href="https://markmail.org/thread/imnf6azzxksrbdg4">released in Mar 5, 2018</a>. <a href="./download.html"><button type="button" class="btn btn-danger">Download</button></a> <a href="/userguide/index.html"><button class="btn btn-primary" type="button">Learn more</button></a>
         </div>
         <div id="carousel-main" class="row">
             <div id="screenshots-carousel" class="carousel slide span10">
@@ -49,6 +49,12 @@
                         <img alt="" src="/images/hivemall_overview_bg.png" height="120px"/>
                         <div class="carousel-caption">
                             <p>Introduction to Hivemall <a href="http://www.slideshare.net/myui/introduction-to-hivemall"></a></p>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <img alt="" src="/images/new_in_v050.png" height="120px"/>
+                        <div class="carousel-caption">
+                            <p>What's new in v0.5.0 <a href="https://www.slideshare.net/myui/incubating-apache-hivemall"></a></p>
                         </div>
                     </div>
                 </div>

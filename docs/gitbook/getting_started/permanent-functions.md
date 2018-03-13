@@ -17,7 +17,7 @@
   under the License.
 -->
         
-Hive v0.13 or later supports [permanent functions](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL#LanguageManualDDL-Create/DropFunction) that live across sessions.
+Hive v0.13 or later supports [permanent functions](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL#LanguageManualDDL-Create/DropFunction) that lives across sessions.
 
 Permanent functions are useful when you are using Hive through Hiveserver or to avoid hivemall installation for each session.
 
@@ -28,7 +28,7 @@ Permanent functions are useful when you are using Hive through Hiveserver or to 
 First, put hivemall jar to HDFS as follows:
 ```sh
 hadoop fs -mkdir -p /apps/hivemall
-hadoop fs -put hivemall-with-dependencies.jar /apps/hivemall
+hadoop fs -put hivemall-all-xxx.jar /apps/hivemall
 ```
 
 # Create permanent functions
@@ -39,9 +39,9 @@ CREATE DATABASE IF NOT EXISTS hivemall;
 USE hivemall;
 ```
 
-Then, create permanent functions using [define-all-as-permanent.hive](https://github.com/myui/hivemall/blob/master/resources/ddl/define-all-as-permanent.hive), a DDL script to define permanent UDFs.
+Then, create permanent functions using [define-all-as-permanent.hive](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/define-all-as-permanent.hive), a DDL script to define permanent UDFs.
 ```sql
-set hivevar:hivemall_jar=hdfs:///apps/hivemall/hivemall-with-dependencies.jar;
+set hivevar:hivemall_jar=hdfs:///apps/hivemall/hivemall-all-xxx.jar.jar;
 
 source /tmp/define-all-as-permanent.hive;
 ```

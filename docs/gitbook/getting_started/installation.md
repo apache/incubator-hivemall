@@ -23,8 +23,11 @@ Prerequisites
 * Hadoop v2.4.0 or later
 * Hive v0.13 or later
 * Java 7 or later
-* [hivemall-core-xxx-with-dependencies.jar](https://github.com/myui/hivemall/releases)
-* [define-all.hive](https://github.com/myui/hivemall/releases)
+* [hivemall-all-xxx.jar](https://search.maven.org/#search%7Cga%7C1%7Ca%3A%22hivemall-all%22)
+* [define-all.hive](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/define-all.hive) (of a given version, e.g., [v0.5.0](https://github.com/apache/incubator-hivemall/blob/v0.5.0/resources/ddl/define-all.hive))
+
+> #### Note
+> 
 
 Installation
 ============
@@ -32,7 +35,7 @@ Installation
 Add the following two lines to your `$HOME/.hiverc` file.
 
 ```
-add jar /home/myui/tmp/hivemall-core-xxx-with-dependencies.jar;
+add jar /home/myui/tmp/hivemall-all-xxx.jar;
 source /home/myui/tmp/define-all.hive;
 ```
 
@@ -40,7 +43,7 @@ This automatically loads all Hivemall functions every time you start a Hive sess
 
 ```
 $ hive
-add jar /tmp/hivemall-core-xxx-with-dependencies.jar;
+add jar /tmp/hivemall-all-xxx.jar;
 source /tmp/define-all.hive;
 ```
 
@@ -64,4 +67,4 @@ $ cd incubator-hivemall
 $ bin/build.sh
 ```
 
-Then, you can find hivemall jars in `./target`.
+Then, you can find Hivemall jars in `./target`.
