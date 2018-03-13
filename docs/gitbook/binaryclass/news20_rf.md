@@ -20,7 +20,7 @@
 Hivemall Random Forest supports libsvm-like sparse inputs. 
 
 > #### Note
-> This feature, i.e., Sparse input support in Random Forest, is supported since Hivemall v0.5-rc.1 or later._
+> This feature, i.e., Sparse input support in Random Forest, is supported since Hivemall v0.5.0 or later._
 > [`feature_hashing`](http://hivemall.incubator.apache.org/userguide/ft_engineering/hashing.html#featurehashing-function) function is useful to prepare feature vectors for Random Forest.
 
 <!-- toc -->
@@ -60,8 +60,10 @@ FROM (
   SELECT
     rowid, 
     m.model_weight,
+	-- v0.5.0 and later
     tree_predict(m.model_id, m.model, t.features, "-classification") as predicted
-    -- tree_predict(m.model_id, m.model, t.features, ${classification}) as predicted
+    -- before v0.5.0
+	-- tree_predict(m.model_id, m.model, t.features, ${classification}) as predicted
   FROM
     rf_model m
     LEFT OUTER JOIN -- CROSS JOIN
