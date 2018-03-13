@@ -94,17 +94,19 @@ CREATE TABLE model
   STORED AS SEQUENCEFILE 
 AS
 select 
-  train_randomforest_classifier(features, label) 
-  -- hivemall v0.4.1-alpha.2 and before
+  train_randomforest_classifier(features, label)
+  -- v0.5.0 and later
+  -- train_randomforest_classifier(features, label) as (model_id, model_weight, model, var_importance, oob_errors, oob_tests)
+  -- v0.4.1-alpha.2 and before
   -- train_randomforest_classifier(features, label) as (pred_model, var_importance, oob_errors, oob_tests)
-  -- hivemall v0.4.1 and later
+  -- from v0.4.1 to v0.4.2-rc4
   -- train_randomforest_classifier(features, label) as (model_id, model_type, pred_model, var_importance, oob_errors, oob_tests)
 from
   training;
 ```
 
 > #### Caution
-> The default `TEXTFILE` should not be used for model table when using Javascript output through `-output javascript` option.
+> Note that model storage format is different between versions as seen the above.
 
 ```sql
 hive> desc extended model;
@@ -163,7 +165,7 @@ usage: train_randomforest_classifier(array<double|string> features, int
                                      features [default:
                                      ceil(sqrt(x[0].length))].
                                      int(num_variables * x[0].length) is
-                                     considered if num_variable is (0,1
+                                     considered if num_variable is (0,1]
 ```
 
 > #### Caution
@@ -215,19 +217,19 @@ as
 SELECT
   rowid,
   -- rf_ensemble(predicted) as predicted
-  -- hivemall v0.5-rc.1 or later
+  -- v0.5.0 or later
   rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
   -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
 FROM (
   SELECT
     rowid, 
-    -- hivemall v0.4.1 and later
+    -- from v0.4.1 to v0.4.2-rc4
     -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
-    -- hivemall v0.5-rc.1 or later
+    -- v0.5.0 or later
     p.model_weight,
     tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
     -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
-    -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
+    -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5.0 or later
   FROM
     model p
     LEFT OUTER JOIN -- CROSS JOIN
@@ -238,8 +240,11 @@ group by
 ;
 ```
 
+> #### Note
+> Left outer join without a join condition (i.e., `model p LEFT OUTER JOIN training t`) is a trick to fix the left table for cross join.
+
 > #### Caution
-> `tree_predict_v1` is for the backward compatibility for using prediction models built before `v0.5-rc.1` on `v0.5-rc.1` or later.
+> `tree_predict_v1` is for the backward compatibility for using prediction models built before `v0.5` on `v0.5` or later.
 
 ### Parallelize Prediction
 
@@ -251,37 +256,7 @@ set hive.auto.convert.join=true;
 SET hive.mapjoin.optimized.hashtable=false;
 SET mapred.reduce.tasks=8;
 
-create table predicted
-as
-SELECT
-  rowid,
-  -- rf_ensemble(predicted) as predicted
-  -- hivemall v0.5-rc.1 or later
-  rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
-  -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
-FROM (
-  SELECT
-    t.rowid, 
-    -- hivemall v0.4.1 and later
-    -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
-    -- hivemall v0.5-rc.1 or later
-    p.model_weight,
-    tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
-    -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
-    -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted as predicted -- to use the old model in v0.5-rc.1 or later
-  FROM (
-    SELECT 
-      -- hivemall v0.4.1 and later
-      -- model_id, model_type, pred_model
-      -- hivemall v0.5-rc.1 or later
-      model_id, model_weight, model
-    FROM model
-    DISTRIBUTE BY rand(1)
-  ) p 
-  LEFT OUTER JOIN training t
-) t1
-group by
-  rowid;
+
 ```
 
 # Evaluation
@@ -295,13 +270,13 @@ select count(1) from training;
 set hivevar:total_cnt=150;
 
 WITH t1 as (
-SELECT
-  t.rowid,
-  t.label as actual,
-  p.predicted.label as predicted
-FROM
-  predicted p
-  LEFT OUTER JOIN training t ON (t.rowid = p.rowid)
+  SELECT
+    t.rowid,
+    t.label as actual,
+    p.predicted.label as predicted
+  FROM
+    predicted p
+    LEFT OUTER JOIN training t ON (t.rowid = p.rowid)
 )
 SELECT
   count(1) / ${total_cnt}
@@ -316,7 +291,7 @@ WHERE
 # Graphvis export
 
 > #### Note
-> `tree_export` feature is supported from Hivemall v0.5-rc.1 or later.
+> `tree_export` feature is supported from Hivemall v0.5.0 or later.
 > Better to limit tree depth on training by `-depth` option to plot a Decision Tree.
 
 Hivemall provide `tree_export` to export a decision tree into [Graphviz](http://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
