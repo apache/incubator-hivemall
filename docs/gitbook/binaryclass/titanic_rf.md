@@ -148,8 +148,9 @@ from
 
 `Q` and `C` represent quantitative variable and categorical variables, respectively.
 
-*Caution:* Note that the output of `guess_attribute_types` is not perfect. Revise it by your self.
-For example, `pclass` is a categorical variable.
+> #### Caution
+> Note that the output of `guess_attribute_types` is not perfect. Revise it by your self.
+> For example, `pclass` is a categorical variable.
 
 ```sql
 set hivevar:attrs=C,C,C,Q,Q,Q,C,Q,C,C;
@@ -159,7 +160,6 @@ create table model_rf
 AS
 select
   train_randomforest_classifier(features, survived, "-trees 500 -attrs ${attrs}") 
-    -- as (model_id, model_type, pred_model, var_importance, oob_errors, oob_tests)
 from
   train_rf
 ;
@@ -192,24 +192,23 @@ FROM (
   SELECT
     passengerid,
     -- rf_ensemble(predicted) as predicted
-    -- hivemall v0.5-rc.1 or later
+    -- v0.5.0 or later
     rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
     -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
   FROM (
     SELECT
       t.passengerid, 
-      -- hivemall v0.4.1-alpha.3 or later
+      -- from v0.4.1-alpha.3 to v0.4.2-rc4
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
-      -- hivemall v0.5-rc.1 or later
+      -- v0.5.0 or later
       p.model_weight,
-	  tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
-	  -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
-      -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
+      tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
+      -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5.0 or later
     FROM (
       SELECT 
-        -- hivemall v0.4.1-alpha.3 or later
+        -- from v0.4.1-alpha.3 or v0.4.2-rc4
         -- model_id, model_type, pred_model
-        -- hivemall v0.5-rc.1 or later
+        -- v0.5.0 or later
         model_id, model_weight, model
       FROM 
         model_rf 
@@ -224,7 +223,7 @@ FROM (
 ```
 
 > #### Caution
-> `tree_predict_v1` is for the backward compatibility for using prediction models built before `v0.5-rc.1` on `v0.5-rc.1` or later.
+> `tree_predict_v1` is for the backward compatibility for using prediction models built before `v0.5.0` on `v0.5.0` or later.
 
 # Kaggle submission
 
@@ -251,7 +250,7 @@ Accuracy would gives `0.76555` for a Kaggle submission.
 # Graphvis export
 
 > #### Note
-> `tree_export` feature is supported from Hivemall v0.5-rc.1 or later.
+> `tree_export` feature is supported from Hivemall v0.5.0 or later.
 > Better to limit tree depth on training by `-depth` option to plot a Decision Tree.
 
 Hivemall provide `tree_export` to export a decision tree into [Graphviz](http://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
@@ -336,24 +335,24 @@ FROM (
   SELECT
     passengerid,
     -- rf_ensemble(predicted) as predicted
-    -- hivemall v0.5-rc.1 or later
+    -- v0.5.0 or later
     rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
     -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
   FROM (
     SELECT
       t.passengerid, 
-      -- hivemall v0.4.1-alpha.3 or later
+      -- from v0.4.1-alpha.3 or v0.4.2-rc4
       -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
-      -- hivemall v0.5-rc.1 or later
+      -- v0.5.0 or later
       p.model_weight,
       tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
       -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
-      -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5-rc.1 or later
+      -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5.0 or later
     FROM (
       SELECT 
-        -- hivemall v0.4.1-alpha.3 or later
+        -- from v0.4.1-alpha.3 to v0.4.2-rc4
         -- model_id, model_type, pred_model
-        -- hivemall v0.5-rc.1 or later
+        -- v0.5.0 or later
         model_id, model_weight, model
       FROM 
         model_rf_07
