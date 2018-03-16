@@ -35,6 +35,7 @@
 		<module>spark-2.0</module>
 		<module>spark-2.1</module>
 		<module>spark-2.2</module>
+		<module>spark-2.3</module>
 	</modules>
 
 	<properties>
