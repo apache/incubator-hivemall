@@ -19,7 +19,7 @@
 
 package org.apache.spark.sql.hive
 
-import java.io.{BufferedInputStream, InputStream, InputStreamReader, BufferedReader}
+import java.io.{BufferedInputStream, BufferedReader, InputStream, InputStreamReader}
 import java.net.URL
 import java.util.UUID
 import java.util.concurrent.{Executors, ExecutorService}
@@ -29,10 +29,11 @@ import hivemall.utils.lang.CommandLineUtils
 import hivemall.utils.net.NetUtils
 import org.apache.commons.cli.Options
 import org.apache.commons.compress.compressors.CompressorStreamFactory
-import org.apache.spark.SparkFunSuite
 import org.scalatest.BeforeAndAfter
+
+import org.apache.spark.SparkFunSuite
 import org.apache.spark.ml.feature.HivemallLabeledPoint
-import org.apache.spark.sql.{DataFrame, Row, Column}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.hive.HivemallGroupedDataset._
 import org.apache.spark.sql.hive.HivemallOps._

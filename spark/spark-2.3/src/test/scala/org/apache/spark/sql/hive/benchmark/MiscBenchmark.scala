@@ -19,10 +19,10 @@
 
 package org.apache.spark.sql.hive.benchmark
 
-import org.apache.spark.sql.{DataFrame, Dataset, Row, Column}
+import org.apache.spark.sql.{Column, DataFrame, Dataset, Row}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{Literal, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Expression, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.benchmark.BenchmarkBaseAccessor
 import org.apache.spark.sql.expressions.Window
