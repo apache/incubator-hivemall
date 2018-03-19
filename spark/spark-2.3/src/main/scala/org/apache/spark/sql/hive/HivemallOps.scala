@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.{Generate, JoinTopK, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{AnalysisBarrier, Generate, JoinTopK, LogicalPlan}
 import org.apache.spark.sql.execution.UserProvidedPlanner
 import org.apache.spark.sql.execution.datasources.csv.{CsvToStruct, StructToCsv}
 import org.apache.spark.sql.functions._
@@ -991,16 +991,14 @@ final class HivemallOps(df: DataFrame) extends Logging {
         k = kInt,
         scoreExpr = scoreExpr,
         groupExprs = groupExprs,
-        elementSchema = StructType(
-          rankField +: inputAttrs.map(d => StructField(d.name, d.dataType))
-        ),
+        elementSchema = StructType(rankField :: Nil),
         children = inputAttrs
       ),
-      unrequiredChildIndex = Seq.empty,
+      unrequiredChildIndex = Nil,
       outer = false,
       qualifier = None,
-      generatorOutput = Seq(rankField.name).map(UnresolvedAttribute(_)) ++ inputAttrs,
-      child = analyzedPlan
+      generatorOutput = Nil,
+      child = AnalysisBarrier(analyzedPlan)
     )
   }
 
