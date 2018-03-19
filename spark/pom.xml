@@ -35,6 +35,7 @@
 		<module>spark-2.0</module>
 		<module>spark-2.1</module>
 		<module>spark-2.2</module>
+		<module>spark-2.3</module>
 	</modules>
 
 	<properties>
@@ -157,7 +158,10 @@
 										<include>org.apache.hivemall:hivemall-spark-common</include>
 										<!-- hivemall-core -->
 										<include>org.apache.hivemall:hivemall-core</include>
-										<include>io.netty:netty-all</include>
+										<!--
+                                                                                Since `netty-all` is bundled in Spark, we don't need to include it here
+                                                                                <include>io.netty:netty-all</include>
+                                                                                -->
 										<include>com.github.haifengl:smile-core</include>
 										<include>com.github.haifengl:smile-math</include>
 										<include>com.github.haifengl:smile-data</include>
