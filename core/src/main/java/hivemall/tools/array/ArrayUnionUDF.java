@@ -95,9 +95,9 @@ public final class ArrayUnionUDF extends GenericUDF {
 
             for (int j = 0, len = oi.getListLength(undeferred); j < len; ++j) {
                 Object nonStd = oi.getListElement(undeferred, j);
-                Object copied = ObjectInspectorUtils.copyToStandardObject(nonStd, elemOI,
+                Object copyed = ObjectInspectorUtils.copyToStandardObject(nonStd, elemOI,
                     ObjectInspectorCopyOption.WRITABLE);
-                objectSet.add(copied);
+                objectSet.add(copyed);
             }
         }
 
