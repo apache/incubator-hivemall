@@ -70,7 +70,7 @@ private object ExtractJoinTopKKeys extends Logging with PredicateHelper {
   }
 }
 
-private[sql] class UserProvidedPlanner(val conf: SQLConf) extends Strategy {
+private[sql] class UserProvidedLogicalPlans(val conf: SQLConf) extends Strategy {
 
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ExtractJoinTopKKeys(
