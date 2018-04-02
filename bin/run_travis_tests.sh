@@ -35,7 +35,7 @@ cd $HIVEMALL_HOME/spark
 
 export MAVEN_OPTS="-XX:MaxPermSize=256m"
 
-mvn -q scalastyle:check -pl spark-2.0,spark-2.1 -am test
+mvn -q scalastyle:check -pl spark-2.1 -am test
 
 # spark-2.2 runs on Java 8+
 if [[ ! -z "$(java -version 2>&1 | grep 1.8)" ]]; then
