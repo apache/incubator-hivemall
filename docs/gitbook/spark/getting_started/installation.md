@@ -49,13 +49,13 @@ scala> :load resources/ddl/define-all.spark
 scala> :load resources/ddl/import-packages.spark
 ```
 
-Installation via [Spark Packages](https://spark-packages.org/package/maropu/apache-hivemall)
+Installation via [Spark Packages](https://spark-packages.org/package/apache-hivemall/apache-hivemall)
 ============
 
 In another way to install Hivemall, you can use a `--packages` option.
 
 ```
-$ ./bin/spark-shell --packages maropu:apache-hivemall:0.5.1-<spark version>
+$ ./bin/spark-shell --packages apache-hivemall:apache-hivemall:0.5.1-<spark version>
 ```
 
 You need to set your Spark version at `<spark version>`, e.g., `spark2.2` for Spark v2.2.x.
