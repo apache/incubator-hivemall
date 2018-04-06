@@ -92,4 +92,5 @@ public class VectorDotUDFTest {
                         PrimitiveObjectInspectorFactory.javaFloatObjectInspector)},
             new Object[] {Arrays.asList(1.d, 2.d, 3.d), Arrays.asList(2.f, 3.f, 4.f)});
     }
+
 }
