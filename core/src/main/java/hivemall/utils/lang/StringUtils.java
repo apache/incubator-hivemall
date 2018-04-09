@@ -193,8 +193,22 @@ public final class StringUtils {
             if (i > 0) { // append separator before each element, except for the head element
                 buf.append(sep);
             }
-
             final String s = list.get(i);
+            if (s != null) {
+                buf.append(s);
+            }
+        }
+        return buf.toString();
+    }
+
+    @Nonnull
+    public static String join(@Nonnull final Object[] list, @Nonnull final char sep) {
+        final StringBuilder buf = new StringBuilder(128);
+        for (int i = 0; i < list.length; i++) {
+            if (i > 0) { // append separator before each element, except for the head element
+                buf.append(sep);
+            }
+            final Object s = list[i];
             if (s != null) {
                 buf.append(s);
             }

@@ -1937,13 +1937,27 @@ object HivemallOps {
   }
 
   /**
-   * @see [[hivemall.tools.array.SubarrayUDF]]
+   * Alias of array_slice for a backward compatibility.
+   *
+   * @see [[hivemall.tools.array.ArraySliceUDF]]
    * @group tools.array
    */
   def subarray(original: Column, fromIndex: Column, toIndex: Column): Column = withExpr {
-    planHiveUDF(
-      "hivemall.tools.array.SubarrayUDF",
+    planHiveGenericUDF(
+      "hivemall.tools.array.ArraySliceUDF",
       "subarray",
+      original :: fromIndex :: toIndex :: Nil
+    )
+  }
+
+  /**
+   * @see [[hivemall.tools.array.ArraySliceUDF]]
+   * @group tools.array
+   */
+  def array_slice(original: Column, fromIndex: Column, toIndex: Column): Column = withExpr {
+    planHiveGenericUDF(
+      "hivemall.tools.array.ArraySliceUDF",
+      "array_slice",
       original :: fromIndex :: toIndex :: Nil
     )
   }

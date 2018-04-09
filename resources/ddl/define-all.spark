@@ -405,7 +405,10 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_concat")
 sqlContext.sql("CREATE TEMPORARY FUNCTION array_concat AS 'hivemall.tools.array.ArrayConcatUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS subarray")
-sqlContext.sql("CREATE TEMPORARY FUNCTION subarray AS 'hivemall.tools.array.SubarrayUDF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION subarray AS 'hivemall.tools.array.ArraySliceUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_slice")
+sqlContext.sql("CREATE TEMPORARY FUNCTION array_slice AS 'hivemall.tools.array.ArraySliceUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_avg")
 sqlContext.sql("CREATE TEMPORARY FUNCTION array_avg AS 'hivemall.tools.array.ArrayAvgGenericUDAF'")

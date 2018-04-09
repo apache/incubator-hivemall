@@ -109,6 +109,24 @@ public final class WritableUtils {
     }
 
     @Nonnull
+    public static List<IntWritable> toWritableList(@Nonnull final int[] src) {
+        // workaround to avoid a bug in Kryo
+        // https://issues.apache.org/jira/browse/HIVE-12551
+        /*
+        final LongWritable[] writables = new LongWritable[src.length];
+        for (int i = 0; i < src.length; i++) {
+            writables[i] = new LongWritable(src[i]);
+        }
+        return Arrays.asList(writables);
+        */
+        final List<IntWritable> list = new ArrayList<IntWritable>(src.length);
+        for (int i = 0; i < src.length; i++) {
+            list.add(new IntWritable(src[i]));
+        }
+        return list;
+    }
+
+    @Nonnull
     public static List<LongWritable> toWritableList(@Nonnull final long[] src) {
         // workaround to avoid a bug in Kryo
         // https://issues.apache.org/jira/browse/HIVE-12551
@@ -122,6 +140,15 @@ public final class WritableUtils {
         final List<LongWritable> list = new ArrayList<LongWritable>(src.length);
         for (int i = 0; i < src.length; i++) {
             list.add(new LongWritable(src[i]));
+        }
+        return list;
+    }
+
+    @Nonnull
+    public static List<FloatWritable> toWritableList(@Nonnull final float[] src) {
+        final List<FloatWritable> list = new ArrayList<FloatWritable>(src.length);
+        for (int i = 0; i < src.length; i++) {
+            list.add(new FloatWritable(src[i]));
         }
         return list;
     }

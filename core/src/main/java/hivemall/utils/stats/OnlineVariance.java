@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.common;
+package hivemall.utils.stats;
 
 /**
  * @see http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance

@@ -99,7 +99,6 @@ create temporary function sort_and_uniq_array as 'hivemall.tools.array.SortAndUn
 create temporary function subarray_endwith as 'hivemall.tools.array.SubarrayEndWithUDF';
 create temporary function subarray_startwith as 'hivemall.tools.array.SubarrayStartWithUDF';
 create temporary function array_concat as 'hivemall.tools.array.ArrayConcatUDF';
-create temporary function subarray as 'hivemall.tools.array.SubarrayUDF';
 create temporary function array_avg as 'hivemall.tools.array.ArrayAvgGenericUDAF';
 create temporary function array_sum as 'hivemall.tools.array.ArraySumUDAF';
 create temporary function to_string_array as 'hivemall.tools.array.ToStringArrayUDF';
@@ -185,6 +184,7 @@ create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
 create temporary function hitrate as 'hivemall.evaluation.HitRateUDAF';
 create temporary function word_ngrams as 'hivemall.tools.text.WordNgramsUDF';
 create temporary function approx_count_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF';
+create temporary function array_slice as 'hivemall.tools.array.ArraySliceUDF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
@@ -197,6 +197,7 @@ create temporary function arow_regress as 'hivemall.regression.AROWRegressionUDT
 create temporary function addBias as 'hivemall.ftvec.AddBiasUDF';
 create temporary function tree_predict_v1 as 'hivemall.smile.tools.TreePredictUDFv1';
 create temporary function add_field_indicies as 'hivemall.ftvec.trans.AddFieldIndicesUDF';
+create temporary function subarray as 'hivemall.tools.array.ArraySliceUDF';
 
 -- alias for TD
 create temporary function approx_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF';

@@ -71,6 +71,10 @@ public final class DoubleRingBuffer implements Iterable<Double> {
         return this;
     }
 
+    public double head() {
+        return ring[head];
+    }
+
     public void toArray(@Nonnull final double[] dst) {
         toArray(dst, true);
     }

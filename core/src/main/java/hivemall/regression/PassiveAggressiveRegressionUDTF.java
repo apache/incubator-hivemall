@@ -18,10 +18,10 @@
  */
 package hivemall.regression;
 
-import hivemall.common.OnlineVariance;
 import hivemall.model.FeatureValue;
 import hivemall.model.PredictionResult;
 import hivemall.optimizer.LossFunctions;
+import hivemall.utils.stats.OnlineVariance;
 
 import javax.annotation.Nonnull;
 

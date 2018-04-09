@@ -16,33 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.tools.array;
-
-import java.util.List;
+package hivemall.tools.sanity;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
-import org.apache.hadoop.io.IntWritable;
 
-@Description(name = "subarray", value = "_FUNC_(array<int> orignal, int fromIndex, int toIndex)"
-        + " - Returns a slice of the original array"
-        + " between the inclusive fromIndex and the exclusive toIndex")
+@Description(name = "raise_error", value = "_FUNC_() or _FUNC_(string msg) - Throws an error")
 @UDFType(deterministic = true, stateful = false)
-public class SubarrayUDF extends UDF {
+public final class RaiseErrorUDF extends UDF {
 
-    public List<IntWritable> evaluate(List<IntWritable> array, int fromIndex, int toIndex) {
-        if (array == null) {
-            return null;
-        }
-        final int arraylength = array.size();
-        if (fromIndex < 0) {
-            fromIndex = 0;
-        }
-        if (toIndex > arraylength) {
-            toIndex = arraylength;
-        }
-        return array.subList(fromIndex, toIndex);
+    public boolean evaluate() throws HiveException {
+        throw new HiveException();
+    }
+
+    public boolean evaluate(String errorMessage) throws HiveException {
+        throw new HiveException(errorMessage);
     }
 
 }

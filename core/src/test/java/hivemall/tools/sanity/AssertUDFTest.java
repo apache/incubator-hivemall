@@ -16,23 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.utils.hashing;
+package hivemall.tools.sanity;
 
-import java.util.Random;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.junit.Assert;
+import org.junit.Test;
 
-public final class HashFunctionFactory {
+public class AssertUDFTest {
 
-    public static HashFunction[] create(int numFunctions) {
-        return create(numFunctions, 31L);
+    @Test
+    public void testTrue() throws HiveException {
+        AssertUDF udf = new AssertUDF();
+        Assert.assertTrue(udf.evaluate(true, "not error"));
     }
 
-    public static HashFunction[] create(int numFunctions, long seed) {
-        final Random rand = new Random(seed);
-        final HashFunction[] funcs = new HashFunction[numFunctions];
-        for (int i = 0; i < numFunctions; i++) {
-            funcs[i] = new MurmurHash3Function(rand.nextInt());
-        }
-        return funcs;
+    @Test(expected = HiveException.class)
+    public void testFalse() throws HiveException {
+        AssertUDF udf = new AssertUDF();
+        udf.evaluate(false);
     }
 
 }

@@ -16,13 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.common;
+package hivemall.utils.stats;
 
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+
+import hivemall.utils.stats.OnlineVariance;
 
 import org.junit.Test;
 

@@ -128,4 +128,28 @@ public class DoubleRingBufferTest {
         Assert.assertArrayEquals(new double[] {2, 3, 4}, dst, 0.d);
     }
 
+    @Test
+    public void testHead() {
+        DoubleRingBuffer ring = new DoubleRingBuffer(3);
+        Assert.assertTrue(ring.isEmpty());
+        Assert.assertEquals(0.d, ring.head(), 0.d);
+        Assert.assertEquals(0, ring.size());
+        ring.add(1.d);
+        Assert.assertEquals(1, ring.size());
+        ring.add(2.d);
+        Assert.assertEquals(2, ring.size());
+        ring.add(3.d);
+        Assert.assertEquals(3, ring.size());
+        Assert.assertTrue(ring.isFull());
+        Assert.assertEquals(1.d, ring.head(), 0.d);
+        Assert.assertEquals(3, ring.size());
+        ring.add(4.d);
+        Assert.assertEquals(2.d, ring.head(), 0.d);
+        ring.add(5.d);
+        Assert.assertEquals(3.d, ring.head(), 0.d);
+        ring.add(6.d);
+        Assert.assertEquals(4.d, ring.head(), 0.d);
+        Assert.assertEquals(3, ring.size());
+    }
+
 }
