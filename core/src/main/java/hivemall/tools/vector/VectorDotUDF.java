@@ -65,19 +65,19 @@ public final class VectorDotUDF extends GenericUDF {
         ObjectInspector argOI1 = argOIs[1];
         if (HiveUtils.isNumberListOI(argOI1)) {
             this.evaluator = new Dot2DVectors(xListOI, HiveUtils.asListOI(argOI1));
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
         } else if (HiveUtils.isNumberOI(argOI1)) {
             this.evaluator = new Multiply2D1D(xListOI, argOI1);
+            return PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
         } else {
             throw new UDFArgumentException(
                 "Expected array<number> or number for the send argument: " + argOI1.getTypeName());
         }
-
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
     }
 
     @Override
-    public List<Double> evaluate(DeferredObject[] args) throws HiveException {
+    public Object evaluate(DeferredObject[] args) throws HiveException {
         final Object arg0 = args[0].get();
         final Object arg1 = args[1].get();
         if (arg0 == null || arg1 == null) {
@@ -90,7 +90,7 @@ public final class VectorDotUDF extends GenericUDF {
     interface Evaluator extends Serializable {
 
         @Nonnull
-        List<Double> dot(@Nonnull Object x, @Nonnull Object y) throws HiveException;
+        Object dot(@Nonnull Object x, @Nonnull Object y) throws HiveException;
 
     }
 
@@ -144,7 +144,7 @@ public final class VectorDotUDF extends GenericUDF {
         }
 
         @Override
-        public List<Double> dot(@Nonnull Object x, @Nonnull Object y) throws HiveException {
+        public Double dot(@Nonnull Object x, @Nonnull Object y) throws HiveException {
             final int xLen = xListOI.getListLength(x);
             final int yLen = yListOI.getListLength(y);
             if (xLen != yLen) {
@@ -152,7 +152,7 @@ public final class VectorDotUDF extends GenericUDF {
                         + ", y=" + yListOI.getList(y));
             }
 
-            final Double[] arr = new Double[xLen];
+            double result = 0.d;
             for (int i = 0; i < xLen; i++) {
                 Object xi = xListOI.getListElement(x, i);
                 Object yi = yListOI.getListElement(y, i);
@@ -162,10 +162,10 @@ public final class VectorDotUDF extends GenericUDF {
                 double xd = PrimitiveObjectInspectorUtils.getDouble(xi, xElemOI);
                 double yd = PrimitiveObjectInspectorUtils.getDouble(yi, yElemOI);
                 double v = xd * yd;
-                arr[i] = Double.valueOf(v);
+                result += v;
             }
 
-            return Arrays.asList(arr);
+            return Double.valueOf(result);
         }
 
     }
