@@ -34,6 +34,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.Writable;
 
 @Description(name = "moving_avg", value = "_FUNC_(NUMBER value, const int windowSize)"
         + " - Returns moving average of a time series using a given window")
@@ -43,7 +44,7 @@ public final class MovingAverageUDTF extends GenericUDTF {
 
     private MovingAverage movingAvg;
 
-    private Object[] forwardObjs;
+    private Writable[] forwardObjs;
     private DoubleWritable result;
 
     @Override
@@ -59,7 +60,7 @@ public final class MovingAverageUDTF extends GenericUDTF {
         this.movingAvg = new MovingAverage(windowSize);
 
         this.result = new DoubleWritable();
-        this.forwardObjs = new Object[] {result};
+        this.forwardObjs = new Writable[] {result};
 
         List<String> fieldNames = Arrays.asList("avg");
         List<ObjectInspector> fieldOIs = Arrays.<ObjectInspector>asList(
