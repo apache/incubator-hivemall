@@ -24,7 +24,6 @@ import hivemall.utils.lang.Preconditions;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -83,24 +82,26 @@ public final class SelectKBestUDF extends GenericUDF {
         this.featuresOI = HiveUtils.asListOI(OIs[0]);
         this.featureOI = HiveUtils.asDoubleCompatibleOI(featuresOI.getListElementObjectInspector());
         this.importanceListOI = HiveUtils.asListOI(OIs[1]);
-        this.importanceElemOI = HiveUtils.asDoubleCompatibleOI(importanceListOI.getListElementObjectInspector());
+        this.importanceElemOI =
+                HiveUtils.asDoubleCompatibleOI(importanceListOI.getListElementObjectInspector());
 
         this._k = HiveUtils.getConstInt(OIs[2]);
         Preconditions.checkArgument(_k >= 1, UDFArgumentException.class);
-        final DoubleWritable[] array = new DoubleWritable[_k];
-        for (int i = 0; i < array.length; i++) {
-            array[i] = new DoubleWritable();
+        final List<DoubleWritable> result = new ArrayList<>(_k);
+        for (int i = 0; i < _k; i++) {
+            result.add(new DoubleWritable());
         }
-        this._result = Arrays.asList(array);
+        this._result = result;
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
     }
 
     @Override
     public List<DoubleWritable> evaluate(DeferredObject[] dObj) throws HiveException {
         final double[] features = HiveUtils.asDoubleArray(dObj[0].get(), featuresOI, featureOI);
-        final double[] importanceList = HiveUtils.asDoubleArray(dObj[1].get(), importanceListOI,
-            importanceElemOI);
+        final double[] importanceList =
+                HiveUtils.asDoubleArray(dObj[1].get(), importanceListOI, importanceElemOI);
 
         Preconditions.checkNotNull(features, UDFArgumentException.class);
         Preconditions.checkNotNull(importanceList, UDFArgumentException.class);
@@ -110,7 +111,8 @@ public final class SelectKBestUDF extends GenericUDF {
 
         int[] topKIndices = _topKIndices;
         if (topKIndices == null) {
-            final List<Map.Entry<Integer, Double>> list = new ArrayList<Map.Entry<Integer, Double>>();
+            final List<Map.Entry<Integer, Double>> list =
+                    new ArrayList<Map.Entry<Integer, Double>>();
             for (int i = 0; i < importanceList.length; i++) {
                 list.add(new AbstractMap.SimpleEntry<Integer, Double>(i, importanceList[i]));
             }
