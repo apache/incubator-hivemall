@@ -34,6 +34,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
 
 @Description(name = "array_concat",
         value = "_FUNC_(array<ANY> x1, array<ANY> x2, ..) - Returns a concatenated array")
@@ -42,7 +43,7 @@ public class ArrayConcatUDF extends GenericUDF {
     /**
      * @see org.apache.hadoop.hive.serde.serdeConstants
      */
-    private static final java.lang.String LIST_TYPE_NAME = "array";
+    private static final String LIST_TYPE_NAME = "array";
 
     private final List<Object> ret = new ArrayList<Object>();
     private ListObjectInspector[] argumentOIs;
@@ -63,10 +64,10 @@ public class ArrayConcatUDF extends GenericUDF {
                         break;
                     }
                 default:
-                    throw new UDFArgumentTypeException(0, "Argument " + i
-                            + " of function CONCAT_ARRAY must be " + LIST_TYPE_NAME + "<"
-                            + Category.PRIMITIVE + ">, but " + arguments[0].getTypeName()
-                            + " was found.");
+                    throw new UDFArgumentTypeException(0,
+                        "Argument " + i + " of function CONCAT_ARRAY must be " + LIST_TYPE_NAME
+                                + "<" + Category.PRIMITIVE + ">, but " + arguments[0].getTypeName()
+                                + " was found.");
             }
         }
 
@@ -77,13 +78,14 @@ public class ArrayConcatUDF extends GenericUDF {
         this.argumentOIs = listOIs;
 
         ObjectInspector firstElemOI = listOIs[0].getListElementObjectInspector();
-        ObjectInspector returnElemOI = ObjectInspectorUtils.getStandardObjectInspector(firstElemOI);
+        ObjectInspector returnElemOI = ObjectInspectorUtils.getStandardObjectInspector(firstElemOI,
+            ObjectInspectorCopyOption.WRITABLE);
 
         return ObjectInspectorFactory.getStandardListObjectInspector(returnElemOI);
     }
 
     @Override
-    public Object evaluate(DeferredObject[] arguments) throws HiveException {
+    public List<Object> evaluate(DeferredObject[] arguments) throws HiveException {
         ret.clear();
 
         for (int i = 0; i < arguments.length; i++) {
@@ -97,7 +99,8 @@ public class ArrayConcatUDF extends GenericUDF {
             for (int j = 0; j < arraylength; j++) {
                 Object rawObj = arrayOI.getListElement(arrayObject, j);
                 ObjectInspector elemOI = arrayOI.getListElementObjectInspector();
-                Object obj = ObjectInspectorUtils.copyToStandardObject(rawObj, elemOI);
+                Object obj = ObjectInspectorUtils.copyToStandardObject(rawObj, elemOI,
+                    ObjectInspectorCopyOption.WRITABLE);
                 ret.add(obj);
             }
         }
@@ -107,6 +110,6 @@ public class ArrayConcatUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "concat_array(" + Arrays.toString(children) + ")";
+        return "array_concat(" + Arrays.toString(children) + ")";
     }
 }
