@@ -21,6 +21,7 @@ package hivemall.tools.array;
 import hivemall.utils.hadoop.HiveUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -71,6 +72,12 @@ public final class ArrayAppendUDF extends GenericUDF {
 
         Object arg0 = args[0].get();
         if (arg0 == null) {
+            Object arg1 = args[1].get();
+            if (arg1 != null) {
+                Object toAppend = returnWritables ? primInspector.getPrimitiveWritableObject(arg1)
+                        : primInspector.getPrimitiveJavaObject(arg1);
+                return Arrays.asList(toAppend);
+            }
             return null;
         }
 
