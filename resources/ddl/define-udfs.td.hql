@@ -41,7 +41,6 @@ create temporary function max_label as 'hivemall.ensemble.MaxValueLabelUDAF';
 create temporary function maxrow as 'hivemall.ensemble.MaxRowUDAF';
 create temporary function argmin_kld as 'hivemall.ensemble.ArgminKLDistanceUDAF';
 create temporary function mhash as 'hivemall.ftvec.hashing.MurmurHash3UDF';
-create temporary function sha1 as 'hivemall.ftvec.hashing.Sha1UDF';
 create temporary function array_hash_values as 'hivemall.ftvec.hashing.ArrayHashValuesUDF';
 create temporary function prefixed_hash_values as 'hivemall.ftvec.hashing.ArrayPrefixedHashValuesUDF';
 create temporary function feature_hashing as 'hivemall.ftvec.hashing.FeatureHashingUDF';
