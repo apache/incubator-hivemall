@@ -26,6 +26,8 @@
     * [Install as permanent functions](getting_started/permanent-functions.md)
     * [Input Format](getting_started/input-format.md)
 
+* [List of functions](misc/funcs.md)
+
 * [Tips for Effective Hivemall](tips/README.md)
     * [Explicit add_bias() for better prediction](tips/addbias.md)
     * [Use rand_amplify() to better prediction results](tips/rand_amplify.md)
@@ -75,11 +77,11 @@
 
 * [Data Generation](eval/datagen.md)
     * [Logistic Regression data generation](eval/lr_datagen.md)
-    
+
 ## Part V - Supervised Learning
 
 * [How Prediction Works](misc/prediction.md)
-    
+
 ## Part VI - Binary classification
 
 * [Binary Classification](binaryclass/general.md)
