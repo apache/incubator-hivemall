@@ -16,8 +16,8 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
-This page describes a list of useful Hivemall generic functions.
+
+This page describes a list of useful Hivemall generic functions. See also a [list of machine-learning-related functions](./funcs.md).
 
 <!-- toc -->
 
@@ -44,7 +44,7 @@ This page describes a list of useful Hivemall generic functions.
     ```sql
     select array_remove(array(1,null,3),array(null));
     > [3]
-    
+
     select array_remove(array("aaa","bbb"),"bbb");
     > ["aaa"]
     ```
@@ -57,7 +57,7 @@ This page describes a list of useful Hivemall generic functions.
     ```
 
 - `subarray_endwith(array<int|text> original, int|text key)` - Returns an array that ends with the specified key
-    
+
     ```sql
     select subarray_endwith(array(1,2,3,4), 3);
     > [1,2,3]
@@ -76,6 +76,12 @@ This page describes a list of useful Hivemall generic functions.
     select subarray(array(1,2,3,4,5,6), 2,4);
     > [3,4]
     ```
+
+- `float_array(nDims)` - Returns an array&lt;float&gt; of nDims elements
+
+- `select_k_best(array<number> array, const array<number> importance, const int k)` - Returns selected top-k elements as array&lt;double&gt;
+
+- `to_string_array(array<ANY>)` - Returns an array of strings
 
 ## Array UDAFs
 
@@ -108,10 +114,10 @@ This page describes a list of useful Hivemall generic functions.
         to_ordered_list(value, key, '-k -2'),          -- [donut, (banana | egg)] (tail-k)
         to_ordered_list(value, key, '-k -100'),        -- [donut, (banana, egg | egg, banana), candy, apple]
         to_ordered_list(value, key, '-k -2 -reverse'), -- [apple, candy] (reverse tail-k = top-k)
-        to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)    
+        to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)
         to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)
         to_ordered_list(key)                           -- [2, 3, 3, 4, 5] (natural ordered keys)
-    from 
+    from
         t
     ;
     ```
@@ -201,13 +207,27 @@ The compression level must be in range [-1,9]
 
 # MapReduce functions
 
+- `distcache_gets(filepath, key, default_value [, parseKey])` - Returns map&lt;key_type, value_type&gt;|value_type
+
+- `jobconf_gets()` - Returns the value from JobConf
+
+- `jobid()` - Returns the value of mapred.job.id
+
 - `rowid()` - Returns a generated row id of a form {TASK_ID}-{SEQUENCE_NUMBER}
+
+- `rownum()` - Returns a generated row number in long
 
 - `taskid()` - Returns the value of mapred.task.partition
 
 # Math functions
 
+- `l2_norm(double xi)` - Return L2 norm of a vector which has the given values in each dimension
+
 - `sigmoid(x)` - Returns `1.0 / (1.0 + exp(-x))`
+
+# Matrix functions
+
+- `transpose_and_dot(array<number> matrix0_row, array<number> matrix1_row)` - Returns dot(matrix0.T, matrix1) as array&lt;array&lt;double&gt;&gt;, shape = (matrix0.#cols, matrix1.#cols)
 
 # Text processing functions
 
@@ -230,7 +250,7 @@ The compression level must be in range [-1,9]
     ```sql
     select normalize_unicode('ﾊﾝｶｸｶﾅ','NFKC');
     > ハンカクカナ
-    
+
     select normalize_unicode('㈱㌧㌦Ⅲ','NFKC');
     > (株)トンドルIII
     ```
@@ -249,13 +269,15 @@ The compression level must be in range [-1,9]
 
 - `tokenize(string englishText [, boolean toLowerCase])` - Returns words in array<string>
 
-- `tokenize_ja(String line [, const string mode = "normal", const list<string> stopWords, const list<string> stopTags])` - returns tokenized strings in array<string>. Refer [this article](../misc/tokenizer.html) for detail.
+- `tokenize_ja(String line [, const string mode = "normal", const list<string> stopWords, const list<string> stopTags])` - returns tokenized Japanese string in array<string>. Refer [this article](../misc/tokenizer.html) for detail.
 
     ```sql
     select tokenize_ja("kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。");
-    
+
     > ["kuromoji","使う","分かち書き","テスト","第","二","引数","normal","search","extended","指定","デフォルト","normal"," モード"]
     ```
+
+- `tokenize_cn(String line [, const list<string> stopWords])` - returns tokenized Chinese string in array&lt;string&gt;. Refer [this article](../misc/tokenizer.html) for detail.
 
 - `word_ngrams(array<string> words, int minSize, int maxSize)` - Returns list of n-grams where `minSize <= n <= maxSize`
 
@@ -275,7 +297,7 @@ The compression level must be in range [-1,9]
 
     ```sql
     select generate_series(1,9);
-    
+
     1
     2
     3
