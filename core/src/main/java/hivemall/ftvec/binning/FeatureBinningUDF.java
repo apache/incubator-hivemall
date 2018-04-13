@@ -42,7 +42,7 @@ import java.util.*;
 @Description(
         name = "feature_binning",
         value = "_FUNC_(array<features::string> features, const map<string, array<number>> quantiles_map)"
-                + " / _FUNC(number weight, const array<number> quantiles)"
+                + " / _FUNC_(number weight, const array<number> quantiles)"
                 + " - Returns binned features as an array<features::string> / bin ID as int")
 @UDFType(deterministic = true, stateful = false)
 public final class FeatureBinningUDF extends GenericUDF {

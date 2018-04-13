@@ -47,9 +47,9 @@ public class ConditionalEmitUDTFTest {
         udtf.setCollector(new Collector() {
             @Override
             public void collect(Object input) throws HiveException {
-                Object[] fowardObj = (Object[]) input;
-                Assert.assertEquals(1, fowardObj.length);
-                actual.add(fowardObj[0]);
+                Object[] forwardObj = (Object[]) input;
+                Assert.assertEquals(1, forwardObj.length);
+                actual.add(forwardObj[0]);
             }
         });
 

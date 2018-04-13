@@ -86,7 +86,7 @@ public class SlimUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(SlimUDTF.class);
 
     //--------------------------------------------
-    // intput OIs
+    // input OIs
 
     private PrimitiveObjectInspector itemIOI;
     private PrimitiveObjectInspector itemJOI;

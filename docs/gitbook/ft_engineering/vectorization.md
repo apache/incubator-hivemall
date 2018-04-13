@@ -40,7 +40,7 @@ select vectorize_features(array("a"),*) from dual;
 > ["a:1.0"]
 
 -- has categorical feature
-select vectorize_features(array("a","b","wheather"),"0.2","0.3","sunny") from dual;
+select vectorize_features(array("a","b","Whether"),"0.2","0.3","sunny") from dual;
 > ["a:0.2","b:0.3","whether#sunny"]
 ```
 

@@ -52,7 +52,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
             @Nonnull double[] values, int numRows, int numColumns) {
         super();
         Preconditions.checkArgument(columnPointers.length >= 1,
-            "rowPointers must be greather than 0: " + columnPointers.length);
+            "rowPointers must be greater than 0: " + columnPointers.length);
         Preconditions.checkArgument(rowIndices.length == values.length, "#rowIndices ("
                 + rowIndices.length + ") must be equals to #values (" + values.length + ")");
         this.columnPointers = columnPointers;

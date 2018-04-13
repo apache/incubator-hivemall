@@ -37,7 +37,7 @@ public final class ThroughputCounter extends GlobalTrafficShapingHandler {
     @Nonnull
     private final MixServerMetrics metrics;
 
-    private final AtomicLong lastChacked = new AtomicLong();
+    private final AtomicLong lastChecked = new AtomicLong();
     private final AtomicLong currentReads = new AtomicLong();
     private final AtomicLong currentWrites = new AtomicLong();
 
@@ -66,7 +66,7 @@ public final class ThroughputCounter extends GlobalTrafficShapingHandler {
     @Override
     protected void doAccounting(TrafficCounter counter) {
         long currentTime = System.currentTimeMillis();
-        long interval = currentTime - lastChacked.getAndSet(currentTime);
+        long interval = currentTime - lastChecked.getAndSet(currentTime);
         if (interval == 0) {
             return;
         }

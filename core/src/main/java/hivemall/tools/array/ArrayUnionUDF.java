@@ -40,7 +40,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.Object
  * Return a list of unique entries for a given set of lists.
  *
  * <pre>
- * {1, 2} ∪ {1, 2} = {1, 2}, 
+ * {1, 2} ∪ {1, 2} = {1, 2},
  * {1, 2} ∪ {2, 3} = {1, 2, 3},
  * {1, 2, 3} ∪ {3, 4, 5} = {1, 2, 3, 4, 5}
  * </pre>
@@ -95,9 +95,9 @@ public final class ArrayUnionUDF extends GenericUDF {
 
             for (int j = 0, len = oi.getListLength(undeferred); j < len; ++j) {
                 Object nonStd = oi.getListElement(undeferred, j);
-                Object copyed = ObjectInspectorUtils.copyToStandardObject(nonStd, elemOI,
+                Object copied = ObjectInspectorUtils.copyToStandardObject(nonStd, elemOI,
                     ObjectInspectorCopyOption.WRITABLE);
-                objectSet.add(copyed);
+                objectSet.add(copied);
             }
         }
 

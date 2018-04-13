@@ -130,7 +130,7 @@ public class ChangeFinder2DTest {
     }
 
     @Test
-    public void testPoissenDist() throws HiveException {
+    public void testPoissonDist() throws HiveException {
         final int examples = 10000;
         final int dims = 3;
         final PoissonDistribution[] poisson = new PoissonDistribution[] {

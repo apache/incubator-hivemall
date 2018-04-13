@@ -173,7 +173,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
             trees = Primitives.parseInt(cl.getOptionValue("num_trees"), trees);
             if (trees < 1) {
-                throw new IllegalArgumentException("Invlaid number of trees: " + trees);
+                throw new IllegalArgumentException("Invalid number of trees: " + trees);
             }
             numVars = Primitives.parseFloat(cl.getOptionValue("num_variables"), numVars);
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
@@ -198,7 +198,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                             classWeight[i] = 1.0d;
                         } else if (v <= 0.d) {
                             throw new UDFArgumentTypeException(3,
-                                "each classWeight must be greather than 0: "
+                                "each classWeight must be greater than 0: "
                                         + Arrays.toString(classWeight));
                         }
                     }
@@ -364,7 +364,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         // Shuffle training samples
         x = SmileExtUtils.shuffle(x, y, _seed);
 
-        int[] labels = SmileExtUtils.classLables(y);
+        int[] labels = SmileExtUtils.classLabels(y);
         Attribute[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
         int numInputVars = SmileExtUtils.computeNumInputVars(_numVars, x);
 
@@ -391,13 +391,13 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         } catch (Exception ex) {
             throw new HiveException(ex);
         } finally {
-            executor.shotdown();
+            executor.shutdown();
         }
     }
 
     /**
      * Synchronized because {@link #forward(Object)} should be called from a single thread.
-     * 
+     *
      * @param accuracy
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
@@ -567,7 +567,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
         /**
          * Stratified sampling for unbalanced data.
-         * 
+         *
          * @link https://en.wikipedia.org/wiki/Stratified_sampling
          */
         @Nonnull

@@ -60,7 +60,7 @@ public final class GenerateSeriesUDTF extends GenericUDTF {
         this.end = HiveUtils.getAsConstLong(argOIs[1]);
         if (start > end) {
             throw new UDFArgumentException("start '" + start
-                    + "' must be less than or equlas to end '" + end + "'");
+                    + "' must be less than or equals to end '" + end + "'");
         }
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);

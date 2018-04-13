@@ -228,7 +228,7 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static int[] classLables(@Nonnull final int[] y) throws HiveException {
+    public static int[] classLabels(@Nonnull final int[] y) throws HiveException {
         final int[] labels = smile.math.Math.unique(y);
         Arrays.sort(labels);
 
@@ -420,7 +420,7 @@ public final class SmileExtUtils {
 
     /**
      * Generates an evenly distributed range of hue values in the HSV color scale.
-     * 
+     *
      * @return colors
      */
     public static double[] getColorBrew(@Nonnegative int n) {

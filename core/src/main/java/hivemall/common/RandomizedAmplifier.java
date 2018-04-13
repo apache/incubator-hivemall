@@ -126,12 +126,12 @@ public final class RandomizedAmplifier<T> {
         }
     }
 
-    protected void dropout(T droppped) throws HiveException {
-        if (droppped == null) {
+    protected void dropout(T dropped) throws HiveException {
+        if (dropped == null) {
             throw new IllegalStateException("Illegal condition that dropped object is null");
         }
         if (listener != null) {
-            listener.onDrop(droppped);
+            listener.onDrop(dropped);
         }
     }
 
@@ -152,7 +152,7 @@ public final class RandomizedAmplifier<T> {
     }
 
     public interface DropoutListener<T> {
-        void onDrop(T droppped) throws HiveException;
+        void onDrop(T dropped) throws HiveException;
     }
 
 }

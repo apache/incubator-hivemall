@@ -73,12 +73,12 @@ public abstract class MatrixBuilder {
         }
 
         if (feature.indexOf(':') != -1) {
-            throw new IllegalArgumentException("Invaliad feature format `<index>:<value>`: " + col);
+            throw new IllegalArgumentException("Invalid feature format `<index>:<value>`: " + col);
         }
 
         int colIndex = Integer.parseInt(feature);
         if (colIndex < 0) {
-            throw new IllegalArgumentException("Col index MUST be greather than or equals to 0: "
+            throw new IllegalArgumentException("Col index MUST be greater than or equals to 0: "
                     + colIndex);
         }
 

@@ -62,7 +62,7 @@ import org.apache.hadoop.io.IntWritable;
 @Description(
         name = "rf_ensemble",
         value = "_FUNC_(int yhat [, array<double> proba [, double model_weight=1.0]])"
-                + " - Returns emsebled prediction results in <int label, double probability, array<double> probabilities>")
+                + " - Returns ensembled prediction results in <int label, double probability, array<double> probabilities>")
 public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver {
 
     public RandomForestEnsembleUDAF() {
@@ -91,7 +91,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 }
                 if (!HiveUtils.isFloatingPointListTypeInfo(typeInfo[1])) {
                     throw new UDFArgumentTypeException(1,
-                        "ARRAY<double> is expected for posteriori: " + typeInfo[1]);
+                        "ARRAY<double> is expected for a posteriori: " + typeInfo[1]);
                 }
                 return new RfEvaluatorV2();
             }
@@ -132,7 +132,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
 
             // initialize output
             final ObjectInspector outputOI;
-            if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial       
+            if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
                 outputOI = ObjectInspectorFactory.getStandardMapObjectInspector(
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector);
@@ -466,7 +466,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 throw new HiveException("Predicted class " + yhat + " is out of bounds: " + _k);
             }
             if (posteriori.length != _k) {
-                throw new HiveException("Given |posteriori| " + posteriori.length
+                throw new HiveException("Given |a posteriori| " + posteriori.length
                         + " is differs from expected one: " + _k);
             }
 

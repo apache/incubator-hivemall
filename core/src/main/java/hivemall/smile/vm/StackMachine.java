@@ -275,7 +275,7 @@ public final class StackMachine {
                 } else {
                     Double v = valuesMap.get(currentOperation.operand);
                     if (v == null) {
-                        throw new VMRuntimeException("value is not binded: "
+                        throw new VMRuntimeException("value is not bound: "
                                 + currentOperation.operand);
                     }
                     push(v);
@@ -295,7 +295,7 @@ public final class StackMachine {
         if (name.equals("end")) {
             this.result = pop();
         } else {
-            throw new VMRuntimeException("Machine code has wrong builin function :" + name);
+            throw new VMRuntimeException("Machine code has wrong built-in function :" + name);
         }
     }
 

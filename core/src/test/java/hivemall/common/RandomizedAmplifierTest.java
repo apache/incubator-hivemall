@@ -60,9 +60,9 @@ public class RandomizedAmplifierTest {
         private final Set<Integer> numset = new HashSet<Integer>(10000);
 
         @Override
-        public void onDrop(Integer droppped) {
-            //System.out.println(droppped);
-            numset.add(droppped);
+        public void onDrop(Integer dropped) {
+            //System.out.println(dropped);
+            numset.add(dropped);
             count++;
         }
 

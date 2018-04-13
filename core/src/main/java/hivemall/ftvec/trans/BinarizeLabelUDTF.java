@@ -48,7 +48,7 @@ public final class BinarizeLabelUDTF extends GenericUDTF {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
-            throw new UDFArgumentException("binalize_label(int/long positive, "
+            throw new UDFArgumentException("binarize_label(int/long positive, "
                     + "int/long negative, *) takes at least three arguments");
         }
         this.positiveOI = HiveUtils.asIntCompatibleOI(argOIs[0]);

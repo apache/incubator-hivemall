@@ -109,7 +109,7 @@ public final class NativeLibLoader {
     }
 
     @Nonnull
-    private static String getPreffix(@Nonnull String fileName) {
+    private static String getPrefix(@Nonnull String fileName) {
         int point = fileName.lastIndexOf(".");
         if (point != -1) {
             return fileName.substring(0, point);
@@ -131,7 +131,7 @@ public final class NativeLibLoader {
         // Create a temporary folder with a random number for the native lib
         final String uuid = UUID.randomUUID().toString();
         final File tempFolder = new File(System.getProperty("java.io.tmpdir"), String.format(
-            "%s-%s", getPreffix(libName), uuid));
+            "%s-%s", getPrefix(libName), uuid));
         if (!tempFolder.exists()) {
             boolean created = tempFolder.mkdirs();
             if (!created) {

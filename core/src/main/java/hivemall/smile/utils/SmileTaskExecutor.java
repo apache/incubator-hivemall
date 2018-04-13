@@ -84,7 +84,7 @@ public final class SmileTaskExecutor {
         return results;
     }
 
-    public void shotdown() {
+    public void shutdown() {
         if (exec != null) {
             exec.shutdownNow();
         }

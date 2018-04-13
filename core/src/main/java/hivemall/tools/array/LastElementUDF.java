@@ -31,7 +31,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 /**
  * Return the last element in an array.
  */
-@Description(name = "last_element", value = "_FUNC_(x) - Retturn the last element in an array")
+@Description(name = "last_element", value = "_FUNC_(x) - Return the last element in an array")
 @UDFType(deterministic = true, stateful = false)
 public class LastElementUDF extends GenericUDF {
 

@@ -115,7 +115,7 @@ public final class LogisticRegressionDataGeneratorUDTF extends UDTFWithOptions {
         if (dense) {
             if (n_features != n_dimensions) {
                 throw new UDFArgumentException("n_features '" + n_features
-                        + "' must be equlas to n_dimensions '" + n_dimensions
+                        + "' must be equals to n_dimensions '" + n_dimensions
                         + "' when making a dense dataset");
             }
         }

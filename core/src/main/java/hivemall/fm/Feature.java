@@ -33,7 +33,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 public abstract class Feature {
     public static final int DEFAULT_NUM_FIELDS = 256;
     public static final int DEFAULT_FEATURE_BITS = 21;
-    public static final int DEFAULT_NUM_FEATURES = 1 << 21; // 2^21    
+    public static final int DEFAULT_NUM_FEATURES = 1 << 21; // 2^21
 
     protected double value;
 
@@ -224,7 +224,7 @@ public abstract class Feature {
         final int pos2 = rest.indexOf(':');
         if (pos2 == -1) {
             throw new HiveException(
-                "Invalid FFM feature repsentation. Expected <field>:<index>:<value> but got " + fv);
+                "Invalid FFM feature representation. Expected <field>:<index>:<value> but got " + fv);
         }
 
         final short field;
@@ -295,7 +295,7 @@ public abstract class Feature {
         final int pos2 = rest.indexOf(':');
         if (pos2 == -1) {
             throw new HiveException(
-                "Invalid FFM feature repsentation. Expected <field>:<index>:<value> but got " + fv);
+                "Invalid FFM feature representation. Expected <field>:<index>:<value> but got " + fv);
         }
 
         final short field;

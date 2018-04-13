@@ -274,7 +274,7 @@ public final class TreePredictUDFv1 extends GenericUDF {
             if (classification) {
                 return evaluateClassification(modelId, compressed, script, features);
             } else {
-                return evaluteRegression(modelId, compressed, script, features);
+                return evaluateRegression(modelId, compressed, script, features);
             }
         }
 
@@ -292,7 +292,7 @@ public final class TreePredictUDFv1 extends GenericUDF {
             return new IntWritable(result);
         }
 
-        private DoubleWritable evaluteRegression(@Nonnull String modelId, boolean compressed,
+        private DoubleWritable evaluateRegression(@Nonnull String modelId, boolean compressed,
                 @Nonnull Text script, double[] features) throws HiveException {
             if (!modelId.equals(prevModelId)) {
                 this.prevModelId = modelId;

@@ -46,7 +46,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     private final float _alpha;
     private final float _beta;
     private final float _lambda1;
-    private final float _lamdda2;
+    private final float _lambda2;
 
     public FieldAwareFactorizationMachineModel(@Nonnull FFMHyperParameters params) {
         super(params);
@@ -62,7 +62,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         this._alpha = params.alphaFTRL;
         this._beta = params.betaFTRL;
         this._lambda1 = params.lambda1;
-        this._lamdda2 = params.lamdda2;
+        this._lambda2 = params.lambda2;
     }
 
     public abstract float getV(@Nonnull Feature x, @Nonnull int yField, int f);
@@ -160,7 +160,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         }
 
         final float nextWi = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
-                / _alpha + _lamdda2));
+                / _alpha + _lambda2));
         if (!NumberUtils.isFinite(nextWi)) {
             throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
                     + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + theta.getW()
@@ -235,7 +235,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         }
 
         final float nextV = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
-                / _alpha + _lamdda2));
+                / _alpha + _lambda2));
         if (!NumberUtils.isFinite(nextV)) {
             throw new IllegalStateException("Got " + nextV + " for next V" + f + '['
                     + x.getFeatureIndex() + "]\n" + "Xi=" + Xi + ", Vif=" + theta.getV(f) + ", h="
@@ -346,7 +346,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         }
         buf1.append("\n");
 
-        // w0        
+        // w0
         double ret = getW0();
         buf1.append("predict(x) = w0");
         buf2.append("predict(x) = ").append(ret);

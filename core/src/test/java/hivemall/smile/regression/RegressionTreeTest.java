@@ -177,7 +177,7 @@ public class RegressionTreeTest {
 
     @Test
     public void testGraphvizOutput() throws HiveException, IOException, ParseException {
-        int maxLeafts = 10;
+        int maxLeafs = 10;
         String outputName = "predicted";
 
         double[][] x = { {234.289, 235.6, 159.0, 107.608, 1947, 60.323},
@@ -200,15 +200,15 @@ public class RegressionTreeTest {
         double[] y = {83.0, 88.5, 88.2, 89.5, 96.2, 98.1, 99.0, 100.0, 101.2, 104.6, 108.4, 110.8,
                 112.6, 114.2, 115.7, 116.9};
 
-        debugPrint(graphvisOutput(x, y, maxLeafts, true, null, outputName));
+        debugPrint(graphvisOutput(x, y, maxLeafs, true, null, outputName));
     }
 
-    private static String graphvisOutput(double[][] x, double[] y, int maxLeafts, boolean dense,
+    private static String graphvisOutput(double[][] x, double[] y, int maxLeafs, boolean dense,
             String[] featureNames, String outputName) throws IOException, HiveException,
             ParseException {
         Attribute[] attrs = new Attribute[x[0].length];
         Arrays.fill(attrs, new NumericAttribute());
-        RegressionTree tree = new RegressionTree(attrs, matrix(x, dense), y, maxLeafts);
+        RegressionTree tree = new RegressionTree(attrs, matrix(x, dense), y, maxLeafs);
 
         Text model = new Text(Base91.encode(tree.serialize(true)));
 

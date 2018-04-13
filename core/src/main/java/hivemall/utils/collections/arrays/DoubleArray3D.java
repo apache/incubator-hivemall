@@ -66,7 +66,7 @@ public final class DoubleArray3D {
     }
 
     public void configure(final int dim1, final int dim2, final int dim3) {
-        int requiredSize = cardinarity(dim1, dim2, dim3);
+        int requiredSize = cardinality(dim1, dim2, dim3);
         if (requiredSize > capacity) {
             this.buffer = allocate(direct, requiredSize);
             this.capacity = requiredSize;
@@ -130,7 +130,7 @@ public final class DoubleArray3D {
         return idx;
     }
 
-    private static int cardinarity(final int dim1, final int dim2, final int dim3) {
+    private static int cardinality(final int dim1, final int dim2, final int dim3) {
         if (dim1 <= 0 || dim2 <= 0 || dim3 <= 0) {
             throw new IllegalArgumentException("Detected negative dimension size. dim1=" + dim1
                     + ", dim2=" + dim2 + ", dim3=" + dim3);

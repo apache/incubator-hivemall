@@ -68,7 +68,7 @@ public class FastMathTest {
         for (double x = 1d; x < 4_000_000d; x += 0.25d) {
             result1 += Math.sqrt(x);
         }
-        long elaspedTimeForSqrt = System.nanoTime() - startTime;
+        long elapsedTimeForSqrt = System.nanoTime() - startTime;
 
         // warm up for FastMath.sqrt
         double result2 = 0d;
@@ -79,11 +79,11 @@ public class FastMathTest {
         for (double x = 1d; x < 4_000_000d; x += 0.25D) {
             result2 += FastMath.sqrt(x);
         }
-        long elaspedTimeForFastSqrt = System.nanoTime() - startTime;
+        long elapsedTimeForFastSqrt = System.nanoTime() - startTime;
 
         if (DEBUG) {
-            System.out.println("elaspedTimeForFastSqrt=" + elaspedTimeForFastSqrt
-                    + " and elaspedTimeForSqrt=" + elaspedTimeForSqrt);
+            System.out.println("elapsedTimeForFastSqrt=" + elapsedTimeForFastSqrt
+                    + " and elapsedTimeForSqrt=" + elapsedTimeForSqrt);
         }
 
         Assert.assertFalse(result1 == 0d);
@@ -92,9 +92,9 @@ public class FastMathTest {
 
         /*
         Assert.assertTrue(
-            "Expected elaspedTimeForFastSqrt < elaspedTimeForSqrt while elaspedTimeForFastSqrt="
-                    + elaspedTimeForFastSqrt + " and elaspedTimeForSqrt=" + elaspedTimeForSqrt,
-            elaspedTimeForFastSqrt < elaspedTimeForSqrt);
+            "Expected elapsedTimeForFastSqrt < elapsedTimeForSqrt while elapsedTimeForFastSqrt="
+                    + elapsedTimeForFastSqrt + " and elapsedTimeForSqrt=" + elapsedTimeForSqrt,
+            elapsedTimeForFastSqrt < elapsedTimeForSqrt);
         */
     }
 

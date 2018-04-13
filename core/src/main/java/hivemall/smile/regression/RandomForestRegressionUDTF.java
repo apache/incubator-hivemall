@@ -112,7 +112,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     @Nullable
     private Counter _treeBuildTaskCounter;
     @Nullable
-    private Counter _treeConstuctionTimeCounter;
+    private Counter _treeConstructionTimeCounter;
     @Nullable
     private Counter _treeSerializationTimeCounter;
 
@@ -153,7 +153,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
             trees = Primitives.parseInt(cl.getOptionValue("num_trees"), trees);
             if (trees < 1) {
-                throw new IllegalArgumentException("Invlaid number of trees: " + trees);
+                throw new IllegalArgumentException("Invalid number of trees: " + trees);
             }
             numVars = Primitives.parseFloat(cl.getOptionValue("num_variables"), numVars);
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
@@ -267,7 +267,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         this._treeBuildTaskCounter = (_progressReporter == null) ? null
                 : _progressReporter.getCounter("hivemall.smile.RandomForestRegression$Counter",
                     "Number of finished tree construction tasks");
-        this._treeConstuctionTimeCounter = (_progressReporter == null) ? null
+        this._treeConstructionTimeCounter = (_progressReporter == null) ? null
                 : _progressReporter.getCounter("hivemall.smile.RandomForestRegression$Counter",
                     "Elapsed time in seconds for tree construction");
         this._treeSerializationTimeCounter = (_progressReporter == null) ? null
@@ -349,13 +349,13 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         } catch (Exception ex) {
             throw new HiveException(ex);
         } finally {
-            executor.shotdown();
+            executor.shutdown();
         }
     }
 
     /**
      * Synchronized because {@link #forward(Object)} should be called from a single thread.
-     * 
+     *
      * @param error
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
@@ -466,7 +466,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             RegressionTree tree = new RegressionTree(_attributes, _x, _y, _numVars,
                 _udtf._maxDepth, _udtf._maxLeafNodes, _udtf._minSamplesSplit,
                 _udtf._minSamplesLeaf, _order, bags, rnd2);
-            incrCounter(_udtf._treeConstuctionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
+            incrCounter(_udtf._treeConstructionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             // out-of-bag prediction
             int oob = 0;

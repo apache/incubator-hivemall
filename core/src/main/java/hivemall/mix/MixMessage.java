@@ -58,7 +58,7 @@ public final class MixMessage implements Externalizable {
             throw new IllegalArgumentException("feature is null");
         }
         if (deltaUpdates < 0 || deltaUpdates > Byte.MAX_VALUE) {
-            throw new IllegalArgumentException("Illegal deletaUpdates: " + deltaUpdates);
+            throw new IllegalArgumentException("Illegal deltaUpdates: " + deltaUpdates);
         }
         this.event = event;
         this.feature = feature;

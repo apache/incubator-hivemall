@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2010 Haifeng Li
- *   
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -197,7 +197,7 @@ public final class DecisionTree implements Classifier<Vector> {
          */
         int output = -1;
         /**
-         * Posteriori probability based on sample ratios in this node.
+         * A posteriori probability based on sample ratios in this node.
          */
         @Nullable
         double[] posteriori = null;
@@ -358,7 +358,7 @@ public final class DecisionTree implements Classifier<Vector> {
             final int myNodeId = nodeIdGenerator.getValue();
 
             if (trueChild == null && falseChild == null) {
-                // fillcolor=h,s,v 
+                // fillcolor=h,s,v
                 // https://en.wikipedia.org/wiki/HSL_and_HSV
                 // http://www.graphviz.org/doc/info/attrs.html#k:colorList
                 String hsvColor = (colorBrew == null || output >= colorBrew.length) ? "#00000000"
@@ -394,7 +394,7 @@ public final class DecisionTree implements Classifier<Vector> {
 
                 if (myNodeId != parentNodeId) {
                     builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
-                    if (parentNodeId == 0) {//only draw edge label on top 
+                    if (parentNodeId == 0) {//only draw edge label on top
                         if (myNodeId == 1) {
                             builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
                         } else {
@@ -580,7 +580,7 @@ public final class DecisionTree implements Classifier<Vector> {
 
         /**
          * Finds the best attribute to split on at the current node.
-         * 
+         *
          * @return true if a split exists to reduce squared error, false otherwise.
          */
         public boolean findBestSplit() {
@@ -669,7 +669,7 @@ public final class DecisionTree implements Classifier<Vector> {
 
         /**
          * Finds the best split cutoff for attribute j at the current node.
-         * 
+         *
          * @param n the number instances in this node.
          * @param count the sample count in each class.
          * @param falseCount an array to store sample count in each class for false child node.
@@ -779,7 +779,7 @@ public final class DecisionTree implements Classifier<Vector> {
                         prevx = x_ij;
                         prevy = y_i;
                         trueCount[y_i] += sample;
-                    }//apply()                    
+                    }//apply()
                 });
             } else {
                 throw new IllegalStateException("Unsupported attribute type: "
@@ -808,7 +808,7 @@ public final class DecisionTree implements Classifier<Vector> {
             this.bags = null; // help GC for recursive call
 
             if (tc < _minLeafSize || fc < _minLeafSize) {
-                // set the node as leaf                
+                // set the node as leaf
                 node.splitFeature = -1;
                 node.splitFeatureType = null;
                 node.splitValue = Double.NaN;
@@ -845,7 +845,7 @@ public final class DecisionTree implements Classifier<Vector> {
             }
 
             _importance.incr(node.splitFeature, node.splitScore);
-            node.posteriori = null; // posteriori is not needed for non-leaf nodes
+            node.posteriori = null; // a posteriori is not needed for non-leaf nodes
 
             return true;
         }
@@ -898,7 +898,7 @@ public final class DecisionTree implements Classifier<Vector> {
 
     /**
      * Returns the impurity of a node.
-     * 
+     *
      * @param count the sample count in each class.
      * @param n the number of samples in the node.
      * @param rule the rule for splitting a node.
@@ -986,7 +986,7 @@ public final class DecisionTree implements Classifier<Vector> {
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);
         if (attributes.length != x.numColumns()) {
-            throw new IllegalArgumentException("-attrs option is invliad: "
+            throw new IllegalArgumentException("-attrs option is invalid: "
                     + Arrays.toString(attributes));
         }
         this._hasNumericType = SmileExtUtils.containsNumericType(_attributes);

@@ -959,7 +959,7 @@ public final class HiveUtils {
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
-                    "Unxpected type '" + argOI.getTypeName() + "' is passed.");
+                    "Unexpected type '" + argOI.getTypeName() + "' is passed.");
         }
         return oi;
     }
@@ -986,7 +986,7 @@ public final class HiveUtils {
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
-                    "Unxpected type '" + argOI.getTypeName() + "' is passed.");
+                    "Unexpected type '" + argOI.getTypeName() + "' is passed.");
         }
         return oi;
     }
@@ -1007,7 +1007,7 @@ public final class HiveUtils {
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
-                    "Unxpected type '" + argOI.getTypeName() + "' is passed.");
+                    "Unexpected type '" + argOI.getTypeName() + "' is passed.");
         }
         return oi;
     }

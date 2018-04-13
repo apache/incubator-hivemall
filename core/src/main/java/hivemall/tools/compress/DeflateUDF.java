@@ -40,7 +40,7 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 
 @Description(name = "deflate", value = "_FUNC_(TEXT data [, const int compressionLevel]) - "
-        + "Returns a compressed BINARY obeject by using Deflater.",
+        + "Returns a compressed BINARY object by using Deflater.",
         extended = "The compression level must be in range [-1,9]")
 @UDFType(deterministic = true, stateful = false)
 public final class DeflateUDF extends GenericUDF {

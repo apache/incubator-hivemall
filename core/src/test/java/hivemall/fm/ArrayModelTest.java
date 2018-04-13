@@ -111,7 +111,7 @@ public class ArrayModelTest {
             println("Accuracy = " + accuracy);
         }
         udtf.runTrainingIteration(10);
-        Assert.assertTrue("Expected accuracy greather than 0.95f: " + accuracy, accuracy > 0.95f);
+        Assert.assertTrue("Expected accuracy greater than 0.95f: " + accuracy, accuracy > 0.95f);
     }
 
     @Test

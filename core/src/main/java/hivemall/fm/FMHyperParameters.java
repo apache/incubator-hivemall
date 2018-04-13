@@ -67,7 +67,7 @@ class FMHyperParameters {
     double convergenceRate = 0.005d;
 
     // adaptive regularization
-    boolean adaptiveReglarization = false;
+    boolean adaptiveRegularization = false;
     float validationRatio = 0.05f;
     int validationThreshold = 1000;
     boolean parseFeatureAsInt = false;
@@ -82,7 +82,7 @@ class FMHyperParameters {
                 + vInit + ", minTarget=" + minTarget + ", maxTarget=" + maxTarget + ", eta=" + eta
                 + ", numFeatures=" + numFeatures + ", l2norm=" + l2norm + ", iters=" + iters
                 + ", conversionCheck=" + conversionCheck + ", convergenceRate=" + convergenceRate
-                + ", adaptiveReglarization=" + adaptiveReglarization + ", validationRatio="
+                + ", adaptiveRegularization=" + adaptiveRegularization + ", validationRatio="
                 + validationRatio + ", validationThreshold=" + validationThreshold
                 + ", parseFeatureAsInt=" + parseFeatureAsInt + "]";
     }
@@ -108,7 +108,7 @@ class FMHyperParameters {
         this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
         this.conversionCheck = !cl.hasOption("disable_cvtest");
         this.convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
-        this.adaptiveReglarization = cl.hasOption("adaptive_regularizaion");
+        this.adaptiveRegularization = cl.hasOption("adaptive_regularization");
         this.validationRatio = Primitives.parseFloat(cl.getOptionValue("validation_ratio"),
             validationRatio);
         if (validationRatio < 0.f || validationRatio >= 1.f) {
@@ -154,7 +154,7 @@ class FMHyperParameters {
         float alphaFTRL = 0.2f; // Learning Rate
         float betaFTRL = 1.f; // Smoothing parameter for AdaGrad
         float lambda1 = 0.001f; // L1 Regularization
-        float lamdda2 = 0.0001f; // L2 Regularization
+        float lambda2 = 0.0001f; // L2 Regularization
 
         FFMHyperParameters() {
             super();
@@ -200,7 +200,7 @@ class FMHyperParameters {
                     }
                     this.betaFTRL = Primitives.parseFloat(cl.getOptionValue("betaFTRL"), betaFTRL);
                     this.lambda1 = Primitives.parseFloat(cl.getOptionValue("lambda1"), lambda1);
-                    this.lamdda2 = Primitives.parseFloat(cl.getOptionValue("lamdda2"), lamdda2);
+                    this.lambda2 = Primitives.parseFloat(cl.getOptionValue("lambda2"), lambda2);
                     break;
                 }
                 case "adagrad": {
@@ -224,7 +224,7 @@ class FMHyperParameters {
             return "FFMHyperParameters [globalBias=" + globalBias + ", linearCoeff=" + linearCoeff
                     + ", numFields=" + numFields + ", useAdaGrad=" + useAdaGrad + ", eps=" + eps
                     + ", useFTRL=" + useFTRL + ", alphaFTRL=" + alphaFTRL + ", betaFTRL="
-                    + betaFTRL + ", lambda1=" + lambda1 + ", lamdda2=" + lamdda2 + "], "
+                    + betaFTRL + ", lambda1=" + lambda1 + ", lambda2=" + lambda2 + "], "
                     + super.toString();
         }
 

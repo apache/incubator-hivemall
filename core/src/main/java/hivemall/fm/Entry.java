@@ -158,7 +158,7 @@ class Entry {
     void clear() {};
 
     static int sizeOf(@Nonnegative final int factors) {
-        Preconditions.checkArgument(factors >= 1, "Factors must be greather than 0: " + factors);
+        Preconditions.checkArgument(factors >= 1, "Factors must be greater than 0: " + factors);
         return SizeOf.FLOAT * factors;
     }
 

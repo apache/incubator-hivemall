@@ -241,7 +241,7 @@ public final class UDAFToOrderedMap extends UDAFToMap {
         }
 
         void initBuffer(@Nonnull MapAggregationBuffer agg, @Nonnegative int size) {
-            Preconditions.checkArgument(size > 0, "size MUST be greather than zero: " + size);
+            Preconditions.checkArgument(size > 0, "size MUST be greater than zero: " + size);
 
             agg.container = new BoundedSortedMap<Object, Object>(size, true);
             agg.size = size;

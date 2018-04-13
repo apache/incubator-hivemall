@@ -58,7 +58,7 @@ import org.apache.hadoop.io.Text;
 @Description(name = "tree_predict",
         value = "_FUNC_(string modelId, string model, array<double|string> features [, const string options | const boolean classification=false])"
                 + " - Returns a prediction result of a random forest"
-                + " in <int value, array<double> posteriori> for classification and <double> for regression")
+                + " in <int value, array<double> a posteriori> for classification and <double> for regression")
 @UDFType(deterministic = true, stateful = false)
 public final class TreePredictUDF extends UDFWithOptions {
 
@@ -222,13 +222,13 @@ public final class TreePredictUDF extends UDFWithOptions {
 
                 if (feature.indexOf(':') != -1) {
                     throw new UDFArgumentException(
-                        "Invaliad feature format `<index>:<value>`: " + col);
+                        "Invalid feature format `<index>:<value>`: " + col);
                 }
 
                 final int colIndex = Integer.parseInt(feature);
                 if (colIndex < 0) {
                     throw new UDFArgumentException(
-                        "Col index MUST be greather than or equals to 0: " + colIndex);
+                        "Col index MUST be greater than or equals to 0: " + colIndex);
                 }
                 probe.set(colIndex, value);
             }

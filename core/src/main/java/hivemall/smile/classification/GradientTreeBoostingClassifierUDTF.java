@@ -156,7 +156,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
 
             trees = Primitives.parseInt(cl.getOptionValue("num_trees"), trees);
             if (trees < 1) {
-                throw new IllegalArgumentException("Invlaid number of trees: " + trees);
+                throw new IllegalArgumentException("Invalid number of trees: " + trees);
             }
             eta = Primitives.parseDouble(cl.getOptionValue("learning_rate"), eta);
             subsample = Primitives.parseDouble(cl.getOptionValue("subsample"), subsample);
@@ -320,7 +320,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         checkOptions();
         this._attributes = SmileExtUtils.attributeTypes(_attributes, x);
 
-        // Shuffle training samples    
+        // Shuffle training samples
         x = SmileExtUtils.shuffle(x, y, _seed);
 
         final int k = smile.math.Math.max(y) + 1;
@@ -345,7 +345,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private void train2(@Nonnull final Matrix x, @Nonnull final int[] y) throws HiveException {
         final int numVars = SmileExtUtils.computeNumInputVars(_numVars, x);
         if (logger.isInfoEnabled()) {
-            logger.info("k: " + 2 + ", numTrees: " + _numTrees + ", shirinkage: " + _eta
+            logger.info("k: " + 2 + ", numTrees: " + _numTrees + ", shrinkage: " + _eta
                     + ", subsample: " + _subsample + ", numVars: " + numVars + ", maxDepth: "
                     + _maxDepth + ", minSamplesSplit: " + _minSamplesSplit + ", maxLeafs: "
                     + _maxLeafNodes + ", seed: " + _seed);
@@ -427,7 +427,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private void traink(final Matrix x, final int[] y, final int k) throws HiveException {
         final int numVars = SmileExtUtils.computeNumInputVars(_numVars, x);
         if (logger.isInfoEnabled()) {
-            logger.info("k: " + k + ", numTrees: " + _numTrees + ", shirinkage: " + _eta
+            logger.info("k: " + k + ", numTrees: " + _numTrees + ", shrinkage: " + _eta
                     + ", subsample: " + _subsample + ", numVars: " + numVars
                     + ", minSamplesSplit: " + _minSamplesSplit + ", maxDepth: " + _maxDepth
                     + ", maxLeafs: " + _maxLeafNodes + ", seed: " + _seed);
@@ -437,7 +437,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final int numSamples = (int) Math.round(numInstances * _subsample);
 
         final double[][] h = new double[k][numInstances]; // boost tree output.
-        final double[][] p = new double[k][numInstances]; // posteriori probabilities.
+        final double[][] p = new double[k][numInstances]; // a posteriori probabilities.
         final double[][] response = new double[k][numInstances]; // pseudo response.
 
         final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
@@ -598,7 +598,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
 
         /**
          * Constructor.
-         * 
+         *
          * @param y pseudo response to fit.
          */
         public L2NodeOutput(double[] y) {
@@ -639,7 +639,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
 
         /**
          * Constructor.
-         * 
+         *
          * @param response response to fit.
          */
         public LKNodeOutput(double[] response, int k) {

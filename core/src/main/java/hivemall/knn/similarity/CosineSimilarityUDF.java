@@ -103,7 +103,7 @@ public final class CosineSimilarityUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "consine_similarity(" + Arrays.toString(children) + ")";
+        return "cosine_similarity(" + Arrays.toString(children) + ")";
     }
 
 }

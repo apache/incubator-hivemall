@@ -163,7 +163,7 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
                 recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
                 if (recommendSize < 0) {
                     throw new UDFArgumentException(
-                        "The third argument `int recommendSize` must be in greather than or equals to 0: "
+                        "The third argument `int recommendSize` must be in greater than or equals to 0: "
                                 + recommendSize);
                 }
             }

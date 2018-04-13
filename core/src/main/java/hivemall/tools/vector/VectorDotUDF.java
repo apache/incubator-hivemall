@@ -47,7 +47,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @UDFType(deterministic = true, stateful = false)
 public final class VectorDotUDF extends GenericUDF {
 
-    private Evaluator evalutor;
+    private Evaluator evaluator;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -64,9 +64,9 @@ public final class VectorDotUDF extends GenericUDF {
 
         ObjectInspector argOI1 = argOIs[1];
         if (HiveUtils.isNumberListOI(argOI1)) {
-            this.evalutor = new Dot2DVectors(xListOI, HiveUtils.asListOI(argOI1));
+            this.evaluator = new Dot2DVectors(xListOI, HiveUtils.asListOI(argOI1));
         } else if (HiveUtils.isNumberOI(argOI1)) {
-            this.evalutor = new Multiply2D1D(xListOI, argOI1);
+            this.evaluator = new Multiply2D1D(xListOI, argOI1);
         } else {
             throw new UDFArgumentException(
                 "Expected array<number> or number for the send argument: " + argOI1.getTypeName());
@@ -84,7 +84,7 @@ public final class VectorDotUDF extends GenericUDF {
             return null;
         }
 
-        return evalutor.dot(arg0, arg1);
+        return evaluator.dot(arg0, arg1);
     }
 
     interface Evaluator extends Serializable {

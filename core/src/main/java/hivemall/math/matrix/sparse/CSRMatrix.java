@@ -54,7 +54,7 @@ public final class CSRMatrix extends RowMajorMatrix {
             @Nonnull double[] values, @Nonnegative int numColumns) {
         super();
         Preconditions.checkArgument(rowPointers.length >= 1,
-            "rowPointers must be greather than 0: " + rowPointers.length);
+            "rowPointers must be greater than 0: " + rowPointers.length);
         Preconditions.checkArgument(columnIndices.length == values.length, "#columnIndices ("
                 + columnIndices.length + ") must be equals to #values (" + values.length + ")");
         this.rowPointers = rowPointers;

@@ -146,7 +146,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             "Threshold to determine convergence [default: 0.005]");
         // adaptive regularization
         if (isAdaptiveRegularizationSupported()) {
-            opts.addOption("adareg", "adaptive_regularizaion", false,
+            opts.addOption("adareg", "adaptive_regularization", false,
                 "Whether to enable adaptive regularization [default: OFF]");
             opts.addOption("va_ratio", "validation_ratio", true,
                 "Ratio of training data used for validation [default: 0.05f]");
@@ -189,7 +189,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         this._iterations = params.iters;
         this._factors = params.factors;
         this._parseFeatureAsInt = params.parseFeatureAsInt;
-        if (params.adaptiveReglarization) {
+        if (params.adaptiveRegularization) {
             this._va_rand = new Random(params.seed + 31L);
         }
         this._validationRatio = params.validationRatio;

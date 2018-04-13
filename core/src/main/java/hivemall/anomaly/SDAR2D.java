@@ -68,8 +68,8 @@ public final class SDAR2D {
      */
     @Nonnull
     public RealVector update(@Nonnull final ArrayRealVector[] x, final int k) {
-        Preconditions.checkArgument(x.length >= 1, "x.length MUST be greather than 1: " + x.length);
-        Preconditions.checkArgument(k >= 0, "k MUST be greather than or equals to 0: ", k);
+        Preconditions.checkArgument(x.length >= 1, "x.length MUST be greater than 1: " + x.length);
+        Preconditions.checkArgument(k >= 0, "k MUST be greater than or equals to 0: ", k);
         Preconditions.checkArgument(k < _C.length, "k MUST be less than |C| but " + "k=" + k
                 + ", |C|=" + _C.length);
 
@@ -102,7 +102,7 @@ public final class SDAR2D {
         // update covariance matrices
         // C_j := (1-r) C_j + r (x_t - \hat{µ}) (x_{t-j} - \hat{µ})'
         final RealMatrix[] C = this._C;
-        final RealVector rxResidual0 = xResidual[0].mapMultiply(_r); // r (x_t - \hat{µ}) 
+        final RealVector rxResidual0 = xResidual[0].mapMultiply(_r); // r (x_t - \hat{µ})
         for (int j = 0; j <= k; j++) {
             RealMatrix Cj = C[j];
             if (Cj == null) {
@@ -114,9 +114,9 @@ public final class SDAR2D {
         }
 
         // solve A in the following Yule-Walker equation
-        // C_j = ∑_{i=1}^{k} A_i C_{j-i} where j = 1..k, C_{-i} = C_i' 
+        // C_j = ∑_{i=1}^{k} A_i C_{j-i} where j = 1..k, C_{-i} = C_i'
         /*
-         * /C_1\     /A_1\  /C_0     |C_1'    |C_2'    | .  .  .   |C_{k-1}' \ 
+         * /C_1\     /A_1\  /C_0     |C_1'    |C_2'    | .  .  .   |C_{k-1}' \
          * |---|     |---|  |--------+--------+--------+           +---------|
          * |C_2|     |A_2|  |C_1     |C_0     |C_1'    |               .     |
          * |---|     |---|  |--------+--------+--------+               .     |
@@ -125,7 +125,7 @@ public final class SDAR2D {
          * | . |     | . |  |   .                            .               |
          * | . |     | . |  |   .                            .               |
          * |---|     |---|  |--------+                              +--------|
-         * \C_k/     \A_k/  \C_{k-1} | .  .  .                      |C_0     / 
+         * \C_k/     \A_k/  \C_{k-1} | .  .  .                      |C_0     /
          */
         RealMatrix[][] rhs = MatrixUtils.toeplitz(C, k);
         RealMatrix[] lhs = Arrays.copyOfRange(C, 1, k + 1);
@@ -143,7 +143,7 @@ public final class SDAR2D {
         }
 
         // update model covariance
-        // ∑ := (1-r) ∑ + r (x - \hat{x}) (x - \hat{x})'       
+        // ∑ := (1-r) ∑ + r (x - \hat{x}) (x - \hat{x})'
         RealVector xEstimateResidual = x_t.subtract(x_hat);
         this._sigma = _sigma.scalarMultiply(1.d - _r).add(
             xEstimateResidual.mapMultiply(_r).outerProduct(xEstimateResidual));

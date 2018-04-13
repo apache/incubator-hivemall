@@ -59,7 +59,7 @@ public final class VectorizeFeaturesUDF extends UDFWithOptions {
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("emit_null", false, "Wheather to emit NULL [default: false]");
+        opts.addOption("emit_null", false, "Whether to emit NULL [default: false]");
         return opts;
     }
 

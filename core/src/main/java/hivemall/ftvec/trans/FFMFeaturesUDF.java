@@ -48,7 +48,7 @@ import org.apache.hadoop.io.Text;
 @Description(
         name = "ffm_features",
         value = "_FUNC_(const array<string> featureNames, feature1, feature2, .. [, const string options])"
-                + " - Takes categroical variables and returns a feature vector array<string>"
+                + " - Takes categorical variables and returns a feature vector array<string>"
                 + " in a libffm format <field>:<index>:<value>")
 @UDFType(deterministic = true, stateful = false)
 public final class FFMFeaturesUDF extends UDFWithOptions {
@@ -66,7 +66,7 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("no_hash", "disable_feature_hashing", false,
-            "Wheather to disable feature hashing [default: false]");
+            "Whether to disable feature hashing [default: false]");
         // feature hashing
         opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("hash", "feature_hashing", true,
@@ -186,7 +186,7 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
 
             final String featureName = _featureNames[i];
             final String feature = featureName + '#' + s;
-            // categorical feature representation 
+            // categorical feature representation
             final String fv;
             if (_mhash) {
                 int field = _emitIndices ? i

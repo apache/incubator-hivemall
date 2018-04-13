@@ -97,7 +97,7 @@ public final class ChangeFinderUDF extends UDFWithOptions {
             true,
             "Score threshold (inclusive) for determining change-point existence [default: -1, do not output decision]");
         opts.addOption("loss1", "lossfunc1", true,
-            "Loss function for outliter scoring [default: hellinger, logloss]");
+            "Loss function for outlier scoring [default: hellinger, logloss]");
         opts.addOption("loss2", "lossfunc2", true,
             "Loss function for change point scoring [default: hellinger, logloss]");
         return opts;
@@ -126,8 +126,8 @@ public final class ChangeFinderUDF extends UDFWithOptions {
             "r1 must be in range (0,1): " + _params.r1);
         Preconditions.checkArgument(_params.r2 > 0.d && _params.r2 < 1.d,
             "r2 must be in range (0,1): " + _params.r2);
-        Preconditions.checkArgument(_params.T1 >= 2, "T1 must be greather than 1: " + _params.T1);
-        Preconditions.checkArgument(_params.T2 >= 2, "T2 must be greather than 1: " + _params.T2);
+        Preconditions.checkArgument(_params.T1 >= 2, "T1 must be greater than 1: " + _params.T1);
+        Preconditions.checkArgument(_params.T2 >= 2, "T2 must be greater than 1: " + _params.T2);
 
         return cl;
     }

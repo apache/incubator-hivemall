@@ -53,7 +53,7 @@ import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
 public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions implements
-        RatingInitilizer {
+        RatingInitializer {
     private static final Log logger = LogFactory.getLog(OnlineMatrixFactorizationUDTF.class);
     private static final int RECORD_BYTES = (Integer.SIZE + Integer.SIZE + Double.SIZE) / 8;
 

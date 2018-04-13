@@ -37,7 +37,7 @@ import org.apache.hadoop.io.Text;
  */
 @Description(name = "polynomial_features",
         value = "_FUNC_(feature_vector in array<string>) - Returns a feature vector"
-                + "having polynominal feature space")
+                + "having polynomial feature space")
 @UDFType(deterministic = true, stateful = false)
 public final class PolynomialFeaturesUDF extends UDF {
 
@@ -88,7 +88,7 @@ public final class PolynomialFeaturesUDF extends UDF {
             final int currentDegree, final int degree, final List<FeatureValue> srcVec,
             final int currentSrcPos, final List<Text> dstVec, final boolean interactionOnly,
             final boolean truncate) {
-        assert (currentDegree <= degree) : "currentDegree: " + currentDegree + ", degress: "
+        assert (currentDegree <= degree) : "currentDegree: " + currentDegree + ", degree: "
                 + degree;
 
         final int lastSrcIndex = srcVec.size() - 1;

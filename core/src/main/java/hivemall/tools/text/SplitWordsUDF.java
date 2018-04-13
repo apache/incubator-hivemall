@@ -29,7 +29,7 @@ import org.apache.hadoop.io.Text;
 
 @Description(
         name = "split_words",
-        value = "_FUNC_(string query [, string regex]) - Returns an array<text> containing splitted strings")
+        value = "_FUNC_(string query [, string regex]) - Returns an array<text> containing split strings")
 @UDFType(deterministic = true, stateful = false)
 public final class SplitWordsUDF extends UDF {
 

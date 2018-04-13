@@ -62,7 +62,7 @@ import org.apache.hadoop.mapred.Reporter;
 @Description(name = "train_bprmf",
         value = "_FUNC_(INT user, INT posItem, INT negItem [, String options])"
                 + " - Returns a relation <INT i, FLOAT Pi, FLOAT Qi [, FLOAT Bi]>")
-public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements RatingInitilizer {
+public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements RatingInitializer {
     private static final Log LOG = LogFactory.getLog(BPRMatrixFactorizationUDTF.class);
     private static final int RECORD_BYTES = (Integer.SIZE + Integer.SIZE + Integer.SIZE) / 8;
 
@@ -362,7 +362,7 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
                 return ex / (1.d + ex);
             }
             default: {
-                throw new IllegalStateException("Unexpectd loss function: " + loss);
+                throw new IllegalStateException("Unexpected loss function: " + loss);
             }
         }
     }

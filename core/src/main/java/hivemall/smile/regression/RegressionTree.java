@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2010 Haifeng Li
- *   
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -91,7 +91,7 @@ import smile.regression.Regression;
  * <p>
  * Some techniques such as bagging, boosting, and random forest use more than one decision tree for
  * their analysis.
- * 
+ *
  * @see GradientTreeBoost
  * @see RandomForest
  */
@@ -146,7 +146,7 @@ public final class RegressionTree implements Regression<Vector> {
     public interface NodeOutput {
         /**
          * Calculate the node output.
-         * 
+         *
          * @param samples the samples in the node.
          * @return the node output
          */
@@ -341,7 +341,7 @@ public final class RegressionTree implements Regression<Vector> {
 
                 if (myNodeId != parentNodeId) {
                     builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
-                    if (parentNodeId == 0) {//only draw edge label on top 
+                    if (parentNodeId == 0) {//only draw edge label on top
                         if (myNodeId == 1) {
                             builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
                         } else {
@@ -522,7 +522,7 @@ public final class RegressionTree implements Regression<Vector> {
 
         /**
          * Calculate the node output for leaves.
-         * 
+         *
          * @param output the output calculate functor.
          */
         public void calculateOutput(final NodeOutput output) {
@@ -558,7 +558,7 @@ public final class RegressionTree implements Regression<Vector> {
 
 
             // Loop through features and compute the reduction of squared error,
-            // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2      
+            // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
             final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows())
                     : null;
             for (int varJ : variableIndex(x, bags)) {
@@ -603,7 +603,7 @@ public final class RegressionTree implements Regression<Vector> {
 
         /**
          * Finds the best split cutoff for attribute j at the current node.
-         * 
+         *
          * @param n the number instances in this node.
          * @param count the sample count in each class.
          * @param impurity the impurity of this node.
@@ -838,7 +838,7 @@ public final class RegressionTree implements Regression<Vector> {
 
     /**
      * Constructor. Learns a regression tree for gradient tree boosting.
-     * 
+     *
      * @param attributes the attribute properties.
      * @param x the training instances.
      * @param y the response variable.
@@ -860,7 +860,7 @@ public final class RegressionTree implements Regression<Vector> {
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);
         if (_attributes.length != x.numColumns()) {
-            throw new IllegalArgumentException("-attrs option is invliad: "
+            throw new IllegalArgumentException("-attrs option is invalid: "
                     + Arrays.toString(attributes));
         }
         this._hasNumericType = SmileExtUtils.containsNumericType(_attributes);

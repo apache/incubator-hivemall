@@ -58,9 +58,9 @@ public final class CategoricalFeaturesUDF extends UDFWithOptions {
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("no_elim", "no_elimination", false,
-            "Wheather to emit NULL and value [default: false]");
-        opts.addOption("emit_null", false, "Wheather to emit NULL [default: false]");
-        opts.addOption("force_value", false, "Wheather to force emit value [default: false]");
+            "Whether to emit NULL and value [default: false]");
+        opts.addOption("emit_null", false, "Whether to emit NULL [default: false]");
+        opts.addOption("force_value", false, "Whether to force emit value [default: false]");
         return opts;
     }
 
@@ -159,7 +159,7 @@ public final class CategoricalFeaturesUDF extends UDFWithOptions {
                 continue;
             }
 
-            // categorical feature representation   
+            // categorical feature representation
             final String f;
             if (_forceValue) {
                 f = _featureNames[i] + '#' + s + ":1";

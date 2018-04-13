@@ -50,7 +50,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(
         name = "minhash",
         value = "_FUNC_(ANY item, array<int|bigint|string> features [, constant string options])"
-                + " - Returns n differnce k-depth signatures (i.e., clusteid) for each item <clusteid, item>")
+                + " - Returns n different k-depth signatures (i.e., clusterid) for each item <clusterid, item>")
 @UDFType(deterministic = true, stateful = false)
 public final class MinHashUDTF extends UDTFWithOptions {
 

@@ -49,7 +49,7 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
     private DoubleWritable[] columnValues;
 
     // lazy instantiation to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.lang.NullPointerException
-    private transient Object[] fowardObjs;
+    private transient Object[] forwardObjs;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -65,7 +65,7 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
         this.doubleOIs = new PrimitiveObjectInspector[outputSize];
         this.columnValues = new DoubleWritable[outputSize];
         this.identifiers = new Identifier[outputSize];
-        this.fowardObjs = null;
+        this.forwardObjs = null;
 
         for (int i = 0; i < outputSize; i++) {
             columnValues[i] = new DoubleWritable(Double.NaN);
@@ -87,8 +87,8 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (fowardObjs == null) {
-            this.fowardObjs = new Object[] {Arrays.asList(columnValues)};
+        if (forwardObjs == null) {
+            this.forwardObjs = new Object[] {Arrays.asList(columnValues)};
         }
 
         boolean outputRow = boolOI.get(args[0]);
@@ -110,8 +110,8 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
                     }
                 }
             }
-            forward(fowardObjs);
-        } else {// load only            
+            forward(forwardObjs);
+        } else {// load only
             for (int i = 0, outputSize = args.length - 1; i < outputSize; i++) {
                 Identifier<String> identifier = identifiers[i];
                 if (identifier != null) {
@@ -131,7 +131,7 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
         this.doubleOIs = null;
         this.identifiers = null;
         this.columnValues = null;
-        this.fowardObjs = null;
+        this.forwardObjs = null;
     }
 
 }

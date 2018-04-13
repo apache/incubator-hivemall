@@ -35,7 +35,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.IntWritable;
 
 @Description(name = "quantify",
-        value = "_FUNC_(boolean outout, col1, col2, ...) - Returns an identified features")
+        value = "_FUNC_(boolean output, col1, col2, ...) - Returns an identified features")
 public final class QuantifyColumnsUDTF extends GenericUDTF {
 
     private BooleanObjectInspector boolOI;
@@ -99,7 +99,7 @@ public final class QuantifyColumnsUDTF extends GenericUDTF {
                 }
             }
             forward(forwardObjs);
-        } else {// load only  
+        } else {// load only
             for (int i = 0, outputSize = args.length - 1; i < outputSize; i++) {
                 Identifier<String> identifier = identifiers[i];
                 if (identifier != null) {
