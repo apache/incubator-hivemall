@@ -19,17 +19,21 @@
 package hivemall.smile.tools;
 
 import hivemall.annotations.Since;
-import hivemall.smile.classification.DecisionTree;
-import hivemall.smile.regression.RegressionTree;
+import hivemall.annotations.VisibleForTesting;
+import hivemall.smile.data.Attribute.AttributeType;
 import hivemall.smile.vm.StackMachine;
 import hivemall.smile.vm.VMRuntimeException;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.codec.DeflateCodec;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.IOUtils;
+import hivemall.utils.lang.ObjectUtils;
 
 import java.io.Closeable;
+import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Arrays;
 
 import javax.annotation.Nonnull;
@@ -59,8 +63,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 
-@Description(
-        name = "tree_predict_v1",
+@Description(name = "tree_predict_v1",
         value = "_FUNC_(string modelId, int modelType, string script, array<double> features [, const boolean classification])"
                 + " - Returns a prediction result of a random forest")
 @UDFType(deterministic = true, stateful = false)
@@ -263,8 +266,8 @@ public final class TreePredictUDFv1 extends GenericUDF {
 
         @Nullable
         private String prevModelId = null;
-        private DecisionTree.Node cNode = null;
-        private RegressionTree.Node rNode = null;
+        private DtNodeV1 cNode = null;
+        private RtNodeV1 rNode = null;
 
         JavaSerializationEvaluator() {}
 
@@ -285,11 +288,32 @@ public final class TreePredictUDFv1 extends GenericUDF {
                 int length = script.getLength();
                 byte[] b = script.getBytes();
                 b = Base91.decode(b, 0, length);
-                this.cNode = DecisionTree.deserialize(b, b.length, compressed);
+                this.cNode = deserializeDecisionTree(b, b.length, compressed);
             }
             assert (cNode != null);
             int result = cNode.predict(features);
             return new IntWritable(result);
+        }
+
+		@Nonnull
+        @VisibleForTesting
+        static DtNodeV1 deserializeDecisionTree(@Nonnull final byte[] serializedObj,
+                final int length, final boolean compressed) throws HiveException {
+            final DtNodeV1 root = new DtNodeV1();
+            try {
+                if (compressed) {
+                    ObjectUtils.readCompressedObject(serializedObj, 0, length, root);
+                } else {
+                    ObjectUtils.readObject(serializedObj, length, root);
+                }
+            } catch (IOException ioe) {
+                throw new HiveException("IOException cause while deserializing DecisionTree object",
+                    ioe);
+            } catch (Exception e) {
+                throw new HiveException("Exception cause while deserializing DecisionTree object",
+                    e);
+            }
+            return root;
         }
 
         private DoubleWritable evaluateRegression(@Nonnull String modelId, boolean compressed,
@@ -299,16 +323,244 @@ public final class TreePredictUDFv1 extends GenericUDF {
                 int length = script.getLength();
                 byte[] b = script.getBytes();
                 b = Base91.decode(b, 0, length);
-                this.rNode = RegressionTree.deserialize(b, b.length, compressed);
+                this.rNode = deserializeRegressionTree(b, b.length, compressed);
             }
             assert (rNode != null);
             double result = rNode.predict(features);
             return new DoubleWritable(result);
         }
 
+        @Nonnull
+        @VisibleForTesting
+         static RtNodeV1 deserializeRegressionTree(final byte[] serializedObj,
+                final int length, final boolean compressed) throws HiveException {
+            final RtNodeV1 root = new RtNodeV1();
+            try {
+                if (compressed) {
+                    ObjectUtils.readCompressedObject(serializedObj, 0, length, root);
+                } else {
+                    ObjectUtils.readObject(serializedObj, length, root);
+                }
+            } catch (IOException ioe) {
+                throw new HiveException("IOException cause while deserializing DecisionTree object",
+                    ioe);
+            } catch (Exception e) {
+                throw new HiveException("Exception cause while deserializing DecisionTree object",
+                    e);
+            }
+            return root;
+        }
+
         @Override
         public void close() throws IOException {}
 
+    }
+
+    /**
+     * Classification tree node.
+     */
+    static final class DtNodeV1 implements Externalizable {
+
+        /**
+         * Predicted class label for this node.
+         */
+        int output = -1;
+        /**
+         * The split feature for this node.
+         */
+        int splitFeature = -1;
+        /**
+         * The type of split feature
+         */
+        AttributeType splitFeatureType = null;
+        /**
+         * The split value.
+         */
+        double splitValue = Double.NaN;
+        /**
+         * Reduction in splitting criterion.
+         */
+        double splitScore = 0.0;
+        /**
+         * Children node.
+         */
+        DtNodeV1 trueChild = null;
+        /**
+         * Children node.
+         */
+        DtNodeV1 falseChild = null;
+        /**
+         * Predicted output for children node.
+         */
+        int trueChildOutput = -1;
+        /**
+         * Predicted output for children node.
+         */
+        int falseChildOutput = -1;
+
+        DtNodeV1() {}// for Externalizable
+
+        /**
+         * Constructor.
+         */
+        DtNodeV1(int output) {
+            this.output = output;
+        }
+
+        /**
+         * Evaluate the regression tree over an instance.
+         */
+        int predict(final double[] x) {
+            if (trueChild == null && falseChild == null) {
+                return output;
+            } else {
+                if (splitFeatureType == AttributeType.NOMINAL) {
+                    if (x[splitFeature] == splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
+                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                    if (x[splitFeature] <= splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
+                } else {
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
+                }
+            }
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            this.output = in.readInt();
+            this.splitFeature = in.readInt();
+            int typeId = in.readInt();
+            if (typeId == -1) {
+                this.splitFeatureType = null;
+            } else {
+                this.splitFeatureType = AttributeType.resolve(typeId);
+            }
+            this.splitValue = in.readDouble();
+            if (in.readBoolean()) {
+                this.trueChild = new DtNodeV1();
+                trueChild.readExternal(in);
+            }
+            if (in.readBoolean()) {
+                this.falseChild = new DtNodeV1();
+                falseChild.readExternal(in);
+            }
+        }
+
+    }
+
+    /**
+     * Regression tree node.
+     */
+    static final class RtNodeV1 implements Externalizable {
+
+        /**
+         * Predicted real value for this node.
+         */
+        double output = 0.0;
+        /**
+         * The split feature for this node.
+         */
+        int splitFeature = -1;
+        /**
+         * The type of split feature
+         */
+        AttributeType splitFeatureType = null;
+        /**
+         * The split value.
+         */
+        double splitValue = Double.NaN;
+        /**
+         * Reduction in squared error compared to parent.
+         */
+        double splitScore = 0.0;
+        /**
+         * Children node.
+         */
+        RtNodeV1 trueChild;
+        /**
+         * Children node.
+         */
+        RtNodeV1 falseChild;
+        /**
+         * Predicted output for children node.
+         */
+        double trueChildOutput = 0.0;
+        /**
+         * Predicted output for children node.
+         */
+        double falseChildOutput = 0.0;
+
+        RtNodeV1() {}//for Externalizable
+
+        RtNodeV1(double output) {
+            this.output = output;
+        }
+
+        /**
+         * Evaluate the regression tree over an instance.
+         */
+        double predict(final double[] x) {
+            if (trueChild == null && falseChild == null) {
+                return output;
+            } else {
+                if (splitFeatureType == AttributeType.NOMINAL) {
+                    // REVIEWME if(Math.equals(x[splitFeature], splitValue)) {
+                    if (x[splitFeature] == splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
+                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                    if (x[splitFeature] <= splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
+                } else {
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
+                }
+            }
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            this.output = in.readDouble();
+            this.splitFeature = in.readInt();
+            int typeId = in.readInt();
+            if (typeId == -1) {
+                this.splitFeatureType = null;
+            } else {
+                this.splitFeatureType = AttributeType.resolve(typeId);
+            }
+            this.splitValue = in.readDouble();
+            if (in.readBoolean()) {
+                this.trueChild = new RtNodeV1();
+                trueChild.readExternal(in);
+            }
+            if (in.readBoolean()) {
+                this.falseChild = new RtNodeV1();
+                falseChild.readExternal(in);
+            }
+        }
     }
 
     static final class StackmachineEvaluator implements Evaluator {
@@ -394,9 +646,9 @@ public final class TreePredictUDFv1 extends GenericUDF {
             ScriptEngineManager manager = new ScriptEngineManager();
             ScriptEngine engine = manager.getEngineByExtension("js");
             if (!(engine instanceof Compilable)) {
-                throw new UDFArgumentException("ScriptEngine was not compilable: "
-                        + engine.getFactory().getEngineName() + " version "
-                        + engine.getFactory().getEngineVersion());
+                throw new UDFArgumentException(
+                    "ScriptEngine was not compilable: " + engine.getFactory().getEngineName()
+                            + " version " + engine.getFactory().getEngineVersion());
             }
             this.scriptEngine = engine;
             this.compilableEngine = (Compilable) engine;

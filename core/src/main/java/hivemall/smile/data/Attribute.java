@@ -18,6 +18,7 @@
  */
 package hivemall.smile.data;
 
+import hivemall.annotations.BackwardCompatibility;
 import hivemall.annotations.Immutable;
 import hivemall.annotations.Mutable;
 
@@ -62,6 +63,22 @@ public abstract class Attribute {
         }
 
         public static AttributeType resolve(byte id) {
+            final AttributeType type;
+            switch (id) {
+                case 1:
+                    type = NUMERIC;
+                    break;
+                case 2:
+                    type = NOMINAL;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected type: " + id);
+            }
+            return type;
+        }
+
+        @BackwardCompatibility
+        public static AttributeType resolve(int id) {
             final AttributeType type;
             switch (id) {
                 case 1:
