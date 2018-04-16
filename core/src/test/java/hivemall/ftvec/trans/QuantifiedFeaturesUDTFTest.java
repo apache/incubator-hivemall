@@ -36,7 +36,7 @@ import java.util.List;
 public class QuantifiedFeaturesUDTFTest {
 
     @Test
-    public void testSerialization() throws HiveException {
+    public void test() throws HiveException {
         final QuantifiedFeaturesUDTF udtf = new QuantifiedFeaturesUDTF();
 
         udtf.initialize(new ObjectInspector[] {
