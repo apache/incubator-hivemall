@@ -48,9 +48,6 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
     private Identifier<String>[] identifiers;
     private DoubleWritable[] columnValues;
 
-    // lazy instantiation to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.lang.NullPointerException
-    private transient Object[] forwardObjs;
-
     @SuppressWarnings("unchecked")
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
@@ -65,7 +62,6 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
         this.doubleOIs = new PrimitiveObjectInspector[outputSize];
         this.columnValues = new DoubleWritable[outputSize];
         this.identifiers = new Identifier[outputSize];
-        this.forwardObjs = null;
 
         for (int i = 0; i < outputSize; i++) {
             columnValues[i] = new DoubleWritable(Double.NaN);
@@ -87,26 +83,23 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (forwardObjs == null) {
-            this.forwardObjs = new Object[] {Arrays.asList(columnValues)};
-        }
-
         boolean outputRow = boolOI.get(args[0]);
         if (outputRow) {
-            final DoubleWritable[] values = this.columnValues;
-            for (int i = 0, outputSize = args.length - 1; i < outputSize; i++) {
+            int outputSize = args.length - 1;
+            final Object[] forwardObjs = new Object[outputSize];
+            for (int i = 0; i < outputSize; i++) {
                 Object arg = args[i + 1];
                 Identifier<String> identifier = identifiers[i];
                 if (identifier == null) {
                     double v = PrimitiveObjectInspectorUtils.getDouble(arg, doubleOIs[i]);
-                    values[i].set(v);
+                    forwardObjs[i] = v;
                 } else {
                     if (arg == null) {
                         throw new HiveException("Found Null in the input: " + Arrays.toString(args));
                     } else {
                         String k = arg.toString();
                         int id = identifier.valueOf(k);
-                        values[i].set(id);
+                        forwardObjs[i] = id;
                     }
                 }
             }
@@ -131,7 +124,6 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
         this.doubleOIs = null;
         this.identifiers = null;
         this.columnValues = null;
-        this.forwardObjs = null;
     }
 
 }
