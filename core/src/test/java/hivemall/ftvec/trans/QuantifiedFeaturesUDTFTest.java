@@ -45,6 +45,10 @@ public class QuantifiedFeaturesUDTFTest {
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
+        // serialization after initialization
+        byte[] serialized = TestUtils.serializeObjectByKryo(udtf);
+        TestUtils.deserializeObjectByKryo(serialized, QuantifiedFeaturesUDTF.class);
+
         final List<Object[]> rows = new ArrayList<>();
         udtf.setCollector(new Collector() {
             public void collect(Object input) throws HiveException {
@@ -55,8 +59,8 @@ public class QuantifiedFeaturesUDTFTest {
         udtf.process(new Object[] {WritableUtils.val(true), "aaa", 1.0});
         udtf.process(new Object[] {WritableUtils.val(true), "bbb", 2.0});
 
-        // test Kryo serialization
-        byte[] serialized = TestUtils.serializeObjectByKryo(udtf);
+        // serialization after processing rows
+        serialized = TestUtils.serializeObjectByKryo(udtf);
         TestUtils.deserializeObjectByKryo(serialized, QuantifiedFeaturesUDTF.class);
 
         udtf.close();
