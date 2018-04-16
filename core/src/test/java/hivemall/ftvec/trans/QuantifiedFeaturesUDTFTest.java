@@ -22,11 +22,9 @@ public class QuantifiedFeaturesUDTFTest {
 
         udtf.initialize(new ObjectInspector[] {
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector,
-                        true),
+                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true),
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector
-        });
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         final List<Object[]> featuresList = new ArrayList<>();
         udtf.setCollector(new Collector() {

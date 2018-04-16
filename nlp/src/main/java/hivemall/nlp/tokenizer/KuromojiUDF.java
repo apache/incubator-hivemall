@@ -159,8 +159,7 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static Mode tokenizationMode(@Nullable final String arg)
-            throws UDFArgumentException {
+    private static Mode tokenizationMode(@Nullable final String arg) throws UDFArgumentException {
         if (arg == null) {
             return Mode.NORMAL;
         }
@@ -194,8 +193,7 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static Set<String> stopTags(@Nullable final String[] array)
-            throws UDFArgumentException {
+    private static Set<String> stopTags(@Nullable final String[] array) throws UDFArgumentException {
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopTags();
         }
