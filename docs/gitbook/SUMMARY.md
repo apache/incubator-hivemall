@@ -198,6 +198,5 @@
 
 ## Part XIV - External References
 
-* [Hivemall on Apache Spark](https://github.com/maropu/hivemall-spark)
 * [Hivemall on Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)
 
