@@ -75,11 +75,11 @@
 
 * [Data Generation](eval/datagen.md)
     * [Logistic Regression data generation](eval/lr_datagen.md)
-    
+
 ## Part V - Supervised Learning
 
 * [How Prediction Works](misc/prediction.md)
-    
+
 ## Part VI - Binary classification
 
 * [Binary Classification](binaryclass/general.md)
@@ -170,11 +170,15 @@
 * [Latent Dirichlet Allocation](clustering/lda.md)
 * [Probabilistic Latent Semantic Analysis](clustering/plsa.md)
 
-## Part XII - GeoSpatial functions
+## Part XII - Word Embeddings
+
+* [Word2vec: Skip-Gram & CBoW with Negative Sampling](embedding/word2vec.md)
+
+## Part XIII - GeoSpatial functions
 
 * [Lat/Lon functions](geospatial/latlon.md)
 
-## Part XIII - Hivemall on Spark
+## Part XIV - Hivemall on Spark
 
 * [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
@@ -195,8 +199,7 @@
 
 * [Getting Started](docker/getting_started.md)
 
-## Part XIV - External References
+## Part XV - External References
 
 * [Hivemall on Apache Spark](https://github.com/maropu/hivemall-spark)
 * [Hivemall on Apache Pig](https://github.com/daijyc/hivemall/wiki/PigHome)
-

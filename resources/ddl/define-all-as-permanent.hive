@@ -681,6 +681,15 @@ CREATE FUNCTION train_plsa as 'hivemall.topicmodel.PLSAUDTF' USING JAR '${hivema
 DROP FUNCTION IF EXISTS plsa_predict;
 CREATE FUNCTION plsa_predict as 'hivemall.topicmodel.PLSAPredictUDAF' USING JAR '${hivemall_jar}';
 
+--------------
+-- Word2Vec --
+--------------
+
+DROP FUNCTION IF EXISTS alias_table;
+CREATE FUNCTION alias_table as 'hivemall.embedding.AliasTableBuilderUDTF' USING JAR '${hivemall_jar}';
+DROP FUNCTION IF EXISTS train_word2vec;
+CREATE FUNCTION train_word2vec as 'hivemall.embedding.Word2VecUDTF' USING JAR '${hivemall_jar}';
+
 ---------------------------
 -- Geo-Spatial functions --
 ---------------------------
