@@ -23,6 +23,7 @@ import hivemall.utils.hadoop.WritableUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
@@ -44,10 +45,10 @@ public class QuantifiedFeaturesUDTFTest {
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
-        final List<Object[]> featuresList = new ArrayList<>();
+        final List<Object[]> rows = new ArrayList<>();
         udtf.setCollector(new Collector() {
             public void collect(Object input) throws HiveException {
-                featuresList.add((Object[]) input);
+                rows.add((Object[]) input);
             }
         });
 
@@ -60,14 +61,14 @@ public class QuantifiedFeaturesUDTFTest {
 
         udtf.close();
 
-        Assert.assertEquals(2, featuresList.size());
+        Assert.assertEquals(2, rows.size());
 
-        Object[] features = featuresList.get(0);
-        Assert.assertEquals(0, ((Integer) features[0]).intValue());
-        Assert.assertEquals(1, ((Double) features[1]).intValue());
+        List<DoubleWritable> features = (List<DoubleWritable>) rows.get(0)[0];
+        Assert.assertTrue(features.get(0).get() == 0.d);
+        Assert.assertTrue(features.get(1).get() == 1.d);
 
-        features = featuresList.get(1);
-        Assert.assertEquals(1, ((Integer) features[0]).intValue());
-        Assert.assertEquals(2, ((Double) features[1]).intValue());
+        features = (List<DoubleWritable>) rows.get(1)[0];
+        Assert.assertTrue(features.get(0).get() == 1.d);
+        Assert.assertTrue(features.get(1).get() == 2.d);
     }
 }
