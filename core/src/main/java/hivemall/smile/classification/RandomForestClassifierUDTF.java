@@ -147,7 +147,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
-        opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY]");
+        opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY, CLASSIFICATION_ERROR]");
         opts.addOption("stratified", "stratified_sampling", false,
             "Enable Stratified sampling for unbalanced data");
         opts.addOption("subsample", true, "Sampling rate in range (0.0,1.0]. [default: 1.0]");
