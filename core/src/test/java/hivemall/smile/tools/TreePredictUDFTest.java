@@ -18,6 +18,7 @@
  */
 package hivemall.smile.tools;
 
+import hivemall.TestUtils;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.data.Attribute;
@@ -204,6 +205,55 @@ public class TreePredictUDFTest {
         DoubleWritable result = (DoubleWritable) udf.evaluate(arguments);
         udf.close();
         return result.get();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException, ParseException {
+        URL url = new URL(
+            "https://gist.githubusercontent.com/myui/ef17aabecf0c0c5bcb69/raw/aac0575b4d43072c6f3c82d9072fdefb61892694/cpu.arff");
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(6);
+        AttributeDataset data = arffParser.parse(is);
+        double[] datay = data.toArray(new double[data.size()]);
+        double[][] datax = data.toArray(new double[data.size()][]);
+
+        int n = datax.length;
+        int m = 3 * n / 4;
+        int[] index = Math.permutate(n);
+
+        double[][] trainx = new double[m][];
+        double[] trainy = new double[m];
+        for (int i = 0; i < m; i++) {
+            trainx[i] = datax[index[i]];
+            trainy[i] = datay[index[i]];
+        }
+
+        double[][] testx = new double[n - m][];
+        double[] testy = new double[n - m];
+        for (int i = m; i < n; i++) {
+            testx[i - m] = datax[index[i]];
+            testy[i - m] = datay[index[i]];
+        }
+
+        Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
+        RegressionTree tree = new RegressionTree(attrs, new RowMajorDenseMatrix2d(trainx,
+            trainx[0].length), trainy, 20);
+
+        byte[] b = tree.serialize(true);
+        byte[] encoded = Base91.encode(b);
+        Text model = new Text(encoded);
+
+        TestUtils.testGenericUDFSerialization(
+            TreePredictUDF.class,
+            new ObjectInspector[] {
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.writableStringObjectInspector,
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)},
+            new Object[] {"model_id#1", model, ArrayUtils.toList(testx[0])});
     }
 
     private static void debugPrint(String msg) {

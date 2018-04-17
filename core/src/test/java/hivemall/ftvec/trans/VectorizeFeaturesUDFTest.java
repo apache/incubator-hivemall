@@ -18,6 +18,7 @@
  */
 package hivemall.ftvec.trans;
 
+import hivemall.TestUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
 import java.io.IOException;
@@ -88,7 +89,7 @@ public class VectorizeFeaturesUDFTest {
         arguments[2] = new DeferredJavaObject("1.1");
 
         List<Text> actuals = udf.evaluate(arguments);
-        //System.out.println(actuals);        
+        //System.out.println(actuals);
         List<Text> expected = WritableUtils.val("a:0.1", "b:1.1");
         Assert.assertEquals(expected, actuals);
 
@@ -111,7 +112,7 @@ public class VectorizeFeaturesUDFTest {
         arguments[2] = new DeferredJavaObject("0");
 
         List<Text> actuals = udf.evaluate(arguments);
-        //System.out.println(actuals);        
+        //System.out.println(actuals);
         List<Text> expected = WritableUtils.val(new String[] {"a:0.1"});
         Assert.assertEquals(expected, actuals);
 
@@ -134,7 +135,7 @@ public class VectorizeFeaturesUDFTest {
         arguments[2] = new DeferredJavaObject(new Boolean(false));
 
         List<Text> actuals = udf.evaluate(arguments);
-        //System.out.println(actuals);        
+        //System.out.println(actuals);
         List<Text> expected = WritableUtils.val(new String[] {"a:0.1"});
         Assert.assertEquals(expected, actuals);
 
@@ -163,19 +164,19 @@ public class VectorizeFeaturesUDFTest {
         arguments[2] = new DeferredJavaObject("dayofweek");
 
         List<Text> actuals = udf.evaluate(arguments);
-        //System.out.println(actuals);        
+        //System.out.println(actuals);
         List<Text> expected = WritableUtils.val("a:0.1", "b#dayofweek");
         Assert.assertEquals(expected, actuals);
 
         arguments[2] = new DeferredJavaObject("1.0");
         actuals = udf.evaluate(arguments);
-        //System.out.println(actuals);        
+        //System.out.println(actuals);
         expected = WritableUtils.val("a:0.1", "b:1.0");
         Assert.assertEquals(expected, actuals);
 
         arguments[2] = new DeferredJavaObject("1");
         actuals = udf.evaluate(arguments);
-        //System.out.println(actuals);        
+        //System.out.println(actuals);
         expected = WritableUtils.val("a:0.1", "b:1.0");
         Assert.assertEquals(expected, actuals);
 
@@ -186,6 +187,20 @@ public class VectorizeFeaturesUDFTest {
         Assert.assertEquals(expected, actuals);
 
         udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        final List<String> featureNames = Arrays.asList("q", "c");
+
+        TestUtils.testGenericUDFSerialization(
+            VectorizeFeaturesUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardConstantListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, featureNames),
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector}, new Object[] {
+                    featureNames, 0.1d, "dayofweek"});
     }
 
 }

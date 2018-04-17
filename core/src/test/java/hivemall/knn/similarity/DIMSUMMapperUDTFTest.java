@@ -18,6 +18,7 @@
  */
 package hivemall.knn.similarity;
 
+import hivemall.TestUtils;
 import hivemall.mf.BPRMatrixFactorizationUDTFTest;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.StringUtils;
@@ -355,6 +356,29 @@ public class DIMSUMMapperUDTFTest {
 
         Assert.assertTrue("Approximated one MUST reduce the number of operations",
             emitCounter.getValue() < numMaxEmits);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        final Integer[] itemIDs = new Integer[] {1, 2, 3};
+
+        final List<String> user = new ArrayList<String>();
+        convertRowToFeatures(0, user, itemIDs);
+
+        final Map<Integer, Double> norms = new HashMap<Integer, Double>();
+        computeColumnNorms(norms, itemIDs);
+
+        TestUtils.testGenericUDTFSerialization(
+            DIMSUMMapperUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardMapObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-threshold 0.999999 -disable_symmetric_output")}, new Object[][] {{user,
+                    norms}});
     }
 
     @Nonnull

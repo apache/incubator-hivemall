@@ -45,10 +45,6 @@ public class QuantifiedFeaturesUDTFTest {
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
-        // serialization after initialization
-        byte[] serialized = TestUtils.serializeObjectByKryo(udtf);
-        TestUtils.deserializeObjectByKryo(serialized, QuantifiedFeaturesUDTF.class);
-
         final List<Object[]> rows = new ArrayList<>();
         udtf.setCollector(new Collector() {
             public void collect(Object input) throws HiveException {
@@ -58,10 +54,6 @@ public class QuantifiedFeaturesUDTFTest {
 
         udtf.process(new Object[] {WritableUtils.val(true), "aaa", 1.0});
         udtf.process(new Object[] {WritableUtils.val(true), "bbb", 2.0});
-
-        // serialization after processing rows
-        serialized = TestUtils.serializeObjectByKryo(udtf);
-        TestUtils.deserializeObjectByKryo(serialized, QuantifiedFeaturesUDTF.class);
 
         udtf.close();
 
@@ -74,5 +66,17 @@ public class QuantifiedFeaturesUDTFTest {
         features = (List<DoubleWritable>) rows.get(1)[0];
         Assert.assertTrue(features.get(0).get() == 1.d);
         Assert.assertTrue(features.get(1).get() == 2.d);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            QuantifiedFeaturesUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true),
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector}, new Object[][] {{
+                    WritableUtils.val(true), "aaa", 1.0}});
     }
 }

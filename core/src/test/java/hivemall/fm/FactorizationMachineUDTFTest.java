@@ -23,12 +23,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -100,6 +102,19 @@ public class FactorizationMachineUDTFTest {
         udtf.initialize(argOIs);
         udtf.initModel(udtf._params);
         Assert.assertTrue(udtf._params.l2norm);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            FactorizationMachineUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-factors 5 -min 1 -max 5 -iters 1 -init_v gaussian -eta0 0.01 -seed 31")},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 1.0}});
     }
 
     @Nonnull

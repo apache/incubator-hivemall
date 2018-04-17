@@ -18,6 +18,7 @@
  */
 package hivemall.fm;
 
+import hivemall.TestUtils;
 import hivemall.utils.lang.NumberUtils;
 
 import java.io.BufferedReader;
@@ -26,6 +27,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -210,6 +212,19 @@ public class FieldAwareFactorizationMachineUDTFTest {
         }
         println("model size=" + udtf._model.getSize());
         Assert.assertTrue("Last loss was greater than expected: " + loss, loss < lossThreshold);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            FieldAwareFactorizationMachineUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-opt sgd -classification -factors 10 -w0 -seed 43")}, new Object[][] {{
+                    Arrays.asList("0:1:-2", "1:2:-1"), 1.0}});
     }
 
     @Nonnull

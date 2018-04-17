@@ -18,6 +18,7 @@
  */
 package hivemall.mf;
 
+import hivemall.TestUtils;
 import hivemall.mf.FactorizedModel.RankInitScheme;
 import hivemall.utils.lang.mutable.MutableInt;
 
@@ -342,5 +343,18 @@ public class MatrixFactorizationSGDUDTFTest {
         Assert.assertEquals(trainingExamples * iters, mf.count);
         Assert.assertEquals(5, numCollected.intValue());
         Assert.assertFalse(tmpFile.exists());
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            MatrixFactorizationSGDUDTF.class,
+            new ObjectInspector[] {
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-factor 10")},
+            new Object[][] {{0, 0, 5.f}});
     }
 }

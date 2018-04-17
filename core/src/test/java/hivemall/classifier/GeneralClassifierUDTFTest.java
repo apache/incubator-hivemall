@@ -21,6 +21,8 @@ package hivemall.classifier;
 import static hivemall.utils.hadoop.HiveUtils.lazyInteger;
 import static hivemall.utils.hadoop.HiveUtils.lazyLong;
 import static hivemall.utils.hadoop.HiveUtils.lazyString;
+
+import hivemall.TestUtils;
 import hivemall.utils.math.MathUtils;
 
 import java.io.BufferedReader;
@@ -366,6 +368,16 @@ public class GeneralClassifierUDTFTest {
         float accuracy = numCorrect / (float) numTests;
         println("Accuracy: " + accuracy);
         Assert.assertTrue(accuracy > 0.8f);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            GeneralClassifierUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
+                    Arrays.asList("1:-2", "2:-1"), 0}});
     }
 
     private static void println(String msg) {
