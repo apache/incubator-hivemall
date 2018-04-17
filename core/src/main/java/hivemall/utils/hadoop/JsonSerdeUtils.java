@@ -127,9 +127,9 @@ public final class JsonSerdeUtils {
     /**
      * Serialize Hive objects as Text.
      */
-    private static void serializeStruct(@Nonnull final StringBuilder sb, @Nullable final Object obj,
-            @Nonnull final StructObjectInspector soi, @Nullable final List<String> columnNames)
-            throws SerDeException {
+    private static void serializeStruct(@Nonnull final StringBuilder sb,
+            @Nullable final Object obj, @Nonnull final StructObjectInspector soi,
+            @Nullable final List<String> columnNames) throws SerDeException {
         if (obj == null) {
             sb.append("null");
         } else {
@@ -273,8 +273,7 @@ public final class JsonSerdeUtils {
                     break;
                 }
                 case STRING: {
-                    String s = SerDeUtils.escapeString(
-                        ((StringObjectInspector) poi).getPrimitiveJavaObject(obj));
+                    String s = SerDeUtils.escapeString(((StringObjectInspector) poi).getPrimitiveJavaObject(obj));
                     appendWithQuotes(sb, s);
                     break;
                 }
@@ -297,28 +296,30 @@ public final class JsonSerdeUtils {
                     sb.append(((HiveDecimalObjectInspector) poi).getPrimitiveJavaObject(obj));
                     break;
                 case VARCHAR: {
-                    String s = SerDeUtils.escapeString(
-                        ((HiveVarcharObjectInspector) poi).getPrimitiveJavaObject(obj).toString());
+                    String s = SerDeUtils.escapeString(((HiveVarcharObjectInspector) poi).getPrimitiveJavaObject(
+                        obj)
+                                                                                         .toString());
                     appendWithQuotes(sb, s);
                     break;
                 }
                 case CHAR: {
                     //this should use HiveChar.getPaddedValue() but it's protected; currently (v0.13)
                     // HiveChar.toString() returns getPaddedValue()
-                    String s = SerDeUtils.escapeString(
-                        ((HiveCharObjectInspector) poi).getPrimitiveJavaObject(obj).toString());
+                    String s = SerDeUtils.escapeString(((HiveCharObjectInspector) poi).getPrimitiveJavaObject(
+                        obj)
+                                                                                      .toString());
                     appendWithQuotes(sb, s);
                     break;
                 }
                 default:
-                    throw new SerDeException(
-                        "Unknown primitive type: " + poi.getPrimitiveCategory());
+                    throw new SerDeException("Unknown primitive type: "
+                            + poi.getPrimitiveCategory());
             }
         }
     }
 
-    private static void buildJSONString(@Nonnull final StringBuilder sb, @Nullable final Object obj,
-            @Nonnull final ObjectInspector oi) throws SerDeException {
+    private static void buildJSONString(@Nonnull final StringBuilder sb,
+            @Nullable final Object obj, @Nonnull final ObjectInspector oi) throws SerDeException {
         switch (oi.getCategory()) {
             case PRIMITIVE: {
                 PrimitiveObjectInspector poi = (PrimitiveObjectInspector) oi;
@@ -375,12 +376,13 @@ public final class JsonSerdeUtils {
 
     @SuppressWarnings("unchecked")
     @Nonnull
-    public static <T> T deserialize(@Nonnull final Text t, @Nullable final List<String> columnNames,
-            @Nullable final List<TypeInfo> columnTypes) throws SerDeException {
+    public static <T> T deserialize(@Nonnull final Text t,
+            @Nullable final List<String> columnNames, @Nullable final List<TypeInfo> columnTypes)
+            throws SerDeException {
         final Object result;
         try {
-            JsonParser p =
-                    new JsonFactory().createJsonParser(new FastByteArrayInputStream(t.getBytes()));
+            JsonParser p = new JsonFactory().createJsonParser(new FastByteArrayInputStream(
+                t.getBytes()));
             final JsonToken token = p.nextToken();
             if (token == JsonToken.START_OBJECT) {
                 result = parseObject(p, columnNames, columnTypes);
@@ -400,8 +402,8 @@ public final class JsonSerdeUtils {
     @Nonnull
     private static Object parseObject(@Nonnull final JsonParser p,
             @CheckForNull final List<String> columnNames,
-            @CheckForNull final List<TypeInfo> columnTypes)
-            throws JsonParseException, IOException, SerDeException {
+            @CheckForNull final List<TypeInfo> columnTypes) throws JsonParseException, IOException,
+            SerDeException {
         Preconditions.checkNotNull(columnNames, "columnNames MUST NOT be null in parseObject",
             SerDeException.class);
         Preconditions.checkNotNull(columnTypes, "columnTypes MUST NOT be null in parseObject",
@@ -435,8 +437,8 @@ public final class JsonSerdeUtils {
 
     @Nonnull
     private static List<Object> parseArray(@Nonnull final JsonParser p,
-            @CheckForNull final List<TypeInfo> columnTypes)
-            throws HCatException, IOException, SerDeException {
+            @CheckForNull final List<TypeInfo> columnTypes) throws HCatException, IOException,
+            SerDeException {
         Preconditions.checkNotNull(columnTypes, "columnTypes MUST NOT be null",
             SerDeException.class);
         if (columnTypes.size() != 1) {
@@ -457,8 +459,8 @@ public final class JsonSerdeUtils {
     }
 
     @Nonnull
-    private static Object parseValue(@Nonnull final JsonParser p)
-            throws JsonParseException, IOException {
+    private static Object parseValue(@Nonnull final JsonParser p) throws JsonParseException,
+            IOException {
         final JsonToken t = p.getCurrentToken();
         switch (t) {
             case VALUE_FALSE:
@@ -479,8 +481,8 @@ public final class JsonSerdeUtils {
     }
 
     private static void populateRecord(@Nonnull final List<Object> r,
-            @Nonnull final JsonToken token, @Nonnull final JsonParser p,
-            @Nonnull final HCatSchema s) throws IOException {
+            @Nonnull final JsonToken token, @Nonnull final JsonParser p, @Nonnull final HCatSchema s)
+            throws IOException {
         if (token != JsonToken.FIELD_NAME) {
             throw new IOException("Field name expected");
         }
@@ -575,8 +577,8 @@ public final class JsonSerdeUtils {
                 break;
             case VARCHAR:
                 int vLen = ((BaseCharTypeInfo) hcatFieldSchema.getTypeInfo()).getLength();
-                val = (valueToken == JsonToken.VALUE_NULL) ? null
-                        : new HiveVarchar(p.getText(), vLen);
+                val = (valueToken == JsonToken.VALUE_NULL) ? null : new HiveVarchar(p.getText(),
+                    vLen);
                 break;
             case CHAR:
                 int cLen = ((BaseCharTypeInfo) hcatFieldSchema.getTypeInfo()).getLength();
@@ -676,8 +678,8 @@ public final class JsonSerdeUtils {
             case CHAR:
                 return new HiveChar(s, ((BaseCharTypeInfo) mapKeyType).getLength());
             default:
-                throw new IOException(
-                    "Could not convert from string to map type " + mapKeyType.getTypeName());
+                throw new IOException("Could not convert from string to map type "
+                        + mapKeyType.getTypeName());
         }
     }
 
@@ -691,8 +693,8 @@ public final class JsonSerdeUtils {
         }
     }
 
-    private static void skipValue(@Nonnull final JsonParser p)
-            throws JsonParseException, IOException {
+    private static void skipValue(@Nonnull final JsonParser p) throws JsonParseException,
+            IOException {
         JsonToken valueToken = p.nextToken();
         if ((valueToken == JsonToken.START_ARRAY) || (valueToken == JsonToken.START_OBJECT)) {
             // if the currently read token is a beginning of an array or object, move stream forward

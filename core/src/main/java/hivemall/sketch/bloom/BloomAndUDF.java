@@ -30,7 +30,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 
-@Description(name = "bloom_and",
+@Description(
+        name = "bloom_and",
         value = "_FUNC_(string bloom1, string bloom2) - Returns the logical AND of two bloom filters")
 @UDFType(deterministic = true, stateful = false)
 public final class BloomAndUDF extends UDF {

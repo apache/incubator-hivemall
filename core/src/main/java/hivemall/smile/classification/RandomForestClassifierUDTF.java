@@ -133,7 +133,10 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         Options opts = new Options();
         opts.addOption("trees", "num_trees", true,
             "The number of trees for each task [default: 50]");
-        opts.addOption("vars", "num_variables", true,
+        opts.addOption(
+            "vars",
+            "num_variables",
+            true,
             "The number of random selected features [default: ceil(sqrt(x[0].length))]."
                     + " int(num_variables * x[0].length) is considered if num_variable is (0.0,1.0]");
         opts.addOption("depth", "max_depth", true,
@@ -147,7 +150,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
-        opts.addOption("rule", "split_rule", true, "Split algorithm [default: GINI, ENTROPY, CLASSIFICATION_ERROR]");
+        opts.addOption("rule", "split_rule", true,
+            "Split algorithm [default: GINI, ENTROPY, CLASSIFICATION_ERROR]");
         opts.addOption("stratified", "stratified_sampling", false,
             "Enable Stratified sampling for unbalanced data");
         opts.addOption("subsample", true, "Sampling rate in range (0.0,1.0]. [default: 1.0]");

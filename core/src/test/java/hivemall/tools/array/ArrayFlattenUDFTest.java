@@ -37,9 +37,7 @@ public class ArrayFlattenUDFTest {
     public void testEvaluate() throws HiveException, IOException {
         ArrayFlattenUDF udf = new ArrayFlattenUDF();
 
-        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
-            ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector))});
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaIntObjectInspector))});
 
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
             Arrays.asList(Arrays.asList(0, 1, 2, 3), Arrays.asList(4, 5), Arrays.asList(6, 7)))};

@@ -422,8 +422,8 @@ public final class MatrixUtils {
 
     @Nonnull
     public static RealMatrix combinedMatrices(@Nonnull final RealMatrix[] grid) {
-        Preconditions.checkArgument(grid.length >= 1,
-            "The number of rows must be greater than 0: " + grid.length);
+        Preconditions.checkArgument(grid.length >= 1, "The number of rows must be greater than 0: "
+                + grid.length);
 
         final int rows = grid.length;
         final int rowDims = grid[0].getRowDimension();
@@ -512,7 +512,7 @@ public final class MatrixUtils {
     /**
      * Find the first singular vector/value of a matrix A based on the Power method.
      *
-     * @see http
+     * @see http 
      *      ://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
      * @param A target matrix
      * @param x0 initial vector

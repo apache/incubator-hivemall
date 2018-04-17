@@ -210,8 +210,7 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
         }
     }
 
-    private void forward(final int user, final int posItem, final int negItem)
-            throws HiveException {
+    private void forward(final int user, final int posItem, final int negItem) throws HiveException {
         assert (user >= 0) : user;
         assert (posItem >= 0) : posItem;
         assert (negItem >= 0) : negItem;
@@ -269,8 +268,9 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
      * Caution: This is not a perfect 'without sampling' but it does 'without sampling' for positive
      * feedbacks.
      */
-    private void uniformUserSamplingWithoutReplacement(@Nonnull final PositiveOnlyFeedback feedback,
-            final int numSamples) throws HiveException {
+    private void uniformUserSamplingWithoutReplacement(
+            @Nonnull final PositiveOnlyFeedback feedback, final int numSamples)
+            throws HiveException {
         int numUsers = feedback.getNumUsers();
         if (numUsers == 0) {
             return;
@@ -288,8 +288,8 @@ public final class BprSamplingUDTF extends UDTFWithOptions {
             int nthUser = rand.nextInt(numUsers);
             int user = BitUtils.indexOfSetBit(userBits, nthUser);
             if (user == -1) {
-                throw new HiveException(
-                    "Cannot find " + nthUser + "-th user among " + numUsers + " users");
+                throw new HiveException("Cannot find " + nthUser + "-th user among " + numUsers
+                        + " users");
             }
 
             IntArrayList posItems = feedback.getItems(user, true);

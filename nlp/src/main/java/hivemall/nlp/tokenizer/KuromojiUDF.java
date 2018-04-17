@@ -59,7 +59,8 @@ import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 
-@Description(name = "tokenize_ja",
+@Description(
+        name = "tokenize_ja",
         value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
                 + " - returns tokenized strings in array<string>")
 @UDFType(deterministic = true, stateful = false)
@@ -83,21 +84,20 @@ public final class KuromojiUDF extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         final int arglen = arguments.length;
         if (arglen < 1 || arglen > 5) {
-            throw new UDFArgumentException(
-                "Invalid number of arguments for `tokenize_ja`: " + arglen);
+            throw new UDFArgumentException("Invalid number of arguments for `tokenize_ja`: "
+                    + arglen);
         }
 
         this._mode = (arglen >= 2) ? tokenizationMode(arguments[1]) : Mode.NORMAL;
-        this._stopWords =
-                (arglen >= 3) ? stopWords(arguments[2]) : JapaneseAnalyzer.getDefaultStopSet();
-        this._stopTags =
-                (arglen >= 4) ? stopTags(arguments[3]) : JapaneseAnalyzer.getDefaultStopTags();
+        this._stopWords = (arglen >= 3) ? stopWords(arguments[2])
+                : JapaneseAnalyzer.getDefaultStopSet();
+        this._stopTags = (arglen >= 4) ? stopTags(arguments[3])
+                : JapaneseAnalyzer.getDefaultStopTags();
         this._userDict = (arglen >= 5) ? userDictionary(arguments[4]) : null;
 
         this._analyzer = null;
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     }
 
     @Override
@@ -265,17 +265,17 @@ public final class KuromojiUDF extends GenericUDF {
 
         final InputStream is;
         try {
-            is = IOUtils.decodeInputStream(
-                HttpUtils.getLimitedInputStream(conn, MAX_INPUT_STREAM_SIZE));
+            is = IOUtils.decodeInputStream(HttpUtils.getLimitedInputStream(conn,
+                MAX_INPUT_STREAM_SIZE));
         } catch (NullPointerException | IOException e) {
             throw new UDFArgumentException("Failed to get input stream from the connection: "
                     + userDictURL + '\n' + ExceptionUtils.prettyPrintStackTrace(e));
         }
 
-        CharsetDecoder decoder =
-                StandardCharsets.UTF_8.newDecoder()
-                                      .onMalformedInput(CodingErrorAction.REPORT)
-                                      .onUnmappableCharacter(CodingErrorAction.REPORT);
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                                                       .onMalformedInput(CodingErrorAction.REPORT)
+                                                       .onUnmappableCharacter(
+                                                           CodingErrorAction.REPORT);
         final Reader reader = new InputStreamReader(is, decoder);
         try {
             return UserDictionary.open(reader); // return null if empty

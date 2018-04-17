@@ -41,8 +41,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 @Description(name = "lr_datagen",
         value = "_FUNC_(options string) - Generates a logistic regression dataset")
 public final class LogisticRegressionDataGeneratorUDTFWrapper extends UDTFWithOptions {
-    private transient LogisticRegressionDataGeneratorUDTF udtf =
-            new LogisticRegressionDataGeneratorUDTF();
+    private transient LogisticRegressionDataGeneratorUDTF udtf = new LogisticRegressionDataGeneratorUDTF();
 
     @Override
     protected Options getOptions() {

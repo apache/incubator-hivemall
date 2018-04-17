@@ -40,14 +40,12 @@ public class ArrayAppendUDFTest {
         ArrayAppendUDF udf = new ArrayAppendUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(
-                    WritableUtils.toWritableList(new double[] {0, 1, 2})),
-                new GenericUDF.DeferredJavaObject(new Double(3))};
+                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {0, 1,
+                        2})), new GenericUDF.DeferredJavaObject(new Double(3))};
 
         List<Object> result = udf.evaluate(args);
 
@@ -64,14 +62,12 @@ public class ArrayAppendUDFTest {
         ArrayAppendUDF udf = new ArrayAppendUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(
-                    WritableUtils.toWritableList(new double[] {0, 1, 2})),
-                new GenericUDF.DeferredJavaObject(null)};
+                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {0, 1,
+                        2})), new GenericUDF.DeferredJavaObject(null)};
 
         List<Object> result = udf.evaluate(args);
 
@@ -89,8 +85,7 @@ public class ArrayAppendUDFTest {
         ArrayAppendUDF udf = new ArrayAppendUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(null),

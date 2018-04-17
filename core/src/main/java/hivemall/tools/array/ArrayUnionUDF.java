@@ -67,17 +67,16 @@ public final class ArrayUnionUDF extends GenericUDF {
             ListObjectInspector checkOI = HiveUtils.asListOI(argOIs[i]);
             if (!ObjectInspectorUtils.compareTypes(arg0ElemOI,
                 checkOI.getListElementObjectInspector())) {
-                throw new UDFArgumentException("Array types does not match: " + arg0OI.getTypeName()
-                        + " != " + checkOI.getTypeName());
+                throw new UDFArgumentException("Array types does not match: "
+                        + arg0OI.getTypeName() + " != " + checkOI.getTypeName());
             }
             listOIs[i] = checkOI;
         }
 
         this._listOIs = listOIs;
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            ObjectInspectorUtils.getStandardObjectInspector(arg0ElemOI,
-                ObjectInspectorCopyOption.WRITABLE));
+        return ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(
+            arg0ElemOI, ObjectInspectorCopyOption.WRITABLE));
     }
 
     @Override

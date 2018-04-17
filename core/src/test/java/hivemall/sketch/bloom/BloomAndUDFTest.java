@@ -50,8 +50,8 @@ public class BloomAndUDFTest {
 
         Assert.assertEquals(expected, actual);
 
-        DynamicBloomFilter deserialized =
-                BloomFilterUtils.deserialize(actual, new DynamicBloomFilter());
+        DynamicBloomFilter deserialized = BloomFilterUtils.deserialize(actual,
+            new DynamicBloomFilter());
         assertNotContains(bf1, deserialized, 1L, 10000);
         assertNotContains(bf1, deserialized, 2L, 10000);
     }

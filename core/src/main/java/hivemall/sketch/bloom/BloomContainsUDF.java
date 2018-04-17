@@ -32,7 +32,8 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 import org.apache.hadoop.util.bloom.Key;
 
-@Description(name = "bloom_contains",
+@Description(
+        name = "bloom_contains",
         value = "_FUNC_(string bloom, string key) - Returns true if the bloom filter contains the given key")
 @UDFType(deterministic = true, stateful = false)
 public final class BloomContainsUDF extends UDF {

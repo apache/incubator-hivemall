@@ -39,7 +39,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
-@Description(name = "array_slice",
+@Description(
+        name = "array_slice",
         value = "_FUNC_(array<ANY> values, int offset [, int length]) - Slices the given array by the given offset and length parameters.")
 @UDFType(deterministic = true, stateful = false)
 public final class ArraySliceUDF extends GenericUDF {
@@ -54,8 +55,8 @@ public final class ArraySliceUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentLengthException(
-                "Expected 2 or 3 arguments, but got " + argOIs.length);
+            throw new UDFArgumentLengthException("Expected 2 or 3 arguments, but got "
+                    + argOIs.length);
         }
 
         this.valuesOI = HiveUtils.asListOI(argOIs[0]);

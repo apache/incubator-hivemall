@@ -63,7 +63,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 
-@Description(name = "tree_predict_v1",
+@Description(
+        name = "tree_predict_v1",
         value = "_FUNC_(string modelId, int modelType, string script, array<double> features [, const boolean classification])"
                 + " - Returns a prediction result of a random forest")
 @UDFType(deterministic = true, stateful = false)
@@ -295,7 +296,7 @@ public final class TreePredictUDFv1 extends GenericUDF {
             return new IntWritable(result);
         }
 
-		@Nonnull
+        @Nonnull
         @VisibleForTesting
         static DtNodeV1 deserializeDecisionTree(@Nonnull final byte[] serializedObj,
                 final int length, final boolean compressed) throws HiveException {
@@ -307,8 +308,8 @@ public final class TreePredictUDFv1 extends GenericUDF {
                     ObjectUtils.readObject(serializedObj, length, root);
                 }
             } catch (IOException ioe) {
-                throw new HiveException("IOException cause while deserializing DecisionTree object",
-                    ioe);
+                throw new HiveException(
+                    "IOException cause while deserializing DecisionTree object", ioe);
             } catch (Exception e) {
                 throw new HiveException("Exception cause while deserializing DecisionTree object",
                     e);
@@ -332,8 +333,8 @@ public final class TreePredictUDFv1 extends GenericUDF {
 
         @Nonnull
         @VisibleForTesting
-         static RtNodeV1 deserializeRegressionTree(final byte[] serializedObj,
-                final int length, final boolean compressed) throws HiveException {
+        static RtNodeV1 deserializeRegressionTree(final byte[] serializedObj, final int length,
+                final boolean compressed) throws HiveException {
             final RtNodeV1 root = new RtNodeV1();
             try {
                 if (compressed) {
@@ -342,8 +343,8 @@ public final class TreePredictUDFv1 extends GenericUDF {
                     ObjectUtils.readObject(serializedObj, length, root);
                 }
             } catch (IOException ioe) {
-                throw new HiveException("IOException cause while deserializing DecisionTree object",
-                    ioe);
+                throw new HiveException(
+                    "IOException cause while deserializing DecisionTree object", ioe);
             } catch (Exception e) {
                 throw new HiveException("Exception cause while deserializing DecisionTree object",
                     e);
@@ -427,8 +428,8 @@ public final class TreePredictUDFv1 extends GenericUDF {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    throw new IllegalStateException("Unsupported attribute type: "
+                            + splitFeatureType);
                 }
             }
         }
@@ -530,8 +531,8 @@ public final class TreePredictUDFv1 extends GenericUDF {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    throw new IllegalStateException("Unsupported attribute type: "
+                            + splitFeatureType);
                 }
             }
         }
@@ -646,9 +647,9 @@ public final class TreePredictUDFv1 extends GenericUDF {
             ScriptEngineManager manager = new ScriptEngineManager();
             ScriptEngine engine = manager.getEngineByExtension("js");
             if (!(engine instanceof Compilable)) {
-                throw new UDFArgumentException(
-                    "ScriptEngine was not compilable: " + engine.getFactory().getEngineName()
-                            + " version " + engine.getFactory().getEngineVersion());
+                throw new UDFArgumentException("ScriptEngine was not compilable: "
+                        + engine.getFactory().getEngineName() + " version "
+                        + engine.getFactory().getEngineVersion());
             }
             this.scriptEngine = engine;
             this.compilableEngine = (Compilable) engine;

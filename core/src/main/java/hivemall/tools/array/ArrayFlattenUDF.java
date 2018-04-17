@@ -48,21 +48,20 @@ public final class ArrayFlattenUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 1) {
-            throw new UDFArgumentException(
-                "array_flatten expects exactly one argument: " + argOIs.length);
+            throw new UDFArgumentException("array_flatten expects exactly one argument: "
+                    + argOIs.length);
         }
 
         this.listOI = HiveUtils.asListOI(argOIs[0]);
         ObjectInspector listElemOI = listOI.getListElementObjectInspector();
         if (listElemOI.getCategory() != Category.LIST) {
-            throw new UDFArgumentException(
-                "array_flatten takes array of array for the argument: " + listOI.toString());
+            throw new UDFArgumentException("array_flatten takes array of array for the argument: "
+                    + listOI.toString());
         }
         this.nextedListOI = HiveUtils.asListOI(listElemOI);
         this.elemOI = nextedListOI.getListElementObjectInspector();
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            ObjectInspectorUtils.getStandardObjectInspector(elemOI));
+        return ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(elemOI));
     }
 
     @Override

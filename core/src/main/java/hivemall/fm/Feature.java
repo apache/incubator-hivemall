@@ -224,7 +224,8 @@ public abstract class Feature {
         final int pos2 = rest.indexOf(':');
         if (pos2 == -1) {
             throw new HiveException(
-                "Invalid FFM feature representation. Expected <field>:<index>:<value> but got " + fv);
+                "Invalid FFM feature representation. Expected <field>:<index>:<value> but got "
+                        + fv);
         }
 
         final short field;
@@ -295,7 +296,8 @@ public abstract class Feature {
         final int pos2 = rest.indexOf(':');
         if (pos2 == -1) {
             throw new HiveException(
-                "Invalid FFM feature representation. Expected <field>:<index>:<value> but got " + fv);
+                "Invalid FFM feature representation. Expected <field>:<index>:<value> but got "
+                        + fv);
         }
 
         final short field;
