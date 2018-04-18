@@ -111,7 +111,7 @@ public class DecisionTreeTest {
     }
 
     @Test
-    public void testGraphvisOutputIris() throws IOException, ParseException, HiveException {
+    public void testGraphvizOutputIris() throws IOException, ParseException, HiveException {
         String datasetUrl = "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff";
         int responseIndex = 4;
         int numLeafs = 4;
@@ -121,18 +121,18 @@ public class DecisionTreeTest {
                 "petalwidth"};
         String[] classNames = new String[] {"setosa", "versicolor", "virginica"};
 
-        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+        debugPrint(graphvizOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
             classNames, outputName));
 
         featureNames = null;
         classNames = null;
         outputName = null;
-        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+        debugPrint(graphvizOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
             classNames, outputName));
     }
 
     @Test
-    public void testGraphvisOutputWeather() throws IOException, ParseException, HiveException {
+    public void testGraphvizOutputWeather() throws IOException, ParseException, HiveException {
         String datasetUrl = "https://gist.githubusercontent.com/myui/2c9df50db3de93a71b92/raw/3f6b4ecfd4045008059e1a2d1c4064fb8a3d372a/weather.nominal.arff";
         int responseIndex = 4;
         int numLeafs = 3;
@@ -141,16 +141,16 @@ public class DecisionTreeTest {
         String[] classNames = new String[] {"yes", "no"};
         String outputName = "play";
 
-        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+        debugPrint(graphvizOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
             classNames, outputName));
 
         featureNames = null;
         classNames = null;
-        debugPrint(graphvisOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
+        debugPrint(graphvizOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
             classNames, outputName));
     }
 
-    private static String graphvisOutput(String datasetUrl, int responseIndex, int numLeafs,
+    private static String graphvizOutput(String datasetUrl, int responseIndex, int numLeafs,
             boolean dense, String[] featureNames, String[] classNames, String outputName)
             throws IOException, HiveException, ParseException {
         URL url = new URL(datasetUrl);
@@ -169,7 +169,7 @@ public class DecisionTreeTest {
 
         Text model = new Text(Base91.encode(tree.serialize(true)));
 
-        Evaluator eval = new Evaluator(OutputType.graphvis, outputName, false);
+        Evaluator eval = new Evaluator(OutputType.graphviz, outputName, false);
         Text exported = eval.export(model, featureNames, classNames);
 
         return exported.toString();

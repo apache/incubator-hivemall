@@ -200,10 +200,10 @@ public class RegressionTreeTest {
         double[] y = {83.0, 88.5, 88.2, 89.5, 96.2, 98.1, 99.0, 100.0, 101.2, 104.6, 108.4, 110.8,
                 112.6, 114.2, 115.7, 116.9};
 
-        debugPrint(graphvisOutput(x, y, maxLeafs, true, null, outputName));
+        debugPrint(graphvizOutput(x, y, maxLeafs, true, null, outputName));
     }
 
-    private static String graphvisOutput(double[][] x, double[] y, int maxLeafs, boolean dense,
+    private static String graphvizOutput(double[][] x, double[] y, int maxLeafs, boolean dense,
             String[] featureNames, String outputName) throws IOException, HiveException,
             ParseException {
         Attribute[] attrs = new Attribute[x[0].length];
@@ -212,7 +212,7 @@ public class RegressionTreeTest {
 
         Text model = new Text(Base91.encode(tree.serialize(true)));
 
-        Evaluator eval = new Evaluator(OutputType.graphvis, outputName, true);
+        Evaluator eval = new Evaluator(OutputType.graphviz, outputName, true);
         Text exported = eval.export(model, featureNames, null);
 
         return exported.toString();
