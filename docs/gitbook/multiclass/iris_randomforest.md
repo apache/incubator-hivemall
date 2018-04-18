@@ -319,7 +319,7 @@ WHERE
 ```
 > 0.98
 
-# Graphvis export
+# Graphviz export
 
 > #### Note
 > `tree_export` feature is supported from Hivemall v0.5.0 or later.
@@ -338,7 +338,7 @@ usage: tree_export(string model, const string options, optional
  -output_name,--outputName <arg>   output name [default: predicted]
  -r,--regression                   Is regression tree or not
  -t,--type <arg>                   Type of output [default: js,
-                                   javascript/js, graphvis/dot
+                                   javascript/js, graphviz/dot
 ```
 
 ```sql
@@ -348,7 +348,7 @@ AS
 select
   model_id,
   tree_export(model, "-type javascript", array('sepal_length','sepal_width','petal_length','petak_width'), array('Setosa','Versicolour','Virginica')) as js,
-  tree_export(model, "-type graphvis", array('sepal_length','sepal_width','petal_length','petak_width'), array('Setosa','Versicolour','Virginica')) as dot
+  tree_export(model, "-type graphviz", array('sepal_length','sepal_width','petal_length','petak_width'), array('Setosa','Versicolour','Virginica')) as dot
 from
   model
 -- limit 1
@@ -387,6 +387,6 @@ digraph Tree {
 }
 ```
 
-<img src="../resources/images/iris.png" alt="Iris Graphvis output"/>
+<img src="../resources/images/iris.png" alt="Iris Graphviz output"/>
 
 You can draw a graph by `dot -Tpng iris.dot -o iris.png` or using [Viz.js](http://viz-js.com/).

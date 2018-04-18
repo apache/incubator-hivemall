@@ -247,7 +247,7 @@ sed -i -e "1i PassengerId,Survived" predicted_rf_submit.csv
 
 Accuracy would gives `0.76555` for a Kaggle submission.
 
-# Graphvis export
+# Graphviz export
 
 > #### Note
 > `tree_export` feature is supported from Hivemall v0.5.0 or later.
@@ -266,7 +266,7 @@ usage: tree_export(string model, const string options, optional
  -output_name,--outputName <arg>   output name [default: predicted]
  -r,--regression                   Is regression tree or not
  -t,--type <arg>                   Type of output [default: js,
-                                   javascript/js, graphvis/dot
+                                   javascript/js, graphviz/dot
 ```
 
 ```sql
@@ -276,14 +276,14 @@ AS
 select
   model_id,
   tree_export(model, "-type javascript -output_name survived", array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked'), array('no','yes')) as js,
-  tree_export(model, "-type graphvis -output_name survived", array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked'), array('no','yes')) as dot
+  tree_export(model, "-type graphviz -output_name survived", array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked'), array('no','yes')) as dot
 from
   model_rf
 -- limit 1
 ;
 ```
 
-[Here is an example](https://gist.github.com/myui/a83ba3795bad9b278cf8bcc59f946e2c#file-titanic-dot) plotting a decision tree using Graphvis or [Vis.js](http://viz-js.com/).
+[Here is an example](https://gist.github.com/myui/a83ba3795bad9b278cf8bcc59f946e2c#file-titanic-dot) plotting a decision tree using Graphviz or [Vis.js](http://viz-js.com/).
 
 ---
 

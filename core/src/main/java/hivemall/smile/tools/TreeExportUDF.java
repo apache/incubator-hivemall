@@ -62,7 +62,7 @@ public final class TreeExportUDF extends UDFWithOptions {
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("t", "type", true,
-            "Type of output [default: js, javascript/js, graphvis/dot");
+            "Type of output [default: js, javascript/js, graphviz/dot");
         opts.addOption("r", "regression", false, "Is regression tree or not");
         opts.addOption("output_name", "outputName", true, "output name [default: predicted]");
         return opts;
@@ -141,17 +141,17 @@ public final class TreeExportUDF extends UDFWithOptions {
     }
 
     public enum OutputType {
-        javascript, graphvis;
+        javascript, graphviz;
 
         @Nonnull
         public static OutputType resolve(@Nonnull String name) throws UDFArgumentException {
             if ("js".equalsIgnoreCase(name) || "javascript".equalsIgnoreCase(name)) {
                 return javascript;
-            } else if ("dot".equalsIgnoreCase(name) || "graphvis".equalsIgnoreCase(name)) {
-                return graphvis;
+            } else if ("dot".equalsIgnoreCase(name) || "graphviz".equalsIgnoreCase(name)) {
+                return graphviz;
             } else {
                 throw new UDFArgumentException(
-                    "Please provide a valid `-type` option from [javascript, graphvis]: " + name);
+                    "Please provide a valid `-type` option from [javascript, graphviz]: " + name);
             }
         }
     }
@@ -198,7 +198,7 @@ public final class TreeExportUDF extends UDFWithOptions {
                     node.exportJavascript(buf, featureNames, classNames, 0);
                     break;
                 }
-                case graphvis: {
+                case graphviz: {
                     buf.append("digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
                     double[] colorBrew = (classNames == null) ? null
                             : SmileExtUtils.getColorBrew(classNames.length);
@@ -224,7 +224,7 @@ public final class TreeExportUDF extends UDFWithOptions {
                     node.exportJavascript(buf, featureNames, 0);
                     break;
                 }
-                case graphvis: {
+                case graphviz: {
                     buf.append("digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
                     node.exportGraphviz(buf, featureNames, outputName, new MutableInt(0), 0);
                     buf.append("}");
