@@ -165,7 +165,7 @@ public class GeneralRegressorUDTFTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testIlleagalStringFeature() throws Exception {
+    public void testIllegalStringFeature() throws Exception {
         List<String> x = Arrays.asList("1:-2jjjj", "2:-1");
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         testFeature(x, featureOI, String.class, String.class);
