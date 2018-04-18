@@ -147,7 +147,8 @@ public final class TreeExportUDF extends UDFWithOptions {
         public static OutputType resolve(@Nonnull String name) throws UDFArgumentException {
             if ("js".equalsIgnoreCase(name) || "javascript".equalsIgnoreCase(name)) {
                 return javascript;
-            } else if ("dot".equalsIgnoreCase(name) || "graphviz".equalsIgnoreCase(name)) {
+            } else if ("dot".equalsIgnoreCase(name) || "graphviz".equalsIgnoreCase(name)
+                    || "graphvis".equalsIgnoreCase(name)) { // "graphvis" for backward compatibility (HIVEMALL-192)
                 return graphviz;
             } else {
                 throw new UDFArgumentException(
