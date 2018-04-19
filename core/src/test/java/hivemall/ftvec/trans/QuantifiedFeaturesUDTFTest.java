@@ -45,10 +45,16 @@ public class QuantifiedFeaturesUDTFTest {
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
-        final List<Object[]> rows = new ArrayList<>();
+        final List<List<Double>> quantifiedInputs = new ArrayList<>();
         udtf.setCollector(new Collector() {
             public void collect(Object input) throws HiveException {
-                rows.add((Object[]) input);
+                Object[] row = (Object[]) input;
+                List<DoubleWritable> column = (List<DoubleWritable>) row[0];
+                List<Double> quantifiedInput = new ArrayList<>();
+                for (DoubleWritable elem : column) {
+                    quantifiedInput.add(elem.get());
+                }
+                quantifiedInputs.add(quantifiedInput);
             }
         });
 
@@ -57,15 +63,15 @@ public class QuantifiedFeaturesUDTFTest {
 
         udtf.close();
 
-        Assert.assertEquals(2, rows.size());
+        Assert.assertEquals(2, quantifiedInputs.size());
 
-        List<DoubleWritable> features = (List<DoubleWritable>) rows.get(0)[0];
-        Assert.assertTrue(features.get(0).get() == 0.d);
-        Assert.assertTrue(features.get(1).get() == 1.d);
+        List<Double> quantifiedInput = quantifiedInputs.get(0);
+        Assert.assertTrue(quantifiedInput.get(0) == 0.d);
+        Assert.assertTrue(quantifiedInput.get(1) == 1.d);
 
-        features = (List<DoubleWritable>) rows.get(1)[0];
-        Assert.assertTrue(features.get(0).get() == 1.d);
-        Assert.assertTrue(features.get(1).get() == 2.d);
+        quantifiedInput = quantifiedInputs.get(1);
+        Assert.assertTrue(quantifiedInput.get(0) == 1.d);
+        Assert.assertTrue(quantifiedInput.get(1) == 2.d);
     }
 
     @Test
