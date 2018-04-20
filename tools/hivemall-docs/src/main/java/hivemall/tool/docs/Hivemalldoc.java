@@ -19,7 +19,7 @@
 package hivemall.tool.docs;
 
 import hivemall.tool.docs.utils.MarkdownUtils;
-import hivemall.tool.docs.utils.StringUtils;
+import hivemall.utils.lang.StringUtils;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.reflections.Reflections;
@@ -85,7 +85,7 @@ public class Hivemalldoc {
 
             String extended = sbExtended.toString();
             if (!extended.isEmpty()) {
-                sb.append(StringUtils.indent(MarkdownUtils.asCodeBlock(extended)));
+                sb.append(MarkdownUtils.indent(MarkdownUtils.asCodeBlock(extended)));
             } else {
                 sb.append("\n");
             }

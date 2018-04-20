@@ -19,6 +19,11 @@
 package hivemall.tool.docs.utils;
 
 public class MarkdownUtils {
+    private static final String TAB = "  ";
+
+    public static String indent(final String s) {
+        return TAB + s.replaceAll("(\\r\\n|\\r|\\n)", "$1" + TAB);
+    }
 
     public static String asBold(final String s) {
         return "**" + s + "**";
@@ -41,6 +46,10 @@ public class MarkdownUtils {
     }
 
     public static String asHeader(final String s, int level) {
-        return StringUtils.repeat("#", level) + " " + s + "\n";
+        char[] buf = new char[level];
+        for (int i = 0; i < level; i++) {
+            buf[i] = '#';
+        }
+        return new String(buf) + " " + s + "\n";
     }
 }
