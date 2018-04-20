@@ -78,7 +78,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>hivemall.tool.docs.Hivemalldoc</mainClass>
+							<mainClass>hivemall.tool.docs.HivemallDocs</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

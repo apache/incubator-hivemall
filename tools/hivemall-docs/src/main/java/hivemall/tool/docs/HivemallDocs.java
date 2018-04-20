@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 
 import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
-public class Hivemalldoc {
+public class HivemallDocs {
 
     public static void main(String... args) {
         Map<String, Set<String>> packages = getHivemallPerPackageDocumentSet();
