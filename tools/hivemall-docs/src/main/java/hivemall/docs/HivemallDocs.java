@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.tool.docs;
+package hivemall.docs;
 
-import hivemall.tool.docs.utils.MarkdownUtils;
+import hivemall.docs.utils.MarkdownUtils;
 import hivemall.utils.lang.StringUtils;
 
 import org.apache.hadoop.hive.ql.exec.Description;

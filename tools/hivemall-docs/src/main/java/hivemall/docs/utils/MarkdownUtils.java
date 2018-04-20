@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.tool.docs.utils;
+package hivemall.docs.utils;
 
 public class MarkdownUtils {
     private static final String TAB = "  ";
