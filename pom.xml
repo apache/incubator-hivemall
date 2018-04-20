@@ -251,6 +251,7 @@
 		<module>mixserv</module>
 		<module>spark</module>
 		<module>dist</module>
+		<module>tools</module>
 	</modules>
 
 	<properties>
