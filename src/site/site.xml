@@ -61,8 +61,7 @@
 	<version position="left" />
 
 	<poweredBy>
-		<logo name="Apache Incubator" href="http://incubator.apache.org/projects/hivemall.html"
-			img="http://incubator.apache.org/images/egg-logo.png" />
+		<logo name="Apache Incubator" href="/images/apache-incubator-logo.png" />
 	</poweredBy>
 
 	<body>

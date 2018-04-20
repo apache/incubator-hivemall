@@ -27,7 +27,7 @@ Apache Hivemall: Hive scalable machine learning library
 
 [Apache Hivemall](http://hivemall.incubator.apache.org/) is a scalable machine learning library that runs on Apache Hive, Apache Spark, and Apache Pig. Hivemall is designed to be scalable to the number of training instances as well as the number of training features.
 
-[![Incubator](http://incubator.apache.org/images/egg-logo2.png "Apache Incubator")](http://hivemall.incubator.apache.org/)
+[<img src="src/site/resources/images/apache-incubator-logo.png" alt="Apache Incubator" width=200>](http://hivemall.incubator.apache.org/)
 
 Usage
 -----
