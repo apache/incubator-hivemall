@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -38,6 +39,7 @@ import org.apache.hadoop.io.Writable;
 
 @Description(name = "moving_avg", value = "_FUNC_(NUMBER value, const int windowSize)"
         + " - Returns moving average of a time series using a given window")
+@UDFType(deterministic = false, stateful = true)
 public final class MovingAverageUDTF extends GenericUDTF {
 
     private PrimitiveObjectInspector valueOI;
