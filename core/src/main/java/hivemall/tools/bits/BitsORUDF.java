@@ -37,7 +37,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "bits_or",
-        value = "_FUNC_(array<long> b1, array<long> b2, ..) - Returns a logical OR given bitsets")
+        value = "_FUNC_(array<long> b1, array<long> b2, ..) - Returns a logical OR given bitsets",
+        extended = "select unbits(bits_or(to_bits(array(1,4)),to_bits(array(2,3))));\n"
+                + "> [1,2,3,4]")
 public final class BitsORUDF extends GenericUDF {
 
     private ListObjectInspector[] _listOIs;

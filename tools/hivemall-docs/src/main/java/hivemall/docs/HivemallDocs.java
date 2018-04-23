@@ -74,7 +74,7 @@ public class HivemallDocs {
 
     private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
     static {
-        genericFuncsHeaders.put("# Utility functions", Arrays.asList("hivemall.tools"));
+        genericFuncsHeaders.put("# Generic functions", Arrays.asList("hivemall.tools"));
         genericFuncsHeaders.put("## Array", Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
         genericFuncsHeaders.put("## Map", Arrays.asList("hivemall.tools.map"));
         genericFuncsHeaders.put("## Bitset", Arrays.asList("hivemall.tools.bits"));

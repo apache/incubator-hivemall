@@ -55,7 +55,26 @@ import org.apache.hadoop.io.IntWritable;
  */
 @Description(name = "to_ordered_map",
         value = "_FUNC_(key, value [, const int k|const boolean reverseOrder=false]) "
-                + "- Convert two aggregated columns into an ordered key-value map")
+                + "- Convert two aggregated columns into an ordered key-value map",
+        extended = "with t as (\n"
+                + "    select 10 as key, 'apple' as value\n"
+                + "    union all\n"
+                + "    select 3 as key, 'banana' as value\n"
+                + "    union all\n"
+                + "    select 4 as key, 'candy' as value\n"
+                + ")\n"
+                + "select\n"
+                + "    to_ordered_map(key, value, true),   -- {10:\"apple\",4:\"candy\",3:\"banana\"} (reverse)\n"
+                + "    to_ordered_map(key, value, 1),      -- {10:\"apple\"} (top-1)\n"
+                + "    to_ordered_map(key, value, 2),      -- {10:\"apple\",4:\"candy\"} (top-2)\n"
+                + "    to_ordered_map(key, value, 3),      -- {10:\"apple\",4:\"candy\",3:\"banana\"} (top-3)\n"
+                + "    to_ordered_map(key, value, 100),    -- {10:\"apple\",4:\"candy\",3:\"banana\"} (top-100)\n"
+                + "    to_ordered_map(key, value),         -- {3:\"banana\",4:\"candy\",10:\"apple\"} (natural)\n"
+                + "    to_ordered_map(key, value, -1),     -- {3:\"banana\"} (tail-1)\n"
+                + "    to_ordered_map(key, value, -2),     -- {3:\"banana\",4:\"candy\"} (tail-2)\n"
+                + "    to_ordered_map(key, value, -3),     -- {3:\"banana\",4:\"candy\",10:\"apple\"} (tail-3)\n"
+                + "    to_ordered_map(key, value, -100)    -- {3:\"banana\",4:\"candy\",10:\"apple\"} (tail-100)\n"
+                + "from t")
 public final class UDAFToOrderedMap extends UDAFToMap {
 
     @Override

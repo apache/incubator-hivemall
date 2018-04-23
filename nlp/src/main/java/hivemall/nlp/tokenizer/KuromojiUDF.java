@@ -62,7 +62,10 @@ import org.apache.lucene.analysis.util.CharArraySet;
 @Description(
         name = "tokenize_ja",
         value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
-                + " - returns tokenized strings in array<string>")
+                + " - returns tokenized strings in array<string>",
+        extended = "select tokenize_ja(\"kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。\");\n"
+                + "\n"
+                + "> [\"kuromoji\",\"使う\",\"分かち書き\",\"テスト\",\"第\",\"二\",\"引数\",\"normal\",\"search\",\"extended\",\"指定\",\"デフォルト\",\"normal\",\" モード\"]\n")
 @UDFType(deterministic = true, stateful = false)
 public final class KuromojiUDF extends GenericUDF {
     private static final int CONNECT_TIMEOUT_MS = 10000; // 10 sec

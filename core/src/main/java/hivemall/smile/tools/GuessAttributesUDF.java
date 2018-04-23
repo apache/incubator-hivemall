@@ -31,8 +31,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(name = "guess_attribute_types", value = "_FUNC_(ANY, ...) - Returns attribute types"
-        + "\nselect guess_attribute_types(*) from train limit 1;"
+@Description(name = "guess_attribute_types", value = "_FUNC_(ANY, ...) - Returns attribute types",
+        extended = "select guess_attribute_types(*) from train limit 1;"
         + "\n> Q,Q,C,C,C,C,Q,C,C,C,Q,C,Q,Q,Q,Q,C,Q")
 @UDFType(deterministic = true, stateful = false)
 public final class GuessAttributesUDF extends GenericUDF {

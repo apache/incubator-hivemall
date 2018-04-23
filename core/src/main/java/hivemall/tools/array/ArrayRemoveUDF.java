@@ -28,7 +28,12 @@ import org.apache.hadoop.io.Text;
 
 @Description(name = "array_remove",
         value = "_FUNC_(array<int|text> original, int|text|array<int> target)"
-                + " - Returns an array that the target is removed " + "from the original array")
+                + " - Returns an array that the target is removed " + "from the original array",
+        extended = "select array_remove(array(1,null,3),array(null));\n"
+                + "> [3]\n"
+                + "\n"
+                + "select array_remove(array(\"aaa\",\"bbb\"),\"bbb\");\n"
+                + "> [\"aaa\"]")
 @UDFType(deterministic = true, stateful = false)
 public class ArrayRemoveUDF extends UDF {
 
