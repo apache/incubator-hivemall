@@ -122,9 +122,7 @@ public class HivemallDocs {
 
             Description description = annotatedClass.getAnnotation(Description.class);
 
-            String[] values = description.value().split("\n", 2);
-
-            String value = values[0];
+            String value = description.value().replaceAll("\n", " ");
             Matcher matcher = func.matcher(value);
             if (matcher.find()) {
                 value = MarkdownUtils.asInlineCode(description.name() + matcher.group(1))
@@ -133,10 +131,6 @@ public class HivemallDocs {
             sb.append(MarkdownUtils.asListElement(value));
 
             StringBuilder sbExtended = new StringBuilder();
-            if (values.length == 2) {
-                sbExtended.append(values[1]);
-                sb.append("\n");
-            }
             if (!description.extended().isEmpty()) {
                 sbExtended.append(description.extended());
                 sb.append("\n");
