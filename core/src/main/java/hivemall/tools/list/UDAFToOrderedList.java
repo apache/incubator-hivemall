@@ -66,7 +66,8 @@ import org.apache.hadoop.io.IntWritable;
 /**
  * Return list of values sorted by value itself or specific key.
  */
-@Description(name = "to_ordered_list",
+@Description(
+        name = "to_ordered_list",
         value = "_FUNC_(PRIMITIVE value [, PRIMITIVE key, const string options])"
                 + " - Return list of values sorted by value itself or specific key",
         extended = "with t as (\n"
@@ -92,8 +93,7 @@ import org.apache.hadoop.io.IntWritable;
                 + "    to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)\n"
                 + "    to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)\n"
                 + "    to_ordered_list(key)                           -- [2, 3, 3, 4, 5] (natural ordered keys)\n"
-                + "from\n"
-                + "    t")
+                + "from\n" + "    t")
 public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
     @Override

@@ -39,10 +39,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspe
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 
-@Description(name = "deflate", value = "_FUNC_(TEXT data [, const int compressionLevel]) - "
-        + "Returns a compressed BINARY object by using Deflater. The compression level must be in range [-1,9]",
-        extended = "select base91(deflate('aaaaaaaaaaaaaaaabbbbccc'));\n"
-        + "> AA+=kaIM|WTt!+wbGAA")
+@Description(
+        name = "deflate",
+        value = "_FUNC_(TEXT data [, const int compressionLevel]) - "
+                + "Returns a compressed BINARY object by using Deflater. The compression level must be in range [-1,9]",
+        extended = "select base91(deflate('aaaaaaaaaaaaaaaabbbbccc'));\n" + "> AA+=kaIM|WTt!+wbGAA")
 @UDFType(deterministic = true, stateful = false)
 public final class DeflateUDF extends GenericUDF {
 

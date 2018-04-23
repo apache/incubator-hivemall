@@ -31,12 +31,12 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(name = "generate_series",
+@Description(
+        name = "generate_series",
         value = "_FUNC_(const int|bigint start, const int|bigint end) - "
                 + "Generate a series of values, from start to end. A similar function to PostgreSQL's `generate_serics`. http://www.postgresql.org/docs/current/static/functions-srf.html",
-        extended = "select generate_series(1,9);\n\n"
-                + "1\n" + "2\n" + "3\n" + "4\n"
-                + "5\n" + "6\n" + "7\n" + "8\n" + "9")
+        extended = "select generate_series(1,9);\n\n" + "1\n" + "2\n" + "3\n" + "4\n" + "5\n"
+                + "6\n" + "7\n" + "8\n" + "9")
 public final class GenerateSeriesUDTF extends GenericUDTF {
 
     private long start, end;

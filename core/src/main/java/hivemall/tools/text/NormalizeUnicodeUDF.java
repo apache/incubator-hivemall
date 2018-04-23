@@ -30,11 +30,8 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
         name = "normalize_unicode",
         value = "_FUNC_(string str [, string form]) - Transforms `str` with the specified normalization form. "
                 + "The `form` takes one of NFC (default), NFD, NFKC, or NFKD",
-        extended = "select normalize_unicode('ﾊﾝｶｸｶﾅ','NFKC');\n"
-                + "> ハンカクカナ\n"
-                + "\n"
-                + "select normalize_unicode('㈱㌧㌦Ⅲ','NFKC');\n"
-                + "> (株)トンドルIII")
+        extended = "select normalize_unicode('ﾊﾝｶｸｶﾅ','NFKC');\n" + "> ハンカクカナ\n" + "\n"
+                + "select normalize_unicode('㈱㌧㌦Ⅲ','NFKC');\n" + "> (株)トンドルIII")
 @UDFType(deterministic = true, stateful = false)
 public final class NormalizeUnicodeUDF extends UDF {
 

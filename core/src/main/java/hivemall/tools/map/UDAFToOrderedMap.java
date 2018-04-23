@@ -53,7 +53,8 @@ import org.apache.hadoop.io.IntWritable;
 /**
  * Convert two aggregated columns into a sorted key-value map.
  */
-@Description(name = "to_ordered_map",
+@Description(
+        name = "to_ordered_map",
         value = "_FUNC_(key, value [, const int k|const boolean reverseOrder=false]) "
                 + "- Convert two aggregated columns into an ordered key-value map",
         extended = "with t as (\n"

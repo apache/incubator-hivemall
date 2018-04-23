@@ -43,7 +43,8 @@ public class HivemallDocs {
         funcsHeaders.put("# Regression", Arrays.asList("hivemall.regression"));
         funcsHeaders.put("# Classification", null);
         funcsHeaders.put("## Binary classification", Arrays.asList("hivemall.classifier"));
-        funcsHeaders.put("## Multiclass classification", Arrays.asList("hivemall.classifier.multiclass"));
+        funcsHeaders.put("## Multiclass classification",
+            Arrays.asList("hivemall.classifier.multiclass"));
         funcsHeaders.put("# Matrix factorization", Arrays.asList("hivemall.mf"));
         funcsHeaders.put("# Factorization machines", Arrays.asList("hivemall.fm"));
         funcsHeaders.put("# Recommendation", Arrays.asList("hivemall.recommend"));
@@ -58,7 +59,8 @@ public class HivemallDocs {
         funcsHeaders.put("## Ranking", Arrays.asList("hivemall.ftvec.ranking"));
         funcsHeaders.put("## Feature scaling", Arrays.asList("hivemall.ftvec.scaling"));
         funcsHeaders.put("## Feature selection", Arrays.asList("hivemall.ftvec.selection"));
-        funcsHeaders.put("## Feature transformation and vectorization", Arrays.asList("hivemall.ftvec.trans"));
+        funcsHeaders.put("## Feature transformation and vectorization",
+            Arrays.asList("hivemall.ftvec.trans"));
         funcsHeaders.put("# Geospatial functions", Arrays.asList("hivemall.geospatial"));
         funcsHeaders.put("# Distance measures", Arrays.asList("hivemall.knn.distance"));
         funcsHeaders.put("# Locality-sensitive hashing", Arrays.asList("hivemall.knn.lsh"));
@@ -67,15 +69,19 @@ public class HivemallDocs {
         funcsHeaders.put("# Sketching", Arrays.asList("hivemall.sketch.hll"));
         funcsHeaders.put("# Ensemble learning", Arrays.asList("hivemall.ensemble"));
         funcsHeaders.put("## Bagging", Arrays.asList("hivemall.ensemble.bagging"));
-        funcsHeaders.put("# Decision trees and RandomForest", Arrays.asList("hivemall.smile.classification", "hivemall.smile.regression", "hivemall.smile.tools"));
-        funcsHeaders.put("# XGBoost", Arrays.asList("hivemall.xgboost.classification", "hivemall.xgboost.regression", "hivemall.xgboost.tools"));
-        funcsHeaders.put("# Others", Arrays.asList("hivemall", "hivemall.dataset", "hivemall.ftvec.text"));
+        funcsHeaders.put("# Decision trees and RandomForest", Arrays.asList(
+            "hivemall.smile.classification", "hivemall.smile.regression", "hivemall.smile.tools"));
+        funcsHeaders.put("# XGBoost", Arrays.asList("hivemall.xgboost.classification",
+            "hivemall.xgboost.regression", "hivemall.xgboost.tools"));
+        funcsHeaders.put("# Others",
+            Arrays.asList("hivemall", "hivemall.dataset", "hivemall.ftvec.text"));
     }
 
     private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
     static {
         genericFuncsHeaders.put("# Generic functions", Arrays.asList("hivemall.tools"));
-        genericFuncsHeaders.put("## Array", Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
+        genericFuncsHeaders.put("## Array",
+            Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
         genericFuncsHeaders.put("## Map", Arrays.asList("hivemall.tools.map"));
         genericFuncsHeaders.put("## Bitset", Arrays.asList("hivemall.tools.bits"));
         genericFuncsHeaders.put("## Compression", Arrays.asList("hivemall.tools.compress"));

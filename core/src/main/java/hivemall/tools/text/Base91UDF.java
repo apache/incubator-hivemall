@@ -40,8 +40,7 @@ import org.apache.hadoop.io.Text;
 
 @Description(name = "base91",
         value = "_FUNC_(BINARY bin) - Convert the argument from binary to a BASE91 string",
-        extended = "select base91(deflate('aaaaaaaaaaaaaaaabbbbccc'));\n"
-                + "> AA+=kaIM|WTt!+wbGAA")
+        extended = "select base91(deflate('aaaaaaaaaaaaaaaabbbbccc'));\n" + "> AA+=kaIM|WTt!+wbGAA")
 @UDFType(deterministic = true, stateful = false)
 public final class Base91UDF extends GenericUDF {
 
