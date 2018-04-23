@@ -24,9 +24,12 @@ import hivemall.utils.lang.StringUtils;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.reflections.Reflections;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.LinkedHashMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,13 +38,69 @@ import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
 public class HivemallDocs {
 
+    private static final Map<String, List<String>> funcsHeaders = new LinkedHashMap<>();
+    static {
+        funcsHeaders.put("# Regression", Arrays.asList("hivemall.regression"));
+        funcsHeaders.put("# Classification", null);
+        funcsHeaders.put("## Binary classification", Arrays.asList("hivemall.classifier"));
+        funcsHeaders.put("## Multiclass classification", Arrays.asList("hivemall.classifier.multiclass"));
+        funcsHeaders.put("# Matrix factorization", Arrays.asList("hivemall.mf"));
+        funcsHeaders.put("# Factorization machines", Arrays.asList("hivemall.fm"));
+        funcsHeaders.put("# Recommendation", Arrays.asList("hivemall.recommend"));
+        funcsHeaders.put("# Anomaly detection", Arrays.asList("hivemall.anomaly"));
+        funcsHeaders.put("# Topic modeling", Arrays.asList("hivemall.topicmodel"));
+        funcsHeaders.put("# Preprocessing", Arrays.asList("hivemall.ftvec"));
+        funcsHeaders.put("## Data amplification", Arrays.asList("hivemall.ftvec.amplify"));
+        funcsHeaders.put("## Feature binning", Arrays.asList("hivemall.ftvec.binning"));
+        funcsHeaders.put("## Feature format conversion", Arrays.asList("hivemall.ftvec.conv"));
+        funcsHeaders.put("## Feature hashing", Arrays.asList("hivemall.ftvec.hashing"));
+        funcsHeaders.put("## Feature paring", Arrays.asList("hivemall.ftvec.pairing"));
+        funcsHeaders.put("## Ranking", Arrays.asList("hivemall.ftvec.ranking"));
+        funcsHeaders.put("## Feature scaling", Arrays.asList("hivemall.ftvec.scaling"));
+        funcsHeaders.put("## Feature selection", Arrays.asList("hivemall.ftvec.selection"));
+        funcsHeaders.put("## Feature transformation and vectorization", Arrays.asList("hivemall.ftvec.trans"));
+        funcsHeaders.put("# Geospatial functions", Arrays.asList("hivemall.geospatial"));
+        funcsHeaders.put("# Distance measures", Arrays.asList("hivemall.knn.distance"));
+        funcsHeaders.put("# Locality-sensitive hashing", Arrays.asList("hivemall.knn.lsh"));
+        funcsHeaders.put("# Similarity measures", Arrays.asList("hivemall.knn.similarity"));
+        funcsHeaders.put("# Evaluation", Arrays.asList("hivemall.evaluation"));
+        funcsHeaders.put("# Sketching", Arrays.asList("hivemall.sketch.hll"));
+        funcsHeaders.put("# Ensemble learning", Arrays.asList("hivemall.ensemble"));
+        funcsHeaders.put("## Bagging", Arrays.asList("hivemall.ensemble.bagging"));
+        funcsHeaders.put("# Decision trees and RandomForest", Arrays.asList("hivemall.smile.classification", "hivemall.smile.regression", "hivemall.smile.tools"));
+        funcsHeaders.put("# XGBoost", Arrays.asList("hivemall.xgboost.classification", "hivemall.xgboost.regression", "hivemall.xgboost.tools"));
+        funcsHeaders.put("# Others", Arrays.asList("hivemall", "hivemall.dataset", "hivemall.ftvec.text"));
+    }
+
+    private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
+    static {
+        genericFuncsHeaders.put("# Utility functions", Arrays.asList("hivemall.tools"));
+        genericFuncsHeaders.put("## Array", Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
+        genericFuncsHeaders.put("## Map", Arrays.asList("hivemall.tools.map"));
+        genericFuncsHeaders.put("## Bitset", Arrays.asList("hivemall.tools.bits"));
+        genericFuncsHeaders.put("## Compression", Arrays.asList("hivemall.tools.compress"));
+        genericFuncsHeaders.put("## MapReduce", Arrays.asList("hivemall.tools.mapred"));
+        genericFuncsHeaders.put("## Math", Arrays.asList("hivemall.tools.math"));
+        genericFuncsHeaders.put("## Matrix", Arrays.asList("hivemall.tools.matrix"));
+        genericFuncsHeaders.put("## Text processing", Arrays.asList("hivemall.tools.text"));
+    }
+
     public static void main(String... args) {
         Map<String, Set<String>> packages = getHivemallPerPackageDocumentSet();
 
-        for (Map.Entry<String, Set<String>> e : packages.entrySet()) {
-            System.out.println(MarkdownUtils.asHeader(e.getKey(), 3));
-            for (String desc : e.getValue()) {
-                System.out.println(desc);
+        Map<String, List<String>> headers = new LinkedHashMap<>(genericFuncsHeaders);
+        headers.putAll(funcsHeaders);
+
+        for (Map.Entry<String, List<String>> e : headers.entrySet()) {
+            System.out.println(e.getKey() + "\n");
+            List<String> packageNames = e.getValue();
+            if (packageNames == null) {
+                continue;
+            }
+            for (String packageName : packageNames) {
+                for (String desc : packages.get(packageName)) {
+                    System.out.println(desc);
+                }
             }
         }
     }
@@ -51,7 +110,7 @@ public class HivemallDocs {
         Set<Class<?>> annotatedClasses = reflections.getTypesAnnotatedWith(Description.class);
 
         StringBuilder sb = new StringBuilder();
-        Map<String, Set<String>> packages = new TreeMap<>();
+        Map<String, Set<String>> packages = new HashMap<>();
 
         Pattern func = Pattern.compile("_FUNC_(\\(.*?\\))(.*)", Pattern.DOTALL);
 
