@@ -66,9 +66,34 @@ import org.apache.hadoop.io.IntWritable;
 /**
  * Return list of values sorted by value itself or specific key.
  */
-@Description(name = "to_ordered_list",
+@Description(
+        name = "to_ordered_list",
         value = "_FUNC_(PRIMITIVE value [, PRIMITIVE key, const string options])"
-                + " - Return list of values sorted by value itself or specific key")
+                + " - Return list of values sorted by value itself or specific key",
+        extended = "with t as (\n"
+                + "    select 5 as key, 'apple' as value\n"
+                + "    union all\n"
+                + "    select 3 as key, 'banana' as value\n"
+                + "    union all\n"
+                + "    select 4 as key, 'candy' as value\n"
+                + "    union all\n"
+                + "    select 2 as key, 'donut' as value\n"
+                + "    union all\n"
+                + "    select 3 as key, 'egg' as value\n"
+                + ")\n"
+                + "select                                             -- expected output\n"
+                + "    to_ordered_list(value, key, '-reverse'),       -- [apple, candy, (banana, egg | egg, banana), donut] (reverse order)\n"
+                + "    to_ordered_list(value, key, '-k 2'),           -- [apple, candy] (top-k)\n"
+                + "    to_ordered_list(value, key, '-k 100'),         -- [apple, candy, (banana, egg | egg, banana), dunut]\n"
+                + "    to_ordered_list(value, key, '-k 2 -reverse'),  -- [donut, (banana | egg)] (reverse top-k = tail-k)\n"
+                + "    to_ordered_list(value, key),                   -- [donut, (banana, egg | egg, banana), candy, apple] (natural order)\n"
+                + "    to_ordered_list(value, key, '-k -2'),          -- [donut, (banana | egg)] (tail-k)\n"
+                + "    to_ordered_list(value, key, '-k -100'),        -- [donut, (banana, egg | egg, banana), candy, apple]\n"
+                + "    to_ordered_list(value, key, '-k -2 -reverse'), -- [apple, candy] (reverse tail-k = top-k)\n"
+                + "    to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)\n"
+                + "    to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)\n"
+                + "    to_ordered_list(key)                           -- [2, 3, 3, 4, 5] (natural ordered keys)\n"
+                + "from\n" + "    t")
 public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
     @Override

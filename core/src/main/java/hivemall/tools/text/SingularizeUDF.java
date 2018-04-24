@@ -39,7 +39,8 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 //  https://github.com/sundrio/sundrio/blob/95c2b11f7b842bdaa04f61e8e338aea60fb38f70/codegen/src/main/java/io/sundr/codegen/functions/Singularize.java
 //  https://github.com/clips/pattern/blob/3eef00481a4555331cf9a099308910d977f6fc22/pattern/text/en/inflect.py#L445-L623
 @Description(name = "singularize",
-        value = "_FUNC_(string word) - Returns singular form of a given English word")
+        value = "_FUNC_(string word) - Returns singular form of a given English word",
+        extended = "select singularize(lower(\"Apples\"));\n" + "\n" + "> \"apple\"")
 @UDFType(deterministic = true, stateful = false)
 public final class SingularizeUDF extends UDF {
 

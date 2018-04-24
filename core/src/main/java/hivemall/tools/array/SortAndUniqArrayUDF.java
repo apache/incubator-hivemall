@@ -29,7 +29,8 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 
 @Description(name = "sort_and_uniq_array", value = "_FUNC_(array<int>) - Takes array<int> and "
-        + "returns a sorted array with duplicate elements eliminated")
+        + "returns a sorted array with duplicate elements eliminated",
+        extended = "select sort_and_uniq_array(array(3,1,1,-2,10));\n" + "> [-2,1,3,10]")
 @UDFType(deterministic = true, stateful = false)
 public class SortAndUniqArrayUDF extends UDF {
 

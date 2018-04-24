@@ -37,7 +37,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
 
 @Description(name = "array_concat",
-        value = "_FUNC_(array<ANY> x1, array<ANY> x2, ..) - Returns a concatenated array")
+        value = "_FUNC_(array<ANY> x1, array<ANY> x2, ..) - Returns a concatenated array",
+        extended = "select array_concat(array(1),array(2,3));\n" + "> [1,2,3]")
 @UDFType(deterministic = true, stateful = false)
 public class ArrayConcatUDF extends GenericUDF {
     /**

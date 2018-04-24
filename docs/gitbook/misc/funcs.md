@@ -191,8 +191,6 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 # Preprocessing
 
-## Feature creation
-
 - `add_bias(feature_vector in array<string>)` - Returns features with a bias in array&lt;string&gt;
 
 - `add_feature_index(ARRAY[DOUBLE]: dense feature vector)` - Returns a feature vector with feature indices
@@ -217,13 +215,13 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `build_bins(number weight, const int num_of_bins[, const boolean auto_shrink = false])` - Return quantiles representing bins: array&lt;double&gt;
 
-- `feature_binning(array<features::string> features, const map<string, array<number>> quantiles_map)` / _FUNC(number weight, const array&lt;number&gt; quantiles) - Returns binned features as an array&lt;features::string&gt; / bin ID as int
+- `feature_binning(array<features::string> features, const map<string, array<number>> quantiles_map)` / _FUNC_(number weight, const array&lt;number&gt; quantiles) - Returns binned features as an array&lt;features::string&gt; / bin ID as int
 
 ## Feature format conversion
 
 - `conv2dense(int feature, float weight, int nDims)` - Return a dense model in array&lt;float&gt;
 
-- `quantify(boolean outout, col1, col2, ...)` - Returns an identified features
+- `quantify(boolean output, col1, col2, ...)` - Returns an identified features
 
 - `to_dense_features(array<string> feature_vector, int dimensions)` - Returns a dense feature in array&lt;float&gt;
 
@@ -245,7 +243,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `feature_pairs(feature_vector in array<string>, [, const string options])` - Returns a relation &lt;string i, string j, double xi, double xj&gt;
 
-- `polynomial_features(feature_vector in array<string>)` - Returns a feature vectorhaving polynominal feature space
+- `polynomial_features(feature_vector in array<string>)` - Returns a feature vectorhaving polynomial feature space
 
 - `powered_features(feature_vector in array<string>, int degree [, boolean truncate])` - Returns a feature vector having a powered feature space
 
@@ -275,13 +273,13 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 ## Feature transformation and vectorization
 
-- `add_field_indices(array<string> features)` - Returns arrays of string that field indices (&lt;field&gt;:&lt;feature&gt;)* are argumented
+- `add_field_indices(array<string> features)` - Returns arrays of string that field indices (&lt;field&gt;:&lt;feature&gt;)* are augmented
 
 - `binarize_label(int/long positive, int/long negative, ...)` - Returns positive/negative records that are represented as (..., int label) where label is 0 or 1
 
 - `categorical_features(array<string> featureNames, feature1, feature2, .. [, const string options])` - Returns a feature vector array&lt;string&gt;
 
-- `ffm_features(const array<string> featureNames, feature1, feature2, .. [, const string options])` - Takes categroical variables and returns a feature vector array&lt;string&gt; in a libffm format &lt;field&gt;:&lt;index&gt;:&lt;value&gt;
+- `ffm_features(const array<string> featureNames, feature1, feature2, .. [, const string options])` - Takes categorical variables and returns a feature vector array&lt;string&gt; in a libffm format &lt;field&gt;:&lt;index&gt;:&lt;value&gt;
 
 - `indexed_features(double v1, double v2, ...)` - Returns a list of features as array&lt;string&gt;: [1:v1, 2:v2, ..]
 
@@ -296,7 +294,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 # Geospatial functions
 
 - `haversine_distance(double lat1, double lon1, double lat2, double lon2, [const boolean mile=false])`::double - return distance between two locations in km [or miles] using `haversine` formula
-  ```
+  ```sql
   Usage: select latlon_distance(lat1, lon1, lat2, lon2) from ...
   ```
 
@@ -310,10 +308,9 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
   Google Maps: https://www.google.com/maps/@${lat},${lon},${zoom}z
   ```
 
-- `tile(double lat, double lon, int zoom)`::bigint - Returns a tile number 2^2n where n is zoom level.
-
+- `tile(double lat, double lon, int zoom)`::bigint - Returns a tile number 2^2n where n is zoom level. _FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom
   ```
-  _FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoomrefer http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail
+  refer http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail
   ```
 
 - `tilex2lon(int x, int zoom)`::double - Returns longitude of the given tile x and zoom level
@@ -344,7 +341,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `bbit_minhash(array<> features [, int numHashes])` - Returns a b-bits minhash value
 
-- `minhash(ANY item, array<int|bigint|string> features [, constant string options])` - Returns n differnce k-depth signatures (i.e., clusteid) for each item &lt;clusteid, item&gt;
+- `minhash(ANY item, array<int|bigint|string> features [, constant string options])` - Returns n different k-depth signatures (i.e., clusterid) for each item &lt;clusterid, item&gt;
 
 - `minhashes(array<> features [, int numHashes, int keyGroup [, boolean noWeight]])` - Returns minhash values
 
@@ -398,8 +395,6 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 # Ensemble learning
 
-## Utils
-
 - `argmin_kld(float mean, float covar)` - Returns mean or covar that minimize a KL-distance among distributions
   ```
   The returned value is (1.0 / (sum(1.0 / covar))) * (sum(mean / covar)
@@ -415,25 +410,25 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `weight_voted_avg(expr)` - Returns an averaged value by considering sum of positive/negative weights
 
-# Dicision trees and RandomForest
+# Decision trees and RandomForest
 
 - `train_gradient_tree_boosting_classifier(array<double|string> features, int label [, string options])` - Returns a relation consists of &lt;int iteration, int model_type, array&lt;string&gt; pred_models, double intercept, double shrinkage, array&lt;double&gt; var_importance, float oob_error_rate&gt;
 
-- `train_randomforest_classifier(array<double|string> features, int label [, const array<double> classWeights, const string options])` - Returns a relation consists of &lt;int model_id, int model_type, string pred_model, array&lt;double&gt; var_importance, int oob_errors, int oob_tests, double weight&gt;
+- `train_randomforest_classifier(array<double|string> features, int label [, const string options, const array<double> classWeights])`- Returns a relation consists of &lt;string model_id, double model_weight, string model, array&lt;double&gt; var_importance, int oob_errors, int oob_tests&gt;
 
 - `train_randomforest_regression(array<double|string> features, double target [, string options])` - Returns a relation consists of &lt;int model_id, int model_type, string pred_model, array&lt;double&gt; var_importance, int oob_errors, int oob_tests&gt;
 
 - `guess_attribute_types(ANY, ...)` - Returns attribute types
-  ```
+  ```sql
   select guess_attribute_types(*) from train limit 1;
   > Q,Q,C,C,C,C,Q,C,C,C,Q,C,Q,Q,Q,Q,C,Q
   ```
 
-- `rf_ensemble(int yhat [, array<double> proba [, double model_weight=1.0]])` - Returns emsebled prediction results in &lt;int label, double probability, array&lt;double&gt; probabilities&gt;
+- `rf_ensemble(int yhat [, array<double> proba [, double model_weight=1.0]])` - Returns ensembled prediction results in &lt;int label, double probability, array&lt;double&gt; probabilities&gt;
 
 - `tree_export(string model, const string options, optional array<string> featureNames=null, optional array<string> classNames=null)` - exports a Decision Tree model as javascript/dot]
 
-- `tree_predict(string modelId, string model, array<double|string> features [, const string options | const boolean classification=false])` - Returns a prediction result of a random forest in &lt;int value, array&lt;double&gt; posteriori&gt; for classification and &lt;double&gt; for regression
+- `tree_predict(string modelId, string model, array<double|string> features [, const string options | const boolean classification=false])` - Returns a prediction result of a random forest in &lt;int value, array&lt;double&gt; a posteriori&gt; for classification and &lt;double&gt; for regression
 
 # XGBoost
 
@@ -450,6 +445,9 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 # Others
 
 - `hivemall_version()` - Returns the version of Hivemall
+  ```sql
+  Usage: SELECT hivemall_version();
+  ```
 
 - `lr_datagen(options string)` - Generates a logistic regression dataset
   ```sql
@@ -457,3 +455,4 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
   ```
 
 - `tf(string text)` - Return a term frequency in &lt;string, float&gt;
+
