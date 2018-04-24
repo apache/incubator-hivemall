@@ -27,7 +27,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
 import org.reflections.Reflections;
 
 import javax.annotation.Nonnull;
@@ -55,16 +54,16 @@ import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 @Mojo(name = "generate-funcs-list")
 public class FuncsListGenerator extends AbstractMojo {
 
-    @Parameter(defaultValue = "${project}", readonly = true)
-    private MavenProject project;
+    @Parameter(defaultValue = "${basedir}", readonly = true)
+    private File basedir;
 
     @Parameter(defaultValue = "${session}", readonly = true)
     private MavenSession session;
 
-    @Parameter(defaultValue = "generic_funcs.md")
+    @Parameter(defaultValue = "docs/gitbook/misc/generic_funcs.md")
     private String pathToGenericFuncs;
 
-    @Parameter(defaultValue = "funcs.md")
+    @Parameter(defaultValue = "docs/gitbook/misc/funcs.md")
     private String pathToFuncs;
 
     private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
@@ -127,14 +126,12 @@ public class FuncsListGenerator extends AbstractMojo {
             return;
         }
 
-        String target = project.getBuild().getDirectory();
-        generate(new File(target, pathToGenericFuncs), genericFuncsHeaders);
-        generate(new File(target, pathToFuncs), funcsHeaders);
+        generate(new File(basedir, pathToGenericFuncs), genericFuncsHeaders);
+        generate(new File(basedir, pathToFuncs), funcsHeaders);
     }
 
     private boolean isReactorRootProject() {
-        return session.getExecutionRootDirectory()
-                      .equalsIgnoreCase(project.getBasedir().toString());
+        return session.getExecutionRootDirectory().equalsIgnoreCase(basedir.toString());
     }
 
     private void generate(@Nonnull File outputFile, @Nonnull Map<String, List<String>> headers)
