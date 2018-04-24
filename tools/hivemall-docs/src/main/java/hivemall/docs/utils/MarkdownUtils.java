@@ -22,7 +22,10 @@ public class MarkdownUtils {
     private static final String TAB = "  ";
 
     public static String indent(final String s) {
-        return TAB + s.replaceAll("(\\r\\n|\\r|\\n)", "$1" + TAB);
+        if (s.isEmpty()) {
+            return s;
+        }
+        return TAB + s.replaceAll("(\\r\\n|\\r|\\n)(.+)", "$1" + TAB + "$2");
     }
 
     public static String asBold(final String s) {

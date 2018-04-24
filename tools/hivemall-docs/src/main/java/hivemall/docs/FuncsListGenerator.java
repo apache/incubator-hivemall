@@ -30,8 +30,11 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.reflections.Reflections;
 
 import javax.annotation.Nonnull;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -68,16 +71,16 @@ public class FuncsListGenerator extends AbstractMojo {
 
     private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
     static {
-        genericFuncsHeaders.put("# Generic functions", Arrays.asList("hivemall.tools"));
-        genericFuncsHeaders.put("## Array",
+        genericFuncsHeaders.put("# Array",
             Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
-        genericFuncsHeaders.put("## Map", Arrays.asList("hivemall.tools.map"));
-        genericFuncsHeaders.put("## Bitset", Arrays.asList("hivemall.tools.bits"));
-        genericFuncsHeaders.put("## Compression", Arrays.asList("hivemall.tools.compress"));
-        genericFuncsHeaders.put("## MapReduce", Arrays.asList("hivemall.tools.mapred"));
-        genericFuncsHeaders.put("## Math", Arrays.asList("hivemall.tools.math"));
-        genericFuncsHeaders.put("## Matrix", Arrays.asList("hivemall.tools.matrix"));
-        genericFuncsHeaders.put("## Text processing", Arrays.asList("hivemall.tools.text"));
+        genericFuncsHeaders.put("# Map", Arrays.asList("hivemall.tools.map"));
+        genericFuncsHeaders.put("# Bitset", Arrays.asList("hivemall.tools.bits"));
+        genericFuncsHeaders.put("# Compression", Arrays.asList("hivemall.tools.compress"));
+        genericFuncsHeaders.put("# MapReduce", Arrays.asList("hivemall.tools.mapred"));
+        genericFuncsHeaders.put("# Math", Arrays.asList("hivemall.tools.math"));
+        genericFuncsHeaders.put("# Matrix", Arrays.asList("hivemall.tools.matrix"));
+        genericFuncsHeaders.put("# Text processing", Arrays.asList("hivemall.tools.text"));
+        genericFuncsHeaders.put("# Others", Arrays.asList("hivemall.tools"));
     }
 
     private static final Map<String, List<String>> funcsHeaders = new LinkedHashMap<>();
@@ -126,16 +129,22 @@ public class FuncsListGenerator extends AbstractMojo {
             return;
         }
 
-        generate(new File(basedir, pathToGenericFuncs), genericFuncsHeaders);
-        generate(new File(basedir, pathToFuncs), funcsHeaders);
+        generate(
+            new File(basedir, pathToGenericFuncs),
+            "This page describes a list of useful Hivemall generic functions. See also a [list of machine-learning-related functions](./funcs.md).",
+            genericFuncsHeaders);
+        generate(
+            new File(basedir, pathToFuncs),
+            "This page describes a list of Hivemall functions. See also a [list of generic Hivemall functions](./generic_funcs.md) for more general-purpose functions such as array and map UDFs.",
+            funcsHeaders);
     }
 
     private boolean isReactorRootProject() {
         return session.getExecutionRootDirectory().equalsIgnoreCase(basedir.toString());
     }
 
-    private void generate(@Nonnull File outputFile, @Nonnull Map<String, List<String>> headers)
-            throws MojoExecutionException {
+    private void generate(@Nonnull File outputFile, @Nonnull String preface,
+            @Nonnull Map<String, List<String>> headers) throws MojoExecutionException {
         Reflections reflections = new Reflections("hivemall");
         Set<Class<?>> annotatedClasses = reflections.getTypesAnnotatedWith(Description.class);
 
@@ -168,7 +177,11 @@ public class FuncsListGenerator extends AbstractMojo {
 
             String extended = sbExtended.toString();
             if (!extended.isEmpty()) {
-                sb.append(MarkdownUtils.indent(MarkdownUtils.asCodeBlock(extended)));
+                if (extended.toLowerCase().contains("select")) { // extended description contains SQL statements
+                    sb.append(MarkdownUtils.indent(MarkdownUtils.asCodeBlock(extended, "sql")));
+                } else {
+                    sb.append(MarkdownUtils.indent(MarkdownUtils.asCodeBlock(extended)));
+                }
             } else {
                 sb.append("\n");
             }
@@ -190,6 +203,25 @@ public class FuncsListGenerator extends AbstractMojo {
         } catch (FileNotFoundException e) {
             throw new MojoExecutionException("Output file is not found");
         }
+
+        // license header
+        writer.println("<!--");
+        try {
+            File licenseFile = new File(basedir, "resources/license-header.txt");
+            FileReader fileReader = new FileReader(licenseFile);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                writer.println(MarkdownUtils.indent(line));
+            }
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to read license file");
+        }
+        writer.println("-->\n");
+
+        writer.println(preface);
+
+        writer.println("\n<!-- toc -->\n");
 
         for (Map.Entry<String, List<String>> e : headers.entrySet()) {
             writer.println(e.getKey() + "\n");
