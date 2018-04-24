@@ -21,9 +21,19 @@ package hivemall.docs;
 import hivemall.docs.utils.MarkdownUtils;
 import hivemall.utils.lang.StringUtils;
 
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.reflections.Reflections;
 
+import javax.annotation.Nonnull;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +46,40 @@ import java.util.regex.Pattern;
 
 import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
-public class HivemallDocs {
+/**
+ * Generate a list of UDFs for documentation.
+ *
+ * @link https://hivemall.incubator.apache.org/userguide/misc/generic_funcs.html
+ * @link https://hivemall.incubator.apache.org/userguide/misc/funcs.html
+ */
+@Mojo(name = "generate-funcs-list")
+public class FuncsListGenerator extends AbstractMojo {
+
+    @Parameter(defaultValue = "${project}", readonly = true)
+    private MavenProject project;
+
+    @Parameter(defaultValue = "${session}", readonly = true)
+    private MavenSession session;
+
+    @Parameter(defaultValue = "generic_funcs.md")
+    private String pathToGenericFuncs;
+
+    @Parameter(defaultValue = "funcs.md")
+    private String pathToFuncs;
+
+    private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
+    static {
+        genericFuncsHeaders.put("# Generic functions", Arrays.asList("hivemall.tools"));
+        genericFuncsHeaders.put("## Array",
+            Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
+        genericFuncsHeaders.put("## Map", Arrays.asList("hivemall.tools.map"));
+        genericFuncsHeaders.put("## Bitset", Arrays.asList("hivemall.tools.bits"));
+        genericFuncsHeaders.put("## Compression", Arrays.asList("hivemall.tools.compress"));
+        genericFuncsHeaders.put("## MapReduce", Arrays.asList("hivemall.tools.mapred"));
+        genericFuncsHeaders.put("## Math", Arrays.asList("hivemall.tools.math"));
+        genericFuncsHeaders.put("## Matrix", Arrays.asList("hivemall.tools.matrix"));
+        genericFuncsHeaders.put("## Text processing", Arrays.asList("hivemall.tools.text"));
+    }
 
     private static final Map<String, List<String>> funcsHeaders = new LinkedHashMap<>();
     static {
@@ -77,41 +120,25 @@ public class HivemallDocs {
             Arrays.asList("hivemall", "hivemall.dataset", "hivemall.ftvec.text"));
     }
 
-    private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
-    static {
-        genericFuncsHeaders.put("# Generic functions", Arrays.asList("hivemall.tools"));
-        genericFuncsHeaders.put("## Array",
-            Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
-        genericFuncsHeaders.put("## Map", Arrays.asList("hivemall.tools.map"));
-        genericFuncsHeaders.put("## Bitset", Arrays.asList("hivemall.tools.bits"));
-        genericFuncsHeaders.put("## Compression", Arrays.asList("hivemall.tools.compress"));
-        genericFuncsHeaders.put("## MapReduce", Arrays.asList("hivemall.tools.mapred"));
-        genericFuncsHeaders.put("## Math", Arrays.asList("hivemall.tools.math"));
-        genericFuncsHeaders.put("## Matrix", Arrays.asList("hivemall.tools.matrix"));
-        genericFuncsHeaders.put("## Text processing", Arrays.asList("hivemall.tools.text"));
-    }
-
-    public static void main(String... args) {
-        Map<String, Set<String>> packages = getHivemallPerPackageDocumentSet();
-
-        Map<String, List<String>> headers = new LinkedHashMap<>(genericFuncsHeaders);
-        headers.putAll(funcsHeaders);
-
-        for (Map.Entry<String, List<String>> e : headers.entrySet()) {
-            System.out.println(e.getKey() + "\n");
-            List<String> packageNames = e.getValue();
-            if (packageNames == null) {
-                continue;
-            }
-            for (String packageName : packageNames) {
-                for (String desc : packages.get(packageName)) {
-                    System.out.println(desc);
-                }
-            }
+    @Override
+    public void execute() throws MojoExecutionException {
+        if (!isReactorRootProject()) {
+            // output only once across the projects
+            return;
         }
+
+        String target = project.getBuild().getDirectory();
+        generate(new File(target, pathToGenericFuncs), genericFuncsHeaders);
+        generate(new File(target, pathToFuncs), funcsHeaders);
     }
 
-    private static Map<String, Set<String>> getHivemallPerPackageDocumentSet() {
+    private boolean isReactorRootProject() {
+        return session.getExecutionRootDirectory()
+                      .equalsIgnoreCase(project.getBasedir().toString());
+    }
+
+    private void generate(@Nonnull File outputFile, @Nonnull Map<String, List<String>> headers)
+            throws MojoExecutionException {
         Reflections reflections = new Reflections("hivemall");
         Set<Class<?>> annotatedClasses = reflections.getTypesAnnotatedWith(Description.class);
 
@@ -160,6 +187,26 @@ public class HivemallDocs {
             StringUtils.clear(sb);
         }
 
-        return packages;
+        PrintWriter writer;
+        try {
+            writer = new PrintWriter(outputFile);
+        } catch (FileNotFoundException e) {
+            throw new MojoExecutionException("Output file is not found");
+        }
+
+        for (Map.Entry<String, List<String>> e : headers.entrySet()) {
+            writer.println(e.getKey() + "\n");
+            List<String> packageNames = e.getValue();
+            if (packageNames == null) {
+                continue;
+            }
+            for (String packageName : packageNames) {
+                for (String desc : packages.get(packageName)) {
+                    writer.println(desc);
+                }
+            }
+        }
+
+        writer.close();
     }
 }

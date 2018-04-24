@@ -26,15 +26,36 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>hivemall-tool-docs</artifactId>
+	<!-- mvn org.apache.hivemall:hivemall-docs:generate-funcs-list -->
+	<artifactId>hivemall-docs</artifactId>
 	<name>Hivemall Documentation Tool</name>
-	<packaging>jar</packaging>
+	<packaging>maven-plugin</packaging>
 
 	<properties>
 		<main.basedir>${project.parent.parent.basedir}</main.basedir>
 	</properties>
 
 	<dependencies>
+		<!-- provided scope -->
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-core</artifactId>
+			<version>3.5.2</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-plugin-api</artifactId>
+			<version>3.5.2</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.maven.plugin-tools</groupId>
+			<artifactId>maven-plugin-annotations</artifactId>
+			<version>3.4</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<!-- hivemall dependencies -->
 		<dependency>
 			<groupId>org.apache.hivemall</groupId>
@@ -56,10 +77,15 @@
 		</dependency>
 
 		<!-- compile scope -->
-		<!-- hive-exec dependency with compile scope enables us to run the main class in IntelliJ -->
 		<dependency>
 			<groupId>org.apache.hive</groupId>
 			<artifactId>hive-exec</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -74,99 +100,20 @@
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<configuration>
-					<archive>
-						<manifest>
-							<mainClass>hivemall.docs.HivemallDocs</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
+				<artifactId>maven-plugin-plugin</artifactId>
+				<version>3.4</version>
 				<executions>
 					<execution>
-						<id>jar-with-dependencies</id>
-						<phase>package</phase>
+						<id>default-descriptor</id>
+						<phase>process-classes</phase>
+					</execution>
+					<execution>
+						<id>generate-helpmojo</id>
 						<goals>
-							<goal>shade</goal>
+							<goal>helpmojo</goal>
 						</goals>
 					</execution>
 				</executions>
-				<configuration>
-					<finalName>${project.artifactId}-${project.version}-with-dependencies</finalName>
-					<outputDirectory>${main.basedir}/target</outputDirectory>
-					<minimizeJar>false</minimizeJar>
-					<createDependencyReducedPom>false</createDependencyReducedPom>
-					<createSourcesJar>false</createSourcesJar>
-					<artifactSet>
-						<includes>
-							<include>org.apache.hivemall:hivemall-spark-common</include>
-							<!-- hivemall-core -->
-							<include>org.apache.hivemall:hivemall-core</include>
-							<include>io.netty:netty-all</include>
-							<include>com.github.haifengl:smile-core</include>
-							<include>com.github.haifengl:smile-math</include>
-							<include>com.github.haifengl:smile-data</include>
-							<include>org.tukaani:xz</include>
-							<include>org.apache.commons:commons-math3</include>
-							<include>org.roaringbitmap:RoaringBitmap</include>
-							<include>it.unimi.dsi:fastutil</include>
-							<include>com.clearspring.analytics:stream</include>
-							<!-- hivemall-nlp -->
-							<include>org.apache.hivemall:hivemall-nlp</include>
-							<include>org.apache.lucene:lucene-analyzers-kuromoji</include>
-							<include>org.apache.lucene:lucene-analyzers-smartcn</include>
-							<include>org.apache.lucene:lucene-analyzers-common</include>
-							<include>org.apache.lucene:lucene-core</include>
-							<!-- hivemall-xgboost -->
-							<include>org.apache.hivemall:hivemall-xgboost</include>
-							<include>io.github.myui:xgboost4j</include>
-							<include>com.esotericsoftware.kryo:kryo</include>
-							<!-- reflections -->
-							<include>org.apache.hive:hive-exec</include>
-							<include>org.javassist:javassist</include>
-							<include>org.reflections:reflections</include>
-						</includes>
-					</artifactSet>
-					<transformers>
-						<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-							<manifestEntries>
-								<Implementation-Title>${project.name}</Implementation-Title>
-								<Implementation-Version>${project.version}</Implementation-Version>
-								<Implementation-Vendor>${project.organization.name}</Implementation-Vendor>
-							</manifestEntries>
-						</transformer>
-					</transformers>
-					<filters>
-						<filter>
-							<artifact>org.apache.lucene:*</artifact>
-							<includes>
-								<include>**</include>
-							</includes>
-						</filter>
-						<filter>
-							<artifact>com.esotericsoftware.kryo:kryo</artifact>
-							<includes>
-								<include>**</include>
-							</includes>
-						</filter>
-						<filter>
-							<artifact>*:*</artifact>
-							<excludes>
-								<exclude>META-INF/LICENSE.txt</exclude>
-								<exclude>META-INF/NOTICE.txt</exclude>
-								<exclude>META-INF/*.SF</exclude>
-								<exclude>META-INF/*.DSA</exclude>
-								<exclude>META-INF/*.RSA</exclude>
-								<exclude>*.jar</exclude>
-								<exclude>tracker.py</exclude>
-							</excludes>
-						</filter>
-					</filters>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
