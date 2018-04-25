@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.Arrays;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -159,6 +160,21 @@ public class LDAUDTFTest {
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `アボカド` SHOULD be more suitable topic word than `健康` in the topic",
             udtf.getWordScore("アボカド", k2) > udtf.getWordScore("健康", k2));
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            LDAUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-topics 2 -num_docs 2 -s 1 -iter 32 -eps 1e-3")},
+            new Object[][] {
+                    {Arrays.asList("fruits:1", "healthy:1", "vegetables:1")},
+                    {Arrays.asList("apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
+                        "oranges:1")}});
     }
 
     private static void println(String msg) {

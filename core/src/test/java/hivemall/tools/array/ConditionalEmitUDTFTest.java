@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -65,4 +66,15 @@ public class ConditionalEmitUDTFTest {
         udtf.close();
     }
 
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            ConditionalEmitUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaBooleanObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector)},
+            new Object[][] {
+                    {Arrays.asList(true, false, true), Arrays.asList("one", "two", "three")},
+                    {Arrays.asList(true, true, false), Arrays.asList("one", "two", "three")}});
+    }
 }

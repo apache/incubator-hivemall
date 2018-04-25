@@ -72,13 +72,10 @@ public final class KuromojiUDF extends GenericUDF {
     private static final int READ_TIMEOUT_MS = 60000; // 60 sec
     private static final long MAX_INPUT_STREAM_SIZE = 32L * 1024L * 1024L; // ~32MB
 
-    private Mode _mode;
-
-    // lazy instantiation to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.lang.NullPointerException
-    private transient CharArraySet _stopWords;
-
-    private Set<String> _stopTags;
-    private UserDictionary _userDict;
+    private String _modeString;
+    private String[] _stopWordsArray;
+    private String[] _stopTagsArray;
+    private Object _userDictObj;
 
     // workaround to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.util.ConcurrentModificationException
     private transient JapaneseAnalyzer _analyzer;
@@ -91,12 +88,29 @@ public final class KuromojiUDF extends GenericUDF {
                     + arglen);
         }
 
-        this._mode = (arglen >= 2) ? tokenizationMode(arguments[1]) : Mode.NORMAL;
-        this._stopWords = (arglen >= 3) ? stopWords(arguments[2])
-                : JapaneseAnalyzer.getDefaultStopSet();
-        this._stopTags = (arglen >= 4) ? stopTags(arguments[3])
-                : JapaneseAnalyzer.getDefaultStopTags();
-        this._userDict = (arglen >= 5) ? userDictionary(arguments[4]) : null;
+        this._modeString = (arglen >= 2) ? HiveUtils.getConstString(arguments[1]) : "NORMAL";
+
+        this._stopWordsArray = null;
+        if (arglen >= 3 && !HiveUtils.isVoidOI(arguments[2])) {
+            this._stopWordsArray = HiveUtils.getConstStringArray(arguments[2]);
+        }
+
+        this._stopTagsArray = null;
+        if (arglen >= 4 && !HiveUtils.isVoidOI(arguments[3])) {
+            this._stopTagsArray = HiveUtils.getConstStringArray(arguments[3]);
+        }
+
+        this._userDictObj = null;
+        if (arglen >= 5) {
+            if (HiveUtils.isConstListOI(arguments[4])) {
+                this._userDictObj = HiveUtils.getConstStringArray(arguments[4]);
+            } else if (HiveUtils.isConstString(arguments[4])) {
+                this._userDictObj = HiveUtils.getConstString(arguments[4]);
+            } else {
+                throw new UDFArgumentException(
+                    "User dictionary MUST be given as an array of constant string or constant string (URL)");
+            }
+        }
 
         this._analyzer = null;
 
@@ -106,7 +120,18 @@ public final class KuromojiUDF extends GenericUDF {
     @Override
     public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
         if (_analyzer == null) {
-            this._analyzer = new JapaneseAnalyzer(_userDict, _mode, _stopWords, _stopTags);
+            Mode mode = tokenizationMode(_modeString);
+            CharArraySet stopWords = stopWords(_stopWordsArray);
+            Set<String> stopTags = stopTags(_stopTagsArray);
+
+            UserDictionary userDict = null;
+            if (_userDictObj instanceof String[]) {
+                userDict = userDictionary((String[]) _userDictObj);
+            } else if (_userDictObj instanceof String) {
+                userDict = userDictionary((String) _userDictObj);
+            }
+
+            this._analyzer = new JapaneseAnalyzer(userDict, mode, stopWords, stopTags);
         }
 
         Object arg0 = arguments[0].get();
@@ -137,9 +162,7 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static Mode tokenizationMode(@Nonnull final ObjectInspector oi)
-            throws UDFArgumentException {
-        final String arg = HiveUtils.getConstString(oi);
+    private static Mode tokenizationMode(@Nullable final String arg) throws UDFArgumentException {
         if (arg == null) {
             return Mode.NORMAL;
         }
@@ -160,12 +183,8 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static CharArraySet stopWords(@Nonnull final ObjectInspector oi)
+    private static CharArraySet stopWords(@Nullable final String[] array)
             throws UDFArgumentException {
-        if (HiveUtils.isVoidOI(oi)) {
-            return JapaneseAnalyzer.getDefaultStopSet();
-        }
-        final String[] array = HiveUtils.getConstStringArray(oi);
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopSet();
         }
@@ -177,12 +196,7 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static Set<String> stopTags(@Nonnull final ObjectInspector oi)
-            throws UDFArgumentException {
-        if (HiveUtils.isVoidOI(oi)) {
-            return JapaneseAnalyzer.getDefaultStopTags();
-        }
-        final String[] array = HiveUtils.getConstStringArray(oi);
+    private static Set<String> stopTags(@Nullable final String[] array) throws UDFArgumentException {
         if (array == null) {
             return JapaneseAnalyzer.getDefaultStopTags();
         }
@@ -198,19 +212,6 @@ public final class KuromojiUDF extends GenericUDF {
             }
         }
         return results;
-    }
-
-    @Nullable
-    private static UserDictionary userDictionary(@Nonnull final ObjectInspector oi)
-            throws UDFArgumentException {
-        if (HiveUtils.isConstListOI(oi)) {
-            return userDictionary(HiveUtils.getConstStringArray(oi));
-        } else if (HiveUtils.isConstString(oi)) {
-            return userDictionary(HiveUtils.getConstString(oi));
-        } else {
-            throw new UDFArgumentException(
-                "User dictionary MUST be given as an array of constant string or constant string (URL)");
-        }
     }
 
     @Nullable

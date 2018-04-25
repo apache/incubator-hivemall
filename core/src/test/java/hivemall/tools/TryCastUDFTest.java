@@ -18,15 +18,18 @@
  */
 package hivemall.tools;
 
+import hivemall.TestUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hadoop.io.Text;
@@ -53,6 +56,17 @@ public class TryCastUDFTest {
         Assert.assertEquals(WritableUtils.val("0.1", "1.1", "2.1"), result);
 
         udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(
+            TryCastUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "array<string>")},
+            new Object[] {Arrays.asList(1.d, 2.d, 3.d)});
     }
 
 }

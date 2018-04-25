@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
@@ -109,5 +110,18 @@ public class ArraySliceUDFTest {
 
         udf.close();
 
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(
+            ArraySliceUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[] {
+                    Arrays.asList("zero", "one", "two", "three", "four", "five", "six", "seven",
+                        "eight", "nine", "ten"), 2, 5});
     }
 }

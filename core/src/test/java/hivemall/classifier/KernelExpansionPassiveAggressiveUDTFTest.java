@@ -18,6 +18,7 @@
  */
 package hivemall.classifier;
 
+import hivemall.TestUtils;
 import hivemall.model.FeatureValue;
 import hivemall.utils.math.MathUtils;
 
@@ -27,6 +28,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
@@ -144,6 +146,16 @@ public class KernelExpansionPassiveAggressiveUDTFTest {
 
         float accuracy = numCorrect / (float) numTests;
         Assert.assertTrue(accuracy > 0.82f);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            KernelExpansionPassiveAggressiveUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
+                    Arrays.asList("1:-2", "2:-1"), 0}});
     }
 
     @Nonnull

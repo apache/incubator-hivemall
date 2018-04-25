@@ -21,6 +21,8 @@ package hivemall.nlp.tokenizer;
 import java.io.IOException;
 import java.util.List;
 
+import hivemall.TestUtils;
+
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
@@ -76,6 +78,35 @@ public class SmartcnUDFTest {
         };
         List<Text> tokens = udf.evaluate(args);
         Assert.assertNotNull(tokens);
+        udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws IOException, HiveException {
+        final SmartcnUDF udf = new SmartcnUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[1];
+        argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        udf.initialize(argOIs);
+
+        // serialization after initialization
+        byte[] serialized = TestUtils.serializeObjectByKryo(udf);
+        TestUtils.deserializeObjectByKryo(serialized, SmartcnUDF.class);
+
+        DeferredObject[] args = new DeferredObject[1];
+        args[0] = new DeferredObject() {
+            public Text get() throws HiveException {
+                return new Text("Smartcn为Apache2.0协议的开源中文分词系统，Java语言编写，修改的中科院计算所ICTCLAS分词系统。");
+            }
+
+            @Override
+            public void prepare(int arg) throws HiveException {}
+        };
+        List<Text> tokens = udf.evaluate(args);
+
+        // serialization after evaluation
+        serialized = TestUtils.serializeObjectByKryo(udf);
+        TestUtils.deserializeObjectByKryo(serialized, SmartcnUDF.class);
+
         udf.close();
     }
 }

@@ -18,10 +18,19 @@
  */
 package hivemall.ftvec.hashing;
 
+import hivemall.TestUtils;
 import hivemall.utils.hashing.MurmurHash3;
 
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 public class FeatureHashingUDFTest {
 
@@ -39,6 +48,17 @@ public class FeatureHashingUDFTest {
         actual = FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES);
         Assert.assertEquals(
             FeatureHashingUDF.mhash("0", MurmurHash3.DEFAULT_NUM_FEATURES) + ":1.1", actual);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(
+            FeatureHashingUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-features 1")},
+            new Object[] {Arrays.asList("aaa#xxx", "bbb:10")});
     }
 
 }

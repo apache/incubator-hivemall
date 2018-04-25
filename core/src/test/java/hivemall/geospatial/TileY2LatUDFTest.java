@@ -20,6 +20,7 @@ package hivemall.geospatial;
 
 import java.io.IOException;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
@@ -43,6 +44,13 @@ public class TileY2LatUDFTest {
         Assert.assertEquals(83.99996604d, result.get(), 0.001);
 
         udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(TileY2LatUDF.class, new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[] {503, 14});
     }
 
 }

@@ -24,6 +24,8 @@ import static org.mockito.Mockito.times;
 import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.verifyPrivate;
+
+import hivemall.TestUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
 import java.util.Arrays;
@@ -103,5 +105,18 @@ public class TestBinarizeLabelUDTF {
         udtf.process(arguments);
 
         verifyPrivate(udtf, times(0)).invoke("forward", any(Object[].class));
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        final List<String> featureNames = Arrays.asList("positive", "negative", "features");
+        TestUtils.testGenericUDTFSerialization(
+            BinarizeLabelUDTF.class,
+            new ObjectInspector[] {
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    ObjectInspectorFactory.getStandardConstantListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, featureNames)},
+            new Object[][] {{new Integer(0), new Integer(0), WritableUtils.val("a:1", "b:2")}});
     }
 }

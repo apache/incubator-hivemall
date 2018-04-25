@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
@@ -63,6 +64,17 @@ public class MovingAverageUDTFTest {
         udtf.process(new Object[] {7.f, null});
 
         Assert.assertEquals(Arrays.asList(1.d, 1.5d, 2.d, 3.d, 4.d, 5.d, 6.d), results);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            MovingAverageUDTF.class,
+            new ObjectInspector[] {
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector, 3)},
+            new Object[][] { {1.f}, {2.f}, {3.f}, {4.f}, {5.f}});
     }
 
 }

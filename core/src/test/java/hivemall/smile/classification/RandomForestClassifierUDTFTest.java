@@ -18,6 +18,7 @@
  */
 package hivemall.smile.classification;
 
+import hivemall.TestUtils;
 import hivemall.classifier.KernelExpansionPassiveAggressiveUDTF;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.lang.mutable.MutableInt;
@@ -360,6 +361,40 @@ public class RandomForestClassifierUDTFTest {
         Assert.assertTrue("oob error rate is too high: " + oobErrorRate, oobErrorRate < 0.3);
     }
 
+    @Test
+    public void testSerialization() throws HiveException, IOException, ParseException {
+        URL url = new URL(
+            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(4);
+
+        AttributeDataset iris = arffParser.parse(is);
+        int size = iris.size();
+        double[][] x = iris.toArray(new double[size][]);
+        int[] y = iris.toArray(new int[size]);
+
+        final Object[][] rows = new Object[size][2];
+        for (int i = 0; i < size; i++) {
+            double[] row = x[i];
+            final List<String> xi = new ArrayList<String>(x[0].length);
+            for (int j = 0; j < row.length; j++) {
+                xi.add(j + ":" + row[j]);
+            }
+            rows[i][0] = xi;
+            rows[i][1] = y[i];
+        }
+
+        TestUtils.testGenericUDTFSerialization(
+            RandomForestClassifierUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 49")},
+            rows);
+    }
 
     @Nonnull
     private static BufferedReader readFile(@Nonnull String fileName) throws IOException {

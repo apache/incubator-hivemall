@@ -18,7 +18,9 @@
  */
 package hivemall.ftvec;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
@@ -28,6 +30,8 @@ import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 public class FeatureUDFTest {
     FeatureUDF udf = null;
@@ -225,4 +229,13 @@ public class FeatureUDFTest {
         Assert.assertNull(ret);
 
     }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(FeatureUDF.class, new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector}, new Object[] {"f1",
+                2.5d});
+    }
+
 }

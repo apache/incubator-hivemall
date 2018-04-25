@@ -20,6 +20,7 @@ package hivemall.geospatial;
 
 import java.io.IOException;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
@@ -100,6 +101,25 @@ public class HaversineDistanceUDFTest {
         Assert.assertEquals(249.84d, result1.get(), 0.1d);
 
         udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        // Tokyo
+        double lat1 = 35.6833d, lon1 = 139.7667d;
+        // Osaka
+        double lat2 = 34.6603d, lon2 = 135.5232d;
+
+        TestUtils.testGenericUDFSerialization(
+            HaversineDistanceUDF.class,
+            new ObjectInspector[] {
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)},
+            new Object[] {lat1, lon1, lat2, lon2, true});
     }
 
 }

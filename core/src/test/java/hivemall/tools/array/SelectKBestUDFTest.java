@@ -21,6 +21,7 @@ package hivemall.tools.array;
 import hivemall.TestUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -70,17 +71,22 @@ public class SelectKBestUDFTest {
     }
 
     @Test
-    public void testSerialization() throws HiveException {
-        final SelectKBestUDF selectKBest = new SelectKBestUDF();
+    public void testSerialization() throws HiveException, IOException {
         final int k = 2;
-        selectKBest.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector, k)});
+        final double[] data = new double[] {250.29999999999998, 170.90000000000003, 73.2,
+                12.199999999999996};
+        final double[] importanceList = new double[] {292.1666753739119, 152.70000455081467,
+                187.93333893418327, 59.93333511948589};
 
-        byte[] serialized = TestUtils.serializeObjectByKryo(selectKBest);
-        TestUtils.deserializeObjectByKryo(serialized, SelectKBestUDF.class);
+        TestUtils.testGenericUDFSerialization(
+            SelectKBestUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector, k)},
+            new Object[] {WritableUtils.toWritableList(data),
+                    WritableUtils.toWritableList(importanceList), k});
     }
 
 }

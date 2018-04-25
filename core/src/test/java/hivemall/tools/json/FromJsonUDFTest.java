@@ -18,11 +18,14 @@
  */
 package hivemall.tools.json;
 
+import hivemall.TestUtils;
 import hivemall.utils.hadoop.HiveUtils;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -78,5 +81,13 @@ public class FromJsonUDFTest {
         Assert.assertEquals(37, result.get(1));
 
         udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(FromJsonUDF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    HiveUtils.getConstStringObjectInspector("array<double>")},
+            new Object[] {"[0.1,1.1,2.2]"});
     }
 }

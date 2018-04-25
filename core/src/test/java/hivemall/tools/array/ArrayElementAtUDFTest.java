@@ -18,9 +18,11 @@
  */
 package hivemall.tools.array;
 
+import hivemall.TestUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
@@ -76,6 +78,16 @@ public class ArrayElementAtUDFTest {
         Assert.assertEquals(WritableUtils.val("s1"), udf.evaluate(args));
 
         udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(
+            ArrayElementAtUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[] {Arrays.asList(0.d, 1.d, 2.d), 1});
     }
 
 }
