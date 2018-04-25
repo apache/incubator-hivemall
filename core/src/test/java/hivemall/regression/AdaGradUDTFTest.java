@@ -20,13 +20,17 @@ package hivemall.regression;
 
 import static org.junit.Assert.assertEquals;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 public class AdaGradUDTFTest {
 
@@ -56,5 +60,15 @@ public class AdaGradUDTFTest {
         StructObjectInspector longListSOI = udtf.initialize(new ObjectInspector[] {longListOI,
                 labelOI});
         assertEquals("struct<feature:bigint,weight:float>", longListSOI.getTypeName());
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            AdaGradUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector}, new Object[][] {{
+                    Arrays.asList("1:-2", "2:-1"), 1.f}});
     }
 }

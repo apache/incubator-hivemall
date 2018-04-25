@@ -18,6 +18,7 @@
  */
 package hivemall.mf;
 
+import hivemall.TestUtils;
 import hivemall.utils.lang.StringUtils;
 
 import java.io.BufferedReader;
@@ -109,6 +110,19 @@ public class BPRMatrixFactorizationUDTFTest {
         bpr.close();
         int finishedIter = bpr.cvState.getCurrentIteration();
         Assert.assertTrue("finishedIter: " + finishedIter, finishedIter < iterations);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            BPRMatrixFactorizationUDTF.class,
+            new ObjectInspector[] {
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-factor 10 -iter 1")}, new Object[][] {{0, 0, 1}});
     }
 
     @Nonnull

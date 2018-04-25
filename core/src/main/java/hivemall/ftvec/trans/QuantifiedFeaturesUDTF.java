@@ -48,8 +48,7 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
     private Identifier<String>[] identifiers;
     private DoubleWritable[] columnValues;
 
-    // lazy instantiation to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.lang.NullPointerException
-    private transient Object[] forwardObjs;
+    private Object[] forwardObjs;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -63,19 +62,20 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
 
         int outputSize = size - 1;
         this.doubleOIs = new PrimitiveObjectInspector[outputSize];
-        this.columnValues = new DoubleWritable[outputSize];
         this.identifiers = new Identifier[outputSize];
-        this.forwardObjs = null;
+        this.columnValues = new DoubleWritable[outputSize];
 
         for (int i = 0; i < outputSize; i++) {
-            columnValues[i] = new DoubleWritable(Double.NaN);
             ObjectInspector argOI = argOIs[i + 1];
             if (HiveUtils.isNumberOI(argOI)) {
                 doubleOIs[i] = HiveUtils.asDoubleCompatibleOI(argOI);
             } else {
                 identifiers[i] = new Identifier<String>();
             }
+            columnValues[i] = new DoubleWritable(Double.NaN);
         }
+
+        this.forwardObjs = null;
 
         List<String> fieldNames = new ArrayList<String>(outputSize);
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(outputSize);
@@ -87,32 +87,37 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (forwardObjs == null) {
-            this.forwardObjs = new Object[] {Arrays.asList(columnValues)};
-        }
-
+        int outputSize = args.length - 1;
         boolean outputRow = boolOI.get(args[0]);
         if (outputRow) {
-            final DoubleWritable[] values = this.columnValues;
-            for (int i = 0, outputSize = args.length - 1; i < outputSize; i++) {
+            if (forwardObjs == null) {
+                // forwardObjs internally references columnValues
+                List<DoubleWritable> column = new ArrayList<>(outputSize);
+                this.forwardObjs = new Object[] {column};
+                for (int i = 0; i < outputSize; i++) {
+                    column.add(columnValues[i]);
+                }
+            }
+            // updating columnValues simultaneously changes forwardObjs
+            for (int i = 0; i < outputSize; i++) {
                 Object arg = args[i + 1];
                 Identifier<String> identifier = identifiers[i];
                 if (identifier == null) {
                     double v = PrimitiveObjectInspectorUtils.getDouble(arg, doubleOIs[i]);
-                    values[i].set(v);
+                    columnValues[i].set(v);
                 } else {
                     if (arg == null) {
                         throw new HiveException("Found Null in the input: " + Arrays.toString(args));
                     } else {
                         String k = arg.toString();
                         int id = identifier.valueOf(k);
-                        values[i].set(id);
+                        columnValues[i].set(id);
                     }
                 }
             }
             forward(forwardObjs);
         } else {// load only
-            for (int i = 0, outputSize = args.length - 1; i < outputSize; i++) {
+            for (int i = 0; i < outputSize; i++) {
                 Identifier<String> identifier = identifiers[i];
                 if (identifier != null) {
                     Object arg = args[i + 1];

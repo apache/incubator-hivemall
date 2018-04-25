@@ -28,6 +28,7 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
@@ -165,7 +166,7 @@ public class GeneralRegressorUDTFTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testIlleagalStringFeature() throws Exception {
+    public void testIllegalStringFeature() throws Exception {
         List<String> x = Arrays.asList("1:-2jjjj", "2:-1");
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         testFeature(x, featureOI, String.class, String.class);
@@ -321,6 +322,19 @@ public class GeneralRegressorUDTFTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            GeneralRegressorUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-loss SquaredLoss")},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 10.f}});
     }
 
     private static void println(String msg) {

@@ -18,9 +18,15 @@
  */
 package hivemall.knn.distance;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import hivemall.TestUtils;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,6 +46,16 @@ public class EuclidDistanceUDFTest {
         List<String> ftvec2 = Arrays.asList("1:2.0", "3:6.0");
         double d = EuclidDistanceUDF.euclidDistance(ftvec1, ftvec2);
         Assert.assertEquals(Math.sqrt(1.0 + 9.0 + 9.0), d, 0.f);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(
+            EuclidDistanceUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector)},
+            new Object[] {Arrays.asList("1:1.0", "2:3.0", "3:3.0"), Arrays.asList("1:2.0", "3:6.0")});
     }
 
 }

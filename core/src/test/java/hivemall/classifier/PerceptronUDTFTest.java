@@ -19,9 +19,12 @@
 package hivemall.classifier;
 
 import static org.junit.Assert.assertEquals;
+
+import hivemall.TestUtils;
 import hivemall.model.FeatureValue;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -29,6 +32,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 public class PerceptronUDTFTest {
 
@@ -117,5 +122,15 @@ public class PerceptronUDTFTest {
         assertEquals(1.f, udtf.model.get(word1.getFeature()).get(), 1e-5f);
         assertEquals(-1.f, udtf.model.get(word3.getFeature()).get(), 1e-5f);
         assertEquals(0.f, udtf.model.get(word4.getFeature()).get(), 1e-5f);
+    }
+
+    @Test
+    public void testSerialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            PerceptronUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
+                    Arrays.asList("1:-2", "2:-1"), 0}});
     }
 }

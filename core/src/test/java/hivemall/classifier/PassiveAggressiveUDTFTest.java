@@ -19,9 +19,12 @@
 package hivemall.classifier;
 
 import static org.junit.Assert.assertEquals;
+
+import hivemall.TestUtils;
 import hivemall.model.PredictionResult;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -219,6 +222,26 @@ public class PassiveAggressiveUDTFTest {
         PredictionResult margin2 = new PredictionResult(0.5f).squaredNorm(0.01f);
         float expectedLearningRate2 = 0.5660377f;
         assertEquals(expectedLearningRate2, udtf.eta(loss, margin2), 1e-5f);
+    }
+
+    @Test
+    public void testPA1Serialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            PassiveAggressiveUDTF.PA1.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
+                    Arrays.asList("1:-2", "2:-1"), 0}});
+    }
+
+    @Test
+    public void testPA2Serialization() throws HiveException {
+        TestUtils.testGenericUDTFSerialization(
+            PassiveAggressiveUDTF.PA2.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
+                    Arrays.asList("1:-2", "2:-1"), 0}});
     }
 
 }

@@ -18,9 +18,11 @@
  */
 package hivemall.tools.array;
 
+import hivemall.TestUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -85,7 +87,7 @@ public class ArrayAppendUDFTest {
         ArrayAppendUDF udf = new ArrayAppendUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(null),
@@ -96,6 +98,16 @@ public class ArrayAppendUDFTest {
         Assert.assertNull(result);
 
         udf.close();
+    }
+
+    @Test
+    public void testSerialization() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(
+            ArrayAppendUDF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector}, new Object[] {
+                    Arrays.asList(0.d, 1.d, 2.d), 3.d});
     }
 
 }
