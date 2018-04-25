@@ -40,7 +40,8 @@ import org.apache.hadoop.io.LongWritable;
 
 @Description(
         name = "to_bits",
-        value = "_FUNC_(int[] indexes) - Returns an bitset representation if the given indexes in long[]")
+        value = "_FUNC_(int[] indexes) - Returns an bitset representation if the given indexes in long[]",
+        extended = "select to_bits(array(1,2,3,128));\n" + "> [14,-9223372036854775808]")
 @UDFType(deterministic = true, stateful = false)
 public final class ToBitsUDF extends GenericUDF {
 
