@@ -41,20 +41,16 @@ public class ArrayUnionUDFTest {
         ArrayUnionUDF udf = new ArrayUnionUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
 
         DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(
-                    WritableUtils.toWritableList(new double[] {0, 1, 2})),
-                new GenericUDF.DeferredJavaObject(
-                    WritableUtils.toWritableList(new double[] {2, 3, 4})),
-                new GenericUDF.DeferredJavaObject(
-                    WritableUtils.toWritableList(new double[] {4, 5}))};
+                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {0, 1,
+                        2})),
+                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {2, 3,
+                        4})),
+                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {4, 5}))};
 
         List<Object> result = udf.evaluate(args);
 

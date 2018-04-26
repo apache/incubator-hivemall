@@ -51,8 +51,8 @@ public class MapKeyValuesUDFTest {
             input.put("k" + i, new DoubleWritable(i));
         }
 
-        GenericUDF.DeferredObject[] arguments =
-                new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(input)};
+        GenericUDF.DeferredObject[] arguments = new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(
+            input)};
 
         List<Object[]> actual = udf.evaluate(arguments);
 

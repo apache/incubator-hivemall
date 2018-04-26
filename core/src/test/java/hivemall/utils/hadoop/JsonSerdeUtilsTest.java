@@ -80,17 +80,18 @@ public class JsonSerdeUtilsTest {
     @Test
     public void testLooseJsonReadability() throws Exception {
         List<String> columnNames = Arrays.asList("s,k".split(","));
-        List<TypeInfo> columnTypes =
-                TypeInfoUtils.getTypeInfosFromTypeString("struct<a:int,b:string>,int");
+        List<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString("struct<a:int,b:string>,int");
 
-        Text jsonText1 = new Text("{ \"x\" : \"abc\" , "
-                + " \"t\" : { \"a\":\"1\", \"b\":\"2\", \"c\":[ { \"x\":2 , \"y\":3 } , { \"x\":3 , \"y\":2 }] } ,"
-                + "\"s\" : { \"a\" : 2 , \"b\" : \"blah\", \"c\": \"woo\" } }");
+        Text jsonText1 = new Text(
+            "{ \"x\" : \"abc\" , "
+                    + " \"t\" : { \"a\":\"1\", \"b\":\"2\", \"c\":[ { \"x\":2 , \"y\":3 } , { \"x\":3 , \"y\":2 }] } ,"
+                    + "\"s\" : { \"a\" : 2 , \"b\" : \"blah\", \"c\": \"woo\" } }");
 
-        Text jsonText2 = new Text("{ \"x\" : \"abc\" , "
-                + " \"t\" : { \"a\":\"1\", \"b\":\"2\", \"c\":[ { \"x\":2 , \"y\":3 } , { \"x\":3 , \"y\":2 }] } ,"
-                + "\"s\" : { \"a\" : 2 , \"b\" : \"blah\", \"c\": \"woo\" } , " + "\"k\" : 113 "
-                + "}");
+        Text jsonText2 = new Text(
+            "{ \"x\" : \"abc\" , "
+                    + " \"t\" : { \"a\":\"1\", \"b\":\"2\", \"c\":[ { \"x\":2 , \"y\":3 } , { \"x\":3 , \"y\":2 }] } ,"
+                    + "\"s\" : { \"a\" : 2 , \"b\" : \"blah\", \"c\": \"woo\" } , "
+                    + "\"k\" : 113 " + "}");
 
         List<Object> expected1 = Arrays.<Object>asList(Arrays.asList(2, "blah"), null);
         List<Object> expected2 = Arrays.<Object>asList(Arrays.asList(2, "blah"), 113);
@@ -104,8 +105,7 @@ public class JsonSerdeUtilsTest {
     @Test
     public void testMapValues() throws SerDeException {
         List<String> columnNames = Arrays.asList("a,b".split(","));
-        List<TypeInfo> columnTypes =
-                TypeInfoUtils.getTypeInfosFromTypeString("array<string>,map<string,int>");
+        List<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString("array<string>,map<string,int>");
 
         Text text1 = new Text("{ \"a\":[\"aaa\"],\"b\":{\"bbb\":1}} ");
         Text text2 = new Text("{\"a\":[\"yyy\"],\"b\":{\"zzz\":123}}");
@@ -193,22 +193,18 @@ public class JsonSerdeUtilsTest {
 
         DefaultHCatRecord r = new DefaultHCatRecord(rlist);
 
-        List<String> columnNames =
-                Arrays.asList("ti,si,i,bi,d,f,s,n,r,l,m,b,c1,bd,hc,hvc,dt,ts,bin".split(","));
-        List<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(
-            "tinyint,smallint,int,bigint,double,float,string,string,"
-                    + "struct<a:string,b:string>,array<int>,map<smallint,string>,boolean,"
-                    + "array<struct<i1:int,i2:struct<ii1:array<int>,ii2:map<string,struct<iii1:int>>>>>,"
-                    + "decimal(5,2),char(10),varchar(20),date,timestamp,binary");
+        List<String> columnNames = Arrays.asList("ti,si,i,bi,d,f,s,n,r,l,m,b,c1,bd,hc,hvc,dt,ts,bin".split(","));
+        List<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString("tinyint,smallint,int,bigint,double,float,string,string,"
+                + "struct<a:string,b:string>,array<int>,map<smallint,string>,boolean,"
+                + "array<struct<i1:int,i2:struct<ii1:array<int>,ii2:map<string,struct<iii1:int>>>>>,"
+                + "decimal(5,2),char(10),varchar(20),date,timestamp,binary");
 
-        StructTypeInfo rowTypeInfo =
-                (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
-        HCatRecordObjectInspector objInspector =
-                HCatRecordObjectInspectorFactory.getHCatRecordObjectInspector(rowTypeInfo);
+        StructTypeInfo rowTypeInfo = (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(
+            columnNames, columnTypes);
+        HCatRecordObjectInspector objInspector = HCatRecordObjectInspectorFactory.getHCatRecordObjectInspector(rowTypeInfo);
 
         Text serialized = JsonSerdeUtils.serialize(r, objInspector, columnNames);
-        List<Object> deserialized =
-                JsonSerdeUtils.deserialize(serialized, columnNames, columnTypes);
+        List<Object> deserialized = JsonSerdeUtils.deserialize(serialized, columnNames, columnTypes);
 
         assertRecordEquals(rlist, deserialized);
     }
@@ -240,22 +236,18 @@ public class JsonSerdeUtilsTest {
 
         DefaultHCatRecord r = new DefaultHCatRecord(nlist);
 
-        List<String> columnNames =
-                Arrays.asList("ti,si,i,bi,d,f,s,n,r,l,m,b,c1,bd,hc,hvc,dt,ts,bin".split(","));
-        List<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(
-            "tinyint,smallint,int,bigint,double,float,string,string,"
-                    + "struct<a:string,b:string>,array<int>,map<smallint,string>,boolean,"
-                    + "array<struct<i1:int,i2:struct<ii1:array<int>,ii2:map<string,struct<iii1:int>>>>>,"
-                    + "decimal(5,2),char(10),varchar(20),date,timestamp,binary");
+        List<String> columnNames = Arrays.asList("ti,si,i,bi,d,f,s,n,r,l,m,b,c1,bd,hc,hvc,dt,ts,bin".split(","));
+        List<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString("tinyint,smallint,int,bigint,double,float,string,string,"
+                + "struct<a:string,b:string>,array<int>,map<smallint,string>,boolean,"
+                + "array<struct<i1:int,i2:struct<ii1:array<int>,ii2:map<string,struct<iii1:int>>>>>,"
+                + "decimal(5,2),char(10),varchar(20),date,timestamp,binary");
 
-        StructTypeInfo rowTypeInfo =
-                (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
-        HCatRecordObjectInspector objInspector =
-                HCatRecordObjectInspectorFactory.getHCatRecordObjectInspector(rowTypeInfo);
+        StructTypeInfo rowTypeInfo = (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(
+            columnNames, columnTypes);
+        HCatRecordObjectInspector objInspector = HCatRecordObjectInspectorFactory.getHCatRecordObjectInspector(rowTypeInfo);
 
         Text serialized = JsonSerdeUtils.serialize(r, objInspector, columnNames);
-        List<Object> deserialized =
-                JsonSerdeUtils.deserialize(serialized, columnNames, columnTypes);
+        List<Object> deserialized = JsonSerdeUtils.deserialize(serialized, columnNames, columnTypes);
 
         assertRecordEquals(nlist, deserialized);
     }
@@ -266,8 +258,8 @@ public class JsonSerdeUtilsTest {
         TypeInfo type1 = TypeInfoUtils.getTypeInfoFromTypeString("struct<name:string,age:int>");
         List<Object> expected1 = Arrays.<Object>asList("makoto", 37);
 
-        List<Object> deserialized1 =
-                JsonSerdeUtils.deserialize(json1, Arrays.asList("person"), Arrays.asList(type1));
+        List<Object> deserialized1 = JsonSerdeUtils.deserialize(json1, Arrays.asList("person"),
+            Arrays.asList(type1));
 
         assertRecordEquals(expected1, deserialized1);
     }
@@ -337,15 +329,15 @@ public class JsonSerdeUtilsTest {
         int mySz = first.size();
         int urSz = second.size();
         if (mySz != urSz) {
-            throw new RuntimeException(
-                "#expected != #actual. #expected=" + mySz + ", #actual=" + urSz);
+            throw new RuntimeException("#expected != #actual. #expected=" + mySz + ", #actual="
+                    + urSz);
         } else {
             for (int i = 0; i < first.size(); i++) {
                 int c = DataType.compare(first.get(i), second.get(i));
                 if (c != 0) {
                     String msg = "first.get(" + i + "}='" + first.get(i) + "' second.get(" + i
-                            + ")='" + second.get(i) + "' compared as " + c + "\n" + "Types 1st/2nd="
-                            + DataType.findType(first.get(i)) + "/"
+                            + ")='" + second.get(i) + "' compared as " + c + "\n"
+                            + "Types 1st/2nd=" + DataType.findType(first.get(i)) + "/"
                             + DataType.findType(second.get(i)) + '\n' + "first='" + first.get(i)
                             + "' second='" + second.get(i) + "'";
                     if (first.get(i) instanceof Date) {

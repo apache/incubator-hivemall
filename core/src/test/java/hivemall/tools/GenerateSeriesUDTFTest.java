@@ -59,8 +59,8 @@ public class GenerateSeriesUDTFTest {
 
         udtf.process(new Object[] {new IntWritable(1), new IntWritable(3)});
 
-        List<IntWritable> expected =
-                Arrays.asList(new IntWritable(1), new IntWritable(2), new IntWritable(3));
+        List<IntWritable> expected = Arrays.asList(new IntWritable(1), new IntWritable(2),
+            new IntWritable(3));
         Assert.assertEquals(expected, actual);
     }
 
@@ -68,9 +68,9 @@ public class GenerateSeriesUDTFTest {
     public void testTwoIntArgs() throws HiveException {
         GenerateSeriesUDTF udtf = new GenerateSeriesUDTF();
 
-        udtf.initialize(
-            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.writableIntObjectInspector});
+        udtf.initialize(new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector});
 
         final List<IntWritable> actual = new ArrayList<>();
 
@@ -85,8 +85,8 @@ public class GenerateSeriesUDTFTest {
 
         udtf.process(new Object[] {1, new IntWritable(3)});
 
-        List<IntWritable> expected =
-                Arrays.asList(new IntWritable(1), new IntWritable(2), new IntWritable(3));
+        List<IntWritable> expected = Arrays.asList(new IntWritable(1), new IntWritable(2),
+            new IntWritable(3));
         Assert.assertEquals(expected, actual);
     }
 
@@ -94,9 +94,9 @@ public class GenerateSeriesUDTFTest {
     public void testTwoLongArgs() throws HiveException {
         GenerateSeriesUDTF udtf = new GenerateSeriesUDTF();
 
-        udtf.initialize(
-            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.writableLongObjectInspector});
+        udtf.initialize(new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector});
 
         final List<LongWritable> actual = new ArrayList<>();
 
@@ -111,8 +111,8 @@ public class GenerateSeriesUDTFTest {
 
         udtf.process(new Object[] {1, new LongWritable(3)});
 
-        List<LongWritable> expected =
-                Arrays.asList(new LongWritable(1), new LongWritable(2), new LongWritable(3));
+        List<LongWritable> expected = Arrays.asList(new LongWritable(1), new LongWritable(2),
+            new LongWritable(3));
         Assert.assertEquals(expected, actual);
     }
 
@@ -120,10 +120,10 @@ public class GenerateSeriesUDTFTest {
     public void testThreeIntArgs() throws HiveException {
         GenerateSeriesUDTF udtf = new GenerateSeriesUDTF();
 
-        udtf.initialize(
-            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.writableIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.javaLongObjectInspector});
+        udtf.initialize(new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector});
 
         final List<IntWritable> actual = new ArrayList<>();
 
@@ -138,8 +138,8 @@ public class GenerateSeriesUDTFTest {
 
         udtf.process(new Object[] {1, new IntWritable(7), 3L});
 
-        List<IntWritable> expected =
-                Arrays.asList(new IntWritable(1), new IntWritable(4), new IntWritable(7));
+        List<IntWritable> expected = Arrays.asList(new IntWritable(1), new IntWritable(4),
+            new IntWritable(7));
         Assert.assertEquals(expected, actual);
     }
 
@@ -147,10 +147,10 @@ public class GenerateSeriesUDTFTest {
     public void testThreeLongArgs() throws HiveException {
         GenerateSeriesUDTF udtf = new GenerateSeriesUDTF();
 
-        udtf.initialize(
-            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaLongObjectInspector,
-                    PrimitiveObjectInspectorFactory.writableLongObjectInspector,
-                    PrimitiveObjectInspectorFactory.javaLongObjectInspector});
+        udtf.initialize(new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector});
 
         final List<LongWritable> actual = new ArrayList<>();
 
@@ -165,8 +165,8 @@ public class GenerateSeriesUDTFTest {
 
         udtf.process(new Object[] {1L, new LongWritable(7), 3L});
 
-        List<LongWritable> expected =
-                Arrays.asList(new LongWritable(1), new LongWritable(4), new LongWritable(7));
+        List<LongWritable> expected = Arrays.asList(new LongWritable(1), new LongWritable(4),
+            new LongWritable(7));
         Assert.assertEquals(expected, actual);
     }
 
@@ -174,10 +174,10 @@ public class GenerateSeriesUDTFTest {
     public void testNegativeStepInt() throws HiveException {
         GenerateSeriesUDTF udtf = new GenerateSeriesUDTF();
 
-        udtf.initialize(
-            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.writableIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.javaLongObjectInspector});
+        udtf.initialize(new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector,
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector});
 
         final List<IntWritable> actual = new ArrayList<>();
 
@@ -192,8 +192,8 @@ public class GenerateSeriesUDTFTest {
 
         udtf.process(new Object[] {5, new IntWritable(1), -2L});
 
-        List<IntWritable> expected =
-                Arrays.asList(new IntWritable(5), new IntWritable(3), new IntWritable(1));
+        List<IntWritable> expected = Arrays.asList(new IntWritable(5), new IntWritable(3),
+            new IntWritable(1));
         Assert.assertEquals(expected, actual);
     }
 
@@ -201,10 +201,10 @@ public class GenerateSeriesUDTFTest {
     public void testNegativeStepLong() throws HiveException {
         GenerateSeriesUDTF udtf = new GenerateSeriesUDTF();
 
-        udtf.initialize(
-            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaLongObjectInspector,
-                    PrimitiveObjectInspectorFactory.writableIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector});
+        udtf.initialize(new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector,
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector});
 
         final List<LongWritable> actual = new ArrayList<>();
 
@@ -219,8 +219,8 @@ public class GenerateSeriesUDTFTest {
 
         udtf.process(new Object[] {5L, new IntWritable(1), -2});
 
-        List<LongWritable> expected =
-                Arrays.asList(new LongWritable(5), new LongWritable(3), new LongWritable(1));
+        List<LongWritable> expected = Arrays.asList(new LongWritable(5), new LongWritable(3),
+            new LongWritable(1));
         Assert.assertEquals(expected, actual);
     }
 
@@ -228,9 +228,9 @@ public class GenerateSeriesUDTFTest {
     public void testSerialization() throws HiveException {
         GenerateSeriesUDTF udtf = new GenerateSeriesUDTF();
 
-        udtf.initialize(
-            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                    PrimitiveObjectInspectorFactory.writableIntObjectInspector});
+        udtf.initialize(new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector});
 
         udtf.setCollector(new Collector() {
             @Override

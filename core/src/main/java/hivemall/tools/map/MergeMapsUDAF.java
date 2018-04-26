@@ -39,9 +39,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
-@Description(name = "merge_maps",
+@Description(
+        name = "merge_maps",
         value = "_FUNC_(x) - Returns a map which contains the union of an aggregation of maps."
-        + " Note that an existing value of a key can be replaced with the other duplicate key entry.",
+                + " Note that an existing value of a key can be replaced with the other duplicate key entry.",
         extended = "SELECT merge_maps(m) FROM ( "
                 + "SELECT map('A',10,'B',20,'C',30) UNION ALL SELECT map('A',10,'B',20,'C',30)) t")
 public final class MergeMapsUDAF extends AbstractGenericUDAFResolver {

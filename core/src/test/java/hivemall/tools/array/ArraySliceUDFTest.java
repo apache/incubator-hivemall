@@ -42,8 +42,7 @@ public class ArraySliceUDFTest {
         ArraySliceUDF udf = new ArraySliceUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.writableIntObjectInspector,
                 PrimitiveObjectInspectorFactory.writableIntObjectInspector});
 
@@ -53,11 +52,9 @@ public class ArraySliceUDFTest {
         DeferredObject arg2 = new GenericUDF.DeferredJavaObject(length);
         DeferredObject nullarg = new GenericUDF.DeferredJavaObject(null);
 
-        DeferredObject[] args =
-                new DeferredObject[] {
-                        new GenericUDF.DeferredJavaObject(Arrays.asList("zero", "one", "two",
-                            "three", "four", "five", "six", "seven", "eight", "nine", "ten")),
-                        arg1, arg2};
+        DeferredObject[] args = new DeferredObject[] {
+                new GenericUDF.DeferredJavaObject(Arrays.asList("zero", "one", "two", "three",
+                    "four", "five", "six", "seven", "eight", "nine", "ten")), arg1, arg2};
 
         offset.set(0);
         length.set(3);
@@ -93,8 +90,7 @@ public class ArraySliceUDFTest {
         ArraySliceUDF udf = new ArraySliceUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.writableIntObjectInspector,
                 PrimitiveObjectInspectorFactory.writableIntObjectInspector});
 
@@ -103,11 +99,9 @@ public class ArraySliceUDFTest {
         DeferredObject arg1 = new GenericUDF.DeferredJavaObject(offset);
         DeferredObject arg2 = new GenericUDF.DeferredJavaObject(length);
 
-        DeferredObject[] args =
-                new DeferredObject[] {
-                        new GenericUDF.DeferredJavaObject(Arrays.asList("zero", "one", "two",
-                            "three", "four", "five", "six", "seven", "eight", "nine", "ten")),
-                        arg1, arg2};
+        DeferredObject[] args = new DeferredObject[] {
+                new GenericUDF.DeferredJavaObject(Arrays.asList("zero", "one", "two", "three",
+                    "four", "five", "six", "seven", "eight", "nine", "ten")), arg1, arg2};
 
 
         offset.set(-12);

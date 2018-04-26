@@ -65,8 +65,7 @@ public final class MovingAverageUDTF extends GenericUDTF {
         this.forwardObjs = new Writable[] {result};
 
         List<String> fieldNames = Arrays.asList("avg");
-        List<ObjectInspector> fieldOIs = Arrays.<ObjectInspector>asList(
-            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+        List<ObjectInspector> fieldOIs = Arrays.<ObjectInspector>asList(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }

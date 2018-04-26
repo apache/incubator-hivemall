@@ -53,16 +53,14 @@ public final class ArrayAppendUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         this.listInspector = HiveUtils.asListOI(argOIs[0]);
-        this.listElemInspector =
-                HiveUtils.asPrimitiveObjectInspector(listInspector.getListElementObjectInspector());
+        this.listElemInspector = HiveUtils.asPrimitiveObjectInspector(listInspector.getListElementObjectInspector());
         this.primInspector = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
         if (listElemInspector.getPrimitiveCategory() != primInspector.getPrimitiveCategory()) {
             throw new UDFArgumentException(
                 "array_append expects the list type to match the type of the value being appended");
         }
         this.returnWritables = listElemInspector.preferWritable();
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            ObjectInspectorUtils.getStandardObjectInspector(listElemInspector));
+        return ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(listElemInspector));
     }
 
     @Nullable

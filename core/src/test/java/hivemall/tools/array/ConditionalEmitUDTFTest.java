@@ -39,10 +39,8 @@ public class ConditionalEmitUDTFTest {
         ConditionalEmitUDTF udtf = new ConditionalEmitUDTF();
 
         udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),});
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaBooleanObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),});
 
         final List<Object> actual = new ArrayList<>();
         udtf.setCollector(new Collector() {
@@ -54,15 +52,15 @@ public class ConditionalEmitUDTFTest {
             }
         });
 
-        udtf.process(
-            new Object[] {Arrays.asList(true, false, true), Arrays.asList("one", "two", "three")});
+        udtf.process(new Object[] {Arrays.asList(true, false, true),
+                Arrays.asList("one", "two", "three")});
 
         Assert.assertEquals(Arrays.asList("one", "three"), actual);
 
         actual.clear();
 
-        udtf.process(
-            new Object[] {Arrays.asList(true, true, false), Arrays.asList("one", "two", "three")});
+        udtf.process(new Object[] {Arrays.asList(true, true, false),
+                Arrays.asList("one", "two", "three")});
         Assert.assertEquals(Arrays.asList("one", "two"), actual);
 
         udtf.close();

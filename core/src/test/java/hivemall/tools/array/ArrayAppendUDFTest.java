@@ -91,7 +91,7 @@ public class ArrayAppendUDFTest {
 
         udf.initialize(new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(null),

@@ -43,7 +43,8 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hive.hcatalog.data.HCatRecordObjectInspectorFactory;
 
-@Description(name = "from_json",
+@Description(
+        name = "from_json",
         value = "_FUNC_(string jsonString, const string returnTypes [, const array<string>|const string columnNames])"
                 + " - Return Hive object.")
 @UDFType(deterministic = true, stateful = false)
@@ -58,8 +59,8 @@ public final class FromJsonUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(
-                "from_json takes two or three arguments: " + argOIs.length);
+            throw new UDFArgumentException("from_json takes two or three arguments: "
+                    + argOIs.length);
         }
 
         this.jsonOI = HiveUtils.asStringOI(argOIs[0]);
@@ -94,8 +95,7 @@ public final class FromJsonUDF extends GenericUDF {
         final int numColumns = columnTypes.size();
         if (numColumns == 1) {
             TypeInfo type = columnTypes.get(0);
-            returnOI =
-                    HCatRecordObjectInspectorFactory.getStandardObjectInspectorFromTypeInfo(type);
+            returnOI = HCatRecordObjectInspectorFactory.getStandardObjectInspectorFromTypeInfo(type);
         } else {
             if (columnNames == null) {
                 columnNames = new ArrayList<>(numColumns);
@@ -111,9 +111,7 @@ public final class FromJsonUDF extends GenericUDF {
             final ObjectInspector[] fieldOIs = new ObjectInspector[numColumns];
             for (int i = 0; i < fieldOIs.length; i++) {
                 TypeInfo type = columnTypes.get(i);
-                fieldOIs[i] =
-                        HCatRecordObjectInspectorFactory.getStandardObjectInspectorFromTypeInfo(
-                            type);
+                fieldOIs[i] = HCatRecordObjectInspectorFactory.getStandardObjectInspectorFromTypeInfo(type);
             }
             returnOI = ObjectInspectorFactory.getStandardStructObjectInspector(columnNames,
                 Arrays.asList(fieldOIs));
@@ -134,8 +132,7 @@ public final class FromJsonUDF extends GenericUDF {
             result = JsonSerdeUtils.deserialize(jsonString, columnNames, columnTypes);
         } catch (Throwable e) {
             throw new HiveException("Failed to deserialize Json: \n" + jsonString.toString() + '\n'
-                    + ExceptionUtils.prettyPrintStackTrace(e),
-                e);
+                    + ExceptionUtils.prettyPrintStackTrace(e), e);
         }
         return result;
     }

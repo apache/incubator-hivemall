@@ -40,9 +40,7 @@ public class ToJsonUDFTest {
     public void testDoubleArray() throws Exception {
         ToJsonUDF udf = new ToJsonUDF();
 
-        ObjectInspector[] argOIs =
-                new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)};
+        ObjectInspector[] argOIs = new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)};
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
             WritableUtils.toWritableList(new double[] {0.1, 1.1, 2.1}))};
 

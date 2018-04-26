@@ -37,8 +37,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 
-@Description(name = "map_key_values",
-        value = "_FUNC_(map) - " + "Returns a array of key-value pairs.")
+@Description(name = "map_key_values", value = "_FUNC_(map) - "
+        + "Returns a array of key-value pairs.")
 @UDFType(deterministic = true, stateful = false)
 public final class MapKeyValuesUDF extends GenericUDF {
 
@@ -49,13 +49,11 @@ public final class MapKeyValuesUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length != 1) {
-            throw new UDFArgumentLengthException(
-                "The function MAP_KEYS only accepts one argument.");
+            throw new UDFArgumentLengthException("The function MAP_KEYS only accepts one argument.");
         } else if (!(arguments[0] instanceof MapObjectInspector)) {
-            throw new UDFArgumentTypeException(0,
-                "\"" + Category.MAP.toString().toLowerCase()
-                        + "\" is expected at function MAP_KEYS, " + "but \""
-                        + arguments[0].getTypeName() + "\" is found");
+            throw new UDFArgumentTypeException(0, "\"" + Category.MAP.toString().toLowerCase()
+                    + "\" is expected at function MAP_KEYS, " + "but \""
+                    + arguments[0].getTypeName() + "\" is found");
         }
 
         this.mapOI = (MapObjectInspector) arguments[0];
@@ -67,9 +65,8 @@ public final class MapKeyValuesUDF extends GenericUDF {
         structFieldNames.add("value");
         structFieldObjectInspectors.add(mapOI.getMapValueObjectInspector());
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            ObjectInspectorFactory.getStandardStructObjectInspector(structFieldNames,
-                structFieldObjectInspectors));
+        return ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardStructObjectInspector(
+            structFieldNames, structFieldObjectInspectors));
     }
 
     @Override

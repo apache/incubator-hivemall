@@ -44,8 +44,7 @@ public class TryCastUDFTest {
         TryCastUDF udf = new TryCastUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
                     TypeInfoFactory.stringTypeInfo, new Text("array<string>"))});
 
