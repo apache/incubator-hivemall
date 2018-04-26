@@ -32,4 +32,23 @@ fi
 cd $HIVEMALL_HOME
 HIVEMALL_HOME=`pwd`
 
-mvn formatter:format
+mvn clean
+
+# workaround for muti-module projects
+# https://github.com/revelc/formatter-maven-plugin/issues/261
+# mvn formatter:format
+
+projects=(
+  core
+  nlp
+  xgboost
+  mixserv
+  spark/common
+  tools/hivemall-docs
+)
+
+for pl in ${projects[@]}; do
+  echo "Start formatting ${pl} .."
+  mvn -pl ${pl} formatter:format
+  echo
+done
