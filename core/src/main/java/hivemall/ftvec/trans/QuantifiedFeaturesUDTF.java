@@ -48,7 +48,8 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
     private Identifier<String>[] identifiers;
     private DoubleWritable[] columnValues;
 
-    private Object[] forwardObjs;
+    // lazy instantiation to avoid org.apache.hive.com.esotericsoftware.kryo.KryoException: java.lang.NullPointerException
+    private transient Object[] forwardObjs;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -87,37 +88,32 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        int outputSize = args.length - 1;
         boolean outputRow = boolOI.get(args[0]);
         if (outputRow) {
+            final DoubleWritable[] values = this.columnValues;
             if (forwardObjs == null) {
-                // forwardObjs internally references columnValues
-                List<DoubleWritable> column = new ArrayList<>(outputSize);
-                this.forwardObjs = new Object[] {column};
-                for (int i = 0; i < outputSize; i++) {
-                    column.add(columnValues[i]);
-                }
+                this.forwardObjs = new Object[] {Arrays.asList(values)};
             }
             // updating columnValues simultaneously changes forwardObjs
-            for (int i = 0; i < outputSize; i++) {
+            for (int i = 0, outputSize = args.length - 1; i < outputSize; i++) {
                 Object arg = args[i + 1];
                 Identifier<String> identifier = identifiers[i];
                 if (identifier == null) {
                     double v = PrimitiveObjectInspectorUtils.getDouble(arg, doubleOIs[i]);
-                    columnValues[i].set(v);
+                    values[i].set(v);
                 } else {
                     if (arg == null) {
                         throw new HiveException("Found Null in the input: " + Arrays.toString(args));
                     } else {
                         String k = arg.toString();
                         int id = identifier.valueOf(k);
-                        columnValues[i].set(id);
+                        values[i].set(id);
                     }
                 }
             }
             forward(forwardObjs);
         } else {// load only
-            for (int i = 0; i < outputSize; i++) {
+            for (int i = 0, outputSize = args.length - 1; i < outputSize; i++) {
                 Identifier<String> identifier = identifiers[i];
                 if (identifier != null) {
                     Object arg = args[i + 1];

@@ -18,11 +18,11 @@
  */
 package hivemall.nlp.tokenizer;
 
+import hivemall.TestUtils;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import hivemall.TestUtils;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -395,6 +395,7 @@ public class KuromojiUDFTest {
             public void prepare(int arg) throws HiveException {}
         };
         List<Text> tokens = udf.evaluate(args);
+        Assert.assertNotNull(tokens);
 
         // serialization after evaluation
         serialized = TestUtils.serializeObjectByKryo(udf);

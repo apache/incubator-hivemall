@@ -66,6 +66,7 @@ public final class TestUtils {
         udf.close();
     }
 
+    @SuppressWarnings("deprecation")
     public static <T extends GenericUDTF> void testGenericUDTFSerialization(
             @Nonnull Class<T> clazz, @Nonnull ObjectInspector[] ois, @Nonnull Object[][] rows)
             throws HiveException {

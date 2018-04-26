@@ -49,6 +49,7 @@ public class QuantifiedFeaturesUDTFTest {
         udtf.setCollector(new Collector() {
             public void collect(Object input) throws HiveException {
                 Object[] row = (Object[]) input;
+                @SuppressWarnings("unchecked")
                 List<DoubleWritable> column = (List<DoubleWritable>) row[0];
                 List<Double> quantifiedInput = new ArrayList<>();
                 for (DoubleWritable elem : column) {
