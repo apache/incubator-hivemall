@@ -42,7 +42,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({BinarizeLabelUDTF.class})
-public class TestBinarizeLabelUDTF {
+public class BinarizeLabelUDTFTest {
 
     // ignored to avoid
     // org.apache.hadoop.hive.shims.ShimLoader.getMajorVersion(ShimLoader.java:141) ExceptionInInitializerError
