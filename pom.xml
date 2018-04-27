@@ -463,15 +463,21 @@
 					<artifactId>maven-enforcer-plugin</artifactId>
 					<version>3.0.0-M1</version>
 				</plugin>
+				<!-- mvn spotless:apply -->
 				<plugin>
-					<!-- mvn formatter:format -->
-					<groupId>net.revelc.code</groupId>
-					<artifactId>formatter-maven-plugin</artifactId>
-					<version>0.5.2</version> <!-- for Java7 compatibility -->
+					<groupId>com.diffplug.spotless</groupId>
+					<artifactId>spotless-maven-plugin</artifactId>
+					<version>1.0.0.BETA4</version>
 					<configuration>
-						<configFile>${main.basedir}/resources/eclipse-style.xml</configFile>
+						<java>
+							<eclipse>
+								<file>${main.basedir}/resources/eclipse-style.xml</file>
+								<version>4.7.2</version>
+							</eclipse>
+							<encoding>UTF-8</encoding>
+						</java>
 						<encoding>UTF-8</encoding>
-						<lineEnding>LF</lineEnding>
+						<lineEndings>UNIX</lineEndings>
 					</configuration>
 				</plugin>
 				<plugin>
@@ -645,10 +651,10 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- mvn formatter:format -->
+			<!-- mvn spotless:apply -->
 			<plugin>
-				<groupId>net.revelc.code</groupId>
-				<artifactId>formatter-maven-plugin</artifactId>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
 			</plugin>
 			<plugin>
 				<!-- mvn license:check; mvn license:format -->
