@@ -171,10 +171,6 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.scalatest</groupId>
-				<artifactId>scalatest-maven-plugin</artifactId>
 				<configuration>
 					<environmentVariables>
 						<JAVA_HOME>${env.JAVA8_HOME}</JAVA_HOME>
