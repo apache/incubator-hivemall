@@ -41,12 +41,14 @@ public class VectorDotUDFTest {
         VectorDotUDF udf = new VectorDotUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector)});
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableFloatObjectInspector)});
 
         DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {1, 2,
-                        3})),
+                new GenericUDF.DeferredJavaObject(
+                    WritableUtils.toWritableList(new double[] {1, 2, 3})),
                 new GenericUDF.DeferredJavaObject(
                     WritableUtils.toWritableList(new float[] {2, 3, 4}))};
 
@@ -63,12 +65,14 @@ public class VectorDotUDFTest {
         VectorDotUDF udf = new VectorDotUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.writableFloatObjectInspector});
 
         DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {1, 2,
-                        3})), new GenericUDF.DeferredJavaObject(WritableUtils.val(2.f))};
+                new GenericUDF.DeferredJavaObject(
+                    WritableUtils.toWritableList(new double[] {1, 2, 3})),
+                new GenericUDF.DeferredJavaObject(WritableUtils.val(2.f))};
 
         Object actual = udf.evaluate(args);
         List<Double> expected = Arrays.asList(2.d, 4.d, 6.d);

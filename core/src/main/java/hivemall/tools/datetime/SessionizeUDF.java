@@ -29,8 +29,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "sessionize",
+@Description(name = "sessionize",
         value = "_FUNC_(long timeInSec, long thresholdInSec [, String subject])"
                 + "- Returns a UUID string of a session.",
         extended = "SELECT sessionize(time, 3600, ip_addr) as session_id, time, ip_addr FROM (\n"

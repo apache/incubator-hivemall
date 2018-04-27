@@ -39,7 +39,8 @@ public class LastElementUDFTest {
     public void test() throws IOException, HiveException {
         LastElementUDF udf = new LastElementUDF();
 
-        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
 
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
             WritableUtils.toWritableList(new double[] {0, 1, 2}))};
@@ -53,10 +54,11 @@ public class LastElementUDFTest {
     public void testNull() throws IOException, HiveException {
         LastElementUDF udf = new LastElementUDF();
 
-        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
 
-        DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
-            WritableUtils.toWritableList(new double[] {}))};
+        DeferredObject[] args = new DeferredObject[] {
+                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {}))};
 
         Assert.assertNull(udf.evaluate(args));
 

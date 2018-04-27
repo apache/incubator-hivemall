@@ -47,8 +47,8 @@ public class FromJsonUDFTest {
         ObjectInspector[] argOIs = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.writableStringObjectInspector,
                 HiveUtils.getConstStringObjectInspector(types)};
-        DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(new Text(json)), null};
+        DeferredObject[] args =
+                new DeferredObject[] {new GenericUDF.DeferredJavaObject(new Text(json)), null};
 
         udf.initialize(argOIs);
         Object result = udf.evaluate(args);
@@ -70,8 +70,8 @@ public class FromJsonUDFTest {
                 PrimitiveObjectInspectorFactory.writableStringObjectInspector,
                 HiveUtils.getConstStringObjectInspector(types),
                 HiveUtils.getConstStringObjectInspector("person")};
-        DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(new Text(json)), null};
+        DeferredObject[] args =
+                new DeferredObject[] {new GenericUDF.DeferredJavaObject(new Text(json)), null};
 
         udf.initialize(argOIs);
         List<Object> result = (List<Object>) udf.evaluate(args);

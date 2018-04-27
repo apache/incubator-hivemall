@@ -27,6 +27,8 @@ import hivemall.smile.data.Attribute.NumericAttribute;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.utils.codec.Base91;
+import smile.math.Math;
+import smile.validation.LOOCV;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -38,9 +40,6 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
-
-import smile.math.Math;
-import smile.validation.LOOCV;
 
 public class RegressionTreeTest {
     private static final boolean DEBUG = false;

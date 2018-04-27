@@ -19,6 +19,7 @@
 package hivemall.smile.classification;
 
 import static org.junit.Assert.assertEquals;
+
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
@@ -29,6 +30,10 @@ import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
+import smile.data.AttributeDataset;
+import smile.data.parser.ArffParser;
+import smile.math.Math;
+import smile.validation.LOOCV;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -42,11 +47,6 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
-
-import smile.data.AttributeDataset;
-import smile.data.parser.ArffParser;
-import smile.math.Math;
-import smile.validation.LOOCV;
 
 public class DecisionTreeTest {
     private static final boolean DEBUG = false;
