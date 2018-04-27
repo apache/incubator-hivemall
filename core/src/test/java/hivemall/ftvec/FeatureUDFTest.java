@@ -47,8 +47,8 @@ public class FeatureUDFTest {
         ObjectInspector weightOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         udf.initialize(new ObjectInspector[] {featureOI, weightOI});
 
-        Text ret = udf.evaluate(new GenericUDF.DeferredObject[] {new DeferredJavaObject(1),
-                new DeferredJavaObject(2)});
+        Text ret = udf.evaluate(
+            new GenericUDF.DeferredObject[] {new DeferredJavaObject(1), new DeferredJavaObject(2)});
 
         Assert.assertEquals("1:2", ret.toString());
     }
@@ -203,9 +203,9 @@ public class FeatureUDFTest {
         ObjectInspector weightOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
         udf.initialize(new ObjectInspector[] {featureOI, weightOI});
 
-        Text ret = udf.evaluate(new GenericUDF.DeferredObject[] {
-                new DeferredJavaObject(new Text("f1")),
-                new DeferredJavaObject(new DoubleWritable(2.5d))});
+        Text ret = udf.evaluate(
+            new GenericUDF.DeferredObject[] {new DeferredJavaObject(new Text("f1")),
+                    new DeferredJavaObject(new DoubleWritable(2.5d))});
 
         Assert.assertEquals("f1:2.5", ret.toString());
     }
@@ -232,10 +232,10 @@ public class FeatureUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(FeatureUDF.class, new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector}, new Object[] {"f1",
-                2.5d});
+        TestUtils.testGenericUDFSerialization(FeatureUDF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector},
+            new Object[] {"f1", 2.5d});
     }
 
 }

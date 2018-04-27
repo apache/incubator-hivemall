@@ -96,7 +96,8 @@ public interface Optimizer {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight, final float gradient) {
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
             weightValueReused.set(weight);
             update(weightValueReused, gradient);
             return weightValueReused.get();
@@ -122,8 +123,8 @@ public interface Optimizer {
 
         @Override
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
-            float new_scaled_sum_sqgrad = weight.getSumOfSquaredGradients() + gradient
-                    * (gradient / scale);
+            float new_scaled_sum_sqgrad =
+                    weight.getSumOfSquaredGradients() + gradient * (gradient / scale);
             weight.setSumOfSquaredGradients(new_scaled_sum_sqgrad);
             return gradient / ((float) Math.sqrt(new_scaled_sum_sqgrad * scale) + eps);
         }
@@ -154,11 +155,10 @@ public interface Optimizer {
             float old_sum_squared_delta_x = weight.getSumOfSquaredDeltaX();
             float new_scaled_sum_sqgrad = (decay * old_scaled_sum_sqgrad)
                     + ((1.f - decay) * gradient * (gradient / scale));
-            float delta = (float) Math.sqrt((old_sum_squared_delta_x + eps)
-                    / (new_scaled_sum_sqgrad * scale + eps))
-                    * gradient;
-            float new_sum_squared_delta_x = (decay * old_sum_squared_delta_x)
-                    + ((1.f - decay) * delta * delta);
+            float delta = (float) Math.sqrt(
+                (old_sum_squared_delta_x + eps) / (new_scaled_sum_sqgrad * scale + eps)) * gradient;
+            float new_sum_squared_delta_x =
+                    (decay * old_sum_squared_delta_x) + ((1.f - decay) * delta * delta);
             weight.setSumOfSquaredGradients(new_scaled_sum_sqgrad);
             weight.setSumOfSquaredDeltaX(new_sum_squared_delta_x);
             return delta;

@@ -38,22 +38,24 @@ public final class Fastutil {
     @Nonnull
     public static ObjectIterable<Int2LongMap.Entry> fastIterable(@Nonnull final Int2LongMap map) {
         final ObjectSet<Int2LongMap.Entry> entries = map.int2LongEntrySet();
-        return entries instanceof Int2LongMap.FastEntrySet ? new ObjectIterable<Int2LongMap.Entry>() {
-            public ObjectIterator<Int2LongMap.Entry> iterator() {
-                return ((Int2LongMap.FastEntrySet) entries).fastIterator();
-            }
-        }
+        return entries instanceof Int2LongMap.FastEntrySet
+                ? new ObjectIterable<Int2LongMap.Entry>() {
+                    public ObjectIterator<Int2LongMap.Entry> iterator() {
+                        return ((Int2LongMap.FastEntrySet) entries).fastIterator();
+                    }
+                }
                 : entries;
     }
 
     @Nonnull
     public static ObjectIterable<Int2FloatMap.Entry> fastIterable(@Nonnull final Int2FloatMap map) {
         final ObjectSet<Int2FloatMap.Entry> entries = map.int2FloatEntrySet();
-        return entries instanceof Int2FloatMap.FastEntrySet ? new ObjectIterable<Int2FloatMap.Entry>() {
-            public ObjectIterator<Int2FloatMap.Entry> iterator() {
-                return ((Int2FloatMap.FastEntrySet) entries).fastIterator();
-            }
-        }
+        return entries instanceof Int2FloatMap.FastEntrySet
+                ? new ObjectIterable<Int2FloatMap.Entry>() {
+                    public ObjectIterator<Int2FloatMap.Entry> iterator() {
+                        return ((Int2FloatMap.FastEntrySet) entries).fastIterator();
+                    }
+                }
                 : entries;
     }
 
@@ -61,11 +63,12 @@ public final class Fastutil {
     public static <V> ObjectIterable<Int2ObjectMap.Entry<V>> fastIterable(
             @Nonnull final Int2ObjectMap<V> map) {
         final ObjectSet<Int2ObjectMap.Entry<V>> entries = map.int2ObjectEntrySet();
-        return entries instanceof Int2ObjectMap.FastEntrySet ? new ObjectIterable<Int2ObjectMap.Entry<V>>() {
-            public ObjectIterator<Int2ObjectMap.Entry<V>> iterator() {
-                return ((Int2ObjectMap.FastEntrySet<V>) entries).fastIterator();
-            }
-        }
+        return entries instanceof Int2ObjectMap.FastEntrySet
+                ? new ObjectIterable<Int2ObjectMap.Entry<V>>() {
+                    public ObjectIterator<Int2ObjectMap.Entry<V>> iterator() {
+                        return ((Int2ObjectMap.FastEntrySet<V>) entries).fastIterator();
+                    }
+                }
                 : entries;
     }
 
@@ -73,12 +76,13 @@ public final class Fastutil {
     public static <K, V> ObjectIterable<Object2ObjectMap.Entry<K, V>> fastIterable(
             @Nonnull final Object2ObjectMap<K, V> map) {
         final ObjectSet<Object2ObjectMap.Entry<K, V>> entries = map.object2ObjectEntrySet();
-        return entries instanceof Object2ObjectMap.FastEntrySet ? new ObjectIterable<Object2ObjectMap.Entry<K, V>>() {
-            @SuppressWarnings("unchecked")
-            public ObjectIterator<Object2ObjectMap.Entry<K, V>> iterator() {
-                return ((Object2ObjectMap.FastEntrySet<K, V>) entries).fastIterator();
-            }
-        }
+        return entries instanceof Object2ObjectMap.FastEntrySet
+                ? new ObjectIterable<Object2ObjectMap.Entry<K, V>>() {
+                    @SuppressWarnings("unchecked")
+                    public ObjectIterator<Object2ObjectMap.Entry<K, V>> iterator() {
+                        return ((Object2ObjectMap.FastEntrySet<K, V>) entries).fastIterator();
+                    }
+                }
                 : entries;
     }
 

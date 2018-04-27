@@ -192,8 +192,8 @@ public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
 
         final int index = getIndex(row, col);
         if (index < 0) {
-            throw new UnsupportedOperationException("Cannot update value in row " + row + ", col "
-                    + col);
+            throw new UnsupportedOperationException(
+                "Cannot update value in row " + row + ", col " + col);
         }
 
         float old = values[index];
@@ -207,8 +207,8 @@ public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
 
         final int index = getIndex(row, col);
         if (index < 0) {
-            throw new UnsupportedOperationException("Cannot update value in row " + row + ", col "
-                    + col);
+            throw new UnsupportedOperationException(
+                "Cannot update value in row " + row + ", col " + col);
         }
         values[index] = value;
     }
@@ -218,8 +218,8 @@ public final class CSCFloatMatrix extends ColumnMajorFloatMatrix {
         int rightEx = columnPointers[col + 1];
         final int index = Arrays.binarySearch(rowIndices, leftIn, rightEx, row);
         if (index >= 0 && index >= values.length) {
-            throw new IndexOutOfBoundsException("Value index " + index + " out of range "
-                    + values.length);
+            throw new IndexOutOfBoundsException(
+                "Value index " + index + " out of range " + values.length);
         }
         return index;
     }

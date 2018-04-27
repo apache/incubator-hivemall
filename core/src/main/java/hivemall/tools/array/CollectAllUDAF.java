@@ -55,15 +55,18 @@ public class CollectAllUDAF extends AbstractGenericUDAFResolver {
             super.init(m, parameters);
             if (m == Mode.PARTIAL1) {
                 inputOI = parameters[0];
-                return ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorUtils.getStandardObjectInspector(inputOI));
+                return ObjectInspectorFactory.getStandardListObjectInspector(
+                    ObjectInspectorUtils.getStandardObjectInspector(inputOI));
             } else {
                 if (!(parameters[0] instanceof StandardListObjectInspector)) {
                     inputOI = ObjectInspectorUtils.getStandardObjectInspector(parameters[0]);
-                    return (StandardListObjectInspector) ObjectInspectorFactory.getStandardListObjectInspector(inputOI);
+                    return (StandardListObjectInspector) ObjectInspectorFactory.getStandardListObjectInspector(
+                        inputOI);
                 } else {
                     internalMergeOI = (StandardListObjectInspector) parameters[0];
                     inputOI = internalMergeOI.getListElementObjectInspector();
-                    loi = (StandardListObjectInspector) ObjectInspectorUtils.getStandardObjectInspector(internalMergeOI);
+                    loi = (StandardListObjectInspector) ObjectInspectorUtils.getStandardObjectInspector(
+                        internalMergeOI);
                     return loi;
                 }
             }

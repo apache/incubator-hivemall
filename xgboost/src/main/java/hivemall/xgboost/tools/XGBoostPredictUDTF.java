@@ -32,8 +32,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(
-        name = "xgboost_predict",
+@Description(name = "xgboost_predict",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<byte> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, float predicted)")
 public final class XGBoostPredictUDTF extends hivemall.xgboost.XGBoostPredictUDTF {

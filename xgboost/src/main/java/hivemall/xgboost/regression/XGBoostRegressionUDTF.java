@@ -27,8 +27,7 @@ import hivemall.xgboost.XGBoostUDTF;
  * A XGBoost regression and the document is as follows; -
  * https://github.com/dmlc/xgboost/tree/master/demo/regression
  */
-@Description(
-        name = "train_xgboost_regr",
+@Description(name = "train_xgboost_regr",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
 public final class XGBoostRegressionUDTF extends XGBoostUDTF {
 

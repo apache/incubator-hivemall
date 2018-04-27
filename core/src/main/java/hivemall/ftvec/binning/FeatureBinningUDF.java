@@ -39,8 +39,7 @@ import org.apache.hadoop.io.Text;
 
 import java.util.*;
 
-@Description(
-        name = "feature_binning",
+@Description(name = "feature_binning",
         value = "_FUNC_(array<features::string> features, const map<string, array<number>> quantiles_map)"
                 + " / _FUNC_(number weight, const array<number> quantiles)"
                 + " - Returns binned features as an array<features::string> / bin ID as int")
@@ -69,7 +68,8 @@ public final class FeatureBinningUDF extends GenericUDF {
         if (HiveUtils.isListOI(OIs[0]) && HiveUtils.isMapOI(OIs[1])) {
             // for (array<features::string> features, const map<string, array<number>> quantiles_map)
 
-            if (!HiveUtils.isStringOI(((ListObjectInspector) OIs[0]).getListElementObjectInspector())) {
+            if (!HiveUtils.isStringOI(
+                ((ListObjectInspector) OIs[0]).getListElementObjectInspector())) {
                 throw new UDFArgumentTypeException(0,
                     "Only array<string> type argument is acceptable but " + OIs[0].getTypeName()
                             + " was passed as `features`");
@@ -80,18 +80,21 @@ public final class FeatureBinningUDF extends GenericUDF {
             quantilesMapOI = HiveUtils.asMapOI(OIs[1]);
             if (!HiveUtils.isStringOI(quantilesMapOI.getMapKeyObjectInspector())
                     || !HiveUtils.isListOI(quantilesMapOI.getMapValueObjectInspector())
-                    || !HiveUtils.isNumberOI(((ListObjectInspector) quantilesMapOI.getMapValueObjectInspector()).getListElementObjectInspector())) {
+                    || !HiveUtils.isNumberOI(
+                        ((ListObjectInspector) quantilesMapOI.getMapValueObjectInspector()).getListElementObjectInspector())) {
                 throw new UDFArgumentTypeException(1,
                     "Only map<string, array<number>> type argument is acceptable but "
                             + OIs[1].getTypeName() + " was passed as `quantiles_map`");
             }
             keyOI = HiveUtils.asStringOI(quantilesMapOI.getMapKeyObjectInspector());
             quantilesOI = HiveUtils.asListOI(quantilesMapOI.getMapValueObjectInspector());
-            quantileOI = HiveUtils.asDoubleCompatibleOI(quantilesOI.getListElementObjectInspector());
+            quantileOI =
+                    HiveUtils.asDoubleCompatibleOI(quantilesOI.getListElementObjectInspector());
 
             multiple = true;
 
-            return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         } else if (HiveUtils.isPrimitiveOI(OIs[0]) && HiveUtils.isListOI(OIs[1])) {
             // for (number weight, const array<number> quantiles)
 
@@ -103,7 +106,8 @@ public final class FeatureBinningUDF extends GenericUDF {
                     "Only array<number> type argument is acceptable but " + OIs[1].getTypeName()
                             + " was passed as `quantiles`");
             }
-            quantileOI = HiveUtils.asDoubleCompatibleOI(quantilesOI.getListElementObjectInspector());
+            quantileOI =
+                    HiveUtils.asDoubleCompatibleOI(quantilesOI.getListElementObjectInspector());
 
             multiple = false;
 
@@ -148,7 +152,8 @@ public final class FeatureBinningUDF extends GenericUDF {
 
                     // binning
                     if (quantilesMap.containsKey(key)) {
-                        val = String.valueOf(findBin(quantilesMap.get(key), Double.parseDouble(val)));
+                        val = String.valueOf(
+                            findBin(quantilesMap.get(key), Double.parseDouble(val)));
                     }
                     result.add(new Text(key + ":" + val));
                 }

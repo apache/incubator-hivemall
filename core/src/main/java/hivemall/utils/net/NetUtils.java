@@ -52,7 +52,8 @@ public final class NetUtils {
     }
 
     public static boolean isIPAddress(final String ip) {
-        return ip.matches("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$");
+        return ip.matches(
+            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$");
     }
 
     public static int getAvailablePort() {
@@ -78,8 +79,8 @@ public final class NetUtils {
                 return i;
             }
         }
-        throw new NoSuchElementException("Could not find available port greater than or equals to "
-                + basePort);
+        throw new NoSuchElementException(
+            "Could not find available port greater than or equals to " + basePort);
     }
 
     public static boolean isPortAvailable(final int port) {

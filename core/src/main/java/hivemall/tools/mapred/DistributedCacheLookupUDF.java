@@ -51,8 +51,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "distcache_gets",
+@Description(name = "distcache_gets",
         value = "_FUNC_(filepath, key, default_value [, parseKey]) - Returns map<key_type, value_type>|value_type")
 @UDFType(deterministic = false, stateful = false)
 public final class DistributedCacheLookupUDF extends GenericUDF {
@@ -77,9 +76,8 @@ public final class DistributedCacheLookupUDF extends GenericUDF {
                         + argOIs.length + getUsage());
         }
         if (!ObjectInspectorUtils.isConstantObjectInspector(argOIs[2])) {
-            throw new UDFArgumentException(
-                "Third argument DEFAULT_VALUE must be a constant value: "
-                        + TypeInfoUtils.getTypeInfoFromObjectInspector(argOIs[2]));
+            throw new UDFArgumentException("Third argument DEFAULT_VALUE must be a constant value: "
+                    + TypeInfoUtils.getTypeInfoFromObjectInspector(argOIs[2]));
         }
         if (argOIs.length == 4) {
             this.parseKey = HiveUtils.getConstBoolean(argOIs[3]);
@@ -126,8 +124,8 @@ public final class DistributedCacheLookupUDF extends GenericUDF {
                 "parseKey=true is only available for string typed key(s)");
         }
 
-        final Object2ObjectMap<Object, Object> map = new Object2ObjectOpenHashMap<Object, Object>(
-            8192);
+        final Object2ObjectMap<Object, Object> map =
+                new Object2ObjectOpenHashMap<Object, Object>(8192);
         try {
             loadValues(map, new File(filepath), keyInputOI, valueInputOI);
             this.cache = map;
@@ -141,8 +139,8 @@ public final class DistributedCacheLookupUDF extends GenericUDF {
     }
 
     private static void loadValues(Object2ObjectMap<Object, Object> map, File file,
-            PrimitiveObjectInspector keyOI, PrimitiveObjectInspector valueOI) throws IOException,
-            SerDeException {
+            PrimitiveObjectInspector keyOI, PrimitiveObjectInspector valueOI)
+            throws IOException, SerDeException {
         if (!file.exists()) {
             return;
         }
@@ -156,8 +154,10 @@ public final class DistributedCacheLookupUDF extends GenericUDF {
                 StructObjectInspector lineOI = (StructObjectInspector) serde.getObjectInspector();
                 StructField keyRef = lineOI.getStructFieldRef("key");
                 StructField valueRef = lineOI.getStructFieldRef("value");
-                PrimitiveObjectInspector keyRefOI = (PrimitiveObjectInspector) keyRef.getFieldObjectInspector();
-                PrimitiveObjectInspector valueRefOI = (PrimitiveObjectInspector) valueRef.getFieldObjectInspector();
+                PrimitiveObjectInspector keyRefOI =
+                        (PrimitiveObjectInspector) keyRef.getFieldObjectInspector();
+                PrimitiveObjectInspector valueRefOI =
+                        (PrimitiveObjectInspector) valueRef.getFieldObjectInspector();
 
                 BufferedReader reader = null;
                 try {

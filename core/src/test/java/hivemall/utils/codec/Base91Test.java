@@ -44,8 +44,9 @@ public class Base91Test {
 
     @Test
     public void testLongEncodeDecode() throws IOException {
-        byte[] expected1 = IOUtils.toString(
-            Base91Test.class.getResourceAsStream("Base91Test.class")).getBytes();
+        byte[] expected1 =
+                IOUtils.toString(Base91Test.class.getResourceAsStream("Base91Test.class"))
+                       .getBytes();
         Assert.assertTrue(expected1.length > 1000);
         byte[] actual1 = Base91.decode(Base91.encode(expected1));
         Assert.assertArrayEquals(expected1, actual1);

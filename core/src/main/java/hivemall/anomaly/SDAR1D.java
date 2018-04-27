@@ -65,8 +65,8 @@ public final class SDAR1D {
     public double update(@Nonnull final double[] x, final int k) {
         Preconditions.checkArgument(x.length >= 1, "x.length MUST be greater than 1: ", x.length);
         Preconditions.checkArgument(k >= 0, "k MUST be greater than or equals to 0: ", k);
-        Preconditions.checkArgument(k < _C.length, "k MUST be less than |C| but ", "k=", k
-                + ", |C|=", _C.length);
+        Preconditions.checkArgument(k < _C.length, "k MUST be less than |C| but ", "k=",
+            k + ", |C|=", _C.length);
 
         final double x_t = x[0];
 

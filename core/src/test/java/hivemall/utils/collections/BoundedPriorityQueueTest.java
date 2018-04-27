@@ -31,13 +31,13 @@ public class BoundedPriorityQueueTest {
 
     @Test
     public void testTop3() {
-        BoundedPriorityQueue<Integer> queue = new BoundedPriorityQueue<Integer>(3,
-            new Comparator<Integer>() {
-                @Override
-                public int compare(Integer o1, Integer o2) {
-                    return Integer.compare(o1, o2);
-                }
-            });
+        BoundedPriorityQueue<Integer> queue =
+                new BoundedPriorityQueue<Integer>(3, new Comparator<Integer>() {
+                    @Override
+                    public int compare(Integer o1, Integer o2) {
+                        return Integer.compare(o1, o2);
+                    }
+                });
         Assert.assertTrue(queue.offer(1));
         Assert.assertTrue(queue.offer(4));
         Assert.assertTrue(queue.offer(3));
@@ -58,8 +58,8 @@ public class BoundedPriorityQueueTest {
 
     @Test
     public void testTail3() {
-        BoundedPriorityQueue<Integer> queue = new BoundedPriorityQueue<Integer>(3,
-            Collections.<Integer>reverseOrder());
+        BoundedPriorityQueue<Integer> queue =
+                new BoundedPriorityQueue<Integer>(3, Collections.<Integer>reverseOrder());
         Assert.assertTrue(queue.offer(1));
         Assert.assertTrue(queue.offer(4));
         Assert.assertTrue(queue.offer(3));
@@ -80,13 +80,13 @@ public class BoundedPriorityQueueTest {
 
     @Test
     public void testString1() {
-        BoundedPriorityQueue<String> queue = new BoundedPriorityQueue<>(3,
-            new Comparator<String>() {
-                @Override
-                public int compare(String o1, String o2) {
-                    return StringUtils.compare(o1, o2);
-                }
-            });
+        BoundedPriorityQueue<String> queue =
+                new BoundedPriorityQueue<>(3, new Comparator<String>() {
+                    @Override
+                    public int compare(String o1, String o2) {
+                        return StringUtils.compare(o1, o2);
+                    }
+                });
         queue.offer("B");
         queue.offer("A");
         queue.offer("C");
@@ -99,8 +99,8 @@ public class BoundedPriorityQueueTest {
 
     @Test
     public void testString2() {
-        BoundedPriorityQueue<String> queue = new BoundedPriorityQueue<>(3,
-            NaturalComparator.<String>getInstance());
+        BoundedPriorityQueue<String> queue =
+                new BoundedPriorityQueue<>(3, NaturalComparator.<String>getInstance());
         queue.offer("B");
         queue.offer("A");
         queue.offer("C");

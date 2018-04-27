@@ -113,13 +113,13 @@ public final class ObjectUtils {
         oos.flush();
     }
 
-    public static <T> T readObject(@Nonnull final byte[] obj) throws IOException,
-            ClassNotFoundException {
+    public static <T> T readObject(@Nonnull final byte[] obj)
+            throws IOException, ClassNotFoundException {
         return readObject(obj, obj.length);
     }
 
-    public static <T> T readObject(@Nonnull final byte[] obj, final int length) throws IOException,
-            ClassNotFoundException {
+    public static <T> T readObject(@Nonnull final byte[] obj, final int length)
+            throws IOException, ClassNotFoundException {
         return readObject(new FastByteArrayInputStream(obj, length));
     }
 
@@ -134,8 +134,8 @@ public final class ObjectUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T readObject(@Nonnull final InputStream is) throws IOException,
-            ClassNotFoundException {
+    public static <T> T readObject(@Nonnull final InputStream is)
+            throws IOException, ClassNotFoundException {
         ObjectInputStream ois = new ObjectInputStream(is);
         return (T) ois.readObject();
     }
@@ -146,8 +146,8 @@ public final class ObjectUtils {
         dst.readExternal(ois);
     }
 
-    public static <T> T readCompressedObject(@Nonnull final byte[] obj) throws IOException,
-            ClassNotFoundException {
+    public static <T> T readCompressedObject(@Nonnull final byte[] obj)
+            throws IOException, ClassNotFoundException {
         FastByteArrayInputStream bis = new FastByteArrayInputStream(obj);
         final InflaterInputStream iis = new InflaterInputStream(bis);
         try {
@@ -185,8 +185,8 @@ public final class ObjectUtils {
     }
 
     public static void readCompressedObject(@Nonnull final byte[] src, final int offset,
-            final int length, @Nonnull final Externalizable dst) throws IOException,
-            ClassNotFoundException {
+            final int length, @Nonnull final Externalizable dst)
+            throws IOException, ClassNotFoundException {
         FastByteArrayInputStream bis = new FastByteArrayInputStream(src, offset, length);
         final InflaterInputStream iis = new InflaterInputStream(bis);
         try {

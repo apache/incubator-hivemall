@@ -135,16 +135,15 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
         /** Parameters for Tree Booster */
         opts.addOption("eta", true,
             "Step size shrinkage used in update to prevents overfitting [default: 0.3]");
-        opts.addOption(
-            "gamma",
-            true,
+        opts.addOption("gamma", true,
             "Minimum loss reduction required to make a further partition on a leaf node of the tree [default: 0.0]");
         opts.addOption("max_depth", true, "Max depth of decision tree [default: 6]");
         opts.addOption("min_child_weight", true,
             "Minimum sum of instance weight(hessian) needed in a child [default: 1]");
         opts.addOption("max_delta_step", true,
             "Maximum delta step we allow each tree's weight estimation to be [default: 0]");
-        opts.addOption("subsample", true, "Subsample ratio of the training instance [default: 1.0]");
+        opts.addOption("subsample", true,
+            "Subsample ratio of the training instance [default: 1.0]");
         opts.addOption("colsample_bytree", true,
             "Subsample ratio of columns when constructing each tree [default: 1.0]");
         opts.addOption("colsample_bylevel", true,
@@ -218,7 +217,8 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
                 params.put("subsample", Double.valueOf(cl.getOptionValue("subsample")));
             }
             if (cl.hasOption("colsample_bytree")) {
-                params.put("colsamle_bytree", Double.valueOf(cl.getOptionValue("colsample_bytree")));
+                params.put("colsamle_bytree",
+                    Double.valueOf(cl.getOptionValue("colsample_bytree")));
             }
             if (cl.hasOption("colsample_bylevel")) {
                 params.put("colsamle_bylevel",
@@ -309,8 +309,8 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
         Class<?>[] args = {Map.class, DMatrix[].class};
         Constructor<Booster> ctor = Booster.class.getDeclaredConstructor(args);
         ctor.setAccessible(true);
-        return ctor.newInstance(new Object[] {params,
-                new DMatrix[] {new DMatrix(input.iterator(), "")}});
+        return ctor.newInstance(
+            new Object[] {params, new DMatrix[] {new DMatrix(input.iterator(), "")}});
     }
 
     @Override

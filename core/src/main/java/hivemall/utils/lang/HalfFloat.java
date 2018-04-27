@@ -181,8 +181,8 @@ public final class HalfFloat {
 
     public static void checkRange(final float f) {
         if (Math.abs(f) > HalfFloat.MAX_FLOAT) {
-            throw new IllegalArgumentException("Acceptable maximum weight is "
-                    + HalfFloat.MAX_FLOAT + ": " + f);
+            throw new IllegalArgumentException(
+                "Acceptable maximum weight is " + HalfFloat.MAX_FLOAT + ": " + f);
         }
     }
 

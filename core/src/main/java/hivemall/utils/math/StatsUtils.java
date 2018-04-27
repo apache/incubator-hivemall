@@ -97,10 +97,10 @@ public final class StatsUtils {
     public static double pdf(@Nonnull final RealVector x, @Nonnull final RealVector x_hat,
             @Nonnull final RealMatrix sigma) {
         final int dim = x.getDimension();
-        Preconditions.checkArgument(x_hat.getDimension() == dim, "|x| != |x_hat|, |x|=" + dim
-                + ", |x_hat|=" + x_hat.getDimension());
-        Preconditions.checkArgument(sigma.getRowDimension() == dim, "|x| != |sigma|, |x|=" + dim
-                + ", |sigma|=" + sigma.getRowDimension());
+        Preconditions.checkArgument(x_hat.getDimension() == dim,
+            "|x| != |x_hat|, |x|=" + dim + ", |x_hat|=" + x_hat.getDimension());
+        Preconditions.checkArgument(sigma.getRowDimension() == dim,
+            "|x| != |sigma|, |x|=" + dim + ", |sigma|=" + sigma.getRowDimension());
         Preconditions.checkArgument(sigma.isSquare(), "Sigma is not square matrix");
 
         LUDecomposition LU = new LUDecomposition(sigma);
@@ -249,8 +249,8 @@ public final class StatsUtils {
      */
     public static double chiSquareTest(@Nonnull final double[] observed,
             @Nonnull final double[] expected) {
-        final ChiSquaredDistribution distribution = new ChiSquaredDistribution(
-            expected.length - 1.d);
+        final ChiSquaredDistribution distribution =
+                new ChiSquaredDistribution(expected.length - 1.d);
         return 1.d - distribution.cumulativeProbability(chiSquare(observed, expected));
     }
 

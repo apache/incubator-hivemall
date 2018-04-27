@@ -70,8 +70,8 @@ public final class SDAR2D {
     public RealVector update(@Nonnull final ArrayRealVector[] x, final int k) {
         Preconditions.checkArgument(x.length >= 1, "x.length MUST be greater than 1: " + x.length);
         Preconditions.checkArgument(k >= 0, "k MUST be greater than or equals to 0: ", k);
-        Preconditions.checkArgument(k < _C.length, "k MUST be less than |C| but " + "k=" + k
-                + ", |C|=" + _C.length);
+        Preconditions.checkArgument(k < _C.length,
+            "k MUST be less than |C| but " + "k=" + k + ", |C|=" + _C.length);
 
         final ArrayRealVector x_t = x[0];
         final int dims = x_t.getDimension();
@@ -145,8 +145,8 @@ public final class SDAR2D {
         // update model covariance
         // ∑ := (1-r) ∑ + r (x - \hat{x}) (x - \hat{x})'
         RealVector xEstimateResidual = x_t.subtract(x_hat);
-        this._sigma = _sigma.scalarMultiply(1.d - _r).add(
-            xEstimateResidual.mapMultiply(_r).outerProduct(xEstimateResidual));
+        this._sigma = _sigma.scalarMultiply(1.d - _r)
+                            .add(xEstimateResidual.mapMultiply(_r).outerProduct(xEstimateResidual));
 
         return x_hat;
     }

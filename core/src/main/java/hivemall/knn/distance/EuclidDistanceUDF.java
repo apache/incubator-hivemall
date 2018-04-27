@@ -36,8 +36,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 
-@Description(
-        name = "euclid_distance",
+@Description(name = "euclid_distance",
         value = "_FUNC_(ftvec1, ftvec2) - Returns the square root of the sum of the squared differences"
                 + ": sqrt(sum((x - y)^2))")
 @UDFType(deterministic = true, stateful = false)

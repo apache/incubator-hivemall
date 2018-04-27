@@ -78,8 +78,8 @@ public final class CompressionStreamFactory {
                 return new LZMA2InputStream(in, dictSize);
             }
             default:
-                throw new UnsupportedOperationException("Unsupported compression algorithm: "
-                        + algo);
+                throw new UnsupportedOperationException(
+                    "Unsupported compression algorithm: " + algo);
         }
     }
 
@@ -145,7 +145,8 @@ public final class CompressionStreamFactory {
                     throw new IllegalStateException("LZMA2Option configuration failed", e);
                 }
                 FinishableWrapperOutputStream wrapped = new FinishableWrapperOutputStream(out);
-                final org.tukaani.xz.FinishableOutputStream lzma2 = options.getOutputStream(wrapped);
+                final org.tukaani.xz.FinishableOutputStream lzma2 =
+                        options.getOutputStream(wrapped);
                 return new FinishableOutputStreamAdapter(lzma2) {
                     @Override
                     public void finish() throws IOException {
@@ -155,8 +156,8 @@ public final class CompressionStreamFactory {
                 };
             }
             default:
-                throw new UnsupportedOperationException("Unsupported compression algorithm: "
-                        + algo);
+                throw new UnsupportedOperationException(
+                    "Unsupported compression algorithm: " + algo);
         }
     }
 }

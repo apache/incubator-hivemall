@@ -30,8 +30,7 @@ import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "array_hash_values",
+@Description(name = "array_hash_values",
         value = "_FUNC_(array<string> values, [string prefix [, int numFeatures], boolean useIndexAsPrefix])"
                 + " returns hash values in array<int>")
 @UDFType(deterministic = true, stateful = false)
@@ -45,7 +44,8 @@ public final class ArrayHashValuesUDF extends UDF {
         return evaluate(values, prefix, MurmurHash3.DEFAULT_NUM_FEATURES);
     }
 
-    public List<IntWritable> evaluate(List<String> values, String prefix, boolean useIndexAsPrefix) {
+    public List<IntWritable> evaluate(List<String> values, String prefix,
+            boolean useIndexAsPrefix) {
         return evaluate(values, prefix, MurmurHash3.DEFAULT_NUM_FEATURES, useIndexAsPrefix);
     }
 

@@ -49,8 +49,8 @@ public final class SingularizeUDF extends UDF {
     private static final String[] prepositions = new String[] {"about", "above", "across", "after",
             "among", "around", "at", "athwart", "before", "behind", "below", "beneath", "beside",
             "besides", "between", "betwixt", "beyond", "but", "by", "during", "except", "for",
-            "from", "in", "into", "near", "of", "off", "on", "onto", "out", "over", "since",
-            "till", "to", "under", "until", "unto", "upon", "with"};
+            "from", "in", "into", "near", "of", "off", "on", "onto", "out", "over", "since", "till",
+            "to", "under", "until", "unto", "upon", "with"};
     // uninfected or uncountable words
     private static final String[] unchanged = new String[] {"advice", "bison", "bread", "bream",
             "breeches", "britches", "butter", "carp", "chassis", "cheese", "christmas", "clippers",

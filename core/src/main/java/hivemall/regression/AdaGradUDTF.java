@@ -40,8 +40,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
  * @deprecated Use {@link hivemall.regression.GeneralRegressorUDTF} instead
  */
 @Deprecated
-@Description(
-        name = "train_adagrad_regr",
+@Description(name = "train_adagrad_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                 + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
 public final class AdaGradUDTF extends RegressionBaseUDTF {

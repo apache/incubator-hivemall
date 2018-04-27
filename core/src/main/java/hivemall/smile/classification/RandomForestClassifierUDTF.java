@@ -80,8 +80,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
-@Description(
-        name = "train_randomforest_classifier",
+@Description(name = "train_randomforest_classifier",
         value = "_FUNC_(array<double|string> features, int label [, const string options, const array<double> classWeights])"
                 + "- Returns a relation consists of "
                 + "<string model_id, double model_weight, string model, array<double> var_importance, int oob_errors, int oob_tests>")
@@ -133,10 +132,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         Options opts = new Options();
         opts.addOption("trees", "num_trees", true,
             "The number of trees for each task [default: 50]");
-        opts.addOption(
-            "vars",
-            "num_variables",
-            true,
+        opts.addOption("vars", "num_variables", true,
             "The number of random selected features [default: ceil(sqrt(x[0].length))]."
                     + " int(num_variables * x[0].length) is considered if num_variable is (0.0,1.0]");
         opts.addOption("depth", "max_depth", true,
@@ -183,8 +179,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
             numLeafs = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), numLeafs);
             minSplits = Primitives.parseInt(cl.getOptionValue("min_split"), minSplits);
-            minSamplesLeaf = Primitives.parseInt(cl.getOptionValue("min_samples_leaf"),
-                minSamplesLeaf);
+            minSamplesLeaf =
+                    Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
             splitRule = SmileExtUtils.resolveSplitRule(cl.getOptionValue("split_rule", "GINI"));
@@ -247,7 +243,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             this.matrixBuilder = new CSRMatrixBuilder(8192);
         } else {
             throw new UDFArgumentException(
-                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+                "_FUNC_ takes double[] or string[] for the first argument: "
+                        + listOI.getTypeName());
         }
         this.labelOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
 
@@ -266,7 +263,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("var_importance");
         if (denseInput) {
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
         } else {
             fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
                 PrimitiveObjectInspectorFactory.writableIntObjectInspector,
@@ -360,8 +358,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private void train(@Nonnull Matrix x, @Nonnull final int[] y) throws HiveException {
         final int numExamples = x.numRows();
         if (numExamples != y.length) {
-            throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
-                numExamples, y.length));
+            throw new HiveException(
+                String.format("The sizes of X and Y don't match: %d != %d", numExamples, y.length));
         }
         checkOptions();
 
@@ -430,8 +428,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         if (denseInput) {
             forwardObjs[3] = WritableUtils.toWritableList(importance.toArray());
         } else {
-            final Map<IntWritable, DoubleWritable> map = new HashMap<IntWritable, DoubleWritable>(
-                importance.size());
+            final Map<IntWritable, DoubleWritable> map =
+                    new HashMap<IntWritable, DoubleWritable>(importance.size());
             importance.each(new VectorProcedure() {
                 public void apply(int i, double value) {
                     map.put(new IntWritable(i), new DoubleWritable(value));
@@ -591,8 +589,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                 if (subsample != 1.0d) {
                     nj = (int) Math.round(nj * subsample);
                 }
-                final int size = (_udtf._classWeight == null) ? nj : (int) Math.round(nj
-                        * _udtf._classWeight[l]);
+                final int size = (_udtf._classWeight == null) ? nj
+                        : (int) Math.round(nj * _udtf._classWeight[l]);
                 for (int j = 0; j < size; j++) {
                     int xi = rnd.nextInt(nj);
                     int index = cj.get(xi);

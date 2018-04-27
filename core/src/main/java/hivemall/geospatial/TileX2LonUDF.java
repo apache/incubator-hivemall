@@ -38,8 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 /**
  * @link http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
  */
-@Description(
-        name = "tilex2lon",
+@Description(name = "tilex2lon",
         value = "_FUNC_(int x, int zoom)::double - Returns longitude of the given tile x and zoom level")
 @UDFType(deterministic = true, stateful = false)
 public final class TileX2LonUDF extends GenericUDF {

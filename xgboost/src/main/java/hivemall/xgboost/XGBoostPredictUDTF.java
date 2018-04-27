@@ -87,8 +87,8 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
             cl = this.parseOptions(rawArgs);
             _batch_size = Primitives.parseInt(cl.getOptionValue("_batch_size"), _batch_size);
             if (_batch_size < 1) {
-                throw new IllegalArgumentException("batch_size must be greater than 0: "
-                        + _batch_size);
+                throw new IllegalArgumentException(
+                    "batch_size must be greater than 0: " + _batch_size);
             }
         }
         this.batch_size = _batch_size;
@@ -171,8 +171,8 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         }
         final String modelId = PrimitiveObjectInspectorUtils.getString(args[2], modelIdOI);
         if (!mapToModel.containsKey(modelId)) {
-            final byte[] predModel = PrimitiveObjectInspectorUtils.getBinary(args[3], modelOI)
-                                                                  .getBytes();
+            final byte[] predModel =
+                    PrimitiveObjectInspectorUtils.getBinary(args[3], modelOI).getBytes();
             mapToModel.put(modelId, initXgBooster(predModel));
         }
 

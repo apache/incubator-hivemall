@@ -48,8 +48,8 @@ public final class QuantifyColumnsUDTF extends GenericUDTF {
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         int size = argOIs.length;
         if (size < 2) {
-            throw new UDFArgumentException("quantified_features takes at least two arguments: "
-                    + size);
+            throw new UDFArgumentException(
+                "quantified_features takes at least two arguments: " + size);
         }
         this.boolOI = HiveUtils.asBooleanOI(argOIs[0]);
 

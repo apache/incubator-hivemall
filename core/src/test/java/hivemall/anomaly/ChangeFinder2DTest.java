@@ -133,9 +133,9 @@ public class ChangeFinder2DTest {
     public void testPoissonDist() throws HiveException {
         final int examples = 10000;
         final int dims = 3;
-        final PoissonDistribution[] poisson = new PoissonDistribution[] {
-                new PoissonDistribution(10.d), new PoissonDistribution(5.d),
-                new PoissonDistribution(20.d)};
+        final PoissonDistribution[] poisson =
+                new PoissonDistribution[] {new PoissonDistribution(10.d),
+                        new PoissonDistribution(5.d), new PoissonDistribution(20.d)};
         final Random rand = new Random(42);
         final Double[] x = new Double[dims];
         final List<Double> xList = Arrays.asList(x);
@@ -201,8 +201,8 @@ public class ChangeFinder2DTest {
                 if (i % 5 == 0) {
                     mean[j] += 50.d;
                 }
-                NormalDistribution normDist = new NormalDistribution(new Well19937c(i + j),
-                    mean[j], sd[j]);
+                NormalDistribution normDist =
+                        new NormalDistribution(new Well19937c(i + j), mean[j], sd[j]);
                 data[j] = normDist.sample(len);
                 data[j][len / (j + 2) + DIM % (j + 1)] = mean[j] + (j + 4) * sd[j];
             }

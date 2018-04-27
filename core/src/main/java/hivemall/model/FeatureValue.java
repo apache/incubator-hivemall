@@ -151,7 +151,8 @@ public final class FeatureValue {
         return new FeatureValue(feature, weight);
     }
 
-    public static void parseFeatureAsString(@Nonnull final Text t, @Nonnull final FeatureValue probe) {
+    public static void parseFeatureAsString(@Nonnull final Text t,
+            @Nonnull final FeatureValue probe) {
         String s = t.toString();
         parseFeatureAsString(s, probe);
     }

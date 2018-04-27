@@ -27,8 +27,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
  * A XGBoost binary classification and the document is as follows; -
  * https://github.com/dmlc/xgboost/tree/master/demo/binary_classification
  */
-@Description(
-        name = "train_xgboost_classifier",
+@Description(name = "train_xgboost_classifier",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
 public final class XGBoostBinaryClassifierUDTF extends XGBoostUDTF {
 

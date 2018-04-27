@@ -107,16 +107,17 @@ class FMHyperParameters {
         this.l2norm = cl.hasOption("enable_norm");
         this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
         this.conversionCheck = !cl.hasOption("disable_cvtest");
-        this.convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
+        this.convergenceRate =
+                Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
         this.adaptiveRegularization = cl.hasOption("adaptive_regularization");
-        this.validationRatio = Primitives.parseFloat(cl.getOptionValue("validation_ratio"),
-            validationRatio);
+        this.validationRatio =
+                Primitives.parseFloat(cl.getOptionValue("validation_ratio"), validationRatio);
         if (validationRatio < 0.f || validationRatio >= 1.f) {
-            throw new UDFArgumentException("validation_ratio should be in range [0, 1): "
-                    + validationRatio);
+            throw new UDFArgumentException(
+                "validation_ratio should be in range [0, 1): " + validationRatio);
         }
-        this.validationThreshold = Primitives.parseInt(cl.getOptionValue("validation_threshold"),
-            validationThreshold);
+        this.validationThreshold =
+                Primitives.parseInt(cl.getOptionValue("validation_threshold"), validationThreshold);
         this.parseFeatureAsInt = cl.hasOption("int_feature");
     }
 
@@ -193,8 +194,8 @@ class FMHyperParameters {
                 case "ftrl": {
                     this.useFTRL = true;
                     this.useAdaGrad = false;
-                    this.alphaFTRL = Primitives.parseFloat(cl.getOptionValue("alphaFTRL"),
-                        alphaFTRL);
+                    this.alphaFTRL =
+                            Primitives.parseFloat(cl.getOptionValue("alphaFTRL"), alphaFTRL);
                     if (alphaFTRL == 0.f) {
                         throw new UDFArgumentException("-alphaFTRL SHOULD NOT be 0");
                     }
@@ -223,9 +224,8 @@ class FMHyperParameters {
         public String toString() {
             return "FFMHyperParameters [globalBias=" + globalBias + ", linearCoeff=" + linearCoeff
                     + ", numFields=" + numFields + ", useAdaGrad=" + useAdaGrad + ", eps=" + eps
-                    + ", useFTRL=" + useFTRL + ", alphaFTRL=" + alphaFTRL + ", betaFTRL="
-                    + betaFTRL + ", lambda1=" + lambda1 + ", lambda2=" + lambda2 + "], "
-                    + super.toString();
+                    + ", useFTRL=" + useFTRL + ", alphaFTRL=" + alphaFTRL + ", betaFTRL=" + betaFTRL
+                    + ", lambda1=" + lambda1 + ", lambda2=" + lambda2 + "], " + super.toString();
         }
 
     }

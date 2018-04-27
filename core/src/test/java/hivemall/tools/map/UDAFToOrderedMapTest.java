@@ -36,11 +36,12 @@ public class UDAFToOrderedMapTest {
     @Test
     public void testNaturalOrder() throws Exception {
         NaturalOrderedMapEvaluator evaluator = new NaturalOrderedMapEvaluator();
-        NaturalOrderedMapEvaluator.MapAggregationBuffer agg = (NaturalOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        NaturalOrderedMapEvaluator.MapAggregationBuffer agg =
+                (NaturalOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
@@ -66,12 +67,13 @@ public class UDAFToOrderedMapTest {
     @Test
     public void testReverseOrder() throws Exception {
         ReverseOrderedMapEvaluator evaluator = new ReverseOrderedMapEvaluator();
-        ReverseOrderedMapEvaluator.MapAggregationBuffer agg = (ReverseOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        ReverseOrderedMapEvaluator.MapAggregationBuffer agg =
+                (ReverseOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaBooleanObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
@@ -97,12 +99,13 @@ public class UDAFToOrderedMapTest {
     @Test
     public void testTopK() throws Exception {
         TopKOrderedMapEvaluator evaluator = new TopKOrderedMapEvaluator();
-        TopKOrderedMapEvaluator.MapAggregationBuffer agg = (TopKOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        TopKOrderedMapEvaluator.MapAggregationBuffer agg =
+                (TopKOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};
@@ -128,12 +131,13 @@ public class UDAFToOrderedMapTest {
     @Test
     public void testTailK() throws Exception {
         TailKOrderedMapEvaluator evaluator = new TailKOrderedMapEvaluator();
-        TailKOrderedMapEvaluator.MapAggregationBuffer agg = (TailKOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
+        TailKOrderedMapEvaluator.MapAggregationBuffer agg =
+                (TailKOrderedMapEvaluator.MapAggregationBuffer) evaluator.getNewAggregationBuffer();
 
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector};
 
         final double[] keys = new double[] {0.7, 0.5, 0.8};
         final String[] values = new String[] {"banana", "apple", "candy"};

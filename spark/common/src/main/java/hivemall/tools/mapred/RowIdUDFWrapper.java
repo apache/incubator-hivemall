@@ -30,8 +30,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 /** An alternative implementation of [[hivemall.tools.mapred.RowIdUDF]]. */
-@Description(
-        name = "rowid",
+@Description(name = "rowid",
         value = "_FUNC_() - Returns a generated row id of a form {TASK_ID}-{UUID}-{SEQUENCE_NUMBER}")
 @UDFType(deterministic = false, stateful = true)
 public class RowIdUDFWrapper extends GenericUDF {

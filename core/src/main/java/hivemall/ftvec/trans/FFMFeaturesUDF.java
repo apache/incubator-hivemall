@@ -45,8 +45,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "ffm_features",
+@Description(name = "ffm_features",
         value = "_FUNC_(const array<string> featureNames, feature1, feature2, .. [, const string options])"
                 + " - Takes categorical variables and returns a feature vector array<string>"
                 + " in a libffm format <field>:<index>:<value>")
@@ -86,15 +85,15 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
             int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"),
                 Feature.DEFAULT_FEATURE_BITS);
             if (hashbits < 18 || hashbits > 31) {
-                throw new UDFArgumentException("-feature_hashing MUST be in range [18,31]: "
-                        + hashbits);
+                throw new UDFArgumentException(
+                    "-feature_hashing MUST be in range [18,31]: " + hashbits);
             }
             numFeatures = 1 << hashbits;
         }
         this._numFeatures = numFeatures;
 
-        int numFields = Primitives.parseInt(cl.getOptionValue("num_fields"),
-            Feature.DEFAULT_NUM_FIELDS);
+        int numFields =
+                Primitives.parseInt(cl.getOptionValue("num_fields"), Feature.DEFAULT_NUM_FIELDS);
         if (numFields <= 1) {
             throw new UDFArgumentException("-num_fields MUST be greater than 1: " + numFields);
         }
@@ -119,16 +118,16 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         }
         int numFeatureNames = _featureNames.length;
         if (numFeatureNames < 1) {
-            throw new UDFArgumentException("#featureNames must be greater than or equals to 1: "
-                    + numFeatureNames);
+            throw new UDFArgumentException(
+                "#featureNames must be greater than or equals to 1: " + numFeatureNames);
         }
         for (String featureName : _featureNames) {
             if (featureName == null) {
-                throw new UDFArgumentException("featureName should not be null: "
-                        + Arrays.toString(_featureNames));
+                throw new UDFArgumentException(
+                    "featureName should not be null: " + Arrays.toString(_featureNames));
             } else if (featureName.indexOf(':') != -1) {
-                throw new UDFArgumentException("featureName should not include colon: "
-                        + featureName);
+                throw new UDFArgumentException(
+                    "featureName should not include colon: " + featureName);
             }
         }
 
@@ -141,16 +140,15 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
                 processOptions(optionValue);
                 numFeatures = numArgOIs - 2;
             } else {
-                throw new UDFArgumentException(
-                    "Unexpected arguments for _FUNC_"
-                            + "(const array<string> featureNames, feature1, feature2, .. [, const string options])");
+                throw new UDFArgumentException("Unexpected arguments for _FUNC_"
+                        + "(const array<string> featureNames, feature1, feature2, .. [, const string options])");
             }
         } else {
             numFeatures = lastArgIndex;
         }
         if (numFeatureNames != numFeatures) {
-            throw new UDFArgumentLengthException("#featureNames '" + numFeatureNames
-                    + "' != #features '" + numFeatures + "'");
+            throw new UDFArgumentLengthException(
+                "#featureNames '" + numFeatureNames + "' != #features '" + numFeatures + "'");
         }
 
         this._inputOIs = new PrimitiveObjectInspector[numFeatures];
@@ -160,7 +158,8 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
         }
         this._result = new ArrayList<Text>(numFeatures);
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     }
 
     @Override
@@ -189,8 +188,8 @@ public final class FFMFeaturesUDF extends UDFWithOptions {
             // categorical feature representation
             final String fv;
             if (_mhash) {
-                int field = _emitIndices ? i
-                        : MurmurHash3.murmurhash3(_featureNames[i], _numFields);
+                int field =
+                        _emitIndices ? i : MurmurHash3.murmurhash3(_featureNames[i], _numFields);
                 // +NUM_FIELD to avoid conflict to quantitative features
                 int index = MurmurHash3.murmurhash3(feature, _numFeatures) + _numFields;
                 fv = builder.append(field).append(':').append(index).append(":1").toString();

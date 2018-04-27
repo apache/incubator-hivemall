@@ -48,8 +48,8 @@ public final class MatrixUtils {
      * R_j = ∑_{i=1}^{k} A_i R_{j-i} where j = 1..k, R_{-i} = R'_i
      * </pre>
      *
-     * @see <a
-     *      href="http://www.emptyloop.com/technotes/a%20tutorial%20on%20linear%20prediction%20and%20levinson-durbin.pdf">Cedrick
+     * @see <a href=
+     *      "http://www.emptyloop.com/technotes/a%20tutorial%20on%20linear%20prediction%20and%20levinson-durbin.pdf">Cedrick
      *      Collomb: A tutorial on linear prediction and Levinson-Durbin</a>
      * @param R autocovariance where |R| >= order
      * @param A coefficient to be solved where |A| >= order + 1
@@ -58,10 +58,10 @@ public final class MatrixUtils {
     @Nonnull
     public static double[] aryule(@Nonnull final double[] R, @Nonnull final double[] A,
             final int order) {
-        Preconditions.checkArgument(R.length > order, "|R| MUST be greater than or equals to "
-                + order + ": " + R.length);
-        Preconditions.checkArgument(A.length >= order + 1, "|A| MUST be greater than or equals to "
-                + (order + 1) + ": " + A.length);
+        Preconditions.checkArgument(R.length > order,
+            "|R| MUST be greater than or equals to " + order + ": " + R.length);
+        Preconditions.checkArgument(A.length >= order + 1,
+            "|A| MUST be greater than or equals to " + (order + 1) + ": " + A.length);
 
         final double[] E = new double[order + 1];
         A[0] = 1.0d;
@@ -99,10 +99,10 @@ public final class MatrixUtils {
     @Nonnull
     public static double[] aryule2(@Nonnull final double[] R, @Nonnull final double[] A,
             final int order) {
-        Preconditions.checkArgument(R.length > order, "|C| MUST be greater than or equals to "
-                + order + ": " + R.length);
-        Preconditions.checkArgument(A.length >= order + 1, "|A| MUST be greater than or equals to "
-                + (order + 1) + ": " + A.length);
+        Preconditions.checkArgument(R.length > order,
+            "|C| MUST be greater than or equals to " + order + ": " + R.length);
+        Preconditions.checkArgument(A.length >= order + 1,
+            "|A| MUST be greater than or equals to " + (order + 1) + ": " + A.length);
 
         final double[] E = new double[order + 1];
         A[0] = E[0] = 1.0d;
@@ -148,10 +148,10 @@ public final class MatrixUtils {
     @Nonnull
     public static double[] arburg(@Nonnull final double[] X, @Nonnull final double[] A,
             final int order) {
-        Preconditions.checkArgument(X.length > order, "|X| MUST be greater than or equals to "
-                + order + ": " + X.length);
-        Preconditions.checkArgument(A.length >= order + 1, "|A| MUST be greater than or equals to "
-                + (order + 1) + ": " + A.length);
+        Preconditions.checkArgument(X.length > order,
+            "|X| MUST be greater than or equals to " + order + ": " + X.length);
+        Preconditions.checkArgument(A.length >= order + 1,
+            "|A| MUST be greater than or equals to " + (order + 1) + ": " + A.length);
 
         final int nDataPoints = X.length;
         final double[] E = new double[order + 1];
@@ -237,8 +237,8 @@ public final class MatrixUtils {
     @Nonnull
     public static RealMatrix[][] toeplitz(@Nonnull final RealMatrix[] c, final int dim) {
         Preconditions.checkArgument(dim >= 1, "Invalid dimension: " + dim);
-        Preconditions.checkArgument(c.length >= dim, "|c| must be greater than " + dim + ": "
-                + c.length);
+        Preconditions.checkArgument(c.length >= dim,
+            "|c| must be greater than " + dim + ": " + c.length);
 
         /*
          * Toeplitz matrix  (symmetric, invertible, k*dimensions by k*dimensions)
@@ -284,8 +284,8 @@ public final class MatrixUtils {
     @Nonnull
     public static double[][] toeplitz(@Nonnull final double[] c, final int dim) {
         Preconditions.checkArgument(dim >= 1, "Invalid dimension: " + dim);
-        Preconditions.checkArgument(c.length >= dim, "|c| must be greater than " + dim + ": "
-                + c.length);
+        Preconditions.checkArgument(c.length >= dim,
+            "|c| must be greater than " + dim + ": " + c.length);
 
         /*
          * Toeplitz matrix  (symmetric, invertible, k*dimensions by k*dimensions)
@@ -385,8 +385,8 @@ public final class MatrixUtils {
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
                     if (offset >= data.length) {
-                        throw new IndexOutOfBoundsException("Offset " + offset
-                                + " exceeded data.length " + data.length);
+                        throw new IndexOutOfBoundsException(
+                            "Offset " + offset + " exceeded data.length " + data.length);
                     }
                     double value = data[offset];
                     cell.setEntry(i, j, value);
@@ -406,7 +406,8 @@ public final class MatrixUtils {
         Preconditions.checkArgument(grid.length >= 1, "The number of rows must be greater than 1");
         Preconditions.checkArgument(grid[0].length >= 1,
             "The number of cols must be greater than 1");
-        Preconditions.checkArgument(dimensions > 0, "Dimension should be more than 0: ", dimensions);
+        Preconditions.checkArgument(dimensions > 0, "Dimension should be more than 0: ",
+            dimensions);
 
         final int rows = grid.length;
         final int cols = grid[0].length;
@@ -422,8 +423,8 @@ public final class MatrixUtils {
 
     @Nonnull
     public static RealMatrix combinedMatrices(@Nonnull final RealMatrix[] grid) {
-        Preconditions.checkArgument(grid.length >= 1, "The number of rows must be greater than 0: "
-                + grid.length);
+        Preconditions.checkArgument(grid.length >= 1,
+            "The number of rows must be greater than 0: " + grid.length);
 
         final int rows = grid.length;
         final int rowDims = grid[0].getRowDimension();
@@ -512,7 +513,7 @@ public final class MatrixUtils {
     /**
      * Find the first singular vector/value of a matrix A based on the Power method.
      *
-     * @see http 
+     * @see http
      *      ://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
      * @param A target matrix
      * @param x0 initial vector
@@ -632,12 +633,14 @@ public final class MatrixUtils {
             x = unitL2norm(x);
 
             RealMatrix subR = R.getSubMatrix(i, i + 1, 0, n - 1);
-            R.setSubMatrix(subR.subtract(x.outerProduct(subR.preMultiply(x)).scalarMultiply(2))
-                               .getData(), i, 0);
+            R.setSubMatrix(
+                subR.subtract(x.outerProduct(subR.preMultiply(x)).scalarMultiply(2)).getData(), i,
+                0);
 
             RealMatrix subQt = Qt.getSubMatrix(i, i + 1, 0, n - 1);
-            Qt.setSubMatrix(subQt.subtract(x.outerProduct(subQt.preMultiply(x)).scalarMultiply(2))
-                                 .getData(), i, 0);
+            Qt.setSubMatrix(
+                subQt.subtract(x.outerProduct(subQt.preMultiply(x)).scalarMultiply(2)).getData(), i,
+                0);
         }
     }
 

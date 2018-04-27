@@ -24,8 +24,7 @@ import org.apache.hadoop.hive.ql.exec.UDAFEvaluator;
 import org.apache.hadoop.io.FloatWritable;
 
 @SuppressWarnings("deprecation")
-@Description(
-        name = "argmin_kld",
+@Description(name = "argmin_kld",
         value = "_FUNC_(float mean, float covar) - Returns mean or covar that minimize a KL-distance among distributions",
         extended = "The returned value is (1.0 / (sum(1.0 / covar))) * (sum(mean / covar)")
 public final class ArgminKLDistanceUDAF extends UDAF {

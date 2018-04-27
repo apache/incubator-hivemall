@@ -40,8 +40,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
  * @deprecated Use {@link hivemall.regression.GeneralRegressorUDTF} instead
  */
 @Deprecated
-@Description(
-        name = "train_adadelta_regr",
+@Description(name = "train_adadelta_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                 + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
 public final class AdaDeltaUDTF extends RegressionBaseUDTF {
@@ -131,11 +130,10 @@ public final class AdaDeltaUDTF extends RegressionBaseUDTF {
         }
 
         float new_scaled_sum_sq_grad = (decay * old_scaled_sum_sqgrad) + ((1.f - decay) * g_g);
-        float dx = (float) Math.sqrt((old_sum_squared_delta_x + eps)
-                / (old_scaled_sum_sqgrad * scaling + eps))
-                * gradient;
-        float new_sum_squared_delta_x = (decay * old_sum_squared_delta_x)
-                + ((1.f - decay) * dx * dx);
+        float dx = (float) Math.sqrt(
+            (old_sum_squared_delta_x + eps) / (old_scaled_sum_sqgrad * scaling + eps)) * gradient;
+        float new_sum_squared_delta_x =
+                (decay * old_sum_squared_delta_x) + ((1.f - decay) * dx * dx);
         float new_w = old_w + (dx * xi);
         return new WeightValueParamsF2(new_w, new_scaled_sum_sq_grad, new_sum_squared_delta_x);
     }

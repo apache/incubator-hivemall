@@ -228,9 +228,8 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
                 }
 
                 if (p_dw == 0.d) {
-                    throw new IllegalStateException(
-                        "Perplexity would be Infinity. "
-                                + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
+                    throw new IllegalStateException("Perplexity would be Infinity. "
+                            + "Try different mini-batch size `-s`, larger `-delta` and/or larger `-alpha`.");
                 }
                 numer += w_value * Math.log(p_dw);
                 denom += w_value;
@@ -242,8 +241,8 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
 
     @Nonnull
     protected SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int z) {
-        final SortedMap<Float, List<String>> res = new TreeMap<Float, List<String>>(
-            Collections.reverseOrder());
+        final SortedMap<Float, List<String>> res =
+                new TreeMap<Float, List<String>>(Collections.reverseOrder());
 
         for (Map.Entry<String, float[]> e : _p_zw.entrySet()) {
             final String w = e.getKey();
@@ -271,7 +270,8 @@ public final class IncrementalPLSAModel extends AbstractProbabilisticTopicModel 
         return _p_zw.get(w)[z];
     }
 
-    protected void setWordScore(@Nonnull final String w, @Nonnegative final int z, final float prob) {
+    protected void setWordScore(@Nonnull final String w, @Nonnegative final int z,
+            final float prob) {
         float[] prob_label = _p_zw.get(w);
         if (prob_label == null) {
             prob_label = newRandomFloatArray(_K, _rnd);

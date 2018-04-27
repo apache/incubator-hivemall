@@ -47,8 +47,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
  * @link http://dl.acm.org/citation.cfm?id=1390190
  * @link http://dl.acm.org/citation.cfm?id=1699577
  */
-@Description(
-        name = "train_multiclass_cw",
+@Description(name = "train_multiclass_cw",
         value = "_FUNC_(list<string|int|bigint> features, {int|string} label [, const string options])"
                 + " - Returns a relation consists of <{int|string} label, {string|int|bigint} feature, float weight, float covar>",
         extended = "Build a prediction model by Confidence-Weighted (CW) multiclass classifier")
@@ -137,8 +136,8 @@ public class MulticlassConfidenceWeightedUDTF extends MulticlassOnlineClassifier
             Object missed_label) {
         assert (actual_label != null);
         if (actual_label.equals(missed_label)) {
-            throw new IllegalArgumentException("Actual label equals to missed label: "
-                    + actual_label);
+            throw new IllegalArgumentException(
+                "Actual label equals to missed label: " + actual_label);
         }
 
         PredictionModel model2add = label2model.get(actual_label);
@@ -168,7 +167,8 @@ public class MulticlassConfidenceWeightedUDTF extends MulticlassOnlineClassifier
 
             if (model2sub != null) {
                 IWeightValue old_wrongclass_w = model2sub.get(k);
-                IWeightValue new_wrongclass_w = getNewWeight(old_wrongclass_w, v, alpha, phi, false);
+                IWeightValue new_wrongclass_w =
+                        getNewWeight(old_wrongclass_w, v, alpha, phi, false);
                 model2sub.set(k, new_wrongclass_w);
             }
         }

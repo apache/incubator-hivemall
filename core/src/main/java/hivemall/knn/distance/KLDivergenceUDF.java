@@ -41,7 +41,8 @@ public final class KLDivergenceUDF extends UDF {
 
     public static double kld(final double mu1, final double sigma1, final double mu2,
             final double sigma2) {
-        return (Math.log(sigma2 / sigma1) + sigma2 / sigma1 + Math.pow(mu1 - mu2, 2) / sigma2 - 1.d) * 0.5d;
+        return (Math.log(sigma2 / sigma1) + sigma2 / sigma1 + Math.pow(mu1 - mu2, 2) / sigma2 - 1.d)
+                * 0.5d;
     }
 
 }

@@ -28,8 +28,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
-@Description(
-        name = "train_multiclass_perceptron",
+@Description(name = "train_multiclass_perceptron",
         value = "_FUNC_(list<string|int|bigint> features, {int|string} label [, const string options])"
                 + " - Returns a relation consists of <{int|string} label, {string|int|bigint} feature, float weight>",
         extended = "Build a prediction model by Perceptron multiclass classifier")
@@ -47,7 +46,8 @@ public final class MulticlassPerceptronUDTF extends MulticlassOnlineClassifierUD
     }
 
     @Override
-    protected void train(@Nonnull final FeatureValue[] features, @Nonnull final Object actual_label) {
+    protected void train(@Nonnull final FeatureValue[] features,
+            @Nonnull final Object actual_label) {
         PredictionResult predicted = classify(features);
         Object predicted_label = predicted.getLabel();
 

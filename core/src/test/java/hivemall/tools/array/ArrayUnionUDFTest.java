@@ -41,16 +41,20 @@ public class ArrayUnionUDFTest {
         ArrayUnionUDF udf = new ArrayUnionUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
 
         DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {0, 1,
-                        2})),
-                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {2, 3,
-                        4})),
-                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {4, 5}))};
+                new GenericUDF.DeferredJavaObject(
+                    WritableUtils.toWritableList(new double[] {0, 1, 2})),
+                new GenericUDF.DeferredJavaObject(
+                    WritableUtils.toWritableList(new double[] {2, 3, 4})),
+                new GenericUDF.DeferredJavaObject(
+                    WritableUtils.toWritableList(new double[] {4, 5}))};
 
         List<Object> result = udf.evaluate(args);
 
@@ -62,11 +66,12 @@ public class ArrayUnionUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(
-            ArrayUnionUDF.class,
+        TestUtils.testGenericUDFSerialization(ArrayUnionUDF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)},
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)},
             new Object[] {Arrays.asList(0.d, 1.d), Arrays.asList(2.d, 3.d)});
     }
 }

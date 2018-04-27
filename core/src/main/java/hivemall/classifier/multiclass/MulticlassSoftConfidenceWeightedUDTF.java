@@ -103,7 +103,8 @@ public abstract class MulticlassSoftConfidenceWeightedUDTF extends MulticlassOnl
             if (c_str != null) {
                 c = Float.parseFloat(c_str);
                 if (!(c > 0.f)) {
-                    throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: " + c);
+                    throw new UDFArgumentException(
+                        "Aggressiveness parameter C must be C > 0: " + c);
                 }
             }
         }
@@ -146,8 +147,7 @@ public abstract class MulticlassSoftConfidenceWeightedUDTF extends MulticlassOnl
 
     protected abstract float getBeta(Margin margin, float alpha);
 
-    @Description(
-            name = "train_multiclass_scw",
+    @Description(name = "train_multiclass_scw",
             value = "_FUNC_(list<string|int|bigint> features, {int|string} label [, const string options])"
                     + " - Returns a relation consists of <{int|string} label, {string|int|bigint} feature, float weight, float covar>",
             extended = "Build a prediction model by Soft Confidence-Weighted (SCW-1) multiclass classifier")
@@ -173,10 +173,8 @@ public abstract class MulticlassSoftConfidenceWeightedUDTF extends MulticlassOnl
             float m = margin.get();
             float var = margin.getVariance();
 
-            float alpha_numer = -m
-                    * psi
-                    + (float) Math.sqrt((m * m * squared_phi * squared_phi / 4.f)
-                            + (var * squared_phi * zeta));
+            float alpha_numer = -m * psi + (float) Math.sqrt(
+                (m * m * squared_phi * squared_phi / 4.f) + (var * squared_phi * zeta));
             float alpha_denom = var * zeta;
             if (alpha_denom == 0.f) {
                 return 0.f;
@@ -211,8 +209,7 @@ public abstract class MulticlassSoftConfidenceWeightedUDTF extends MulticlassOnl
 
     }
 
-    @Description(
-            name = "train_multiclass_scw2",
+    @Description(name = "train_multiclass_scw2",
             value = "_FUNC_(list<string|int|bigint> features, {int|string} label [, const string options])"
                     + " - Returns a relation consists of <{int|string} label, {string|int|bigint} feature, float weight, float covar>",
             extended = "Build a prediction model by Soft Confidence-Weighted 2 (SCW-2) multiclass classifier")
@@ -250,8 +247,8 @@ public abstract class MulticlassSoftConfidenceWeightedUDTF extends MulticlassOnl
             final Object missed_label, final float alpha, final float beta) {
         assert (actual_label != null);
         if (actual_label.equals(missed_label)) {
-            throw new IllegalArgumentException("Actual label equals to missed label: "
-                    + actual_label);
+            throw new IllegalArgumentException(
+                "Actual label equals to missed label: " + actual_label);
         }
 
         PredictionModel model2add = label2model.get(actual_label);
@@ -276,13 +273,14 @@ public abstract class MulticlassSoftConfidenceWeightedUDTF extends MulticlassOnl
             final float v = f.getValueAsFloat();
 
             IWeightValue old_correctclass_w = model2add.get(k);
-            IWeightValue new_correctclass_w = getNewWeight(old_correctclass_w, v, alpha, beta, true);
+            IWeightValue new_correctclass_w =
+                    getNewWeight(old_correctclass_w, v, alpha, beta, true);
             model2add.set(k, new_correctclass_w);
 
             if (model2sub != null) {
                 IWeightValue old_wrongclass_w = model2sub.get(k);
-                IWeightValue new_wrongclass_w = getNewWeight(old_wrongclass_w, v, alpha, beta,
-                    false);
+                IWeightValue new_wrongclass_w =
+                        getNewWeight(old_wrongclass_w, v, alpha, beta, false);
                 model2sub.set(k, new_wrongclass_w);
             }
         }

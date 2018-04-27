@@ -74,7 +74,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
         if (!HiveUtils.isStringTypeInfo(typeInfo[0])) {
             throw new UDFArgumentTypeException(0,
-                "String type is expected for the first argument word: " + typeInfo[0].getTypeName());
+                "String type is expected for the first argument word: "
+                        + typeInfo[0].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[1])) {
             throw new UDFArgumentTypeException(1,
@@ -179,16 +180,16 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 String rawArgs = HiveUtils.getConstString(argOIs[4]);
                 cl = parseOptions(rawArgs);
 
-                this.topics = Primitives.parseInt(cl.getOptionValue("topics"),
-                    LDAUDTF.DEFAULT_TOPICS);
+                this.topics =
+                        Primitives.parseInt(cl.getOptionValue("topics"), LDAUDTF.DEFAULT_TOPICS);
                 if (topics < 1) {
                     throw new UDFArgumentException(
                         "A positive integer MUST be set to an option `-topics`: " + topics);
                 }
 
                 this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
-                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"),
-                    LDAUDTF.DEFAULT_DELTA);
+                this.delta =
+                        Primitives.parseDouble(cl.getOptionValue("delta"), LDAUDTF.DEFAULT_DELTA);
             } else {
                 this.topics = LDAUDTF.DEFAULT_TOPICS;
                 this.alpha = 1.f / topics;
@@ -221,8 +222,10 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.wcListElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.wcListOI = ObjectInspectorFactory.getStandardListObjectInspector(wcListElemOI);
                 this.lambdaMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                this.lambdaMapValueElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                this.lambdaMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(lambdaMapValueElemOI);
+                this.lambdaMapValueElemOI =
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+                this.lambdaMapValueOI =
+                        ObjectInspectorFactory.getStandardListObjectInspector(lambdaMapValueElemOI);
                 this.lambdaMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
                     lambdaMapKeyOI, lambdaMapValueOI);
             }
@@ -239,8 +242,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 fieldNames.add("probability");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
-                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardStructObjectInspector(
-                    fieldNames, fieldOIs));
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs));
             }
             return outputOI;
         }
@@ -250,12 +253,14 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
             fieldNames.add("wcList");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
             fieldNames.add("lambdaMap");
             fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
 
             fieldNames.add("topics");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
@@ -340,7 +345,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             }
 
             Object lambdaMapObj = internalMergeOI.getStructFieldData(partial, lambdaMapField);
-            Map<?, ?> lambdaMapRaw = lambdaMapOI.getMap(HiveUtils.castLazyBinaryObject(lambdaMapObj));
+            Map<?, ?> lambdaMapRaw =
+                    lambdaMapOI.getMap(HiveUtils.castLazyBinaryObject(lambdaMapObj));
 
             Map<String, List<Float>> lambdaMap = new HashMap<String, List<Float>>();
             for (Map.Entry<?, ?> e : lambdaMapRaw.entrySet()) {
@@ -348,14 +354,15 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
                 String word = PrimitiveObjectInspectorUtils.getString(e.getKey(), lambdaMapKeyOI);
 
                 Object lambdaMapValueObj = e.getValue();
-                List<?> lambdaMapValueRaw = lambdaMapValueOI.getList(HiveUtils.castLazyBinaryObject(lambdaMapValueObj));
+                List<?> lambdaMapValueRaw =
+                        lambdaMapValueOI.getList(HiveUtils.castLazyBinaryObject(lambdaMapValueObj));
 
                 // fix map values to lists of Java Float objects
                 int lambdaMapValueSize = lambdaMapValueRaw.size();
                 List<Float> lambda_word = new ArrayList<Float>();
                 for (int i = 0; i < lambdaMapValueSize; i++) {
-                    lambda_word.add(HiveUtils.getFloat(lambdaMapValueRaw.get(i),
-                        lambdaMapValueElemOI));
+                    lambda_word.add(
+                        HiveUtils.getFloat(lambdaMapValueRaw.get(i), lambdaMapValueElemOI));
                 }
 
                 lambdaMap.put(word, lambda_word);
@@ -369,7 +376,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             this.alpha = PrimitiveObjectInspectorFactory.writableFloatObjectInspector.get(alphaObj);
 
             Object deltaObj = internalMergeOI.getStructFieldData(partial, deltaOptionField);
-            this.delta = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(deltaObj);
+            this.delta =
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(deltaObj);
 
             OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
             myAggr.setOptions(topics, alpha, delta);
@@ -382,8 +390,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
             float[] topicDistr = myAggr.get();
 
-            SortedMap<Float, Integer> sortedDistr = new TreeMap<Float, Integer>(
-                Collections.reverseOrder());
+            SortedMap<Float, Integer> sortedDistr =
+                    new TreeMap<Float, Integer>(Collections.reverseOrder());
             for (int i = 0; i < topicDistr.length; i++) {
                 sortedDistr.put(topicDistr[i], i);
             }
@@ -400,8 +408,8 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static class OnlineLDAPredictAggregationBuffer extends
-            GenericUDAFEvaluator.AbstractAggregationBuffer {
+    public static class OnlineLDAPredictAggregationBuffer
+            extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
         private List<String> wcList;
         private Map<String, List<Float>> lambdaMap;

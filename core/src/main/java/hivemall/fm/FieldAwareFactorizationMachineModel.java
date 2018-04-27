@@ -109,9 +109,9 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
             }
         }
         if (!NumberUtils.isFinite(ret)) {
-            throw new HiveException("Detected " + ret
-                    + " in predict. We recommend to normalize training examples.\n"
-                    + "Dumping variables ...\n" + varDump(x));
+            throw new HiveException(
+                "Detected " + ret + " in predict. We recommend to normalize training examples.\n"
+                        + "Dumping variables ...\n" + varDump(x));
         }
         return ret;
     }
@@ -131,9 +131,9 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         final float eta = eta(theta, t, gradWi);
         float nextWi = wi - eta * (gradWi + 2.f * _lambdaW * wi);
         if (!NumberUtils.isFinite(nextWi)) {
-            throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
-                    + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + wi + ", dloss=" + dloss
-                    + ", eta=" + eta + ", t=" + t);
+            throw new IllegalStateException(
+                "Got " + nextWi + " for next W[" + x.getFeature() + "]\n" + "Xi=" + Xi + ", gradWi="
+                        + gradWi + ", wi=" + wi + ", dloss=" + dloss + ", eta=" + eta + ", t=" + t);
         }
         if (MathUtils.closeToZero(nextWi, 1E-9f)) {
             removeEntry(theta);
@@ -159,8 +159,8 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
             return;
         }
 
-        final float nextWi = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
-                / _alpha + _lambda2));
+        final float nextWi = (float) ((MathUtils.sign(z) * _lambda1 - z)
+                / ((_beta + Math.sqrt(n)) / _alpha + _lambda2));
         if (!NumberUtils.isFinite(nextWi)) {
             throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
                     + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + theta.getW()
@@ -196,10 +196,10 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         final float eta = eta(theta, f, t, gradV);
         final float nextV = currentV - eta * (gradV + 2.f * lambdaVf * currentV);
         if (!NumberUtils.isFinite(nextV)) {
-            throw new IllegalStateException("Got " + nextV + " for next V" + f + '['
-                    + x.getFeatureIndex() + "]\n" + "Xi=" + Xi + ", Vif=" + currentV + ", h=" + h
-                    + ", gradV=" + gradV + ", lambdaVf=" + lambdaVf + ", dloss=" + dloss
-                    + ", sumViX=" + sumViX + ", t=" + t);
+            throw new IllegalStateException(
+                "Got " + nextV + " for next V" + f + '[' + x.getFeatureIndex() + "]\n" + "Xi=" + Xi
+                        + ", Vif=" + currentV + ", h=" + h + ", gradV=" + gradV + ", lambdaVf="
+                        + lambdaVf + ", dloss=" + dloss + ", sumViX=" + sumViX + ", t=" + t);
         }
         if (MathUtils.closeToZero(nextV, 1E-9f)) {
             theta.setV(f, 0.f);
@@ -234,13 +234,13 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
             return;
         }
 
-        final float nextV = (float) ((MathUtils.sign(z) * _lambda1 - z) / ((_beta + Math.sqrt(n))
-                / _alpha + _lambda2));
+        final float nextV = (float) ((MathUtils.sign(z) * _lambda1 - z)
+                / ((_beta + Math.sqrt(n)) / _alpha + _lambda2));
         if (!NumberUtils.isFinite(nextV)) {
-            throw new IllegalStateException("Got " + nextV + " for next V" + f + '['
-                    + x.getFeatureIndex() + "]\n" + "Xi=" + Xi + ", Vif=" + theta.getV(f) + ", h="
-                    + h + ", gradV=" + gradV + ", dloss=" + dloss + ", sumViX=" + sumViX + ", n="
-                    + n + ", z=" + z);
+            throw new IllegalStateException(
+                "Got " + nextV + " for next V" + f + '[' + x.getFeatureIndex() + "]\n" + "Xi=" + Xi
+                        + ", Vif=" + theta.getV(f) + ", h=" + h + ", gradV=" + gradV + ", dloss="
+                        + dloss + ", sumViX=" + sumViX + ", n=" + n + ", z=" + z);
         }
         if (MathUtils.closeToZero(nextV, 1E-9f)) {
             theta.setV(f, 0.f);

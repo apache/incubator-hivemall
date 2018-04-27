@@ -26,8 +26,7 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 
-@Description(
-        name = "normalize_unicode",
+@Description(name = "normalize_unicode",
         value = "_FUNC_(string str [, string form]) - Transforms `str` with the specified normalization form. "
                 + "The `form` takes one of NFC (default), NFD, NFKC, or NFKD",
         extended = "select normalize_unicode('ﾊﾝｶｸｶﾅ','NFKC');\n" + "> ハンカクカナ\n" + "\n"

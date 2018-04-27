@@ -138,7 +138,8 @@ public final class AdaGradRDAUDTF extends BinaryOnlineClassifierUDTF {
         } else {
             // x_{t,i} = -sign(u_{t,i}) * \frac{\eta t}{\sqrt{G_{t,ii}}}(|u_{t,i}|/t - \lambda)
             float weight = -1.f * sign * eta * t * meansOfGradients / (float) Math.sqrt(sum_sqgrad);
-            IWeightValue new_w = new WeightValueParamsF2(weight, scaled_sum_sqgrad, scaled_sum_grad);
+            IWeightValue new_w =
+                    new WeightValueParamsF2(weight, scaled_sum_sqgrad, scaled_sum_grad);
             model.set(x, new_w);
         }
     }

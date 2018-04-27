@@ -154,8 +154,8 @@ final class SingularSpectrumTransform implements SingularSpectrumTransformInterf
         RealMatrix Q = svdG.getU();
 
         // find the largest singular value for the r principal components
-        RealMatrix UTQ = UT.getSubMatrix(0, r - 1, 0, window - 1).multiply(
-            Q.getSubMatrix(0, window - 1, 0, r - 1));
+        RealMatrix UTQ = UT.getSubMatrix(0, r - 1, 0, window - 1)
+                           .multiply(Q.getSubMatrix(0, window - 1, 0, r - 1));
         SingularValueDecomposition svdUTQ = new SingularValueDecomposition(UTQ);
         double[] s = svdUTQ.getSingularValues();
 

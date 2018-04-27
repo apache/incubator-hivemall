@@ -41,24 +41,28 @@ public class PerceptronUDTFTest {
     public void testInitialize() throws UDFArgumentException {
         PerceptronUDTF udtf = new PerceptronUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
 
         /* test for INT_TYPE_NAME feature */
-        StructObjectInspector intListSOI = udtf.initialize(new ObjectInspector[] {intListOI, intOI});
+        StructObjectInspector intListSOI =
+                udtf.initialize(new ObjectInspector[] {intListOI, intOI});
         assertEquals("struct<feature:int,weight:float>", intListSOI.getTypeName());
 
         /* test for STRING_TYPE_NAME feature */
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
-        StructObjectInspector stringListSOI = udtf.initialize(new ObjectInspector[] {stringListOI,
-                intOI});
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        StructObjectInspector stringListSOI =
+                udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
         assertEquals("struct<feature:string,weight:float>", stringListSOI.getTypeName());
 
         /* test for BIGINT_TYPE_NAME feature */
         ObjectInspector longOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
-        ListObjectInspector longListOI = ObjectInspectorFactory.getStandardListObjectInspector(longOI);
-        StructObjectInspector longListSOI = udtf.initialize(new ObjectInspector[] {longListOI,
-                intOI});
+        ListObjectInspector longListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(longOI);
+        StructObjectInspector longListSOI =
+                udtf.initialize(new ObjectInspector[] {longListOI, intOI});
         assertEquals("struct<feature:bigint,weight:float>", longListSOI.getTypeName());
     }
 
@@ -66,7 +70,8 @@ public class PerceptronUDTFTest {
     public void testUpdate() throws UDFArgumentException {
         PerceptronUDTF udtf = new PerceptronUDTF();
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         udtf.initialize(new ObjectInspector[] {stringListOI,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector});
 
@@ -96,7 +101,8 @@ public class PerceptronUDTFTest {
     public void testUpdateStringTypeDisableBias() throws UDFArgumentException {
         PerceptronUDTF udtf = new PerceptronUDTF();
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "");
         udtf.initialize(new ObjectInspector[] {stringListOI,
@@ -126,11 +132,11 @@ public class PerceptronUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            PerceptronUDTF.class,
+        TestUtils.testGenericUDTFSerialization(PerceptronUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
-                    Arrays.asList("1:-2", "2:-1"), 0}});
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0}});
     }
 }

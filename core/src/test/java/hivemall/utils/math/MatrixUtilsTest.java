@@ -82,13 +82,16 @@ public class MatrixUtilsTest {
         // 3  2  1
         Assert.assertArrayEquals(new RealMatrix[] {new Array2DRowRealMatrix(new double[] {1}),
                 new Array2DRowRealMatrix(new double[] {2}),
-                new Array2DRowRealMatrix(new double[] {3})}, A[0]);
+                new Array2DRowRealMatrix(new double[] {3})},
+            A[0]);
         Assert.assertArrayEquals(new RealMatrix[] {new Array2DRowRealMatrix(new double[] {2}),
                 new Array2DRowRealMatrix(new double[] {1}),
-                new Array2DRowRealMatrix(new double[] {2})}, A[1]);
+                new Array2DRowRealMatrix(new double[] {2})},
+            A[1]);
         Assert.assertArrayEquals(new RealMatrix[] {new Array2DRowRealMatrix(new double[] {3}),
                 new Array2DRowRealMatrix(new double[] {2}),
-                new Array2DRowRealMatrix(new double[] {1})}, A[2]);
+                new Array2DRowRealMatrix(new double[] {1})},
+            A[2]);
     }
 
     @Test
@@ -110,12 +113,12 @@ public class MatrixUtilsTest {
     @Test
     public void testCombinedMatrices2D() {
         RealMatrix[] m1 = new RealMatrix[] {
-                new Array2DRowRealMatrix(new double[][] {new double[] {1, 2, 3},
-                        new double[] {4, 5, 6}}),
-                new Array2DRowRealMatrix(new double[][] {new double[] {7, 8, 9},
-                        new double[] {10, 11, 12}}),
-                new Array2DRowRealMatrix(new double[][] {new double[] {13, 14, 15},
-                        new double[] {16, 17, 18}})};
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {1, 2, 3}, new double[] {4, 5, 6}}),
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {7, 8, 9}, new double[] {10, 11, 12}}),
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {13, 14, 15}, new double[] {16, 17, 18}})};
         RealMatrix flatten1 = MatrixUtils.combinedMatrices(m1);
         Assert.assertEquals(3, flatten1.getColumnDimension());
         Assert.assertEquals(6, flatten1.getRowDimension());
@@ -172,12 +175,12 @@ public class MatrixUtilsTest {
     @Test
     public void testFlatten2D() {
         RealMatrix[] m1 = new RealMatrix[] {
-                new Array2DRowRealMatrix(new double[][] {new double[] {1, 2, 3},
-                        new double[] {4, 5, 6}}),
-                new Array2DRowRealMatrix(new double[][] {new double[] {7, 8, 9},
-                        new double[] {10, 11, 12}}),
-                new Array2DRowRealMatrix(new double[][] {new double[] {13, 14, 15},
-                        new double[] {16, 17, 18}})};
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {1, 2, 3}, new double[] {4, 5, 6}}),
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {7, 8, 9}, new double[] {10, 11, 12}}),
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {13, 14, 15}, new double[] {16, 17, 18}})};
         double[] actual = MatrixUtils.flatten(m1);
         double[] expected = new double[18];
         for (int i = 0; i < expected.length; i++) {
@@ -195,22 +198,22 @@ public class MatrixUtilsTest {
         RealMatrix[] actual = MatrixUtils.unflatten(data, 2, 3, 4);
 
         RealMatrix[] expected = new RealMatrix[] {
-                new Array2DRowRealMatrix(new double[][] {new double[] {1, 2, 3},
-                        new double[] {4, 5, 6}}),
-                new Array2DRowRealMatrix(new double[][] {new double[] {7, 8, 9},
-                        new double[] {10, 11, 12}}),
-                new Array2DRowRealMatrix(new double[][] {new double[] {13, 14, 15},
-                        new double[] {16, 17, 18}}),
-                new Array2DRowRealMatrix(new double[][] {new double[] {19, 20, 21},
-                        new double[] {22, 23, 24}})};
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {1, 2, 3}, new double[] {4, 5, 6}}),
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {7, 8, 9}, new double[] {10, 11, 12}}),
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {13, 14, 15}, new double[] {16, 17, 18}}),
+                new Array2DRowRealMatrix(
+                    new double[][] {new double[] {19, 20, 21}, new double[] {22, 23, 24}})};
 
         Assert.assertArrayEquals(expected, actual);
     }
 
     @Test
     public void testPower1() {
-        RealMatrix A = new Array2DRowRealMatrix(new double[][] {new double[] {1, 2, 3},
-                new double[] {4, 5, 6}});
+        RealMatrix A = new Array2DRowRealMatrix(
+            new double[][] {new double[] {1, 2, 3}, new double[] {4, 5, 6}});
 
         double[] x = new double[3];
         x[0] = Math.random();
@@ -241,9 +244,9 @@ public class MatrixUtilsTest {
         RealMatrix actual = new Array2DRowRealMatrix(new double[4][4]);
         MatrixUtils.lanczosTridiagonalization(C, a, actual);
 
-        RealMatrix expected = new Array2DRowRealMatrix(new double[][] {new double[] {40, 60, 0, 0},
-                new double[] {60, 10, 120, 0}, new double[] {0, 120, 10, 120},
-                new double[] {0, 0, 120, 10}});
+        RealMatrix expected = new Array2DRowRealMatrix(
+            new double[][] {new double[] {40, 60, 0, 0}, new double[] {60, 10, 120, 0},
+                    new double[] {0, 120, 10, 120}, new double[] {0, 0, 120, 10}});
 
         Assert.assertEquals(expected, actual);
     }
@@ -251,9 +254,9 @@ public class MatrixUtilsTest {
     @Test
     public void testTridiagonalEigen() {
         // Tridiagonal Matrix
-        RealMatrix T = new Array2DRowRealMatrix(new double[][] {new double[] {40, 60, 0, 0},
-                new double[] {60, 10, 120, 0}, new double[] {0, 120, 10, 120},
-                new double[] {0, 0, 120, 10}});
+        RealMatrix T = new Array2DRowRealMatrix(
+            new double[][] {new double[] {40, 60, 0, 0}, new double[] {60, 10, 120, 0},
+                    new double[] {0, 120, 10, 120}, new double[] {0, 0, 120, 10}});
 
         double[] eigvals = new double[4];
         RealMatrix eigvecs = new Array2DRowRealMatrix(new double[4][4]);

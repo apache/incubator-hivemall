@@ -48,8 +48,8 @@ public final class DoKIntMatrix extends AbstractIntMatrix {
 
     public DoKIntMatrix(@Nonnegative int numRows, @Nonnegative int numCols,
             @Nonnegative float sparsity) {
-        Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f, "Invalid Sparsity value: "
-                + sparsity);
+        Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f,
+            "Invalid Sparsity value: " + sparsity);
         int initialCapacity = Math.max(16384, Math.round(numRows * numCols * sparsity));
         this.elements = new Long2IntOpenHashTable(initialCapacity);
         this.numRows = numRows;
@@ -249,10 +249,10 @@ public final class DoKIntMatrix extends AbstractIntMatrix {
     }
 
     @Nonnull
-    private static DoKIntMatrix buildFromColumnMajorMatrix(
-            @Nonnull final int[][] columnMajorMatrix, boolean nonZeroOnly) {
-        final Long2IntOpenHashTable elements = new Long2IntOpenHashTable(
-            columnMajorMatrix.length * 3);
+    private static DoKIntMatrix buildFromColumnMajorMatrix(@Nonnull final int[][] columnMajorMatrix,
+            boolean nonZeroOnly) {
+        final Long2IntOpenHashTable elements =
+                new Long2IntOpenHashTable(columnMajorMatrix.length * 3);
 
         int numRows = 0, numColumns = columnMajorMatrix.length;
         for (int j = 0; j < columnMajorMatrix.length; j++) {

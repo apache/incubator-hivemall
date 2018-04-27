@@ -25,14 +25,13 @@ public class GeoSpatialUtilsTest {
 
     @Test
     public void testTile() {
-        double[] lat_array = new double[] {GeoSpatialUtils.MIN_LATITUDE, 0.d,
-                GeoSpatialUtils.MAX_LATITUDE};
+        double[] lat_array =
+                new double[] {GeoSpatialUtils.MIN_LATITUDE, 0.d, GeoSpatialUtils.MAX_LATITUDE};
         double[] lon_array = new double[] {-180.d, 0.d, 180.d};
         for (double lat : lat_array) {
             for (double lon : lon_array) {
-                Assert.assertTrue(
-                    String.format("lat=%s, lon=%s, tile=%s", lat, lon,
-                        GeoSpatialUtils.tile(lat, lon, 4)), GeoSpatialUtils.tile(lat, lon, 4) >= 0);
+                Assert.assertTrue(String.format("lat=%s, lon=%s, tile=%s", lat, lon,
+                    GeoSpatialUtils.tile(lat, lon, 4)), GeoSpatialUtils.tile(lat, lon, 4) >= 0);
             }
         }
     }

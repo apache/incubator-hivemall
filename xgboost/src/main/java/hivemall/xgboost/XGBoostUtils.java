@@ -29,7 +29,8 @@ public final class XGBoostUtils {
 
     /** Transform List<String> inputs into a XGBoost input format */
     @Nullable
-    public static LabeledPoint parseFeatures(final double target, @Nonnull final String[] features) {
+    public static LabeledPoint parseFeatures(final double target,
+            @Nonnull final String[] features) {
         final int size = features.length;
         if (size == 0) {
             return null;

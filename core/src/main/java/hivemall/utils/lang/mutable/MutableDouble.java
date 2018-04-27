@@ -24,8 +24,8 @@ import java.io.Serializable;
 
 import javax.annotation.Nonnull;
 
-public final class MutableDouble extends Number implements Copyable<MutableDouble>,
-        Comparable<MutableDouble>, Serializable {
+public final class MutableDouble extends Number
+        implements Copyable<MutableDouble>, Comparable<MutableDouble>, Serializable {
     private static final long serialVersionUID = 3275291486084936953L;
 
     private double value;
@@ -97,8 +97,8 @@ public final class MutableDouble extends Number implements Copyable<MutableDoubl
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof MutableDouble)
-                && (Double.doubleToLongBits(((MutableDouble) obj).value) == Double.doubleToLongBits(value));
+        return (obj instanceof MutableDouble) && (Double.doubleToLongBits(
+            ((MutableDouble) obj).value) == Double.doubleToLongBits(value));
     }
 
     @Override

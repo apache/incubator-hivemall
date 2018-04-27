@@ -43,8 +43,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
  * 
  * @link http://dl.acm.org/citation.cfm?id=1390190
  */
-@Description(
-        name = "train_cw",
+@Description(name = "train_cw",
         value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                 + " - Returns a relation consists of <string|int|bigint feature, float weight, float covar>",
         extended = "Build a prediction model by Confidence-Weighted (CW) binary classifier")

@@ -34,23 +34,26 @@ public class TransposeAndDotUDAFTest {
     public void test() throws Exception {
         final TransposeAndDotUDAF tad = new TransposeAndDotUDAF();
 
-        final double[][] matrix0 = new double[][] { {1, -2}, {-1, 3}};
-        final double[][] matrix1 = new double[][] { {1, 2}, {3, 4}};
+        final double[][] matrix0 = new double[][] {{1, -2}, {-1, 3}};
+        final double[][] matrix1 = new double[][] {{1, 2}, {3, 4}};
 
         final ObjectInspector[] OIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)};
-        final GenericUDAFEvaluator evaluator = tad.getEvaluator(new SimpleGenericUDAFParameterInfo(
-            OIs, false, false));
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)};
+        final GenericUDAFEvaluator evaluator =
+                tad.getEvaluator(new SimpleGenericUDAFParameterInfo(OIs, false, false));
         evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, OIs);
-        TransposeAndDotUDAF.TransposeAndDotUDAFEvaluator.TransposeAndDotAggregationBuffer agg = (TransposeAndDotUDAF.TransposeAndDotUDAFEvaluator.TransposeAndDotAggregationBuffer) evaluator.getNewAggregationBuffer();
+        TransposeAndDotUDAF.TransposeAndDotUDAFEvaluator.TransposeAndDotAggregationBuffer agg =
+                (TransposeAndDotUDAF.TransposeAndDotUDAFEvaluator.TransposeAndDotAggregationBuffer) evaluator.getNewAggregationBuffer();
         evaluator.reset(agg);
         for (int i = 0; i < matrix0.length; i++) {
             evaluator.iterate(agg, new Object[] {WritableUtils.toWritableList(matrix0[i]),
                     WritableUtils.toWritableList(matrix1[i])});
         }
 
-        final double[][] answer = new double[][] { {-2.0, -2.0}, {7.0, 8.0}};
+        final double[][] answer = new double[][] {{-2.0, -2.0}, {7.0, 8.0}};
 
         for (int i = 0; i < answer.length; i++) {
             Assert.assertArrayEquals(answer[i], agg.aggMatrix[i], 0.d);

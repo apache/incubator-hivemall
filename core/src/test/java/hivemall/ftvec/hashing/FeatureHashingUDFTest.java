@@ -37,7 +37,8 @@ public class FeatureHashingUDFTest {
     @Test
     public void testBias() {
         String expected = "0:1.0";
-        String actual = FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES);
+        String actual =
+                FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES);
         Assert.assertEquals(expected, actual);
 
         expected = "0";
@@ -46,16 +47,16 @@ public class FeatureHashingUDFTest {
 
         expected = "0:1.1";
         actual = FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES);
-        Assert.assertEquals(
-            FeatureHashingUDF.mhash("0", MurmurHash3.DEFAULT_NUM_FEATURES) + ":1.1", actual);
+        Assert.assertEquals(FeatureHashingUDF.mhash("0", MurmurHash3.DEFAULT_NUM_FEATURES) + ":1.1",
+            actual);
     }
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(
-            FeatureHashingUDF.class,
+        TestUtils.testGenericUDFSerialization(FeatureHashingUDF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-features 1")},
             new Object[] {Arrays.asList("aaa#xxx", "bbb:10")});

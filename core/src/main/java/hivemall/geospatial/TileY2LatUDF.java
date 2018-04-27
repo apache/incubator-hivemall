@@ -38,8 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 /**
  * @link http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
  */
-@Description(
-        name = "tiley2lat",
+@Description(name = "tiley2lat",
         value = "_FUNC_(int y, int zoom)::double - Returns latitude of the given tile y and zoom level")
 @UDFType(deterministic = true, stateful = false)
 public final class TileY2LatUDF extends GenericUDF {

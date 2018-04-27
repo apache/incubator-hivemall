@@ -70,8 +70,8 @@ public class TreePredictUDFv1Test {
         byte[] serialized = IOUtils.toByteArray(gis);
 
         byte[] b = Base91.decode(serialized);
-        DtNodeV1 deserialized = JavaSerializationEvaluator.deserializeDecisionTree(b, b.length,
-            true);
+        DtNodeV1 deserialized =
+                JavaSerializationEvaluator.deserializeDecisionTree(b, b.length, true);
 
         Assert.assertNotNull(deserialized);
     }
@@ -98,8 +98,8 @@ public class TreePredictUDFv1Test {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-                x[0].length), trainy, 4);
+            DecisionTree tree = new DecisionTree(attrs,
+                new RowMajorDenseMatrix2d(trainx, x[0].length), trainy, 4);
             assertEquals(tree.predict(x[loocv.test[i]]), evalPredict(tree, x[loocv.test[i]]));
         }
     }
@@ -126,8 +126,8 @@ public class TreePredictUDFv1Test {
             double[][] testx = Math.slice(datax, cv.test[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-            RegressionTree tree = new RegressionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-                trainx[0].length), trainy, 20);
+            RegressionTree tree = new RegressionTree(attrs,
+                new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
 
             for (int j = 0; j < testx.length; j++) {
                 assertEquals(tree.predict(testx[j]), evalPredict(tree, testx[j]), 1.0);
@@ -166,8 +166,8 @@ public class TreePredictUDFv1Test {
         }
 
         Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-        RegressionTree tree = new RegressionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-            trainx[0].length), trainy, 20);
+        RegressionTree tree = new RegressionTree(attrs,
+            new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
         debugPrint(String.format("RMSE = %.4f\n", rmse(tree, testx, testy)));
 
         for (int i = m; i < n; i++) {
@@ -184,45 +184,46 @@ public class TreePredictUDFv1Test {
         return new RMSE().measure(y, predictions);
     }
 
-    private static int evalPredict(DecisionTree tree, double[] x) throws HiveException, IOException {
+    private static int evalPredict(DecisionTree tree, double[] x)
+            throws HiveException, IOException {
         String opScript = tree.predictOpCodegen(StackMachine.SEP);
         debugPrint(opScript);
 
         TreePredictUDFv1 udf = new TreePredictUDFv1();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
         DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
-                new DeferredJavaObject(ModelType.opscode.getId()),
-                new DeferredJavaObject(opScript), new DeferredJavaObject(ArrayUtils.toList(x)),
-                new DeferredJavaObject(true)};
+                new DeferredJavaObject(ModelType.opscode.getId()), new DeferredJavaObject(opScript),
+                new DeferredJavaObject(ArrayUtils.toList(x)), new DeferredJavaObject(true)};
 
         IntWritable result = (IntWritable) udf.evaluate(arguments);
         udf.close();
         return result.get();
     }
 
-    private static double evalPredict(RegressionTree tree, double[] x) throws HiveException,
-            IOException {
+    private static double evalPredict(RegressionTree tree, double[] x)
+            throws HiveException, IOException {
         String opScript = tree.predictOpCodegen(StackMachine.SEP);
         debugPrint(opScript);
 
         TreePredictUDFv1 udf = new TreePredictUDFv1();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)});
         DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
-                new DeferredJavaObject(ModelType.opscode.getId()),
-                new DeferredJavaObject(opScript), new DeferredJavaObject(ArrayUtils.toList(x)),
-                new DeferredJavaObject(false)};
+                new DeferredJavaObject(ModelType.opscode.getId()), new DeferredJavaObject(opScript),
+                new DeferredJavaObject(ArrayUtils.toList(x)), new DeferredJavaObject(false)};
 
         DoubleWritable result = (DoubleWritable) udf.evaluate(arguments);
         udf.close();
@@ -260,17 +261,16 @@ public class TreePredictUDFv1Test {
         }
 
         Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-        RegressionTree tree = new RegressionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-            trainx[0].length), trainy, 20);
+        RegressionTree tree = new RegressionTree(attrs,
+            new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
         String opScript = tree.predictOpCodegen(StackMachine.SEP);
 
-        TestUtils.testGenericUDFSerialization(
-            TreePredictUDFv1.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+        TestUtils.testGenericUDFSerialization(TreePredictUDFv1.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)},
             new Object[] {"model_id#1", ModelType.opscode.getId(), opScript,

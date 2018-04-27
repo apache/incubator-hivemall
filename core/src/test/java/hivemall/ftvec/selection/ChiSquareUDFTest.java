@@ -38,14 +38,14 @@ public class ChiSquareUDFTest {
         final ChiSquareUDF chi2 = new ChiSquareUDF();
         final List<List<DoubleWritable>> observed = new ArrayList<List<DoubleWritable>>();
         final List<List<DoubleWritable>> expected = new ArrayList<List<DoubleWritable>>();
-        final GenericUDF.DeferredObject[] dObjs = new GenericUDF.DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(observed),
-                new GenericUDF.DeferredJavaObject(expected)};
+        final GenericUDF.DeferredObject[] dObjs =
+                new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(observed),
+                        new GenericUDF.DeferredJavaObject(expected)};
 
-        final double[][] matrix0 = new double[][] {
-                {250.29999999999998, 170.90000000000003, 73.2, 12.199999999999996},
-                {296.8, 138.50000000000003, 212.99999999999997, 66.3},
-                {329.3999999999999, 148.7, 277.59999999999997, 101.29999999999998}};
+        final double[][] matrix0 =
+                new double[][] {{250.29999999999998, 170.90000000000003, 73.2, 12.199999999999996},
+                        {296.8, 138.50000000000003, 212.99999999999997, 66.3},
+                        {329.3999999999999, 148.7, 277.59999999999997, 101.29999999999998}};
         final double[][] matrix1 = new double[][] {
                 {292.1666753739119, 152.70000455081467, 187.93333893418327, 59.93333511948589},
                 {292.1666753739119, 152.70000455081467, 187.93333893418327, 59.93333511948589},
@@ -59,8 +59,12 @@ public class ChiSquareUDFTest {
         }
 
         chi2.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)),
-                ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector))});
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector))});
         final List<DoubleWritable>[] result = chi2.evaluate(dObjs);
         final double[] result0 = new double[matrix0[0].length];
         final double[] result1 = new double[matrix0[0].length];
@@ -71,8 +75,8 @@ public class ChiSquareUDFTest {
 
         // compare results to one of scikit-learn
         final double[] answer0 = new double[] {10.81782088, 3.59449902, 116.16984746, 67.24482759};
-        final double[] answer1 = new double[] {4.47651499e-03, 1.65754167e-01, 5.94344354e-26,
-                2.50017968e-15};
+        final double[] answer1 =
+                new double[] {4.47651499e-03, 1.65754167e-01, 5.94344354e-26, 2.50017968e-15};
 
         Assert.assertArrayEquals(answer0, result0, 1e-5);
         Assert.assertArrayEquals(answer1, result1, 1e-5);

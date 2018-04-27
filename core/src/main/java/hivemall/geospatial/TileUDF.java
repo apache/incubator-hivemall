@@ -38,8 +38,7 @@ import org.apache.hadoop.io.LongWritable;
 /**
  * @link http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
  */
-@Description(
-        name = "tile",
+@Description(name = "tile",
         value = "_FUNC_(double lat, double lon, int zoom)::bigint - Returns a tile number 2^2n where n is zoom level.\n"
                 + "_FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom",
         extended = "refer http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail")

@@ -56,7 +56,8 @@ public class GeneralRegressorUDTFTest {
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt UnsupportedOpt");
 
@@ -68,7 +69,8 @@ public class GeneralRegressorUDTFTest {
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss UnsupportedLoss");
 
@@ -80,7 +82,8 @@ public class GeneralRegressorUDTFTest {
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss HingeLoss");
 
@@ -92,7 +95,8 @@ public class GeneralRegressorUDTFTest {
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reg UnsupportedReg");
 
@@ -107,7 +111,8 @@ public class GeneralRegressorUDTFTest {
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
 
@@ -125,7 +130,8 @@ public class GeneralRegressorUDTFTest {
 
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
-        ListObjectInspector featureListOI = ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
+        ListObjectInspector featureListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
 
         udtf.initialize(new ObjectInspector[] {featureListOI, valueOI});
 
@@ -151,8 +157,8 @@ public class GeneralRegressorUDTFTest {
 
     @Test
     public void testLazyStringFeature() throws Exception {
-        LazyStringObjectInspector oi = LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(
-            false, (byte) 0);
+        LazyStringObjectInspector oi =
+                LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(false, (byte) 0);
         List<LazyString> x = Arrays.asList(lazyString("テスト:-2", oi), lazyString("漢字:-333.0", oi),
             lazyString("test:-1"));
         testFeature(x, oi, LazyString.class, String.class);
@@ -248,7 +254,8 @@ public class GeneralRegressorUDTFTest {
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
 
@@ -272,8 +279,9 @@ public class GeneralRegressorUDTFTest {
         double cumLoss = udtf.getCumulativeLoss();
         println("Cumulative loss: " + cumLoss);
         double normalizedLoss = cumLoss / numSamples;
-        Assert.assertTrue("cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss
-                + "\noptions: " + options, normalizedLoss < 0.1d);
+        Assert.assertTrue(
+            "cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss + "\noptions: " + options,
+            normalizedLoss < 0.1d);
 
         accum = 0.f;
         for (int i = 0; i < numSamples; i++) {
@@ -287,7 +295,8 @@ public class GeneralRegressorUDTFTest {
         float mae = accum / numSamples;
         println("Mean absolute error after training: " + mae);
         Assert.assertTrue("accum: " + accum + ", mae (init):" + maeInit + ", mae:" + mae
-                + "\noptions: " + options, mae < maeInit);
+                + "\noptions: " + options,
+            mae < maeInit);
     }
 
     @Test
@@ -304,8 +313,8 @@ public class GeneralRegressorUDTFTest {
                 }
 
                 for (String loss : lossFunctions) {
-                    String options = "-opt " + opt + " -reg " + reg + " -loss " + loss
-                            + " -iter 512";
+                    String options =
+                            "-opt " + opt + " -reg " + reg + " -loss " + loss + " -iter 512";
 
                     // sparse
                     run(options);
@@ -326,10 +335,10 @@ public class GeneralRegressorUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            GeneralRegressorUDTF.class,
+        TestUtils.testGenericUDTFSerialization(GeneralRegressorUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,

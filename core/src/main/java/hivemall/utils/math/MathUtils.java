@@ -100,11 +100,11 @@ public final class MathUtils {
      * Returns the inverse erf. This code is based on erfInv() in
      * org.apache.commons.math3.special.Erf.
      * <p>
-     * This implementation is described in the paper: <a
-     * href="http://people.maths.ox.ac.uk/gilesm/files/gems_erfinv.pdf">Approximating the erfinv
+     * This implementation is described in the paper:
+     * <a href="http://people.maths.ox.ac.uk/gilesm/files/gems_erfinv.pdf">Approximating the erfinv
      * function</a> by Mike Giles, Oxford-Man Institute of Quantitative Finance, which was published
-     * in GPU Computing Gems, volume 2, 2010. The source code is available <a
-     * href="http://gpucomputing.net/?q=node/1828">here</a>.
+     * in GPU Computing Gems, volume 2, 2010. The source code is available
+     * <a href="http://gpucomputing.net/?q=node/1828">here</a>.
      * </p>
      * 
      * @param x the value
@@ -211,11 +211,13 @@ public final class MathUtils {
         return (float) Math.sqrt(sqsum);
     }
 
-    public static double gaussian(final double mean, final double stddev, @Nonnull final Random rnd) {
+    public static double gaussian(final double mean, final double stddev,
+            @Nonnull final Random rnd) {
         return mean + (stddev * rnd.nextGaussian());
     }
 
-    public static double lognormal(final double mean, final double stddev, @Nonnull final Random rnd) {
+    public static double lognormal(final double mean, final double stddev,
+            @Nonnull final Random rnd) {
         return Math.exp(gaussian(mean, stddev, rnd));
     }
 
@@ -339,7 +341,8 @@ public final class MathUtils {
         }
     }
 
-    public static void add(@Nonnull final float[] src, @Nonnull final double[] dst, final int size) {
+    public static void add(@Nonnull final float[] src, @Nonnull final double[] dst,
+            final int size) {
         for (int i = 0; i < size; i++) {
             dst[i] += src[i];
         }

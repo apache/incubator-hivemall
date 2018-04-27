@@ -40,8 +40,8 @@ public class SelectKBestUDFTest {
     public void test() throws Exception {
         final SelectKBestUDF selectKBest = new SelectKBestUDF();
         final int k = 2;
-        final double[] data = new double[] {250.29999999999998, 170.90000000000003, 73.2,
-                12.199999999999996};
+        final double[] data =
+                new double[] {250.29999999999998, 170.90000000000003, 73.2, 12.199999999999996};
         final double[] importanceList = new double[] {292.1666753739119, 152.70000455081467,
                 187.93333893418327, 59.93333511948589};
 
@@ -51,8 +51,10 @@ public class SelectKBestUDFTest {
                 new GenericUDF.DeferredJavaObject(k)};
 
         selectKBest.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector, k)});
         final List<DoubleWritable> resultObj = selectKBest.evaluate(dObjs);
@@ -73,16 +75,17 @@ public class SelectKBestUDFTest {
     @Test
     public void testSerialization() throws HiveException, IOException {
         final int k = 2;
-        final double[] data = new double[] {250.29999999999998, 170.90000000000003, 73.2,
-                12.199999999999996};
+        final double[] data =
+                new double[] {250.29999999999998, 170.90000000000003, 73.2, 12.199999999999996};
         final double[] importanceList = new double[] {292.1666753739119, 152.70000455081467,
                 187.93333893418327, 59.93333511948589};
 
-        TestUtils.testGenericUDFSerialization(
-            SelectKBestUDF.class,
+        TestUtils.testGenericUDFSerialization(SelectKBestUDF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaIntObjectInspector, k)},
             new Object[] {WritableUtils.toWritableList(data),

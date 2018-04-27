@@ -32,8 +32,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
-@Description(
-        name = "train_pa1_regr",
+@Description(name = "train_pa1_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                 + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
 public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
@@ -76,7 +75,8 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
             if (opt_c != null) {
                 c = Float.parseFloat(opt_c);
                 if (!(c > 0.f)) {
-                    throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: " + c);
+                    throw new UDFArgumentException(
+                        "Aggressiveness parameter C must be C > 0: " + c);
                 }
             }
 
@@ -131,8 +131,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
         return Math.min(c, eta);
     }
 
-    @Description(
-            name = "train_pa1a_regr",
+    @Description(name = "train_pa1a_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                     + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
     public static final class PA1a extends PassiveAggressiveRegressionUDTF {
@@ -160,8 +159,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     }
 
-    @Description(
-            name = "train_pa2_regr",
+    @Description(name = "train_pa2_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                     + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
     public static class PA2 extends PassiveAggressiveRegressionUDTF {
@@ -180,8 +178,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     }
 
-    @Description(
-            name = "train_pa2a_regr",
+    @Description(name = "train_pa2a_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                     + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
     public static final class PA2a extends PA2 {

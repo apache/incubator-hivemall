@@ -66,7 +66,7 @@ public class MatrixFactorizationSGDUDTFTest {
         mf.initialize(argOIs);
         Assert.assertTrue(mf.rankInit == RankInitScheme.random);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
         final int num_iters = 100;
         for (int iter = 0; iter < num_iters; iter++) {
@@ -99,13 +99,13 @@ public class MatrixFactorizationSGDUDTFTest {
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-factor 3 -rankinit random"));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-factor 3 -rankinit random"));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, floatOI, param};
         mf.initialize(argOIs);
         Assert.assertTrue(mf.rankInit == RankInitScheme.random);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
         final int num_iters = 100;
         for (int iter = 0; iter < num_iters; iter++) {
@@ -136,13 +136,13 @@ public class MatrixFactorizationSGDUDTFTest {
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-factor 3 -rankinit gaussian"));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-factor 3 -rankinit gaussian"));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, floatOI, param};
         mf.initialize(argOIs);
         Assert.assertTrue(mf.rankInit == RankInitScheme.gaussian);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
         final int num_iters = 100;
         for (int iter = 0; iter < num_iters; iter++) {
@@ -174,15 +174,15 @@ public class MatrixFactorizationSGDUDTFTest {
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         int iters = 100;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-factor 3 -iterations " + iters));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-factor 3 -iterations " + iters));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, floatOI, param};
         MapredContext mrContext = MapredContextAccessor.create(true, null);
         mf.configure(mrContext);
         mf.initialize(argOIs);
         Assert.assertTrue(mf.rankInit == RankInitScheme.random);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
         for (int row = 0; row < rating.length; row++) {
             for (int col = 0, size = rating[row].length; col < size; col++) {
@@ -213,8 +213,8 @@ public class MatrixFactorizationSGDUDTFTest {
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         int iters = 3;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-factor 3 -iterations " + iters));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-factor 3 -iterations " + iters));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, floatOI, param};
         MapredContext mrContext = MapredContextAccessor.create(true, null);
         mf.configure(mrContext);
@@ -228,7 +228,7 @@ public class MatrixFactorizationSGDUDTFTest {
         });
         Assert.assertTrue(mf.rankInit == RankInitScheme.random);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
 
         final int num_iters = 100;
@@ -258,8 +258,8 @@ public class MatrixFactorizationSGDUDTFTest {
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         int iters = 10;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-factor 3 -iterations " + iters));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-factor 3 -iterations " + iters));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, floatOI, param};
         MapredContext mrContext = MapredContextAccessor.create(true, null);
         mf.configure(mrContext);
@@ -273,7 +273,7 @@ public class MatrixFactorizationSGDUDTFTest {
         });
         Assert.assertTrue(mf.rankInit == RankInitScheme.random);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
 
         final int num_iters = 500;
@@ -306,8 +306,8 @@ public class MatrixFactorizationSGDUDTFTest {
         ObjectInspector floatOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         int iters = 5;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-disable_cv -factor 3 -iterations " + iters));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-disable_cv -factor 3 -iterations " + iters));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, floatOI, param};
         MapredContext mrContext = MapredContextAccessor.create(true, null);
         mf.configure(mrContext);
@@ -321,7 +321,7 @@ public class MatrixFactorizationSGDUDTFTest {
         });
         Assert.assertTrue(mf.rankInit == RankInitScheme.random);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
 
         final int num_iters = 500;
@@ -347,10 +347,8 @@ public class MatrixFactorizationSGDUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            MatrixFactorizationSGDUDTF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+        TestUtils.testGenericUDTFSerialization(MatrixFactorizationSGDUDTF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(

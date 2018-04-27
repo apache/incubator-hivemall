@@ -43,8 +43,8 @@ public final class BinaryResponsesMeasures {
      * @param recommendSize top-`recommendSize` items in `rankedList` are recommended
      * @return nDCG
      */
-    public static double nDCG(@Nonnull final List<?> rankedList,
-            @Nonnull final List<?> groundTruth, @Nonnegative final int recommendSize) {
+    public static double nDCG(@Nonnull final List<?> rankedList, @Nonnull final List<?> groundTruth,
+            @Nonnegative final int recommendSize) {
         Preconditions.checkArgument(recommendSize >= 0);
 
         double dcg = 0.d;

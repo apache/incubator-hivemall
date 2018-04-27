@@ -43,7 +43,8 @@ public class DeflateCodecTest {
         byte[] compressed1 = codec.compress(original1);
         byte[] decompressed1 = codec.decompress(compressed1);
         Assert.assertTrue("compressed size (" + compressed1.length + " bytes) < original size ("
-                + original1.length + " bytes)", compressed1.length < original1.length);
+                + original1.length + " bytes)",
+            compressed1.length < original1.length);
         Assert.assertArrayEquals(original1, decompressed1);
         codec.close();
     }
@@ -51,12 +52,15 @@ public class DeflateCodecTest {
     @Test
     public void testNonString() throws IOException {
         DeflateCodec codec = new DeflateCodec();
-        byte[] original1 = IOUtils.toString(
-            DeflateCodecTest.class.getResourceAsStream("DeflateCodecTest.class")).getBytes();
+        byte[] original1 = IOUtils
+                                  .toString(DeflateCodecTest.class.getResourceAsStream(
+                                      "DeflateCodecTest.class"))
+                                  .getBytes();
         byte[] compressed1 = codec.compress(original1);
         byte[] decompressed1 = codec.decompress(compressed1);
         Assert.assertTrue("compressed size (" + compressed1.length + " bytes) < original size ("
-                + original1.length + " bytes)", compressed1.length < original1.length);
+                + original1.length + " bytes)",
+            compressed1.length < original1.length);
         Assert.assertArrayEquals(original1, decompressed1);
         codec.close();
     }

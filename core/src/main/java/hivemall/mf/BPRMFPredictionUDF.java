@@ -26,8 +26,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.FloatWritable;
 
-@Description(
-        name = "bprmf_predict",
+@Description(name = "bprmf_predict",
         value = "_FUNC_(List<Float> Pu, List<Float> Qi[, double Bi]) - Returns the prediction value")
 @UDFType(deterministic = true, stateful = false)
 public final class BPRMFPredictionUDF extends UDF {

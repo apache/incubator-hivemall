@@ -28,8 +28,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
 @SuppressWarnings("deprecation")
-@Description(
-        name = "r2",
+@Description(name = "r2",
         value = "_FUNC_(double predicted, double actual) - Return R Squared (coefficient of determination)")
 public final class R2UDAF extends UDAF {
 

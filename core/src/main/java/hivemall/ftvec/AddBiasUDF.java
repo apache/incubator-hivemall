@@ -30,8 +30,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "add_bias",
+@Description(name = "add_bias",
         value = "_FUNC_(feature_vector in array<string>) - Returns features with a bias in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class AddBiasUDF extends UDF {

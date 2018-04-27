@@ -40,7 +40,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
 @Description(name = "rand_amplify", value = "_FUNC_(const int xtimes [, const string options], *)"
         + " - amplify the input records x-times in map-side")
-public final class RandomAmplifierUDTF extends UDTFWithOptions implements DropoutListener<Object[]> {
+public final class RandomAmplifierUDTF extends UDTFWithOptions
+        implements DropoutListener<Object[]> {
 
     private boolean hasOption = false;
     private long seed = -1L;
@@ -66,7 +67,8 @@ public final class RandomAmplifierUDTF extends UDTFWithOptions implements Dropou
             cl = parseOptions(rawArgs);
             this.hasOption = true;
             this.seed = Primitives.parseLong(cl.getOptionValue("seed"), this.seed);
-            this.numBuffers = Primitives.parseInt(cl.getOptionValue("num_buffers"), this.numBuffers);
+            this.numBuffers =
+                    Primitives.parseInt(cl.getOptionValue("num_buffers"), this.numBuffers);
         }
         return cl;
     }

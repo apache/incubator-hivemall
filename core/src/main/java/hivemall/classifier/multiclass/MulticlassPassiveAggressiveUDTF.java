@@ -29,8 +29,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
-@Description(
-        name = "train_multiclass_pa",
+@Description(name = "train_multiclass_pa",
         value = "_FUNC_(list<string|int|bigint> features, {int|string} label [, const string options])"
                 + " - Returns a relation consists of <{int|string} label, {string|int|bigint} feature, float weight>",
         extended = "Build a prediction model by Passive-Aggressive (PA) multiclass classifier")
@@ -71,8 +70,7 @@ public class MulticlassPassiveAggressiveUDTF extends MulticlassOnlineClassifierU
         return loss / (2.f * sqnorm);
     }
 
-    @Description(
-            name = "train_multiclass_pa1",
+    @Description(name = "train_multiclass_pa1",
             value = "_FUNC_(list<string|int|bigint> features, {int|string} label [, const string options])"
                     + " - Returns a relation consists of <{int|string} label, {string|int|bigint} feature, float weight>",
             extended = "Build a prediction model by Passive-Aggressive 1 (PA-1) multiclass classifier")
@@ -91,8 +89,8 @@ public class MulticlassPassiveAggressiveUDTF extends MulticlassOnlineClassifierU
                 if (c_str != null) {
                     c = Float.parseFloat(c_str);
                     if (!(c > 0.f)) {
-                        throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: "
-                                + c);
+                        throw new UDFArgumentException(
+                            "Aggressiveness parameter C must be C > 0: " + c);
                     }
                 }
             }
@@ -109,8 +107,7 @@ public class MulticlassPassiveAggressiveUDTF extends MulticlassOnlineClassifierU
 
     }
 
-    @Description(
-            name = "train_multiclass_pa2",
+    @Description(name = "train_multiclass_pa2",
             value = "_FUNC_(list<string|int|bigint> features, {int|string} label [, const string options])"
                     + " - Returns a relation consists of <{int|string} label, {string|int|bigint} feature, float weight>",
             extended = "Build a prediction model by Passive-Aggressive 2 (PA-2) multiclass classifier")

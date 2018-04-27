@@ -53,8 +53,8 @@ public final class CSRMatrix extends RowMajorMatrix {
     public CSRMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
             @Nonnull double[] values, @Nonnegative int numColumns) {
         super();
-        Preconditions.checkArgument(rowPointers.length >= 1, "rowPointers must be greater than 0: "
-                + rowPointers.length);
+        Preconditions.checkArgument(rowPointers.length >= 1,
+            "rowPointers must be greater than 0: " + rowPointers.length);
         Preconditions.checkArgument(columnIndices.length == values.length, "#columnIndices ("
                 + columnIndices.length + ") must be equals to #values (" + values.length + ")");
         this.rowPointers = rowPointers;
@@ -145,8 +145,8 @@ public final class CSRMatrix extends RowMajorMatrix {
 
         final int index = getIndex(row, col);
         if (index < 0) {
-            throw new UnsupportedOperationException("Cannot update value in row " + row + ", col "
-                    + col);
+            throw new UnsupportedOperationException(
+                "Cannot update value in row " + row + ", col " + col);
         }
 
         double old = values[index];
@@ -160,8 +160,8 @@ public final class CSRMatrix extends RowMajorMatrix {
 
         final int index = getIndex(row, col);
         if (index < 0) {
-            throw new UnsupportedOperationException("Cannot update value in row " + row + ", col "
-                    + col);
+            throw new UnsupportedOperationException(
+                "Cannot update value in row " + row + ", col " + col);
         }
         values[index] = value;
     }
@@ -171,8 +171,8 @@ public final class CSRMatrix extends RowMajorMatrix {
         int rightEx = rowPointers[row + 1];
         final int index = Arrays.binarySearch(columnIndices, leftIn, rightEx, col);
         if (index >= 0 && index >= values.length) {
-            throw new IndexOutOfBoundsException("Value index " + index + " out of range "
-                    + values.length);
+            throw new IndexOutOfBoundsException(
+                "Value index " + index + " out of range " + values.length);
         }
         return index;
     }

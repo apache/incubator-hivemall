@@ -79,7 +79,8 @@ public final class ConditionalEmitUDTF extends GenericUDTF {
         this.condElemOI = HiveUtils.asBooleanOI(conditionsOI.getListElementObjectInspector());
 
         this.featuresOI = HiveUtils.asListOI(argOIs[1]);
-        this.featureElemOI = HiveUtils.asPrimitiveObjectInspector(featuresOI.getListElementObjectInspector());
+        this.featureElemOI =
+                HiveUtils.asPrimitiveObjectInspector(featuresOI.getListElementObjectInspector());
 
         List<String> fieldNames = Arrays.asList("feature");
         List<ObjectInspector> fieldOIs = Arrays.<ObjectInspector>asList(featureElemOI);

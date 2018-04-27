@@ -112,8 +112,8 @@ public final class ArraySumUDAF extends UDAF {
 
         void update(@Nonnull final List<Double> tuple) throws HiveException {
             if (tuple.size() != _size) {// a corner case
-                throw new HiveException("Mismatch in the number of elements at tuple: "
-                        + tuple.toString());
+                throw new HiveException(
+                    "Mismatch in the number of elements at tuple: " + tuple.toString());
             }
             final List<Double> sum = _sum;
             for (int i = 0, len = _size; i < len; i++) {

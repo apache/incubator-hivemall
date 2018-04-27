@@ -38,8 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.LongWritable;
 
-@Description(
-        name = "to_bits",
+@Description(name = "to_bits",
         value = "_FUNC_(int[] indexes) - Returns an bitset representation if the given indexes in long[]",
         extended = "select to_bits(array(1,2,3,128));\n" + "> [14,-9223372036854775808]")
 @UDFType(deterministic = true, stateful = false)
@@ -63,7 +62,8 @@ public final class ToBitsUDF extends GenericUDF {
         this.listElemOI = HiveUtils.asIntCompatibleOI(listOI.getListElementObjectInspector());
         this.bitset = new BitSet();
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
     }
 
     @Override

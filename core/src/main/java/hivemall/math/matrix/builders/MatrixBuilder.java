@@ -78,8 +78,8 @@ public abstract class MatrixBuilder {
 
         int colIndex = Integer.parseInt(feature);
         if (colIndex < 0) {
-            throw new IllegalArgumentException("Col index MUST be greater than or equals to 0: "
-                    + colIndex);
+            throw new IllegalArgumentException(
+                "Col index MUST be greater than or equals to 0: " + colIndex);
         }
 
         return nextColumn(colIndex, value);

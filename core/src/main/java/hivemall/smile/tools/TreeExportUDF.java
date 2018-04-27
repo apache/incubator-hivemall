@@ -43,8 +43,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "tree_export",
+@Description(name = "tree_export",
         value = "_FUNC_(string model, const string options, optional array<string> featureNames=null, optional array<string> classNames=null)"
                 + " - exports a Decision Tree model as javascript/dot]")
 @UDFType(deterministic = true, stateful = false)
@@ -200,7 +199,8 @@ public final class TreeExportUDF extends UDFWithOptions {
                     break;
                 }
                 case graphviz: {
-                    buf.append("digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
+                    buf.append(
+                        "digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
                     double[] colorBrew = (classNames == null) ? null
                             : SmileExtUtils.getColorBrew(classNames.length);
                     node.exportGraphviz(buf, featureNames, classNames, outputName, colorBrew,
@@ -226,7 +226,8 @@ public final class TreeExportUDF extends UDFWithOptions {
                     break;
                 }
                 case graphviz: {
-                    buf.append("digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
+                    buf.append(
+                        "digraph Tree {\n node [shape=box, style=\"filled, rounded\", color=\"black\", fontname=helvetica];\n edge [fontname=helvetica];\n");
                     node.exportGraphviz(buf, featureNames, outputName, new MutableInt(0), 0);
                     buf.append("}");
                     break;

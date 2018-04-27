@@ -49,8 +49,8 @@ public class BPRMatrixFactorizationUDTFTest {
 
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-factor 10 -iter " + iterations));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-factor 10 -iter " + iterations));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, intOI, param};
 
         MapredContext mapredContext = MapredContextAccessor.create(true, null);
@@ -84,8 +84,8 @@ public class BPRMatrixFactorizationUDTFTest {
 
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, new String(
-                "-boldDriver -factor 10 -iter " + iterations));
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            new String("-boldDriver -factor 10 -iter " + iterations));
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, intOI, param};
 
         MapredContext mapredContext = MapredContextAccessor.create(true, null);
@@ -114,15 +114,14 @@ public class BPRMatrixFactorizationUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            BPRMatrixFactorizationUDTF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+        TestUtils.testGenericUDTFSerialization(BPRMatrixFactorizationUDTF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-factor 10 -iter 1")}, new Object[][] {{0, 0, 1}});
+                        "-factor 10 -iter 1")},
+            new Object[][] {{0, 0, 1}});
     }
 
     @Nonnull

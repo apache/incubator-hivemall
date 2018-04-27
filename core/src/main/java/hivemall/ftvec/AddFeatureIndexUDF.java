@@ -35,8 +35,7 @@ import org.apache.hadoop.io.Text;
  * > ["1:3.0","2:4.0","3:5.0"]
  * </pre>
  */
-@Description(
-        name = "add_feature_index",
+@Description(name = "add_feature_index",
         value = "_FUNC_(ARRAY[DOUBLE]: dense feature vector) - Returns a feature vector with feature indices")
 @UDFType(deterministic = true, stateful = false)
 public final class AddFeatureIndexUDF extends UDF {

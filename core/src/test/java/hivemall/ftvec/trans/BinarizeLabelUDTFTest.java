@@ -110,10 +110,8 @@ public class BinarizeLabelUDTFTest {
     @Test
     public void testSerialization() throws HiveException {
         final List<String> featureNames = Arrays.asList("positive", "negative", "features");
-        TestUtils.testGenericUDTFSerialization(
-            BinarizeLabelUDTF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+        TestUtils.testGenericUDTFSerialization(BinarizeLabelUDTF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     ObjectInspectorFactory.getStandardConstantListObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector, featureNames)},

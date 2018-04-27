@@ -79,7 +79,8 @@ public final class InflateUDF extends GenericUDF {
         try {
             decompressed = codec.decompress(compressed, 0, len);
         } catch (IOException e) {
-            throw new HiveException("Failed to decompressed. Compressed data format is illegal.", e);
+            throw new HiveException("Failed to decompressed. Compressed data format is illegal.",
+                e);
         }
         compressed = null;
         if (result == null) {

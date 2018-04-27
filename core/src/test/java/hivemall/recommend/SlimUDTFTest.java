@@ -50,14 +50,14 @@ public class SlimUDTFTest {
         ObjectInspector optionArgumentOI = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-l2 0.01 -l1 0.01");
 
-        ObjectInspector[] argOIs = {itemIOI, itemIRatesOI, topKRatesOfIOI, itemJOI, itemJRatesOI,
-                optionArgumentOI};
+        ObjectInspector[] argOIs =
+                {itemIOI, itemIRatesOI, topKRatesOfIOI, itemJOI, itemJRatesOI, optionArgumentOI};
 
         slim.initialize(argOIs);
         int numUser = 4;
         int numItem = 5;
 
-        float[][] data = { {1.f, 4.f, 0.f, 0.f, 0.f}, {0.f, 3.f, 0.f, 1.f, 2.f},
+        float[][] data = {{1.f, 4.f, 0.f, 0.f, 0.f}, {0.f, 3.f, 0.f, 1.f, 2.f},
                 {2.f, 2.f, 0.f, 0.f, 3.f}, {0.f, 1.f, 1.f, 0.f, 0.f}};
 
         for (int i = 0; i < numItem; i++) {
@@ -102,7 +102,7 @@ public class SlimUDTFTest {
         int numUser = 4;
         int numItem = 5;
 
-        float[][] data = { {1.f, 4.f, 0.f, 0.f, 0.f}, {0.f, 3.f, 0.f, 1.f, 2.f},
+        float[][] data = {{1.f, 4.f, 0.f, 0.f, 0.f}, {0.f, 3.f, 0.f, 1.f, 2.f},
                 {2.f, 2.f, 0.f, 0.f, 3.f}, {0.f, 1.f, 1.f, 0.f, 0.f}};
 
         Object[][] rows = new Object[numItem * (numItem - 1)][5];
@@ -147,10 +147,8 @@ public class SlimUDTFTest {
             }
         }
 
-        TestUtils.testGenericUDTFSerialization(
-            SlimUDTF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+        TestUtils.testGenericUDTFSerialization(SlimUDTF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     ObjectInspectorFactory.getStandardMapObjectInspector(
                         PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                         PrimitiveObjectInspectorFactory.javaFloatObjectInspector),
@@ -165,7 +163,8 @@ public class SlimUDTFTest {
                         PrimitiveObjectInspectorFactory.javaFloatObjectInspector),
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-l2 0.01 -l1 0.01")}, rows);
+                        "-l2 0.01 -l1 0.01")},
+            rows);
     }
 
 }

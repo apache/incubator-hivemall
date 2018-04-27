@@ -83,15 +83,19 @@ public final class ChiSquareUDF extends GenericUDF {
 
         this.observedOI = HiveUtils.asListOI(OIs[1]);
         this.observedRowOI = HiveUtils.asListOI(observedOI.getListElementObjectInspector());
-        this.observedElOI = HiveUtils.asDoubleCompatibleOI(observedRowOI.getListElementObjectInspector());
+        this.observedElOI =
+                HiveUtils.asDoubleCompatibleOI(observedRowOI.getListElementObjectInspector());
         this.expectedOI = HiveUtils.asListOI(OIs[0]);
         this.expectedRowOI = HiveUtils.asListOI(expectedOI.getListElementObjectInspector());
-        this.expectedElOI = HiveUtils.asDoubleCompatibleOI(expectedRowOI.getListElementObjectInspector());
+        this.expectedElOI =
+                HiveUtils.asDoubleCompatibleOI(expectedRowOI.getListElementObjectInspector());
         this.result = new List[2];
 
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(
             Arrays.asList("chi2", "pvalue"), fieldOIs);
@@ -118,10 +122,10 @@ public final class ChiSquareUDF extends GenericUDF {
             Preconditions.checkNotNull(expectedObjRow, UDFArgumentException.class);
 
             if (observedRow == null) {
-                observedRow = HiveUtils.asDoubleArray(observedObjRow, observedRowOI, observedElOI,
-                    false);
-                expectedRow = HiveUtils.asDoubleArray(expectedObjRow, expectedRowOI, expectedElOI,
-                    false);
+                observedRow =
+                        HiveUtils.asDoubleArray(observedObjRow, observedRowOI, observedElOI, false);
+                expectedRow =
+                        HiveUtils.asDoubleArray(expectedObjRow, expectedRowOI, expectedElOI, false);
                 nFeatures = observedRow.length;
                 observed = new double[nFeatures][nClasses];
                 expected = new double[nFeatures][nClasses];

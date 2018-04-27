@@ -44,8 +44,10 @@ public class AUCUDAFTest {
         auc = new AUCUDAF();
 
         inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE),
-                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT)};
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                    PrimitiveObjectInspector.PrimitiveCategory.DOUBLE),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                    PrimitiveObjectInspector.PrimitiveCategory.INT)};
 
         evaluator = auc.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
 
@@ -82,20 +84,23 @@ public class AUCUDAFTest {
         fieldNames.add("tpPartialMap");
         fieldOIs.add(tpPartialMapOI);
 
-        MapObjectInspector fpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        MapObjectInspector fpPrevPartialMapOI =
+                ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector);
         fieldNames.add("fpPrevPartialMap");
         fieldOIs.add(fpPrevPartialMapOI);
 
-        MapObjectInspector tpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        MapObjectInspector tpPrevPartialMapOI =
+                ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector);
         fieldNames.add("tpPrevPartialMap");
         fieldOIs.add(tpPrevPartialMapOI);
 
         partialOI = new ObjectInspector[2];
-        partialOI[0] = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
+        partialOI[0] =
+                ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
 
         agg = (AUCUDAF.ClassificationAUCAggregationBuffer) evaluator.getNewAggregationBuffer();
     }
@@ -232,8 +237,8 @@ public class AUCUDAFTest {
 
         // merge bins
         // merge in a different order; e.g., <bin0, bin1>, <bin1, bin0> should return same value
-        final int[][] orders = new int[][] { {0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0},
-                {2, 0, 1}};
+        final int[][] orders =
+                new int[][] {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}, {2, 0, 1}};
         for (int i = 0; i < orders.length; i++) {
             evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL2, partialOI);
             evaluator.reset(agg);
@@ -248,13 +253,13 @@ public class AUCUDAFTest {
 
     @Test
     public void test100() throws Exception {
-        final double[] scores = new double[] {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
-                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.7, 0.7,
-                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6, 0.6, 0.6,
-                0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4,
-                0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
-                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
-                0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+        final double[] scores = new double[] {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.8,
+                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7,
+                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6, 0.6, 0.6, 0.6, 0.5, 0.5,
+                0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,
+                0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.2,
+                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+                0.1, 0.1, 0.1, 0.1};
         final int[] labels = new int[] {1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
                 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1,
                 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1,
@@ -273,13 +278,13 @@ public class AUCUDAFTest {
 
     @Test
     public void testMerge100() throws Exception {
-        final double[] scores = new double[] {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8,
-                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.7, 0.7,
-                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6, 0.6, 0.6,
-                0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4,
-                0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
-                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1,
-                0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+        final double[] scores = new double[] {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.8,
+                0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7,
+                0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.6, 0.6, 0.6, 0.6, 0.5, 0.5,
+                0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,
+                0.4, 0.4, 0.4, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.2,
+                0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+                0.1, 0.1, 0.1, 0.1};
         final int[] labels = new int[] {1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
                 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1,
                 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1,
@@ -317,8 +322,8 @@ public class AUCUDAFTest {
 
         // merge bins
         // merge in a different order; e.g., <bin0, bin1>, <bin1, bin0> should return same value
-        final int[][] orders = new int[][] { {0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0},
-                {2, 0, 1}};
+        final int[][] orders =
+                new int[][] {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}, {2, 0, 1}};
         for (int j = 0; j < orders.length; j++) {
             evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL2, partialOI);
             evaluator.reset(agg);

@@ -101,8 +101,8 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                 this._numFields = Primitives.parseInt(cl.getOptionValue("num_fields"),
                     Feature.DEFAULT_NUM_FIELDS);
                 if (_numFields <= 1) {
-                    throw new UDFArgumentException("-num_fields MUST be greater than 1: "
-                            + _numFields);
+                    throw new UDFArgumentException(
+                        "-num_fields MUST be greater than 1: " + _numFields);
                 }
             } else {
                 throw new UDFArgumentException("Unsupported option: " + cl.getArgList().get(0));
@@ -282,8 +282,8 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                 return;
             }
 
-            this._features = Feature.parseFFMFeatures(arg, fvOI, _features, _numFeatures,
-                _numFields);
+            this._features =
+                    Feature.parseFFMFeatures(arg, fvOI, _features, _numFeatures, _numFields);
 
             // W0
             f0.set(0);

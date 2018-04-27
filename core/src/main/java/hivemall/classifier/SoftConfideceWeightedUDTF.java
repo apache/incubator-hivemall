@@ -102,7 +102,8 @@ public abstract class SoftConfideceWeightedUDTF extends BinaryOnlineClassifierUD
             if (c_str != null) {
                 c = Float.parseFloat(c_str);
                 if (!(c > 0.f)) {
-                    throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: " + c);
+                    throw new UDFArgumentException(
+                        "Aggressiveness parameter C must be C > 0: " + c);
                 }
             }
         }
@@ -145,8 +146,7 @@ public abstract class SoftConfideceWeightedUDTF extends BinaryOnlineClassifierUD
 
     protected abstract float getBeta(PredictionResult margin, float alpha);
 
-    @Description(
-            name = "train_scw",
+    @Description(name = "train_scw",
             value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                     + " - Returns a relation consists of <string|int|bigint feature, float weight, float covar>",
             extended = "Build a prediction model by Soft Confidence-Weighted (SCW-1) binary classifier")
@@ -172,10 +172,8 @@ public abstract class SoftConfideceWeightedUDTF extends BinaryOnlineClassifierUD
             float m = margin.getScore();
             float var = margin.getVariance();
 
-            float alpha_numer = -m
-                    * psi
-                    + (float) Math.sqrt((m * m * squared_phi * squared_phi / 4.f)
-                            + (var * squared_phi * zeta));
+            float alpha_numer = -m * psi + (float) Math.sqrt(
+                (m * m * squared_phi * squared_phi / 4.f) + (var * squared_phi * zeta));
             float alpha_denom = var * zeta;
             if (alpha_denom == 0.f) {
                 return 0.f;
@@ -210,8 +208,7 @@ public abstract class SoftConfideceWeightedUDTF extends BinaryOnlineClassifierUD
 
     }
 
-    @Description(
-            name = "train_scw2",
+    @Description(name = "train_scw2",
             value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                     + " - Returns a relation consists of <string|int|bigint feature, float weight, float covar>",
             extended = "Build a prediction model by Soft Confidence-Weighted 2 (SCW-2) binary classifier")

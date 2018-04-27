@@ -48,7 +48,7 @@ public class RegressionTreeTest {
     @Test
     public void testPredictDense() {
 
-        double[][] longley = { {234.289, 235.6, 159.0, 107.608, 1947, 60.323},
+        double[][] longley = {{234.289, 235.6, 159.0, 107.608, 1947, 60.323},
                 {259.426, 232.5, 145.6, 108.632, 1948, 61.122},
                 {258.054, 368.2, 161.6, 109.773, 1949, 60.171},
                 {284.599, 335.1, 165.0, 110.929, 1950, 61.187},
@@ -91,7 +91,7 @@ public class RegressionTreeTest {
     @Test
     public void testPredictSparse() {
 
-        double[][] longley = { {234.289, 235.6, 159.0, 107.608, 1947, 60.323},
+        double[][] longley = {{234.289, 235.6, 159.0, 107.608, 1947, 60.323},
                 {259.426, 232.5, 145.6, 108.632, 1948, 61.122},
                 {258.054, 368.2, 161.6, 109.773, 1949, 60.171},
                 {284.599, 335.1, 165.0, 110.929, 1950, 61.187},
@@ -121,8 +121,8 @@ public class RegressionTreeTest {
             double[][] trainx = Math.slice(longley, loocv.train[i]);
             double[] trainy = Math.slice(y, loocv.train[i]);
             int maxLeafs = 10;
-            RegressionTree tree = new RegressionTree(attrs, matrix(trainx, false), trainy,
-                maxLeafs, RandomNumberGeneratorFactory.createPRNG(i));
+            RegressionTree tree = new RegressionTree(attrs, matrix(trainx, false), trainy, maxLeafs,
+                RandomNumberGeneratorFactory.createPRNG(i));
 
             double r = y[loocv.test[i]] - tree.predict(longley[loocv.test[i]]);
             rss += r * r;
@@ -134,7 +134,7 @@ public class RegressionTreeTest {
     @Test
     public void testSerPredict() throws HiveException {
 
-        double[][] longley = { {234.289, 235.6, 159.0, 107.608, 1947, 60.323},
+        double[][] longley = {{234.289, 235.6, 159.0, 107.608, 1947, 60.323},
                 {259.426, 232.5, 145.6, 108.632, 1948, 61.122},
                 {258.054, 368.2, 161.6, 109.773, 1949, 60.171},
                 {284.599, 335.1, 165.0, 110.929, 1950, 61.187},
@@ -180,7 +180,7 @@ public class RegressionTreeTest {
         int maxLeafs = 10;
         String outputName = "predicted";
 
-        double[][] x = { {234.289, 235.6, 159.0, 107.608, 1947, 60.323},
+        double[][] x = {{234.289, 235.6, 159.0, 107.608, 1947, 60.323},
                 {259.426, 232.5, 145.6, 108.632, 1948, 61.122},
                 {258.054, 368.2, 161.6, 109.773, 1949, 60.171},
                 {284.599, 335.1, 165.0, 110.929, 1950, 61.187},
@@ -204,8 +204,8 @@ public class RegressionTreeTest {
     }
 
     private static String graphvizOutput(double[][] x, double[] y, int maxLeafs, boolean dense,
-            String[] featureNames, String outputName) throws IOException, HiveException,
-            ParseException {
+            String[] featureNames, String outputName)
+            throws IOException, HiveException, ParseException {
         Attribute[] attrs = new Attribute[x[0].length];
         Arrays.fill(attrs, new NumericAttribute());
         RegressionTree tree = new RegressionTree(attrs, matrix(x, dense), y, maxLeafs);

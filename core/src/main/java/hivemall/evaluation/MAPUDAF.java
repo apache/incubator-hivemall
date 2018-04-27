@@ -47,14 +47,14 @@ import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
-@Description(
-        name = "average_precision",
+@Description(name = "average_precision",
         value = "_FUNC_(array rankItems, array correctItems [, const int recommendSize = rankItems.size])"
                 + " - Returns MAP")
 public final class MAPUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
+            throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes two or three arguments");
@@ -157,7 +157,8 @@ public final class MAPUDAF extends AbstractGenericUDAFResolver {
 
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
-                recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
+                recommendSize =
+                        PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
                 if (recommendSize < 0) {
                     throw new UDFArgumentException(
                         "The third argument `int recommendSize` must be in greater than or equals to 0: "
@@ -233,7 +234,8 @@ public final class MAPUDAF extends AbstractGenericUDAFResolver {
 
         void iterate(@Nonnull List<?> recommendList, @Nonnull List<?> truthList,
                 @Nonnull int recommendSize) {
-            sum += BinaryResponsesMeasures.AveragePrecision(recommendList, truthList, recommendSize);
+            sum += BinaryResponsesMeasures.AveragePrecision(recommendList, truthList,
+                recommendSize);
             count++;
         }
     }

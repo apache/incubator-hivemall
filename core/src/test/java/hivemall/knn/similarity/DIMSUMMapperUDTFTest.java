@@ -59,14 +59,15 @@ public class DIMSUMMapperUDTFTest {
     public void setUp() throws HiveException {
         this.udtf = new DIMSUMMapperUDTF();
 
-        this.R = new double[][] { {1, 2, 3}, {1, 2, 3}};
+        this.R = new double[][] {{1, 2, 3}, {1, 2, 3}};
         this.numUsers = R.length;
         this.numItems = R[0].length;
     }
 
     @Test
     public void testIntFeature() throws HiveException {
-        final Map<Integer, Map<Integer, Double>> sims = new HashMap<Integer, Map<Integer, Double>>();
+        final Map<Integer, Map<Integer, Double>> sims =
+                new HashMap<Integer, Map<Integer, Double>>();
         Collector collector = new Collector() {
             public void collect(Object input) throws HiveException {
                 Object[] row = (Object[]) input;
@@ -91,7 +92,8 @@ public class DIMSUMMapperUDTFTest {
         udtf.setCollector(collector);
 
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorFactory.getStandardMapObjectInspector(
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
@@ -161,7 +163,8 @@ public class DIMSUMMapperUDTFTest {
         udtf.setCollector(collector);
 
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorFactory.getStandardMapObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
@@ -301,7 +304,8 @@ public class DIMSUMMapperUDTFTest {
         // Case I: Set zero to `threshold`
         // this computes exact cosine similarity
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorFactory.getStandardMapObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
@@ -325,8 +329,8 @@ public class DIMSUMMapperUDTFTest {
                 for (String k : items.keySet()) {
                     final Double sims_jk = sims_j.get(k);
                     if (sims_jk != null) {
-                        float simsExact_jk = CosineSimilarityUDF.cosineSimilarity(item_j,
-                            items.get(k));
+                        float simsExact_jk =
+                                CosineSimilarityUDF.cosineSimilarity(item_j, items.get(k));
                         Assert.assertEquals(simsExact_jk, sims_jk.floatValue(), 1e-6);
                     }
                 }
@@ -340,7 +344,8 @@ public class DIMSUMMapperUDTFTest {
         // Case II: Set (almost) max value to `threshold`
         // this skips a bunch of operations with high probability
         argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorFactory.getStandardMapObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
@@ -368,17 +373,17 @@ public class DIMSUMMapperUDTFTest {
         final Map<Integer, Double> norms = new HashMap<Integer, Double>();
         computeColumnNorms(norms, itemIDs);
 
-        TestUtils.testGenericUDTFSerialization(
-            DIMSUMMapperUDTF.class,
+        TestUtils.testGenericUDTFSerialization(DIMSUMMapperUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     ObjectInspectorFactory.getStandardMapObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                         PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-threshold 0.999999 -disable_symmetric_output")}, new Object[][] {{user,
-                    norms}});
+                        "-threshold 0.999999 -disable_symmetric_output")},
+            new Object[][] {{user, norms}});
     }
 
     @Nonnull

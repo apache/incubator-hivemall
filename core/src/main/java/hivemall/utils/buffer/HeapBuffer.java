@@ -136,8 +136,8 @@ public final class HeapBuffer {
 
     private void validatePointer(final long ptr) {
         if (ptr >= _position) {
-            throw new IllegalArgumentException("Invalid pointer " + ptr + " does not in range [0,"
-                    + _position + ')');
+            throw new IllegalArgumentException(
+                "Invalid pointer " + ptr + " does not in range [0," + _position + ')');
         }
     }
 
@@ -288,8 +288,8 @@ public final class HeapBuffer {
 
     private void validateOffset(final long offset) {
         if (offset >= _chunkBytes) {
-            throw new IndexOutOfBoundsException("Invalid offset " + offset + " not in range [0,"
-                    + _chunkBytes + ')');
+            throw new IndexOutOfBoundsException(
+                "Invalid offset " + offset + " not in range [0," + _chunkBytes + ')');
         }
     }
 

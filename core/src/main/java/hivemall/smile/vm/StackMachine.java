@@ -275,8 +275,8 @@ public final class StackMachine {
                 } else {
                     Double v = valuesMap.get(currentOperation.operand);
                     if (v == null) {
-                        throw new VMRuntimeException("value is not bound: "
-                                + currentOperation.operand);
+                        throw new VMRuntimeException(
+                            "value is not bound: " + currentOperation.operand);
                     }
                     push(v);
                 }
@@ -284,8 +284,8 @@ public final class StackMachine {
                 break;
             }
             default:
-                throw new VMRuntimeException("Machine code has wrong opcode :"
-                        + currentOperation.op);
+                throw new VMRuntimeException(
+                    "Machine code has wrong opcode :" + currentOperation.op);
         }
         return true;
 

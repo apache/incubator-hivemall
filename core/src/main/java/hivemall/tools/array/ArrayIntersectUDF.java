@@ -55,8 +55,8 @@ public final class ArrayIntersectUDF extends GenericUDF {
             throws UDFArgumentException {
         final int argLength = argOIs.length;
         if (argLength < 2) {
-            throw new UDFArgumentLengthException("Expecting at least two arrays as arguments: "
-                    + argLength);
+            throw new UDFArgumentLengthException(
+                "Expecting at least two arrays as arguments: " + argLength);
         }
 
         ListObjectInspector[] argListOIs = new ListObjectInspector[argLength];
@@ -67,9 +67,9 @@ public final class ArrayIntersectUDF extends GenericUDF {
             ListObjectInspector listOI = HiveUtils.asListOI(argOIs[i]);
             if (!ObjectInspectorUtils.compareTypes(listOI.getListElementObjectInspector(),
                 arg0ElemOI)) {
-                throw new UDFArgumentException("Array types does not match: "
-                        + arg0ElemOI.getTypeName() + " != "
-                        + listOI.getListElementObjectInspector().getTypeName());
+                throw new UDFArgumentException(
+                    "Array types does not match: " + arg0ElemOI.getTypeName() + " != "
+                            + listOI.getListElementObjectInspector().getTypeName());
             }
             argListOIs[i] = listOI;
         }
@@ -106,7 +106,8 @@ public final class ArrayIntersectUDF extends GenericUDF {
             if (argI == null) {
                 continue;
             }
-            final Set<InspectableObject> newSet = new HashSet<ArrayIntersectUDF.InspectableObject>();
+            final Set<InspectableObject> newSet =
+                    new HashSet<ArrayIntersectUDF.InspectableObject>();
             final ListObjectInspector argIListOI = argListOIs[i];
             final ObjectInspector argIElemOI = argIListOI.getListElementObjectInspector();
             for (int j = 0, j_size = argIListOI.getListLength(argI); j < j_size; j++) {

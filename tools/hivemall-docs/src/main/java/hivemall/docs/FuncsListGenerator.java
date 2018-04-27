@@ -113,7 +113,8 @@ public class FuncsListGenerator extends AbstractMojo {
             Collections.singletonList("hivemall.ftvec.selection"));
         funcsHeaders.put("## Feature transformation and vectorization",
             Collections.singletonList("hivemall.ftvec.trans"));
-        funcsHeaders.put("# Geospatial functions", Collections.singletonList("hivemall.geospatial"));
+        funcsHeaders.put("# Geospatial functions",
+            Collections.singletonList("hivemall.geospatial"));
         funcsHeaders.put("# Distance measures", Collections.singletonList("hivemall.knn.distance"));
         funcsHeaders.put("# Locality-sensitive hashing",
             Collections.singletonList("hivemall.knn.lsh"));
@@ -138,12 +139,10 @@ public class FuncsListGenerator extends AbstractMojo {
             return;
         }
 
-        generate(
-            new File(basedir, pathToGenericFuncs),
+        generate(new File(basedir, pathToGenericFuncs),
             "This page describes a list of useful Hivemall generic functions. See also a [list of machine-learning-related functions](./funcs.md).",
             genericFuncsHeaders);
-        generate(
-            new File(basedir, pathToFuncs),
+        generate(new File(basedir, pathToFuncs),
             "This page describes a list of Hivemall functions. See also a [list of generic Hivemall functions](./generic_funcs.md) for more general-purpose functions such as array and map UDFs.",
             funcsHeaders);
     }

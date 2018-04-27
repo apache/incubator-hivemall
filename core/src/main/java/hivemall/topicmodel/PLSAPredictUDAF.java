@@ -75,7 +75,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
         if (!HiveUtils.isStringTypeInfo(typeInfo[0])) {
             throw new UDFArgumentTypeException(0,
-                "String type is expected for the first argument word: " + typeInfo[0].getTypeName());
+                "String type is expected for the first argument word: "
+                        + typeInfo[0].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[1])) {
             throw new UDFArgumentTypeException(1,
@@ -89,7 +90,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
         }
         if (!HiveUtils.isNumberTypeInfo(typeInfo[3])) {
             throw new UDFArgumentTypeException(3,
-                "Number type is expected for the forth argument prob: " + typeInfo[3].getTypeName());
+                "Number type is expected for the forth argument prob: "
+                        + typeInfo[3].getTypeName());
         }
 
         if (typeInfo.length == 5) {
@@ -180,17 +182,17 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 String rawArgs = HiveUtils.getConstString(argOIs[4]);
                 cl = parseOptions(rawArgs);
 
-                this.topics = Primitives.parseInt(cl.getOptionValue("topics"),
-                    PLSAUDTF.DEFAULT_TOPICS);
+                this.topics =
+                        Primitives.parseInt(cl.getOptionValue("topics"), PLSAUDTF.DEFAULT_TOPICS);
                 if (topics < 1) {
                     throw new UDFArgumentException(
                         "A positive integer MUST be set to an option `-topics`: " + topics);
                 }
 
-                this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"),
-                    PLSAUDTF.DEFAULT_ALPHA);
-                this.delta = Primitives.parseDouble(cl.getOptionValue("delta"),
-                    PLSAUDTF.DEFAULT_DELTA);
+                this.alpha =
+                        Primitives.parseFloat(cl.getOptionValue("alpha"), PLSAUDTF.DEFAULT_ALPHA);
+                this.delta =
+                        Primitives.parseDouble(cl.getOptionValue("delta"), PLSAUDTF.DEFAULT_DELTA);
             } else {
                 this.topics = PLSAUDTF.DEFAULT_TOPICS;
                 this.alpha = PLSAUDTF.DEFAULT_ALPHA;
@@ -224,7 +226,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 this.wcListOI = ObjectInspectorFactory.getStandardListObjectInspector(wcListElemOI);
                 this.probMapKeyOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
                 this.probMapValueElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-                this.probMapValueOI = ObjectInspectorFactory.getStandardListObjectInspector(probMapValueElemOI);
+                this.probMapValueOI =
+                        ObjectInspectorFactory.getStandardListObjectInspector(probMapValueElemOI);
                 this.probMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(probMapKeyOI,
                     probMapValueOI);
             }
@@ -241,8 +244,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 fieldNames.add("probability");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
-                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardStructObjectInspector(
-                    fieldNames, fieldOIs));
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs));
             }
             return outputOI;
         }
@@ -252,12 +255,14 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
             fieldNames.add("wcList");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector));
 
             fieldNames.add("probMap");
             fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector)));
 
             fieldNames.add("topics");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
@@ -350,7 +355,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
                 String word = PrimitiveObjectInspectorUtils.getString(e.getKey(), probMapKeyOI);
 
                 Object probMapValueObj = e.getValue();
-                List<?> probMapValueRaw = probMapValueOI.getList(HiveUtils.castLazyBinaryObject(probMapValueObj));
+                List<?> probMapValueRaw =
+                        probMapValueOI.getList(HiveUtils.castLazyBinaryObject(probMapValueObj));
 
                 // fix map values to lists of Java Float objects
                 int probMapValueSize = probMapValueRaw.size();
@@ -370,7 +376,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             this.alpha = PrimitiveObjectInspectorFactory.writableFloatObjectInspector.get(alphaObj);
 
             Object deltaObj = internalMergeOI.getStructFieldData(partial, deltaOptionField);
-            this.delta = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(deltaObj);
+            this.delta =
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(deltaObj);
 
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             myAggr.setOptions(topics, alpha, delta);
@@ -383,8 +390,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
             float[] topicDistr = myAggr.get();
 
-            SortedMap<Float, Integer> sortedDistr = new TreeMap<Float, Integer>(
-                Collections.reverseOrder());
+            SortedMap<Float, Integer> sortedDistr =
+                    new TreeMap<Float, Integer>(Collections.reverseOrder());
             for (int i = 0; i < topicDistr.length; i++) {
                 sortedDistr.put(topicDistr[i], i);
             }
@@ -401,8 +408,8 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static class PLSAPredictAggregationBuffer extends
-            GenericUDAFEvaluator.AbstractAggregationBuffer {
+    public static class PLSAPredictAggregationBuffer
+            extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
         private List<String> wcList;
         private Map<String, List<Float>> probMap;

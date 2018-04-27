@@ -52,8 +52,8 @@ public class OnlineLDAModelTest {
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
-                "oranges:1"};
+        String[] doc2 =
+                new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
 
         do {
             perplexityPrev = perplexity;
@@ -106,8 +106,9 @@ public class OnlineLDAModelTest {
             k1 = 1;
             k2 = 0;
         }
-        Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+        Assert.assertTrue(
+            "doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
+                    + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
             model.getWordScore("vegetables", k1) > model.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
@@ -124,8 +125,8 @@ public class OnlineLDAModelTest {
         OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, 2, 80, 0.8, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
-                "oranges:1"};
+        String[] doc2 =
+                new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
 
         do {
             perplexityPrev = perplexity;
@@ -142,9 +143,10 @@ public class OnlineLDAModelTest {
         // scikit-learn Python library (implemented based on Matthew D. Hoffman's onlineldavb code)
         // returns perplexity=15 in a batch setting and perplexity=22 in an online setting.
         // Hivemall needs to converge to the similar perplexity.
-        Assert.assertTrue("Perplexity SHOULD be in [12, 25]; "
-                + "converged perplexity is too small or large for some reasons", 12.f <= perplexity
-                && perplexity <= 25.f);
+        Assert.assertTrue(
+            "Perplexity SHOULD be in [12, 25]; "
+                    + "converged perplexity is too small or large for some reasons",
+            12.f <= perplexity && perplexity <= 25.f);
     }
 
     @Test
@@ -155,7 +157,8 @@ public class OnlineLDAModelTest {
 
         int cnt, it;
 
-        OnlineLDAModel model = new OnlineLDAModel(K, 1.f / K, 1.f / K, numTotalDocs, 80, 0.8, 1E-3d);
+        OnlineLDAModel model =
+                new OnlineLDAModel(K, 1.f / K, 1.f / K, numTotalDocs, 80, 0.8, 1E-3d);
 
         BufferedReader news20 = readFile("news20-multiclass.gz");
 
@@ -222,7 +225,8 @@ public class OnlineLDAModelTest {
 
         int n = topics.size();
         Assert.assertTrue("At least 15 documents SHOULD be classified to different topics, "
-                + "but there are only " + n + " unique topics.", n >= 15);
+                + "but there are only " + n + " unique topics.",
+            n >= 15);
     }
 
     private static void println(String msg) {
@@ -234,7 +238,8 @@ public class OnlineLDAModelTest {
     @Nonnull
     private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
         // use data stored for KPA UDTF test
-        InputStream is = KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
+        InputStream is =
+                KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
         if (fileName.endsWith(".gz")) {
             is = new GZIPInputStream(is);
         }

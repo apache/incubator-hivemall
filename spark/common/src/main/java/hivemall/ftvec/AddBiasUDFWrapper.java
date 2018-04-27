@@ -65,7 +65,8 @@ public class AddBiasUDFWrapper extends GenericUDF {
                 throw new UDFArgumentTypeException(0, "Type mismatch: features");
         }
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(argumentOI.getListElementObjectInspector());
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            argumentOI.getListElementObjectInspector());
     }
 
     @Override

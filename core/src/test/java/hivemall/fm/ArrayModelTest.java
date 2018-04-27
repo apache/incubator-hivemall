@@ -44,7 +44,8 @@ public class ArrayModelTest {
         final int ROW = 10, COL = 40;
 
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
-        ListObjectInspector xOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ListObjectInspector xOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         DoubleObjectInspector yOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
         ObjectInspector paramOI = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,
@@ -119,7 +120,8 @@ public class ArrayModelTest {
         final int ROW = 1000, COL = 80;
 
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
-        ListObjectInspector xOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ListObjectInspector xOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         DoubleObjectInspector yOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
         ObjectInspector paramOI = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,

@@ -55,8 +55,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspe
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "tree_predict",
+@Description(name = "tree_predict",
         value = "_FUNC_(string modelId, string model, array<double|string> features [, const string options | const boolean classification=false])"
                 + " - Returns a prediction result of a random forest"
                 + " in <int value, array<double> a posteriori> for classification and <double> for regression")
@@ -134,7 +133,8 @@ public final class TreePredictUDF extends UDFWithOptions {
             fieldNames.add("value");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
             fieldNames.add("posteriori");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         } else {
             return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
@@ -163,8 +163,8 @@ public final class TreePredictUDF extends UDFWithOptions {
         this.featuresProbe = parseFeatures(arg2, featuresProbe);
 
         if (evaluator == null) {
-            this.evaluator = classification ? new ClassificationEvaluator()
-                    : new RegressionEvaluator();
+            this.evaluator =
+                    classification ? new ClassificationEvaluator() : new RegressionEvaluator();
         }
         return evaluator.evaluate(modelId, model, featuresProbe);
     }
@@ -221,8 +221,8 @@ public final class TreePredictUDF extends UDFWithOptions {
                 }
 
                 if (feature.indexOf(':') != -1) {
-                    throw new UDFArgumentException("Invalid feature format `<index>:<value>`: "
-                            + col);
+                    throw new UDFArgumentException(
+                        "Invalid feature format `<index>:<value>`: " + col);
                 }
 
                 final int colIndex = Integer.parseInt(feature);

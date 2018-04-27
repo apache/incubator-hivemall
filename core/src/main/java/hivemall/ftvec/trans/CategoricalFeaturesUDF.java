@@ -40,8 +40,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
-@Description(
-        name = "categorical_features",
+@Description(name = "categorical_features",
         value = "_FUNC_(array<string> featureNames, feature1, feature2, .. [, const string options])"
                 + " - Returns a feature vector array<string>")
 @UDFType(deterministic = true, stateful = false)
@@ -82,8 +81,8 @@ public final class CategoricalFeaturesUDF extends UDFWithOptions {
             throws UDFArgumentException {
         final int numArgOIs = argOIs.length;
         if (numArgOIs < 2) {
-            throw new UDFArgumentException("argOIs.length must be greater that or equals to 2: "
-                    + numArgOIs);
+            throw new UDFArgumentException(
+                "argOIs.length must be greater that or equals to 2: " + numArgOIs);
         }
 
         this._featureNames = HiveUtils.getConstStringArray(argOIs[0]);
@@ -92,16 +91,16 @@ public final class CategoricalFeaturesUDF extends UDFWithOptions {
         }
         int numFeatureNames = _featureNames.length;
         if (numFeatureNames < 1) {
-            throw new UDFArgumentException("#featureNames must be greater than or equals to 1: "
-                    + numFeatureNames);
+            throw new UDFArgumentException(
+                "#featureNames must be greater than or equals to 1: " + numFeatureNames);
         }
         for (String featureName : _featureNames) {
             if (featureName == null) {
-                throw new UDFArgumentException("featureName should not be null: "
-                        + Arrays.toString(_featureNames));
+                throw new UDFArgumentException(
+                    "featureName should not be null: " + Arrays.toString(_featureNames));
             } else if (featureName.indexOf(':') != -1) {
-                throw new UDFArgumentException("featureName should not include colon: "
-                        + featureName);
+                throw new UDFArgumentException(
+                    "featureName should not include colon: " + featureName);
             }
         }
 
@@ -114,16 +113,15 @@ public final class CategoricalFeaturesUDF extends UDFWithOptions {
                 processOptions(optionValue);
                 numFeatures = numArgOIs - 2;
             } else {
-                throw new UDFArgumentException(
-                    "Unexpected arguments for _FUNC_"
-                            + "(const array<string> featureNames, feature1, feature2, .. [, const string options])");
+                throw new UDFArgumentException("Unexpected arguments for _FUNC_"
+                        + "(const array<string> featureNames, feature1, feature2, .. [, const string options])");
             }
         } else {
             numFeatures = lastArgIndex;
         }
         if (numFeatureNames != numFeatures) {
-            throw new UDFArgumentLengthException("#featureNames '" + numFeatureNames
-                    + "' != #features '" + numFeatures + "'");
+            throw new UDFArgumentLengthException(
+                "#featureNames '" + numFeatureNames + "' != #features '" + numFeatures + "'");
         }
 
         this._inputOIs = new PrimitiveObjectInspector[numFeatures];
@@ -133,7 +131,8 @@ public final class CategoricalFeaturesUDF extends UDFWithOptions {
         }
         this._result = new ArrayList<String>(numFeatures);
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
     }
 
     @Override

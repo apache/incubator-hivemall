@@ -41,7 +41,8 @@ public class LDAUDTFTest {
         LDAUDTF udtf = new LDAUDTF();
 
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                     "-topics 2 -num_docs 2 -s 1 -iter 32 -eps 1e-3")};
@@ -49,8 +50,8 @@ public class LDAUDTFTest {
         udtf.initialize(argOIs);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
-                "oranges:1"};
+        String[] doc2 =
+                new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
         udtf.process(new Object[] {Arrays.asList(doc1)});
         udtf.process(new Object[] {Arrays.asList(doc2)});
 
@@ -91,8 +92,9 @@ public class LDAUDTFTest {
             k2 = 0;
         }
 
-        Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+        Assert.assertTrue(
+            "doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
+                    + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
             udtf.getWordScore("vegetables", k1) > udtf.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
@@ -104,7 +106,8 @@ public class LDAUDTFTest {
         LDAUDTF udtf = new LDAUDTF();
 
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                     "-topics 2 -num_docs 2 -s 1 -iter 32 -eps 1e-3  -mini_batch_size 1")};
@@ -154,25 +157,26 @@ public class LDAUDTFTest {
             k2 = 0;
         }
 
-        Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-                + "and `野菜` SHOULD be more suitable topic word than `インフルエンザ` in the topic",
+        Assert.assertTrue(
+            "doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
+                    + "and `野菜` SHOULD be more suitable topic word than `インフルエンザ` in the topic",
             udtf.getWordScore("野菜", k1) > udtf.getWordScore("インフルエンザ", k1));
-        Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
-                + "and `アボカド` SHOULD be more suitable topic word than `健康` in the topic",
+        Assert.assertTrue(
+            "doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
+                    + "and `アボカド` SHOULD be more suitable topic word than `健康` in the topic",
             udtf.getWordScore("アボカド", k2) > udtf.getWordScore("健康", k2));
     }
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            LDAUDTF.class,
+        TestUtils.testGenericUDTFSerialization(LDAUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                         "-topics 2 -num_docs 2 -s 1 -iter 32 -eps 1e-3")},
-            new Object[][] {
-                    {Arrays.asList("fruits:1", "healthy:1", "vegetables:1")},
+            new Object[][] {{Arrays.asList("fruits:1", "healthy:1", "vegetables:1")},
                     {Arrays.asList("apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
                         "oranges:1")}});
     }

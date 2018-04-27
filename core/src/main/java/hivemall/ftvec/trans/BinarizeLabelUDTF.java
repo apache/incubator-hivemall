@@ -34,9 +34,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
-@Description(name = "binarize_label", value = "_FUNC_(int/long positive, int/long negative, ...) "
-        + "- Returns positive/negative records that are represented "
-        + "as (..., int label) where label is 0 or 1")
+@Description(name = "binarize_label",
+        value = "_FUNC_(int/long positive, int/long negative, ...) "
+                + "- Returns positive/negative records that are represented "
+                + "as (..., int label) where label is 0 or 1")
 @UDFType(deterministic = true, stateful = false)
 public final class BinarizeLabelUDTF extends GenericUDTF {
 

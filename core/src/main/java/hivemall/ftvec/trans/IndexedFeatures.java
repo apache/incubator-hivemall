@@ -34,8 +34,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(
-        name = "indexed_features",
+@Description(name = "indexed_features",
         value = "_FUNC_(double v1, double v2, ...) - Returns a list of features as array<string>: [1:v1, 2:v2, ..]")
 @UDFType(deterministic = true, stateful = false)
 public final class IndexedFeatures extends GenericUDF {
@@ -53,7 +52,8 @@ public final class IndexedFeatures extends GenericUDF {
         }
 
         this.list = null;
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
     }
 
     @Override

@@ -22,8 +22,8 @@ import hivemall.utils.lang.Copyable;
 
 import java.io.Serializable;
 
-public final class MutableFloat extends Number implements Copyable<MutableFloat>,
-        Comparable<MutableFloat>, Serializable {
+public final class MutableFloat extends Number
+        implements Copyable<MutableFloat>, Comparable<MutableFloat>, Serializable {
     private static final long serialVersionUID = 1758508142164954048L;
 
     private float value;
@@ -95,8 +95,8 @@ public final class MutableFloat extends Number implements Copyable<MutableFloat>
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof MutableFloat)
-                && (Float.floatToIntBits(((MutableFloat) obj).value) == Float.floatToIntBits(value));
+        return (obj instanceof MutableFloat) && (Float.floatToIntBits(
+            ((MutableFloat) obj).value) == Float.floatToIntBits(value));
     }
 
     @Override

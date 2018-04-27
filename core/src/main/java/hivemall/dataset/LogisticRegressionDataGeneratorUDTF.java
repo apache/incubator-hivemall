@@ -40,8 +40,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(
-        name = "lr_datagen",
+@Description(name = "lr_datagen",
         value = "_FUNC_(options string) - Generates a logistic regression dataset",
         extended = "WITH dual AS (SELECT 1) SELECT lr_datagen('-n_examples 1k -n_features 10') FROM dual;")
 public final class LogisticRegressionDataGeneratorUDTF extends UDTFWithOptions {
@@ -79,9 +78,7 @@ public final class LogisticRegressionDataGeneratorUDTF extends UDTFWithOptions {
         opts.addOption("p1", "prob_one", true,
             " Probability in [0, 1.0) that a label is 1 [DEFAULT: 0.6]");
         opts.addOption("seed", true, "The seed value for random number generator [DEFAULT: 43L]");
-        opts.addOption(
-            "dense",
-            false,
+        opts.addOption("dense", false,
             "Make a dense dataset or not. If not specified, a sparse dataset is generated.\n"
                     + "For sparse, n_dims should be much larger than n_features. When disabled, n_features must be equals to n_dims ");
         opts.addOption("sort", false, "Sort features if specified (used only for sparse dataset)");
@@ -114,9 +111,9 @@ public final class LogisticRegressionDataGeneratorUDTF extends UDTFWithOptions {
         }
         if (dense) {
             if (n_features != n_dimensions) {
-                throw new UDFArgumentException("n_features '" + n_features
-                        + "' must be equals to n_dimensions '" + n_dimensions
-                        + "' when making a dense dataset");
+                throw new UDFArgumentException(
+                    "n_features '" + n_features + "' must be equals to n_dimensions '"
+                            + n_dimensions + "' when making a dense dataset");
             }
         }
 
@@ -135,9 +132,11 @@ public final class LogisticRegressionDataGeneratorUDTF extends UDTFWithOptions {
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
         fieldNames.add("features");
         if (dense) {
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaFloatObjectInspector));
         } else {
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector));
         }
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }

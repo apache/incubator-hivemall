@@ -57,7 +57,8 @@ public class MapTailNUDF extends GenericUDF {
         }
         this.intObjectInspector = (IntObjectInspector) arguments[1];
 
-        ObjectInspector keyOI = ObjectInspectorUtils.getStandardObjectInspector(mapObjectInspector.getMapKeyObjectInspector());
+        ObjectInspector keyOI = ObjectInspectorUtils.getStandardObjectInspector(
+            mapObjectInspector.getMapKeyObjectInspector());
         ObjectInspector valueOI = mapObjectInspector.getMapValueObjectInspector();
 
         return ObjectInspectorFactory.getStandardMapObjectInspector(keyOI, valueOI);

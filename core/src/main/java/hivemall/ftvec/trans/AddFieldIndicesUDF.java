@@ -56,7 +56,8 @@ public final class AddFieldIndicesUDF extends GenericUDF {
             throw new UDFArgumentException("Expected array<string> but got " + argOIs[0]);
         }
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
     }
 
     @Override

@@ -39,7 +39,8 @@ public class FirstElementUDFTest {
     public void test() throws IOException, HiveException {
         FirstElementUDF udf = new FirstElementUDF();
 
-        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
 
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
             WritableUtils.toWritableList(new double[] {0, 1, 2}))};
@@ -53,10 +54,11 @@ public class FirstElementUDFTest {
     public void testNull() throws IOException, HiveException {
         FirstElementUDF udf = new FirstElementUDF();
 
-        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)});
 
-        DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
-            WritableUtils.toWritableList(new double[] {}))};
+        DeferredObject[] args = new DeferredObject[] {
+                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {}))};
 
         Assert.assertNull(udf.evaluate(args));
 
@@ -65,9 +67,9 @@ public class FirstElementUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(
-            FirstElementUDF.class,
-            new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)},
+        TestUtils.testGenericUDFSerialization(FirstElementUDF.class,
+            new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)},
             new Object[] {Arrays.asList(0.d, 1.d, 2.d)});
     }
 

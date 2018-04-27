@@ -70,15 +70,18 @@ public final class BitsCollectUDAF extends AbstractGenericUDAFResolver {
                 this.inputOI = HiveUtils.asLongCompatibleOI(argOIs[0]);
             } else {// from partial aggregation
                 this.mergeOI = HiveUtils.asListOI(argOIs[0]);
-                this.mergeListElemOI = HiveUtils.asPrimitiveObjectInspector(mergeOI.getListElementObjectInspector());
+                this.mergeListElemOI = HiveUtils.asPrimitiveObjectInspector(
+                    mergeOI.getListElementObjectInspector());
             }
 
             // initialize output
             final ObjectInspector outputOI;
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
-                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector);
             } else {// terminate
-                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector);
             }
             return outputOI;
         }
@@ -112,8 +115,8 @@ public final class BitsCollectUDAF extends AbstractGenericUDAFResolver {
             if (arg != null) {
                 int index = PrimitiveObjectInspectorUtils.getInt(arg, inputOI);
                 if (index < 0) {
-                    throw new UDFArgumentException("Specified index SHOULD NOT be negative: "
-                            + index);
+                    throw new UDFArgumentException(
+                        "Specified index SHOULD NOT be negative: " + index);
                 }
                 ArrayAggregationBuffer agg = (ArrayAggregationBuffer) aggr;
                 agg.bitset.set(index);

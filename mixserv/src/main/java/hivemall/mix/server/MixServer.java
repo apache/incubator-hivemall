@@ -109,8 +109,8 @@ public final class MixServer implements Runnable {
     public String toString() {
         return "[port=" + port + ", numWorkers=" + numWorkers + ", ssl=" + ssl + ", scale=" + scale
                 + ", syncThreshold=" + syncThreshold + ", sessionTTLinSec=" + sessionTTLinSec
-                + ", sweepIntervalInSec=" + sweepIntervalInSec + ", jmx=" + jmx + ", state="
-                + state + "]";
+                + ", sweepIntervalInSec=" + sweepIntervalInSec + ", jmx=" + jmx + ", state=" + state
+                + "]";
     }
 
     public ServerState getState() {
@@ -143,7 +143,8 @@ public final class MixServer implements Runnable {
         // configure metrics
         ScheduledExecutorService metricCollector = Executors.newScheduledThreadPool(1);
         MixServerMetrics metrics = new MixServerMetrics();
-        ThroughputCounter throughputCounter = new ThroughputCounter(metricCollector, 5000L, metrics);
+        ThroughputCounter throughputCounter =
+                new ThroughputCounter(metricCollector, 5000L, metrics);
         if (jmx) {// register mbean
             MetricsRegistry.registerMBeans(metrics, port);
         }
@@ -151,8 +152,8 @@ public final class MixServer implements Runnable {
         // configure initializer
         SessionStore sessionStore = new SessionStore();
         MixServerHandler msgHandler = new MixServerHandler(sessionStore, syncThreshold, scale);
-        MixServerInitializer initializer = new MixServerInitializer(msgHandler, throughputCounter,
-            sslCtx);
+        MixServerInitializer initializer =
+                new MixServerInitializer(msgHandler, throughputCounter, sslCtx);
 
         Runnable cleanSessionTask = new IdleSessionSweeper(sessionStore, sessionTTLinSec * 1000L);
         ScheduledExecutorService idleSessionChecker = Executors.newScheduledThreadPool(1);

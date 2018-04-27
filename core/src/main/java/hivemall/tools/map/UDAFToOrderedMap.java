@@ -53,18 +53,12 @@ import org.apache.hadoop.io.IntWritable;
 /**
  * Convert two aggregated columns into a sorted key-value map.
  */
-@Description(
-        name = "to_ordered_map",
+@Description(name = "to_ordered_map",
         value = "_FUNC_(key, value [, const int k|const boolean reverseOrder=false]) "
                 + "- Convert two aggregated columns into an ordered key-value map",
-        extended = "with t as (\n"
-                + "    select 10 as key, 'apple' as value\n"
-                + "    union all\n"
-                + "    select 3 as key, 'banana' as value\n"
-                + "    union all\n"
-                + "    select 4 as key, 'candy' as value\n"
-                + ")\n"
-                + "select\n"
+        extended = "with t as (\n" + "    select 10 as key, 'apple' as value\n" + "    union all\n"
+                + "    select 3 as key, 'banana' as value\n" + "    union all\n"
+                + "    select 4 as key, 'candy' as value\n" + ")\n" + "select\n"
                 + "    to_ordered_map(key, value, true),   -- {10:\"apple\",4:\"candy\",3:\"banana\"} (reverse)\n"
                 + "    to_ordered_map(key, value, 1),      -- {10:\"apple\"} (top-1)\n"
                 + "    to_ordered_map(key, value, 2),      -- {10:\"apple\",4:\"candy\"} (top-2)\n"
@@ -142,8 +136,8 @@ public final class UDAFToOrderedMap extends UDAFToMap {
         @Override
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
-            ((MapAggregationBuffer) agg).container = new TreeMap<Object, Object>(
-                Collections.reverseOrder());
+            ((MapAggregationBuffer) agg).container =
+                    new TreeMap<Object, Object>(Collections.reverseOrder());
         }
 
     }
@@ -175,8 +169,10 @@ public final class UDAFToOrderedMap extends UDAFToMap {
 
                 this.partialMapField = soi.getStructFieldRef("partialMap");
                 // re-extract input key/value OIs
-                MapObjectInspector partialMapOI = (MapObjectInspector) partialMapField.getFieldObjectInspector();
-                this.inputKeyOI = HiveUtils.asPrimitiveObjectInspector(partialMapOI.getMapKeyObjectInspector());
+                MapObjectInspector partialMapOI =
+                        (MapObjectInspector) partialMapField.getFieldObjectInspector();
+                this.inputKeyOI = HiveUtils.asPrimitiveObjectInspector(
+                    partialMapOI.getMapKeyObjectInspector());
                 this.inputValueOI = partialMapOI.getMapValueObjectInspector();
 
                 this.partialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
@@ -289,7 +285,8 @@ public final class UDAFToOrderedMap extends UDAFToMap {
             MapAggregationBuffer myagg = (MapAggregationBuffer) agg;
 
             Object partialMapObj = internalMergeOI.getStructFieldData(partial, partialMapField);
-            Map<?, ?> partialMap = partialMapOI.getMap(HiveUtils.castLazyBinaryObject(partialMapObj));
+            Map<?, ?> partialMap =
+                    partialMapOI.getMap(HiveUtils.castLazyBinaryObject(partialMapObj));
             if (partialMap == null) {
                 return;
             }
@@ -301,7 +298,8 @@ public final class UDAFToOrderedMap extends UDAFToMap {
             }
             for (Map.Entry<?, ?> e : partialMap.entrySet()) {
                 Object key = ObjectInspectorUtils.copyToStandardObject(e.getKey(), inputKeyOI);
-                Object value = ObjectInspectorUtils.copyToStandardObject(e.getValue(), inputValueOI);
+                Object value =
+                        ObjectInspectorUtils.copyToStandardObject(e.getValue(), inputValueOI);
                 myagg.container.put(key, value);
             }
         }

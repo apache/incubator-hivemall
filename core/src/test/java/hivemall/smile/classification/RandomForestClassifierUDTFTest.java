@@ -71,7 +71,8 @@ public class RandomForestClassifierUDTFTest {
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 49");
         udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
 
         final List<Double> xi = new ArrayList<Double>(x[0].length);
@@ -114,7 +115,8 @@ public class RandomForestClassifierUDTFTest {
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 49");
         udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
 
         final List<String> xi = new ArrayList<String>(x[0].length);
@@ -142,7 +144,8 @@ public class RandomForestClassifierUDTFTest {
 
     @Test
     public void testIrisSparseDenseEquals() throws IOException, ParseException, HiveException {
-        String urlString = "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff";
+        String urlString =
+                "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff";
         DecisionTree.Node denseNode = getDecisionTreeFromDenseInput(urlString);
         DecisionTree.Node sparseNode = getDecisionTreeFromSparseInput(urlString);
 
@@ -182,7 +185,8 @@ public class RandomForestClassifierUDTFTest {
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 1 -seed 71");
         udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
 
         final List<Double> xi = new ArrayList<Double>(x[0].length);
@@ -230,7 +234,8 @@ public class RandomForestClassifierUDTFTest {
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 1 -seed 71");
         udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
 
         final List<String> xi = new ArrayList<String>(x[0].length);
@@ -270,7 +275,8 @@ public class RandomForestClassifierUDTFTest {
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,
             "-stratified_sampling -seed 71 -trees " + numTrees);
         udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
 
 
@@ -316,10 +322,11 @@ public class RandomForestClassifierUDTFTest {
         final int numTrees = 10;
         RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-seed 71 -trees "
-                    + numTrees);
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-seed 71 -trees " + numTrees);
         udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
 
         BufferedReader news20 = readFile("news20-small.binary.gz");
@@ -386,10 +393,10 @@ public class RandomForestClassifierUDTFTest {
             rows[i][1] = y[i];
         }
 
-        TestUtils.testGenericUDTFSerialization(
-            RandomForestClassifierUDTF.class,
+        TestUtils.testGenericUDTFSerialization(RandomForestClassifierUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 49")},

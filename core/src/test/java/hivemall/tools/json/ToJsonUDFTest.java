@@ -40,7 +40,9 @@ public class ToJsonUDFTest {
     public void testDoubleArray() throws Exception {
         ToJsonUDF udf = new ToJsonUDF();
 
-        ObjectInspector[] argOIs = new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)};
+        ObjectInspector[] argOIs =
+                new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)};
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
             WritableUtils.toWritableList(new double[] {0.1, 1.1, 2.1}))};
 
@@ -54,9 +56,9 @@ public class ToJsonUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(
-            ToJsonUDF.class,
-            new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)},
+        TestUtils.testGenericUDFSerialization(ToJsonUDF.class,
+            new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)},
             new Object[] {Arrays.asList(0.1d, 1.1d, 2.1d)});
     }
 

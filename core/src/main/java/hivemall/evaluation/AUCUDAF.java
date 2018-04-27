@@ -63,7 +63,8 @@ import org.apache.hadoop.io.LongWritable;
 public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
+            throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes two or three arguments");
@@ -160,28 +161,33 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             fieldNames.add("tpPrev");
             fieldOIs.add(writableLongObjectInspector);
 
-            MapObjectInspector areaPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                javaDoubleObjectInspector, javaDoubleObjectInspector);
+            MapObjectInspector areaPartialMapOI =
+                    ObjectInspectorFactory.getStandardMapObjectInspector(javaDoubleObjectInspector,
+                        javaDoubleObjectInspector);
             fieldNames.add("areaPartialMap");
             fieldOIs.add(areaPartialMapOI);
 
-            MapObjectInspector fpPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                javaDoubleObjectInspector, javaLongObjectInspector);
+            MapObjectInspector fpPartialMapOI =
+                    ObjectInspectorFactory.getStandardMapObjectInspector(javaDoubleObjectInspector,
+                        javaLongObjectInspector);
             fieldNames.add("fpPartialMap");
             fieldOIs.add(fpPartialMapOI);
 
-            MapObjectInspector tpPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                javaDoubleObjectInspector, javaLongObjectInspector);
+            MapObjectInspector tpPartialMapOI =
+                    ObjectInspectorFactory.getStandardMapObjectInspector(javaDoubleObjectInspector,
+                        javaLongObjectInspector);
             fieldNames.add("tpPartialMap");
             fieldOIs.add(tpPartialMapOI);
 
-            MapObjectInspector fpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                javaDoubleObjectInspector, javaLongObjectInspector);
+            MapObjectInspector fpPrevPartialMapOI =
+                    ObjectInspectorFactory.getStandardMapObjectInspector(javaDoubleObjectInspector,
+                        javaLongObjectInspector);
             fieldNames.add("fpPrevPartialMap");
             fieldOIs.add(fpPrevPartialMapOI);
 
-            MapObjectInspector tpPrevPartialMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                javaDoubleObjectInspector, javaLongObjectInspector);
+            MapObjectInspector tpPrevPartialMapOI =
+                    ObjectInspectorFactory.getStandardMapObjectInspector(javaDoubleObjectInspector,
+                        javaLongObjectInspector);
             fieldNames.add("tpPrevPartialMap");
             fieldOIs.add(tpPrevPartialMapOI);
 
@@ -260,14 +266,14 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             Object tpObj = internalMergeOI.getStructFieldData(partial, tpField);
             Object fpPrevObj = internalMergeOI.getStructFieldData(partial, fpPrevField);
             Object tpPrevObj = internalMergeOI.getStructFieldData(partial, tpPrevField);
-            Object areaPartialMapObj = internalMergeOI.getStructFieldData(partial,
-                areaPartialMapField);
+            Object areaPartialMapObj =
+                    internalMergeOI.getStructFieldData(partial, areaPartialMapField);
             Object fpPartialMapObj = internalMergeOI.getStructFieldData(partial, fpPartialMapField);
             Object tpPartialMapObj = internalMergeOI.getStructFieldData(partial, tpPartialMapField);
-            Object fpPrevPartialMapObj = internalMergeOI.getStructFieldData(partial,
-                fpPrevPartialMapField);
-            Object tpPrevPartialMapObj = internalMergeOI.getStructFieldData(partial,
-                tpPrevPartialMapField);
+            Object fpPrevPartialMapObj =
+                    internalMergeOI.getStructFieldData(partial, fpPrevPartialMapField);
+            Object tpPrevPartialMapObj =
+                    internalMergeOI.getStructFieldData(partial, tpPrevPartialMapField);
 
             double indexScore = writableDoubleObjectInspector.get(indexScoreObj);
             double area = writableDoubleObjectInspector.get(areaObj);
@@ -276,16 +282,23 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             long fpPrev = writableLongObjectInspector.get(fpPrevObj);
             long tpPrev = writableLongObjectInspector.get(tpPrevObj);
 
-            StandardMapObjectInspector ddMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                javaDoubleObjectInspector, javaDoubleObjectInspector);
-            StandardMapObjectInspector dlMapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
-                javaDoubleObjectInspector, javaLongObjectInspector);
+            StandardMapObjectInspector ddMapOI =
+                    ObjectInspectorFactory.getStandardMapObjectInspector(javaDoubleObjectInspector,
+                        javaDoubleObjectInspector);
+            StandardMapObjectInspector dlMapOI =
+                    ObjectInspectorFactory.getStandardMapObjectInspector(javaDoubleObjectInspector,
+                        javaLongObjectInspector);
 
-            Map<Double, Double> areaPartialMap = (Map<Double, Double>) ddMapOI.getMap(HiveUtils.castLazyBinaryObject(areaPartialMapObj));
-            Map<Double, Long> fpPartialMap = (Map<Double, Long>) dlMapOI.getMap(HiveUtils.castLazyBinaryObject(fpPartialMapObj));
-            Map<Double, Long> tpPartialMap = (Map<Double, Long>) dlMapOI.getMap(HiveUtils.castLazyBinaryObject(tpPartialMapObj));
-            Map<Double, Long> fpPrevPartialMap = (Map<Double, Long>) dlMapOI.getMap(HiveUtils.castLazyBinaryObject(fpPrevPartialMapObj));
-            Map<Double, Long> tpPrevPartialMap = (Map<Double, Long>) dlMapOI.getMap(HiveUtils.castLazyBinaryObject(tpPrevPartialMapObj));
+            Map<Double, Double> areaPartialMap = (Map<Double, Double>) ddMapOI.getMap(
+                HiveUtils.castLazyBinaryObject(areaPartialMapObj));
+            Map<Double, Long> fpPartialMap = (Map<Double, Long>) dlMapOI.getMap(
+                HiveUtils.castLazyBinaryObject(fpPartialMapObj));
+            Map<Double, Long> tpPartialMap = (Map<Double, Long>) dlMapOI.getMap(
+                HiveUtils.castLazyBinaryObject(tpPartialMapObj));
+            Map<Double, Long> fpPrevPartialMap = (Map<Double, Long>) dlMapOI.getMap(
+                HiveUtils.castLazyBinaryObject(fpPrevPartialMapObj));
+            Map<Double, Long> tpPrevPartialMap = (Map<Double, Long>) dlMapOI.getMap(
+                HiveUtils.castLazyBinaryObject(tpPrevPartialMapObj));
 
             ClassificationAUCAggregationBuffer myAggr = (ClassificationAUCAggregationBuffer) agg;
             myAggr.merge(indexScore, area, fp, tp, fpPrev, tpPrev, areaPartialMap, fpPartialMap,
@@ -358,8 +371,8 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
             fpPrevPartialMap.put(indexScore, fpPrev);
             tpPrevPartialMap.put(indexScore, tpPrev);
 
-            SortedMap<Double, Double> areaPartialSortedMap = new TreeMap<Double, Double>(
-                Collections.reverseOrder());
+            SortedMap<Double, Double> areaPartialSortedMap =
+                    new TreeMap<Double, Double>(Collections.reverseOrder());
             areaPartialSortedMap.putAll(areaPartialMap);
 
             // initialize with leftmost partial result
@@ -506,7 +519,8 @@ public final class AUCUDAF extends AbstractGenericUDAFResolver {
 
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
-                recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
+                recommendSize =
+                        PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
                 if (recommendSize < 0) {
                     throw new UDFArgumentException(
                         "The third argument `int recommendSize` must be in greater than or equals to 0: "

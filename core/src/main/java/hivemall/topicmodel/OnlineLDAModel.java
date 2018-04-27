@@ -332,8 +332,8 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
             }
 
             for (int k = 0; k < _K; k++) {
-                lambda_label[k] = (float) ((1.d - _rhot) * lambda_label[k] + _rhot
-                        * lambdaTilde_label[k]);
+                lambda_label[k] =
+                        (float) ((1.d - _rhot) * lambda_label[k] + _rhot * lambdaTilde_label[k]);
             }
         }
     }
@@ -444,8 +444,8 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
             throw new IllegalArgumentException("Word `" + label + "` is not in the corpus.");
         }
         if (k >= lambda_label.length) {
-            throw new IllegalArgumentException("Topic index must be in [0, "
-                    + _lambda.get(label).length + "]");
+            throw new IllegalArgumentException(
+                "Topic index must be in [0, " + _lambda.get(label).length + "]");
         }
         return lambda_label[k];
     }
@@ -469,8 +469,8 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
     public SortedMap<Float, List<String>> getTopicWords(@Nonnegative final int k,
             @Nonnegative int topN) {
         double lambdaSum = 0.d;
-        final SortedMap<Float, List<String>> sortedLambda = new TreeMap<Float, List<String>>(
-            Collections.reverseOrder());
+        final SortedMap<Float, List<String>> sortedLambda =
+                new TreeMap<Float, List<String>>(Collections.reverseOrder());
 
         for (Map.Entry<String, float[]> e : _lambda.entrySet()) {
             final float lambda_k = e.getValue()[k];
@@ -484,8 +484,8 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
             labels.add(e.getKey());
         }
 
-        final SortedMap<Float, List<String>> ret = new TreeMap<Float, List<String>>(
-            Collections.reverseOrder());
+        final SortedMap<Float, List<String>> ret =
+                new TreeMap<Float, List<String>>(Collections.reverseOrder());
 
         topN = Math.min(topN, _lambda.keySet().size());
         int tt = 0;

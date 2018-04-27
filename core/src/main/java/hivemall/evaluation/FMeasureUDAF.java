@@ -53,39 +53,41 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
-@Description(
-        name = "fmeasure",
+@Description(name = "fmeasure",
         value = "_FUNC_(array|int|boolean actual, array|int| boolean predicted [, const string options])"
                 + " - Return a F-measure (f1score is the special with beta=1.0)")
 public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
+            throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes two or three arguments");
         }
 
-        boolean isArg1ListOrIntOrBoolean = HiveUtils.isListTypeInfo(typeInfo[0])
-                || HiveUtils.isIntegerTypeInfo(typeInfo[0])
-                || HiveUtils.isBooleanTypeInfo(typeInfo[0]);
+        boolean isArg1ListOrIntOrBoolean =
+                HiveUtils.isListTypeInfo(typeInfo[0]) || HiveUtils.isIntegerTypeInfo(typeInfo[0])
+                        || HiveUtils.isBooleanTypeInfo(typeInfo[0]);
         if (!isArg1ListOrIntOrBoolean) {
             throw new UDFArgumentTypeException(0,
                 "The first argument `array/int/boolean actual` is invalid form: " + typeInfo[0]);
         }
 
-        boolean isArg2ListOrIntOrBoolean = HiveUtils.isListTypeInfo(typeInfo[1])
-                || HiveUtils.isIntegerTypeInfo(typeInfo[1])
-                || HiveUtils.isBooleanTypeInfo(typeInfo[1]);
+        boolean isArg2ListOrIntOrBoolean =
+                HiveUtils.isListTypeInfo(typeInfo[1]) || HiveUtils.isIntegerTypeInfo(typeInfo[1])
+                        || HiveUtils.isBooleanTypeInfo(typeInfo[1]);
         if (!isArg2ListOrIntOrBoolean) {
             throw new UDFArgumentTypeException(1,
-                "The second argument `array/int/boolean predicted` is invalid form: " + typeInfo[1]);
+                "The second argument `array/int/boolean predicted` is invalid form: "
+                        + typeInfo[1]);
         }
 
         if (!typeInfo[0].equals(typeInfo[1])) {
-            throw new UDFArgumentTypeException(1, "The first argument `actual`'s type is "
-                    + typeInfo[0] + ", but the second argument `predicted`'s type is not match: "
-                    + typeInfo[1]);
+            throw new UDFArgumentTypeException(1,
+                "The first argument `actual`'s type is " + typeInfo[0]
+                        + ", but the second argument `predicted`'s type is not match: "
+                        + typeInfo[1]);
         }
 
         return new Evaluator();
@@ -233,20 +235,21 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                 predicted = ((ListObjectInspector) predictedOI).getList(parameters[1]);
             } else {//binary case
                 if (HiveUtils.isBooleanOI(actualOI)) { // boolean case
-                    actual = Arrays.asList(asIntLabel(parameters[0],
-                        (BooleanObjectInspector) actualOI));
-                    predicted = Arrays.asList(asIntLabel(parameters[1],
-                        (BooleanObjectInspector) predictedOI));
+                    actual = Arrays.asList(
+                        asIntLabel(parameters[0], (BooleanObjectInspector) actualOI));
+                    predicted = Arrays.asList(
+                        asIntLabel(parameters[1], (BooleanObjectInspector) predictedOI));
                 } else { // int case
-                    final int actualLabel = asIntLabel(parameters[0], (IntObjectInspector) actualOI);
+                    final int actualLabel =
+                            asIntLabel(parameters[0], (IntObjectInspector) actualOI);
                     if (actualLabel == 0 && "binary".equals(average)) {
                         actual = Collections.emptyList();
                     } else {
                         actual = Arrays.asList(actualLabel);
                     }
 
-                    final int predictedLabel = asIntLabel(parameters[1],
-                        (IntObjectInspector) predictedOI);
+                    final int predictedLabel =
+                            asIntLabel(parameters[1], (IntObjectInspector) predictedOI);
                     if (predictedLabel == 0 && "binary".equals(average)) {
                         predicted = Collections.emptyList();
                     } else {
@@ -303,15 +306,20 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
 
             Object tpObj = internalMergeOI.getStructFieldData(partial, tpField);
             Object totalActualObj = internalMergeOI.getStructFieldData(partial, totalActualField);
-            Object totalPredictedObj = internalMergeOI.getStructFieldData(partial,
-                totalPredictedField);
+            Object totalPredictedObj =
+                    internalMergeOI.getStructFieldData(partial, totalPredictedField);
             Object betaObj = internalMergeOI.getStructFieldData(partial, betaOptionField);
             Object averageObj = internalMergeOI.getStructFieldData(partial, averageOptionFiled);
             long tp = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(tpObj);
-            long totalActual = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalActualObj);
-            long totalPredicted = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalPredictedObj);
-            double beta = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(betaObj);
-            String average = PrimitiveObjectInspectorFactory.writableStringObjectInspector.getPrimitiveJavaObject(averageObj);
+            long totalActual =
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(totalActualObj);
+            long totalPredicted = PrimitiveObjectInspectorFactory.writableLongObjectInspector.get(
+                totalPredictedObj);
+            double beta =
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector.get(betaObj);
+            String average =
+                    PrimitiveObjectInspectorFactory.writableStringObjectInspector.getPrimitiveJavaObject(
+                        averageObj);
 
             FMeasureAggregationBuffer myAggr = (FMeasureAggregationBuffer) agg;
             myAggr.merge(tp, totalActual, totalPredicted, beta, average);

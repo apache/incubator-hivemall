@@ -44,12 +44,15 @@ public class FMeasureUDAFTest {
     public void setUp() throws Exception {
         fmeasure = new FMeasureUDAF();
         inputOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-beta 1.")};
 
-        evaluator = fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+        evaluator =
+                fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
 
         agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
     }
@@ -57,13 +60,16 @@ public class FMeasureUDAFTest {
     private void setUpWithArguments(double beta, String average) throws Exception {
         fmeasure = new FMeasureUDAF();
         inputOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector),
                 ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-beta " + beta
-                            + " -average " + average)};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-beta " + beta + " -average " + average)};
 
-        evaluator = fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+        evaluator =
+                fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
         agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
     }
 
@@ -74,27 +80,34 @@ public class FMeasureUDAFTest {
 
         String actualClassName = actual.getClass().getName();
         if (actualClassName.equals("java.lang.Integer")) {
-            inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
+            inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                PrimitiveObjectInspector.PrimitiveCategory.INT);
         } else if (actualClassName.equals("java.lang.Boolean")) {
-            inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
+            inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
         } else if ((actualClassName.equals("java.lang.String"))) {
-            inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING);
+            inputOIs[0] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                PrimitiveObjectInspector.PrimitiveCategory.STRING);
         }
 
         String predicatedClassName = predicted.getClass().getName();
         if (predicatedClassName.equals("java.lang.Integer")) {
-            inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
+            inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                PrimitiveObjectInspector.PrimitiveCategory.INT);
         } else if (predicatedClassName.equals("java.lang.Boolean")) {
-            inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
+            inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
         } else if ((predicatedClassName.equals("java.lang.String"))) {
-            inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.STRING);
+            inputOIs[1] = PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                PrimitiveObjectInspector.PrimitiveCategory.STRING);
         }
 
         inputOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-beta " + beta
-                    + " -average " + average);
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-beta " + beta + " -average " + average);
 
-        evaluator = fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+        evaluator =
+                fmeasure.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
         agg = (FMeasureUDAF.FMeasureAggregationBuffer) evaluator.getNewAggregationBuffer();
     }
 
@@ -330,10 +343,10 @@ public class FMeasureUDAFTest {
 
     @Test
     public void testMultiLabelF1MultiSamples() throws Exception {
-        String[][] actual = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
-                {"1", "2"}};
-        String[][] predicted = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"},
-                {"1"}};
+        String[][] actual =
+                {{"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"}, {"1", "2"}};
+        String[][] predicted =
+                {{"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
 
         double beta = 1.0;
         String average = "micro";
@@ -353,10 +366,10 @@ public class FMeasureUDAFTest {
 
     @Test
     public void testMultiLabelFmeasureMultiSamples() throws Exception {
-        String[][] actual = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
-                {"1", "2"}};
-        String[][] predicted = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"},
-                {"1"}};
+        String[][] actual =
+                {{"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"}, {"1", "2"}};
+        String[][] predicted =
+                {{"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
 
         double beta = 2.0;
         String average = "micro";
@@ -373,10 +386,10 @@ public class FMeasureUDAFTest {
 
     @Test(expected = HiveException.class)
     public void testMultiLabelFmeasureBinary() throws Exception {
-        String[][] actual = { {"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"},
-                {"1", "2"}};
-        String[][] predicted = { {"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"},
-                {"1"}};
+        String[][] actual =
+                {{"0", "2"}, {"0", "1"}, {"0"}, {"2"}, {"2", "0"}, {"0", "1"}, {"1", "2"}};
+        String[][] predicted =
+                {{"0", "1"}, {"0", "2"}, {}, {"2"}, {"2", "0"}, {"0", "1", "2"}, {"1"}};
 
         double beta = 1.0;
         String average = "binary";

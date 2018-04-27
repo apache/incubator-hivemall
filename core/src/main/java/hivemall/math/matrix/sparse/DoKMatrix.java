@@ -59,10 +59,11 @@ public final class DoKMatrix extends AbstractMatrix {
         this(numRows, numCols, 0.05f);
     }
 
-    public DoKMatrix(@Nonnegative int numRows, @Nonnegative int numCols, @Nonnegative float sparsity) {
+    public DoKMatrix(@Nonnegative int numRows, @Nonnegative int numCols,
+            @Nonnegative float sparsity) {
         super();
-        Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f, "Invalid Sparsity value: "
-                + sparsity);
+        Preconditions.checkArgument(sparsity >= 0.f && sparsity <= 1.f,
+            "Invalid Sparsity value: " + sparsity);
         int initialCapacity = Math.max(16384, Math.round(numRows * numCols * sparsity));
         this.elements = new Long2DoubleOpenHashTable(initialCapacity);
         elements.defaultReturnValue(0.d);

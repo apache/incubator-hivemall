@@ -39,8 +39,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "populate_not_in",
+@Description(name = "populate_not_in",
         value = "_FUNC_(list items, const int max_item_id [, const string options])"
                 + "- Returns a relation consists of <int item> that item does not exist in the given items")
 public final class PopulateNotInUDTF extends UDTFWithOptions {
@@ -89,7 +88,8 @@ public final class PopulateNotInUDTF extends UDTFWithOptions {
                         + " takes at least two arguments");
         }
         this.listOI = HiveUtils.asListOI(argOIs[0]);
-        this.listElemOI = HiveUtils.asPrimitiveObjectInspector(listOI.getListElementObjectInspector());
+        this.listElemOI =
+                HiveUtils.asPrimitiveObjectInspector(listOI.getListElementObjectInspector());
         processOptions(argOIs);
 
         this.maxItemId = HiveUtils.getAsConstInt(argOIs[1]);

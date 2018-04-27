@@ -239,7 +239,8 @@ public final class ArrayUtils {
         return INDEX_NOT_FOUND;
     }
 
-    public static int lastIndexOf(@Nullable final int[] array, final int valueToFind, int startIndex) {
+    public static int lastIndexOf(@Nullable final int[] array, final int valueToFind,
+            int startIndex) {
         if (array == null) {
             return INDEX_NOT_FOUND;
         }
@@ -285,8 +286,8 @@ public final class ArrayUtils {
 
     public static void copy(@Nonnull final int[] src, @Nonnull final int[] dest) {
         if (src.length != dest.length) {
-            throw new IllegalArgumentException("src.legnth '" + src.length + "' != dest.length '"
-                    + dest.length + "'");
+            throw new IllegalArgumentException(
+                "src.legnth '" + src.length + "' != dest.length '" + dest.length + "'");
         }
         System.arraycopy(src, 0, dest, 0, src.length);
     }
@@ -303,7 +304,8 @@ public final class ArrayUtils {
     }
 
     @Nonnull
-    public static float[] append(@Nonnull float[] array, final int currentSize, final float element) {
+    public static float[] append(@Nonnull float[] array, final int currentSize,
+            final float element) {
         if (currentSize + 1 > array.length) {
             float[] newArray = new float[currentSize * 2];
             System.arraycopy(array, 0, newArray, 0, currentSize);
@@ -739,7 +741,8 @@ public final class ArrayUtils {
     }
 
     @Nonnull
-    public static float[] newRandomFloatArray(@Nonnegative final int size, @Nonnull final PRNG rnd) {
+    public static float[] newRandomFloatArray(@Nonnegative final int size,
+            @Nonnull final PRNG rnd) {
         final float[] ret = new float[size];
         for (int i = 0; i < size; i++) {
             ret[i] = (float) rnd.nextDouble();

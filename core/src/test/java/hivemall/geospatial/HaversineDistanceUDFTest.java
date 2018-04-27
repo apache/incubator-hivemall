@@ -36,20 +36,20 @@ public class HaversineDistanceUDFTest {
     @Test
     public void testKilometers1() throws HiveException, IOException {
         HaversineDistanceUDF udf = new HaversineDistanceUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         // Tokyo
         double lat1 = 35.6833d, lon1 = 139.7667d;
         // Osaka
         double lat2 = 34.6603d, lon2 = 135.5232d;
 
-        DoubleWritable result1 = udf.evaluate(new DeferredObject[] {new DeferredJavaObject(lat1),
-                new DeferredJavaObject(lon1), new DeferredJavaObject(lat2),
-                new DeferredJavaObject(lon2)});
+        DoubleWritable result1 = udf.evaluate(
+            new DeferredObject[] {new DeferredJavaObject(lat1), new DeferredJavaObject(lon1),
+                    new DeferredJavaObject(lat2), new DeferredJavaObject(lon2)});
         Assert.assertEquals(402.092d, result1.get(), 0.001d);
 
         udf.close();
@@ -58,22 +58,22 @@ public class HaversineDistanceUDFTest {
     @Test
     public void testKilometers2() throws HiveException, IOException {
         HaversineDistanceUDF udf = new HaversineDistanceUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)});
 
         // Tokyo
         double lat1 = 35.6833d, lon1 = 139.7667d;
         // Osaka
         double lat2 = 34.6603d, lon2 = 135.5232d;
 
-        DoubleWritable result1 = udf.evaluate(new DeferredObject[] {new DeferredJavaObject(lat1),
-                new DeferredJavaObject(lon1), new DeferredJavaObject(lat2),
-                new DeferredJavaObject(lon2)});
+        DoubleWritable result1 = udf.evaluate(
+            new DeferredObject[] {new DeferredJavaObject(lat1), new DeferredJavaObject(lon1),
+                    new DeferredJavaObject(lat2), new DeferredJavaObject(lon2)});
         Assert.assertEquals(402.092d, result1.get(), 0.001d);
 
         udf.close();
@@ -82,13 +82,13 @@ public class HaversineDistanceUDFTest {
     @Test
     public void testMiles() throws HiveException, IOException {
         HaversineDistanceUDF udf = new HaversineDistanceUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
 
         // Tokyo
         double lat1 = 35.6833d, lon1 = 139.7667d;
@@ -110,10 +110,8 @@ public class HaversineDistanceUDFTest {
         // Osaka
         double lat2 = 34.6603d, lon2 = 135.5232d;
 
-        TestUtils.testGenericUDFSerialization(
-            HaversineDistanceUDF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+        TestUtils.testGenericUDFSerialization(HaversineDistanceUDF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,

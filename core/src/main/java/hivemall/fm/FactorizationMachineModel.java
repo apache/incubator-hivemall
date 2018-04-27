@@ -157,9 +157,9 @@ public abstract class FactorizationMachineModel {
             assert (!Double.isNaN(ret));
         }
         if (!NumberUtils.isFinite(ret)) {
-            throw new HiveException("Detected " + ret
-                    + " in predict. We recommend to normalize training examples.\n"
-                    + "Dumping variables ...\n" + varDump(x));
+            throw new HiveException(
+                "Detected " + ret + " in predict. We recommend to normalize training examples.\n"
+                        + "Dumping variables ...\n" + varDump(x));
         }
         return ret;
     }
@@ -222,9 +222,9 @@ public abstract class FactorizationMachineModel {
         float wi = getW(x);
         float nextWi = wi - eta * (gradWi + 2.f * _lambdaW * wi);
         if (!NumberUtils.isFinite(nextWi)) {
-            throw new IllegalStateException("Got " + nextWi + " for next W[" + x.getFeature()
-                    + "]\n" + "Xi=" + Xi + ", gradWi=" + gradWi + ", wi=" + wi + ", dloss=" + dloss
-                    + ", eta=" + eta);
+            throw new IllegalStateException(
+                "Got " + nextWi + " for next W[" + x.getFeature() + "]\n" + "Xi=" + Xi + ", gradWi="
+                        + gradWi + ", wi=" + wi + ", dloss=" + dloss + ", eta=" + eta);
         }
         setW(x, nextWi);
     }
@@ -238,10 +238,10 @@ public abstract class FactorizationMachineModel {
         float LambdaVf = getLambdaV(f);
         float nextVif = Vif - eta * (gradV + 2.f * LambdaVf * Vif);
         if (!NumberUtils.isFinite(nextVif)) {
-            throw new IllegalStateException("Got " + nextVif + " for next V" + f + '['
-                    + x.getFeature() + "]\n" + "Xi=" + Xi + ", Vif=" + Vif + ", h=" + h
-                    + ", gradV=" + gradV + ", lambdaVf=" + LambdaVf + ", dloss=" + dloss
-                    + ", sumViX=" + sumViX + ", eta=" + eta);
+            throw new IllegalStateException(
+                "Got " + nextVif + " for next V" + f + '[' + x.getFeature() + "]\n" + "Xi=" + Xi
+                        + ", Vif=" + Vif + ", h=" + h + ", gradV=" + gradV + ", lambdaVf="
+                        + LambdaVf + ", dloss=" + dloss + ", sumViX=" + sumViX + ", eta=" + eta);
         }
         setV(x, f, nextVif);
     }
@@ -317,8 +317,8 @@ public abstract class FactorizationMachineModel {
             ret += Vjf * xj;
         }
         if (!NumberUtils.isFinite(ret)) {
-            throw new IllegalStateException("Got " + ret + " for sumV[ " + f + "]X.\n" + "x = "
-                    + Arrays.toString(x));
+            throw new IllegalStateException(
+                "Got " + ret + " for sumV[ " + f + "]X.\n" + "x = " + Arrays.toString(x));
         }
         return ret;
     }
@@ -350,7 +350,8 @@ public abstract class FactorizationMachineModel {
         }
 
         @Nonnull
-        public static VInitScheme resolve(@Nullable String opt, @Nonnull VInitScheme defaultScheme) {
+        public static VInitScheme resolve(@Nullable String opt,
+                @Nonnull VInitScheme defaultScheme) {
             if (opt == null) {
                 return defaultScheme;
             } else if ("gaussian".equalsIgnoreCase(opt)) {
@@ -389,8 +390,8 @@ public abstract class FactorizationMachineModel {
                 gaussianFill(ret, _initScheme.rand, _initScheme.initStdDev);
                 break;
             default:
-                throw new IllegalStateException("Unsupported V initialization scheme: "
-                        + _initScheme);
+                throw new IllegalStateException(
+                    "Unsupported V initialization scheme: " + _initScheme);
         }
         return ret;
     }

@@ -32,10 +32,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspe
  * **THIS CLASS IS IMPORTED FROM HIVE 2.1.0 FOR COMPATIBILITY**
  *
  * A generic, re-usable histogram class that supports partial aggregations. The algorithm is a
- * heuristic adapted from the following paper: Yael Ben-Haim and Elad Tom-Tov,
- * "A streaming parallel decision tree algorithm", J. Machine Learning Research 11 (2010), pp.
- * 849--872. Although there are no approximation guarantees, it appears to work well with adequate
- * data and a large (e.g., 20-80) number of histogram bins.
+ * heuristic adapted from the following paper: Yael Ben-Haim and Elad Tom-Tov, "A streaming parallel
+ * decision tree algorithm", J. Machine Learning Research 11 (2010), pp. 849--872. Although there
+ * are no approximation guarantees, it appears to work well with adequate data and a large (e.g.,
+ * 20-80) number of histogram bins.
  */
 public final class NumericHistogram {
     /**
@@ -242,8 +242,8 @@ public final class NumericHistogram {
             double d = bins.get(smallestdiffloc).y + bins.get(smallestdiffloc + 1).y;
             Coord smallestdiffbin = bins.get(smallestdiffloc);
             smallestdiffbin.x *= smallestdiffbin.y / d;
-            smallestdiffbin.x += bins.get(smallestdiffloc + 1).x / d
-                    * bins.get(smallestdiffloc + 1).y;
+            smallestdiffbin.x +=
+                    bins.get(smallestdiffloc + 1).x / d * bins.get(smallestdiffloc + 1).y;
             smallestdiffbin.y = d;
             // Shift the remaining bins left one position
             bins.remove(smallestdiffloc + 1);
@@ -273,8 +273,8 @@ public final class NumericHistogram {
                 }
 
                 csum -= bins.get(b).y;
-                double r = bins.get(b - 1).x + (q * sum - csum)
-                        * (bins.get(b).x - bins.get(b - 1).x) / (bins.get(b).y);
+                double r = bins.get(b - 1).x
+                        + (q * sum - csum) * (bins.get(b).x - bins.get(b - 1).x) / (bins.get(b).y);
                 return r;
             }
         }

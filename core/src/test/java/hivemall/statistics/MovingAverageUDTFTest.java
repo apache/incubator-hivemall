@@ -68,13 +68,11 @@ public class MovingAverageUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            MovingAverageUDTF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
+        TestUtils.testGenericUDTFSerialization(MovingAverageUDTF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaIntObjectInspector, 3)},
-            new Object[][] { {1.f}, {2.f}, {3.f}, {4.f}, {5.f}});
+            new Object[][] {{1.f}, {2.f}, {3.f}, {4.f}, {5.f}});
     }
 
 }

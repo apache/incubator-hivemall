@@ -64,7 +64,8 @@ public final class OnehotEncodingUDAF extends AbstractGenericUDAFResolver {
     }
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] argTypes) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] argTypes)
+            throws SemanticException {
         final int numFeatures = argTypes.length;
         if (numFeatures == 0) {
             throw new UDFArgumentException("_FUNC_ requires at least 1 argument");
@@ -115,9 +116,11 @@ public final class OnehotEncodingUDAF extends AbstractGenericUDAFResolver {
                 for (int i = 0; i < numFields; i++) {
                     StructField field = mergeOI.getStructFieldRef("f" + String.valueOf(i));
                     fields[i] = field;
-                    ListObjectInspector fieldOI = HiveUtils.asListOI(field.getFieldObjectInspector());
+                    ListObjectInspector fieldOI =
+                            HiveUtils.asListOI(field.getFieldObjectInspector());
                     fieldOIs[i] = fieldOI;
-                    inputElemOIs[i] = HiveUtils.asPrimitiveObjectInspector(fieldOI.getListElementObjectInspector());
+                    inputElemOIs[i] = HiveUtils.asPrimitiveObjectInspector(
+                        fieldOI.getListElementObjectInspector());
                 }
             }
 
@@ -154,7 +157,8 @@ public final class OnehotEncodingUDAF extends AbstractGenericUDAFResolver {
                 fieldNames.add("f" + String.valueOf(i));
                 ObjectInspector elemOI = ObjectInspectorUtils.getStandardObjectInspector(
                     inputOIs[i], ObjectInspectorCopyOption.WRITABLE);
-                ListObjectInspector listOI = ObjectInspectorFactory.getStandardListObjectInspector(elemOI);
+                ListObjectInspector listOI =
+                        ObjectInspectorFactory.getStandardListObjectInspector(elemOI);
                 fieldOIs.add(listOI);
             }
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
@@ -170,8 +174,8 @@ public final class OnehotEncodingUDAF extends AbstractGenericUDAFResolver {
             final List<ObjectInspector> fieldOIs = new ArrayList<>(inputOIs.length);
             for (int i = 0; i < inputOIs.length; i++) {
                 fieldNames.add("f" + String.valueOf(i + 1));
-                ObjectInspector keyOI = ObjectInspectorUtils.getStandardObjectInspector(
-                    inputOIs[i], ObjectInspectorCopyOption.WRITABLE);
+                ObjectInspector keyOI = ObjectInspectorUtils.getStandardObjectInspector(inputOIs[i],
+                    ObjectInspectorCopyOption.WRITABLE);
                 MapObjectInspector mapOI = ObjectInspectorFactory.getStandardMapObjectInspector(
                     keyOI, PrimitiveObjectInspectorFactory.javaIntObjectInspector);
                 fieldOIs.add(mapOI);
@@ -213,7 +217,8 @@ public final class OnehotEncodingUDAF extends AbstractGenericUDAFResolver {
 
         @SuppressWarnings("deprecation")
         @Override
-        public void merge(AggregationBuffer aggregationBuffer, Object partial) throws HiveException {
+        public void merge(AggregationBuffer aggregationBuffer, Object partial)
+                throws HiveException {
             if (partial == null) {
                 return;
             }
@@ -286,7 +291,8 @@ public final class OnehotEncodingUDAF extends AbstractGenericUDAFResolver {
 
         @SuppressWarnings("unchecked")
         void merge(@Nonnull final Object partial, @Nonnull final StructObjectInspector mergeOI,
-                @Nonnull final StructField[] fields, @Nonnull final ListObjectInspector[] fieldOIs) {
+                @Nonnull final StructField[] fields,
+                @Nonnull final ListObjectInspector[] fieldOIs) {
             Preconditions.checkArgument(fields.length == fieldOIs.length);
 
             final int numFields = fieldOIs.length;

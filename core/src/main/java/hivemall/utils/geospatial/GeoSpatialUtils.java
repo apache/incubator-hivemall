@@ -96,8 +96,8 @@ public final class GeoSpatialUtils {
         double dLon = toRadians(lon2 - lon1);
         double sinDLat = sin(dLat / 2.d);
         double sinDLon = sin(dLon / 2.d);
-        double a = sinDLat * sinDLat + cos(toRadians(lat1)) * cos(toRadians(lat2)) * sinDLon
-                * sinDLon;
+        double a =
+                sinDLat * sinDLat + cos(toRadians(lat1)) * cos(toRadians(lat2)) * sinDLon * sinDLon;
         double c = 2.d * atan2(sqrt(a), sqrt(1.d - a));
         return R * c; // Distance in Km
     }

@@ -33,8 +33,8 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.Text;
 
-@Description(name = "bbit_minhash", value = "_FUNC_(array<> features [, int numHashes])"
-        + " - Returns a b-bits minhash value")
+@Description(name = "bbit_minhash",
+        value = "_FUNC_(array<> features [, int numHashes])" + " - Returns a b-bits minhash value")
 @UDFType(deterministic = true, stateful = false)
 public final class bBitMinHashUDF extends UDF {
 
@@ -106,8 +106,8 @@ public final class bBitMinHashUDF extends UDF {
     private static String computeSignatures(final List<FeatureValue> features, final int numHashes,
             final int[] seeds) throws HiveException {
         if (numHashes <= 0 || numHashes > 512) {
-            throw new HiveException("The number of hash function must be in range (0,512]: "
-                    + numHashes);
+            throw new HiveException(
+                "The number of hash function must be in range (0,512]: " + numHashes);
         }
         final int[] hashes = new int[numHashes];
         // Compute N sets K minhash values

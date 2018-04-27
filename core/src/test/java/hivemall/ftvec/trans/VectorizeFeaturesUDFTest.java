@@ -193,14 +193,13 @@ public class VectorizeFeaturesUDFTest {
     public void testSerialization() throws HiveException, IOException {
         final List<String> featureNames = Arrays.asList("q", "c");
 
-        TestUtils.testGenericUDFSerialization(
-            VectorizeFeaturesUDF.class,
+        TestUtils.testGenericUDFSerialization(VectorizeFeaturesUDF.class,
             new ObjectInspector[] {
                     ObjectInspectorFactory.getStandardConstantListObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector, featureNames),
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector}, new Object[] {
-                    featureNames, 0.1d, "dayofweek"});
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector},
+            new Object[] {featureNames, 0.1d, "dayofweek"});
     }
 
 }

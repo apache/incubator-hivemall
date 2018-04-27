@@ -59,8 +59,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "rf_ensemble",
+@Description(name = "rf_ensemble",
         value = "_FUNC_(int yhat [, array<double> proba [, double model_weight=1.0]])"
                 + " - Returns ensembled prediction results in <int label, double probability, array<double> probabilities>")
 public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver {
@@ -96,8 +95,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 return new RfEvaluatorV2();
             }
             default:
-                throw new UDFArgumentLengthException("Expected 1~3 arguments but got "
-                        + typeInfo.length);
+                throw new UDFArgumentLengthException(
+                    "Expected 1~3 arguments but got " + typeInfo.length);
         }
     }
 
@@ -144,7 +143,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 fieldNames.add("probability");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
                 fieldNames.add("probabilities");
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
                 outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
                     fieldOIs);
             }
@@ -313,7 +313,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
                 this.yhatOI = HiveUtils.asIntegerOI(parameters[0]);
                 this.posterioriOI = HiveUtils.asListOI(parameters[1]);
-                this.posterioriElemOI = HiveUtils.asDoubleCompatibleOI(posterioriOI.getListElementObjectInspector());
+                this.posterioriElemOI = HiveUtils.asDoubleCompatibleOI(
+                    posterioriOI.getListElementObjectInspector());
                 if (parameters.length == 3) {
                     this.weightOI = HiveUtils.asDoubleCompatibleOI(parameters[2]);
                 }
@@ -323,7 +324,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 this.sizeField = soi.getStructFieldRef("size");
                 this.posterioriField = soi.getStructFieldRef("posteriori");
                 this.sizeFieldOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
-                this.posterioriFieldOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                this.posterioriFieldOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             }
 
             // initialize output
@@ -334,7 +336,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 fieldNames.add("size");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
                 fieldNames.add("posteriori");
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
                 outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
                     fieldOIs);
             } else {// terminate
@@ -345,7 +348,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                 fieldNames.add("probability");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
                 fieldNames.add("probabilities");
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
                 outputOI = ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames,
                     fieldOIs);
             }
@@ -372,8 +376,8 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
             Preconditions.checkNotNull(parameters[0]);
             int yhat = PrimitiveObjectInspectorUtils.getInt(parameters[0], yhatOI);
             Preconditions.checkNotNull(parameters[1]);
-            double[] posteriori = HiveUtils.asDoubleArray(parameters[1], posterioriOI,
-                posterioriElemOI);
+            double[] posteriori =
+                    HiveUtils.asDoubleArray(parameters[1], posterioriOI, posterioriElemOI);
 
             double weight = 1.0d;
             if (parameters.length == 3) {
@@ -481,13 +485,14 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
                     this._k = size;
                     this._posteriori = new double[size];
                 } else {
-                    throw new HiveException("Mismatch in the number of elements: _k=" + _k
-                            + ", size=" + size);
+                    throw new HiveException(
+                        "Mismatch in the number of elements: _k=" + _k + ", size=" + size);
                 }
             }
 
             final double[] posteriori = _posteriori;
-            final DoubleObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+            final DoubleObjectInspector doubleOI =
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
             for (int i = 0, len = _k; i < len; i++) {
                 Object o2 = posterioriOI.getListElement(posterioriObj, i);
                 posteriori[i] += doubleOI.get(o2);

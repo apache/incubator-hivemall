@@ -65,10 +65,10 @@ public class ArrayConcatUDF extends GenericUDF {
                         break;
                     }
                 default:
-                    throw new UDFArgumentTypeException(0, "Argument " + i
-                            + " of function CONCAT_ARRAY must be " + LIST_TYPE_NAME + "<"
-                            + Category.PRIMITIVE + ">, but " + arguments[0].getTypeName()
-                            + " was found.");
+                    throw new UDFArgumentTypeException(0,
+                        "Argument " + i + " of function CONCAT_ARRAY must be " + LIST_TYPE_NAME
+                                + "<" + Category.PRIMITIVE + ">, but " + arguments[0].getTypeName()
+                                + " was found.");
             }
         }
 

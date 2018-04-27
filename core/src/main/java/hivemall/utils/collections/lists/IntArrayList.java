@@ -101,8 +101,8 @@ public final class IntArrayList implements Serializable {
 
     public void set(final int index, final int value) {
         if (index > used) {
-            throw new IllegalArgumentException("Index " + index + " MUST be less than size() "
-                    + used);
+            throw new IllegalArgumentException(
+                "Index " + index + " MUST be less than size() " + used);
         } else if (index == used) {
             ++used;
         }

@@ -35,12 +35,12 @@ public class Lon2TileXUDFTest {
     @Test
     public void testEvaluate() throws HiveException, IOException {
         Lon2TileXUDF udf = new Lon2TileXUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector});
 
-        IntWritable result1 = udf.evaluate(new DeferredObject[] {new DeferredJavaObject(11.01296d),
-                new DeferredJavaObject(13)});
+        IntWritable result1 = udf.evaluate(
+            new DeferredObject[] {new DeferredJavaObject(11.01296d), new DeferredJavaObject(13)});
         Assert.assertEquals(4346, result1.get());
 
         udf.close();
@@ -48,10 +48,10 @@ public class Lon2TileXUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(Lon2TileXUDF.class, new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[] {11.01296d,
-                13});
+        TestUtils.testGenericUDFSerialization(Lon2TileXUDF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[] {11.01296d, 13});
     }
 
 }

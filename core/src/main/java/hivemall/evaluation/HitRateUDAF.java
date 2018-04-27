@@ -65,14 +65,14 @@ import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
-@Description(
-        name = "hitrate",
+@Description(name = "hitrate",
         value = "_FUNC_(array rankItems, array correctItems [, const int recommendSize = rankItems.size])"
                 + " - Returns HitRate")
 public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
+            throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes two or three arguments");
@@ -175,7 +175,8 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
-                recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
+                recommendSize =
+                        PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
                 if (recommendSize < 0) {
                     throw new UDFArgumentException(
                         "The third argument `int recommendSize` must be in greater than or equals to 0: "
@@ -223,8 +224,8 @@ public final class HitRateUDAF extends AbstractGenericUDAFResolver {
 
     }
 
-    public static final class HitRateAggregationBuffer extends
-            GenericUDAFEvaluator.AbstractAggregationBuffer {
+    public static final class HitRateAggregationBuffer
+            extends GenericUDAFEvaluator.AbstractAggregationBuffer {
 
         private double sum;
         private long count;

@@ -136,8 +136,8 @@ public final class FMIntFeatureMapModel extends FactorizationMachineModel {
             }
             final int idx = e.getFeatureIndex();
             if (idx < 1) {
-                throw new HiveException("Index of x should be greater than or equals to 1: "
-                        + Arrays.toString(x));
+                throw new HiveException(
+                    "Index of x should be greater than or equals to 1: " + Arrays.toString(x));
             }
             if (!_w.containsKey(idx)) {
                 _w.put(idx, 0.f);

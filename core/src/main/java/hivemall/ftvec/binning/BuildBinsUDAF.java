@@ -145,23 +145,31 @@ public final class BuildBinsUDAF extends AbstractGenericUDAFResolver {
                 autoShrinkField = structOI.getStructFieldRef("autoShrink");
                 histogramField = structOI.getStructFieldRef("histogram");
                 quantilesField = structOI.getStructFieldRef("quantiles");
-                autoShrinkOI = (WritableBooleanObjectInspector) autoShrinkField.getFieldObjectInspector();
-                histogramOI = (StandardListObjectInspector) histogramField.getFieldObjectInspector();
-                quantilesOI = (StandardListObjectInspector) quantilesField.getFieldObjectInspector();
-                histogramElOI = (WritableDoubleObjectInspector) histogramOI.getListElementObjectInspector();
-                quantileOI = (WritableDoubleObjectInspector) quantilesOI.getListElementObjectInspector();
+                autoShrinkOI =
+                        (WritableBooleanObjectInspector) autoShrinkField.getFieldObjectInspector();
+                histogramOI =
+                        (StandardListObjectInspector) histogramField.getFieldObjectInspector();
+                quantilesOI =
+                        (StandardListObjectInspector) quantilesField.getFieldObjectInspector();
+                histogramElOI =
+                        (WritableDoubleObjectInspector) histogramOI.getListElementObjectInspector();
+                quantileOI =
+                        (WritableDoubleObjectInspector) quantilesOI.getListElementObjectInspector();
             }
 
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {
                 final ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
 
                 return ObjectInspectorFactory.getStandardStructObjectInspector(
                     Arrays.asList("autoShrink", "histogram", "quantiles"), fieldOIs);
             } else {
-                return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                return ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             }
         }
 
@@ -215,7 +223,8 @@ public final class BuildBinsUDAF extends AbstractGenericUDAFResolver {
 
             final BuildBinsAggregationBuffer myAgg = (BuildBinsAggregationBuffer) agg;
 
-            myAgg.autoShrink = autoShrinkOI.get(structOI.getStructFieldData(other, autoShrinkField));
+            myAgg.autoShrink =
+                    autoShrinkOI.get(structOI.getStructFieldData(other, autoShrinkField));
 
             final List<?> histogram = ((LazyBinaryArray) structOI.getStructFieldData(other,
                 histogramField)).getList();
@@ -235,8 +244,9 @@ public final class BuildBinsUDAF extends AbstractGenericUDAFResolver {
             final Object[] partialResult = new Object[3];
             partialResult[0] = new BooleanWritable(myAgg.autoShrink);
             partialResult[1] = myAgg.histogram.serialize();
-            partialResult[2] = (myAgg.quantiles != null) ? WritableUtils.toWritableList(myAgg.quantiles)
-                    : Collections.singletonList(new DoubleWritable(0));
+            partialResult[2] =
+                    (myAgg.quantiles != null) ? WritableUtils.toWritableList(myAgg.quantiles)
+                            : Collections.singletonList(new DoubleWritable(0));
             return partialResult;
         }
 

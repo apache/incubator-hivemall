@@ -270,8 +270,8 @@ public final class DecisionTree implements Classifier<Vector> {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
             }
         }
@@ -296,8 +296,8 @@ public final class DecisionTree implements Classifier<Vector> {
                         falseChild.predict(x, handler);
                     }
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
             }
         }
@@ -339,8 +339,8 @@ public final class DecisionTree implements Classifier<Vector> {
                                .append(" ) {\n");
                     }
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
                 trueChild.exportJavascript(builder, featureNames, classNames, depth + 1);
                 indent(builder, depth);
@@ -363,42 +363,48 @@ public final class DecisionTree implements Classifier<Vector> {
                 // http://www.graphviz.org/doc/info/attrs.html#k:colorList
                 String hsvColor = (colorBrew == null || output >= colorBrew.length) ? "#00000000"
                         : String.format("%.4f,1.000,1.000", colorBrew[output]);
-                builder.append(String.format(
-                    " %d [label=<%s = %s>, fillcolor=\"%s\", shape=ellipse];\n", myNodeId,
-                    outputName, resolveName(output, classNames), hsvColor));
+                builder.append(
+                    String.format(" %d [label=<%s = %s>, fillcolor=\"%s\", shape=ellipse];\n",
+                        myNodeId, outputName, resolveName(output, classNames), hsvColor));
 
                 if (myNodeId != parentNodeId) {
                     builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
                     if (parentNodeId == 0) {
                         if (myNodeId == 1) {
-                            builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
                         } else {
-                            builder.append(" [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
                         }
                     }
                     builder.append(";\n");
                 }
             } else {
                 if (splitFeatureType == AttributeType.NOMINAL) {
-                    builder.append(String.format(
-                        " %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
-                        resolveFeatureName(splitFeature, featureNames), Double.toString(splitValue)));
+                    builder.append(
+                        String.format(" %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
+                            resolveFeatureName(splitFeature, featureNames),
+                            Double.toString(splitValue)));
                 } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    builder.append(String.format(
-                        " %d [label=<%s &le; %s>, fillcolor=\"#00000000\"];\n", myNodeId,
-                        resolveFeatureName(splitFeature, featureNames), Double.toString(splitValue)));
+                    builder.append(
+                        String.format(" %d [label=<%s &le; %s>, fillcolor=\"#00000000\"];\n",
+                            myNodeId, resolveFeatureName(splitFeature, featureNames),
+                            Double.toString(splitValue)));
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
 
                 if (myNodeId != parentNodeId) {
                     builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
                     if (parentNodeId == 0) {//only draw edge label on top
                         if (myNodeId == 1) {
-                            builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
                         } else {
-                            builder.append(" [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
                         }
                     }
                     builder.append(";\n");
@@ -458,8 +464,8 @@ public final class DecisionTree implements Classifier<Vector> {
                     int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
                     selfDepth += falseDepth;
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
             }
             return selfDepth;
@@ -605,12 +611,12 @@ public final class DecisionTree implements Classifier<Vector> {
 
             final double impurity = impurity(count, numSamples, _rule);
 
-            final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows())
-                    : null;
+            final int[] samples =
+                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows()) : null;
             final int[] falseCount = new int[_k];
             for (int varJ : variableIndex(x, bags)) {
-                final Node split = findBestSplit(numSamples, count, falseCount, impurity, varJ,
-                    samples);
+                final Node split =
+                        findBestSplit(numSamples, count, falseCount, impurity, varJ, samples);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
                     node.splitFeatureType = split.splitFeatureType;
@@ -707,9 +713,9 @@ public final class DecisionTree implements Classifier<Vector> {
                         falseCount[q] = count[q] - trueCount[l][q];
                     }
 
-                    final double gain = impurity - (double) tc / n
-                            * impurity(trueCount[l], tc, _rule) - (double) fc / n
-                            * impurity(falseCount, fc, _rule);
+                    final double gain =
+                            impurity - (double) tc / n * impurity(trueCount[l], tc, _rule)
+                                    - (double) fc / n * impurity(falseCount, fc, _rule);
 
                     if (gain > splitNode.splitScore) {
                         // new best split
@@ -762,9 +768,9 @@ public final class DecisionTree implements Classifier<Vector> {
                             falseCount[l] = count[l] - trueCount[l];
                         }
 
-                        final double gain = impurity - (double) tc / n
-                                * impurity(trueCount, tc, _rule) - (double) fc / n
-                                * impurity(falseCount, fc, _rule);
+                        final double gain =
+                                impurity - (double) tc / n * impurity(trueCount, tc, _rule)
+                                        - (double) fc / n * impurity(falseCount, fc, _rule);
 
                         if (gain > splitNode.splitScore) {
                             // new best split
@@ -782,8 +788,8 @@ public final class DecisionTree implements Classifier<Vector> {
                     }//apply()
                 });
             } else {
-                throw new IllegalStateException("Unsupported attribute type: "
-                        + _attributes[j].type);
+                throw new IllegalStateException(
+                    "Unsupported attribute type: " + _attributes[j].type);
             }
 
             return splitNode;
@@ -822,7 +828,8 @@ public final class DecisionTree implements Classifier<Vector> {
             }
 
             node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
-            TrainNode trueChild = new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
+            TrainNode trueChild =
+                    new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
             trueBags = null; // help GC for recursive call
             if (tc >= _minSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
@@ -833,8 +840,8 @@ public final class DecisionTree implements Classifier<Vector> {
             }
 
             node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
-            TrainNode falseChild = new TrainNode(node.falseChild, x, y, falseBags.toArray(),
-                depth + 1);
+            TrainNode falseChild =
+                    new TrainNode(node.falseChild, x, y, falseBags.toArray(), depth + 1);
             falseBags = null; // help GC for recursive call
             if (fc >= _minSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
@@ -888,8 +895,8 @@ public final class DecisionTree implements Classifier<Vector> {
                     }
                 }
             } else {
-                throw new IllegalStateException("Unsupported attribute type: "
-                        + node.splitFeatureType);
+                throw new IllegalStateException(
+                    "Unsupported attribute type: " + node.splitFeatureType);
             }
             return tc;
         }
@@ -986,8 +993,8 @@ public final class DecisionTree implements Classifier<Vector> {
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);
         if (attributes.length != x.numColumns()) {
-            throw new IllegalArgumentException("-attrs option is invalid: "
-                    + Arrays.toString(attributes));
+            throw new IllegalArgumentException(
+                "-attrs option is invalid: " + Arrays.toString(attributes));
         }
         this._hasNumericType = SmileExtUtils.containsNumericType(_attributes);
 
@@ -1054,8 +1061,8 @@ public final class DecisionTree implements Classifier<Vector> {
     private static void checkArgument(@Nonnull Matrix x, @Nonnull int[] y, int numVars,
             int maxDepth, int maxLeafs, int minSplits, int minLeafSize) {
         if (x.numRows() != y.length) {
-            throw new IllegalArgumentException(String.format(
-                "The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
+            throw new IllegalArgumentException(
+                String.format("The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
         }
         if (numVars <= 0 || numVars > x.numColumns()) {
             throw new IllegalArgumentException(
@@ -1073,7 +1080,8 @@ public final class DecisionTree implements Classifier<Vector> {
                         + minSplits);
         }
         if (minLeafSize < 1) {
-            throw new IllegalArgumentException("Invalid minimum size of leaf nodes: " + minLeafSize);
+            throw new IllegalArgumentException(
+                "Invalid minimum size of leaf nodes: " + minLeafSize);
         }
     }
 

@@ -55,7 +55,8 @@ import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 public final class ApproxCountDistinctUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
+            throws SemanticException {
         if (typeInfo.length != 1 && typeInfo.length != 2) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes one or two arguments");
@@ -162,7 +163,8 @@ public final class ApproxCountDistinctUDAF extends AbstractGenericUDAFResolver {
             }
 
             HLLBuffer buf = (HLLBuffer) agg;
-            Object value = ObjectInspectorUtils.copyToStandardJavaObject(parameters[0], origInputOI);
+            Object value =
+                    ObjectInspectorUtils.copyToStandardJavaObject(parameters[0], origInputOI);
             Preconditions.checkNotNull(buf.hll, HiveException.class);
             buf.hll.offer(value);
         }

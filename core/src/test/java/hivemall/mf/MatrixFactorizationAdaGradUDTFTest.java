@@ -56,7 +56,7 @@ public class MatrixFactorizationAdaGradUDTFTest {
         ObjectInspector[] argOIs = new ObjectInspector[] {intOI, intOI, floatOI, param};
         mf.initialize(argOIs);
 
-        float[][] rating = { {5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
+        float[][] rating = {{5, 3, 0, 1}, {4, 0, 0, 1}, {1, 1, 0, 5}, {1, 0, 0, 4}, {0, 1, 5, 4}};
         Object[] args = new Object[3];
         final int num_iters = 100;
         for (int iter = 0; iter < num_iters; iter++) {
@@ -83,10 +83,8 @@ public class MatrixFactorizationAdaGradUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            MatrixFactorizationAdaGradUDTF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+        TestUtils.testGenericUDTFSerialization(MatrixFactorizationAdaGradUDTF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                     PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(

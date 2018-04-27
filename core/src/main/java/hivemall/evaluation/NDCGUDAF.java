@@ -49,14 +49,14 @@ import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
-@Description(
-        name = "ndcg",
+@Description(name = "ndcg",
         value = "_FUNC_(array rankItems, array correctItems [, const int recommendSize = rankItems.size])"
                 + " - Returns nDCG")
 public final class NDCGUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
+            throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes two or three arguments");
@@ -160,7 +160,8 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
 
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
-                recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
+                recommendSize =
+                        PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
                 if (recommendSize < 0) {
                     throw new UDFArgumentException(
                         "The third argument `int recommendSize` must be in greater than or equals to 0: "
@@ -168,7 +169,8 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
                 }
             }
 
-            boolean isBinary = !HiveUtils.isStructOI(recommendListOI.getListElementObjectInspector());
+            boolean isBinary =
+                    !HiveUtils.isStructOI(recommendListOI.getListElementObjectInspector());
             double ndcg = 0.0d;
 
             if (isBinary) {
@@ -176,34 +178,37 @@ public final class NDCGUDAF extends AbstractGenericUDAFResolver {
             } else {
                 // Create a ordered list of relevance scores for recommended items
                 List<Double> recommendRelScoreList = new ArrayList<Double>();
-                StructObjectInspector sOI = (StructObjectInspector) recommendListOI.getListElementObjectInspector();
+                StructObjectInspector sOI =
+                        (StructObjectInspector) recommendListOI.getListElementObjectInspector();
                 List<?> fieldRefList = sOI.getAllStructFieldRefs();
                 StructField relScoreField = (StructField) fieldRefList.get(0);
-                PrimitiveObjectInspector relScoreFieldOI = HiveUtils.asDoubleCompatibleOI(relScoreField.getFieldObjectInspector());
+                PrimitiveObjectInspector relScoreFieldOI =
+                        HiveUtils.asDoubleCompatibleOI(relScoreField.getFieldObjectInspector());
                 for (int i = 0, n = recommendList.size(); i < n; i++) {
                     Object structObj = recommendList.get(i);
                     List<Object> fieldList = sOI.getStructFieldsDataAsList(structObj);
                     Object field0 = fieldList.get(0);
                     if (field0 == null) {
-                        throw new UDFArgumentException("Field 0 of a struct field is null: "
-                                + fieldList);
+                        throw new UDFArgumentException(
+                            "Field 0 of a struct field is null: " + fieldList);
                     }
-                    double relScore = PrimitiveObjectInspectorUtils.getDouble(field0,
-                        relScoreFieldOI);
+                    double relScore =
+                            PrimitiveObjectInspectorUtils.getDouble(field0, relScoreFieldOI);
                     recommendRelScoreList.add(relScore);
                 }
 
                 // Create a ordered list of relevance scores for truth items
                 List<Double> truthRelScoreList = new ArrayList<Double>();
-                PrimitiveObjectInspector truthRelScoreOI = HiveUtils.asDoubleCompatibleOI(truthListOI.getListElementObjectInspector());
+                PrimitiveObjectInspector truthRelScoreOI =
+                        HiveUtils.asDoubleCompatibleOI(truthListOI.getListElementObjectInspector());
                 for (int i = 0, n = truthList.size(); i < n; i++) {
                     Object relScoreObj = truthList.get(i);
                     if (relScoreObj == null) {
-                        throw new UDFArgumentException("Found null in the ground truth: "
-                                + truthList);
+                        throw new UDFArgumentException(
+                            "Found null in the ground truth: " + truthList);
                     }
-                    double relScore = PrimitiveObjectInspectorUtils.getDouble(relScoreObj,
-                        truthRelScoreOI);
+                    double relScore =
+                            PrimitiveObjectInspectorUtils.getDouble(relScoreObj, truthRelScoreOI);
                     truthRelScoreList.add(relScore);
                 }
 

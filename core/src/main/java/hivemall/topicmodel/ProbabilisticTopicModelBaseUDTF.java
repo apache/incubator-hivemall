@@ -92,7 +92,8 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("k", "topics", true, "The number of topics [default: 10]");
-        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 10]");
+        opts.addOption("iter", "iterations", true,
+            "The maximum number of iterations [default: 10]");
         opts.addOption("eps", "epsilon", true,
             "Check convergence based on the difference of perplexity [default: 1E-1]");
         opts.addOption("s", "mini_batch_size", true,
@@ -196,8 +197,8 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                 file = File.createTempFile("hivemall_topicmodel", ".sgmt");
                 file.deleteOnExit();
                 if (!file.canWrite()) {
-                    throw new UDFArgumentException("Cannot write a temporary file: "
-                            + file.getAbsolutePath());
+                    throw new UDFArgumentException(
+                        "Cannot write a temporary file: " + file.getAbsolutePath());
                 }
                 logger.info("Record training samples to a file: " + file.getAbsolutePath());
             } catch (IOException ioe) {
@@ -300,8 +301,9 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
         }
 
         final Reporter reporter = getReporter();
-        final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-            "hivemall.topicmodel.ProbabilisticTopicModel$Counter", "iteration");
+        final Counters.Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.topicmodel.ProbabilisticTopicModel$Counter",
+                    "iteration");
 
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file
@@ -339,9 +341,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                         break;
                     }
                 }
-                logger.info("Performed "
-                        + Math.min(iter, iterations)
-                        + " iterations of "
+                logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on memory (thus "
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
@@ -354,8 +354,8 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                 try {
                     dst.flush();
                 } catch (IOException e) {
-                    throw new HiveException("Failed to flush a file: "
-                            + dst.getFile().getAbsolutePath(), e);
+                    throw new HiveException(
+                        "Failed to flush a file: " + dst.getFile().getAbsolutePath(), e);
                 }
                 if (logger.isInfoEnabled()) {
                     File tmpFile = dst.getFile();
@@ -385,8 +385,8 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                         try {
                             bytesRead = dst.read(buf);
                         } catch (IOException e) {
-                            throw new HiveException("Failed to read a file: "
-                                    + dst.getFile().getAbsolutePath(), e);
+                            throw new HiveException(
+                                "Failed to read a file: " + dst.getFile().getAbsolutePath(), e);
                         }
                         if (bytesRead == 0) { // reached file EOF
                             break;
@@ -427,9 +427,7 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
                         break;
                     }
                 }
-                logger.info("Performed "
-                        + Math.min(iter, iterations)
-                        + " iterations of "
+                logger.info("Performed " + Math.min(iter, iterations) + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
                         + NumberUtils.formatNumber(numTrainingExamples * Math.min(iter, iterations))
@@ -442,8 +440,8 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             try {
                 dst.close(true);
             } catch (IOException e) {
-                throw new HiveException("Failed to close a file: "
-                        + dst.getFile().getAbsolutePath(), e);
+                throw new HiveException(
+                    "Failed to close a file: " + dst.getFile().getAbsolutePath(), e);
             }
             this.inputBuf = null;
             this.fileIO = null;

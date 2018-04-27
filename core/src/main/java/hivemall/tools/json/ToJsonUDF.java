@@ -37,8 +37,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "to_json",
+@Description(name = "to_json",
         value = "_FUNC_(ANY object [, const array<string>|const string columnNames]) - Returns Json string")
 @UDFType(deterministic = true, stateful = false)
 public final class ToJsonUDF extends GenericUDF {
@@ -51,7 +50,8 @@ public final class ToJsonUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 1 && argOIs.length != 2) {
-            throw new UDFArgumentException("from_json takes one or two arguments: " + argOIs.length);
+            throw new UDFArgumentException(
+                "from_json takes one or two arguments: " + argOIs.length);
         }
 
         this.objOI = argOIs[0];
@@ -81,8 +81,8 @@ public final class ToJsonUDF extends GenericUDF {
         try {
             return JsonSerdeUtils.serialize(obj, objOI, columnNames);
         } catch (Throwable e) {
-            throw new HiveException("Failed to serialize: " + obj + '\n'
-                    + ExceptionUtils.prettyPrintStackTrace(e), e);
+            throw new HiveException(
+                "Failed to serialize: " + obj + '\n' + ExceptionUtils.prettyPrintStackTrace(e), e);
         }
     }
 

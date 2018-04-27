@@ -66,7 +66,8 @@ public final class MinHashesUDF extends UDF {
         return computeSignatures(featureList, numHashes, keyGroups, seeds);
     }
 
-    public List<IntWritable> evaluate(List<String> features, boolean noWeight) throws HiveException {
+    public List<IntWritable> evaluate(List<String> features, boolean noWeight)
+            throws HiveException {
         return evaluate(features, 5, 2, noWeight);
     }
 

@@ -59,7 +59,8 @@ public final class UnBitsUDF extends GenericUDF {
         this.listOI = HiveUtils.asListOI(argOIs[0]);
         this.listElemLongOI = HiveUtils.asLongOI(listOI.getListElementObjectInspector());
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
     }
 
     @Override

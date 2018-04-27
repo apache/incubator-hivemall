@@ -166,7 +166,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     protected Options getOptions() {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true, getLossOptionDescription());
-        opts.addOption("iter", "iterations", true, "The maximum number of iterations [default: 10]");
+        opts.addOption("iter", "iterations", true,
+            "The maximum number of iterations [default: 10]");
         // conversion check
         opts.addOption("disable_cv", "disable_cvtest", false,
             "Whether to disable convergence check [default: OFF]");
@@ -188,7 +189,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         if (cl != null) {
             if (cl.hasOption("loss_function")) {
                 try {
-                    lossFunction = LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
+                    lossFunction =
+                            LossFunctions.getLossFunction(cl.getOptionValue("loss_function"));
                 } catch (Throwable e) {
                     throw new UDFArgumentException(e.getMessage());
                 }
@@ -312,8 +314,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 file = File.createTempFile("hivemall_general_learner", ".sgmt");
                 file.deleteOnExit();
                 if (!file.canWrite()) {
-                    throw new UDFArgumentException("Cannot write a temporary file: "
-                            + file.getAbsolutePath());
+                    throw new UDFArgumentException(
+                        "Cannot write a temporary file: " + file.getAbsolutePath());
                 }
                 logger.info("Record training samples to a file: " + file.getAbsolutePath());
             } catch (IOException ioe) {
@@ -381,8 +383,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 feature = Long.valueOf(featureStr);
                 break;
             default:
-                throw new IllegalStateException("Unexpected feature type " + featureType
-                        + " for feature: " + featureStr);
+                throw new IllegalStateException(
+                    "Unexpected feature type " + featureType + " for feature: " + featureStr);
         }
         double value = buf.getDouble();
         return new FeatureValue(feature, value);
@@ -542,8 +544,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         final long numTrainingExamples = count;
 
         final Reporter reporter = getReporter();
-        final Counters.Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-            "hivemall.GeneralLearnerBase$Counter", "iteration");
+        final Counters.Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.GeneralLearnerBase$Counter", "iteration");
 
         try {
             if (dst.getPosition() == 0L) {// run iterations w/o temporary file
@@ -578,13 +580,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         break;
                     }
                 }
-                logger.info("Performed "
-                        + cvState.getCurrentIteration()
-                        + " iterations of "
+                logger.info("Performed " + cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on memory (thus "
-                        + NumberUtils.formatNumber(numTrainingExamples
-                                * cvState.getCurrentIteration()) + " training updates in total) ");
+                        + NumberUtils.formatNumber(
+                            numTrainingExamples * cvState.getCurrentIteration())
+                        + " training updates in total) ");
             } else {// read training examples in the temporary file and invoke train for each example
                 // write training examples in buffer to a temporary file
                 if (buf.remaining() > 0) {
@@ -593,8 +594,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 try {
                     dst.flush();
                 } catch (IOException e) {
-                    throw new HiveException("Failed to flush a file: "
-                            + dst.getFile().getAbsolutePath(), e);
+                    throw new HiveException(
+                        "Failed to flush a file: " + dst.getFile().getAbsolutePath(), e);
                 }
                 if (logger.isInfoEnabled()) {
                     File tmpFile = dst.getFile();
@@ -619,8 +620,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         try {
                             bytesRead = dst.read(buf);
                         } catch (IOException e) {
-                            throw new HiveException("Failed to read a file: "
-                                    + dst.getFile().getAbsolutePath(), e);
+                            throw new HiveException(
+                                "Failed to read a file: " + dst.getFile().getAbsolutePath(), e);
                         }
                         if (bytesRead == 0) { // reached file EOF
                             break;
@@ -644,7 +645,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                             }
 
                             int featureVectorLength = buf.getInt();
-                            final FeatureValue[] featureVector = new FeatureValue[featureVectorLength];
+                            final FeatureValue[] featureVector =
+                                    new FeatureValue[featureVectorLength];
                             for (int j = 0; j < featureVectorLength; j++) {
                                 featureVector[j] = readFeatureValue(buf, featureType);
                             }
@@ -664,13 +666,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                         break;
                     }
                 }
-                logger.info("Performed "
-                        + cvState.getCurrentIteration()
-                        + " iterations of "
+                logger.info("Performed " + cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
-                        + NumberUtils.formatNumber(numTrainingExamples
-                                * cvState.getCurrentIteration()) + " training updates in total)");
+                        + NumberUtils.formatNumber(
+                            numTrainingExamples * cvState.getCurrentIteration())
+                        + " training updates in total)");
             }
         } catch (Throwable e) {
             throw new HiveException("Exception caused in the iterative training", e);
@@ -679,8 +680,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             try {
                 dst.close(true);
             } catch (IOException e) {
-                throw new HiveException("Failed to close a file: "
-                        + dst.getFile().getAbsolutePath(), e);
+                throw new HiveException(
+                    "Failed to close a file: " + dst.getFile().getAbsolutePath(), e);
             }
             this.inputBuf = null;
             this.fileIO = null;

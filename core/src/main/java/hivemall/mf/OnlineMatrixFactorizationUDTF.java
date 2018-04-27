@@ -52,8 +52,8 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
-public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions implements
-        RatingInitializer {
+public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
+        implements RatingInitializer {
     private static final Log logger = LogFactory.getLog(OnlineMatrixFactorizationUDTF.class);
     private static final int RECORD_BYTES = (Integer.SIZE + Integer.SIZE + Double.SIZE) / 8;
 
@@ -147,15 +147,16 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
             initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.1d);
             this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
             if (iterations < 1) {
-                throw new UDFArgumentException("'-iterations' must be greater than or equal to 1: "
-                        + iterations);
+                throw new UDFArgumentException(
+                    "'-iterations' must be greater than or equal to 1: " + iterations);
             }
             conversionCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
             boolean noBias = cl.hasOption("no_bias");
             this.useBiasClause = !noBias;
             if (noBias && updateMeanRating) {
-                throw new UDFArgumentException("Cannot set both `update_mean` and `no_bias` option");
+                throw new UDFArgumentException(
+                    "Cannot set both `update_mean` and `no_bias` option");
             }
         }
         this.rankInit = RankInitScheme.resolve(rankInitOpt);
@@ -191,8 +192,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
                 file = File.createTempFile("hivemall_mf", ".sgmt");
                 file.deleteOnExit();
                 if (!file.canWrite()) {
-                    throw new UDFArgumentException("Cannot write a temporary file: "
-                            + file.getAbsolutePath());
+                    throw new UDFArgumentException(
+                        "Cannot write a temporary file: " + file.getAbsolutePath());
                 }
             } catch (IOException ioe) {
                 throw new UDFArgumentException(ioe);
@@ -208,9 +209,11 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
         fieldNames.add("idx");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldNames.add("Pu");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
         fieldNames.add("Qi");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
         if (useBiasClause) {
             fieldNames.add("Bu");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
@@ -439,9 +442,9 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
                 numForwarded++;
             }
             this.model = null; // help GC
-            logger.info("Forwarded the prediction model of " + numForwarded
-                    + " rows. [totalErrors=" + cvState.getTotalErrors() + ", lastLosses="
-                    + cvState.getCumulativeLoss() + ", #trainingExamples=" + count + "]");
+            logger.info("Forwarded the prediction model of " + numForwarded + " rows. [totalErrors="
+                    + cvState.getTotalErrors() + ", lastLosses=" + cvState.getCumulativeLoss()
+                    + ", #trainingExamples=" + count + "]");
         }
     }
 
@@ -467,8 +470,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
         final long numTrainingExamples = count;
 
         final Reporter reporter = getReporter();
-        final Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-            "hivemall.mf.MatrixFactorization$Counter", "iteration");
+        final Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.mf.MatrixFactorization$Counter", "iteration");
 
         try {
             if (lastWritePos == 0) {// run iterations w/o temporary file
@@ -510,8 +513,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
                 try {
                     fileIO.flush();
                 } catch (IOException e) {
-                    throw new HiveException("Failed to flush a file: "
-                            + fileIO.getFile().getAbsolutePath(), e);
+                    throw new HiveException(
+                        "Failed to flush a file: " + fileIO.getFile().getAbsolutePath(), e);
                 }
                 if (logger.isInfoEnabled()) {
                     File tmpFile = fileIO.getFile();
@@ -536,8 +539,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
                         try {
                             bytesRead = fileIO.read(seekPos, inputBuf);
                         } catch (IOException e) {
-                            throw new HiveException("Failed to read a file: "
-                                    + fileIO.getFile().getAbsolutePath(), e);
+                            throw new HiveException(
+                                "Failed to read a file: " + fileIO.getFile().getAbsolutePath(), e);
                         }
                         if (bytesRead == 0) { // reached file EOF
                             break;
@@ -574,8 +577,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions impl
             try {
                 fileIO.close(true);
             } catch (IOException e) {
-                throw new HiveException("Failed to close a file: "
-                        + fileIO.getFile().getAbsolutePath(), e);
+                throw new HiveException(
+                    "Failed to close a file: " + fileIO.getFile().getAbsolutePath(), e);
             }
             this.inputBuf = null;
             this.fileIO = null;

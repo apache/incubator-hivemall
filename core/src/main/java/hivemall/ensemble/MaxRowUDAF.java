@@ -38,14 +38,14 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 
-@Description(
-        name = "maxrow",
+@Description(name = "maxrow",
         value = "_FUNC_(ANY compare, ...) - Returns a row that has maximum value in the 1st argument")
 public final class MaxRowUDAF extends AbstractGenericUDAFResolver {
 
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
-        ObjectInspector oi = TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(parameters[0]);
+        ObjectInspector oi =
+                TypeInfoUtils.getStandardJavaObjectInspectorFromTypeInfo(parameters[0]);
         if (!ObjectInspectorUtils.compareSupported(oi)) {
             throw new UDFArgumentTypeException(0,
                 "Cannot support comparison of map<> type or complex type containing map<>.");

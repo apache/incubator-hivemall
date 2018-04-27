@@ -156,7 +156,8 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static Attribute[] convertAttributeTypes(@Nonnull final smile.data.Attribute[] original) {
+    public static Attribute[] convertAttributeTypes(
+            @Nonnull final smile.data.Attribute[] original) {
         final int size = original.length;
         final NumericAttribute immutableNumAttr = new NumericAttribute();
         final Attribute[] dst = new Attribute[size];
@@ -288,8 +289,8 @@ public final class SmileExtUtils {
     public static Matrix shuffle(@Nonnull final Matrix x, @Nonnull final int[] y, long seed) {
         final int numRows = x.numRows();
         if (numRows != y.length) {
-            throw new IllegalArgumentException("x.length (" + numRows + ") != y.length ("
-                    + y.length + ')');
+            throw new IllegalArgumentException(
+                "x.length (" + numRows + ") != y.length (" + y.length + ')');
         }
         if (seed == -1L) {
             seed = generateSeed();
@@ -321,8 +322,8 @@ public final class SmileExtUtils {
             @Nonnull long seed) {
         final int numRows = x.numRows();
         if (numRows != y.length) {
-            throw new IllegalArgumentException("x.length (" + numRows + ") != y.length ("
-                    + y.length + ')');
+            throw new IllegalArgumentException(
+                "x.length (" + numRows + ") != y.length (" + y.length + ')');
         }
         if (seed == -1L) {
             seed = generateSeed();

@@ -91,7 +91,8 @@ public final class PrivilegedAccessor {
     public static Method getMethod(Class<?> thisClass, String methodName, Class<?>[] classTypes)
             throws NoSuchMethodException {
         if (thisClass == null) {
-            throw new NoSuchMethodException("Class is not specified for method " + methodName + ".");
+            throw new NoSuchMethodException(
+                "Class is not specified for method " + methodName + ".");
         }
         try {
             return thisClass.getDeclaredMethod(methodName, classTypes);
@@ -114,8 +115,8 @@ public final class PrivilegedAccessor {
      * @param fieldName the name of the field
      * @return an object representing the value of the field
      */
-    public static Object getValue(Object instance, String fieldName) throws IllegalAccessException,
-            NoSuchFieldException {
+    public static Object getValue(Object instance, String fieldName)
+            throws IllegalAccessException, NoSuchFieldException {
         Field field = getField(instance.getClass(), fieldName, true);
         return field.get(instance);
     }
@@ -193,9 +194,9 @@ public final class PrivilegedAccessor {
      * specified arguments includes null object.
      */
     public static Object invokeStaticMethod(String className, String methodName,
-            Class<?>[] classTypes, Object... objects) throws ClassNotFoundException,
-            SecurityException, NoSuchMethodException, IllegalArgumentException,
-            IllegalAccessException, InvocationTargetException {
+            Class<?>[] classTypes, Object... objects)
+            throws ClassNotFoundException, SecurityException, NoSuchMethodException,
+            IllegalArgumentException, IllegalAccessException, InvocationTargetException {
         Class<?> primeClass = Class.forName(className);
         Method method = primeClass.getDeclaredMethod(methodName, classTypes);
         method.setAccessible(true);

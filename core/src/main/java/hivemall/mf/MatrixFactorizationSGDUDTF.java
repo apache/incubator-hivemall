@@ -26,8 +26,7 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 
-@Description(
-        name = "train_mf_sgd",
+@Description(name = "train_mf_sgd",
         value = "_FUNC_(INT user, INT item, FLOAT rating [, CONSTANT STRING options])"
                 + " - Returns a relation consists of <int idx, array<float> Pu, array<float> Qi [, float Bu, float Bi [, float mu]]>")
 public final class MatrixFactorizationSGDUDTF extends OnlineMatrixFactorizationUDTF {

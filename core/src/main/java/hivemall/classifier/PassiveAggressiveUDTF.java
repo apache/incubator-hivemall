@@ -68,8 +68,7 @@ public class PassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF {
         return loss / margin.getSquaredNorm();
     }
 
-    @Description(
-            name = "train_pa1",
+    @Description(name = "train_pa1",
             value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                     + " - Returns a relation consists of <string|int|bigint feature, float weight>",
             extended = "Build a prediction model by Passive-Aggressive 1 (PA-1) binary classifier")
@@ -95,8 +94,8 @@ public class PassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF {
                 if (c_str != null) {
                     c = Float.parseFloat(c_str);
                     if (!(c > 0.f)) {
-                        throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: "
-                                + c);
+                        throw new UDFArgumentException(
+                            "Aggressiveness parameter C must be C > 0: " + c);
                     }
                 }
             }
@@ -114,8 +113,7 @@ public class PassiveAggressiveUDTF extends BinaryOnlineClassifierUDTF {
 
     }
 
-    @Description(
-            name = "train_pa2",
+    @Description(name = "train_pa2",
             value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                     + " - Returns a relation consists of <string|int|bigint feature, float weight>",
             extended = "Build a prediction model by Passive-Aggressive 2 (PA-2) binary classifier")

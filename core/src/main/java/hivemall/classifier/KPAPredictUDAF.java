@@ -40,8 +40,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
-@Description(
-        name = "kpa_predict",
+@Description(name = "kpa_predict",
         value = "_FUNC_(@Nonnull double xh, @Nonnull double xk, @Nullable float w0, @Nonnull float w1, @Nonnull float w2, @Nullable float w3)"
                 + " - Returns a prediction value in Double")
 public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
@@ -54,28 +53,28 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
                         + parameters.length);
         }
         if (!HiveUtils.isNumberTypeInfo(parameters[0])) {
-            throw new UDFArgumentTypeException(0, "Number type is expected for xh (1st argument): "
-                    + parameters[0].getTypeName());
+            throw new UDFArgumentTypeException(0,
+                "Number type is expected for xh (1st argument): " + parameters[0].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(parameters[1])) {
-            throw new UDFArgumentTypeException(1, "Number type is expected for xk (2nd argument): "
-                    + parameters[1].getTypeName());
+            throw new UDFArgumentTypeException(1,
+                "Number type is expected for xk (2nd argument): " + parameters[1].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(parameters[2])) {
-            throw new UDFArgumentTypeException(2, "Number type is expected for w0 (3rd argument): "
-                    + parameters[2].getTypeName());
+            throw new UDFArgumentTypeException(2,
+                "Number type is expected for w0 (3rd argument): " + parameters[2].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(parameters[3])) {
-            throw new UDFArgumentTypeException(3, "Number type is expected for w1 (4th argument): "
-                    + parameters[3].getTypeName());
+            throw new UDFArgumentTypeException(3,
+                "Number type is expected for w1 (4th argument): " + parameters[3].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(parameters[4])) {
-            throw new UDFArgumentTypeException(4, "Number type is expected for w2 (5th argument): "
-                    + parameters[4].getTypeName());
+            throw new UDFArgumentTypeException(4,
+                "Number type is expected for w2 (5th argument): " + parameters[4].getTypeName());
         }
         if (!HiveUtils.isNumberTypeInfo(parameters[5])) {
-            throw new UDFArgumentTypeException(5, "Number type is expected for w3 (6th argument): "
-                    + parameters[5].getTypeName());
+            throw new UDFArgumentTypeException(5,
+                "Number type is expected for w3 (6th argument): " + parameters[5].getTypeName());
         }
 
         return new Evaluator();
@@ -126,10 +125,10 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
 
             final AggrBuffer aggr = (AggrBuffer) agg;
 
-            if (parameters[0] /* xh */!= null) {
+            if (parameters[0] /* xh */ != null) {
                 double xh = HiveUtils.getDouble(parameters[0], xhOI);
-                if (parameters[1] /* xk */!= null) {
-                    if (parameters[5] /* w3hk */== null) {
+                if (parameters[1] /* xk */ != null) {
+                    if (parameters[5] /* w3hk */ == null) {
                         return;
                     }
                     // xh, xk, w3hk
@@ -137,7 +136,7 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
                     double w3hk = HiveUtils.getDouble(parameters[5], w3OI);
                     aggr.addW3(xh, xk, w3hk);
                 } else {
-                    if (parameters[3] /* w1h */== null) {
+                    if (parameters[3] /* w1h */ == null) {
                         return;
                     }
                     // xh, w1h, w2h
@@ -146,7 +145,7 @@ public final class KPAPredictUDAF extends AbstractGenericUDAFResolver {
                     double w2h = HiveUtils.getDouble(parameters[4], w2OI);
                     aggr.addW1W2(xh, w1h, w2h);
                 }
-            } else if (parameters[2] /* w0 */!= null) {
+            } else if (parameters[2] /* w0 */ != null) {
                 // w0
                 double w0 = HiveUtils.getDouble(parameters[2], w0OI);
                 aggr.addW0(w0);

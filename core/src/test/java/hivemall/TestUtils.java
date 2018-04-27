@@ -36,8 +36,8 @@ import org.apache.hive.com.esotericsoftware.kryo.io.Output;
 public final class TestUtils {
 
     public static <T extends GenericUDF> void testGenericUDFSerialization(@Nonnull Class<T> clazz,
-            @Nonnull ObjectInspector[] ois, @Nonnull Object[] row) throws HiveException,
-            IOException {
+            @Nonnull ObjectInspector[] ois, @Nonnull Object[] row)
+            throws HiveException, IOException {
         final T udf;
         try {
             udf = clazz.newInstance();
@@ -67,9 +67,8 @@ public final class TestUtils {
     }
 
     @SuppressWarnings("deprecation")
-    public static <T extends GenericUDTF> void testGenericUDTFSerialization(
-            @Nonnull Class<T> clazz, @Nonnull ObjectInspector[] ois, @Nonnull Object[][] rows)
-            throws HiveException {
+    public static <T extends GenericUDTF> void testGenericUDTFSerialization(@Nonnull Class<T> clazz,
+            @Nonnull ObjectInspector[] ois, @Nonnull Object[][] rows) throws HiveException {
         final T udtf;
         try {
             udtf = clazz.newInstance();

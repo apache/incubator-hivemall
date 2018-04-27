@@ -24,8 +24,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "convert_label",
+@Description(name = "convert_label",
         value = "_FUNC_(const int|const float) - Convert from -1|1 to 0.0f|1.0f, or from 0.0f|1.0f to -1|1")
 @UDFType(deterministic = true, stateful = false)
 public final class ConvertLabelUDF extends UDF {

@@ -65,7 +65,8 @@ public class GeneralClassifierUDTFTest {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-opt UnsupportedOpt");
 
@@ -77,7 +78,8 @@ public class GeneralClassifierUDTFTest {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-loss UnsupportedLoss");
 
@@ -89,7 +91,8 @@ public class GeneralClassifierUDTFTest {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reg UnsupportedReg");
 
@@ -104,7 +107,8 @@ public class GeneralClassifierUDTFTest {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
 
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
 
@@ -123,7 +127,8 @@ public class GeneralClassifierUDTFTest {
 
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector featureListOI = ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
+        ListObjectInspector featureListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(featureOI);
 
         udtf.initialize(new ObjectInspector[] {featureListOI, valueOI});
 
@@ -163,8 +168,8 @@ public class GeneralClassifierUDTFTest {
 
     @Test
     public void testLazyStringFeature() throws Exception {
-        LazyStringObjectInspector oi = LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(
-            false, (byte) 0);
+        LazyStringObjectInspector oi =
+                LazyPrimitiveObjectInspectorFactory.getLazyStringObjectInspector(false, (byte) 0);
         List<LazyString> x = Arrays.asList(lazyString("テスト:-2", oi), lazyString("漢字:-333.0", oi),
             lazyString("test:-1"));
         testFeature(x, oi, LazyString.class, String.class);
@@ -235,7 +240,8 @@ public class GeneralClassifierUDTFTest {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
 
@@ -250,8 +256,9 @@ public class GeneralClassifierUDTFTest {
         double cumLoss = udtf.getCumulativeLoss();
         println("Cumulative loss: " + cumLoss);
         double normalizedLoss = cumLoss / samplesList.size();
-        Assert.assertTrue("cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss
-                + "\noptions: " + options, normalizedLoss < 0.5d);
+        Assert.assertTrue(
+            "cumLoss: " + cumLoss + ", normalizedLoss: " + normalizedLoss + "\noptions: " + options,
+            normalizedLoss < 0.5d);
 
         int numTests = 0;
         int numCorrect = 0;
@@ -315,7 +322,8 @@ public class GeneralClassifierUDTFTest {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,
             "-opt SGD -loss logloss -reg L2 -lambda 0.1 -cv_rate 0.005");
@@ -372,12 +380,12 @@ public class GeneralClassifierUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            GeneralClassifierUDTF.class,
+        TestUtils.testGenericUDTFSerialization(GeneralClassifierUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
-                    Arrays.asList("1:-2", "2:-1"), 0}});
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0}});
     }
 
     private static void println(String msg) {

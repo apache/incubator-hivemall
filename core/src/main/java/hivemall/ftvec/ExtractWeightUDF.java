@@ -29,8 +29,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
-@Description(
-        name = "extract_weight",
+@Description(name = "extract_weight",
         value = "_FUNC_(feature_vector in array<string>) - Returns the weights of features in array<string>")
 @UDFType(deterministic = true, stateful = false)
 public final class ExtractWeightUDF extends UDF {

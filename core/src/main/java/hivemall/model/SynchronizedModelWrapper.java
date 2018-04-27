@@ -127,7 +127,8 @@ public final class SynchronizedModelWrapper implements PredictionModel {
     }
 
     @Override
-    public <T extends IWeightValue> void set(@Nonnull final Object feature, @Nonnull final T value) {
+    public <T extends IWeightValue> void set(@Nonnull final Object feature,
+            @Nonnull final T value) {
         try {
             lock.lock();
             model.set(feature, value);

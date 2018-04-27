@@ -50,8 +50,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "dimsum_mapper",
+@Description(name = "dimsum_mapper",
         value = "_FUNC_(array<string> row, map<int col_id, double norm> colNorms [, const string options]) "
                 + "- Returns column-wise partial similarities")
 public final class DIMSUMMapperUDTF extends UDTFWithOptions {

@@ -81,15 +81,16 @@ public final class RescaleUDF extends UDF {
 
         final String[] fv = s.split(":");
         if (fv.length != 2) {
-            throw new HiveException(String.format("Invalid feature value " + "representation: %s",
-                s));
+            throw new HiveException(
+                String.format("Invalid feature value " + "representation: %s", s));
         }
         float v;
         try {
             v = Float.parseFloat(fv[1]);
         } catch (NumberFormatException e) {
-            throw new HiveException(String.format("Invalid feature value "
-                    + "representation: %s, %s can't parse to float.", s, fv[1]));
+            throw new HiveException(String.format(
+                "Invalid feature value " + "representation: %s, %s can't parse to float.", s,
+                fv[1]));
         }
 
         float scaled_v = min_max_normalization(v, min.floatValue(), max.floatValue());
@@ -100,8 +101,8 @@ public final class RescaleUDF extends UDF {
     private static float min_max_normalization(final float value, final float min, final float max)
             throws HiveException {
         if (min > max) {
-            throw new HiveException("min value `" + min + "` SHOULD be less than max value `" + max
-                    + '`');
+            throw new HiveException(
+                "min value `" + min + "` SHOULD be less than max value `" + max + '`');
         }
         if (min == max) {
             return 0.5f;

@@ -59,7 +59,8 @@ public final class LDAUDTF extends ProbabilisticTopicModelBaseUDTF {
         opts.addOption("d", "num_docs", true, "The total number of documents [default: auto]");
         opts.addOption("tau", "tau0", true,
             "The parameter which downweights early iterations [default: 64.0]");
-        opts.addOption("kappa", true, "Exponential decay rate (i.e., learning rate) [default: 0.7]");
+        opts.addOption("kappa", true,
+            "Exponential decay rate (i.e., learning rate) [default: 0.7]");
         opts.addOption("delta", true, "Check convergence in the expectation step [default: 1E-3]");
         return opts;
     }

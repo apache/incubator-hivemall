@@ -74,27 +74,35 @@ public final class OptimizerTest {
         options.put("optimizer", "AdaDelta");
         for (final String regType : regTypes) {
             options.put("regularization", regType);
-            Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaDelta);
-            Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaDelta);
+            Assert.assertTrue(
+                DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaDelta);
+            Assert.assertTrue(SparseOptimizerFactory.create(8,
+                options) instanceof SparseOptimizerFactory.AdaDelta);
         }
         options.put("optimizer", "AdaGrad");
         for (final String regType : regTypes) {
             options.put("regularization", regType);
-            Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaGrad);
-            Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdaGrad);
+            Assert.assertTrue(
+                DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdaGrad);
+            Assert.assertTrue(SparseOptimizerFactory.create(8,
+                options) instanceof SparseOptimizerFactory.AdaGrad);
         }
         options.put("optimizer", "Adam");
         for (final String regType : regTypes) {
             options.put("regularization", regType);
-            Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.Adam);
-            Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.Adam);
+            Assert.assertTrue(
+                DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.Adam);
+            Assert.assertTrue(
+                SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.Adam);
         }
 
         // We need special handling for `Optimizer#RDA`
         options.put("optimizer", "AdaGrad");
         options.put("regularization", "RDA");
-        Assert.assertTrue(DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdagradRDA);
-        Assert.assertTrue(SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdagradRDA);
+        Assert.assertTrue(
+            DenseOptimizerFactory.create(8, options) instanceof DenseOptimizerFactory.AdagradRDA);
+        Assert.assertTrue(
+            SparseOptimizerFactory.create(8, options) instanceof SparseOptimizerFactory.AdagradRDA);
 
         // `SGD`, `AdaDelta`, and `Adam` currently does not support `RDA`
         for (final String optimizerType : new String[] {"SGD", "AdaDelta", "Adam"}) {

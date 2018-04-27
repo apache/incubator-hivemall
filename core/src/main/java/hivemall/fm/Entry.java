@@ -57,7 +57,8 @@ class Entry {
         this(buf, factors, Entry.sizeOf(factors), key, offset);
     }
 
-    private Entry(@Nonnull HeapBuffer buf, int factors, int size, int key, @Nonnegative long offset) {
+    private Entry(@Nonnull HeapBuffer buf, int factors, int size, int key,
+            @Nonnegative long offset) {
         this._buf = buf;
         this._size = size;
         this._factors = factors;
@@ -259,9 +260,9 @@ class Entry {
 
             final float newZ = z + gradW - sigma * W;
             if (!NumberUtils.isFinite(newZ)) {
-                throw new IllegalStateException("Got newZ " + newZ + " where z=" + z + ", gradW="
-                        + gradW + ", sigma=" + sigma + ", W=" + W + ", n=" + n + ", gg=" + gg
-                        + ", alpha=" + alpha);
+                throw new IllegalStateException(
+                    "Got newZ " + newZ + " where z=" + z + ", gradW=" + gradW + ", sigma=" + sigma
+                            + ", W=" + W + ", n=" + n + ", gg=" + gg + ", alpha=" + alpha);
             }
             _buf.putFloat(zOffset, newZ);
             return newZ;
@@ -276,8 +277,8 @@ class Entry {
             final double n = _buf.getFloat(nOffset);
             final double newN = n + gradW * gradW;
             if (!NumberUtils.isFinite(newN)) {
-                throw new IllegalStateException("Got newN " + newN + " where n=" + n + ", gradW="
-                        + gradW);
+                throw new IllegalStateException(
+                    "Got newN " + newN + " where n=" + n + ", gradW=" + gradW);
             }
             _buf.putFloat(nOffset, NumberUtils.castToFloat(newN)); // cast may throw ArithmeticException
             return newN;

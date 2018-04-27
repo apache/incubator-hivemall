@@ -38,8 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInsp
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
-@Description(
-        name = "quantified_features",
+@Description(name = "quantified_features",
         value = "_FUNC_(boolean output, col1, col2, ...) - Returns an identified features in a dense array<double>")
 public final class QuantifiedFeaturesUDTF extends GenericUDTF {
 
@@ -56,8 +55,8 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         int size = argOIs.length;
         if (size < 2) {
-            throw new UDFArgumentException("quantified_features takes at least two arguments: "
-                    + size);
+            throw new UDFArgumentException(
+                "quantified_features takes at least two arguments: " + size);
         }
         this.boolOI = HiveUtils.asBooleanOI(argOIs[0]);
 
@@ -81,7 +80,8 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
         List<String> fieldNames = new ArrayList<String>(outputSize);
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(outputSize);
         fieldNames.add("features");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -103,7 +103,8 @@ public final class QuantifiedFeaturesUDTF extends GenericUDTF {
                     values[i].set(v);
                 } else {
                     if (arg == null) {
-                        throw new HiveException("Found Null in the input: " + Arrays.toString(args));
+                        throw new HiveException(
+                            "Found Null in the input: " + Arrays.toString(args));
                     } else {
                         String k = arg.toString();
                         int id = identifier.valueOf(k);

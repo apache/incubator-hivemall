@@ -180,8 +180,8 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
                     keyIdx += keyLength;
                 }
                 if (keyIdx == loopIndex) {
-                    throw new IllegalStateException("Detected infinite loop where key=" + key
-                            + ", keyIdx=" + keyIdx);
+                    throw new IllegalStateException(
+                        "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
                 }
 
                 state = states[keyIdx];
@@ -256,8 +256,8 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
                 keyIdx += keyLength;
             }
             if (keyIdx == startIndex) {
-                throw new IllegalStateException("Detected infinite loop where key=" + key
-                        + ", keyIdx=" + keyIdx);
+                throw new IllegalStateException(
+                    "Detected infinite loop where key=" + key + ", keyIdx=" + keyIdx);
             }
         }
     }
@@ -338,8 +338,8 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
                         keyIdx += newCapacity;
                     }
                     if (keyIdx == loopIndex) {
-                        throw new IllegalStateException("Detected infinite loop where key=" + k
-                                + ", keyIdx=" + keyIdx);
+                        throw new IllegalStateException(
+                            "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
                     }
                 } while (newStates[keyIdx] != FREE);
             }
@@ -461,8 +461,8 @@ public final class Long2DoubleOpenHashTable implements Externalizable {
                         keyIdx += newCapacity;
                     }
                     if (keyIdx == loopIndex) {
-                        throw new IllegalStateException("Detected infinite loop where key=" + k
-                                + ", keyIdx=" + keyIdx);
+                        throw new IllegalStateException(
+                            "Detected infinite loop where key=" + k + ", keyIdx=" + keyIdx);
                     }
                 } while (states[keyIdx] != FREE);
             }

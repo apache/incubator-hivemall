@@ -49,8 +49,8 @@ public final class RowNumberUDF extends UDF {
         if (taskId == -1) {
             this.taskId = HadoopUtils.getTaskId() + 1;
             if (taskId > 9999) {
-                throw new HiveException("TaskId out of range `" + taskId
-                        + "`. rownum() supports 9999 tasks at max");
+                throw new HiveException(
+                    "TaskId out of range `" + taskId + "`. rownum() supports 9999 tasks at max");
             }
         }
         sequence++;

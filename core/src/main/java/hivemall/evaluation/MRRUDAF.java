@@ -47,14 +47,14 @@ import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
-@Description(
-        name = "mrr",
+@Description(name = "mrr",
         value = "_FUNC_(array rankItems, array correctItems [, const int recommendSize = rankItems.size])"
                 + " - Returns MRR")
 public final class MRRUDAF extends AbstractGenericUDAFResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
+    public GenericUDAFEvaluator getEvaluator(@Nonnull TypeInfo[] typeInfo)
+            throws SemanticException {
         if (typeInfo.length != 2 && typeInfo.length != 3) {
             throw new UDFArgumentTypeException(typeInfo.length - 1,
                 "_FUNC_ takes two or three arguments");
@@ -157,7 +157,8 @@ public final class MRRUDAF extends AbstractGenericUDAFResolver {
 
             int recommendSize = recommendList.size();
             if (parameters.length == 3) {
-                recommendSize = PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
+                recommendSize =
+                        PrimitiveObjectInspectorUtils.getInt(parameters[2], recommendSizeOI);
                 if (recommendSize < 0) {
                     throw new UDFArgumentException(
                         "The third argument `int recommendSize` must be in greater than or equals to 0: "

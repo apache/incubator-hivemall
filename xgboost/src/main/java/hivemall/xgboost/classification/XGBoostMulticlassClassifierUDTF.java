@@ -31,8 +31,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
  * A XGBoost multiclass classification and the document is as follows; -
  * https://github.com/dmlc/xgboost/tree/master/demo/multiclass_classification
  */
-@Description(
-        name = "train_multiclass_xgboost_classifier",
+@Description(name = "train_multiclass_xgboost_classifier",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
 public final class XGBoostMulticlassClassifierUDTF extends XGBoostUDTF {
 
@@ -61,8 +60,8 @@ public final class XGBoostMulticlassClassifierUDTF extends XGBoostUDTF {
             if (cli.hasOption("num_class")) {
                 int _num_class = Integer.valueOf(cli.getOptionValue("num_class"));
                 if (_num_class < 2) {
-                    throw new UDFArgumentException("num_class must be greater than 1: "
-                            + _num_class);
+                    throw new UDFArgumentException(
+                        "num_class must be greater than 1: " + _num_class);
                 }
                 params.put("num_class", _num_class);
             }

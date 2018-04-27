@@ -230,8 +230,8 @@ public final class RegressionTree implements Regression<Vector> {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
             }
         }
@@ -298,8 +298,8 @@ public final class RegressionTree implements Regression<Vector> {
                     indent(builder, depth);
                     builder.append("}\n");
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
             }
         }
@@ -318,34 +318,40 @@ public final class RegressionTree implements Regression<Vector> {
                     builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
                     if (parentNodeId == 0) {
                         if (myNodeId == 1) {
-                            builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
                         } else {
-                            builder.append(" [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
                         }
                     }
                     builder.append(";\n");
                 }
             } else {
                 if (splitFeatureType == AttributeType.NOMINAL) {
-                    builder.append(String.format(
-                        " %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
-                        resolveFeatureName(splitFeature, featureNames), Double.toString(splitValue)));
+                    builder.append(
+                        String.format(" %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
+                            resolveFeatureName(splitFeature, featureNames),
+                            Double.toString(splitValue)));
                 } else if (splitFeatureType == AttributeType.NUMERIC) {
-                    builder.append(String.format(
-                        " %d [label=<%s &le; %s>, fillcolor=\"#00000000\"];\n", myNodeId,
-                        resolveFeatureName(splitFeature, featureNames), Double.toString(splitValue)));
+                    builder.append(
+                        String.format(" %d [label=<%s &le; %s>, fillcolor=\"#00000000\"];\n",
+                            myNodeId, resolveFeatureName(splitFeature, featureNames),
+                            Double.toString(splitValue)));
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
 
                 if (myNodeId != parentNodeId) {
                     builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
                     if (parentNodeId == 0) {//only draw edge label on top
                         if (myNodeId == 1) {
-                            builder.append(" [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=45, headlabel=\"True\"]");
                         } else {
-                            builder.append(" [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
+                            builder.append(
+                                " [labeldistance=2.5, labelangle=-45, headlabel=\"False\"]");
                         }
                     }
                     builder.append(";\n");
@@ -405,8 +411,8 @@ public final class RegressionTree implements Regression<Vector> {
                     int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
                     selfDepth += falseDepth;
                 } else {
-                    throw new IllegalStateException("Unsupported attribute type: "
-                            + splitFeatureType);
+                    throw new IllegalStateException(
+                        "Unsupported attribute type: " + splitFeatureType);
                 }
             }
             return selfDepth;
@@ -559,8 +565,8 @@ public final class RegressionTree implements Regression<Vector> {
 
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
-            final int[] samples = _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows())
-                    : null;
+            final int[] samples =
+                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows()) : null;
             for (int varJ : variableIndex(x, bags)) {
                 final Node split = findBestSplit(numSamples, sum, varJ, samples);
                 if (split.splitScore > node.splitScore) {
@@ -644,8 +650,8 @@ public final class RegressionTree implements Regression<Vector> {
                     final double trueMean = trueSum[k] / tc;
                     final double falseMean = (sum - trueSum[k]) / fc;
 
-                    final double gain = (tc * trueMean * trueMean + fc * falseMean * falseMean) - n
-                            * split.output * split.output;
+                    final double gain = (tc * trueMean * trueMean + fc * falseMean * falseMean)
+                            - n * split.output * split.output;
                     if (gain > split.splitScore) {
                         // new best split
                         split.splitFeature = j;
@@ -698,8 +704,8 @@ public final class RegressionTree implements Regression<Vector> {
                         // The gain is actually -(reduction in squared error) for
                         // sorting in priority queue, which treats smaller number with
                         // higher priority.
-                        final double gain = (trueCount * trueMean * trueMean + falseCount
-                                * falseMean * falseMean)
+                        final double gain = (trueCount * trueMean * trueMean
+                                + falseCount * falseMean * falseMean)
                                 - n * split.output * split.output;
                         if (gain > split.splitScore) {
                             // new best split
@@ -718,8 +724,8 @@ public final class RegressionTree implements Regression<Vector> {
                 });
 
             } else {
-                throw new IllegalStateException("Unsupported attribute type: "
-                        + _attributes[j].type);
+                throw new IllegalStateException(
+                    "Unsupported attribute type: " + _attributes[j].type);
             }
 
             return split;
@@ -812,8 +818,8 @@ public final class RegressionTree implements Regression<Vector> {
                     }
                 }
             } else {
-                throw new IllegalStateException("Unsupported attribute type: "
-                        + node.splitFeatureType);
+                throw new IllegalStateException(
+                    "Unsupported attribute type: " + node.splitFeatureType);
             }
             return tc;
         }
@@ -854,14 +860,14 @@ public final class RegressionTree implements Regression<Vector> {
      */
     public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
-            @Nullable NodeOutput output, @Nullable PRNG rand) {
+            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags, @Nullable NodeOutput output,
+            @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);
         if (_attributes.length != x.numColumns()) {
-            throw new IllegalArgumentException("-attrs option is invalid: "
-                    + Arrays.toString(attributes));
+            throw new IllegalArgumentException(
+                "-attrs option is invalid: " + Arrays.toString(attributes));
         }
         this._hasNumericType = SmileExtUtils.containsNumericType(_attributes);
 
@@ -925,8 +931,8 @@ public final class RegressionTree implements Regression<Vector> {
     private static void checkArgument(@Nonnull Matrix x, @Nonnull double[] y, int numVars,
             int maxDepth, int maxLeafs, int minSplits, int minLeafSize) {
         if (x.numRows() != y.length) {
-            throw new IllegalArgumentException(String.format(
-                "The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
+            throw new IllegalArgumentException(
+                String.format("The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
         }
         if (numVars <= 0 || numVars > x.numColumns()) {
             throw new IllegalArgumentException(
@@ -944,7 +950,8 @@ public final class RegressionTree implements Regression<Vector> {
                         + minSplits);
         }
         if (minLeafSize < 1) {
-            throw new IllegalArgumentException("Invalid minimum size of leaf nodes: " + minLeafSize);
+            throw new IllegalArgumentException(
+                "Invalid minimum size of leaf nodes: " + minLeafSize);
         }
     }
 

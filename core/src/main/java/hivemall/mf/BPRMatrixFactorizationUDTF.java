@@ -227,9 +227,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 3 && argOIs.length != 4) {
-            throw new UDFArgumentException(
-                getClass().getSimpleName()
-                        + " takes 3 or 4 arguments: INT user, INT posItem, INT negItem [, CONSTANT STRING options]");
+            throw new UDFArgumentException(getClass().getSimpleName()
+                    + " takes 3 or 4 arguments: INT user, INT posItem, INT negItem [, CONSTANT STRING options]");
         }
         this.userOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
         this.posItemOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
@@ -251,8 +250,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
                 file = File.createTempFile("hivemall_bprmf", ".sgmt");
                 file.deleteOnExit();
                 if (!file.canWrite()) {
-                    throw new UDFArgumentException("Cannot write a temporary file: "
-                            + file.getAbsolutePath());
+                    throw new UDFArgumentException(
+                        "Cannot write a temporary file: " + file.getAbsolutePath());
                 }
             } catch (IOException ioe) {
                 throw new UDFArgumentException(ioe);
@@ -268,9 +267,11 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
         fieldNames.add("idx");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
         fieldNames.add("Pu");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
         fieldNames.add("Qi");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
         if (useBiasClause) {
             fieldNames.add("Bi");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
@@ -342,8 +343,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
             ret += userProbe[k] * itemProbe[k];
         }
         if (!NumberUtils.isFinite(ret)) {
-            throw new IllegalStateException("Detected " + ret + " in predict where user=" + user
-                    + " and item=" + item);
+            throw new IllegalStateException(
+                "Detected " + ret + " in predict where user=" + user + " and item=" + item);
         }
         return ret;
     }
@@ -461,7 +462,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
         }
     }
 
-    private final void runIterativeTraining(@Nonnegative final int iterations) throws HiveException {
+    private final void runIterativeTraining(@Nonnegative final int iterations)
+            throws HiveException {
         final ByteBuffer inputBuf = this.inputBuf;
         final NioFixedSegment fileIO = this.fileIO;
         assert (inputBuf != null);
@@ -469,8 +471,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
         final long numTrainingExamples = count;
 
         final Reporter reporter = getReporter();
-        final Counter iterCounter = (reporter == null) ? null : reporter.getCounter(
-            "hivemall.mf.BPRMatrixFactorization$Counter", "iteration");
+        final Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.mf.BPRMatrixFactorization$Counter", "iteration");
 
         try {
             if (lastWritePos == 0) {// run iterations w/o temporary file
@@ -517,8 +519,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
                 try {
                     fileIO.flush();
                 } catch (IOException e) {
-                    throw new HiveException("Failed to flush a file: "
-                            + fileIO.getFile().getAbsolutePath(), e);
+                    throw new HiveException(
+                        "Failed to flush a file: " + fileIO.getFile().getAbsolutePath(), e);
                 }
                 if (LOG.isInfoEnabled()) {
                     File tmpFile = fileIO.getFile();
@@ -543,8 +545,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
                         try {
                             bytesRead = fileIO.read(seekPos, inputBuf);
                         } catch (IOException e) {
-                            throw new HiveException("Failed to read a file: "
-                                    + fileIO.getFile().getAbsolutePath(), e);
+                            throw new HiveException(
+                                "Failed to read a file: " + fileIO.getFile().getAbsolutePath(), e);
                         }
                         if (bytesRead == 0) { // reached file EOF
                             break;
@@ -586,8 +588,8 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
             try {
                 fileIO.close(true);
             } catch (IOException e) {
-                throw new HiveException("Failed to close a file: "
-                        + fileIO.getFile().getAbsolutePath(), e);
+                throw new HiveException(
+                    "Failed to close a file: " + fileIO.getFile().getAbsolutePath(), e);
             }
             this.inputBuf = null;
             this.fileIO = null;

@@ -43,24 +43,28 @@ public class PassiveAggressiveUDTFTest {
     public void testInitialize() throws UDFArgumentException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
 
         /* test for INT_TYPE_NAME feature */
-        StructObjectInspector intListSOI = udtf.initialize(new ObjectInspector[] {intListOI, intOI});
+        StructObjectInspector intListSOI =
+                udtf.initialize(new ObjectInspector[] {intListOI, intOI});
         assertEquals("struct<feature:int,weight:float>", intListSOI.getTypeName());
 
         /* test for STRING_TYPE_NAME feature */
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
-        StructObjectInspector stringListSOI = udtf.initialize(new ObjectInspector[] {stringListOI,
-                intOI});
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        StructObjectInspector stringListSOI =
+                udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
         assertEquals("struct<feature:string,weight:float>", stringListSOI.getTypeName());
 
         /* test for BIGINT_TYPE_NAME feature */
         ObjectInspector longOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
-        ListObjectInspector longListOI = ObjectInspectorFactory.getStandardListObjectInspector(longOI);
-        StructObjectInspector longListSOI = udtf.initialize(new ObjectInspector[] {longListOI,
-                intOI});
+        ListObjectInspector longListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(longOI);
+        StructObjectInspector longListSOI =
+                udtf.initialize(new ObjectInspector[] {longListOI, intOI});
         assertEquals("struct<feature:bigint,weight:float>", longListSOI.getTypeName());
     }
 
@@ -68,7 +72,8 @@ public class PassiveAggressiveUDTFTest {
     public void testTrain() throws HiveException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
         udtf.initialize(new ObjectInspector[] {intListOI, intOI});
 
         /* train weights by List<Object> */
@@ -113,7 +118,8 @@ public class PassiveAggressiveUDTFTest {
     public void testPA1Eta() throws UDFArgumentException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF.PA1();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-c 3.0");
 
@@ -134,7 +140,8 @@ public class PassiveAggressiveUDTFTest {
     public void testPA1EtaDefaultParameter() throws UDFArgumentException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF.PA1();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
 
         udtf.initialize(new ObjectInspector[] {intListOI, intOI});
         float loss = 0.1f;
@@ -148,7 +155,8 @@ public class PassiveAggressiveUDTFTest {
     public void testPA1TrainWithoutParameter() throws UDFArgumentException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF.PA1();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
 
         /* define aggressive parameter */
         udtf.initialize(new ObjectInspector[] {intListOI, intOI});
@@ -167,7 +175,8 @@ public class PassiveAggressiveUDTFTest {
     public void testPA1TrainWithParameter() throws UDFArgumentException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF.PA1();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
 
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-c 0.1");
@@ -188,7 +197,8 @@ public class PassiveAggressiveUDTFTest {
     public void testPA2EtaWithoutParameter() throws UDFArgumentException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF.PA2();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
 
         /* do initialize() with aggressiveness parameter */
         udtf.initialize(new ObjectInspector[] {intListOI, intOI});
@@ -207,7 +217,8 @@ public class PassiveAggressiveUDTFTest {
     public void testPA2EtaWithParameter() throws UDFArgumentException {
         PassiveAggressiveUDTF udtf = new PassiveAggressiveUDTF.PA2();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
         ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-c 3.0");
 
@@ -226,22 +237,22 @@ public class PassiveAggressiveUDTFTest {
 
     @Test
     public void testPA1Serialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            PassiveAggressiveUDTF.PA1.class,
+        TestUtils.testGenericUDTFSerialization(PassiveAggressiveUDTF.PA1.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
-                    Arrays.asList("1:-2", "2:-1"), 0}});
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0}});
     }
 
     @Test
     public void testPA2Serialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            PassiveAggressiveUDTF.PA2.class,
+        TestUtils.testGenericUDTFSerialization(PassiveAggressiveUDTF.PA2.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
-                    Arrays.asList("1:-2", "2:-1"), 0}});
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0}});
     }
 
 }

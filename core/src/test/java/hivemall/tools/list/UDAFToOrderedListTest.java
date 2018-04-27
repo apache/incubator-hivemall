@@ -44,7 +44,8 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testNaturalOrder() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
 
@@ -65,10 +66,11 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testReverseOrder() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reverse_order")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-reverse_order")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
 
@@ -89,10 +91,10 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testTopK() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
 
@@ -113,10 +115,11 @@ public class UDAFToOrderedListTest {
     @Test
     public void testReverseTopK() throws Exception {
         // = tail-k
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2 -reverse")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k 2 -reverse")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
 
@@ -136,10 +139,10 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testTailK() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
 
@@ -160,10 +163,11 @@ public class UDAFToOrderedListTest {
     @Test
     public void testReverseTailK() throws Exception {
         // = top-k
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2 -reverse")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k -2 -reverse")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
 
@@ -183,9 +187,9 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testNaturalOrderWithKey() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
         final double[] keys = new double[] {0.7, 0.5, 0.7};
@@ -210,11 +214,12 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testReverseOrderWithKey() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-reverse_order")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-reverse_order")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
         final double[] keys = new double[] {0.7, 0.5, 0.7};
@@ -239,11 +244,11 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testTopKWithKey() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
         final double[] keys = new double[] {0.7, 0.5, 0.8};
@@ -265,11 +270,12 @@ public class UDAFToOrderedListTest {
     @Test
     public void testReverseTopKWithKey() throws Exception {
         // = tail-k
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k 2 -reverse")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k 2 -reverse")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
         final double[] keys = new double[] {0.7, 0.5, 0.8};
@@ -290,11 +296,11 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testTailKWithKey() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
         final double[] keys = new double[] {0.7, 0.5, 0.8};
@@ -316,11 +322,12 @@ public class UDAFToOrderedListTest {
     @Test
     public void testReverseTailKWithKey() throws Exception {
         // = top-k
-        ObjectInspector[] inputOIs = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-k -2 -reverse")};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k -2 -reverse")};
 
         final String[] values = new String[] {"banana", "apple", "candy"};
         final double[] keys = new double[] {0.7, 0.5, 0.8};
@@ -341,7 +348,8 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testNullOnly() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
 
         final String[] values = new String[] {null, null, null};
 
@@ -359,7 +367,8 @@ public class UDAFToOrderedListTest {
 
     @Test
     public void testNullMixed() throws Exception {
-        ObjectInspector[] inputOIs = new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector};
 
         final String[] values = new String[] {"banana", "apple", null, "candy"};
 

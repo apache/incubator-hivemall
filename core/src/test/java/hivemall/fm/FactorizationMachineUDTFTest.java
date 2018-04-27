@@ -48,7 +48,8 @@ public class FactorizationMachineUDTFTest {
         println("SGD test");
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
@@ -82,7 +83,8 @@ public class FactorizationMachineUDTFTest {
             }
             cumul = udtf._cvState.getCumulativeLoss();
             loss = (cumul - loss) / trExamples;
-            println(trainingIteration + " " + loss + " " + cumul / (trainingIteration * trExamples));
+            println(
+                trainingIteration + " " + loss + " " + cumul / (trainingIteration * trExamples));
             data.close();
         }
 
@@ -93,7 +95,8 @@ public class FactorizationMachineUDTFTest {
     public void testEnableL2Norm() throws HiveException, IOException {
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
         ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
@@ -106,10 +109,10 @@ public class FactorizationMachineUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            FactorizationMachineUDTF.class,
+        TestUtils.testGenericUDTFSerialization(FactorizationMachineUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,

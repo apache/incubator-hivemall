@@ -71,8 +71,8 @@ public class L2NormUDAFTest {
         partials[2] = evaluator.terminatePartial();
 
         // merge in a different order; e.g., <bin0, bin1>, <bin1, bin0> should return same value
-        final int[][] orders = new int[][] { {0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0},
-                {2, 0, 1}};
+        final int[][] orders =
+                new int[][] {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 1, 0}, {2, 0, 1}};
         for (int i = 0; i < orders.length; i++) {
             evaluator.init();
 

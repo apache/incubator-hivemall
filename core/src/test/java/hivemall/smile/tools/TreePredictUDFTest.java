@@ -78,9 +78,10 @@ public class TreePredictUDFTest {
             int[] trainy = Math.slice(y, loocv.train[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
-            DecisionTree tree = new DecisionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-                x[0].length), trainy, 4);
-            Assert.assertEquals(tree.predict(x[loocv.test[i]]), evalPredict(tree, x[loocv.test[i]]));
+            DecisionTree tree = new DecisionTree(attrs,
+                new RowMajorDenseMatrix2d(trainx, x[0].length), trainy, 4);
+            Assert.assertEquals(tree.predict(x[loocv.test[i]]),
+                evalPredict(tree, x[loocv.test[i]]));
         }
     }
 
@@ -106,8 +107,8 @@ public class TreePredictUDFTest {
             double[][] testx = Math.slice(datax, cv.test[i]);
 
             Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-            RegressionTree tree = new RegressionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-                trainx[0].length), trainy, 20);
+            RegressionTree tree = new RegressionTree(attrs,
+                new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
 
             for (int j = 0; j < testx.length; j++) {
                 Assert.assertEquals(tree.predict(testx[j]), evalPredict(tree, testx[j]), 1.0);
@@ -146,8 +147,8 @@ public class TreePredictUDFTest {
         }
 
         Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-        RegressionTree tree = new RegressionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-            trainx[0].length), trainy, 20);
+        RegressionTree tree = new RegressionTree(attrs,
+            new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
         debugPrint(String.format("RMSE = %.4f\n", rmse(tree, testx, testy)));
 
         for (int i = m; i < n; i++) {
@@ -164,18 +165,20 @@ public class TreePredictUDFTest {
         return new RMSE().measure(y, predictions);
     }
 
-    private static int evalPredict(DecisionTree tree, double[] x) throws HiveException, IOException {
+    private static int evalPredict(DecisionTree tree, double[] x)
+            throws HiveException, IOException {
         byte[] b = tree.serialize(true);
         byte[] encoded = Base91.encode(b);
         Text model = new Text(encoded);
 
         TreePredictUDF udf = new TreePredictUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.writableStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.writableStringObjectInspector,
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true)});
         DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
                 new DeferredJavaObject(model), new DeferredJavaObject(ArrayUtils.toList(x)),
                 new DeferredJavaObject(true)};
@@ -185,19 +188,20 @@ public class TreePredictUDFTest {
         return ((IntWritable) result[0]).get();
     }
 
-    private static double evalPredict(RegressionTree tree, double[] x) throws HiveException,
-            IOException {
+    private static double evalPredict(RegressionTree tree, double[] x)
+            throws HiveException, IOException {
         byte[] b = tree.serialize(true);
         byte[] encoded = Base91.encode(b);
         Text model = new Text(encoded);
 
         TreePredictUDF udf = new TreePredictUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                PrimitiveObjectInspectorFactory.writableStringObjectInspector,
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.writableStringObjectInspector,
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)});
         DeferredObject[] arguments = new DeferredObject[] {new DeferredJavaObject("model_id#1"),
                 new DeferredJavaObject(model), new DeferredJavaObject(ArrayUtils.toList(x)),
                 new DeferredJavaObject(false)};
@@ -238,19 +242,18 @@ public class TreePredictUDFTest {
         }
 
         Attribute[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
-        RegressionTree tree = new RegressionTree(attrs, new RowMajorDenseMatrix2d(trainx,
-            trainx[0].length), trainy, 20);
+        RegressionTree tree = new RegressionTree(attrs,
+            new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
 
         byte[] b = tree.serialize(true);
         byte[] encoded = Base91.encode(b);
         Text model = new Text(encoded);
 
-        TestUtils.testGenericUDFSerialization(
-            TreePredictUDF.class,
-            new ObjectInspector[] {
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+        TestUtils.testGenericUDFSerialization(TreePredictUDF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                     PrimitiveObjectInspectorFactory.writableStringObjectInspector,
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, false)},
             new Object[] {"model_id#1", model, ArrayUtils.toList(testx[0])});

@@ -38,8 +38,7 @@ import org.apache.hadoop.io.IntWritable;
 /**
  * @link http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
  */
-@Description(
-        name = "lon2tilex",
+@Description(name = "lon2tilex",
         value = "_FUNC_(double lon, int zoom)::int - Returns the tile number of the given longitude and zoom level")
 @UDFType(deterministic = true, stateful = false)
 public final class Lon2TileXUDF extends GenericUDF {

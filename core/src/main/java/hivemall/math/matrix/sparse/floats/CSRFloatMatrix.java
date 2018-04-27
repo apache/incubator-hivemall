@@ -53,8 +53,8 @@ public final class CSRFloatMatrix extends RowMajorFloatMatrix {
     public CSRFloatMatrix(@Nonnull int[] rowPointers, @Nonnull int[] columnIndices,
             @Nonnull float[] values, @Nonnegative int numColumns) {
         super();
-        Preconditions.checkArgument(rowPointers.length >= 1, "rowPointers must be greater than 0: "
-                + rowPointers.length);
+        Preconditions.checkArgument(rowPointers.length >= 1,
+            "rowPointers must be greater than 0: " + rowPointers.length);
         Preconditions.checkArgument(columnIndices.length == values.length, "#columnIndices ("
                 + columnIndices.length + ") must be equals to #values (" + values.length + ")");
         this.rowPointers = rowPointers;
@@ -151,13 +151,14 @@ public final class CSRFloatMatrix extends RowMajorFloatMatrix {
     }
 
     @Override
-    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col, final float value) {
+    public float getAndSet(@Nonnegative final int row, @Nonnegative final int col,
+            final float value) {
         checkIndex(row, col, numRows, numColumns);
 
         final int index = getIndex(row, col);
         if (index < 0) {
-            throw new UnsupportedOperationException("Cannot update value in row " + row + ", col "
-                    + col);
+            throw new UnsupportedOperationException(
+                "Cannot update value in row " + row + ", col " + col);
         }
 
         float old = values[index];
@@ -171,8 +172,8 @@ public final class CSRFloatMatrix extends RowMajorFloatMatrix {
 
         final int index = getIndex(row, col);
         if (index < 0) {
-            throw new UnsupportedOperationException("Cannot update value in row " + row + ", col "
-                    + col);
+            throw new UnsupportedOperationException(
+                "Cannot update value in row " + row + ", col " + col);
         }
         values[index] = value;
     }
@@ -182,8 +183,8 @@ public final class CSRFloatMatrix extends RowMajorFloatMatrix {
         int rightEx = rowPointers[row + 1];
         final int index = Arrays.binarySearch(columnIndices, leftIn, rightEx, col);
         if (index >= 0 && index >= values.length) {
-            throw new IndexOutOfBoundsException("Value index " + index + " out of range "
-                    + values.length);
+            throw new IndexOutOfBoundsException(
+                "Value index " + index + " out of range " + values.length);
         }
         return index;
     }

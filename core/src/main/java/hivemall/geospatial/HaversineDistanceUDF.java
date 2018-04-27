@@ -41,8 +41,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
  * @link https://en.wikipedia.org/wiki/Haversine_formula
  * @link https://rosettacode.org/wiki/Haversine_formula
  */
-@Description(
-        name = "haversine_distance",
+@Description(name = "haversine_distance",
         value = "_FUNC_(double lat1, double lon1, double lat2, double lon2, [const boolean mile=false])::double"
                 + " - return distance between two locations in km [or miles] using `haversine` formula",
         extended = "Usage: select latlon_distance(lat1, lon1, lat2, lon2) from ...")

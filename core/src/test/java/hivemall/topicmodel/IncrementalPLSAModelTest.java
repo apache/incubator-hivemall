@@ -53,8 +53,8 @@ public class IncrementalPLSAModelTest {
         IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.5f, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
-                "oranges:1"};
+        String[] doc2 =
+                new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
 
         do {
             perplexityPrev = perplexity;
@@ -108,8 +108,9 @@ public class IncrementalPLSAModelTest {
             k1 = 1;
             k2 = 0;
         }
-        Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+        Assert.assertTrue(
+            "doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
+                    + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
             model.getWordScore("vegetables", k1) > model.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
@@ -127,8 +128,8 @@ public class IncrementalPLSAModelTest {
         IncrementalPLSAModel model = new IncrementalPLSAModel(K, 0.5f, 1E-5d);
 
         String[] doc1 = new String[] {"fruits:1", "healthy:1", "vegetables:1"};
-        String[] doc2 = new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
-                "oranges:1"};
+        String[] doc2 =
+                new String[] {"apples:1", "avocados:1", "colds:1", "flu:1", "like:2", "oranges:1"};
 
         do {
             perplexityPrev = perplexity;
@@ -175,8 +176,9 @@ public class IncrementalPLSAModelTest {
             k1 = 1;
             k2 = 0;
         }
-        Assert.assertTrue("doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
-                + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
+        Assert.assertTrue(
+            "doc1 is in topic " + k1 + " (" + (topicDistr[k1] * 100) + "%), "
+                    + "and `vegetables` SHOULD be more suitable topic word than `flu` in the topic",
             model.getWordScore("vegetables", k1) > model.getWordScore("flu", k1));
         Assert.assertTrue("doc2 is in topic " + k2 + " (" + (topicDistr[k2] * 100) + "%), "
                 + "and `avocados` SHOULD be more suitable topic word than `healthy` in the topic",
@@ -258,7 +260,8 @@ public class IncrementalPLSAModelTest {
         int n = topics.size();
         println("# of unique topics: " + n);
         Assert.assertTrue("At least 15 documents SHOULD be classified to different topics, "
-                + "but there are only " + n + " unique topics.", n >= 15);
+                + "but there are only " + n + " unique topics.",
+            n >= 15);
     }
 
     private static void println(String msg) {
@@ -270,7 +273,8 @@ public class IncrementalPLSAModelTest {
     @Nonnull
     private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
         // use data stored for KPA UDTF test
-        InputStream is = KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
+        InputStream is =
+                KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
         if (fileName.endsWith(".gz")) {
             is = new GZIPInputStream(is);
         }

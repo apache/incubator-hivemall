@@ -60,7 +60,8 @@ public abstract class AbstractIntMatrix implements IntMatrix {
 
     protected static final void checkColIndex(final int col, final int numColumns) {
         if (col < 0 || col >= numColumns) {
-            throw new IndexOutOfBoundsException("Col index " + col + " out of bounds " + numColumns);
+            throw new IndexOutOfBoundsException(
+                "Col index " + col + " out of bounds " + numColumns);
         }
     }
 
@@ -85,7 +86,8 @@ public abstract class AbstractIntMatrix implements IntMatrix {
             throw new IndexOutOfBoundsException("Row index " + row + " out of bounds " + numRows);
         }
         if (col < 0 || col >= numColumns) {
-            throw new IndexOutOfBoundsException("Col index " + col + " out of bounds " + numColumns);
+            throw new IndexOutOfBoundsException(
+                "Col index " + col + " out of bounds " + numColumns);
         }
     }
 

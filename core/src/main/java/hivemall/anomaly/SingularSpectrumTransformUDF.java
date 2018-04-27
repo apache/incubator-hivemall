@@ -49,17 +49,14 @@ import org.apache.hadoop.io.BooleanWritable;
  *
  * References:
  * <ul>
- * <li>T. Ide and K. Inoue,
- * "Knowledge Discovery from Heterogeneous Dynamic Systems using Change-Point Correlations", SDM'05.
- * </li>
+ * <li>T. Ide and K. Inoue, "Knowledge Discovery from Heterogeneous Dynamic Systems using
+ * Change-Point Correlations", SDM'05.</li>
  * <li>T. Ide and K. Tsuda, "Change-point detection using Krylov subspace learning", SDM'07.</li>
  * </ul>
  */
-@Description(
-        name = "sst",
-        value = "_FUNC_(double|array<double> x [, const string options])"
-                + " - Returns change-point scores and decisions using Singular Spectrum Transformation (SST)."
-                + " It will return a tuple <double changepoint_score [, boolean is_changepoint]>")
+@Description(name = "sst", value = "_FUNC_(double|array<double> x [, const string options])"
+        + " - Returns change-point scores and decisions using Singular Spectrum Transformation (SST)."
+        + " It will return a tuple <double changepoint_score [, boolean is_changepoint]>")
 @UDFType(deterministic = false, stateful = true)
 @Since(version = "0.5-rc.1")
 public final class SingularSpectrumTransformUDF extends UDFWithOptions {
@@ -93,16 +90,10 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
             "Offset of the current windows from the updating sample [default: `-w` = -30]");
         opts.addOption("r", "n_component", true,
             "Number of singular vectors (i.e. principal components) [default: 3]");
-        opts.addOption(
-            "k",
-            "n_dim",
-            true,
+        opts.addOption("k", "n_dim", true,
             "Number of dimensions for the Krylov subspaces [default: 5 (`2*r` if `r` is even, `2*r-1` otherwise)]");
         opts.addOption("score", "scorefunc", true, "Score function [default: svd, ika]");
-        opts.addOption(
-            "th",
-            "threshold",
-            true,
+        opts.addOption("th", "threshold", true,
             "Score threshold (inclusive) for determining change-point existence [default: -1, do not output decision]");
         return opts;
     }
@@ -119,15 +110,15 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
         this._params.k = Primitives.parseInt(cl.getOptionValue("k"),
             (_params.r % 2 == 0) ? (2 * _params.r) : (2 * _params.r - 1));
 
-        this._params.scoreFunc = ScoreFunction.resolve(cl.getOptionValue("scorefunc",
-            ScoreFunction.svd.name()));
+        this._params.scoreFunc =
+                ScoreFunction.resolve(cl.getOptionValue("scorefunc", ScoreFunction.svd.name()));
         if ((_params.w != _params.n || _params.w != _params.m)
                 && _params.scoreFunc == ScoreFunction.ika) {
             throw new UDFArgumentException("IKA-based efficient SST requires w = n = m");
         }
 
-        this._params.changepointThreshold = Primitives.parseDouble(cl.getOptionValue("th"),
-            _params.changepointThreshold);
+        this._params.changepointThreshold =
+                Primitives.parseDouble(cl.getOptionValue("th"), _params.changepointThreshold);
 
         Preconditions.checkArgument(_params.w >= 2, UDFArgumentException.class,
             "w must be greater than 1: " + _params.w);
@@ -137,8 +128,9 @@ public final class SingularSpectrumTransformUDF extends UDFWithOptions {
             "k must be greater than 0: " + _params.k);
         Preconditions.checkArgument(_params.k >= _params.r, UDFArgumentException.class,
             "k must be equals to or greater than r: k=" + _params.k + ", r" + _params.r);
-        Preconditions.checkArgument(_params.changepointThreshold > 0.d
-                && _params.changepointThreshold < 1.d, UDFArgumentException.class,
+        Preconditions.checkArgument(
+            _params.changepointThreshold > 0.d && _params.changepointThreshold < 1.d,
+            UDFArgumentException.class,
             "changepointThreshold must be in range (0, 1): " + _params.changepointThreshold);
 
         return cl;

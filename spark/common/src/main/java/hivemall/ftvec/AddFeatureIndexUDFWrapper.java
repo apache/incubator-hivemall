@@ -39,8 +39,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
  * NOTE: This is needed to avoid the issue of Spark reflection. That is, spark cannot handle List<>
  * as a return type in Hive UDF. Therefore, the type must be passed via ObjectInspector.
  */
-@Description(
-        name = "add_feature_index",
+@Description(name = "add_feature_index",
         value = "_FUNC_(dense features in array<double>) - Returns a feature vector with feature indices")
 @UDFType(deterministic = true, stateful = false)
 public class AddFeatureIndexUDFWrapper extends GenericUDF {
@@ -67,7 +66,8 @@ public class AddFeatureIndexUDFWrapper extends GenericUDF {
                 throw new UDFArgumentTypeException(0, "Type mismatch: features");
         }
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
     }
 
     @Override

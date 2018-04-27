@@ -110,7 +110,8 @@ public final class ItemPairsSamplingUDTF extends UDTFWithOptions {
                         + " takes at least two arguments");
         }
         this.listOI = HiveUtils.asListOI(argOIs[0]);
-        this.listElemOI = HiveUtils.asPrimitiveObjectInspector(listOI.getListElementObjectInspector());
+        this.listElemOI =
+                HiveUtils.asPrimitiveObjectInspector(listOI.getListElementObjectInspector());
         processOptions(argOIs);
 
         this.maxItemId = HiveUtils.getAsConstInt(argOIs[1]);
@@ -181,9 +182,9 @@ public final class ItemPairsSamplingUDTF extends UDTFWithOptions {
 
             int i = BitUtils.indexOfSetBit(bitset, nth);
             if (i == -1) {
-                throw new UDFArgumentException("Cannot find a value for " + nth
-                        + "-th element in bitset " + bitset.toString() + " where numPosItems = "
-                        + numPosItems);
+                throw new UDFArgumentException(
+                    "Cannot find a value for " + nth + "-th element in bitset " + bitset.toString()
+                            + " where numPosItems = " + numPosItems);
             }
 
             nth = _rand.nextInt(numNegItems);
@@ -208,9 +209,9 @@ public final class ItemPairsSamplingUDTF extends UDTFWithOptions {
             int nth = _rand.nextInt(numPosItems);
             int i = BitUtils.indexOfSetBit(bitsetForPosSampling, nth);
             if (i == -1) {
-                throw new UDFArgumentException("Cannot find a value for " + nth
-                        + "-th element in bitset " + bitset.toString() + " where numPosItems = "
-                        + numPosItems);
+                throw new UDFArgumentException(
+                    "Cannot find a value for " + nth + "-th element in bitset " + bitset.toString()
+                            + " where numPosItems = " + numPosItems);
             }
             bitsetForPosSampling.set(i, false);
             --numPosItems;

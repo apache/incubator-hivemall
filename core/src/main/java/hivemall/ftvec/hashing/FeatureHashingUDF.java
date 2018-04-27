@@ -98,7 +98,8 @@ public final class FeatureHashingUDF extends UDFWithOptions {
         if (_listOI == null) {
             return PrimitiveObjectInspectorFactory.writableStringObjectInspector;
         } else {
-            return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         }
     }
 

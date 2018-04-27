@@ -44,8 +44,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(
-        name = "transpose_and_dot",
+@Description(name = "transpose_and_dot",
         value = "_FUNC_(array<number> matrix0_row, array<number> matrix1_row)"
                 + " - Returns dot(matrix0.T, matrix1) as array<array<double>>, shape = (matrix0.#cols, matrix1.#cols)")
 public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
@@ -118,16 +117,22 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
 
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
                 this.matrix0RowOI = HiveUtils.asListOI(OIs[0]);
-                this.matrix0ElOI = HiveUtils.asDoubleCompatibleOI(matrix0RowOI.getListElementObjectInspector());
+                this.matrix0ElOI = HiveUtils.asDoubleCompatibleOI(
+                    matrix0RowOI.getListElementObjectInspector());
                 this.matrix1RowOI = HiveUtils.asListOI(OIs[1]);
-                this.matrix1ElOI = HiveUtils.asDoubleCompatibleOI(matrix1RowOI.getListElementObjectInspector());
+                this.matrix1ElOI = HiveUtils.asDoubleCompatibleOI(
+                    matrix1RowOI.getListElementObjectInspector());
             } else {
                 this.aggMatrixOI = HiveUtils.asListOI(OIs[0]);
-                this.aggMatrixRowOI = HiveUtils.asListOI(aggMatrixOI.getListElementObjectInspector());
-                this.aggMatrixElOI = HiveUtils.asDoubleOI(aggMatrixRowOI.getListElementObjectInspector());
+                this.aggMatrixRowOI =
+                        HiveUtils.asListOI(aggMatrixOI.getListElementObjectInspector());
+                this.aggMatrixElOI =
+                        HiveUtils.asDoubleOI(aggMatrixRowOI.getListElementObjectInspector());
             }
 
-            return ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
         }
 
         @Override

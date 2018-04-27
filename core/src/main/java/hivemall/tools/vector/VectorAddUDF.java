@@ -63,10 +63,12 @@ public final class VectorAddUDF extends GenericUDF {
 
         if (HiveUtils.isIntegerOI(xElemOI) && HiveUtils.isIntegerOI(yElemOI)) {
             this.floatingPoints = false;
-            return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaLongObjectInspector);
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaLongObjectInspector);
         } else {
             this.floatingPoints = true;
-            return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
         }
     }
 
@@ -82,8 +84,8 @@ public final class VectorAddUDF extends GenericUDF {
         final int xLen = xOI.getListLength(arg0);
         final int yLen = yOI.getListLength(arg1);
         if (xLen != yLen) {
-            throw new HiveException("vector lengths do not match. x=" + xOI.getList(arg0) + ", y="
-                    + yOI.getList(arg1));
+            throw new HiveException(
+                "vector lengths do not match. x=" + xOI.getList(arg0) + ", y=" + yOI.getList(arg1));
         }
 
         if (floatingPoints) {

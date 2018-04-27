@@ -114,8 +114,8 @@ public final class MixClient implements ModelUpdateHandler, Closeable {
      * @return true if sent request, otherwise false
      */
     @Override
-    public boolean onUpdate(Object feature, float weight, float covar, short clock, int deltaUpdates)
-            throws Exception {
+    public boolean onUpdate(Object feature, float weight, float covar, short clock,
+            int deltaUpdates) throws Exception {
         assert (deltaUpdates > 0) : deltaUpdates;
         if (deltaUpdates < mixThreshold) {
             return false; // avoid mixing

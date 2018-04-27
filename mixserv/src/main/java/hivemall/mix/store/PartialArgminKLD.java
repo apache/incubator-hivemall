@@ -52,7 +52,8 @@ public final class PartialArgminKLD extends PartialResult {
     }
 
     @Override
-    public void subtract(float localWeight, float covar, @Nonnegative int deltaUpdates, float scale) {
+    public void subtract(float localWeight, float covar, @Nonnegative int deltaUpdates,
+            float scale) {
         this.sum_mean_div_covar -= (localWeight / covar) / scale;
         this.sum_inv_covar -= (1.f / covar) / scale;
     }

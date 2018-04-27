@@ -122,8 +122,8 @@ public final class F1ScoreUDAF extends UDAF {
         }
 
         private static double precision(final PartialResult partial) {
-            return (partial.totalPredicted == 0L) ? 0d : partial.tp
-                    / (double) partial.totalPredicted;
+            return (partial.totalPredicted == 0L) ? 0d
+                    : partial.tp / (double) partial.totalPredicted;
         }
 
         private static double recall(final PartialResult partial) {

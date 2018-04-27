@@ -53,13 +53,14 @@ public final class BitsORUDF extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int argLength = argOIs.length;
         if (argLength < 2) {
-            throw new UDFArgumentLengthException("Expecting at least two arrays as arguments: "
-                    + argLength);
+            throw new UDFArgumentLengthException(
+                "Expecting at least two arrays as arguments: " + argLength);
         }
 
         ListObjectInspector[] argListOIs = new ListObjectInspector[argLength];
         ListObjectInspector arg0ListOI = HiveUtils.asListOI(argOIs[0]);
-        PrimitiveObjectInspector arg0ElemOI = HiveUtils.asLongCompatibleOI(arg0ListOI.getListElementObjectInspector());
+        PrimitiveObjectInspector arg0ElemOI =
+                HiveUtils.asLongCompatibleOI(arg0ListOI.getListElementObjectInspector());
 
         argListOIs[0] = arg0ListOI;
         for (int i = 1; i < argLength; i++) {
@@ -75,7 +76,8 @@ public final class BitsORUDF extends GenericUDF {
         this._listElemOI = arg0ElemOI;
         this._bitset = new BitSet();
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector);
     }
 
     @Override

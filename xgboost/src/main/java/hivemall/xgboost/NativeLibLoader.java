@@ -98,8 +98,8 @@ public final class NativeLibLoader {
             try {
                 File tempFile = createTempFileFromResource(userDefinedLibFile.getName(),
                     new FileInputStream(userDefinedLibFile.getAbsolutePath()));
-                logger.info("Copyed the user-defined native library as "
-                        + tempFile.getAbsolutePath());
+                logger.info(
+                    "Copyed the user-defined native library as " + tempFile.getAbsolutePath());
                 addLibraryPath(tempFile.getParent());
             } catch (Exception e) {
                 // Simply ignore it here
@@ -126,12 +126,12 @@ public final class NativeLibLoader {
      * @throws IOException
      * @throws IllegalArgumentException
      */
-    static File createTempFileFromResource(String libName, InputStream is) throws IOException,
-            IllegalArgumentException {
+    static File createTempFileFromResource(String libName, InputStream is)
+            throws IOException, IllegalArgumentException {
         // Create a temporary folder with a random number for the native lib
         final String uuid = UUID.randomUUID().toString();
-        final File tempFolder = new File(System.getProperty("java.io.tmpdir"), String.format(
-            "%s-%s", getPrefix(libName), uuid));
+        final File tempFolder = new File(System.getProperty("java.io.tmpdir"),
+            String.format("%s-%s", getPrefix(libName), uuid));
         if (!tempFolder.exists()) {
             boolean created = tempFolder.mkdirs();
             if (!created) {

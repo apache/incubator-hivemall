@@ -49,7 +49,8 @@ public final class ColumnMajorDenseMatrixBuilder extends MatrixBuilder {
     }
 
     @Override
-    public ColumnMajorDenseMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+    public ColumnMajorDenseMatrixBuilder nextColumn(@Nonnegative final int col,
+            final double value) {
         if (value == 0.d) {
             return this;
         }

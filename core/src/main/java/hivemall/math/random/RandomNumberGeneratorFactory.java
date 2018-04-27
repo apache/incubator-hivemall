@@ -80,15 +80,15 @@ public final class RandomNumberGeneratorFactory {
                 rng = new SmileRandom(seed);
                 break;
             case smileMT:
-                rng = new SmileRandom(new smile.math.random.MersenneTwister(
-                    Primitives.hashCode(seed)));
+                rng = new SmileRandom(
+                    new smile.math.random.MersenneTwister(Primitives.hashCode(seed)));
                 break;
             case smileMT64:
                 rng = new SmileRandom(new smile.math.random.MersenneTwister64(seed));
                 break;
             case commonsMath3MT:
-                rng = new CommonsMathRandom(new org.apache.commons.math3.random.MersenneTwister(
-                    seed));
+                rng = new CommonsMathRandom(
+                    new org.apache.commons.math3.random.MersenneTwister(seed));
                 break;
             default:
                 throw new IllegalStateException("Unexpected type: " + type);

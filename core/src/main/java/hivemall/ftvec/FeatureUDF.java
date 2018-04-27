@@ -33,8 +33,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "feature",
+@Description(name = "feature",
         value = "_FUNC_(<string|int|long|short|byte> feature, <number> value) - Returns a feature string")
 @UDFType(deterministic = true, stateful = false)
 public final class FeatureUDF extends GenericUDF {
@@ -77,10 +76,11 @@ public final class FeatureUDF extends GenericUDF {
         }
     }
 
-    private static void validateValueOI(@Nonnull ObjectInspector argOI) throws UDFArgumentException {
+    private static void validateValueOI(@Nonnull ObjectInspector argOI)
+            throws UDFArgumentException {
         if (!HiveUtils.isNumberOI(argOI)) {
-            throw new UDFArgumentException("_FUNC_ expects a number type for `value` but got "
-                    + argOI.getTypeName());
+            throw new UDFArgumentException(
+                "_FUNC_ expects a number type for `value` but got " + argOI.getTypeName());
         }
     }
 

@@ -67,11 +67,10 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
                 "Only array<number> type argument is acceptable but " + OIs[0].getTypeName()
                         + " was passed as `features`");
         }
-        if (!HiveUtils.isListOI(OIs[1])
-                || !HiveUtils.isIntegerOI(((ListObjectInspector) OIs[1]).getListElementObjectInspector())) {
-            throw new UDFArgumentTypeException(1,
-                "Only array<int> type argument is acceptable but " + OIs[1].getTypeName()
-                        + " was passed as `labels`");
+        if (!HiveUtils.isListOI(OIs[1]) || !HiveUtils.isIntegerOI(
+            ((ListObjectInspector) OIs[1]).getListElementObjectInspector())) {
+            throw new UDFArgumentTypeException(1, "Only array<int> type argument is acceptable but "
+                    + OIs[1].getTypeName() + " was passed as `labels`");
         }
 
         return new SignalNoiseRatioUDAFEvaluator();
@@ -104,9 +103,10 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
 
             @Override
             public int estimate() {
-                return counts == null ? 0 : SizeOf.LONG * counts.length + SizeOf.DOUBLE
-                        * means.length * means[0].length + SizeOf.DOUBLE * variances.length
-                        * variances[0].length;
+                return counts == null ? 0
+                        : SizeOf.LONG * counts.length
+                                + SizeOf.DOUBLE * means.length * means[0].length
+                                + SizeOf.DOUBLE * variances.length * variances[0].length;
             }
 
             public void init(int nClasses, int nFeatures) {
@@ -135,7 +135,8 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
                 this.featuresOI = HiveUtils.asListOI(OIs[0]);
-                this.featureOI = HiveUtils.asDoubleCompatibleOI(featuresOI.getListElementObjectInspector());
+                this.featureOI =
+                        HiveUtils.asDoubleCompatibleOI(featuresOI.getListElementObjectInspector());
                 this.labelsOI = HiveUtils.asListOI(OIs[1]);
                 this.labelOI = HiveUtils.asIntegerOI(labelsOI.getListElementObjectInspector());
             } else {// from partial aggregation
@@ -149,20 +150,28 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
                 this.meanElemOI = HiveUtils.asDoubleOI(meanListOI.getListElementObjectInspector());
                 this.variancesField = structOI.getStructFieldRef("variances");
                 this.variancesOI = HiveUtils.asListOI(variancesField.getFieldObjectInspector());
-                this.varianceListOI = HiveUtils.asListOI(variancesOI.getListElementObjectInspector());
-                this.varianceElemOI = HiveUtils.asDoubleOI(varianceListOI.getListElementObjectInspector());
+                this.varianceListOI =
+                        HiveUtils.asListOI(variancesOI.getListElementObjectInspector());
+                this.varianceElemOI =
+                        HiveUtils.asDoubleOI(varianceListOI.getListElementObjectInspector());
             }
 
             // initialize output
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
                 List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector));
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)));
-                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)));
+                fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)));
                 return ObjectInspectorFactory.getStandardStructObjectInspector(
                     Arrays.asList("counts", "means", "variances"), fieldOIs);
             } else {// terminate
-                return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                return ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             }
         }
 
@@ -214,13 +223,13 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
             final long n = myAgg.counts[clazz];
             myAgg.counts[clazz]++;
             for (int i = 0; i < nFeatures; i++) {
-                final double x = PrimitiveObjectInspectorUtils.getDouble(features.get(i), featureOI);
+                final double x =
+                        PrimitiveObjectInspectorUtils.getDouble(features.get(i), featureOI);
                 final double meanN = myAgg.means[clazz][i];
                 final double varianceN = myAgg.variances[clazz][i];
                 myAgg.means[clazz][i] = (n * meanN + x) / (n + 1.d);
-                myAgg.variances[clazz][i] = (n * varianceN + (x - meanN)
-                        * (x - myAgg.means[clazz][i]))
-                        / (n + 1.d);
+                myAgg.variances[clazz][i] =
+                        (n * varianceN + (x - meanN) * (x - myAgg.means[clazz][i])) / (n + 1.d);
             }
         }
 
@@ -260,10 +269,11 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
 
             final SignalNoiseRatioAggregationBuffer myAgg = (SignalNoiseRatioAggregationBuffer) agg;
 
-            final List<?> counts = countsOI.getList(structOI.getStructFieldData(other, countsField));
+            final List<?> counts =
+                    countsOI.getList(structOI.getStructFieldData(other, countsField));
             final List<?> means = meansOI.getList(structOI.getStructFieldData(other, meansField));
-            final List<?> variances = variancesOI.getList(structOI.getStructFieldData(other,
-                variancesField));
+            final List<?> variances =
+                    variancesOI.getList(structOI.getStructFieldData(other, variancesField));
 
             final int nClasses = counts.size();
             final int nFeatures = meanListOI.getListLength(means.get(0));
@@ -286,8 +296,8 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
                 myAgg.counts[i] += cnt;
                 for (int j = 0; j < nFeatures; j++) {
                     final double meanN = myAgg.means[i][j];
-                    final double meanM = PrimitiveObjectInspectorUtils.getDouble(mean.get(j),
-                        meanElemOI);
+                    final double meanM =
+                            PrimitiveObjectInspectorUtils.getDouble(mean.get(j), meanElemOI);
                     final double varianceN = myAgg.variances[i][j];
                     final double varianceM = PrimitiveObjectInspectorUtils.getDouble(
                         variance.get(j), varianceElemOI);
@@ -299,9 +309,8 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
                         // merge by Chan's method
                         // http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
                         myAgg.means[i][j] = (n * meanN + cnt * meanM) / (double) (n + cnt);
-                        myAgg.variances[i][j] = (varianceN * (n - 1) + varianceM * (cnt - 1) + Math.pow(
-                            meanN - meanM, 2) * n * cnt / (n + cnt))
-                                / (n + cnt - 1);
+                        myAgg.variances[i][j] = (varianceN * (n - 1) + varianceM * (cnt - 1)
+                                + Math.pow(meanN - meanM, 2) * n * cnt / (n + cnt)) / (n + cnt - 1);
                     }
                 }
             }
@@ -348,13 +357,14 @@ public class SignalNoiseRatioUDAF extends AbstractGenericUDAFResolver {
                     }
                     for (int k = 0; k < j; k++) {
                         // avoid comparing between classes having only single entry
-                        if (myAgg.counts[k] == 0 || (myAgg.counts[j] == 1 && myAgg.counts[k] == 1)) {
+                        if (myAgg.counts[k] == 0
+                                || (myAgg.counts[j] == 1 && myAgg.counts[k] == 1)) {
                             continue;
                         }
 
                         // SUM(snr) GROUP BY feature
-                        final double snr = Math.abs(myAgg.means[j][i] - myAgg.means[k][i])
-                                / (sds[j] + sds[k]);
+                        final double snr =
+                                Math.abs(myAgg.means[j][i] - myAgg.means[k][i]) / (sds[j] + sds[k]);
                         // if `NaN`(when diff between means and both sds are zero, IOW, all related values are equal),
                         // regard feature `i` as meaningless between class `j` and `k`. So, skip the entry.
                         if (!Double.isNaN(snr)) {

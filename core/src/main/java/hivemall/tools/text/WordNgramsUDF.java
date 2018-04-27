@@ -34,12 +34,10 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-@Description(
-        name = "word_ngrams",
+@Description(name = "word_ngrams",
         value = "_FUNC_(array<string> words, int minSize, int maxSize])"
                 + " - Returns list of n-grams for given words, where `minSize <= n <= maxSize`",
-        extended = "select word_ngrams(tokenize('Machine learning is fun!', true), 1, 2);\n"
-                + "\n"
+        extended = "select word_ngrams(tokenize('Machine learning is fun!', true), 1, 2);\n" + "\n"
                 + "> [\"machine\",\"machine learning\",\"learning\",\"learning is\",\"is\",\"is fun\",\"fun\"]")
 @UDFType(deterministic = true, stateful = false)
 public final class WordNgramsUDF extends UDF {
@@ -54,8 +52,8 @@ public final class WordNgramsUDF extends UDF {
             throw new UDFArgumentException("`minSize` must be greater than zero: " + minSize);
         }
         if (minSize > maxSize) {
-            throw new UDFArgumentException("`maxSize` must be greater than or equal to `minSize`: "
-                    + maxSize);
+            throw new UDFArgumentException(
+                "`maxSize` must be greater than or equal to `minSize`: " + maxSize);
         }
         return getNgrams(words, minSize, maxSize);
     }

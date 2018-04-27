@@ -71,8 +71,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
-@Description(
-        name = "train_randomforest_regression",
+@Description(name = "train_randomforest_regression",
         value = "_FUNC_(array<double|string> features, double target [, string options]) - "
                 + "Returns a relation consists of "
                 + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests>")
@@ -121,10 +120,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         Options opts = new Options();
         opts.addOption("trees", "num_trees", true,
             "The number of trees for each task [default: 50]");
-        opts.addOption(
-            "vars",
-            "num_variables",
-            true,
+        opts.addOption("vars", "num_variables", true,
             "The number of random selected features [default: ceil(sqrt(x[0].length))]."
                     + " int(num_variables * x[0].length) is considered if num_variable is (0.0,1.0]");
         opts.addOption("depth", "max_depth", true,
@@ -162,8 +158,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
             maxLeafs = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafs);
             minSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSplit);
-            minSamplesLeaf = Primitives.parseInt(cl.getOptionValue("min_samples_leaf"),
-                minSamplesLeaf);
+            minSamplesLeaf =
+                    Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
             attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
         }
@@ -183,10 +179,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(
-                getClass().getSimpleName()
-                        + " takes 2 or 3 arguments: array<double|string> features, double target [, const string options]: "
-                        + argOIs.length);
+            throw new UDFArgumentException(getClass().getSimpleName()
+                    + " takes 2 or 3 arguments: array<double|string> features, double target [, const string options]: "
+                    + argOIs.length);
         }
 
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
@@ -202,7 +197,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             this.matrixBuilder = new CSRMatrixBuilder(8192);
         } else {
             throw new UDFArgumentException(
-                "_FUNC_ takes double[] or string[] for the first argument: " + listOI.getTypeName());
+                "_FUNC_ takes double[] or string[] for the first argument: "
+                        + listOI.getTypeName());
         }
         this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
 
@@ -220,7 +216,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         fieldNames.add("pred_model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("var_importance");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
         fieldNames.add("oob_errors");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("oob_tests");
@@ -316,8 +313,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private void train(@Nonnull Matrix x, @Nonnull final double[] y) throws HiveException {
         final int numExamples = x.numRows();
         if (numExamples != y.length) {
-            throw new HiveException(String.format("The sizes of X and Y don't match: %d != %d",
-                numExamples, y.length));
+            throw new HiveException(
+                String.format("The sizes of X and Y don't match: %d != %d", numExamples, y.length));
         }
         checkOptions();
 
@@ -433,8 +430,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes, Matrix x,
-                double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction,
-                int[] oob, long seed, AtomicInteger remainingTasks) {
+                double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction, int[] oob,
+                long seed, AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;
@@ -466,9 +463,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             }
 
             StopWatch stopwatch = new StopWatch();
-            RegressionTree tree = new RegressionTree(_attributes, _x, _y, _numVars,
-                _udtf._maxDepth, _udtf._maxLeafNodes, _udtf._minSamplesSplit,
-                _udtf._minSamplesLeaf, _order, bags, rnd2);
+            RegressionTree tree = new RegressionTree(_attributes, _x, _y, _numVars, _udtf._maxDepth,
+                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf, _order, bags,
+                rnd2);
             incrCounter(_udtf._treeConstructionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             // out-of-bag prediction

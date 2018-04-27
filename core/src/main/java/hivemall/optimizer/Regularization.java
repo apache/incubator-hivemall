@@ -97,15 +97,15 @@ public abstract class Regularization {
 
             this.l1Ratio = Primitives.parseFloat(options.get("l1_ratio"), DEFAULT_L1_RATIO);
             if (l1Ratio < 0.f || l1Ratio > 1.f) {
-                throw new IllegalArgumentException("L1 ratio should be in [0.0, 1.0], but got "
-                        + l1Ratio);
+                throw new IllegalArgumentException(
+                    "L1 ratio should be in [0.0, 1.0], but got " + l1Ratio);
             }
         }
 
         @Override
         public float getRegularizer(final float weight) {
-            return l1Ratio * l1.getRegularizer(weight) + (1.f - l1Ratio)
-                    * l2.getRegularizer(weight);
+            return l1Ratio * l1.getRegularizer(weight)
+                    + (1.f - l1Ratio) * l2.getRegularizer(weight);
         }
     }
 

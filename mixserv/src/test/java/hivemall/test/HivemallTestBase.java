@@ -39,7 +39,7 @@ public abstract class HivemallTestBase {
 
     @Before
     public void afterEachTest() {
-        logger.info("\n\n===== FINISHED " + packageName + ": '" + testName.getMethodName()
-                + "' =====\n");
+        logger.info(
+            "\n\n===== FINISHED " + packageName + ": '" + testName.getMethodName() + "' =====\n");
     }
 }

@@ -56,14 +56,15 @@ public final class SmartcnUDF extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         final int arglen = arguments.length;
         if (arglen < 1 || arglen > 2) {
-            throw new UDFArgumentException("Invalid number of arguments for `tokenize_cn`: "
-                    + arglen);
+            throw new UDFArgumentException(
+                "Invalid number of arguments for `tokenize_cn`: " + arglen);
         }
 
         this._stopWordsArray = (arglen >= 2) ? HiveUtils.getConstStringArray(arguments[1]) : null;
         this._analyzer = null;
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     }
 
     @Override

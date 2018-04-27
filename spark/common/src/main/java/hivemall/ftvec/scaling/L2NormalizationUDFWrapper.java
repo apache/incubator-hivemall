@@ -56,7 +56,8 @@ public class L2NormalizationUDFWrapper extends GenericUDF {
 
         switch (arguments[0].getCategory()) {
             case LIST:
-                ObjectInspector elmOI = ((ListObjectInspector) arguments[0]).getListElementObjectInspector();
+                ObjectInspector elmOI =
+                        ((ListObjectInspector) arguments[0]).getListElementObjectInspector();
                 if (elmOI.getCategory().equals(Category.PRIMITIVE)) {
                     if (((PrimitiveObjectInspector) elmOI).getPrimitiveCategory() == PrimitiveCategory.STRING) {
                         break;
@@ -71,7 +72,8 @@ public class L2NormalizationUDFWrapper extends GenericUDF {
         // Create a ObjectInspector converter for arguments
         ObjectInspector outputElemOI = ObjectInspectorFactory.getReflectionObjectInspector(
             Text.class, ObjectInspectorOptions.JAVA);
-        ObjectInspector outputOI = ObjectInspectorFactory.getStandardListObjectInspector(outputElemOI);
+        ObjectInspector outputOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(outputElemOI);
         toListText = ObjectInspectorConverters.getConverter(arguments[0], outputOI);
 
         ObjectInspector listElemOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;

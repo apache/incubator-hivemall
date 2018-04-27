@@ -35,12 +35,12 @@ public class Lat2TileYUDFTest {
     @Test
     public void testEvaluate() throws HiveException, IOException {
         Lat2TileYUDF udf = new Lat2TileYUDF();
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector});
+        udf.initialize(
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector});
 
-        IntWritable result1 = udf.evaluate(new DeferredObject[] {new DeferredJavaObject(49.60055d),
-                new DeferredJavaObject(13)});
+        IntWritable result1 = udf.evaluate(
+            new DeferredObject[] {new DeferredJavaObject(49.60055d), new DeferredJavaObject(13)});
         Assert.assertEquals(2792, result1.get());
 
         udf.close();
@@ -48,10 +48,10 @@ public class Lat2TileYUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(Lat2TileYUDF.class, new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[] {49.60055d,
-                13});
+        TestUtils.testGenericUDFSerialization(Lat2TileYUDF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[] {49.60055d, 13});
     }
 
 }

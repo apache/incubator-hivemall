@@ -57,8 +57,8 @@ public final class VectorDotUDF extends GenericUDF {
 
         ObjectInspector argOI0 = argOIs[0];
         if (!HiveUtils.isNumberListOI(argOI0)) {
-            throw new UDFArgumentException("Expected array<number> for the first argument: "
-                    + argOI0.getTypeName());
+            throw new UDFArgumentException(
+                "Expected array<number> for the first argument: " + argOI0.getTypeName());
         }
         ListObjectInspector xListOI = HiveUtils.asListOI(argOI0);
 
@@ -72,7 +72,8 @@ public final class VectorDotUDF extends GenericUDF {
                 "Expected array<number> or number for the send argument: " + argOI1.getTypeName());
         }
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
     }
 
     @Override

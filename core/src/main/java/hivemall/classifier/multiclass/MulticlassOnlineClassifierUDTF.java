@@ -88,17 +88,16 @@ public abstract class MulticlassOnlineClassifierUDTF extends LearnerBaseUDTF {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 2) {
-            throw new UDFArgumentException(
-                getClass().getSimpleName()
-                        + " takes 2 arguments: List<Int|BigInt|Text> features, {Int|BitInt|Text} label [, constant text options]");
+            throw new UDFArgumentException(getClass().getSimpleName()
+                    + " takes 2 arguments: List<Int|BigInt|Text> features, {Int|BitInt|Text} label [, constant text options]");
         }
         PrimitiveObjectInspector featureInputOI = processFeaturesOI(argOIs[0]);
         this.labelInputOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
         String labelTypeName = labelInputOI.getTypeName();
         if (!STRING_TYPE_NAME.equals(labelTypeName) && !INT_TYPE_NAME.equals(labelTypeName)
                 && !BIGINT_TYPE_NAME.equals(labelTypeName)) {
-            throw new UDFArgumentTypeException(0, "label must be a type [Int|BigInt|Text]: "
-                    + labelTypeName);
+            throw new UDFArgumentTypeException(0,
+                "label must be a type [Int|BigInt|Text]: " + labelTypeName);
         }
 
         processOptions(argOIs);
@@ -343,8 +342,8 @@ public abstract class MulticlassOnlineClassifierUDTF extends LearnerBaseUDTF {
             Object missed_label) {
         assert (actual_label != null);
         if (actual_label.equals(missed_label)) {
-            throw new IllegalArgumentException("Actual label equals to missed label: "
-                    + actual_label);
+            throw new IllegalArgumentException(
+                "Actual label equals to missed label: " + actual_label);
         }
 
         PredictionModel model2add = label2model.get(actual_label);
@@ -496,9 +495,12 @@ public abstract class MulticlassOnlineClassifierUDTF extends LearnerBaseUDTF {
                 StructField c1ref = lineOI.getStructFieldRef("c1");
                 StructField c2ref = lineOI.getStructFieldRef("c2");
                 StructField c3ref = lineOI.getStructFieldRef("c3");
-                PrimitiveObjectInspector c1refOI = (PrimitiveObjectInspector) c1ref.getFieldObjectInspector();
-                PrimitiveObjectInspector c2refOI = (PrimitiveObjectInspector) c2ref.getFieldObjectInspector();
-                FloatObjectInspector c3refOI = (FloatObjectInspector) c3ref.getFieldObjectInspector();
+                PrimitiveObjectInspector c1refOI =
+                        (PrimitiveObjectInspector) c1ref.getFieldObjectInspector();
+                PrimitiveObjectInspector c2refOI =
+                        (PrimitiveObjectInspector) c2ref.getFieldObjectInspector();
+                FloatObjectInspector c3refOI =
+                        (FloatObjectInspector) c3ref.getFieldObjectInspector();
 
                 BufferedReader reader = null;
                 try {
@@ -548,17 +550,21 @@ public abstract class MulticlassOnlineClassifierUDTF extends LearnerBaseUDTF {
                         covarOI);
                 }
             } else {
-                LazySimpleSerDe serde = HiveUtils.getLineSerde(labelOI, featureOI, weightOI,
-                    covarOI);
+                LazySimpleSerDe serde =
+                        HiveUtils.getLineSerde(labelOI, featureOI, weightOI, covarOI);
                 StructObjectInspector lineOI = (StructObjectInspector) serde.getObjectInspector();
                 StructField c1ref = lineOI.getStructFieldRef("c1");
                 StructField c2ref = lineOI.getStructFieldRef("c2");
                 StructField c3ref = lineOI.getStructFieldRef("c3");
                 StructField c4ref = lineOI.getStructFieldRef("c4");
-                PrimitiveObjectInspector c1refOI = (PrimitiveObjectInspector) c1ref.getFieldObjectInspector();
-                PrimitiveObjectInspector c2refOI = (PrimitiveObjectInspector) c2ref.getFieldObjectInspector();
-                FloatObjectInspector c3refOI = (FloatObjectInspector) c3ref.getFieldObjectInspector();
-                FloatObjectInspector c4refOI = (FloatObjectInspector) c4ref.getFieldObjectInspector();
+                PrimitiveObjectInspector c1refOI =
+                        (PrimitiveObjectInspector) c1ref.getFieldObjectInspector();
+                PrimitiveObjectInspector c2refOI =
+                        (PrimitiveObjectInspector) c2ref.getFieldObjectInspector();
+                FloatObjectInspector c3refOI =
+                        (FloatObjectInspector) c3ref.getFieldObjectInspector();
+                FloatObjectInspector c4refOI =
+                        (FloatObjectInspector) c4ref.getFieldObjectInspector();
 
                 BufferedReader reader = null;
                 try {
@@ -584,8 +590,8 @@ public abstract class MulticlassOnlineClassifierUDTF extends LearnerBaseUDTF {
                         }
                         Object k = c2refOI.getPrimitiveWritableObject(c2refOI.copyObject(f1));
                         float v = c3refOI.get(f2);
-                        float cov = (f3 == null) ? WeightValueWithCovar.DEFAULT_COVAR
-                                : c4refOI.get(f3);
+                        float cov =
+                                (f3 == null) ? WeightValueWithCovar.DEFAULT_COVAR : c4refOI.get(f3);
                         model.set(k, new WeightValueWithCovar(v, cov, false));
                     }
                 } finally {

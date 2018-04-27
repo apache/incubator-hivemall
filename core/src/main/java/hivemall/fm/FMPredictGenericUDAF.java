@@ -55,8 +55,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.WritableDoubleObj
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
-@Description(
-        name = "fm_predict",
+@Description(name = "fm_predict",
         value = "_FUNC_(Float Wj, array<float> Vjf, float Xj) - Returns a prediction value in Double")
 public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
@@ -123,8 +122,10 @@ public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
                 this.sumVjXjField = soi.getStructFieldRef("sumVjXj");
                 this.sumV2X2Field = soi.getStructFieldRef("sumV2X2");
                 this.retOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-                this.sumVjXjOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-                this.sumV2X2OI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                this.sumVjXjOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                this.sumV2X2OI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             }
 
             // initialize output
@@ -144,9 +145,11 @@ public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
             fieldNames.add("ret");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             fieldNames.add("sumVjXj");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
             fieldNames.add("sumV2X2");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
 
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
@@ -310,7 +313,8 @@ public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
                 throw new HiveException("Mismatch in the number of factors");
             }
 
-            final WritableDoubleObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+            final WritableDoubleObjectInspector doubleOI =
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
             for (int f = 0; f < factors; f++) {
                 Object o1 = sumVjXjOI.getListElement(o_sumVjXj, f);
                 Object o2 = sumV2X2OI.getListElement(o_sumV2X2, f);

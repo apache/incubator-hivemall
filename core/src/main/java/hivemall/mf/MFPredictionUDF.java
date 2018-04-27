@@ -30,8 +30,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 
-@Description(
-        name = "mf_predict",
+@Description(name = "mf_predict",
         value = "_FUNC_(List<Float> Pu, List<Float> Qi[, double Bu, double Bi[, double mu]]) - Returns the prediction value")
 @UDFType(deterministic = true, stateful = false)
 public final class MFPredictionUDF extends UDF {

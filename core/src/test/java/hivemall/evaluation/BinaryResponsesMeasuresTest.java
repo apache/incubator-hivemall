@@ -70,7 +70,8 @@ public class BinaryResponsesMeasuresTest {
             0.d);
 
         Assert.assertEquals(0.d,
-            BinaryResponsesMeasures.Recall(Arrays.asList(1, 3, 2), Collections.emptyList(), 2), 0.d);
+            BinaryResponsesMeasures.Recall(Arrays.asList(1, 3, 2), Collections.emptyList(), 2),
+            0.d);
     }
 
     @Test
@@ -78,8 +79,8 @@ public class BinaryResponsesMeasuresTest {
         List<Integer> rankedList = Arrays.asList(1, 3, 2, 6);
         List<Integer> groundTruth = Arrays.asList(1, 2, 4);
 
-        double actual = BinaryResponsesMeasures.Precision(rankedList, groundTruth,
-            rankedList.size());
+        double actual =
+                BinaryResponsesMeasures.Precision(rankedList, groundTruth, rankedList.size());
         Assert.assertEquals(0.5d, actual, 0.0001d);
 
         actual = BinaryResponsesMeasures.Precision(rankedList, groundTruth, 2);
@@ -102,8 +103,8 @@ public class BinaryResponsesMeasuresTest {
         List<Integer> rankedList = Arrays.asList(1, 3, 2, 6);
         List<Integer> groundTruth = Arrays.asList(1, 2, 4);
 
-        double actual = BinaryResponsesMeasures.ReciprocalRank(rankedList, groundTruth,
-            rankedList.size());
+        double actual =
+                BinaryResponsesMeasures.ReciprocalRank(rankedList, groundTruth, rankedList.size());
         Assert.assertEquals(1.0d, actual, 0.0001d);
 
         Collections.reverse(rankedList);

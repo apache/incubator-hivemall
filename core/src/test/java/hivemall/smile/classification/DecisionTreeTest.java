@@ -112,13 +112,14 @@ public class DecisionTreeTest {
 
     @Test
     public void testGraphvizOutputIris() throws IOException, ParseException, HiveException {
-        String datasetUrl = "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff";
+        String datasetUrl =
+                "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff";
         int responseIndex = 4;
         int numLeafs = 4;
         boolean dense = true;
         String outputName = "class";
-        String[] featureNames = new String[] {"sepallength", "sepalwidth", "petallength",
-                "petalwidth"};
+        String[] featureNames =
+                new String[] {"sepallength", "sepalwidth", "petallength", "petalwidth"};
         String[] classNames = new String[] {"setosa", "versicolor", "virginica"};
 
         debugPrint(graphvizOutput(datasetUrl, responseIndex, numLeafs, dense, featureNames,
@@ -133,7 +134,8 @@ public class DecisionTreeTest {
 
     @Test
     public void testGraphvizOutputWeather() throws IOException, ParseException, HiveException {
-        String datasetUrl = "https://gist.githubusercontent.com/myui/2c9df50db3de93a71b92/raw/3f6b4ecfd4045008059e1a2d1c4064fb8a3d372a/weather.nominal.arff";
+        String datasetUrl =
+                "https://gist.githubusercontent.com/myui/2c9df50db3de93a71b92/raw/3f6b4ecfd4045008059e1a2d1c4064fb8a3d372a/weather.nominal.arff";
         int responseIndex = 4;
         int numLeafs = 3;
         boolean dense = true;

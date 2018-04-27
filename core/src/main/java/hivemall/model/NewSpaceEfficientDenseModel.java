@@ -150,7 +150,8 @@ public final class NewSpaceEfficientDenseModel extends AbstractPredictionModel {
     }
 
     @Override
-    public <T extends IWeightValue> void set(@Nonnull final Object feature, @Nonnull final T value) {
+    public <T extends IWeightValue> void set(@Nonnull final Object feature,
+            @Nonnull final T value) {
         int i = HiveUtils.parseInt(feature);
         ensureCapacity(i);
         float weight = value.get();

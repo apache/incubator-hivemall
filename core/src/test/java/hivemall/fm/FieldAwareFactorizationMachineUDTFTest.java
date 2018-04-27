@@ -94,7 +94,8 @@ public class FieldAwareFactorizationMachineUDTFTest {
     public void testSampleEnableNorm() throws IOException, HiveException {
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -enable_norm", 0.01f);
+            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -enable_norm",
+            0.01f);
     }
 
     private static void run(String testName, String testFile, String testOptions,
@@ -102,11 +103,14 @@ public class FieldAwareFactorizationMachineUDTFTest {
         println(testName);
 
         FieldAwareFactorizationMachineUDTF udtf = new FieldAwareFactorizationMachineUDTF();
-        ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, testOptions)};
+        ObjectInspector[] argOIs =
+                new ObjectInspector[] {
+                        ObjectInspectorFactory.getStandardListObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            testOptions)};
 
         udtf.initialize(argOIs);
         FieldAwareFactorizationMachineModel model = udtf.initModel(udtf._params);
@@ -160,11 +164,14 @@ public class FieldAwareFactorizationMachineUDTFTest {
         println(testName);
 
         FieldAwareFactorizationMachineUDTF udtf = new FieldAwareFactorizationMachineUDTF();
-        ObjectInspector[] argOIs = new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, testOptions)};
+        ObjectInspector[] argOIs =
+                new ObjectInspector[] {
+                        ObjectInspectorFactory.getStandardListObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            testOptions)};
 
         udtf.initialize(argOIs);
         FieldAwareFactorizationMachineModel model = udtf.initModel(udtf._params);
@@ -216,15 +223,15 @@ public class FieldAwareFactorizationMachineUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            FieldAwareFactorizationMachineUDTF.class,
+        TestUtils.testGenericUDTFSerialization(FieldAwareFactorizationMachineUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-opt sgd -classification -factors 10 -w0 -seed 43")}, new Object[][] {{
-                    Arrays.asList("0:1:-2", "1:2:-1"), 1.0}});
+                        "-opt sgd -classification -factors 10 -w0 -seed 43")},
+            new Object[][] {{Arrays.asList("0:1:-2", "1:2:-1"), 1.0}});
     }
 
     @Nonnull

@@ -40,35 +40,38 @@ public class AdaGradUDTFTest {
         AdaGradUDTF udtf = new AdaGradUDTF();
         ObjectInspector labelOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
-        ListObjectInspector intListOI = ObjectInspectorFactory.getStandardListObjectInspector(intOI);
+        ListObjectInspector intListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(intOI);
 
         /* test for INT_TYPE_NAME feature */
-        StructObjectInspector intListSOI = udtf.initialize(new ObjectInspector[] {intListOI,
-                labelOI});
+        StructObjectInspector intListSOI =
+                udtf.initialize(new ObjectInspector[] {intListOI, labelOI});
         assertEquals("struct<feature:int,weight:float>", intListSOI.getTypeName());
 
         /* test for STRING_TYPE_NAME feature */
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
-        StructObjectInspector stringListSOI = udtf.initialize(new ObjectInspector[] {stringListOI,
-                labelOI});
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        StructObjectInspector stringListSOI =
+                udtf.initialize(new ObjectInspector[] {stringListOI, labelOI});
         assertEquals("struct<feature:string,weight:float>", stringListSOI.getTypeName());
 
         /* test for BIGINT_TYPE_NAME feature */
         ObjectInspector longOI = PrimitiveObjectInspectorFactory.javaLongObjectInspector;
-        ListObjectInspector longListOI = ObjectInspectorFactory.getStandardListObjectInspector(longOI);
-        StructObjectInspector longListSOI = udtf.initialize(new ObjectInspector[] {longListOI,
-                labelOI});
+        ListObjectInspector longListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(longOI);
+        StructObjectInspector longListSOI =
+                udtf.initialize(new ObjectInspector[] {longListOI, labelOI});
         assertEquals("struct<feature:bigint,weight:float>", longListSOI.getTypeName());
     }
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            AdaGradUDTF.class,
+        TestUtils.testGenericUDTFSerialization(AdaGradUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector}, new Object[][] {{
-                    Arrays.asList("1:-2", "2:-1"), 1.f}});
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 1.f}});
     }
 }

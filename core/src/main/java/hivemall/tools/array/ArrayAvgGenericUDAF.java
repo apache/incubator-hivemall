@@ -94,7 +94,8 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
                 this.inputListOI = (ListObjectInspector) parameters[0];
-                this.inputListElemOI = HiveUtils.asDoubleCompatibleOI(inputListOI.getListElementObjectInspector());
+                this.inputListElemOI =
+                        HiveUtils.asDoubleCompatibleOI(inputListOI.getListElementObjectInspector());
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 this.internalMergeOI = soi;
@@ -102,8 +103,10 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
                 this.sumField = soi.getStructFieldRef("sum");
                 this.countField = soi.getStructFieldRef("count");
                 this.sizeOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
-                this.sumOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-                this.countOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                this.sumOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                this.countOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector);
             }
 
             // initialize output
@@ -111,7 +114,8 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
                 outputOI = internalMergeOI();
             } else {// terminate
-                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
             }
             return outputOI;
         }
@@ -123,9 +127,11 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
             fieldNames.add("size");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
             fieldNames.add("sum");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
             fieldNames.add("count");
-            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector));
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector));
 
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
@@ -201,8 +207,8 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
         }
 
         @Override
-        public List<FloatWritable> terminate(@SuppressWarnings("deprecation") AggregationBuffer aggr)
-                throws HiveException {
+        public List<FloatWritable> terminate(
+                @SuppressWarnings("deprecation") AggregationBuffer aggr) throws HiveException {
             ArrayAvgAggregationBuffer myAggr = (ArrayAvgAggregationBuffer) aggr;
 
             final int size = myAggr._size;
@@ -255,8 +261,8 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
                 init(size);
             }
             if (size != _size) {// a corner case
-                throw new HiveException("Mismatch in the number of elements at tuple: "
-                        + tuple.toString());
+                throw new HiveException(
+                    "Mismatch in the number of elements at tuple: " + tuple.toString());
             }
             final double[] sum = _sum;
             final long[] count = _count;
@@ -273,8 +279,10 @@ public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
         void merge(final int o_size, @Nonnull final Object o_sum, @Nonnull final Object o_count,
                 @Nonnull final StandardListObjectInspector sumOI,
                 @Nonnull final StandardListObjectInspector countOI) throws HiveException {
-            final WritableDoubleObjectInspector sumElemOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-            final WritableLongObjectInspector countElemOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+            final WritableDoubleObjectInspector sumElemOI =
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+            final WritableLongObjectInspector countElemOI =
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector;
 
             if (o_size != _size) {
                 if (_size == -1) {

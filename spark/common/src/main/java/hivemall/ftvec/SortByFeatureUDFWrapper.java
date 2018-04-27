@@ -61,8 +61,10 @@ public class SortByFeatureUDFWrapper extends GenericUDF {
                 ObjectInspector valueOI = argumentOI.getMapValueObjectInspector();
                 if (keyOI.getCategory().equals(Category.PRIMITIVE)
                         && valueOI.getCategory().equals(Category.PRIMITIVE)) {
-                    final PrimitiveCategory keyCategory = ((PrimitiveObjectInspector) keyOI).getPrimitiveCategory();
-                    final PrimitiveCategory valueCategory = ((PrimitiveObjectInspector) valueOI).getPrimitiveCategory();
+                    final PrimitiveCategory keyCategory =
+                            ((PrimitiveObjectInspector) keyOI).getPrimitiveCategory();
+                    final PrimitiveCategory valueCategory =
+                            ((PrimitiveObjectInspector) valueOI).getPrimitiveCategory();
                     if (keyCategory == PrimitiveCategory.INT
                             && valueCategory == PrimitiveCategory.FLOAT) {
                         break;
@@ -81,7 +83,8 @@ public class SortByFeatureUDFWrapper extends GenericUDF {
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         assert (arguments.length == 1);
         @SuppressWarnings("unchecked")
-        final Map<IntWritable, FloatWritable> input = (Map<IntWritable, FloatWritable>) argumentOI.getMap(arguments[0].get());
+        final Map<IntWritable, FloatWritable> input =
+                (Map<IntWritable, FloatWritable>) argumentOI.getMap(arguments[0].get());
         return udf.evaluate(input);
     }
 

@@ -50,7 +50,8 @@ public class KernelExpansionPassiveAggressiveUDTFTest {
         KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI});
 
         BufferedReader news20 = readFile("news20-small.binary.gz");
@@ -78,7 +79,8 @@ public class KernelExpansionPassiveAggressiveUDTFTest {
         KernelExpansionPassiveAggressiveUDTF udtf = new KernelExpansionPassiveAggressiveUDTF();
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
         ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
-        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
         ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-c 0.01");
 
@@ -150,17 +152,18 @@ public class KernelExpansionPassiveAggressiveUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            KernelExpansionPassiveAggressiveUDTF.class,
+        TestUtils.testGenericUDTFSerialization(KernelExpansionPassiveAggressiveUDTF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                    PrimitiveObjectInspectorFactory.javaIntObjectInspector}, new Object[][] {{
-                    Arrays.asList("1:-2", "2:-1"), 0}});
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaIntObjectInspector},
+            new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0}});
     }
 
     @Nonnull
     private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
-        InputStream is = KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
+        InputStream is =
+                KernelExpansionPassiveAggressiveUDTFTest.class.getResourceAsStream(fileName);
         if (fileName.endsWith(".gz")) {
             is = new GZIPInputStream(is);
         }

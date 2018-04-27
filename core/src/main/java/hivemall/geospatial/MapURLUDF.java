@@ -38,8 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.Text;
 
-@Description(
-        name = "map_url",
+@Description(name = "map_url",
         value = "_FUNC_(double lat, double lon, int zoom [, const string option]) - Returns a URL string",
         extended = "OpenStreetMap: http://tile.openstreetmap.org/${zoom}/${xtile}/${ytile}.png\n"
                 + "Google Maps: https://www.google.com/maps/@${lat},${lon},${zoom}z")
@@ -129,7 +128,8 @@ public final class MapURLUDF extends UDFWithOptions {
         if (type == MapType.openstreetmap) {// http://tile.openstreetmap.org/${zoom}/${xtile}/${ytile}.png            
             if (zoom < 0 || zoom > 19) {
                 throw new UDFArgumentException(
-                    "Illegal zoom level. Supported zoom level for openstreetmap is [0,19]: " + zoom);
+                    "Illegal zoom level. Supported zoom level for openstreetmap is [0,19]: "
+                            + zoom);
             }
             final int xtile, ytile;
             try {

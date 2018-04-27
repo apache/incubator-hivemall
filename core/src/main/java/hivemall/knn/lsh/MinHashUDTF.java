@@ -47,8 +47,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 /**
  * A Minhash implementation that outputs n different k-depth Signatures.
  */
-@Description(
-        name = "minhash",
+@Description(name = "minhash",
         value = "_FUNC_(ANY item, array<int|bigint|string> features [, constant string options])"
                 + " - Returns n different k-depth signatures (i.e., clusterid) for each item <clusterid, item>")
 @UDFType(deterministic = true, stateful = false)

@@ -61,7 +61,8 @@ public final class OptimizerOptions {
         opts.addOption("scale", true, "Scaling factor for cumulative weights [100.0]");
     }
 
-    public static void processOptions(@Nullable CommandLine cl, @Nonnull Map<String, String> options) {
+    public static void processOptions(@Nullable CommandLine cl,
+            @Nonnull Map<String, String> options) {
         if (cl == null) {
             return;
         }

@@ -44,7 +44,8 @@ public class TryCastUDFTest {
         TryCastUDF udf = new TryCastUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.getPrimitiveWritableConstantObjectInspector(
                     TypeInfoFactory.stringTypeInfo, new Text("array<string>"))});
 
@@ -60,12 +61,11 @@ public class TryCastUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(
-            TryCastUDF.class,
-            new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                    ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "array<string>")},
+        TestUtils.testGenericUDFSerialization(TryCastUDF.class, new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "array<string>")},
             new Object[] {Arrays.asList(1.d, 2.d, 3.d)});
     }
 

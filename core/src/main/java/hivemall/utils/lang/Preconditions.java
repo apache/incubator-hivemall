@@ -42,8 +42,8 @@ public final class Preconditions {
             try {
                 throwable = clazz.newInstance();
             } catch (InstantiationException | IllegalAccessException e) {
-                throw new IllegalStateException(
-                    "Failed to instantiate a class: " + clazz.getName(), e);
+                throw new IllegalStateException("Failed to instantiate a class: " + clazz.getName(),
+                    e);
             }
             throw throwable;
         }
@@ -58,12 +58,12 @@ public final class Preconditions {
                 Constructor<E> constructor = clazz.getConstructor(String.class);
                 throwable = constructor.newInstance(errorMessage);
             } catch (NoSuchMethodException | SecurityException e1) {
-                throw new IllegalStateException("Failed to get a Constructor(String): "
-                        + clazz.getName(), e1);
+                throw new IllegalStateException(
+                    "Failed to get a Constructor(String): " + clazz.getName(), e1);
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                     | InvocationTargetException e2) {
-                throw new IllegalStateException(
-                    "Failed to instantiate a class: " + clazz.getName(), e2);
+                throw new IllegalStateException("Failed to instantiate a class: " + clazz.getName(),
+                    e2);
             }
             throw throwable;
         }
@@ -90,8 +90,8 @@ public final class Preconditions {
             try {
                 throwable = clazz.newInstance();
             } catch (InstantiationException | IllegalAccessException e) {
-                throw new IllegalStateException(
-                    "Failed to instantiate a class: " + clazz.getName(), e);
+                throw new IllegalStateException("Failed to instantiate a class: " + clazz.getName(),
+                    e);
             }
             throw throwable;
         }
@@ -104,15 +104,15 @@ public final class Preconditions {
             try {
                 constructor = clazz.getConstructor(String.class);
             } catch (NoSuchMethodException | SecurityException e) {
-                throw new IllegalStateException(
-                    "Failed to get a constructor of " + clazz.getName(), e);
+                throw new IllegalStateException("Failed to get a constructor of " + clazz.getName(),
+                    e);
             }
             final E throwable;
             try {
                 throwable = constructor.newInstance(errorMessage);
             } catch (ReflectiveOperationException | IllegalArgumentException e) {
-                throw new IllegalStateException(
-                    "Failed to instantiate a class: " + clazz.getName(), e);
+                throw new IllegalStateException("Failed to instantiate a class: " + clazz.getName(),
+                    e);
             }
             throw throwable;
         }
@@ -127,8 +127,8 @@ public final class Preconditions {
     public static void checkArgument(boolean expression, @Nullable String errorMessageTemplate,
             @Nullable Object... errorMessageArgs) {
         if (!expression) {
-            throw new IllegalArgumentException(StringUtils.format(errorMessageTemplate,
-                errorMessageArgs));
+            throw new IllegalArgumentException(
+                StringUtils.format(errorMessageTemplate, errorMessageArgs));
         }
     }
 

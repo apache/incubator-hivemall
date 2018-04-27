@@ -116,8 +116,8 @@ public final class FMArrayModel extends FactorizationMachineModel {
     public void check(@Nonnull Feature[] x) throws HiveException {
         for (Feature e : x) {
             if (e != null && e.getFeatureIndex() < 1) {
-                throw new HiveException("Index of x should be greater than or equals to 1: "
-                        + Arrays.toString(x));
+                throw new HiveException(
+                    "Index of x should be greater than or equals to 1: " + Arrays.toString(x));
             }
         }
     }

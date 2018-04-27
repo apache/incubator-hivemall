@@ -42,8 +42,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(
-        name = "each_top_k",
+@Description(name = "each_top_k",
         value = "_FUNC_(int K, Object group, double cmpKey, *) - Returns top-K values (or tail-K values when k is less than 0)")
 public final class EachTopKUDTF extends GenericUDTF {
 

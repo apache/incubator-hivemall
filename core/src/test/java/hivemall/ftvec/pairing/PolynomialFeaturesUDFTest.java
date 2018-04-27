@@ -41,8 +41,8 @@ public class PolynomialFeaturesUDFTest {
         List<Text> args = WritableUtils.val("a:0.5", "b:0.3");
         PolynomialFeaturesUDF udf = new PolynomialFeaturesUDF();
         List<Text> actuals = udf.evaluate(args, 2);
-        List<Text> expected = WritableUtils.val("a:0.5", "a^a:0.25", "a^b:0.15", "b:0.3",
-            "b^b:0.09");
+        List<Text> expected =
+                WritableUtils.val("a:0.5", "a^a:0.25", "a^b:0.15", "b:0.3", "b^b:0.09");
         Assert.assertEquals(expected, actuals);
 
         actuals = udf.evaluate(args, 3);
@@ -69,10 +69,10 @@ public class PolynomialFeaturesUDFTest {
         Assert.assertEquals(expected, actuals);
 
         actuals = udf.evaluate(args, 3, false, false);
-        expected = WritableUtils.val("a:0.5", "a^a:0.25", "a^a^a:0.125", "a^a^b:0.25",
-            "a^a^c:0.05", "a^b:0.5", "a^b^b:0.5", "a^b^c:0.1", "a^c:0.1", "a^c^c:0.020000001",
-            "b:1.0", "b^b:1.0", "b^b^b:1.0", "b^b^c:0.2", "b^c:0.2", "b^c^c:0.040000003", "c:0.2",
-            "c^c:0.040000003", "c^c^c:0.008");
+        expected = WritableUtils.val("a:0.5", "a^a:0.25", "a^a^a:0.125", "a^a^b:0.25", "a^a^c:0.05",
+            "a^b:0.5", "a^b^b:0.5", "a^b^c:0.1", "a^c:0.1", "a^c^c:0.020000001", "b:1.0", "b^b:1.0",
+            "b^b^b:1.0", "b^b^c:0.2", "b^c:0.2", "b^c^c:0.040000003", "c:0.2", "c^c:0.040000003",
+            "c^c^c:0.008");
         Assert.assertEquals(expected, actuals);
     }
 
@@ -81,8 +81,8 @@ public class PolynomialFeaturesUDFTest {
         List<Text> args = WritableUtils.val("a:0.5", "b:0.3", "c:0.2");
         PolynomialFeaturesUDF udf = new PolynomialFeaturesUDF();
         List<Text> actuals = udf.evaluate(args, 3, true, true);
-        List<Text> expected = WritableUtils.val("a:0.5", "a^b:0.15", "a^b^c:0.030000001",
-            "a^c:0.1", "b:0.3", "b^c:0.060000002", "c:0.2");
+        List<Text> expected = WritableUtils.val("a:0.5", "a^b:0.15", "a^b^c:0.030000001", "a^c:0.1",
+            "b:0.3", "b^c:0.060000002", "c:0.2");
         Assert.assertEquals(expected, actuals);
     }
 

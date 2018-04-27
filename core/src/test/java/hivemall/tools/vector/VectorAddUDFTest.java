@@ -41,12 +41,14 @@ public class VectorAddUDFTest {
         VectorAddUDF udf = new VectorAddUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableFloatObjectInspector)});
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableFloatObjectInspector)});
 
         DeferredObject[] args = new DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new double[] {1, 2,
-                        3})),
+                new GenericUDF.DeferredJavaObject(
+                    WritableUtils.toWritableList(new double[] {1, 2, 3})),
                 new GenericUDF.DeferredJavaObject(
                     WritableUtils.toWritableList(new float[] {2, 3, 4}))};
 
@@ -63,13 +65,16 @@ public class VectorAddUDFTest {
         VectorAddUDF udf = new VectorAddUDF();
 
         udf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector),
-                ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableIntObjectInspector)});
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableLongObjectInspector),
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableIntObjectInspector)});
 
         DeferredObject[] args = new DeferredObject[] {
                 new GenericUDF.DeferredJavaObject(
                     WritableUtils.toWritableList(new long[] {1, 2, 3})),
-                new GenericUDF.DeferredJavaObject(WritableUtils.toWritableList(new int[] {2, 3, 4}))};
+                new GenericUDF.DeferredJavaObject(
+                    WritableUtils.toWritableList(new int[] {2, 3, 4}))};
 
         List<?> actual = udf.evaluate(args);
         List<Long> expected = Arrays.asList(3L, 5L, 7L);
@@ -81,11 +86,12 @@ public class VectorAddUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        TestUtils.testGenericUDFSerialization(
-            VectorAddUDF.class,
+        TestUtils.testGenericUDFSerialization(VectorAddUDF.class,
             new ObjectInspector[] {
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
-                    ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaFloatObjectInspector)},
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaFloatObjectInspector)},
             new Object[] {Arrays.asList(1.d, 2.d, 3.d), Arrays.asList(2.f, 3.f, 4.f)});
     }
 }

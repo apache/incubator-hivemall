@@ -26,8 +26,9 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-@Description(name = "subarray_endwith", value = "_FUNC_(array<int|text> original, int|text key)"
-        + " - Returns an array that ends with the specified key",
+@Description(name = "subarray_endwith",
+        value = "_FUNC_(array<int|text> original, int|text key)"
+                + " - Returns an array that ends with the specified key",
         extended = "select subarray_endwith(array(1,2,3,4), 3);\n" + "> [1,2,3]")
 @UDFType(deterministic = true, stateful = false)
 public class SubarrayEndWithUDF extends UDF {

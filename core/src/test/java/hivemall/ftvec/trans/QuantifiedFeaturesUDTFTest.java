@@ -77,13 +77,12 @@ public class QuantifiedFeaturesUDTFTest {
 
     @Test
     public void testSerialization() throws HiveException {
-        TestUtils.testGenericUDTFSerialization(
-            QuantifiedFeaturesUDTF.class,
+        TestUtils.testGenericUDTFSerialization(QuantifiedFeaturesUDTF.class,
             new ObjectInspector[] {
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaBooleanObjectInspector, true),
                     PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector}, new Object[][] {{
-                    WritableUtils.val(true), "aaa", 1.0}});
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector},
+            new Object[][] {{WritableUtils.val(true), "aaa", 1.0}});
     }
 }

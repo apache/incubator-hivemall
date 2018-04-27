@@ -79,7 +79,8 @@ public class UDAFToMap extends AbstractGenericUDAFResolver {
                 inputValueOI = argOIs[1];
             } else {// from partial aggregation
                 internalMergeOI = (StandardMapObjectInspector) argOIs[0];
-                inputKeyOI = HiveUtils.asPrimitiveObjectInspector(internalMergeOI.getMapKeyObjectInspector());
+                inputKeyOI = HiveUtils.asPrimitiveObjectInspector(
+                    internalMergeOI.getMapKeyObjectInspector());
                 inputValueOI = internalMergeOI.getMapValueObjectInspector();
             }
 

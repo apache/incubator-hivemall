@@ -111,21 +111,22 @@ public final class DoubleArray3D {
             throw new IllegalStateException("Double3DArray#configure() is not called");
         }
         if (i >= n1 || i < 0) {
-            throw new ArrayIndexOutOfBoundsException("Index '" + i
-                    + "' out of bounds for 1st dimension of size " + n1);
+            throw new ArrayIndexOutOfBoundsException(
+                "Index '" + i + "' out of bounds for 1st dimension of size " + n1);
         }
         if (j >= n2 || j < 0) {
-            throw new ArrayIndexOutOfBoundsException("Index '" + j
-                    + "' out of bounds for 2nd dimension of size " + n2);
+            throw new ArrayIndexOutOfBoundsException(
+                "Index '" + j + "' out of bounds for 2nd dimension of size " + n2);
         }
         if (k >= n3 || k < 0) {
-            throw new ArrayIndexOutOfBoundsException("Index '" + k
-                    + "' out of bounds for 3rd dimension of size " + n3);
+            throw new ArrayIndexOutOfBoundsException(
+                "Index '" + k + "' out of bounds for 3rd dimension of size " + n3);
         }
         final int idx = i * p1 + j * p2 + k;
         if (idx >= size) {
-            throw new IndexOutOfBoundsException("Computed internal index '" + idx
-                    + "' exceeds buffer size '" + size + "' where i=" + i + ", j=" + j + ", k=" + k);
+            throw new IndexOutOfBoundsException(
+                "Computed internal index '" + idx + "' exceeds buffer size '" + size + "' where i="
+                        + i + ", j=" + j + ", k=" + k);
         }
         return idx;
     }

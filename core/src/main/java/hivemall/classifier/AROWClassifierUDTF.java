@@ -41,8 +41,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
  *     In Proc. NIPS, 2009.
  * </pre>
  */
-@Description(
-        name = "train_arow",
+@Description(name = "train_arow",
         value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                 + " - Returns a relation consists of <string|int|bigint feature, float weight, float covar>",
         extended = "Build a prediction model by Adaptive Regularization of Weight Vectors (AROW) binary classifier")
@@ -149,8 +148,7 @@ public class AROWClassifierUDTF extends BinaryOnlineClassifierUDTF {
         return new WeightValueWithCovar(new_w, new_cov);
     }
 
-    @Description(
-            name = "train_arowh",
+    @Description(name = "train_arowh",
             value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                     + " - Returns a relation consists of <string|int|bigint feature, float weight, float covar>",
             extended = "Build a prediction model by AROW binary classifier using hinge loss")
@@ -176,8 +174,8 @@ public class AROWClassifierUDTF extends BinaryOnlineClassifierUDTF {
                 if (c_str != null) {
                     c = Float.parseFloat(c_str);
                     if (!(c > 0.f)) {
-                        throw new UDFArgumentException("Aggressiveness parameter C must be C > 0: "
-                                + c);
+                        throw new UDFArgumentException(
+                            "Aggressiveness parameter C must be C > 0: " + c);
                     }
                 }
             }

@@ -29,8 +29,8 @@ import javax.annotation.Nullable;
 public final class LossFunctions {
 
     public enum LossType {
-        SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, SquaredEpsilonInsensitiveLoss,
-        HuberLoss, HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss
+        SquaredLoss, QuantileLoss, EpsilonInsensitiveLoss, SquaredEpsilonInsensitiveLoss, HuberLoss,
+        HingeLoss, LogLoss, SquaredHingeLoss, ModifiedHuberLoss
     }
 
     @Nonnull

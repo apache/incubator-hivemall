@@ -46,8 +46,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
-@Description(
-        name = "changefinder",
+@Description(name = "changefinder",
         value = "_FUNC_(double|array<double> x [, const string options])"
                 + " - Returns outlier/change-point scores and decisions using ChangeFinder."
                 + " It will return a tuple <double outlier_score, double changepoint_score [, boolean is_anomaly [, boolean is_changepoint]]")
@@ -86,15 +85,9 @@ public final class ChangeFinderUDF extends UDFWithOptions {
             "Number of past samples to include for calculating outlier score [default: 7]");
         opts.addOption("T2", "y_window", true,
             "Number of past samples to include for calculating change-point score [default: 7]");
-        opts.addOption(
-            "outlier_threshold",
-            "x_threshold",
-            true,
+        opts.addOption("outlier_threshold", "x_threshold", true,
             "Score threshold (inclusive) for determining outlier existence [default: -1, do not output decision]");
-        opts.addOption(
-            "changepoint_threshold",
-            "y_threshold",
-            true,
+        opts.addOption("changepoint_threshold", "y_threshold", true,
             "Score threshold (inclusive) for determining change-point existence [default: -1, do not output decision]");
         opts.addOption("loss1", "lossfunc1", true,
             "Loss function for outlier scoring [default: hellinger, logloss]");
@@ -116,10 +109,10 @@ public final class ChangeFinderUDF extends UDFWithOptions {
             cl.getOptionValue("outlier_threshold"), _params.outlierThreshold);
         this._params.changepointThreshold = Primitives.parseDouble(
             cl.getOptionValue("changepoint_threshold"), _params.changepointThreshold);
-        this._params.lossFunc1 = LossFunction.resolve(cl.getOptionValue("lossfunc1",
-            LossFunction.hellinger.name()));
-        this._params.lossFunc2 = LossFunction.resolve(cl.getOptionValue("lossfunc2",
-            LossFunction.hellinger.name()));
+        this._params.lossFunc1 =
+                LossFunction.resolve(cl.getOptionValue("lossfunc1", LossFunction.hellinger.name()));
+        this._params.lossFunc2 =
+                LossFunction.resolve(cl.getOptionValue("lossfunc2", LossFunction.hellinger.name()));
 
         Preconditions.checkArgument(_params.k >= 2, "K must be greater than 1: " + _params.k);
         Preconditions.checkArgument(_params.r1 > 0.d && _params.r1 < 1.d,

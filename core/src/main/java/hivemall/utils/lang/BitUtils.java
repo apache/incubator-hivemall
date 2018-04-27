@@ -64,7 +64,8 @@ public final class BitUtils {
         return pos;
     }
 
-    public static int indexOfClearBit(@Nonnull final BitSet bits, final int nth, final int lastIndex) {
+    public static int indexOfClearBit(@Nonnull final BitSet bits, final int nth,
+            final int lastIndex) {
         int j = bits.nextClearBit(0);
         for (int c = 0; j <= lastIndex; j = bits.nextClearBit(j + 1), c++) {
             if (c == nth) {

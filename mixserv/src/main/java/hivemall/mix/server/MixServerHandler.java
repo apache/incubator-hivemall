@@ -90,7 +90,8 @@ public final class MixServerHandler extends SimpleChannelInboundHandler<MixMessa
     }
 
     @Nonnull
-    private PartialResult getPartialResult(@Nonnull MixMessage msg, @Nonnull SessionObject session) {
+    private PartialResult getPartialResult(@Nonnull MixMessage msg,
+            @Nonnull SessionObject session) {
         final ConcurrentMap<Object, PartialResult> map = session.get();
 
         Object feature = msg.getFeature();

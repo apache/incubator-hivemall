@@ -34,8 +34,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
-@Description(
-        name = "train_arow_regr",
+@Description(name = "train_arow_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                 + " - Returns a relation consists of <{int|bigint|string} feature, float weight, float covar>")
 public class AROWRegressionUDTF extends RegressionBaseUDTF {
@@ -142,8 +141,7 @@ public class AROWRegressionUDTF extends RegressionBaseUDTF {
         return new WeightValueWithCovar(new_w, new_cov);
     }
 
-    @Description(
-            name = "train_arowe_regr",
+    @Description(name = "train_arowe_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                     + " - Returns a relation consists of <{int|bigint|string} feature, float weight, float covar>")
     public static class AROWe extends AROWRegressionUDTF {
@@ -154,7 +152,8 @@ public class AROWRegressionUDTF extends RegressionBaseUDTF {
         @Override
         protected Options getOptions() {
             Options opts = super.getOptions();
-            opts.addOption("e", "epsilon", true, "Sensitivity to prediction mistakes [default 0.1]");
+            opts.addOption("e", "epsilon", true,
+                "Sensitivity to prediction mistakes [default 0.1]");
             return opts;
         }
 
@@ -200,8 +199,7 @@ public class AROWRegressionUDTF extends RegressionBaseUDTF {
         }
     }
 
-    @Description(
-            name = "train_arowe2_regr",
+    @Description(name = "train_arowe2_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                     + " - Returns a relation consists of <{int|bigint|string} feature, float weight, float covar>")
     public static class AROWe2 extends AROWe {

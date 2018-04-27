@@ -73,8 +73,8 @@ public final class DynamicByteArray {
 
     public byte get(final int index) {
         if (index >= length) {
-            throw new IndexOutOfBoundsException("Index " + index + " is outside of 0.."
-                    + (length - 1));
+            throw new IndexOutOfBoundsException(
+                "Index " + index + " is outside of 0.." + (length - 1));
         }
         int i = index / chunkSize;
         int j = index % chunkSize;
