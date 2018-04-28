@@ -18,18 +18,14 @@
  */
 package hivemall.docs;
 
-import hivemall.docs.utils.MarkdownUtils;
+import static hivemall.docs.utils.MarkdownUtils.asCodeBlock;
+import static hivemall.docs.utils.MarkdownUtils.asInlineCode;
+import static hivemall.docs.utils.MarkdownUtils.asListElement;
+import static hivemall.docs.utils.MarkdownUtils.indent;
+import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
+
 import hivemall.utils.lang.StringUtils;
 
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.reflections.Reflections;
-
-import javax.annotation.Nonnull;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,15 +35,23 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.LinkedHashMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
+import javax.annotation.Nonnull;
+
+import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.reflections.Reflections;
 
 /**
  * Generate a list of UDFs for documentation.
@@ -172,10 +176,10 @@ public class FuncsListGenerator extends AbstractMojo {
             String value = description.value().replaceAll("\n", " ");
             Matcher matcher = func.matcher(value);
             if (matcher.find()) {
-                value = MarkdownUtils.asInlineCode(description.name() + matcher.group(1))
+                value = asInlineCode(description.name() + matcher.group(1))
                         + escapeHtml(matcher.group(2));
             }
-            sb.append(MarkdownUtils.asListElement(value));
+            sb.append(asListElement(value));
 
             StringBuilder sbExtended = new StringBuilder();
             if (!description.extended().isEmpty()) {
@@ -184,14 +188,14 @@ public class FuncsListGenerator extends AbstractMojo {
             }
 
             String extended = sbExtended.toString();
-            if (!extended.isEmpty()) {
-                if (extended.toLowerCase().contains("select")) { // extended description contains SQL statements
-                    sb.append(MarkdownUtils.indent(MarkdownUtils.asCodeBlock(extended, "sql")));
-                } else {
-                    sb.append(MarkdownUtils.indent(MarkdownUtils.asCodeBlock(extended)));
-                }
-            } else {
+            if (extended.isEmpty()) {
                 sb.append("\n");
+            } else {
+                if (extended.toLowerCase().contains("select")) { // extended description contains SQL statements
+                    sb.append(indent(asCodeBlock(extended, "sql")));
+                } else {
+                    sb.append(indent(asCodeBlock(extended)));
+                }
             }
 
             String packageName = annotatedClass.getPackage().getName();
@@ -205,42 +209,41 @@ public class FuncsListGenerator extends AbstractMojo {
             StringUtils.clear(sb);
         }
 
-        PrintWriter writer;
-        try {
-            writer = new PrintWriter(outputFile);
+        try (PrintWriter writer = new PrintWriter(outputFile)) {
+            // license header
+            writer.println("<!--");
+            try {
+                File licenseFile = new File(basedir, "resources/license-header.txt");
+                FileReader fileReader = new FileReader(licenseFile);
+
+                try (BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        writer.println(indent(line));
+                    }
+                }
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to read license file");
+            }
+            writer.println("-->\n");
+
+            writer.println(preface);
+
+            writer.println("\n<!-- toc -->\n");
+
+            for (Map.Entry<String, List<String>> e : headers.entrySet()) {
+                writer.println(e.getKey() + "\n");
+                List<String> packageNames = e.getValue();
+                for (String packageName : packageNames) {
+                    for (String desc : packages.get(packageName)) {
+                        writer.println(desc);
+                    }
+                }
+            }
+
+            writer.flush();
         } catch (FileNotFoundException e) {
             throw new MojoExecutionException("Output file is not found");
         }
-
-        // license header
-        writer.println("<!--");
-        try {
-            File licenseFile = new File(basedir, "resources/license-header.txt");
-            FileReader fileReader = new FileReader(licenseFile);
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                writer.println(MarkdownUtils.indent(line));
-            }
-        } catch (IOException e) {
-            throw new MojoExecutionException("Failed to read license file");
-        }
-        writer.println("-->\n");
-
-        writer.println(preface);
-
-        writer.println("\n<!-- toc -->\n");
-
-        for (Map.Entry<String, List<String>> e : headers.entrySet()) {
-            writer.println(e.getKey() + "\n");
-            List<String> packageNames = e.getValue();
-            for (String packageName : packageNames) {
-                for (String desc : packages.get(packageName)) {
-                    writer.println(desc);
-                }
-            }
-        }
-
-        writer.close();
     }
 }
