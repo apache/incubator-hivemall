@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.statistics;
+package hivemall.tools.timeseries;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.stats.MovingAverage;
@@ -37,8 +37,18 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Writable;
 
-@Description(name = "moving_avg", value = "_FUNC_(NUMBER value, const int windowSize)"
-        + " - Returns moving average of a time series using a given window")
+@Description(name = "moving_avg",
+        value = "_FUNC_(NUMBER value, const int windowSize)"
+                + " - Returns moving average of a time series using a given window",
+        extended = "SELECT moving_avg(x, 3) FROM (SELECT explode(array(1.0,2.0,3.0,4.0,5.0,6.0,7.0)) as x) series;\n"
+                + "> avg\n" + 
+                "> 1.0\n" + 
+                "> 1.5\n" + 
+                "> 2.0\n" + 
+                "> 3.0\n" + 
+                "> 4.0\n" + 
+                "> 5.0\n" + 
+                "> 6.0")
 @UDFType(deterministic = false, stateful = true)
 public final class MovingAverageUDTF extends GenericUDTF {
 

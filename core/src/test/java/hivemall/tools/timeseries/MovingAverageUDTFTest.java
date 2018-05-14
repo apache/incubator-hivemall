@@ -16,9 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.statistics;
+package hivemall.tools.timeseries;
 
 import hivemall.TestUtils;
+import hivemall.tools.timeseries.MovingAverageUDTF;
 
 import java.util.ArrayList;
 import java.util.Arrays;
