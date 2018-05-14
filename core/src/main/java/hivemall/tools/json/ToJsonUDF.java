@@ -37,8 +37,80 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Text;
 
+// @formatter:off
 @Description(name = "to_json",
-        value = "_FUNC_(ANY object [, const array<string>|const string columnNames]) - Returns Json string")
+        value = "_FUNC_(ANY object [, const array<string>|const string columnNames]) - Returns Json string",
+        extended = "SELECT \n" +
+                "  NAMED_STRUCT(\"Name\", \"John\", \"age\", 31),\n" +
+                "  to_json(\n" +
+                "     NAMED_STRUCT(\"Name\", \"John\", \"age\", 31)\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "     NAMED_STRUCT(\"Name\", \"John\", \"age\", 31),\n" +
+                "     array('Name', 'age')\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "     NAMED_STRUCT(\"Name\", \"John\", \"age\", 31),\n" +
+                "     array('name', 'age')\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "     NAMED_STRUCT(\"Name\", \"John\", \"age\", 31),\n" +
+                "     array('age')\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "     NAMED_STRUCT(\"Name\", \"John\", \"age\", 31),\n" +
+                "     array()\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "     null,\n" +
+                "     array()\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "    struct(\"123\", \"456\", 789, array(314,007)),\n" +
+                "    array('ti','si','i','bi')\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "    struct(\"123\", \"456\", 789, array(314,007)),\n" +
+                "    'ti,si,i,bi'\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "    struct(\"123\", \"456\", 789, array(314,007))\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "    NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\")\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "    NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\"), \n" +
+                "    array('city')\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "    ARRAY(\n" +
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\"), \n" +
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" +
+                "    )\n" +
+                "  ),\n" +
+                "  to_json(\n" +
+                "    ARRAY(\n" +
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\"), \n" +
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" +
+                "    ),\n" +
+                "    array('city')\n" +
+                "  );\n" +
+                "> {\"name\":\"John\",\"age\":31} "
+                + "{\"name\":\"John\",\"age\":31} "
+                + "{\"Name\":\"John\",\"age\":31} "
+                + "{\"name\":\"John\",\"age\":31} "
+                + "{\"age\":31} "
+                + "{}"
+                + "NULL "
+                + "{\"ti\":\"123\",\"si\":\"456\",\"i\":789,\"bi\":[314,7]} "
+                + "{\"ti\":\"123\",\"si\":\"456\",\"i\":789,\"bi\":[314,7]} "
+                + "{\"col1\":\"123\",\"col2\":\"456\",\"col3\":789,\"col4\":[314,7]} "
+                + "{\"country\":\"japan\",\"city\":\"tokyo\"} "
+                + "{\"city\":\"tokyo\"} "
+                + "[{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}] "
+                + "[{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]")
+// @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ToJsonUDF extends GenericUDF {
 
