@@ -40,11 +40,49 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Writable;
 
+// @formatter:off
 @Description(name = "generate_series",
         value = "_FUNC_(const int|bigint start, const int|bigint end) - "
-                + "Generate a series of values, from start to end. A similar function to PostgreSQL's `generate_serics`. http://www.postgresql.org/docs/current/static/functions-srf.html",
-        extended = "select generate_series(1,9);\n\n" + "1\n" + "2\n" + "3\n" + "4\n" + "5\n"
-                + "6\n" + "7\n" + "8\n" + "9")
+                + "Generate a series of values, from start to end. " + 
+                "A similar function to PostgreSQL's [generate_serics](http://www.postgresql.org/docs/current/static/functions-srf.html)",
+        extended = "SELECT generate_series(2,4);\n" + 
+                "\n" + 
+                " 2\n" + 
+                " 3\n" + 
+                " 4\n" + 
+                "\n" + 
+                "SELECT generate_series(5,1,-2);\n" + 
+                "\n" + 
+                " 5\n" + 
+                " 3\n" + 
+                " 1\n" + 
+                "\n" + 
+                "SELECT generate_series(4,3);\n" + 
+                "\n" + 
+                "> (no return)\n" + 
+                "\n" + 
+                "SELECT date_add(current_date(),value),value from (SELECT generate_series(1,3)) t;\n" + 
+                "\n" + 
+                " 2018-04-21      1\n" + 
+                " 2018-04-22      2\n" + 
+                " 2018-04-23      3\n" + 
+                "\n" + 
+                "WITH input as (\n" + 
+                " SELECT 1 as c1, 10 as c2, 3 as step\n" + 
+                " UNION ALL\n" + 
+                " SELECT 10, 2, -3\n" + 
+                ")\n" + 
+                "SELECT generate_series(c1, c2, step) as series\n" + 
+                "FROM input;\n" + 
+                "\n" + 
+                " 1\n" + 
+                " 4\n" + 
+                " 7\n" + 
+                " 10\n" + 
+                " 10\n" + 
+                " 7\n" + 
+                " 4")
+// @formatter:on
 public final class GenerateSeriesUDTF extends GenericUDTF {
 
     private PrimitiveObjectInspector startOI, endOI;

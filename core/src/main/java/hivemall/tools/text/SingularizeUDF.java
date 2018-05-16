@@ -40,7 +40,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 //  https://github.com/clips/pattern/blob/3eef00481a4555331cf9a099308910d977f6fc22/pattern/text/en/inflect.py#L445-L623
 @Description(name = "singularize",
         value = "_FUNC_(string word) - Returns singular form of a given English word",
-        extended = "select singularize(lower(\"Apples\"));\n" + "\n" + "> \"apple\"")
+        extended = "SELECT singularize(lower(\"Apples\"));\n" + "\n" + " \"apple\"")
 @UDFType(deterministic = true, stateful = false)
 public final class SingularizeUDF extends UDF {
 

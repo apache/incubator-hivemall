@@ -29,11 +29,19 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
+//@formatter:off
 @Description(name = "sessionize",
         value = "_FUNC_(long timeInSec, long thresholdInSec [, String subject])"
                 + "- Returns a UUID string of a session.",
-        extended = "SELECT sessionize(time, 3600, ip_addr) as session_id, time, ip_addr FROM (\n"
-                + "SELECT time, ipaddr FROM weblog DISTRIBUTE BY ip_addr, time SORT BY ip_addr, time DESC\n) t1")
+        extended = "SELECT \n" + 
+                "  sessionize(time, 3600, ip_addr) as session_id, \n" + 
+                "  time, ip_addr\n" + 
+                "FROM (\n" + 
+                "  SELECT time, ipaddr \n" + 
+                "  FROM weblog \n" + 
+                "  DISTRIBUTE BY ip_addr, time SORT BY ip_addr, time DESC\n" + 
+                ") t1")
+//@formatter:on
 @UDFType(deterministic = false, stateful = true)
 public final class SessionizeUDF extends UDF {
 

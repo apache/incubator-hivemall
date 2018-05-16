@@ -55,9 +55,26 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInsp
  *    table_to_scan_once
  * </pre>
  */
+// @formatter:off
 @Description(name = "conditional_emit",
         value = "_FUNC_(array<boolean> conditions, array<primitive> features)"
-                + " - Emit features of a row according to various conditions")
+                + " - Emit features of a row according to various conditions",
+        extended = "WITH input as (\n" + 
+                "   select array(true, false, true) as conditions, array(\"one\", \"two\", \"three\") as features\n" + 
+                "   UNION ALL\n" + 
+                "   select array(true, true, false), array(\"four\", \"five\", \"six\")\n" + 
+                ")\n" + 
+                "SELECT\n" + 
+                "  conditional_emit(\n" + 
+                "     conditions, features\n" + 
+                "  )\n" + 
+                "FROM \n" + 
+                "  input;\n" +
+                " one\n" + 
+                " three\n" + 
+                " four\n" + 
+                " five")
+// @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ConditionalEmitUDTF extends GenericUDTF {
 

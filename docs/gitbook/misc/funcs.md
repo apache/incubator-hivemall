@@ -446,7 +446,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `hivemall_version()` - Returns the version of Hivemall
   ```sql
-  Usage: SELECT hivemall_version();
+  SELECT hivemall_version();
   ```
 
 - `lr_datagen(options string)` - Generates a logistic regression dataset

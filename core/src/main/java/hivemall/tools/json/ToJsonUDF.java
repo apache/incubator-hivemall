@@ -95,21 +95,21 @@ import org.apache.hadoop.io.Text;
                 "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" +
                 "    ),\n" +
                 "    array('city')\n" +
-                "  );\n" +
-                "> {\"name\":\"John\",\"age\":31} "
-                + "{\"name\":\"John\",\"age\":31} "
-                + "{\"Name\":\"John\",\"age\":31} "
-                + "{\"name\":\"John\",\"age\":31} "
-                + "{\"age\":31} "
-                + "{}"
-                + "NULL "
-                + "{\"ti\":\"123\",\"si\":\"456\",\"i\":789,\"bi\":[314,7]} "
-                + "{\"ti\":\"123\",\"si\":\"456\",\"i\":789,\"bi\":[314,7]} "
-                + "{\"col1\":\"123\",\"col2\":\"456\",\"col3\":789,\"col4\":[314,7]} "
-                + "{\"country\":\"japan\",\"city\":\"tokyo\"} "
-                + "{\"city\":\"tokyo\"} "
-                + "[{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}] "
-                + "[{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]")
+                "  );\n\n" +
+                " {\"name\":\"John\",\"age\":31}\n"
+                + " {\"name\":\"John\",\"age\":31}\n"
+                + " {\"Name\":\"John\",\"age\":31}\n"
+                + " {\"name\":\"John\",\"age\":31}\n"
+                + " {\"age\":31}\n"
+                + " {}\n"
+                + " NULL\n"
+                + " {\"ti\":\"123\",\"si\":\"456\",\"i\":789,\"bi\":[314,7]}\n"
+                + " {\"ti\":\"123\",\"si\":\"456\",\"i\":789,\"bi\":[314,7]}\n"
+                + " {\"col1\":\"123\",\"col2\":\"456\",\"col3\":789,\"col4\":[314,7]}\n"
+                + " {\"country\":\"japan\",\"city\":\"tokyo\"}\n"
+                + " {\"city\":\"tokyo\"}\n"
+                + " [{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]\n"
+                + " [{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]")
 // @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ToJsonUDF extends GenericUDF {

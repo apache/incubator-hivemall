@@ -42,8 +42,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "vector_dot",
-        value = "_FUNC_(array<NUMBER> x, array<NUMBER> y) - Performs vector dot product.",
-        extended = "_FUNC_(array<NUMBER> x, NUMBER y) - Performs vector multiplication")
+        value = "_FUNC_(array<NUMBER> x, array<NUMBER> y) - Performs vector dot product.")
 @UDFType(deterministic = true, stateful = false)
 public final class VectorDotUDF extends GenericUDF {
 

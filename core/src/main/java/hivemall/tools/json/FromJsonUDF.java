@@ -43,9 +43,45 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hive.hcatalog.data.HCatRecordObjectInspectorFactory;
 
+// @formatter:off
 @Description(name = "from_json",
         value = "_FUNC_(string jsonString, const string returnTypes [, const array<string>|const string columnNames])"
-                + " - Return Hive object.")
+                + " - Return Hive object.",
+        extended = "SELECT\n" + 
+                "  from_json(\n" + 
+                "    '{ \"person\" : { \"name\" : \"makoto\" , \"age\" : 37 } }',\n" + 
+                "    'struct<name:string,age:int>', \n" + 
+                "    array('person')\n" + 
+                "  ),\n" + 
+                "  from_json(\n" + 
+                "    '[0.1,1.1,2.2]',\n" + 
+                "    'array<double>'\n" + 
+                "  ),\n" + 
+                "  from_json(to_json(\n" + 
+                "    ARRAY(\n" + 
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\"), \n" + 
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" + 
+                "    )\n" + 
+                "  ),'array<struct<country:string,city:string>>'),\n" + 
+                "  from_json(to_json(\n" + 
+                "    ARRAY(\n" + 
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\"), \n" + 
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" + 
+                "    ),\n" + 
+                "    array('city')\n" + 
+                "  ), 'array<struct<country:string,city:string>>'),\n" + 
+                "  from_json(to_json(\n" + 
+                "    ARRAY(\n" + 
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\"), \n" + 
+                "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" + 
+                "    )\n" + 
+                "  ),'array<struct<city:string>>');\n\n" +
+                " {\"name\":\"makoto\",\"age\":37}\n" + 
+                " [0.1,1.1,2.2]\n" + 
+                " [{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]\n" + 
+                " [{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]\n" + 
+                " [{\"city\":\"tokyo\"},{\"city\":\"osaka\"}]")
+//@formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class FromJsonUDF extends GenericUDF {
 

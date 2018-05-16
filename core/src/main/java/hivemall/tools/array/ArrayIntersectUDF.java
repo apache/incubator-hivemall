@@ -41,7 +41,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 
 @Description(name = "array_intersect",
         value = "_FUNC_(array<ANY> x1, array<ANY> x2, ..) - Returns an intersect of given arrays",
-        extended = "select array_intersect(array(1,3,4),array(2,3,4),array(3,5));\n" + "> [3]")
+        extended = "SELECT array_intersect(array(1,3,4),array(2,3,4),array(3,5));\n" + " [3]")
 @UDFType(deterministic = true, stateful = false)
 public final class ArrayIntersectUDF extends GenericUDF {
 

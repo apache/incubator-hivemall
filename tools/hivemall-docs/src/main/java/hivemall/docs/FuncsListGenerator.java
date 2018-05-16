@@ -78,17 +78,22 @@ public class FuncsListGenerator extends AbstractMojo {
     static {
         genericFuncsHeaders.put("# Array",
             Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
-        genericFuncsHeaders.put("# Map", Collections.singletonList("hivemall.tools.map"));
         genericFuncsHeaders.put("# Bitset", Collections.singletonList("hivemall.tools.bits"));
         genericFuncsHeaders.put("# Compression",
             Collections.singletonList("hivemall.tools.compress"));
+        genericFuncsHeaders.put("# Datetime", Collections.singletonList("hivemall.tools.datetime"));
+        genericFuncsHeaders.put("# JSON", Collections.singletonList("hivemall.tools.json"));
+        genericFuncsHeaders.put("# Map", Collections.singletonList("hivemall.tools.map"));
         genericFuncsHeaders.put("# MapReduce", Collections.singletonList("hivemall.tools.mapred"));
         genericFuncsHeaders.put("# Math", Collections.singletonList("hivemall.tools.math"));
         genericFuncsHeaders.put("# Matrix", Collections.singletonList("hivemall.tools.matrix"));
+        genericFuncsHeaders.put("# Sanity Checks",
+            Collections.singletonList("hivemall.tools.sanity"));
         genericFuncsHeaders.put("# Text processing",
             Collections.singletonList("hivemall.tools.text"));
         genericFuncsHeaders.put("# Timeseries",
             Collections.singletonList("hivemall.tools.timeseries"));
+        genericFuncsHeaders.put("# Vector", Collections.singletonList("hivemall.tools.vector"));
         genericFuncsHeaders.put("# Others", Collections.singletonList("hivemall.tools"));
     }
 
