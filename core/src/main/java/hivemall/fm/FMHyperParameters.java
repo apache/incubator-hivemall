@@ -92,7 +92,7 @@ class FMHyperParameters {
         this.factors = Primitives.parseInt(cl.getOptionValue("factors"), factors);
         this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), lambda);
         this.lambdaW0 = Primitives.parseFloat(cl.getOptionValue("lambda_w0"), lambda);
-        this.lambdaW = Primitives.parseFloat(cl.getOptionValue("lambda_w"), lambda);
+        this.lambdaW = Primitives.parseFloat(cl.getOptionValue("lambda_wi"), lambda);
         this.lambdaV = Primitives.parseFloat(cl.getOptionValue("lambda_v"), lambda);
         this.sigma = Primitives.parseDouble(cl.getOptionValue("sigma"), sigma);
         this.seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
