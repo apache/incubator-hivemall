@@ -134,7 +134,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         opts.addOption("max", "max_target", true, "The maximum value of target variable");
         // learning rates
         opts.addOption("eta", true, "The initial learning rate");
-        opts.addOption("eta0", true, "The initial learning rate [default 0.05]");
+        opts.addOption("eta0", true,
+            "The initial learning rate [default " + FMHyperParameters.DEFAULT_ETA0 + "]");
         opts.addOption("t", "total_steps", true, "The total number of training examples");
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");

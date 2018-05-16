@@ -28,7 +28,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 
 class FMHyperParameters {
-    private static final float DEFAULT_ETA0 = 0.05f;
+    protected static final float DEFAULT_ETA0 = 0.05f;
 
     // -------------------------------------
     // Model parameters

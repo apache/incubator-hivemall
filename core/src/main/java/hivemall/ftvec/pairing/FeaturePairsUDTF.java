@@ -69,7 +69,8 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
         opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31]. [default: -1] No feature hashing for -1.");
-        opts.addOption("num_fields", true, "The number of fields [default:1024]");
+        opts.addOption("num_fields", true,
+            "The number of fields [default: " + Feature.DEFAULT_NUM_FIELDS + "]");
         return opts;
     }
 
