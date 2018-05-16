@@ -55,5 +55,5 @@ $ ./bin/update_ddls.sh
 Note that, before creating a pull request including Java code, please make sure your code follows our coding conventions by applying formatter:
 
 ```
-$ mvn spotless:apply
+$ ./bin/format_code.sh
 ```
