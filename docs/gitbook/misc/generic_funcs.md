@@ -325,19 +325,19 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
     );
 
    {"name":"John","age":31}
-  {"name":"John","age":31}
-  {"Name":"John","age":31}
-  {"name":"John","age":31}
-  {"age":31}
-  {}
-  NULL
-  {"ti":"123","si":"456","i":789,"bi":[314,7]}
-  {"ti":"123","si":"456","i":789,"bi":[314,7]}
-  {"col1":"123","col2":"456","col3":789,"col4":[314,7]}
-  {"country":"japan","city":"tokyo"}
-  {"city":"tokyo"}
-  [{"country":"japan","city":"tokyo"},{"country":"japan","city":"osaka"}]
-  [{"country":"japan","city":"tokyo"},{"country":"japan","city":"osaka"}]
+   {"name":"John","age":31}
+   {"Name":"John","age":31}
+   {"name":"John","age":31}
+   {"age":31}
+   {}
+   NULL
+   {"ti":"123","si":"456","i":789,"bi":[314,7]}
+   {"ti":"123","si":"456","i":789,"bi":[314,7]}
+   {"col1":"123","col2":"456","col3":789,"col4":[314,7]}
+   {"country":"japan","city":"tokyo"}
+   {"city":"tokyo"}
+   [{"country":"japan","city":"tokyo"},{"country":"japan","city":"osaka"}]
+   [{"country":"japan","city":"tokyo"},{"country":"japan","city":"osaka"}]
   ```
 
 # Map
@@ -504,7 +504,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
   > (no return)
 
-  SELECT date_add(current_date(),value) as `date`,value from (SELECT generate_series(1,3)) t;
+  SELECT date_add(current_date(),value),value from (SELECT generate_series(1,3)) t;
 
    2018-04-21      1
    2018-04-22      2
