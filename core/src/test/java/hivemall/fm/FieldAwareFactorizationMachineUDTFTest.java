@@ -91,12 +91,12 @@ public class FieldAwareFactorizationMachineUDTFTest {
             "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43", 0.01f);
     }
 
-    // TODO @Test
+    @Test
     public void testSampleEnableNorm() throws IOException, HiveException {
         System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -enable_norm",
+            "-classification -factors 2 -iters 10 -alphaFTRL 10.0 -feature_hashing 20 -seed 43 -enable_norm",
             0.01f);
     }
 
