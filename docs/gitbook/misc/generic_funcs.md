@@ -257,7 +257,9 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
         NAMED_STRUCT("country", "japan", "city", "osaka")
       )
     ),'array<struct<city:string>>');
+  ```
 
+  ```
    {"name":"makoto","age":37}
    [0.1,1.1,2.2]
    [{"country":"japan","city":"tokyo"},{"country":"japan","city":"osaka"}]
@@ -323,7 +325,9 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
       ),
       array('city')
     );
+  ```
 
+  ```
    {"name":"John","age":31}
    {"name":"John","age":31}
    {"Name":"John","age":31}
@@ -502,7 +506,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
   SELECT generate_series(4,3);
 
-  > (no return)
+   (no return)
 
   SELECT date_add(current_date(),value),value from (SELECT generate_series(1,3)) t;
 

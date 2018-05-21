@@ -95,7 +95,9 @@ import org.apache.hadoop.io.Text;
                 "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" +
                 "    ),\n" +
                 "    array('city')\n" +
-                "  );\n\n" +
+                "  );\n" +
+                "```\n\n" +
+                "```\n" +
                 " {\"name\":\"John\",\"age\":31}\n"
                 + " {\"name\":\"John\",\"age\":31}\n"
                 + " {\"Name\":\"John\",\"age\":31}\n"

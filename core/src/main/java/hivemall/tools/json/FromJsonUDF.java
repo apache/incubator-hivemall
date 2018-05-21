@@ -75,7 +75,9 @@ import org.apache.hive.hcatalog.data.HCatRecordObjectInspectorFactory;
                 "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"tokyo\"), \n" + 
                 "      NAMED_STRUCT(\"country\", \"japan\", \"city\", \"osaka\")\n" + 
                 "    )\n" + 
-                "  ),'array<struct<city:string>>');\n\n" +
+                "  ),'array<struct<city:string>>');\n"
+                + "```\n\n" +
+                "```\n" +
                 " {\"name\":\"makoto\",\"age\":37}\n" + 
                 " [0.1,1.1,2.2]\n" + 
                 " [{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]\n" + 

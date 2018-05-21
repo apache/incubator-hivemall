@@ -59,7 +59,7 @@ import org.apache.hadoop.io.Writable;
                 "\n" + 
                 "SELECT generate_series(4,3);\n" + 
                 "\n" + 
-                "> (no return)\n" + 
+                " (no return)\n" + 
                 "\n" + 
                 "SELECT date_add(current_date(),value),value from (SELECT generate_series(1,3)) t;\n" + 
                 "\n" + 
