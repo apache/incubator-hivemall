@@ -304,7 +304,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             final long offset = e.getLongValue();
             if (Entry.isEntryW(i)) {// set Wi
                 entryW.setOffset(offset);
-                float w = entryV.getW();
+                float w = entryW.getW();
                 if (w == 0.f) {
                     continue; // skip w_i=0
                 }
