@@ -36,7 +36,6 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
 
     @Nonnull
     protected final FFMHyperParameters _params;
-    protected final float _eta0;
     protected final float _eps;
 
     protected final boolean _useAdaGrad;
@@ -51,11 +50,6 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     public FieldAwareFactorizationMachineModel(@Nonnull FFMHyperParameters params) {
         super(params);
         this._params = params;
-        if (params.useAdaGrad) {
-            this._eta0 = 1.0f;
-        } else {
-            this._eta0 = params.eta.eta0();
-        }
         this._eps = params.eps;
         this._useAdaGrad = params.useAdaGrad;
         this._useFTRL = params.useFTRL;
@@ -263,7 +257,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         if (_useAdaGrad) {
             theta.addGradient(f, grad);
             double gg = theta.getSumOfSquaredGradients(f);
-            return (float) (_eta0 / Math.sqrt(_eps + gg));
+            return (float) (_eta.eta(t) / Math.sqrt(_eps + gg));
         } else {
             return _eta.eta(t);
         }
