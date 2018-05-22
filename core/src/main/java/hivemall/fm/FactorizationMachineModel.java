@@ -399,9 +399,8 @@ public abstract class FactorizationMachineModel {
     protected static final void uniformFill(final float[] a, final Random rand,
             final float maxInitValue) {
         final int len = a.length;
-        final float basev = maxInitValue / len;
         for (int i = 0; i < len; i++) {
-            float v = rand.nextFloat() * basev;
+            float v = rand.nextFloat() * maxInitValue;
             a[i] = v;
         }
     }
