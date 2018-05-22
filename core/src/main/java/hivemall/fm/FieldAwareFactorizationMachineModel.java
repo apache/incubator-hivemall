@@ -42,7 +42,7 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     protected final boolean _useAdaGrad;
     protected final boolean _useFTRL;
 
-    // FTEL
+    // FTRL
     private final float _alpha;
     private final float _beta;
     private final float _lambda1;
