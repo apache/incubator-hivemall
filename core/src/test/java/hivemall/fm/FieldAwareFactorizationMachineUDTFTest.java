@@ -53,31 +53,31 @@ public class FieldAwareFactorizationMachineUDTFTest {
     @Test
     public void testSGD() throws HiveException, IOException {
         runIterations("Pure SGD test", "bigdata.tr.txt.gz",
-            "-opt sgd -linear_term -classification -factors 10 -w0 -seed 43", 0.60f);
+            "-opt sgd -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm", 0.60f);
     }
 
     @Test
     public void testAdaGrad() throws HiveException, IOException {
         runIterations("AdaGrad test", "bigdata.tr.txt.gz",
-            "-opt adagrad -eta 1.0 -linear_term -classification -factors 10 -w0 -seed 43", 0.30f);
+            "-opt adagrad -eta 1.0 -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
     }
 
     @Test
     public void testAdaGradNoCoeff() throws HiveException, IOException {
         runIterations("AdaGrad No Coeff test", "bigdata.tr.txt.gz",
-            "-opt adagrad -eta 1.0 -classification -factors 10 -w0 -seed 43", 0.30f);
+            "-opt adagrad -eta 1.0 -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
     }
 
     @Test
     public void testFTRL() throws HiveException, IOException {
         runIterations("FTRL test", "bigdata.tr.txt.gz",
-            "-opt ftrl -linear_term -classification -factors 10 -w0 -seed 43", 0.30f);
+            "-opt ftrl -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
     }
 
     @Test
     public void testFTRLNoCoeff() throws HiveException, IOException {
         runIterations("FTRL Coeff test", "bigdata.tr.txt.gz",
-            "-opt ftrl -classification -factors 10 -w0 -seed 43", 0.30f);
+            "-opt ftrl -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
     }
 
     // ----------------------------------------------------
@@ -88,7 +88,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
         System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-linear_term -classification -factors 2 -iters 10 -feature_hashing 20 -seed 43", 0.01f);
+            "-linear_term -classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -disable_norm", 0.01f);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
         System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-linear_term -classification -factors 2 -iters 10 -alphaFTRL 10.0 -feature_hashing 20 -seed 43 -enable_norm",
+            "-linear_term -classification -factors 2 -iters 10 -alphaFTRL 10.0 -feature_hashing 20 -seed 43",
             0.01f);
     }
 
@@ -232,7 +232,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-opt sgd -linear_term -classification -factors 10 -w0 -seed 43")},
+                        "-opt sgd -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm")},
             new Object[][] {{Arrays.asList("0:1:-2", "1:2:-1"), 1.0}});
     }
 

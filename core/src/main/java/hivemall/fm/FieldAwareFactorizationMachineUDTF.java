@@ -87,6 +87,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             "Whether to include global bias term w0 [default: OFF]");
         opts.addOption("enable_wi", "linear_term", false,
             "Include linear term [default: OFF]");
+        opts.addOption("no_norm", "disable_norm", false, "Disable instance-wise L2 normalization");
         // feature hashing
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default: -1]. No feature hashing for -1.");

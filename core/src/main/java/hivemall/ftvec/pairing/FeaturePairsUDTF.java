@@ -72,7 +72,7 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
             "The number of bits for feature hashing in range [18,31]. [default: -1] No feature hashing for -1.");
         opts.addOption("num_fields", true,
             "The number of fields [default: " + Feature.DEFAULT_NUM_FIELDS + "]");
-        opts.addOption("enable_norm", "l2norm", false, "Enable instance-wise L2 normalization");
+        opts.addOption("no_norm", "disable_norm", false, "Disable instance-wise L2 normalization");
         return opts;
     }
 
@@ -107,7 +107,7 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                     throw new UDFArgumentException(
                         "-num_fields MUST be greater than 1: " + _numFields);
                 }
-                this._l2norm = cl.hasOption("enable_norm");
+                this._l2norm = !cl.hasOption("disable_norm");
             } else {
                 throw new UDFArgumentException("Unsupported option: " + cl.getArgList().get(0));
             }

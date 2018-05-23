@@ -172,6 +172,12 @@ class FMHyperParameters {
             this.globalBias = cl.hasOption("global_bias");
             this.linearCoeff = cl.hasOption("linear_term");
 
+            if (cl.hasOption("enable_norm") && cl.hasOption("disable_norm")) {
+                throw new UDFArgumentException(
+                        "-enable_norm and -disable_norm MUST NOT be used simultaneously");
+            }
+            this.l2norm = !cl.hasOption("disable_norm");
+
             // feature hashing
             if (numFeatures == -1) {
                 int hashbits = Primitives.parseInt(cl.getOptionValue("feature_hashing"), -1);
