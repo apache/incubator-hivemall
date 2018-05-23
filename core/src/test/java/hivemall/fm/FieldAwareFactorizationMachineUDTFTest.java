@@ -59,13 +59,13 @@ public class FieldAwareFactorizationMachineUDTFTest {
     @Test
     public void testAdaGrad() throws HiveException, IOException {
         runIterations("AdaGrad test", "bigdata.tr.txt.gz",
-            "-opt adagrad -linear_term -classification -factors 10 -w0 -seed 43", 0.30f);
+            "-opt adagrad -eta 1.0 -linear_term -classification -factors 10 -w0 -seed 43", 0.30f);
     }
 
     @Test
     public void testAdaGradNoCoeff() throws HiveException, IOException {
         runIterations("AdaGrad No Coeff test", "bigdata.tr.txt.gz",
-            "-opt adagrad -classification -factors 10 -w0 -seed 43", 0.30f);
+            "-opt adagrad -eta 1.0 -classification -factors 10 -w0 -seed 43", 0.30f);
     }
 
     @Test
