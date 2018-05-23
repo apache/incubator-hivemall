@@ -170,7 +170,7 @@ class FMHyperParameters {
             }
 
             this.globalBias = cl.hasOption("global_bias");
-            this.linearCoeff = !cl.hasOption("no_coeff");
+            this.linearCoeff = cl.hasOption("linear_term");
 
             // feature hashing
             if (numFeatures == -1) {

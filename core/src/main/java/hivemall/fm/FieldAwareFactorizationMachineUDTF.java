@@ -85,8 +85,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         Options opts = super.getOptions();
         opts.addOption("w0", "global_bias", false,
             "Whether to include global bias term w0 [default: OFF]");
-        opts.addOption("disable_wi", "no_coeff", false,
-            "Not to include linear term [default: OFF]");
+        opts.addOption("enable_wi", "linear_term", false,
+            "Include linear term [default: OFF]");
         // feature hashing
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default: -1]. No feature hashing for -1.");
