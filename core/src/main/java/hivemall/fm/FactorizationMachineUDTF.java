@@ -122,13 +122,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         opts.addOption("f", "factors", true, "The number of the latent variables [default: 5]");
         opts.addOption("sigma", true, "The standard deviation for initializing V [default: 0.1]");
         opts.addOption("lambda0", "lambda", true,
-            "The initial lambda value for regularization [default: 0.01]");
+            "The initial lambda value for regularization [default: 0.0001]");
         opts.addOption("lambdaW0", "lambda_w0", true,
-            "The initial lambda value for W0 regularization [default: 0.01]");
+            "The initial lambda value for W0 regularization [default: 0.0001]");
         opts.addOption("lambdaWi", "lambda_wi", true,
-            "The initial lambda value for Wi regularization [default: 0.01]");
+            "The initial lambda value for Wi regularization [default: 0.0001]");
         opts.addOption("lambdaV", "lambda_v", true,
-            "The initial lambda value for V regularization [default: 0.01]");
+            "The initial lambda value for V regularization [default: 0.0001]");
         // regression
         opts.addOption("min", "min_target", true, "The minimum value of target variable");
         opts.addOption("max", "max_target", true, "The maximum value of target variable");
