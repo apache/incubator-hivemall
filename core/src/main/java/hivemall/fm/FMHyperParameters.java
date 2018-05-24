@@ -62,7 +62,7 @@ class FMHyperParameters {
 
     boolean l2norm; // enable by default for FFM. disabled by default for FM.
 
-    int iters = 1;
+    int iters = 10;
     boolean conversionCheck = true;
     double convergenceRate = 0.005d;
 
