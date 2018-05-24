@@ -44,59 +44,57 @@ import org.junit.Test;
 public class FieldAwareFactorizationMachineUDTFTest {
 
     private static final boolean DEBUG = false;
-    private static final int ITERATIONS = 50;
-    private static final int MAX_LINES = 200;
 
     // ----------------------------------------------------
     // bigdata.tr.txt
 
     @Test
     public void testSGD() throws HiveException, IOException {
-        runIterations("Pure SGD test", "bigdata.tr.txt.gz",
-            "-opt sgd -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm", 0.60f);
+        run("Pure SGD test", "bigdata.tr.txt.gz",
+            "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 20 -seed 43", 0.30f);
     }
 
     @Test
     public void testAdaGrad() throws HiveException, IOException {
-        runIterations("AdaGrad test", "bigdata.tr.txt.gz",
-            "-opt adagrad -eta 1.0 -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
+        run("AdaGrad test", "bigdata.tr.txt.gz",
+            "-opt adagrad -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 30 -seed 43", 0.30f);
     }
 
     @Test
     public void testAdaGradNoCoeff() throws HiveException, IOException {
-        runIterations("AdaGrad No Coeff test", "bigdata.tr.txt.gz",
-            "-opt adagrad -eta 1.0 -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
+        run("AdaGrad No Coeff test", "bigdata.tr.txt.gz",
+            "-opt adagrad -classification -factors 10 -w0 -eta 0.4 -iters 30 -seed 43", 0.30f);
     }
 
     @Test
     public void testFTRL() throws HiveException, IOException {
-        runIterations("FTRL test", "bigdata.tr.txt.gz",
-            "-opt ftrl -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
+        run("FTRL test", "bigdata.tr.txt.gz",
+            "-opt ftrl -linear_term -classification -factors 10 -w0 -alphaFTRL 10.0 -seed 43", 0.30f);
     }
 
     @Test
     public void testFTRLNoCoeff() throws HiveException, IOException {
-        runIterations("FTRL Coeff test", "bigdata.tr.txt.gz",
-            "-opt ftrl -classification -factors 10 -w0 -seed 43 -disable_norm", 0.30f);
+        run("FTRL Coeff test", "bigdata.tr.txt.gz",
+            "-opt ftrl -classification -factors 10 -w0 -alphaFTRL 10.0 -seed 43", 0.30f);
     }
 
     // ----------------------------------------------------
     // https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz
 
     @Test
+    public void testSampleDisableNorm() throws IOException, HiveException {
+        System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
+        run("[Sample.ffm] default option",
+            "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
+            "-disable_norm -linear_term -classification -factors 2 -feature_hashing 20 -seed 43", 0.01f);
+    }
+
+    @Test
     public void testSample() throws IOException, HiveException {
         System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-linear_term -classification -factors 2 -iters 10 -feature_hashing 20 -seed 43 -disable_norm", 0.01f);
-    }
-
-    @Test
-    public void testSampleEnableNorm() throws IOException, HiveException {
-        System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
-        run("[Sample.ffm] default option",
-            "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-linear_term -classification -factors 2 -iters 10 -alphaFTRL 10.0 -feature_hashing 20 -seed 43",
+            "-linear_term -classification -factors 2 -alphaFTRL 10.0 -feature_hashing 20 -seed 43",
             0.01f);
     }
 
@@ -161,68 +159,6 @@ public class FieldAwareFactorizationMachineUDTFTest {
             avgLoss < lossThreshold);
     }
 
-    private static void runIterations(String testName, String testFile, String testOptions,
-            float lossThreshold) throws IOException, HiveException {
-        println(testName);
-
-        FieldAwareFactorizationMachineUDTF udtf = new FieldAwareFactorizationMachineUDTF();
-        ObjectInspector[] argOIs =
-                new ObjectInspector[] {
-                        ObjectInspectorFactory.getStandardListObjectInspector(
-                            PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                        ObjectInspectorUtils.getConstantObjectInspector(
-                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                            testOptions)};
-
-        udtf.initialize(argOIs);
-        FieldAwareFactorizationMachineModel model = udtf.initModel(udtf._params);
-        Assert.assertTrue("Actual class: " + model.getClass().getName(),
-            model instanceof FFMStringFeatureMapModel);
-
-        double loss = 0.d;
-        double cumul = 0.d;
-        for (int trainingIteration = 1; trainingIteration <= ITERATIONS; ++trainingIteration) {
-            BufferedReader data = readFile(testFile);
-            loss = udtf._cvState.getCumulativeLoss();
-            int lines = 0;
-            for (int lineNumber = 0; lineNumber < MAX_LINES; ++lineNumber, ++lines) {
-                //gather features in current line
-                final String input = data.readLine();
-                if (input == null) {
-                    break;
-                }
-                String[] featureStrings = input.split(" ");
-
-                double y = Double.parseDouble(featureStrings[0]);
-                if (y == 0) {
-                    y = -1;//LibFFM data uses {0, 1}; Hivemall uses {-1, 1}
-                }
-
-                final List<String> features = new ArrayList<String>(featureStrings.length - 1);
-                for (int j = 1; j < featureStrings.length; ++j) {
-                    String fj = featureStrings[j];
-                    String[] splitted = fj.split(":");
-                    Assert.assertEquals(3, splitted.length);
-                    String indexStr = splitted[1];
-                    String f = fj;
-                    if (NumberUtils.isDigits(indexStr)) {
-                        int index = Integer.parseInt(indexStr) + 1; // avoid 0 index
-                        f = splitted[0] + ':' + index + ':' + splitted[2];
-                    }
-                    features.add(f);
-                }
-                udtf.process(new Object[] {features, y});
-            }
-            cumul = udtf._cvState.getCumulativeLoss();
-            loss = (cumul - loss) / lines;
-            println(trainingIteration + " " + loss + " " + cumul / (trainingIteration * lines));
-            data.close();
-        }
-        println("model size=" + udtf._model.getSize());
-        Assert.assertTrue("Last loss was greater than expected: " + loss, loss < lossThreshold);
-    }
-
     @Test
     public void testSerialization() throws HiveException {
         TestUtils.testGenericUDTFSerialization(FieldAwareFactorizationMachineUDTF.class,
@@ -232,7 +168,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-opt sgd -linear_term -classification -factors 10 -w0 -seed 43 -disable_norm")},
+                        "-seed 43")},
             new Object[][] {{Arrays.asList("0:1:-2", "1:2:-1"), 1.0}});
     }
 
