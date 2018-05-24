@@ -726,3 +726,30 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION train_slim AS 'hivemall.recommend.Slim
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS approx_count_distinct")
 sqlContext.sql("CREATE TEMPORARY FUNCTION approx_count_distinct AS 'hivemall.sketch.hll.ApproxCountDistinctUDAF'")
 
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS try_cast")
+sqlContext.sql("CREATE TEMPORARY FUNCTION try_cast AS 'hivemall.tools.TryCastUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_append")
+sqlContext.sql("CREATE TEMPORARY FUNCTION array_append AS 'hivemall.tools.array.ArrayAppendUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS element_at")
+sqlContext.sql("CREATE TEMPORARY FUNCTION element_at AS 'hivemall.tools.array.ArrayElementAtUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_union")
+sqlContext.sql("CREATE TEMPORARY FUNCTION array_union AS 'hivemall.tools.array.ArrayUnionUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS first_element")
+sqlContext.sql("CREATE TEMPORARY FUNCTION first_element AS 'hivemall.tools.array.FirstElementUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS last_element")
+sqlContext.sql("CREATE TEMPORARY FUNCTION last_element AS 'hivemall.tools.array.LastElementUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_flatten")
+sqlContext.sql("CREATE TEMPORARY FUNCTION array_flatten AS 'hivemall.tools.array.ArrayFlattenUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_include_keys")
+sqlContext.sql("CREATE TEMPORARY FUNCTION map_include_keys AS 'hivemall.tools.map.MapIncludeKeysUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_exclude_keys")
+sqlContext.sql("CREATE TEMPORARY FUNCTION map_exclude_keys AS 'hivemall.tools.map.MapExcludeKeysUDF'")

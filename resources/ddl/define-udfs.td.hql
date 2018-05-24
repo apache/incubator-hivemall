@@ -200,3 +200,21 @@ create temporary function subarray as 'hivemall.tools.array.ArraySliceUDF';
 
 -- alias for TD
 create temporary function approx_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF';
+
+create temporary function try_cast as 'hivemall.tools.TryCastUDF';
+
+create temporary function array_append as 'hivemall.tools.array.ArrayAppendUDF';
+
+create temporary function element_at as 'hivemall.tools.array.ArrayElementAtUDF';
+
+create temporary function array_union as 'hivemall.tools.array.ArrayUnionUDF';
+
+create temporary function first_element as 'hivemall.tools.array.FirstElementUDF';
+
+create temporary function last_element as 'hivemall.tools.array.LastElementUDF';
+
+create temporary function array_flatten as 'hivemall.tools.array.ArrayFlattenUDF';
+
+create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF';
+
+create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';

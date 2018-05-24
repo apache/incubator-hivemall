@@ -39,7 +39,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 
 @Description(name = "array_append",
-        value = "_FUNC_(array<T> arr, T elem) - Append an element to the end of an array")
+        value = "_FUNC_(array<T> arr, T elem) - Append an element to the end of an array",
+        extended = "SELECT array_append(array(1,2),3);\n 1,2,3\n\n"
+                + "SELECT array_append(array('a','b'),'c');\n \"a\",\"b\",\"c\"")
 @UDFType(deterministic = true, stateful = false)
 public final class ArrayAppendUDF extends GenericUDF {
 

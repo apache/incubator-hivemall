@@ -95,11 +95,11 @@ public class ArrayConcatUDF extends GenericUDF {
                 continue;
             }
 
-            final ListObjectInspector arrayOI = (ListObjectInspector) argumentOIs[i];
+            final ListObjectInspector arrayOI = argumentOIs[i];
+            final ObjectInspector elemOI = arrayOI.getListElementObjectInspector();
             final int arraylength = arrayOI.getListLength(arrayObject);
             for (int j = 0; j < arraylength; j++) {
                 Object rawObj = arrayOI.getListElement(arrayObject, j);
-                ObjectInspector elemOI = arrayOI.getListElementObjectInspector();
                 Object obj = ObjectInspectorUtils.copyToStandardObject(rawObj, elemOI,
                     ObjectInspectorCopyOption.WRITABLE);
                 ret.add(obj);

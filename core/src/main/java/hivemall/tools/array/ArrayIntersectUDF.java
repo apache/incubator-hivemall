@@ -88,7 +88,7 @@ public final class ArrayIntersectUDF extends GenericUDF {
             return Collections.emptyList();
         }
 
-        Set<InspectableObject> checkSet = new HashSet<ArrayIntersectUDF.InspectableObject>();
+        Set<InspectableObject> checkSet = new HashSet<InspectableObject>();
         final ListObjectInspector arg0ListOI = argListOIs[0];
         final ObjectInspector arg0ElemOI = arg0ListOI.getListElementObjectInspector();
         final int arg0size = arg0ListOI.getListLength(arg0);
@@ -106,8 +106,7 @@ public final class ArrayIntersectUDF extends GenericUDF {
             if (argI == null) {
                 continue;
             }
-            final Set<InspectableObject> newSet =
-                    new HashSet<ArrayIntersectUDF.InspectableObject>();
+            final Set<InspectableObject> newSet = new HashSet<InspectableObject>();
             final ListObjectInspector argIListOI = argListOIs[i];
             final ObjectInspector argIElemOI = argIListOI.getListElementObjectInspector();
             for (int j = 0, j_size = argIListOI.getListLength(argI); j < j_size; j++) {

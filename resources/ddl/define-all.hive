@@ -773,3 +773,30 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
+
+drop temporary function if exists try_cast;
+create temporary function try_cast as 'hivemall.tools.TryCastUDF';
+
+drop temporary function if exists array_append;
+create temporary function array_append as 'hivemall.tools.array.ArrayAppendUDF';
+
+drop temporary function if exists element_at;
+create temporary function element_at as 'hivemall.tools.array.ArrayElementAtUDF';
+
+drop temporary function if exists array_union;
+create temporary function array_union as 'hivemall.tools.array.ArrayUnionUDF';
+
+drop temporary function if exists first_element;
+create temporary function first_element as 'hivemall.tools.array.FirstElementUDF';
+
+drop temporary function if exists last_element;
+create temporary function last_element as 'hivemall.tools.array.LastElementUDF';
+
+drop temporary function if exists array_flatten;
+create temporary function array_flatten as 'hivemall.tools.array.ArrayFlattenUDF';
+
+drop temporary function if exists map_include_keys;
+create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF';
+
+drop temporary function if exists map_exclude_keys;
+create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';

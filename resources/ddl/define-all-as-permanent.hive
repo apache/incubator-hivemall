@@ -767,3 +767,30 @@ CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.tools.XGBoostPredictUDTF' U
 
 DROP FUNCTION xgboost_multiclass_predict;
 CREATE FUNCTION xgboost_multiclass_predict AS 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS try_cast;
+CREATE FUNCTION try_cast as 'hivemall.tools.TryCastUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS array_append;
+CREATE FUNCTION array_append as 'hivemall.tools.array.ArrayAppendUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS element_at;
+CREATE FUNCTION element_at as 'hivemall.tools.array.ArrayElementAtUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS array_union;
+CREATE FUNCTION array_union as 'hivemall.tools.array.ArrayUnionUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS first_element;
+CREATE FUNCTION first_element as 'hivemall.tools.array.FirstElementUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS last_element;
+CREATE FUNCTION last_element as 'hivemall.tools.array.LastElementUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS array_flatten;
+CREATE FUNCTION array_flatten as 'hivemall.tools.array.ArrayFlattenUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS map_include_keys;
+CREATE FUNCTION map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS map_exclude_keys;
+CREATE FUNCTION map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF' USING JAR '${hivemall_jar}';
