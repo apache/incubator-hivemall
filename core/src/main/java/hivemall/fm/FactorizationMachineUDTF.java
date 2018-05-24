@@ -90,6 +90,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     protected boolean _parseFeatureAsInt;
 
     // adaptive regularization
+    protected boolean _adaptiveRegularization;
     @Nullable
     protected Random _va_rand;
     protected float _validationRatio;
@@ -189,7 +190,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         this._iterations = params.iters;
         this._factors = params.factors;
         this._parseFeatureAsInt = params.parseFeatureAsInt;
-        if (params.adaptiveRegularization) {
+        this._adaptiveRegularization = params.adaptiveRegularization;
+        if (_adaptiveRegularization) {
             this._va_rand = new Random(params.seed + 31L);
         }
         this._validationRatio = params.validationRatio;
@@ -284,9 +286,16 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
 
         ++_t;
-        recordTrain(x, y);
-        boolean adaptiveRegularization = (_va_rand != null) && _t >= _validationThreshold;
-        train(x, y, adaptiveRegularization);
+
+        boolean validation = false;
+        if ((_va_rand != null) && _t >= _validationThreshold) {
+            final float rnd = _va_rand.nextFloat();
+            validation = rnd < _validationRatio;
+        }
+
+        recordTrain(x, y, validation);
+
+        train(x, y, validation);
     }
 
     @Nullable
@@ -298,7 +307,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         return features;
     }
 
-    protected void recordTrain(@Nonnull final Feature[] x, final double y) throws HiveException {
+    protected void recordTrain(@Nonnull final Feature[] x, final double y, final boolean validation) throws HiveException {
         if (_iterations <= 1) {
             return;
         }
@@ -326,7 +335,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
 
         int xBytes = Feature.requiredBytes(x);
-        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes;
+        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes + SizeOf.SHORT;
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
         if (remain < requiredBytes) {
@@ -339,6 +348,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             f.writeTo(inputBuf);
         }
         inputBuf.putDouble(y);
+        inputBuf.putShort((short) (validation ? 1 : 0));
     }
 
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
@@ -357,17 +367,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     }
 
     public void train(@Nonnull final Feature[] x, final double y,
-            final boolean adaptiveRegularization) throws HiveException {
+            final boolean validation) throws HiveException {
         checkInputVector(x);
 
         try {
-            if (adaptiveRegularization) {
-                assert (_va_rand != null);
-                final float rnd = _va_rand.nextFloat();
-                if (rnd < _validationRatio) {
+            if (validation) {
+                if (_adaptiveRegularization) {
                     trainLambda(x, y); // adaptive regularization
-                } else {
-                    trainTheta(x, y);
                 }
             } else {
                 trainTheta(x, y);
@@ -544,7 +550,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         assert (inputBuf != null);
         assert (fileIO != null);
         final long numTrainingExamples = _t;
-        final boolean adaregr = _va_rand != null;
 
         final Reporter reporter = getReporter();
         final Counter iterCounter = (reporter == null) ? null
@@ -571,9 +576,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                             x[j] = instantiateFeature(inputBuf);
                         }
                         double y = inputBuf.getDouble();
+                        boolean validation = inputBuf.getShort() == 1;
+
                         // invoke train
                         ++_t;
-                        train(x, y, adaregr);
+                        train(x, y, validation);
                     }
                     if (_cvState.isConverged(numTrainingExamples)) {
                         break;
@@ -648,10 +655,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                                 x[j] = instantiateFeature(inputBuf);
                             }
                             double y = inputBuf.getDouble();
+                            boolean validation = inputBuf.getShort() == 1;
 
                             // invoke training
                             ++_t;
-                            train(x, y, adaregr);
+                            train(x, y, validation);
 
                             remain -= recordBytes;
                         }
