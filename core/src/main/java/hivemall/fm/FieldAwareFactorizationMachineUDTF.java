@@ -182,14 +182,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
     }
 
     @Override
-    public void train(@Nonnull final Feature[] x, final double y,
-            final boolean adaptiveRegularization) throws HiveException {
+    protected void checkInputVector(@Nonnull final Feature[] x) throws HiveException {
         _ffmModel.check(x);
-        try {
-            trainTheta(x, y);
-        } catch (Exception ex) {
-            throw new HiveException("Exception caused in the " + _t + "-th call of train()", ex);
-        }
     }
 
     @Override

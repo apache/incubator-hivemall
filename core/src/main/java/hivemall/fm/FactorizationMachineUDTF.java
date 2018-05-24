@@ -352,9 +352,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         srcBuf.clear();
     }
 
+    protected void checkInputVector(@Nonnull final Feature[] x) throws HiveException {
+        _model.check(x);
+    }
+
     public void train(@Nonnull final Feature[] x, final double y,
             final boolean adaptiveRegularization) throws HiveException {
-        _model.check(x);
+        checkInputVector(x);
 
         try {
             if (adaptiveRegularization) {
