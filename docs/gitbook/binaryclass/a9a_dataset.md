@@ -26,7 +26,7 @@ http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#a9a
 preparation
 =========
 
-[conv.awk](https://raw.githubusercontent.com/myui/hivemall/master/resources/misc/conv.awk)
+[conv.awk](https://github.com/apache/incubator-hivemall/blob/master/resources/misc/conv.awk)
 
 ```
 cd /mnt/archive/datasets/classification/a9a
