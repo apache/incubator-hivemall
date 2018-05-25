@@ -797,3 +797,6 @@ CREATE FUNCTION map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF' USING
 
 DROP FUNCTION IF EXISTS array_to_str;
 CREATE FUNCTION array_to_str as 'hadoop.tools.array.ArrayToStrUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS map_index;
+CREATE FUNCTION map_index as 'hivemall.tools.map.MapIndexUDF' USING JAR '${hivemall_jar}';

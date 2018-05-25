@@ -756,3 +756,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION map_exclude_keys AS 'hivemall.tools.ma
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_to_str")
 sqlContext.sql("CREATE TEMPORARY FUNCTION array_to_str AS 'hadoop.tools.array.ArrayToStrUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_index")
+sqlContext.sql("CREATE TEMPORARY FUNCTION map_index AS 'hivemall.tools.map.MapIndexUDF'")
