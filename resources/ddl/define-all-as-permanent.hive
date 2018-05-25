@@ -800,3 +800,6 @@ CREATE FUNCTION array_to_str as 'hadoop.tools.array.ArrayToStrUDF' USING JAR '${
 
 DROP FUNCTION IF EXISTS map_index;
 CREATE FUNCTION map_index as 'hivemall.tools.map.MapIndexUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS map_key_values;
+CREATE FUNCTION map_key_values as 'hivemall.tools.map.MapKeyValuesUDF' USING JAR '${hivemall_jar}';

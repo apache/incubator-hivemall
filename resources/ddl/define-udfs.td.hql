@@ -222,3 +222,5 @@ create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeys
 create temporary function array_to_str as 'hadoop.tools.array.ArrayToStrUDF';
 
 create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
+
+create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
