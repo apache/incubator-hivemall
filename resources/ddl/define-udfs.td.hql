@@ -218,3 +218,5 @@ create temporary function array_flatten as 'hivemall.tools.array.ArrayFlattenUDF
 create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF';
 
 create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
+
+create temporary function array_to_str as 'hadoop.tools.array.ArrayToStrUDF';

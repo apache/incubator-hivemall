@@ -800,3 +800,6 @@ create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeys
 
 drop temporary function if exists map_exclude_keys;
 create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
+
+drop temporary function if exists array_to_str;
+create temporary function array_to_str as 'hadoop.tools.array.ArrayToStrUDF';
