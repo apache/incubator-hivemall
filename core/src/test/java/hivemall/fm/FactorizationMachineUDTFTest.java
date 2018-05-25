@@ -128,7 +128,7 @@ public class FactorizationMachineUDTFTest {
         udtf.finalizeTraining();
         data.close();
 
-        double loss = udtf._validatiState.getAverageLoss(trExamples);
+        double loss = udtf._validationState.getAverageLoss(trExamples);
         Assert.assertTrue("Loss was greater than 0.1: " + loss, loss <= 0.1);
     }
 
