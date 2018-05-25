@@ -78,6 +78,12 @@ public class FieldAwareFactorizationMachineUDTFTest {
             "-opt ftrl -classification -factors 10 -w0 -alphaFTRL 10.0 -seed 43", 0.30f);
     }
 
+    @Test
+    public void testEarlyStopping() throws HiveException, IOException {
+        run("Early stopping option stops training at the iteration before `-iters`-th iteration", "bigdata.tr.txt.gz",
+                "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 20 -early_stopping -validation_threshold 1 -disable_cv -seed 43", 0.60f);
+    }
+
     // ----------------------------------------------------
     // https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz
 

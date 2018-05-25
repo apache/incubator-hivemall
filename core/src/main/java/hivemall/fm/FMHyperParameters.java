@@ -66,6 +66,8 @@ class FMHyperParameters {
     boolean conversionCheck = true;
     double convergenceRate = 0.005d;
 
+    boolean earlyStopping = false;
+
     // adaptive regularization
     boolean adaptiveRegularization = false;
     float validationRatio = 0.05f;
@@ -109,6 +111,7 @@ class FMHyperParameters {
         this.conversionCheck = !cl.hasOption("disable_cvtest");
         this.convergenceRate =
                 Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
+        this.earlyStopping = cl.hasOption("early_stopping");
         this.adaptiveRegularization = cl.hasOption("adaptive_regularization");
         this.validationRatio =
                 Primitives.parseFloat(cl.getOptionValue("validation_ratio"), validationRatio);

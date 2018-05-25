@@ -92,6 +92,47 @@ public class FactorizationMachineUDTFTest {
     }
 
     @Test
+    public void testEarlyStopping() throws HiveException, IOException {
+        println("Early stopping test");
+        FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters 20 -early_stopping -validation_threshold 1 -disable_cv")};
+
+        udtf.initialize(argOIs);
+        FactorizationMachineModel model = udtf.initModel(udtf._params);
+
+        Assert.assertFalse(udtf._params.l2norm);
+        Assert.assertTrue("Actual class: " + model.getClass().getName(),
+                model instanceof FMStringFeatureMapModel);
+
+        BufferedReader data = readFile("5107786.txt.gz");
+        int trExamples = 0;
+        String line = data.readLine();
+        while (line != null) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+            double y = Double.parseDouble(tokenizer.nextToken());
+            List<String> features = new ArrayList<String>();
+            while (tokenizer.hasMoreTokens()) {
+                String f = tokenizer.nextToken();
+                features.add(f);
+            }
+            udtf.process(new Object[] {features, y});
+            trExamples++;
+            line = data.readLine();
+        }
+        udtf.finalizeTraining();
+        data.close();
+
+        double loss = udtf._validatiState.getAverageLoss(trExamples);
+        Assert.assertTrue("Loss was greater than 0.1: " + loss, loss <= 0.1);
+    }
+
+    @Test
     public void testEnableL2Norm() throws HiveException, IOException {
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
         ObjectInspector[] argOIs = new ObjectInspector[] {

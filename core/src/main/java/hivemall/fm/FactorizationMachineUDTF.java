@@ -89,6 +89,10 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     protected int _factors;
     protected boolean _parseFeatureAsInt;
 
+    protected boolean _earlyStopping;
+    @Nullable
+    protected ConversionState _validatiState;
+
     // adaptive regularization
     protected boolean _adaptiveRegularization;
     @Nullable
@@ -145,15 +149,17 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             "Whether to disable convergence check [default: OFF]");
         opts.addOption("cv_rate", "convergence_rate", true,
             "Threshold to determine convergence [default: 0.005]");
-        // adaptive regularization
+        // adaptive regularization and early stopping with randomly hold-out validation samples
+        opts.addOption("auto_stop", "early_stopping", false,
+            "Stop at the iteration that achieves the best validation on partial samples [default: OFF]");
+        opts.addOption("va_ratio", "validation_ratio", true,
+            "Ratio of training data used for validation [default: 0.05f]");
+        opts.addOption("va_threshold", "validation_threshold", true,
+            "Threshold to start validation. "
+                + "At least N training examples are used before validation [default: 1000]");
         if (isAdaptiveRegularizationSupported()) {
             opts.addOption("adareg", "adaptive_regularization", false,
                 "Whether to enable adaptive regularization [default: OFF]");
-            opts.addOption("va_ratio", "validation_ratio", true,
-                "Ratio of training data used for validation [default: 0.05f]");
-            opts.addOption("va_threshold", "validation_threshold", true,
-                "Threshold to start validation. "
-                        + "At least N training examples are used before validation [default: 1000]");
         }
         // initialization of V
         opts.addOption("init_v", true, "Initialization strategy of matrix V [random, gaussian]"
@@ -190,8 +196,9 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         this._iterations = params.iters;
         this._factors = params.factors;
         this._parseFeatureAsInt = params.parseFeatureAsInt;
+        this._earlyStopping = params.earlyStopping;
         this._adaptiveRegularization = params.adaptiveRegularization;
-        if (_adaptiveRegularization) {
+        if (_earlyStopping || _adaptiveRegularization) {
             this._va_rand = new Random(params.seed + 31L);
         }
         this._validationRatio = params.validationRatio;
@@ -375,6 +382,14 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 if (_adaptiveRegularization) {
                     trainLambda(x, y); // adaptive regularization
                 }
+                if (_earlyStopping) {
+                    double p = _model.predict(x);
+                    double loss = _lossFunction.loss(p, y);
+                    if (_validatiState == null) {
+                        this._validatiState = new ConversionState();
+                    }
+                    _validatiState.incrLoss(loss);
+                }
             } else {
                 trainTheta(x, y);
             }
@@ -551,6 +566,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         assert (fileIO != null);
         final long numTrainingExamples = _t;
 
+        final boolean earlyStopValidation = _validatiState != null;
+
         final Reporter reporter = getReporter();
         final Counter iterCounter = (reporter == null) ? null
                 : reporter.getCounter("hivemall.fm.FactorizationMachines$Counter", "iteration");
@@ -563,6 +580,10 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 inputBuf.flip();
 
                 for (int iter = 2; iter <= iterations; iter++) {
+                    if (earlyStopValidation) {
+                        // TODO: cache current model here
+                        _validatiState.next();
+                    }
                     _cvState.next();
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
@@ -581,6 +602,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         // invoke train
                         ++_t;
                         train(x, y, validation);
+                    }
+                    if (earlyStopValidation) {
+                        if (_validatiState.isLossIncreased()) {
+                            break;
+                        }
                     }
                     if (_cvState.isConverged(numTrainingExamples)) {
                         break;
@@ -613,6 +639,10 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
                 // run iterations
                 for (int iter = 2; iter <= iterations; iter++) {
+                    if (earlyStopValidation) {
+                        // TODO: cache current model here
+                        _validatiState.next();
+                    }
                     _cvState.next();
                     setCounterValue(iterCounter, iter);
 
@@ -664,6 +694,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                             remain -= recordBytes;
                         }
                         inputBuf.compact();
+                    }
+                    if (earlyStopValidation) {
+                        if (_validatiState.isLossIncreased()) {
+                            break;
+                        }
                     }
                     if (_cvState.isConverged(numTrainingExamples)) {
                         break;
