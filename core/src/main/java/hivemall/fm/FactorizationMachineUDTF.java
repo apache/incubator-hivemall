@@ -648,7 +648,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 // run iterations
                 for (int iter = 2; iter <= iterations; iter++) {
                     if (earlyStopValidation) {
-                        // TODO: cache current model here
+                        cacheCurrentModel();
                         _validationState.next();
                     }
                     _cvState.next();
