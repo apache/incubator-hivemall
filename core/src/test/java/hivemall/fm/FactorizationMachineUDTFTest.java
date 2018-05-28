@@ -94,6 +94,10 @@ public class FactorizationMachineUDTFTest {
     @Test
     public void testEarlyStopping() throws HiveException, IOException {
         println("Early stopping test");
+
+        int iters = 20;
+
+        // train with 20 iterations
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
         ObjectInspector[] argOIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(
@@ -101,17 +105,13 @@ public class FactorizationMachineUDTFTest {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters 20 -early_stopping -validation_threshold 1 -disable_cv")};
+                        "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters + " -early_stopping -validation_threshold 1 -disable_cv")};
 
         udtf.initialize(argOIs);
-        FactorizationMachineModel model = udtf.initModel(udtf._params);
-
-        Assert.assertFalse(udtf._params.l2norm);
-        Assert.assertTrue("Actual class: " + model.getClass().getName(),
-                model instanceof FMStringFeatureMapModel);
 
         BufferedReader data = readFile("5107786.txt.gz");
-        int trExamples = 0;
+        List<List<String>> featureVectors = new ArrayList<>();
+        List<Double> ys = new ArrayList<>();
         String line = data.readLine();
         while (line != null) {
             StringTokenizer tokenizer = new StringTokenizer(line, " ");
@@ -122,14 +122,49 @@ public class FactorizationMachineUDTFTest {
                 features.add(f);
             }
             udtf.process(new Object[] {features, y});
-            trExamples++;
+            featureVectors.add(features);
+            ys.add(y);
             line = data.readLine();
         }
         udtf.finalizeTraining();
         data.close();
 
-        double loss = udtf._validationState.getAverageLoss(trExamples);
-        Assert.assertTrue("Loss was greater than 0.1: " + loss, loss <= 0.1);
+        double loss = udtf._validationState.getAverageLoss(featureVectors.size());
+        Assert.assertTrue("Training seems to be failed because average loss is greater than 0.1: " + loss, loss <= 0.1);
+
+        Assert.assertNotNull("Early stopping validation has not been conducted", udtf._validationState);
+        println("Performed " + udtf._bestIter + " iterations out of " + iters);
+        Assert.assertNotEquals("Early stopping did not happen", iters, udtf._bestIter);
+
+        // store the best state achieved by early stopping
+        iters = udtf._bestIter;
+        double bestCumulativeLoss = udtf._validationState.getPreviousLoss();
+        println("Best cumulative loss: " + bestCumulativeLoss);
+        FactorizationMachineModel bestModel = udtf._model;
+
+        // train with the number of early-stopped iterations
+        udtf = new FactorizationMachineUDTF();
+        argOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters + " -early_stopping -validation_threshold 1 -disable_cv");
+        udtf.initialize(argOIs);
+        udtf.initModel(udtf._params);
+        for (int i = 0, n = featureVectors.size(); i < n; i++) {
+            udtf.process(new Object[] {featureVectors.get(i), ys.get(i)});
+        }
+        udtf.finalizeTraining();
+
+        println("Performed " + udtf._bestIter + " iterations out of " + iters);
+        Assert.assertEquals("Training finished earlier than expected", iters, udtf._bestIter);
+
+        println("Best cumulative loss: " + udtf._validationState.getCumulativeLoss());
+        Assert.assertTrue("Cumulative loss should be same",
+                bestCumulativeLoss == udtf._validationState.getCumulativeLoss());
+
+        for (List<String> featureVector : featureVectors) {
+            Feature[] fv = udtf.parseFeatures(featureVector);
+            Assert.assertTrue("Early-stopped best model was not correctly cached/restored", bestModel.predict(fv) == udtf._model.predict(fv));
+        }
     }
 
     @Test

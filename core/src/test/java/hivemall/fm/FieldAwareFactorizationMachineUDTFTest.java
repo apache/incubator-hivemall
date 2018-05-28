@@ -78,12 +78,6 @@ public class FieldAwareFactorizationMachineUDTFTest {
             "-opt ftrl -classification -factors 10 -w0 -alphaFTRL 10.0 -seed 43", 0.30f);
     }
 
-    @Test
-    public void testEarlyStopping() throws HiveException, IOException {
-        run("Early stopping option stops training at the iteration before `-iters`-th iteration", "bigdata.tr.txt.gz",
-                "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 20 -early_stopping -validation_threshold 1 -disable_cv -seed 43", 0.60f);
-    }
-
     // ----------------------------------------------------
     // https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz
 
@@ -163,6 +157,101 @@ public class FieldAwareFactorizationMachineUDTFTest {
         double avgLoss = udtf._cvState.getAverageLoss(lines);
         Assert.assertTrue("Last loss was greater than expected: " + avgLoss,
             avgLoss < lossThreshold);
+    }
+
+    @Test
+    public void testEarlyStopping() throws HiveException, IOException {
+        println("Early stopping");
+
+        int iters = 20;
+
+        FieldAwareFactorizationMachineUDTF udtf = new FieldAwareFactorizationMachineUDTF();
+        ObjectInspector[] argOIs =
+                new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                                "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters "
+                                        + iters + " -early_stopping -validation_threshold 1 -disable_cv -seed 43")};
+
+        udtf.initialize(argOIs);
+
+        BufferedReader data = readFile("bigdata.tr.txt.gz");
+        List<List<String>> featureVectors = new ArrayList<>();
+        List<Double> ys = new ArrayList<>();
+        while (true) {
+            //gather features in current line
+            final String input = data.readLine();
+            if (input == null) {
+                break;
+            }
+            String[] featureStrings = input.split(" ");
+
+            double y = Double.parseDouble(featureStrings[0]);
+            if (y == 0) {
+                y = -1;//LibFFM data uses {0, 1}; Hivemall uses {-1, 1}
+            }
+            ys.add(y);
+
+            final List<String> features = new ArrayList<String>(featureStrings.length - 1);
+            for (int j = 1; j < featureStrings.length; ++j) {
+                String fj = featureStrings[j];
+                String[] splitted = fj.split(":");
+                Assert.assertEquals(3, splitted.length);
+                String indexStr = splitted[1];
+                String f = fj;
+                if (NumberUtils.isDigits(indexStr)) {
+                    int index = Integer.parseInt(indexStr) + 1; // avoid 0 index
+                    f = splitted[0] + ':' + index + ':' + splitted[2];
+                }
+                features.add(f);
+            }
+            featureVectors.add(features);
+
+            udtf.process(new Object[] {features, y});
+        }
+        udtf.finalizeTraining();
+        data.close();
+
+        double loss = udtf._validationState.getAverageLoss(featureVectors.size());
+        Assert.assertTrue("Training seems to be failed because average loss is greater than 0.6: " + loss, loss <= 0.6);
+
+        Assert.assertNotNull("Early stopping validation has not been conducted", udtf._validationState);
+        println("Performed " + udtf._bestIter + " iterations out of " + iters);
+        Assert.assertNotEquals("Early stopping did not happen", iters, udtf._bestIter);
+
+        // store the best state achieved by early stopping
+        iters = udtf._bestIter;
+        double bestCumulativeLoss = udtf._validationState.getPreviousLoss();
+        println("Best cumulative loss: " + bestCumulativeLoss);
+        FFMStringFeatureMapModel bestModel = udtf._ffmModel;
+
+        // train with the number of early-stopped iterations
+        udtf = new FieldAwareFactorizationMachineUDTF();
+        argOIs[2] =
+                ObjectInspectorUtils.getConstantObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters "
+                                + iters + " -early_stopping -validation_threshold 1 -disable_cv -seed 43");
+        udtf.initialize(argOIs);
+        udtf.initModel(udtf._params);
+        for (int i = 0, n = featureVectors.size(); i < n; i++) {
+            udtf.process(new Object[] {featureVectors.get(i), ys.get(i)});
+        }
+        udtf.finalizeTraining();
+
+        println("Performed " + udtf._bestIter + " iterations out of " + iters);
+        Assert.assertEquals("Training finished earlier than expected", iters, udtf._bestIter);
+
+        println("Best cumulative loss: " + udtf._validationState.getCumulativeLoss());
+        Assert.assertTrue("Cumulative loss should be same",
+                bestCumulativeLoss == udtf._validationState.getCumulativeLoss());
+
+        for (List<String> featureVector : featureVectors) {
+            Feature[] fv = udtf.parseFeatures(featureVector);
+            Assert.assertTrue("Early-stopped best model was not correctly cached/restored",
+                    bestModel.predict(fv) == udtf._model.predict(fv));
+        }
     }
 
     @Test
