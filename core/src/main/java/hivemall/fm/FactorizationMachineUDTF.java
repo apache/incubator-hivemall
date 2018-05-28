@@ -379,23 +379,28 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         _model.check(x);
     }
 
+    protected void processValidationSample(@Nonnull final Feature[] x, final double y)
+            throws HiveException {
+        if (_adaptiveRegularization) {
+            trainLambda(x, y); // adaptive regularization
+        }
+        if (_earlyStopping) {
+            double p = _model.predict(x);
+            double loss = _lossFunction.loss(p, y);
+            if (_validationState == null) {
+                this._validationState = new ConversionState();
+            }
+            _validationState.incrLoss(loss);
+        }
+    }
+
     public void train(@Nonnull final Feature[] x, final double y, final boolean validation)
             throws HiveException {
         checkInputVector(x);
 
         try {
             if (validation) {
-                if (_adaptiveRegularization) {
-                    trainLambda(x, y); // adaptive regularization
-                }
-                if (_earlyStopping) {
-                    double p = _model.predict(x);
-                    double loss = _lossFunction.loss(p, y);
-                    if (_validationState == null) {
-                        this._validationState = new ConversionState();
-                    }
-                    _validationState.incrLoss(loss);
-                }
+                processValidationSample(x, y);
             } else {
                 trainTheta(x, y);
             }

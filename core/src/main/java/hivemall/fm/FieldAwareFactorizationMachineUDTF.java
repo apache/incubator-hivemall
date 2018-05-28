@@ -18,6 +18,7 @@
  */
 package hivemall.fm;
 
+import hivemall.common.ConversionState;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.collections.Fastutil;
 import hivemall.utils.collections.arrays.DoubleArray3D;
@@ -185,6 +186,19 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
     @Override
     protected void checkInputVector(@Nonnull final Feature[] x) throws HiveException {
         _ffmModel.check(x);
+    }
+
+    @Override
+    protected void processValidationSample(@Nonnull final Feature[] x, final double y)
+            throws HiveException {
+        if (_earlyStopping) {
+            double p = _model.predict(x);
+            double loss = _lossFunction.loss(p, y);
+            if (_validationState == null) {
+                this._validationState = new ConversionState();
+            }
+            _validationState.incrLoss(loss);
+        }
     }
 
     @Override
