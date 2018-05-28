@@ -160,7 +160,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             "Ratio of training data used for validation [default: 0.05f]");
         opts.addOption("va_threshold", "validation_threshold", true,
             "Threshold to start validation. "
-                + "At least N training examples are used before validation [default: 1000]");
+                    + "At least N training examples are used before validation [default: 1000]");
         if (isAdaptiveRegularizationSupported()) {
             opts.addOption("adareg", "adaptive_regularization", false,
                 "Whether to enable adaptive regularization [default: OFF]");
@@ -319,7 +319,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         return features;
     }
 
-    protected void recordTrain(@Nonnull final Feature[] x, final double y, final boolean validation) throws HiveException {
+    protected void recordTrain(@Nonnull final Feature[] x, final double y, final boolean validation)
+            throws HiveException {
         if (_iterations <= 1) {
             return;
         }
@@ -378,8 +379,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         _model.check(x);
     }
 
-    public void train(@Nonnull final Feature[] x, final double y,
-            final boolean validation) throws HiveException {
+    public void train(@Nonnull final Feature[] x, final double y, final boolean validation)
+            throws HiveException {
         checkInputVector(x);
 
         try {
@@ -748,7 +749,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         this._modelPrev = model;
     }
 
-    private static void copyModelParameters(@Nonnull FactorizationMachineModel src, @Nonnull FactorizationMachineModel dst) {
+    private static void copyModelParameters(@Nonnull FactorizationMachineModel src,
+            @Nonnull FactorizationMachineModel dst) {
         dst.setW0(src.getW0());
 
         for (int i = src.getMinIndex(), maxIdx = src.getMaxIndex(); i <= maxIdx; i++) {
@@ -765,7 +767,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
     }
 
-    private static void copyModelParameters(@Nonnull FMStringFeatureMapModel src, @Nonnull FMStringFeatureMapModel dst) {
+    private static void copyModelParameters(@Nonnull FMStringFeatureMapModel src,
+            @Nonnull FMStringFeatureMapModel dst) {
         dst.setW0(src.getW0());
 
         for (Map.Entry<String, Entry> e : Fastutil.fastIterable(src.getMap())) {

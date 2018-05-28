@@ -51,13 +51,15 @@ public class FieldAwareFactorizationMachineUDTFTest {
     @Test
     public void testSGD() throws HiveException, IOException {
         run("Pure SGD test", "bigdata.tr.txt.gz",
-            "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 20 -seed 43", 0.30f);
+            "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 20 -seed 43",
+            0.30f);
     }
 
     @Test
     public void testAdaGrad() throws HiveException, IOException {
         run("AdaGrad test", "bigdata.tr.txt.gz",
-            "-opt adagrad -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 30 -seed 43", 0.30f);
+            "-opt adagrad -linear_term -classification -factors 10 -w0 -eta 0.4 -iters 30 -seed 43",
+            0.30f);
     }
 
     @Test
@@ -69,7 +71,8 @@ public class FieldAwareFactorizationMachineUDTFTest {
     @Test
     public void testFTRL() throws HiveException, IOException {
         run("FTRL test", "bigdata.tr.txt.gz",
-            "-opt ftrl -linear_term -classification -factors 10 -w0 -alphaFTRL 10.0 -seed 43", 0.30f);
+            "-opt ftrl -linear_term -classification -factors 10 -w0 -alphaFTRL 10.0 -seed 43",
+            0.30f);
     }
 
     @Test
@@ -86,7 +89,8 @@ public class FieldAwareFactorizationMachineUDTFTest {
         System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
         run("[Sample.ffm] default option",
             "https://github.com/myui/ml_dataset/raw/master/ffm/sample.ffm.gz",
-            "-disable_norm -linear_term -classification -factors 2 -feature_hashing 20 -seed 43", 0.01f);
+            "-disable_norm -linear_term -classification -factors 2 -feature_hashing 20 -seed 43",
+            0.01f);
     }
 
     @Test
@@ -166,14 +170,14 @@ public class FieldAwareFactorizationMachineUDTFTest {
         int iters = 20;
 
         FieldAwareFactorizationMachineUDTF udtf = new FieldAwareFactorizationMachineUDTF();
-        ObjectInspector[] argOIs =
-                new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                        ObjectInspectorUtils.getConstantObjectInspector(
-                                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                                "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters "
-                                        + iters + " -early_stopping -validation_threshold 1 -disable_cv -seed 43")};
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters " + iters
+                            + " -early_stopping -validation_threshold 1 -disable_cv -seed 43")};
 
         udtf.initialize(argOIs);
 
@@ -215,9 +219,12 @@ public class FieldAwareFactorizationMachineUDTFTest {
         data.close();
 
         double loss = udtf._validationState.getAverageLoss(featureVectors.size());
-        Assert.assertTrue("Training seems to be failed because average loss is greater than 0.6: " + loss, loss <= 0.6);
+        Assert.assertTrue(
+            "Training seems to be failed because average loss is greater than 0.6: " + loss,
+            loss <= 0.6);
 
-        Assert.assertNotNull("Early stopping validation has not been conducted", udtf._validationState);
+        Assert.assertNotNull("Early stopping validation has not been conducted",
+            udtf._validationState);
         println("Performed " + udtf._bestIter + " iterations out of " + iters);
         Assert.assertNotEquals("Early stopping did not happen", iters, udtf._bestIter);
 
@@ -229,10 +236,10 @@ public class FieldAwareFactorizationMachineUDTFTest {
 
         // train with the number of early-stopped iterations
         udtf = new FieldAwareFactorizationMachineUDTF();
-        argOIs[2] =
-                ObjectInspectorUtils.getConstantObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters "
-                                + iters + " -early_stopping -validation_threshold 1 -disable_cv -seed 43");
+        argOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-opt sgd -linear_term -classification -factors 10 -w0 -eta 0.4 -iters " + iters
+                    + " -early_stopping -validation_threshold 1 -disable_cv -seed 43");
         udtf.initialize(argOIs);
         udtf.initModel(udtf._params);
         for (int i = 0, n = featureVectors.size(); i < n; i++) {
@@ -245,12 +252,12 @@ public class FieldAwareFactorizationMachineUDTFTest {
 
         println("Best cumulative loss: " + udtf._validationState.getCumulativeLoss());
         Assert.assertTrue("Cumulative loss should be same",
-                bestCumulativeLoss == udtf._validationState.getCumulativeLoss());
+            bestCumulativeLoss == udtf._validationState.getCumulativeLoss());
 
         for (List<String> featureVector : featureVectors) {
             Feature[] fv = udtf.parseFeatures(featureVector);
             Assert.assertTrue("Early-stopped best model was not correctly cached/restored",
-                    bestModel.predict(fv) == udtf._model.predict(fv));
+                bestModel.predict(fv) == udtf._model.predict(fv));
         }
     }
 
@@ -262,8 +269,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                     ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-seed 43")},
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-seed 43")},
             new Object[][] {{Arrays.asList("0:1:-2", "1:2:-1"), 1.0}});
     }
 

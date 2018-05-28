@@ -52,7 +52,7 @@ import org.apache.hadoop.io.Text;
 
 /**
  * Field-aware Factorization Machines.
- * 
+ *
  * @link https://www.csie.ntu.edu.tw/~cjlin/libffm/
  * @since v0.5-rc.1
  */
@@ -87,8 +87,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         Options opts = super.getOptions();
         opts.addOption("w0", "global_bias", false,
             "Whether to include global bias term w0 [default: OFF]");
-        opts.addOption("enable_wi", "linear_term", false,
-            "Include linear term [default: OFF]");
+        opts.addOption("enable_wi", "linear_term", false, "Include linear term [default: OFF]");
         opts.addOption("no_norm", "disable_norm", false, "Disable instance-wise L2 normalization");
         // feature hashing
         opts.addOption("feature_hashing", true,
@@ -326,7 +325,8 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
     @Override
     protected void cacheCurrentModel() {
-        final FFMStringFeatureMapModel model = new FFMStringFeatureMapModel((FFMHyperParameters) _params);
+        final FFMStringFeatureMapModel model =
+                new FFMStringFeatureMapModel((FFMHyperParameters) _params);
 
         model.setW0(_ffmModel.getW0());
 

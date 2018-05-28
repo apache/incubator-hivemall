@@ -177,7 +177,7 @@ class FMHyperParameters {
 
             if (cl.hasOption("enable_norm") && cl.hasOption("disable_norm")) {
                 throw new UDFArgumentException(
-                        "-enable_norm and -disable_norm MUST NOT be used simultaneously");
+                    "-enable_norm and -disable_norm MUST NOT be used simultaneously");
             }
             this.l2norm = !cl.hasOption("disable_norm");
 

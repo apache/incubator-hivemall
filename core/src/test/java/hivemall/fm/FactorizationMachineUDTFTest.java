@@ -101,11 +101,12 @@ public class FactorizationMachineUDTFTest {
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
         ObjectInspector[] argOIs = new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters + " -early_stopping -validation_threshold 1 -disable_cv")};
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters
+                            + " -early_stopping -validation_threshold 1 -disable_cv")};
 
         udtf.initialize(argOIs);
 
@@ -130,9 +131,12 @@ public class FactorizationMachineUDTFTest {
         data.close();
 
         double loss = udtf._validationState.getAverageLoss(featureVectors.size());
-        Assert.assertTrue("Training seems to be failed because average loss is greater than 0.1: " + loss, loss <= 0.1);
+        Assert.assertTrue(
+            "Training seems to be failed because average loss is greater than 0.1: " + loss,
+            loss <= 0.1);
 
-        Assert.assertNotNull("Early stopping validation has not been conducted", udtf._validationState);
+        Assert.assertNotNull("Early stopping validation has not been conducted",
+            udtf._validationState);
         println("Performed " + udtf._bestIter + " iterations out of " + iters);
         Assert.assertNotEquals("Early stopping did not happen", iters, udtf._bestIter);
 
@@ -145,8 +149,9 @@ public class FactorizationMachineUDTFTest {
         // train with the number of early-stopped iterations
         udtf = new FactorizationMachineUDTF();
         argOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
-                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                        "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters + " -early_stopping -validation_threshold 1 -disable_cv");
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters
+                    + " -early_stopping -validation_threshold 1 -disable_cv");
         udtf.initialize(argOIs);
         udtf.initModel(udtf._params);
         for (int i = 0, n = featureVectors.size(); i < n; i++) {
@@ -159,11 +164,12 @@ public class FactorizationMachineUDTFTest {
 
         println("Best cumulative loss: " + udtf._validationState.getCumulativeLoss());
         Assert.assertTrue("Cumulative loss should be same",
-                bestCumulativeLoss == udtf._validationState.getCumulativeLoss());
+            bestCumulativeLoss == udtf._validationState.getCumulativeLoss());
 
         for (List<String> featureVector : featureVectors) {
             Feature[] fv = udtf.parseFeatures(featureVector);
-            Assert.assertTrue("Early-stopped best model was not correctly cached/restored", bestModel.predict(fv) == udtf._model.predict(fv));
+            Assert.assertTrue("Early-stopped best model was not correctly cached/restored",
+                bestModel.predict(fv) == udtf._model.predict(fv));
         }
     }
 
