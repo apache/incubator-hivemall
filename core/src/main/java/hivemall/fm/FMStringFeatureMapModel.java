@@ -73,7 +73,11 @@ public final class FMStringFeatureMapModel extends FactorizationMachineModel {
     protected void setW(@Nonnull Feature x, float nextWi) {
         String j = x.getFeature();
         assert (j != null);
+        setW(j, nextWi);
+    }
 
+    @Override
+    protected void setW(@Nonnull String j, float nextWi) {
         Entry entry = _map.get(j);
         if (entry == null) {
             float[] Vf = initV();
@@ -106,7 +110,11 @@ public final class FMStringFeatureMapModel extends FactorizationMachineModel {
     protected void setV(@Nonnull Feature x, int f, float nextVif) {
         String j = x.getFeature();
         assert (j != null);
+        setV(j, f, nextVif);
+    }
 
+    @Override
+    protected void setV(@Nonnull String j, int f, float nextVif) {
         final float[] V;
         Entry entry = _map.get(j);
         if (entry == null) {

@@ -124,7 +124,11 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     @Override
     protected void setW(@Nonnull final Feature x, final float nextWi) {
         final int j = Feature.toIntFeature(x);
+        setW(j, nextWi);
+    }
 
+    @Override
+    protected void setW(int j, final float nextWi) {
         Entry entry = getEntry(j);
         if (entry == null) {
             entry = newEntry(j, nextWi);
@@ -162,7 +166,11 @@ public final class FFMStringFeatureMapModel extends FieldAwareFactorizationMachi
     protected void setV(@Nonnull final Feature x, @Nonnull final int yField, final int f,
             final float nextVif) {
         final int j = Feature.toIntFeature(x, yField, _numFields);
+        setV(j, f, nextVif);
+    }
 
+    @Override
+    protected void setV(int j, final int f, final float nextVif) {
         Entry entry = getEntry(j);
         if (entry == null) {
             if (_initV == false) {
