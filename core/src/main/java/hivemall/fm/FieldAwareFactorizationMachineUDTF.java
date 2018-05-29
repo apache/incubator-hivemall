@@ -192,9 +192,6 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         if (_earlyStopping) {
             double p = _model.predict(x);
             double loss = _lossFunction.loss(p, y);
-            if (_validationState == null) {
-                this._validationState = new ConversionState();
-            }
             _validationState.incrLoss(loss);
         }
     }
