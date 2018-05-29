@@ -224,3 +224,9 @@ create temporary function array_to_str as 'hadoop.tools.array.ArrayToStrUDF';
 create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
 
 create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
+
+create temporary function sessionize as 'hivemall.tools.datetime.SessionizeUDF';
+
+create temporary function to_json as 'hivemall.tools.json.ToJsonUDF';
+
+create temporary function from_json as 'hivemall.tools.json.FromJsonUDF';

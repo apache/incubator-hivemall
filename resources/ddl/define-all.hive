@@ -809,3 +809,12 @@ create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
 
 drop temporary function if exists map_key_values;
 create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
+
+drop temporary function if exists sessionize;
+create temporary function sessionize as 'hivemall.tools.datetime.SessionizeUDF';
+
+drop temporary function if exists to_json;
+create temporary function to_json as 'hivemall.tools.json.ToJsonUDF';
+
+drop temporary function if exists from_json;
+create temporary function from_json as 'hivemall.tools.json.FromJsonUDF';

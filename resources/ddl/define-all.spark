@@ -762,3 +762,12 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION map_index AS 'hivemall.tools.map.MapIn
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_key_values")
 sqlContext.sql("CREATE TEMPORARY FUNCTION map_key_values AS 'hivemall.tools.map.MapKeyValuesUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sessionize")
+sqlContext.sql("CREATE TEMPORARY FUNCTION sessionize AS 'hivemall.tools.datetime.SessionizeUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_json")
+sqlContext.sql("CREATE TEMPORARY FUNCTION to_json AS 'hivemall.tools.json.ToJsonUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS from_json")
+sqlContext.sql("CREATE TEMPORARY FUNCTION from_json AS 'hivemall.tools.json.FromJsonUDF'")

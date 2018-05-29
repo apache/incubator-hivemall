@@ -803,3 +803,12 @@ CREATE FUNCTION map_index as 'hivemall.tools.map.MapIndexUDF' USING JAR '${hivem
 
 DROP FUNCTION IF EXISTS map_key_values;
 CREATE FUNCTION map_key_values as 'hivemall.tools.map.MapKeyValuesUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS sessionize;
+CREATE FUNCTION sessionize as 'hivemall.tools.datetime.SessionizeUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS to_json;
+CREATE FUNCTION to_json as 'hivemall.tools.json.ToJsonUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS from_json;
+CREATE FUNCTION from_json as 'hivemall.tools.json.FromJsonUDF' USING JAR '${hivemall_jar}';
