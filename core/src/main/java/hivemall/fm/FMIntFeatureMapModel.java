@@ -94,11 +94,6 @@ public final class FMIntFeatureMapModel extends FactorizationMachineModel {
     @Override
     protected void setW(@Nonnull Feature x, float nextWi) {
         final int i = x.getFeatureIndex();
-        setW(i, nextWi);
-    }
-
-    @Override
-    protected void setW(int i, float nextWi) {
         if (i == 0) {
             this._w0 = nextWi;
         } else {
@@ -127,11 +122,6 @@ public final class FMIntFeatureMapModel extends FactorizationMachineModel {
     @Override
     protected void setV(@Nonnull Feature x, int f, float nextVif) {
         final int i = x.getFeatureIndex();
-        setV(i, f, nextVif);
-    }
-
-    @Override
-    protected void setV(int i, int f, float nextVif) {
         assert (i >= 1) : i;
         float[] vi = _V.get(i);
         assert (vi != null) : "V[" + i + "] was null";

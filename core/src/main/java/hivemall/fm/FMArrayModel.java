@@ -80,11 +80,6 @@ public final class FMArrayModel extends FactorizationMachineModel {
     @Override
     protected void setW(@Nonnull Feature x, float nextWi) {
         int i = x.getFeatureIndex();
-        setW(i, nextWi);
-    }
-
-    @Override
-    protected void setW(int i, float nextWi) {
         assert (i >= 0) : i;
         _w[i] = nextWi;
     }
@@ -113,11 +108,6 @@ public final class FMArrayModel extends FactorizationMachineModel {
     @Override
     protected void setV(@Nonnull Feature x, int f, float nextVif) {
         final int i = x.getFeatureIndex();
-        setV(i, f, nextVif);
-    }
-
-    @Override
-    protected void setV(int i, int f, float nextVif) {
         float[] v = getV(i, true);
         v[f] = nextVif;
     }

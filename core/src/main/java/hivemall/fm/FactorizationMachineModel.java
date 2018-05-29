@@ -92,14 +92,6 @@ public abstract class FactorizationMachineModel {
 
     protected abstract void setW(@Nonnull Feature x, float nextWi);
 
-    protected void setW(int i, float nextWi) {
-        throw new UnsupportedOperationException();
-    }
-
-    protected void setW(@Nonnull String j, float nextWi) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * @param i index value >= 1
      */
@@ -111,14 +103,6 @@ public abstract class FactorizationMachineModel {
     public abstract float getV(@Nonnull Feature x, int f);
 
     protected abstract void setV(@Nonnull Feature x, int f, float nextVif);
-
-    protected void setV(int i, int f, float nextVif) {
-        throw new UnsupportedOperationException();
-    }
-
-    protected void setV(@Nonnull String j, int f, float nextVif) {
-        throw new UnsupportedOperationException();
-    }
 
     /**
      * @param f index value >= 0
