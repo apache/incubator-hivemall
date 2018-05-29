@@ -258,6 +258,19 @@ public class FieldAwareFactorizationMachineUDTFTest {
             cumulativeLoss > udtf._validationState.getCumulativeLoss());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testUnsupportedAdaptiveRegularizationOption() throws Exception {
+        TestUtils.testGenericUDTFSerialization(FieldAwareFactorizationMachineUDTF.class,
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-seed 43 -adaptive_regularization")},
+            new Object[][] {{Arrays.asList("0:1:-2", "1:2:-1"), 1.0}});
+    }
+
     @Test
     public void testSerialization() throws HiveException {
         TestUtils.testGenericUDTFSerialization(FieldAwareFactorizationMachineUDTF.class,
