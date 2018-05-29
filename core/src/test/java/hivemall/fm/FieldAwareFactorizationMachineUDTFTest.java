@@ -231,7 +231,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
             udtf._validationState.getCurrentIteration());
 
         // store the best state achieved by early stopping
-        iters = udtf._validationState.getCurrentIteration() - 1;
+        iters = udtf._validationState.getCurrentIteration() - 2; // best loss was at (N-2)-th iter
         double cumulativeLoss = udtf._validationState.getCumulativeLoss();
         println("Cumulative loss: " + cumulativeLoss);
 

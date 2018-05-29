@@ -569,6 +569,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         assert (fileIO != null);
         final long numTrainingExamples = _t;
 
+        boolean lossIncreasedLastIter = false;
+
         final Reporter reporter = getReporter();
         final Counter iterCounter = (reporter == null) ? null
                 : reporter.getCounter("hivemall.fm.FactorizationMachines$Counter", "iteration");
@@ -601,12 +603,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         ++_t;
                         train(x, y, validation);
                     }
-                    if (_validationState.isLossIncreased()) {
+                    // stop if validation loss is consecutively increased over recent 2 iterations
+                    final boolean lossIncreased = _validationState.isLossIncreased();
+                    if ((lossIncreasedLastIter && lossIncreased)
+                            || _cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
-                    if (_cvState.isConverged(numTrainingExamples)) {
-                        break;
-                    }
+                    lossIncreasedLastIter = lossIncreased;
                     inputBuf.rewind();
                 }
                 LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
@@ -688,12 +691,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                         }
                         inputBuf.compact();
                     }
-                    if (_validationState.isLossIncreased()) {
+                    // stop if validation loss is consecutively increased over recent 2 iterations
+                    final boolean lossIncreased = _validationState.isLossIncreased();
+                    if ((lossIncreasedLastIter && lossIncreased)
+                            || _cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
-                    if (_cvState.isConverged(numTrainingExamples)) {
-                        break;
-                    }
+                    lossIncreasedLastIter = lossIncreased;
                 }
                 LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
