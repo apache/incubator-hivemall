@@ -72,8 +72,6 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
     // ----------------------------------------
 
     protected transient FFMStringFeatureMapModel _ffmModel;
-    @Nullable
-    private transient FFMStringFeatureMapModel _ffmModelPrev;
 
     private transient IntArrayList _fieldList;
     @Nullable
@@ -276,13 +274,11 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             LOG.info(_ffmModel.getStatistics());
         }
         this._ffmModel = null;
-        this._ffmModelPrev = null;
     }
 
     @Override
     protected void forwardModel() throws HiveException {
         this._model = null;
-        this._modelPrev = null;
         this._fieldList = null;
         this._sumVfX = null;
 
@@ -335,45 +331,6 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
 
             forward(forwardObjs);
         }
-    }
-
-    @Override
-    protected void cacheCurrentModel() {
-        final FFMStringFeatureMapModel model =
-                new FFMStringFeatureMapModel((FFMHyperParameters) _params);
-
-        model.setW0(_ffmModel.getW0());
-
-        final Entry entryW = new Entry(_ffmModel._buf, 1);
-        final Entry entryV = new Entry(_ffmModel._buf, _ffmModel._factor);
-        final float[] Vi = new float[_ffmModel._factor];
-
-        for (Int2LongMap.Entry e : Fastutil.fastIterable(_ffmModel._map)) {
-            final int j = e.getIntKey();
-            final long offset = e.getLongValue();
-
-            final Entry cached;
-            if (Entry.isEntryW(j)) {
-                entryW.setOffset(offset);
-                float w = entryW.getW();
-                if (w == 0.f) {
-                    continue;
-                }
-                cached = model.newEntry(j, w);
-            } else {
-                entryV.setOffset(offset);
-                entryV.getV(Vi);
-                cached = model.newEntry(j, Vi);
-            }
-            model._map.put(j, cached.getOffset());
-        }
-
-        this._ffmModelPrev = model;
-    }
-
-    @Override
-    public void restoreCachedModel() {
-        this._ffmModel = _ffmModelPrev;
     }
 
 }

@@ -108,10 +108,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
     protected transient FactorizationMachineModel _model;
 
-    @Nullable
-    protected transient FactorizationMachineModel _modelPrev;
-    protected int _bestIter;
-
     /**
      * The number of training examples processed
      */
@@ -230,7 +226,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
         this._model = null;
         this._t = 0L;
-        this._bestIter = _iterations;
 
         if (LOG.isInfoEnabled()) {
             LOG.info(_params);
@@ -478,7 +473,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
         forwardModel();
         this._model = null;
-        this._modelPrev = null;
     }
 
     @VisibleForTesting
@@ -593,7 +587,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
                 for (int iter = 2; iter <= iterations; iter++) {
                     if (earlyStopValidation) {
-                        cacheCurrentModel();
                         _validationState.next();
                     }
                     _cvState.next();
@@ -617,8 +610,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                     }
                     if (earlyStopValidation) {
                         if (_validationState.isLossIncreased()) {
-                            restoreCachedModel();
-                            this._bestIter = _validationState.getCurrentIteration() - 1;
                             break;
                         }
                     }
@@ -654,7 +645,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 // run iterations
                 for (int iter = 2; iter <= iterations; iter++) {
                     if (earlyStopValidation) {
-                        cacheCurrentModel();
                         _validationState.next();
                     }
                     _cvState.next();
@@ -711,8 +701,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                     }
                     if (earlyStopValidation) {
                         if (_validationState.isLossIncreased()) {
-                            restoreCachedModel();
-                            this._bestIter = _validationState.getCurrentIteration() - 1;
                             break;
                         }
                     }
@@ -736,61 +724,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             this._inputBuf = null;
             this._fileIO = null;
         }
-    }
-
-    protected void cacheCurrentModel() {
-        final FactorizationMachineModel model;
-        if (_parseFeatureAsInt) {
-            if (_model instanceof FMIntFeatureMapModel) {
-                model = new FMIntFeatureMapModel(_params);
-            } else {
-                model = new FMArrayModel(_params);
-            }
-            copyModelParameters(_model, model);
-        } else {
-            model = new FMStringFeatureMapModel(_params);
-            copyModelParameters((FMStringFeatureMapModel) _model, (FMStringFeatureMapModel) model);
-        }
-        this._modelPrev = model;
-    }
-
-    private static void copyModelParameters(@Nonnull FactorizationMachineModel src,
-            @Nonnull FactorizationMachineModel dst) {
-        dst.setW0(src.getW0());
-
-        for (int i = src.getMinIndex(), maxIdx = src.getMaxIndex(); i <= maxIdx; i++) {
-            final float[] vi = src.getV(i, false);
-            if (vi == null) {
-                continue;
-            }
-            final float w = src.getW(i);
-            dst.setW(i, w);
-            for (int f = 0; f < src._factor; f++) {
-                float v = vi[f];
-                dst.setV(i, f, v);
-            }
-        }
-    }
-
-    private static void copyModelParameters(@Nonnull FMStringFeatureMapModel src,
-            @Nonnull FMStringFeatureMapModel dst) {
-        dst.setW0(src.getW0());
-
-        for (Map.Entry<String, Entry> e : Fastutil.fastIterable(src.getMap())) {
-            String i = e.getKey();
-            assert (i != null);
-            Entry entry = e.getValue();
-            dst.setW(i, entry.W);
-            final float[] Vi = entry.Vf;
-            for (int f = 0; f < src._factor; f++) {
-                float v = Vi[f];
-                dst.setV(i, f, v);
-            }
-        }
-    }
-
-    protected void restoreCachedModel() {
-        this._model = _modelPrev;
     }
 
     @Nonnull

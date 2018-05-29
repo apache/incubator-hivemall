@@ -225,14 +225,15 @@ public class FieldAwareFactorizationMachineUDTFTest {
 
         Assert.assertNotNull("Early stopping validation has not been conducted",
             udtf._validationState);
-        println("Performed " + udtf._bestIter + " iterations out of " + iters);
-        Assert.assertNotEquals("Early stopping did not happen", iters, udtf._bestIter);
+        println("Performed " + udtf._validationState.getCurrentIteration() + " iterations out of "
+                + iters);
+        Assert.assertNotEquals("Early stopping did not happen", iters,
+            udtf._validationState.getCurrentIteration());
 
         // store the best state achieved by early stopping
-        iters = udtf._bestIter;
-        double bestCumulativeLoss = udtf._validationState.getPreviousLoss();
-        println("Best cumulative loss: " + bestCumulativeLoss);
-        FFMStringFeatureMapModel bestModel = udtf._ffmModel;
+        iters = udtf._validationState.getCurrentIteration() - 1;
+        double cumulativeLoss = udtf._validationState.getCumulativeLoss();
+        println("Cumulative loss: " + cumulativeLoss);
 
         // train with the number of early-stopped iterations
         udtf = new FieldAwareFactorizationMachineUDTF();
@@ -247,18 +248,14 @@ public class FieldAwareFactorizationMachineUDTFTest {
         }
         udtf.finalizeTraining();
 
-        println("Performed " + udtf._bestIter + " iterations out of " + iters);
-        Assert.assertEquals("Training finished earlier than expected", iters, udtf._bestIter);
+        println("Performed " + udtf._validationState.getCurrentIteration() + " iterations out of "
+                + iters);
+        Assert.assertEquals("Training finished earlier than expected", iters,
+            udtf._validationState.getCurrentIteration());
 
-        println("Best cumulative loss: " + udtf._validationState.getCumulativeLoss());
-        Assert.assertTrue("Cumulative loss should be same",
-            bestCumulativeLoss == udtf._validationState.getCumulativeLoss());
-
-        for (List<String> featureVector : featureVectors) {
-            Feature[] fv = udtf.parseFeatures(featureVector);
-            Assert.assertTrue("Early-stopped best model was not correctly cached/restored",
-                bestModel.predict(fv) == udtf._model.predict(fv));
-        }
+        println("Cumulative loss: " + udtf._validationState.getCumulativeLoss());
+        Assert.assertTrue("Cumulative loss should be better than " + cumulativeLoss,
+            cumulativeLoss > udtf._validationState.getCumulativeLoss());
     }
 
     @Test
