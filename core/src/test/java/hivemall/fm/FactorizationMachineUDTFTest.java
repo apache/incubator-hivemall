@@ -92,6 +92,62 @@ public class FactorizationMachineUDTFTest {
     }
 
     @Test
+    public void testAdaptiveRegularization() throws HiveException, IOException {
+        println("Adaptive regularization test");
+
+        final String options = "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.01 -seed 31 ";
+
+        FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, options)};
+
+        udtf.initialize(argOIs);
+
+        BufferedReader data = readFile("5107786.txt.gz");
+        List<List<String>> featureVectors = new ArrayList<>();
+        List<Double> ys = new ArrayList<>();
+        String line = data.readLine();
+        while (line != null) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+            double y = Double.parseDouble(tokenizer.nextToken());
+            List<String> features = new ArrayList<String>();
+            while (tokenizer.hasMoreTokens()) {
+                String f = tokenizer.nextToken();
+                features.add(f);
+            }
+            udtf.process(new Object[] {features, y});
+            featureVectors.add(features);
+            ys.add(y);
+            line = data.readLine();
+        }
+        udtf.finalizeTraining();
+        data.close();
+
+        double loss = udtf._cvState.getAverageLoss(featureVectors.size());
+        println("Average loss without adaptive regularization: " + loss);
+
+        // train with adaptive regularization
+        udtf = new FactorizationMachineUDTF();
+        argOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            options + "-adaptive_regularization -validation_threshold 1");
+        udtf.initialize(argOIs);
+        udtf.initModel(udtf._params);
+        for (int i = 0, n = featureVectors.size(); i < n; i++) {
+            udtf.process(new Object[] {featureVectors.get(i), ys.get(i)});
+        }
+        udtf.finalizeTraining();
+
+        double loss_adareg = udtf._cvState.getAverageLoss(featureVectors.size());
+        println("Average loss with adaptive regularization: " + loss_adareg);
+        Assert.assertTrue("Adaptive regularization should achieve lower loss", loss > loss_adareg);
+    }
+
+    @Test
     public void testEarlyStopping() throws HiveException, IOException {
         println("Early stopping test");
 
