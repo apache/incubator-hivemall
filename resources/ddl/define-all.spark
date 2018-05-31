@@ -777,3 +777,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION assert AS 'hivemall.tools.sanity.Asser
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS raise_error")
 sqlContext.sql("CREATE TEMPORARY FUNCTION raise_error AS 'hivemall.tools.sanity.RaiseErrorUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS moving_avg")
+sqlContext.sql("CREATE TEMPORARY FUNCTION moving_avg AS 'hivemall.tools.timeseries.MovingAverageUDTF'")

@@ -818,3 +818,6 @@ CREATE FUNCTION assert as 'hivemall.tools.sanity.AssertUDF' USING JAR '${hivemal
 
 DROP FUNCTION IF EXISTS raise_error;
 CREATE FUNCTION raise_error as 'hivemall.tools.sanity.RaiseErrorUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS moving_avg;
+CREATE FUNCTION moving_avg as 'hivemall.tools.timeseries.MovingAverageUDTF' USING JAR '${hivemall_jar}';
