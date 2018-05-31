@@ -236,3 +236,7 @@ create temporary function assert as 'hivemall.tools.sanity.AssertUDF';
 create temporary function raise_error as 'hivemall.tools.sanity.RaiseErrorUDF';
 
 create temporary function moving_avg as 'hivemall.tools.timeseries.MovingAverageUDTF';
+
+create temporary function vector_add as 'hivemall.tools.vector.VectorAddUDF';
+
+create temporary function vector_dot as 'hivemall.tools.vector.VectorDotUDF';

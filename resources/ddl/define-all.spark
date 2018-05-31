@@ -780,3 +780,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION raise_error AS 'hivemall.tools.sanity.
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS moving_avg")
 sqlContext.sql("CREATE TEMPORARY FUNCTION moving_avg AS 'hivemall.tools.timeseries.MovingAverageUDTF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS vector_add")
+sqlContext.sql("CREATE TEMPORARY FUNCTION vector_add AS 'hivemall.tools.vector.VectorAddUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS vector_dot")
+sqlContext.sql("CREATE TEMPORARY FUNCTION vector_dot AS 'hivemall.tools.vector.VectorDotUDF'")

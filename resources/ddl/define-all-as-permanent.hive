@@ -821,3 +821,9 @@ CREATE FUNCTION raise_error as 'hivemall.tools.sanity.RaiseErrorUDF' USING JAR '
 
 DROP FUNCTION IF EXISTS moving_avg;
 CREATE FUNCTION moving_avg as 'hivemall.tools.timeseries.MovingAverageUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS vector_add;
+CREATE FUNCTION vector_add as 'hivemall.tools.vector.VectorAddUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS vector_dot;
+CREATE FUNCTION vector_dot as 'hivemall.tools.vector.VectorDotUDF' USING JAR '${hivemall_jar}';

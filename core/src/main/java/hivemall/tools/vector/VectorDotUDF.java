@@ -42,7 +42,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "vector_dot",
-        value = "_FUNC_(array<NUMBER> x, array<NUMBER> y) - Performs vector dot product.")
+        value = "_FUNC_(array<NUMBER> x, array<NUMBER> y) - Performs vector dot product.",
+        extended = "SELECT vector_dot(array(1.0,2.0,3.0),array(2.0,3.0,4.0));\n20\n\n"
+                + "SELECT vector_dot(array(1.0,2.0,3.0),2);\n[2.0,4.0,6.0]")
 @UDFType(deterministic = true, stateful = false)
 public final class VectorDotUDF extends GenericUDF {
 
@@ -64,11 +66,11 @@ public final class VectorDotUDF extends GenericUDF {
         ObjectInspector argOI1 = argOIs[1];
         if (HiveUtils.isNumberListOI(argOI1)) {
             this.evaluator = new Dot2DVectors(xListOI, HiveUtils.asListOI(argOI1));
-            return ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
+            return PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
         } else if (HiveUtils.isNumberOI(argOI1)) {
             this.evaluator = new Multiply2D1D(xListOI, argOI1);
-            return PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
         } else {
             throw new UDFArgumentException(
                 "Expected array<number> or number for the send argument: " + argOI1.getTypeName());

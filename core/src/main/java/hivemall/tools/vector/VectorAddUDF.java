@@ -42,7 +42,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "vector_add",
-        value = "_FUNC_(array<NUMBER> x, array<NUMBER> y) - Perform vector ADD operation.")
+        value = "_FUNC_(array<NUMBER> x, array<NUMBER> y) - Perform vector ADD operation.",
+        extended = "SELECT vector_add(array(1.0,2.0,3.0), array(2, 3, 4));\n" + "[3.0,5.0,7.0]")
 @UDFType(deterministic = true, stateful = false)
 public final class VectorAddUDF extends GenericUDF {
 
