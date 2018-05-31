@@ -812,3 +812,9 @@ CREATE FUNCTION to_json as 'hivemall.tools.json.ToJsonUDF' USING JAR '${hivemall
 
 DROP FUNCTION IF EXISTS from_json;
 CREATE FUNCTION from_json as 'hivemall.tools.json.FromJsonUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS assert;
+CREATE FUNCTION assert as 'hivemall.tools.sanity.AssertUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS raise_error;
+CREATE FUNCTION raise_error as 'hivemall.tools.sanity.RaiseErrorUDF' USING JAR '${hivemall_jar}';

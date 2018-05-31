@@ -230,3 +230,7 @@ create temporary function sessionize as 'hivemall.tools.datetime.SessionizeUDF';
 create temporary function to_json as 'hivemall.tools.json.ToJsonUDF';
 
 create temporary function from_json as 'hivemall.tools.json.FromJsonUDF';
+
+create temporary function assert as 'hivemall.tools.sanity.AssertUDF';
+
+create temporary function raise_error as 'hivemall.tools.sanity.RaiseErrorUDF';

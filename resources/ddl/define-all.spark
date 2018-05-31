@@ -771,3 +771,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION to_json AS 'hivemall.tools.json.ToJson
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS from_json")
 sqlContext.sql("CREATE TEMPORARY FUNCTION from_json AS 'hivemall.tools.json.FromJsonUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS assert")
+sqlContext.sql("CREATE TEMPORARY FUNCTION assert AS 'hivemall.tools.sanity.AssertUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS raise_error")
+sqlContext.sql("CREATE TEMPORARY FUNCTION raise_error AS 'hivemall.tools.sanity.RaiseErrorUDF'")

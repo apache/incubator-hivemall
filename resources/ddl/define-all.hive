@@ -818,3 +818,9 @@ create temporary function to_json as 'hivemall.tools.json.ToJsonUDF';
 
 drop temporary function if exists from_json;
 create temporary function from_json as 'hivemall.tools.json.FromJsonUDF';
+
+drop temporary function if exists assert;
+create temporary function assert as 'hivemall.tools.sanity.AssertUDF';
+
+drop temporary function if exists raise_error;
+create temporary function raise_error as 'hivemall.tools.sanity.RaiseErrorUDF';
