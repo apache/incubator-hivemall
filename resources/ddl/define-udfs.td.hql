@@ -240,3 +240,13 @@ create temporary function moving_avg as 'hivemall.tools.timeseries.MovingAverage
 create temporary function vector_add as 'hivemall.tools.vector.VectorAddUDF';
 
 create temporary function vector_dot as 'hivemall.tools.vector.VectorDotUDF';
+
+create temporary function bloom_filter as 'hivemall.sketch.bloom.BloomFilterUDAF';
+
+create temporary function bloom_and as 'hivemall.sketch.bloom.BloomAndUDF';
+
+create temporary function bloom_contains as 'hivemall.sketch.bloom.BloomContainsUDF';
+
+create temporary function bloom_not as 'hivemall.sketch.bloom.BloomNotUDF';
+
+create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';

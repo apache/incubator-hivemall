@@ -833,3 +833,18 @@ create temporary function vector_add as 'hivemall.tools.vector.VectorAddUDF';
 
 drop temporary function if exists vector_dot;
 create temporary function vector_dot as 'hivemall.tools.vector.VectorDotUDF';
+
+drop temporary function if exists bloom_filter;
+create temporary function bloom_filter as 'hivemall.sketch.bloom.BloomFilterUDAF';
+
+drop temporary function if exists bloom_and;
+create temporary function bloom_and as 'hivemall.sketch.bloom.BloomAndUDF';
+
+drop temporary function if exists bloom_contains;
+create temporary function bloom_contains as 'hivemall.sketch.bloom.BloomContainsUDF';
+
+drop temporary function if exists bloom_not;
+create temporary function bloom_not as 'hivemall.sketch.bloom.BloomNotUDF';
+
+drop temporary function if exists bloom_or;
+create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';
