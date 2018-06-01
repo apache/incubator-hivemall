@@ -32,10 +32,10 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 import org.apache.hadoop.util.bloom.Key;
 
-@Description(name = "bloom",
+@Description(name = "bloom_filter",
         value = "_FUNC_(string key) - Constructs a BloomFilter by aggregating a set of keys")
 @SuppressWarnings("deprecation")
-public final class BloomUDAF extends UDAF {
+public final class BloomFilterUDAF extends UDAF {
 
     public static class Evaluator implements UDAFEvaluator {
 
