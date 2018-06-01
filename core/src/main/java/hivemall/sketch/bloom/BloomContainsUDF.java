@@ -19,6 +19,7 @@
 package hivemall.sketch.bloom;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -33,7 +34,8 @@ import org.apache.hadoop.util.bloom.Filter;
 import org.apache.hadoop.util.bloom.Key;
 
 @Description(name = "bloom_contains",
-        value = "_FUNC_(string bloom, string key) - Returns true if the bloom filter contains the given key")
+        value = "_FUNC_(string bloom, string key) or _FUNC_(string bloom, array<string> keys)"
+                + " - Returns true if the bloom filter contains all the given key(s). Returns false if key is null.")
 @UDFType(deterministic = true, stateful = false)
 public final class BloomContainsUDF extends UDF {
 
@@ -41,31 +43,64 @@ public final class BloomContainsUDF extends UDF {
     private final Key key = new Key();
 
     @Nullable
-    private Text prevKey;
+    private Text prevBfStr;
     @Nullable
-    private Filter prevFilter;
+    private Filter prevBf;
 
     @Nullable
     public Boolean evaluate(@Nullable Text bloomStr, @Nullable Text keyStr) throws HiveException {
-        if (bloomStr == null || key == null) {
+        if (bloomStr == null) {
             return null;
         }
+        if (keyStr == null) {
+            return Boolean.FALSE;
+        }
 
+        Filter bloom = getFilter(bloomStr);
+        key.set(keyStr.getBytes(), 1.0d);
+        return Boolean.valueOf(bloom.membershipTest(key));
+    }
+
+    @Nullable
+    public Boolean evaluate(@Nullable Text bloomStr, @Nullable List<Text> keys)
+            throws HiveException {
+        if (bloomStr == null) {
+            return null;
+        }
+        if (keys == null) {
+            return Boolean.FALSE;
+        }
+
+        final Filter bloom = getFilter(bloomStr);
+
+        for (Text keyStr : keys) {
+            if (keyStr == null) {
+                continue;
+            }
+            key.set(keyStr.getBytes(), 1.0d);
+            if (bloom.membershipTest(key) == false) {
+                return Boolean.FALSE;
+            }
+        }
+
+        return Boolean.TRUE;
+    }
+
+    @Nonnull
+    private Filter getFilter(@Nonnull final Text bloomStr) throws HiveException {
         final Filter bloom;
-        if (prevFilter != null && prevKey.equals(keyStr)) {
-            bloom = prevFilter;
+        if (prevBf != null && prevBfStr.equals(bloomStr)) {
+            bloom = prevBf;
         } else {
             try {
                 bloom = BloomFilterUtils.deserialize(bloomStr, new DynamicBloomFilter());
             } catch (IOException e) {
                 throw new HiveException(e);
             }
-            this.prevKey = keyStr;
-            this.prevFilter = bloom;
-            key.set(keyStr.getBytes(), 1.0d);
+            this.prevBfStr = bloomStr;
+            this.prevBf = bloom;
         }
-
-        return Boolean.valueOf(bloom.membershipTest(key));
+        return bloom;
     }
 
 }
