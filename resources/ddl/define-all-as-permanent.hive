@@ -828,8 +828,8 @@ CREATE FUNCTION vector_add as 'hivemall.tools.vector.VectorAddUDF' USING JAR '${
 DROP FUNCTION IF EXISTS vector_dot;
 CREATE FUNCTION vector_dot as 'hivemall.tools.vector.VectorDotUDF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION IF EXISTS bloom_filter;
-CREATE FUNCTION bloom_filter as 'hivemall.sketch.bloom.BloomFilterUDAF' USING JAR '${hivemall_jar}';
+DROP FUNCTION IF EXISTS bloom;
+CREATE FUNCTION bloom as 'hivemall.sketch.bloom.BloomFilterUDAF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS bloom_and;
 CREATE FUNCTION bloom_and as 'hivemall.sketch.bloom.BloomAndUDF' USING JAR '${hivemall_jar}';
@@ -842,3 +842,6 @@ CREATE FUNCTION bloom_not as 'hivemall.sketch.bloom.BloomNotUDF' USING JAR '${hi
 
 DROP FUNCTION IF EXISTS bloom_or;
 CREATE FUNCTION bloom_or as 'hivemall.sketch.bloom.BloomOrUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS bloom_contains_any;
+CREATE FUNCTION bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF' USING JAR '${hivemall_jar}';
