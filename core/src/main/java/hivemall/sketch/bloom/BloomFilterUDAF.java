@@ -32,7 +32,7 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 import org.apache.hadoop.util.bloom.Key;
 
-@Description(name = "bloom_filter",
+@Description(name = "bloom",
         value = "_FUNC_(string key) - Constructs a BloomFilter by aggregating a set of keys")
 @SuppressWarnings("deprecation")
 public final class BloomFilterUDAF extends UDAF {
@@ -52,8 +52,11 @@ public final class BloomFilterUDAF extends UDAF {
             if (keyStr == null) {
                 return true;
             }
-            key.set(keyStr.getBytes(), 1.0d);
+            if (filter == null) {
+                init();
+            }
 
+            key.set(keyStr.getBytes(), 1.0d);
             filter.add(key);
 
             return true;
