@@ -56,7 +56,7 @@ public final class BloomFilterUDAF extends UDAF {
                 init();
             }
 
-            key.set(keyStr.getBytes(), 1.0d);
+            key.set(keyStr.copyBytes(), 1.0d);
             filter.add(key);
 
             return true;

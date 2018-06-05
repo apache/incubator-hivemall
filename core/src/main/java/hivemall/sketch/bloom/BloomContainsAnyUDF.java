@@ -62,7 +62,7 @@ public final class BloomContainsAnyUDF extends UDF {
             if (keyStr == null) {
                 continue;
             }
-            key.set(keyStr.getBytes(), 1.0d);
+            key.set(keyStr.copyBytes(), 1.0d);
             if (bloom.membershipTest(key)) {
                 return Boolean.TRUE;
             }
@@ -82,7 +82,7 @@ public final class BloomContainsAnyUDF extends UDF {
             } catch (IOException e) {
                 throw new HiveException(e);
             }
-            this.prevBfStr = bloomStr;
+            this.prevBfStr = new Text(bloomStr);
             this.prevBf = bloom;
         }
         return bloom;
