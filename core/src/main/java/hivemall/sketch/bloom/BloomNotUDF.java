@@ -31,7 +31,8 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 
 @Description(name = "bloom_not",
-        value = "_FUNC_(string bloom) - Returns the logical NOT of a bloom filters")
+        value = "_FUNC_(string bloom) - Returns the logical NOT of a bloom filters",
+        extended = "SELECT bloom_not(bf) FROM xxx;")
 @UDFType(deterministic = true, stateful = false)
 public final class BloomNotUDF extends UDF {
 

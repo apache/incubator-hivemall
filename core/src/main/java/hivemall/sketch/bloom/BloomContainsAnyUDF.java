@@ -33,8 +33,28 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 import org.apache.hadoop.util.bloom.Key;
 
+//@formatter:off
 @Description(name = "bloom_contains_any",
-        value = "_FUNC_(string bloom, string key) - Returns true if the bloom filter contains any of the given key")
+        value = "_FUNC_(string bloom, string key) or _FUNC_(string bloom, array<string> keys)"
+                + "- Returns true if the bloom filter contains any of the given key",
+        extended = "WITH data1 as (\n" + 
+                "  SELECT explode(array(1,2,3,4,5)) as id\n" + 
+                "),\n" + 
+                "data2 as (\n" + 
+                "  SELECT explode(array(1,3,5,6,8)) as id\n" + 
+                "),\n" + 
+                "bloom as (\n" + 
+                "  SELECT bloom(id) as bf\n" + 
+                "  FROM data1\n" + 
+                ")\n" + 
+                "SELECT \n" + 
+                "  l.* \n" + 
+                "FROM \n" + 
+                "  data2 l\n" + 
+                "  CROSS JOIN bloom r\n" + 
+                "WHERE\n" + 
+                "  bloom_contains_any(r.bf, array(l.id))")
+//@formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class BloomContainsAnyUDF extends UDF {
 

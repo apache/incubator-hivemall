@@ -33,9 +33,37 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 import org.apache.hadoop.util.bloom.Key;
 
+//@formatter:off
 @Description(name = "bloom_contains",
         value = "_FUNC_(string bloom, string key) or _FUNC_(string bloom, array<string> keys)"
-                + " - Returns true if the bloom filter contains all the given key(s). Returns false if key is null.")
+                + " - Returns true if the bloom filter contains all the given key(s). Returns false if key is null.",
+        extended = "WITH satisfied_movies as (\n" + 
+                "  SELECT bloom(movieid) as movies\n" + 
+                "  FROM (\n" + 
+                "    SELECT movieid\n" + 
+                "    FROM ratings\n" + 
+                "    GROUP BY movieid\n" + 
+                "    HAVING avg(rating) >= 4.0\n" + 
+                "  ) t\n" + 
+                ")\n" + 
+                "SELECT\n" + 
+                "  l.rating,\n" + 
+                "  count(distinct l.userid) as cnt\n" + 
+                "FROM\n" + 
+                "  ratings l \n" + 
+                "  CROSS JOIN satisfied_movies r\n" + 
+                "WHERE\n" + 
+                "  bloom_contains(r.movies, l.movieid) -- includes false positive\n" + 
+                "GROUP BY \n" + 
+                "  l.rating;\n" + 
+                "\n" + 
+                "l.rating        cnt\n" + 
+                "1       1296\n" + 
+                "2       2770\n" + 
+                "3       5008\n" + 
+                "4       5824\n" + 
+                "5       5925")
+//@formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class BloomContainsUDF extends UDF {
 
