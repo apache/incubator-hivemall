@@ -134,7 +134,8 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
         funcsHeaders.put("# Similarity measures",
             Collections.singletonList("hivemall.knn.similarity"));
         funcsHeaders.put("# Evaluation", Collections.singletonList("hivemall.evaluation"));
-        funcsHeaders.put("# Sketching", Collections.singletonList("hivemall.sketch.hll"));
+        funcsHeaders.put("# Sketching",
+            Arrays.asList("hivemall.sketch.hll", "hivemall.sketch.bloom"));
         funcsHeaders.put("# Ensemble learning", Collections.singletonList("hivemall.ensemble"));
         funcsHeaders.put("## Bagging", Collections.singletonList("hivemall.ensemble.bagging"));
         funcsHeaders.put("# Decision trees and RandomForest", Arrays.asList(
