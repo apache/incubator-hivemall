@@ -427,6 +427,30 @@ create temporary function array_intersect as 'hivemall.tools.array.ArrayIntersec
 drop temporary function if exists select_k_best;
 create temporary function select_k_best as 'hivemall.tools.array.SelectKBestUDF';
 
+drop temporary function if exists array_append;
+create temporary function array_append as 'hivemall.tools.array.ArrayAppendUDF';
+
+drop temporary function if exists element_at;
+create temporary function element_at as 'hivemall.tools.array.ArrayElementAtUDF';
+
+drop temporary function if exists array_union;
+create temporary function array_union as 'hivemall.tools.array.ArrayUnionUDF';
+
+drop temporary function if exists first_element;
+create temporary function first_element as 'hivemall.tools.array.FirstElementUDF';
+
+drop temporary function if exists last_element;
+create temporary function last_element as 'hivemall.tools.array.LastElementUDF';
+
+drop temporary function if exists array_flatten;
+create temporary function array_flatten as 'hivemall.tools.array.ArrayFlattenUDF';
+
+drop temporary function if exists array_to_str;
+create temporary function array_to_str as 'hivemall.tools.array.ArrayToStrUDF';
+
+drop temporary function if exists conditional_emit;
+create temporary function conditional_emit as 'hivemall.tools.array.ConditionalEmitUDTF';
+
 -----------------------------
 -- bit operation functions --
 -----------------------------
@@ -469,6 +493,18 @@ create temporary function to_map as 'hivemall.tools.map.UDAFToMap';
 drop temporary function if exists to_ordered_map;
 create temporary function to_ordered_map as 'hivemall.tools.map.UDAFToOrderedMap';
 
+drop temporary function if exists map_include_keys;
+create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF';
+
+drop temporary function if exists map_exclude_keys;
+create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
+
+drop temporary function if exists map_index;
+create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
+
+drop temporary function if exists map_key_values;
+create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
+
 ---------------------
 -- list functions --
 ---------------------
@@ -486,12 +522,18 @@ create temporary function sigmoid as 'hivemall.tools.math.SigmoidGenericUDF';
 drop temporary function if exists l2_norm;
 create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
 
-----------------------
--- Matrix functions --
-----------------------
+-----------------------------
+-- Matrix/Vector functions --
+-----------------------------
 
 drop temporary function if exists transpose_and_dot;
 create temporary function transpose_and_dot as 'hivemall.tools.matrix.TransposeAndDotUDAF';
+
+drop temporary function if exists vector_add;
+create temporary function vector_add as 'hivemall.tools.vector.VectorAddUDF';
+
+drop temporary function if exists vector_dot;
+create temporary function vector_dot as 'hivemall.tools.vector.VectorDotUDF';
 
 ----------------------
 -- mapred functions --
@@ -516,6 +558,26 @@ drop temporary function if exists jobconf_gets;
 create temporary function jobconf_gets as 'hivemall.tools.mapred.JobConfGetsUDF';
 
 --------------------
+-- JSON functions --
+--------------------
+
+drop temporary function if exists to_json;
+create temporary function to_json as 'hivemall.tools.json.ToJsonUDF';
+
+drop temporary function if exists from_json;
+create temporary function from_json as 'hivemall.tools.json.FromJsonUDF';
+
+----------------------------
+-- Sanity Check functions --
+----------------------------
+
+drop temporary function if exists assert;
+create temporary function assert as 'hivemall.tools.sanity.AssertUDF';
+
+drop temporary function if exists raise_error;
+create temporary function raise_error as 'hivemall.tools.sanity.RaiseErrorUDF';
+
+--------------------
 -- misc functions --
 --------------------
 
@@ -530,6 +592,15 @@ create temporary function x_rank as 'hivemall.tools.RankSequenceUDF';
 
 drop temporary function if exists each_top_k;
 create temporary function each_top_k as 'hivemall.tools.EachTopKUDTF';
+
+drop temporary function if exists try_cast;
+create temporary function try_cast as 'hivemall.tools.TryCastUDF';
+
+drop temporary function if exists sessionize;
+create temporary function sessionize as 'hivemall.tools.datetime.SessionizeUDF';
+
+drop temporary function if exists moving_avg;
+create temporary function moving_avg as 'hivemall.tools.timeseries.MovingAverageUDTF';
 
 -------------------------------
 -- Text processing functions --
@@ -741,6 +812,28 @@ create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
 drop temporary function if exists approx_count_distinct;
 create temporary function approx_count_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF';
 
+------------------
+-- Bloom Filter --
+------------------
+
+drop temporary function if exists bloom;
+create temporary function bloom as 'hivemall.sketch.bloom.BloomFilterUDAF';
+
+drop temporary function if exists bloom_and;
+create temporary function bloom_and as 'hivemall.sketch.bloom.BloomAndUDF';
+
+drop temporary function if exists bloom_contains;
+create temporary function bloom_contains as 'hivemall.sketch.bloom.BloomContainsUDF';
+
+drop temporary function if exists bloom_not;
+create temporary function bloom_not as 'hivemall.sketch.bloom.BloomNotUDF';
+
+drop temporary function if exists bloom_or;
+create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';
+
+drop temporary function if exists bloom_contains_any;
+create temporary function bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF';
+
 --------------------------------------------------------------------------------------------------
 -- macros available from hive 0.12.0
 -- see https://issues.apache.org/jira/browse/HIVE-2655
@@ -773,84 +866,3 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
-
-drop temporary function if exists try_cast;
-create temporary function try_cast as 'hivemall.tools.TryCastUDF';
-
-drop temporary function if exists array_append;
-create temporary function array_append as 'hivemall.tools.array.ArrayAppendUDF';
-
-drop temporary function if exists element_at;
-create temporary function element_at as 'hivemall.tools.array.ArrayElementAtUDF';
-
-drop temporary function if exists array_union;
-create temporary function array_union as 'hivemall.tools.array.ArrayUnionUDF';
-
-drop temporary function if exists first_element;
-create temporary function first_element as 'hivemall.tools.array.FirstElementUDF';
-
-drop temporary function if exists last_element;
-create temporary function last_element as 'hivemall.tools.array.LastElementUDF';
-
-drop temporary function if exists array_flatten;
-create temporary function array_flatten as 'hivemall.tools.array.ArrayFlattenUDF';
-
-drop temporary function if exists map_include_keys;
-create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF';
-
-drop temporary function if exists map_exclude_keys;
-create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
-
-drop temporary function if exists array_to_str;
-create temporary function array_to_str as 'hivemall.tools.array.ArrayToStrUDF';
-
-drop temporary function if exists map_index;
-create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
-
-drop temporary function if exists map_key_values;
-create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
-
-drop temporary function if exists sessionize;
-create temporary function sessionize as 'hivemall.tools.datetime.SessionizeUDF';
-
-drop temporary function if exists to_json;
-create temporary function to_json as 'hivemall.tools.json.ToJsonUDF';
-
-drop temporary function if exists from_json;
-create temporary function from_json as 'hivemall.tools.json.FromJsonUDF';
-
-drop temporary function if exists assert;
-create temporary function assert as 'hivemall.tools.sanity.AssertUDF';
-
-drop temporary function if exists raise_error;
-create temporary function raise_error as 'hivemall.tools.sanity.RaiseErrorUDF';
-
-drop temporary function if exists moving_avg;
-create temporary function moving_avg as 'hivemall.tools.timeseries.MovingAverageUDTF';
-
-drop temporary function if exists vector_add;
-create temporary function vector_add as 'hivemall.tools.vector.VectorAddUDF';
-
-drop temporary function if exists vector_dot;
-create temporary function vector_dot as 'hivemall.tools.vector.VectorDotUDF';
-
-drop temporary function if exists bloom;
-create temporary function bloom as 'hivemall.sketch.bloom.BloomFilterUDAF';
-
-drop temporary function if exists bloom_and;
-create temporary function bloom_and as 'hivemall.sketch.bloom.BloomAndUDF';
-
-drop temporary function if exists bloom_contains;
-create temporary function bloom_contains as 'hivemall.sketch.bloom.BloomContainsUDF';
-
-drop temporary function if exists bloom_not;
-create temporary function bloom_not as 'hivemall.sketch.bloom.BloomNotUDF';
-
-drop temporary function if exists bloom_or;
-create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';
-
-drop temporary function if exists bloom_contains_any;
-create temporary function bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF';
-
-drop temporary function if exists conditional_emit;
-create temporary function conditional_emit as 'hivemall.tools.array.ConditionalEmitUDTF';
