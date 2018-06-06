@@ -31,7 +31,8 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 
 @Description(name = "bloom_or",
-        value = "_FUNC_(string bloom1, string bloom2) - Returns the logical OR of two bloom filters")
+        value = "_FUNC_(string bloom1, string bloom2) - Returns the logical OR of two bloom filters",
+        extended = "SELECT bloom_or(bf1, bf2) FROM xxx;")
 @UDFType(deterministic = true, stateful = false)
 public final class BloomOrUDF extends UDF {
 

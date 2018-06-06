@@ -85,22 +85,21 @@ public class ArrayAppendUDFTest {
         udf.close();
     }
 
-
     @Test
-    public void testEvaluateReturnNull() throws HiveException, IOException {
+    public void testEvaluateNullList() throws HiveException, IOException {
         ArrayAppendUDF udf = new ArrayAppendUDF();
 
         udf.initialize(new ObjectInspector[] {
                 ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector),
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector});
 
         DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(null),
-                new GenericUDF.DeferredJavaObject(new Double(3))};
+                new GenericUDF.DeferredJavaObject(new Double(3d))};
 
         List<Object> result = udf.evaluate(args);
 
-        Assert.assertNull(result);
+        Assert.assertEquals(Arrays.asList(new DoubleWritable(3d)), result);
 
         udf.close();
     }

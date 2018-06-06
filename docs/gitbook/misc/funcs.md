@@ -393,6 +393,84 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `approx_count_distinct(expr x [, const string options])` - Returns an approximation of count(DISTINCT x) using HyperLogLogPlus algorithm
 
+- `bloom(string key)` - Constructs a BloomFilter by aggregating a set of keys
+  ```sql
+  CREATE TABLE satisfied_movies AS 
+    SELECT bloom(movieid) as movies
+    FROM (
+      SELECT movieid
+      FROM ratings
+      GROUP BY movieid
+      HAVING avg(rating) >= 4.0
+    ) t;
+  ```
+
+- `bloom_and(string bloom1, string bloom2)` - Returns the logical AND of two bloom filters
+  ```sql
+  SELECT bloom_and(bf1, bf2) FROM xxx;
+  ```
+
+- `bloom_contains(string bloom, string key)` or _FUNC_(string bloom, array&lt;string&gt; keys) - Returns true if the bloom filter contains all the given key(s). Returns false if key is null.
+  ```sql
+  WITH satisfied_movies as (
+    SELECT bloom(movieid) as movies
+    FROM (
+      SELECT movieid
+      FROM ratings
+      GROUP BY movieid
+      HAVING avg(rating) >= 4.0
+    ) t
+  )
+  SELECT
+    l.rating,
+    count(distinct l.userid) as cnt
+  FROM
+    ratings l 
+    CROSS JOIN satisfied_movies r
+  WHERE
+    bloom_contains(r.movies, l.movieid) -- includes false positive
+  GROUP BY 
+    l.rating;
+
+  l.rating        cnt
+  1       1296
+  2       2770
+  3       5008
+  4       5824
+  5       5925
+  ```
+
+- `bloom_contains_any(string bloom, string key)` or _FUNC_(string bloom, array&lt;string&gt; keys)- Returns true if the bloom filter contains any of the given key
+  ```sql
+  WITH data1 as (
+    SELECT explode(array(1,2,3,4,5)) as id
+  ),
+  data2 as (
+    SELECT explode(array(1,3,5,6,8)) as id
+  ),
+  bloom as (
+    SELECT bloom(id) as bf
+    FROM data1
+  )
+  SELECT 
+    l.* 
+  FROM 
+    data2 l
+    CROSS JOIN bloom r
+  WHERE
+    bloom_contains_any(r.bf, array(l.id))
+  ```
+
+- `bloom_not(string bloom)` - Returns the logical NOT of a bloom filters
+  ```sql
+  SELECT bloom_not(bf) FROM xxx;
+  ```
+
+- `bloom_or(string bloom1, string bloom2)` - Returns the logical OR of two bloom filters
+  ```sql
+  SELECT bloom_or(bf1, bf2) FROM xxx;
+  ```
+
 # Ensemble learning
 
 - `argmin_kld(float mean, float covar)` - Returns mean or covar that minimize a KL-distance among distributions
@@ -446,7 +524,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `hivemall_version()` - Returns the version of Hivemall
   ```sql
-  Usage: SELECT hivemall_version();
+  SELECT hivemall_version();
   ```
 
 - `lr_datagen(options string)` - Generates a logistic regression dataset

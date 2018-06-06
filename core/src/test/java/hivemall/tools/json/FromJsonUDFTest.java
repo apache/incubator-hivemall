@@ -90,4 +90,5 @@ public class FromJsonUDFTest {
                     HiveUtils.getConstStringObjectInspector("array<double>")},
             new Object[] {"[0.1,1.1,2.2]"});
     }
+
 }

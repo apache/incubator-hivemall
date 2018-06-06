@@ -239,7 +239,6 @@ public final class MatrixUtils {
         Preconditions.checkArgument(dim >= 1, "Invalid dimension: " + dim);
         Preconditions.checkArgument(c.length >= dim,
             "|c| must be greater than " + dim + ": " + c.length);
-
         /*
          * Toeplitz matrix  (symmetric, invertible, k*dimensions by k*dimensions)
          *
@@ -511,8 +510,12 @@ public final class MatrixUtils {
     }
 
     /**
-     * Find the first singular vector/value of a matrix A based on the Power method.
+     * Find the first singular vector/value of a matrix A based on the Power method. <<<<<<< HEAD
      *
+     * =======
+     * 
+     * >>>>>>> Applied spotless-maven-plugin formatter
+     * 
      * @see http
      *      ://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
      * @param A target matrix

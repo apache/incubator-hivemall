@@ -1211,7 +1211,7 @@ public final class HiveUtils {
 
     @Nonnull
     public static ObjectInspector getObjectInspector(@Nonnull final String typeString,
-            boolean preferWritable) {
+            final boolean preferWritable) {
         TypeInfo typeInfo = TypeInfoUtils.getTypeInfoFromTypeString(typeString);
         if (preferWritable) {
             return TypeInfoUtils.getStandardWritableObjectInspectorFromTypeInfo(typeInfo);

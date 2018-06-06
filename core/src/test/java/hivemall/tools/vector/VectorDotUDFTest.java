@@ -52,8 +52,8 @@ public class VectorDotUDFTest {
                 new GenericUDF.DeferredJavaObject(
                     WritableUtils.toWritableList(new float[] {2, 3, 4}))};
 
-        List<Double> actual = udf.evaluate(args);
-        List<Double> expected = Arrays.asList(2.d, 6.d, 12.d);
+        Object actual = udf.evaluate(args);
+        Double expected = Double.valueOf(1.d * 2.d + 2.d * 3.d + 3.d * 4.d);
 
         Assert.assertEquals(expected, actual);
 
@@ -74,7 +74,7 @@ public class VectorDotUDFTest {
                     WritableUtils.toWritableList(new double[] {1, 2, 3})),
                 new GenericUDF.DeferredJavaObject(WritableUtils.val(2.f))};
 
-        List<Double> actual = udf.evaluate(args);
+        Object actual = udf.evaluate(args);
         List<Double> expected = Arrays.asList(2.d, 4.d, 6.d);
 
         Assert.assertEquals(expected, actual);
@@ -92,4 +92,5 @@ public class VectorDotUDFTest {
                         PrimitiveObjectInspectorFactory.javaFloatObjectInspector)},
             new Object[] {Arrays.asList(1.d, 2.d, 3.d), Arrays.asList(2.f, 3.f, 4.f)});
     }
+
 }

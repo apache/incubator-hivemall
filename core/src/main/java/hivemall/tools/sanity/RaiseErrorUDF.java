@@ -18,21 +18,48 @@
  */
 package hivemall.tools.sanity;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(name = "raise_error", value = "_FUNC_() or _FUNC_(string msg) - Throws an error")
-@UDFType(deterministic = true, stateful = false)
-public final class RaiseErrorUDF extends UDF {
+@Description(name = "raise_error", value = "_FUNC_() or _FUNC_(string msg) - Throws an error",
+        extended = "SELECT product_id, price, raise_error('Found an invalid record') FROM xxx WHERE price < 0.0")
+@UDFType(deterministic = false, stateful = false)
+public class RaiseErrorUDF extends GenericUDF {
 
-    public boolean evaluate() throws HiveException {
-        throw new HiveException();
+    @Override
+    public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
+        if (argOIs.length != 0 && argOIs.length != 1) {
+            throw new UDFArgumentLengthException(
+                "Expected one or two arguments for raise_error UDF: " + argOIs.length);
+        }
+
+        return PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
     }
 
-    public boolean evaluate(String errorMessage) throws HiveException {
-        throw new HiveException(errorMessage);
+    @Override
+    public Object evaluate(DeferredObject[] arguments) throws HiveException {
+        if (arguments.length == 1) {
+            Object arg0 = arguments[0].get();
+            if (arg0 == null) {
+                throw new HiveException();
+            }
+            String msg = arg0.toString();
+            throw new HiveException(msg);
+        } else {
+            throw new HiveException();
+        }
+    }
+
+    @Override
+    public String getDisplayString(String[] children) {
+        return "raise_error(" + StringUtils.join(children, ',') + ')';
     }
 
 }

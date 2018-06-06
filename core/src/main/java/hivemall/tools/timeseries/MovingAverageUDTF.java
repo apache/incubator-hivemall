@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.statistics;
+package hivemall.tools.timeseries;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.stats.MovingAverage;
@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -34,16 +35,29 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.Writable;
 
-@Description(name = "moving_avg", value = "_FUNC_(NUMBER value, const int windowSize)"
-        + " - Returns moving average of a time series using a given window")
+// @formatter:off
+@Description(name = "moving_avg",
+        value = "_FUNC_(NUMBER value, const int windowSize)"
+                + " - Returns moving average of a time series using a given window",
+        extended = "SELECT moving_avg(x, 3) FROM (SELECT explode(array(1.0,2.0,3.0,4.0,5.0,6.0,7.0)) as x) series;\n" +
+                " 1.0\n" + 
+                " 1.5\n" + 
+                " 2.0\n" + 
+                " 3.0\n" + 
+                " 4.0\n" + 
+                " 5.0\n" + 
+                " 6.0")
+// @formatter:on
+@UDFType(deterministic = false, stateful = true)
 public final class MovingAverageUDTF extends GenericUDTF {
 
     private PrimitiveObjectInspector valueOI;
 
     private MovingAverage movingAvg;
 
-    private Object[] forwardObjs;
+    private Writable[] forwardObjs;
     private DoubleWritable result;
 
     @Override
@@ -59,7 +73,7 @@ public final class MovingAverageUDTF extends GenericUDTF {
         this.movingAvg = new MovingAverage(windowSize);
 
         this.result = new DoubleWritable();
-        this.forwardObjs = new Object[] {result};
+        this.forwardObjs = new Writable[] {result};
 
         List<String> fieldNames = Arrays.asList("avg");
         List<ObjectInspector> fieldOIs = Arrays.<ObjectInspector>asList(

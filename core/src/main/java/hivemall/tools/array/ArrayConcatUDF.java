@@ -38,7 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.Object
 
 @Description(name = "array_concat",
         value = "_FUNC_(array<ANY> x1, array<ANY> x2, ..) - Returns a concatenated array",
-        extended = "select array_concat(array(1),array(2,3));\n" + "> [1,2,3]")
+        extended = "SELECT array_concat(array(1),array(2,3));\n" + " [1,2,3]")
 @UDFType(deterministic = true, stateful = false)
 public class ArrayConcatUDF extends GenericUDF {
     /**
@@ -95,11 +95,11 @@ public class ArrayConcatUDF extends GenericUDF {
                 continue;
             }
 
-            final ListObjectInspector arrayOI = (ListObjectInspector) argumentOIs[i];
+            final ListObjectInspector arrayOI = argumentOIs[i];
+            final ObjectInspector elemOI = arrayOI.getListElementObjectInspector();
             final int arraylength = arrayOI.getListLength(arrayObject);
             for (int j = 0; j < arraylength; j++) {
                 Object rawObj = arrayOI.getListElement(arrayObject, j);
-                ObjectInspector elemOI = arrayOI.getListElementObjectInspector();
                 Object obj = ObjectInspectorUtils.copyToStandardObject(rawObj, elemOI,
                     ObjectInspectorCopyOption.WRITABLE);
                 ret.add(obj);

@@ -25,8 +25,10 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 
 @Description(name = "assert",
         value = "_FUNC_(boolean condition) or _FUNC_(boolean condition, string errMsg)"
-                + "- Throws HiveException if condition is not met")
-@UDFType(deterministic = true, stateful = false)
+                + "- Throws HiveException if condition is not met",
+        extended = "SELECT count(1) FROM stock_price WHERE assert(price > 0.0);\n"
+                + "SELECT count(1) FROM stock_price WHERE assert(price > 0.0, 'price MUST be more than 0.0')")
+@UDFType(deterministic = false, stateful = false)
 public final class AssertUDF extends UDF {
 
     public boolean evaluate(boolean condition) throws HiveException {

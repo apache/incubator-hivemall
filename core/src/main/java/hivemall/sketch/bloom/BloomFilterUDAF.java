@@ -32,10 +32,20 @@ import org.apache.hadoop.util.bloom.DynamicBloomFilter;
 import org.apache.hadoop.util.bloom.Filter;
 import org.apache.hadoop.util.bloom.Key;
 
+//@formatter:off
 @Description(name = "bloom",
-        value = "_FUNC_(string key) - Constructs a BloomFilter by aggregating a set of keys")
+        value = "_FUNC_(string key) - Constructs a BloomFilter by aggregating a set of keys",
+        extended = "CREATE TABLE satisfied_movies AS \n" + 
+                "  SELECT bloom(movieid) as movies\n" + 
+                "  FROM (\n" + 
+                "    SELECT movieid\n" + 
+                "    FROM ratings\n" + 
+                "    GROUP BY movieid\n" + 
+                "    HAVING avg(rating) >= 4.0\n" + 
+                "  ) t;")
+//@formatter:on
 @SuppressWarnings("deprecation")
-public final class BloomUDAF extends UDAF {
+public final class BloomFilterUDAF extends UDAF {
 
     public static class Evaluator implements UDAFEvaluator {
 
@@ -52,8 +62,11 @@ public final class BloomUDAF extends UDAF {
             if (keyStr == null) {
                 return true;
             }
-            key.set(keyStr.getBytes(), 1.0d);
+            if (filter == null) {
+                init();
+            }
 
+            key.set(keyStr.copyBytes(), 1.0d);
             filter.add(key);
 
             return true;

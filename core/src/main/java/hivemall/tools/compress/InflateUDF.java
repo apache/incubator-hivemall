@@ -40,8 +40,8 @@ import org.apache.hadoop.io.Text;
 
 @Description(name = "inflate",
         value = "_FUNC_(BINARY compressedData) - Returns a decompressed STRING by using Inflater",
-        extended = "select inflate(unbase91(base91(deflate('aaaaaaaaaaaaaaaabbbbccc'))));\n"
-                + "> aaaaaaaaaaaaaaaabbbbccc")
+        extended = "SELECT inflate(unbase91(base91(deflate('aaaaaaaaaaaaaaaabbbbccc'))));\n"
+                + " aaaaaaaaaaaaaaaabbbbccc")
 @UDFType(deterministic = true, stateful = false)
 public final class InflateUDF extends GenericUDF {
 

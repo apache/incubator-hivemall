@@ -21,6 +21,9 @@ package hivemall.ftvec.hashing;
 import hivemall.TestUtils;
 import hivemall.utils.hashing.MurmurHash3;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -28,9 +31,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 public class FeatureHashingUDFTest {
 

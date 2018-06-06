@@ -21,6 +21,7 @@ package hivemall.tools.array;
 import hivemall.utils.hadoop.HiveUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -38,7 +39,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 
 @Description(name = "array_append",
-        value = "_FUNC_(array<T> arr, T elem) - Append an element to the end of an array")
+        value = "_FUNC_(array<T> arr, T elem) - Append an element to the end of an array",
+        extended = "SELECT array_append(array(1,2),3);\n 1,2,3\n\n"
+                + "SELECT array_append(array('a','b'),'c');\n \"a\",\"b\",\"c\"")
 @UDFType(deterministic = true, stateful = false)
 public final class ArrayAppendUDF extends GenericUDF {
 
@@ -71,6 +74,12 @@ public final class ArrayAppendUDF extends GenericUDF {
 
         Object arg0 = args[0].get();
         if (arg0 == null) {
+            Object arg1 = args[1].get();
+            if (arg1 != null) {
+                Object toAppend = returnWritables ? primInspector.getPrimitiveWritableObject(arg1)
+                        : primInspector.getPrimitiveJavaObject(arg1);
+                return Arrays.asList(toAppend);
+            }
             return null;
         }
 

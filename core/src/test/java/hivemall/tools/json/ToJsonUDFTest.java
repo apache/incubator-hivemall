@@ -21,6 +21,9 @@ package hivemall.tools.json;
 import hivemall.TestUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
@@ -30,9 +33,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 public class ToJsonUDFTest {
 

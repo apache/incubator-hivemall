@@ -39,8 +39,8 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 
 @Description(name = "unbase91", value = "_FUNC_(string) - Convert a BASE91 string to a binary",
-        extended = "select inflate(unbase91(base91(deflate('aaaaaaaaaaaaaaaabbbbccc'))));\n"
-                + "> aaaaaaaaaaaaaaaabbbbccc")
+        extended = "SELECT inflate(unbase91(base91(deflate('aaaaaaaaaaaaaaaabbbbccc'))));\n"
+                + " aaaaaaaaaaaaaaaabbbbccc")
 @UDFType(deterministic = true, stateful = false)
 public final class Unbase91UDF extends GenericUDF {
 

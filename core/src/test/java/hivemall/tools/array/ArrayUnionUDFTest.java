@@ -74,4 +74,5 @@ public class ArrayUnionUDFTest {
                         PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)},
             new Object[] {Arrays.asList(0.d, 1.d), Arrays.asList(2.d, 3.d)});
     }
+
 }

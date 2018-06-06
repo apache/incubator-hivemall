@@ -18,15 +18,21 @@
  */
 package hivemall.tools.sanity;
 
+import java.io.IOException;
+
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
 import org.junit.Test;
 
 public class RaiseErrorUDFTest {
 
     @Test(expected = HiveException.class)
-    public void test() throws HiveException {
+    public void test() throws HiveException, IOException {
         RaiseErrorUDF udf = new RaiseErrorUDF();
-        udf.evaluate();
+
+        udf.evaluate(new DeferredObject[] {});
+
+        udf.close();
     }
 
 }

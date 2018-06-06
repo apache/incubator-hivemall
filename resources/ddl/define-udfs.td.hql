@@ -155,7 +155,7 @@ create temporary function train_randomforest_regr as 'hivemall.smile.regression.
 create temporary function tree_predict as 'hivemall.smile.tools.TreePredictUDF';
 create temporary function rf_ensemble as 'hivemall.smile.tools.RandomForestEnsembleUDAF';
 create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAttributesUDF';
--- since Hivemall v0.5
+-- since Hivemall v0.5.0
 create temporary function changefinder as 'hivemall.anomaly.ChangeFinderUDF';
 create temporary function sst as 'hivemall.anomaly.SingularSpectrumTransformUDF';
 create temporary function train_lda as 'hivemall.topicmodel.LDAUDTF';
@@ -183,7 +183,35 @@ create temporary function train_slim as 'hivemall.recommend.SlimUDTF';
 create temporary function hitrate as 'hivemall.evaluation.HitRateUDAF';
 create temporary function word_ngrams as 'hivemall.tools.text.WordNgramsUDF';
 create temporary function approx_count_distinct as 'hivemall.sketch.hll.ApproxCountDistinctUDAF';
+-- since Hivemall v0.5.2
 create temporary function array_slice as 'hivemall.tools.array.ArraySliceUDF';
+create temporary function try_cast as 'hivemall.tools.TryCastUDF';
+create temporary function array_append as 'hivemall.tools.array.ArrayAppendUDF';
+create temporary function element_at as 'hivemall.tools.array.ArrayElementAtUDF';
+create temporary function array_union as 'hivemall.tools.array.ArrayUnionUDF';
+create temporary function first_element as 'hivemall.tools.array.FirstElementUDF';
+create temporary function last_element as 'hivemall.tools.array.LastElementUDF';
+create temporary function array_flatten as 'hivemall.tools.array.ArrayFlattenUDF';
+create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF';
+create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
+create temporary function array_to_str as 'hivemall.tools.array.ArrayToStrUDF';
+create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
+create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
+create temporary function sessionize as 'hivemall.tools.datetime.SessionizeUDF';
+create temporary function to_json as 'hivemall.tools.json.ToJsonUDF';
+create temporary function from_json as 'hivemall.tools.json.FromJsonUDF';
+create temporary function assert as 'hivemall.tools.sanity.AssertUDF';
+create temporary function raise_error as 'hivemall.tools.sanity.RaiseErrorUDF';
+create temporary function moving_avg as 'hivemall.tools.timeseries.MovingAverageUDTF';
+create temporary function vector_add as 'hivemall.tools.vector.VectorAddUDF';
+create temporary function vector_dot as 'hivemall.tools.vector.VectorDotUDF';
+create temporary function bloom as 'hivemall.sketch.bloom.BloomFilterUDAF';
+create temporary function bloom_and as 'hivemall.sketch.bloom.BloomAndUDF';
+create temporary function bloom_contains as 'hivemall.sketch.bloom.BloomContainsUDF';
+create temporary function bloom_not as 'hivemall.sketch.bloom.BloomNotUDF';
+create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';
+create temporary function bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF';
+create temporary function conditional_emit as 'hivemall.tools.array.ConditionalEmitUDTF';
 
 -- NLP features
 create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';

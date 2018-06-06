@@ -21,6 +21,10 @@ package hivemall.tools;
 import hivemall.utils.hadoop.HiveUtils;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -28,70 +32,176 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Writable;
 
+// @formatter:off
 @Description(name = "generate_series",
         value = "_FUNC_(const int|bigint start, const int|bigint end) - "
-                + "Generate a series of values, from start to end. A similar function to PostgreSQL's `generate_serics`. http://www.postgresql.org/docs/current/static/functions-srf.html",
-        extended = "select generate_series(1,9);\n\n" + "1\n" + "2\n" + "3\n" + "4\n" + "5\n"
-                + "6\n" + "7\n" + "8\n" + "9")
+                + "Generate a series of values, from start to end. " + 
+                "A similar function to PostgreSQL's [generate_serics](http://www.postgresql.org/docs/current/static/functions-srf.html)",
+        extended = "SELECT generate_series(2,4);\n" + 
+                "\n" + 
+                " 2\n" + 
+                " 3\n" + 
+                " 4\n" + 
+                "\n" + 
+                "SELECT generate_series(5,1,-2);\n" + 
+                "\n" + 
+                " 5\n" + 
+                " 3\n" + 
+                " 1\n" + 
+                "\n" + 
+                "SELECT generate_series(4,3);\n" + 
+                "\n" + 
+                " (no return)\n" + 
+                "\n" + 
+                "SELECT date_add(current_date(),value),value from (SELECT generate_series(1,3)) t;\n" + 
+                "\n" + 
+                " 2018-04-21      1\n" + 
+                " 2018-04-22      2\n" + 
+                " 2018-04-23      3\n" + 
+                "\n" + 
+                "WITH input as (\n" + 
+                " SELECT 1 as c1, 10 as c2, 3 as step\n" + 
+                " UNION ALL\n" + 
+                " SELECT 10, 2, -3\n" + 
+                ")\n" + 
+                "SELECT generate_series(c1, c2, step) as series\n" + 
+                "FROM input;\n" + 
+                "\n" + 
+                " 1\n" + 
+                " 4\n" + 
+                " 7\n" + 
+                " 10\n" + 
+                " 10\n" + 
+                " 7\n" + 
+                " 4")
+// @formatter:on
 public final class GenerateSeriesUDTF extends GenericUDTF {
 
-    private long start, end;
-    private boolean useBigInt;
+    private PrimitiveObjectInspector startOI, endOI;
+    @Nullable
+    private PrimitiveObjectInspector stepOI;
+
+    @Nonnull
+    private final Writable[] row = new Writable[1];
+    private boolean returnLong;
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length != 2) {
-            throw new UDFArgumentException("Expected number of arguments is 2: " + argOIs.length);
-        }
-
-        ArrayList<String> fieldNames = new ArrayList<String>(1);
-        fieldNames.add("value");
-        ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(1);
-
-        this.useBigInt = HiveUtils.isBigIntOI(argOIs[1]);
-        if (useBigInt) {
-            fieldOIs.add(PrimitiveObjectInspectorFactory.javaLongObjectInspector);
-        } else {
-            fieldOIs.add(PrimitiveObjectInspectorFactory.javaIntObjectInspector);
-        }
-
-        this.start = HiveUtils.getAsConstLong(argOIs[0]);
-        this.end = HiveUtils.getAsConstLong(argOIs[1]);
-        if (start > end) {
+        if (argOIs.length != 2 && argOIs.length != 3) {
             throw new UDFArgumentException(
-                "start '" + start + "' must be less than or equals to end '" + end + "'");
+                "Expected number of arguments is 2 or 3: " + argOIs.length);
+        }
+        if (!HiveUtils.isIntegerOI(argOIs[0])) {
+            throw new UDFArgumentException(
+                "Expected Integer type for the first argument: " + argOIs[0].getTypeName());
+        }
+        if (!HiveUtils.isIntegerOI(argOIs[1])) {
+            throw new UDFArgumentException(
+                "Expected Integer type for the second argument: " + argOIs[1].getTypeName());
+        }
+        this.startOI = HiveUtils.asIntegerOI(argOIs[0]);
+        this.endOI = HiveUtils.asIntegerOI(argOIs[1]);
+
+        if (argOIs.length == 3) {
+            if (!HiveUtils.isIntegerOI(argOIs[2])) {
+                throw new UDFArgumentException(
+                    "Expected Integer type for the third argument: " + argOIs[2].getTypeName());
+            }
+            this.stepOI = HiveUtils.asIntegerOI(argOIs[2]);
         }
 
+        this.returnLong = HiveUtils.isBigIntOI(startOI) || HiveUtils.isBigIntOI(endOI);
+
+        List<String> fieldNames = new ArrayList<>(1);
+        fieldNames.add("value");
+        List<ObjectInspector> fieldOIs = new ArrayList<>(1);
+        if (returnLong) {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+        } else {
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        }
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
     @Override
-    public void process(Object[] argOIs) throws HiveException {
-        final Object[] forwardObjs = new Object[1];
-        if (useBigInt) {
-            if (start == end) {
-                forwardObjs[0] = start;
-                forward(forwardObjs);
-            } else {
-                for (long i = start; i <= end; i++) {
-                    forwardObjs[0] = i;
-                    forward(forwardObjs);
+    public void process(Object[] args) throws HiveException {
+        if (returnLong) {
+            generateLongSeries(args);
+        } else {
+            generateIntSeries(args);
+        }
+    }
+
+    private void generateLongSeries(@Nonnull final Object[] args) throws HiveException {
+        final long start, end;
+        long step = 1L;
+        switch (args.length) {
+            case 3:
+                step = PrimitiveObjectInspectorUtils.getLong(args[2], stepOI);
+                if (step == 0) {
+                    throw new UDFArgumentException("Step MUST NOT be zero");
                 }
+                // fall through
+            case 2:
+                start = PrimitiveObjectInspectorUtils.getLong(args[0], startOI);
+                end = PrimitiveObjectInspectorUtils.getLong(args[1], endOI);
+                break;
+            default:
+                throw new UDFArgumentException("Expected number of arguments: " + args.length);
+        }
+
+        final LongWritable row0 = new LongWritable();
+        row[0] = row0;
+        if (step > 0) {
+            for (long i = start; i <= end; i += step) {
+                row0.set(i);
+                forward(row);
             }
         } else {
-            int starti = (int) start;
-            int endi = (int) end;
-            if (starti == endi) {
-                forwardObjs[0] = starti;
-                forward(forwardObjs);
-            } else {
-                for (int i = starti; i <= endi; i++) {
-                    forwardObjs[0] = i;
-                    forward(forwardObjs);
+            for (long i = start; i >= end; i += step) {
+                row0.set(i);
+                forward(row);
+            }
+        }
+    }
+
+    private void generateIntSeries(@Nonnull final Object[] args) throws HiveException {
+        final int start, end;
+        int step = 1;
+        switch (args.length) {
+            case 3:
+                step = PrimitiveObjectInspectorUtils.getInt(args[2], stepOI);
+                if (step == 0) {
+                    throw new UDFArgumentException("Step MUST NOT be zero");
                 }
+                // fall through
+            case 2:
+                start = PrimitiveObjectInspectorUtils.getInt(args[0], startOI);
+                end = PrimitiveObjectInspectorUtils.getInt(args[1], endOI);
+                break;
+            default:
+                throw new UDFArgumentException("Expected number of arguments: " + args.length);
+        }
+
+        final IntWritable row0 = new IntWritable();
+        row[0] = row0;
+        if (step > 0) {
+            for (int i = start; i <= end; i += step) {
+                row0.set(i);
+                forward(row);
+            }
+        } else {
+            for (int i = start; i >= end; i += step) {
+                row0.set(i);
+                forward(row);
             }
         }
     }
