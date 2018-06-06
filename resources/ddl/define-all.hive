@@ -802,7 +802,7 @@ drop temporary function if exists map_exclude_keys;
 create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
 
 drop temporary function if exists array_to_str;
-create temporary function array_to_str as 'hadoop.tools.array.ArrayToStrUDF';
+create temporary function array_to_str as 'hivemall.tools.array.ArrayToStrUDF';
 
 drop temporary function if exists map_index;
 create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
@@ -851,3 +851,6 @@ create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';
 
 drop temporary function if exists bloom_contains_any;
 create temporary function bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF';
+
+drop temporary function if exists conditional_emit;
+create temporary function conditional_emit as 'hivemall.tools.array.ConditionalEmitUDTF';

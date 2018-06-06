@@ -219,7 +219,7 @@ create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeys
 
 create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
 
-create temporary function array_to_str as 'hadoop.tools.array.ArrayToStrUDF';
+create temporary function array_to_str as 'hivemall.tools.array.ArrayToStrUDF';
 
 create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
 
@@ -252,3 +252,5 @@ create temporary function bloom_not as 'hivemall.sketch.bloom.BloomNotUDF';
 create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';
 
 create temporary function bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF';
+
+create temporary function conditional_emit as 'hivemall.tools.array.ConditionalEmitUDTF';

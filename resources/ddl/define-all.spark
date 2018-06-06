@@ -755,7 +755,7 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_exclude_keys")
 sqlContext.sql("CREATE TEMPORARY FUNCTION map_exclude_keys AS 'hivemall.tools.map.MapExcludeKeysUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_to_str")
-sqlContext.sql("CREATE TEMPORARY FUNCTION array_to_str AS 'hadoop.tools.array.ArrayToStrUDF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION array_to_str AS 'hivemall.tools.array.ArrayToStrUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_index")
 sqlContext.sql("CREATE TEMPORARY FUNCTION map_index AS 'hivemall.tools.map.MapIndexUDF'")
@@ -804,3 +804,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION bloom_or AS 'hivemall.sketch.bloom.Blo
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS bloom_contains_any")
 sqlContext.sql("CREATE TEMPORARY FUNCTION bloom_contains_any AS 'hivemall.sketch.bloom.BloomContainsAnyUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS conditional_emit")
+sqlContext.sql("CREATE TEMPORARY FUNCTION conditional_emit AS 'hivemall.tools.array.ConditionalEmitUDTF'")
