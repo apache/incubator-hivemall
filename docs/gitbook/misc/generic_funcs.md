@@ -24,6 +24,13 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 # Array
 
 - `array_append(array<T> arr, T elem)` - Append an element to the end of an array
+  ```sql
+  SELECT array_append(array(1,2),3);
+   1,2,3
+
+  SELECT array_append(array('a','b'),'c');
+   "a","b","c"
+  ```
 
 - `array_avg(array<number>)` - Returns an array&lt;double&gt; in which each element is the mean of a set of numbers
 
@@ -34,6 +41,10 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```
 
 - `array_flatten(array<array<ANY>>)` - Returns an array with the elements flattened.
+  ```sql
+  SELECT array_flatten(array(array(1,2,3),array(4,5),array(6,7,8)));
+   [1,2,3,4,5,6,7,8]
+  ```
 
 - `array_intersect(array<ANY> x1, array<ANY> x2, ..)` - Returns an intersect of given arrays
   ```sql
@@ -94,7 +105,20 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 - `array_sum(array<number>)` - Returns an array&lt;double&gt; in which each element is summed up
 
+- `array_to_str(array arr [, string sep=','])` - Convert array to string using a sperator
+  ```sql
+  SELECT array_to_str(array(1,2,3),'-');
+  1-2-3
+  ```
+
 - `array_union(array1, array2, ...)` - Returns the union of a set of arrays
+  ```sql
+  SELECT array_union(array(1,2),array(1,2));
+  [1,2]
+
+  SELECT array_union(array(1,2),array(2,3),array(2,5));
+  [1,2,3,5]
+  ```
 
 - `conditional_emit(array<boolean> conditions, array<primitive> features)` - Emit features of a row according to various conditions
   ```sql
@@ -116,12 +140,30 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```
 
 - `element_at(array<T> list, int pos)` - Returns an element at the given position
+  ```sql
+  SELECT element_at(array(1,2,3,4),0);
+   1
 
-- `first_element(x)` - Returns the first element in an array 
+  SELECT element_at(array(1,2,3,4),-2);
+   3
+  ```
+
+- `first_element(x)` - Returns the first element in an array
+  ```sql
+  SELECT first_element(array('a','b','c'));
+   a
+
+  SELECT first_element(array());
+   NULL
+  ```
 
 - `float_array(nDims)` - Returns an array&lt;float&gt; of nDims elements
 
 - `last_element(x)` - Return the last element in an array
+  ```sql
+  SELECT last_element(array('a','b','c'));
+   c
+  ```
 
 - `select_k_best(array<number> array, const array<number> importance, const int k)` - Returns selected top-k elements as array&lt;double&gt;
 
@@ -346,9 +388,40 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 # Map
 
+- `map_exclude_keys(Map<K,V> map, array<K> filteringKeys)` - Returns the filtered entries of a map not having specified keys
+  ```sql
+  SELECT map_exclude_keys(map(1,'one',2,'two',3,'three'),array(2,3));
+  {1:"one"}
+  ```
+
 - `map_get_sum(map<int,float> src, array<int> keys)` - Returns sum of values that are retrieved by keys
 
+- `map_include_keys(Map<K,V> map, array<K> filteringKeys)` - Returns the filtered entries of a map having specified keys
+  ```sql
+  SELECT map_include_keys(map(1,'one',2,'two',3,'three'),array(2,3));
+  {2:"two",3:"three"}
+  ```
+
+- `map_index(a, n)` - Returns the n-th element of the given array
+  ```sql
+  WITH tmp as (
+    SELECT "one" as key
+    UNION ALL
+    SELECT "two" as key
+  )
+  SELECT map_index(map("one",1,"two",2),key)
+  FROM tmp;
+
+  1
+  2
+  ```
+
 - `map_key_values(map)` - Returns a array of key-value pairs.
+  ```sql
+  SELECT map_key_values(map("one",1,"two",2));
+
+  [{"key":"one","value":1},{"key":"two","value":2}]
+  ```
 
 - `map_tail_n(map SRC, int N)` - Returns the last N elements from a sorted array of SRC
 
@@ -418,8 +491,15 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 # Sanity Checks
 
 - `assert(boolean condition)` or _FUNC_(boolean condition, string errMsg)- Throws HiveException if condition is not met
+  ```sql
+  SELECT count(1) FROM stock_price WHERE assert(price > 0.0);
+  SELECT count(1) FROM stock_price WHERE assert(price > 0.0, 'price MUST be more than 0.0')
+  ```
 
 - `raise_error()` or _FUNC_(string msg) - Throws an error
+  ```sql
+  SELECT product_id, price, raise_error('Found an invalid record') FROM xxx WHERE price < 0.0
+  ```
 
 # Text processing
 
@@ -481,8 +561,19 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 # Vector
 
 - `vector_add(array<NUMBER> x, array<NUMBER> y)` - Perform vector ADD operation.
+  ```sql
+  SELECT vector_add(array(1.0,2.0,3.0), array(2, 3, 4));
+  [3.0,5.0,7.0]
+  ```
 
 - `vector_dot(array<NUMBER> x, array<NUMBER> y)` - Performs vector dot product.
+  ```sql
+  SELECT vector_dot(array(1.0,2.0,3.0),array(2.0,3.0,4.0));
+  20
+
+  SELECT vector_dot(array(1.0,2.0,3.0),2);
+  [2.0,4.0,6.0]
+  ```
 
 # Others
 
