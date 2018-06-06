@@ -31,7 +31,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 /**
  * Return the first element in an array.
  */
-@Description(name = "first_element", value = "_FUNC_(x) - Returns the first element in an array ")
+@Description(name = "first_element", value = "_FUNC_(x) - Returns the first element in an array",
+        extended = "SELECT first_element(array('a','b','c'));\n a\n\n"
+                + "SELECT first_element(array());\n NULL")
 @UDFType(deterministic = true, stateful = false)
 public class FirstElementUDF extends GenericUDF {
 

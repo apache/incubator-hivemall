@@ -39,9 +39,48 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
+// @formatter:off
 @Description(name = "array_slice",
         value = "_FUNC_(array<ANY> values, int offset [, int length]) - Slices the given array by the given offset and length parameters.",
-        extended = "select array_slice(array(1,2,3,4,5,6), 2,4);\n" + "> [3,4]")
+        extended = "SELECT \n" + 
+                "  array_slice(array(1,2,3,4,5,6), 2,4),\n" + 
+                "  array_slice(\n" + 
+                "   array(\"zero\", \"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\", \"ten\"),\n" + 
+                "   0, -- offset\n" + 
+                "   2 -- length\n" + 
+                "  ),\n" + 
+                "  array_slice(\n" + 
+                "   array(\"zero\", \"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\", \"ten\"),\n" + 
+                "   6, -- offset\n" + 
+                "   3 -- length\n" + 
+                "  ),\n" + 
+                "  array_slice(\n" + 
+                "   array(\"zero\", \"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\", \"ten\"),\n" + 
+                "   6, -- offset\n" + 
+                "   10 -- length\n" + 
+                "  ),\n" + 
+                "  array_slice(\n" + 
+                "   array(\"zero\", \"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\", \"ten\"),\n" + 
+                "   6 -- offset\n" + 
+                "  ),\n" + 
+                "  array_slice(\n" + 
+                "   array(\"zero\", \"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\", \"ten\"),\n" + 
+                "   -3 -- offset\n" + 
+                "  ),\n" + 
+                "  array_slice(\n" + 
+                "   array(\"zero\", \"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\", \"ten\"),\n" + 
+                "   -3, -- offset\n" + 
+                "   2 -- length\n" + 
+                "  );\n" + 
+                "\n" + 
+                " [3,4]\n" + 
+                " [\"zero\",\"one\"] \n" + 
+                " [\"six\",\"seven\",\"eight\"]\n" + 
+                " [\"six\",\"seven\",\"eight\",\"nine\",\"ten\"]\n" + 
+                " [\"six\",\"seven\",\"eight\",\"nine\",\"ten\"]\n" + 
+                " [\"eight\",\"nine\",\"ten\"]\n" + 
+                " [\"eight\",\"nine\"]")
+// @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ArraySliceUDF extends GenericUDF {
 

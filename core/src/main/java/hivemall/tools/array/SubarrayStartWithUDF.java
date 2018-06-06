@@ -29,7 +29,7 @@ import org.apache.hadoop.io.Text;
 @Description(name = "subarray_startwith",
         value = "_FUNC_(array<int|text> original, int|text key)"
                 + " - Returns an array that starts with the specified key",
-        extended = "select subarray_startwith(array(1,2,3,4), 2);\n" + "> [2,3,4]")
+        extended = "SELECT subarray_startwith(array(1,2,3,4), 2);\n" + " [2,3,4]")
 @UDFType(deterministic = true, stateful = false)
 public class SubarrayStartWithUDF extends UDF {
 

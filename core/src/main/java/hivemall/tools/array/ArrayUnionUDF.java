@@ -46,7 +46,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.Object
  * </pre>
  */
 @Description(name = "array_union",
-        value = "_FUNC_(array1, array2, ...) - Returns the union of a set of arrays")
+        value = "_FUNC_(array1, array2, ...) - Returns the union of a set of arrays",
+        extended = "SELECT array_union(array(1,2),array(1,2));\n" + "[1,2]\n\n"
+                + "SELECT array_union(array(1,2),array(2,3),array(2,5));\n" + "[1,2,3,5]")
 @UDFType(deterministic = true, stateful = false)
 public final class ArrayUnionUDF extends GenericUDF {
 
@@ -95,9 +97,9 @@ public final class ArrayUnionUDF extends GenericUDF {
 
             for (int j = 0, len = oi.getListLength(undeferred); j < len; ++j) {
                 Object nonStd = oi.getListElement(undeferred, j);
-                Object copied = ObjectInspectorUtils.copyToStandardObject(nonStd, elemOI,
+                Object copyed = ObjectInspectorUtils.copyToStandardObject(nonStd, elemOI,
                     ObjectInspectorCopyOption.WRITABLE);
-                objectSet.add(copied);
+                objectSet.add(copyed);
             }
         }
 

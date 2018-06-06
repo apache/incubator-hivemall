@@ -19,6 +19,7 @@ package hivemall.smile.classification;
 
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
 import static hivemall.smile.utils.SmileExtUtils.resolveName;
+
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
@@ -36,6 +37,8 @@ import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.sampling.IntReservoirSampler;
+import smile.classification.Classifier;
+import smile.math.Math;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -52,9 +55,6 @@ import javax.annotation.Nullable;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.roaringbitmap.IntConsumer;
 import org.roaringbitmap.RoaringBitmap;
-
-import smile.classification.Classifier;
-import smile.math.Math;
 
 /**
  * Decision tree for classification. A decision tree can be learned by splitting the training set

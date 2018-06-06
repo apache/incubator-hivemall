@@ -66,15 +66,16 @@ import org.apache.hadoop.io.IntWritable;
 /**
  * Return list of values sorted by value itself or specific key.
  */
+//@formatter:off
 @Description(name = "to_ordered_list",
         value = "_FUNC_(PRIMITIVE value [, PRIMITIVE key, const string options])"
                 + " - Return list of values sorted by value itself or specific key",
-        extended = "with t as (\n" + "    select 5 as key, 'apple' as value\n" + "    union all\n"
-                + "    select 3 as key, 'banana' as value\n" + "    union all\n"
-                + "    select 4 as key, 'candy' as value\n" + "    union all\n"
-                + "    select 2 as key, 'donut' as value\n" + "    union all\n"
-                + "    select 3 as key, 'egg' as value\n" + ")\n"
-                + "select                                             -- expected output\n"
+        extended = "WITH t as (\n" + "    SELECT 5 as key, 'apple' as value\n" + "    UNION ALL\n"
+                + "    SELECT 3 as key, 'banana' as value\n" + "    UNION ALL\n"
+                + "    SELECT 4 as key, 'candy' as value\n" + "    UNION ALL\n"
+                + "    SELECT 2 as key, 'donut' as value\n" + "    UNION ALL\n"
+                + "    SELECT 3 as key, 'egg' as value\n" + ")\n"
+                + "SELECT                                             -- expected output\n"
                 + "    to_ordered_list(value, key, '-reverse'),       -- [apple, candy, (banana, egg | egg, banana), donut] (reverse order)\n"
                 + "    to_ordered_list(value, key, '-k 2'),           -- [apple, candy] (top-k)\n"
                 + "    to_ordered_list(value, key, '-k 100'),         -- [apple, candy, (banana, egg | egg, banana), dunut]\n"
@@ -86,7 +87,8 @@ import org.apache.hadoop.io.IntWritable;
                 + "    to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)\n"
                 + "    to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)\n"
                 + "    to_ordered_list(key)                           -- [2, 3, 3, 4, 5] (natural ordered keys)\n"
-                + "from\n" + "    t")
+                + "FROM\n" + "    t")
+//@formatter:on
 public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
     @Override

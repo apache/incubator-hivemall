@@ -30,7 +30,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
 
 @Description(name = "element_at",
-        value = "_FUNC_(array<T> list, int pos) - Returns an element at the given position")
+        value = "_FUNC_(array<T> list, int pos) - Returns an element at the given position",
+        extended = "SELECT element_at(array(1,2,3,4),0);\n 1\n\n"
+                + "SELECT element_at(array(1,2,3,4),-2);\n 3")
 @UDFType(deterministic = true, stateful = false)
 public final class ArrayElementAtUDF extends GenericUDF {
     private ListObjectInspector listInspector;

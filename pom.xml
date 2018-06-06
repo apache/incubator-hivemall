@@ -196,6 +196,18 @@
 			</roles>
 			<timezone>+9</timezone>
 		</developer>
+		<developer>
+			<id>jbanks</id>
+			<name>Jerome Banks</name>
+			<email>jbanks[at]apache.org</email>
+			<url>https://github.com/jeromebanks/</url>
+			<organization>Jumpshot Inc.</organization>
+			<organizationUrl>https://www.jumpshot.com/</organizationUrl>
+			<roles>
+				<role>Committer</role>
+			</roles>
+			<timezone>-8</timezone>
+		</developer>
 		<!-- Project mentors -->
 		<developer>
 			<id>rvs</id>

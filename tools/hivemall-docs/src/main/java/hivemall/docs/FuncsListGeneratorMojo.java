@@ -24,8 +24,6 @@ import static hivemall.docs.utils.MarkdownUtils.asListElement;
 import static hivemall.docs.utils.MarkdownUtils.indent;
 import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
-import hivemall.utils.lang.StringUtils;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,8 +47,10 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.reflections.Reflections;
 
 /**
@@ -59,8 +59,10 @@ import org.reflections.Reflections;
  * @link https://hivemall.incubator.apache.org/userguide/misc/generic_funcs.html
  * @link https://hivemall.incubator.apache.org/userguide/misc/funcs.html
  */
-@Mojo(name = "generate-funcs-list")
-public class FuncsListGenerator extends AbstractMojo {
+@Mojo(name = "generate-funcs-list", defaultPhase = LifecyclePhase.PROCESS_CLASSES,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
+        configurator = "include-project-dependencies")
+public class FuncsListGeneratorMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${basedir}", readonly = true)
     private File basedir;
@@ -78,15 +80,22 @@ public class FuncsListGenerator extends AbstractMojo {
     static {
         genericFuncsHeaders.put("# Array",
             Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
-        genericFuncsHeaders.put("# Map", Collections.singletonList("hivemall.tools.map"));
         genericFuncsHeaders.put("# Bitset", Collections.singletonList("hivemall.tools.bits"));
         genericFuncsHeaders.put("# Compression",
             Collections.singletonList("hivemall.tools.compress"));
+        genericFuncsHeaders.put("# Datetime", Collections.singletonList("hivemall.tools.datetime"));
+        genericFuncsHeaders.put("# JSON", Collections.singletonList("hivemall.tools.json"));
+        genericFuncsHeaders.put("# Map", Collections.singletonList("hivemall.tools.map"));
         genericFuncsHeaders.put("# MapReduce", Collections.singletonList("hivemall.tools.mapred"));
         genericFuncsHeaders.put("# Math", Collections.singletonList("hivemall.tools.math"));
         genericFuncsHeaders.put("# Matrix", Collections.singletonList("hivemall.tools.matrix"));
+        genericFuncsHeaders.put("# Sanity Checks",
+            Collections.singletonList("hivemall.tools.sanity"));
         genericFuncsHeaders.put("# Text processing",
             Collections.singletonList("hivemall.tools.text"));
+        genericFuncsHeaders.put("# Timeseries",
+            Collections.singletonList("hivemall.tools.timeseries"));
+        genericFuncsHeaders.put("# Vector", Collections.singletonList("hivemall.tools.vector"));
         genericFuncsHeaders.put("# Others", Collections.singletonList("hivemall.tools"));
     }
 
@@ -125,7 +134,8 @@ public class FuncsListGenerator extends AbstractMojo {
         funcsHeaders.put("# Similarity measures",
             Collections.singletonList("hivemall.knn.similarity"));
         funcsHeaders.put("# Evaluation", Collections.singletonList("hivemall.evaluation"));
-        funcsHeaders.put("# Sketching", Collections.singletonList("hivemall.sketch.hll"));
+        funcsHeaders.put("# Sketching",
+            Arrays.asList("hivemall.sketch.hll", "hivemall.sketch.bloom"));
         funcsHeaders.put("# Ensemble learning", Collections.singletonList("hivemall.ensemble"));
         funcsHeaders.put("## Bagging", Collections.singletonList("hivemall.ensemble.bagging"));
         funcsHeaders.put("# Decision trees and RandomForest", Arrays.asList(
@@ -206,7 +216,7 @@ public class FuncsListGenerator extends AbstractMojo {
             Set<String> List = packages.get(packageName);
             List.add(sb.toString());
 
-            StringUtils.clear(sb);
+            sb.setLength(0);
         }
 
         try (PrintWriter writer = new PrintWriter(outputFile)) {
@@ -235,6 +245,11 @@ public class FuncsListGenerator extends AbstractMojo {
                 writer.println(e.getKey() + "\n");
                 List<String> packageNames = e.getValue();
                 for (String packageName : packageNames) {
+                    if (!packages.containsKey(packageName)) {
+                        writer.close();
+                        throw new MojoExecutionException(
+                            "Failed to find package in the classpath: " + packageName);
+                    }
                     for (String desc : packages.get(packageName)) {
                         writer.println(desc);
                     }

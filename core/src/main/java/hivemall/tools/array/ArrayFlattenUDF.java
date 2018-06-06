@@ -19,6 +19,7 @@
 package hivemall.tools.array;
 
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,16 +34,16 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
 
 @Description(name = "array_flatten",
-        value = "_FUNC_(array<array<ANY>>) - Returns an array with the elements flattened.")
+        value = "_FUNC_(array<array<ANY>>) - Returns an array with the elements flattened.",
+        extended = "SELECT array_flatten(array(array(1,2,3),array(4,5),array(6,7,8)));\n"
+                + " [1,2,3,4,5,6,7,8]")
 @UDFType(deterministic = true, stateful = false)
 public final class ArrayFlattenUDF extends GenericUDF {
 
     private ListObjectInspector listOI;
-    private ListObjectInspector nextedListOI;
-    private ObjectInspector elemOI;
-
     private final List<Object> result = new ArrayList<>();
 
     @Override
@@ -58,11 +59,13 @@ public final class ArrayFlattenUDF extends GenericUDF {
             throw new UDFArgumentException(
                 "array_flatten takes array of array for the argument: " + listOI.toString());
         }
-        this.nextedListOI = HiveUtils.asListOI(listElemOI);
-        this.elemOI = nextedListOI.getListElementObjectInspector();
+
+        ListObjectInspector nestedListOI = HiveUtils.asListOI(listElemOI);
+        ObjectInspector elemOI = nestedListOI.getListElementObjectInspector();
 
         return ObjectInspectorFactory.getStandardListObjectInspector(
-            ObjectInspectorUtils.getStandardObjectInspector(elemOI));
+            ObjectInspectorUtils.getStandardObjectInspector(elemOI,
+                ObjectInspectorCopyOption.WRITABLE));
     }
 
     @Override
@@ -81,12 +84,17 @@ public final class ArrayFlattenUDF extends GenericUDF {
                 continue;
             }
 
-            final int subarrayLength = nextedListOI.getListLength(subarray);
+            final ListObjectInspector subarrayOI =
+                    HiveUtils.asListOI(listOI.getListElementObjectInspector());
+            final ObjectInspector elemOI = subarrayOI.getListElementObjectInspector();
+            final int subarrayLength = subarrayOI.getListLength(subarray);
             for (int j = 0; j < subarrayLength; j++) {
-                Object elem = nextedListOI.getListElement(subarray, j);
-                if (elem == null) {
+                Object rawElem = subarrayOI.getListElement(subarray, j);
+                if (rawElem == null) {
                     continue;
                 }
+                Object elem = ObjectInspectorUtils.copyToStandardObject(rawElem, elemOI,
+                    ObjectInspectorCopyOption.WRITABLE);
                 result.add(elem);
             }
         }
@@ -96,16 +104,7 @@ public final class ArrayFlattenUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] args) {
-        final StringBuffer buf = new StringBuffer();
-        buf.append("array_flatten(");
-        for (int i = 0, len = args.length; i < len; i++) {
-            if (i != 0) {
-                buf.append(", ");
-            }
-            buf.append(args[i]);
-        }
-        buf.append(")");
-        return buf.toString();
+        return "array_flatten(" + StringUtils.join(args, ',') + ")";
     }
 
 }

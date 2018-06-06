@@ -158,7 +158,7 @@ public final class TreePredictUDF extends UDFWithOptions {
 
         Object arg2 = arguments[2].get();
         if (arg2 == null) {
-            throw new HiveException("array<double> features was null");
+            throw new HiveException("features was null");
         }
         this.featuresProbe = parseFeatures(arg2, featuresProbe);
 

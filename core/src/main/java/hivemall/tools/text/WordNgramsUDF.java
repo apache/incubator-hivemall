@@ -37,8 +37,8 @@ import java.util.List;
 @Description(name = "word_ngrams",
         value = "_FUNC_(array<string> words, int minSize, int maxSize])"
                 + " - Returns list of n-grams for given words, where `minSize <= n <= maxSize`",
-        extended = "select word_ngrams(tokenize('Machine learning is fun!', true), 1, 2);\n" + "\n"
-                + "> [\"machine\",\"machine learning\",\"learning\",\"learning is\",\"is\",\"is fun\",\"fun\"]")
+        extended = "SELECT word_ngrams(tokenize('Machine learning is fun!', true), 1, 2);\n" + "\n"
+                + " [\"machine\",\"machine learning\",\"learning\",\"learning is\",\"is\",\"is fun\",\"fun\"]")
 @UDFType(deterministic = true, stateful = false)
 public final class WordNgramsUDF extends UDF {
 

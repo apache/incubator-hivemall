@@ -16,13 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.statistics;
+package hivemall.tools.timeseries;
+
+import hivemall.TestUtils;
+import hivemall.tools.timeseries.MovingAverageUDTF;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;

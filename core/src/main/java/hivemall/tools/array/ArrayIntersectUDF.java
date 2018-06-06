@@ -41,7 +41,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 
 @Description(name = "array_intersect",
         value = "_FUNC_(array<ANY> x1, array<ANY> x2, ..) - Returns an intersect of given arrays",
-        extended = "select array_intersect(array(1,3,4),array(2,3,4),array(3,5));\n" + "> [3]")
+        extended = "SELECT array_intersect(array(1,3,4),array(2,3,4),array(3,5));\n" + " [3]")
 @UDFType(deterministic = true, stateful = false)
 public final class ArrayIntersectUDF extends GenericUDF {
 
@@ -88,7 +88,7 @@ public final class ArrayIntersectUDF extends GenericUDF {
             return Collections.emptyList();
         }
 
-        Set<InspectableObject> checkSet = new HashSet<ArrayIntersectUDF.InspectableObject>();
+        Set<InspectableObject> checkSet = new HashSet<InspectableObject>();
         final ListObjectInspector arg0ListOI = argListOIs[0];
         final ObjectInspector arg0ElemOI = arg0ListOI.getListElementObjectInspector();
         final int arg0size = arg0ListOI.getListLength(arg0);
@@ -106,8 +106,7 @@ public final class ArrayIntersectUDF extends GenericUDF {
             if (argI == null) {
                 continue;
             }
-            final Set<InspectableObject> newSet =
-                    new HashSet<ArrayIntersectUDF.InspectableObject>();
+            final Set<InspectableObject> newSet = new HashSet<InspectableObject>();
             final ListObjectInspector argIListOI = argListOIs[i];
             final ObjectInspector argIElemOI = argIListOI.getListElementObjectInspector();
             for (int j = 0, j_size = argIListOI.getListLength(argI); j < j_size; j++) {
