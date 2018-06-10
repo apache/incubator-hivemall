@@ -54,6 +54,13 @@
 			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
+		<!-- Jackson -->
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-core-asl</artifactId>
+			<version>1.8.3</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -113,11 +120,19 @@
 									<include>org.apache.hivemall:hivemall-xgboost</include>
 									<include>io.github.myui:xgboost4j</include>
 									<include>com.esotericsoftware.kryo:kryo</include>
+									<!-- Jackson -->
+									<include>org.codehaus.jackson:jackson-core-asl</include>
 								</includes>
 								<excludes>
 									<exclude>org.apache.hivemall:hivemall-all</exclude>
 								</excludes>
 							</artifactSet>
+							<relocations>
+								<relocation>
+									<pattern>org.codehaus.jackson</pattern>
+									<shadedPattern>hivemall.codehaus.jackson</shadedPattern>
+								</relocation>
+							</relocations>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
