@@ -54,11 +54,16 @@
 			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
-		<!-- Jackson -->
+		<!-- for Jason encoding/decoding -->
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-core-asl</artifactId>
 			<version>1.8.3</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hive.hcatalog</groupId>
+			<artifactId>hive-hcatalog-core</artifactId>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
@@ -120,8 +125,9 @@
 									<include>org.apache.hivemall:hivemall-xgboost</include>
 									<include>io.github.myui:xgboost4j</include>
 									<include>com.esotericsoftware.kryo:kryo</include>
-									<!-- Jackson -->
+									<!-- for Jason encoding/decoding -->
 									<include>org.codehaus.jackson:jackson-core-asl</include>
+									<include>org.apache.hive.hcatalog:hive-hcatalog-core</include>
 								</includes>
 								<excludes>
 									<exclude>org.apache.hivemall:hivemall-all</exclude>
@@ -131,6 +137,10 @@
 								<relocation>
 									<pattern>org.codehaus.jackson</pattern>
 									<shadedPattern>hivemall.codehaus.jackson</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.hive.hcatalog</pattern>
+									<shadedPattern>hivemall.hcatalog</shadedPattern>
 								</relocation>
 							</relocations>
 							<transformers>
