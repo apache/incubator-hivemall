@@ -55,6 +55,7 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
     private RowProcessor _proc;
     private int _numFields;
     private int _numFeatures;
+    private boolean _l2norm;
 
     public FeaturePairsUDTF() {}
 
@@ -69,7 +70,9 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
         opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31]. [default: -1] No feature hashing for -1.");
-        opts.addOption("num_fields", true, "The number of fields [default:1024]");
+        opts.addOption("num_fields", true,
+            "The number of fields [default: " + Feature.DEFAULT_NUM_FIELDS + "]");
+        opts.addOption("no_norm", "disable_norm", false, "Disable instance-wise L2 normalization");
         return opts;
     }
 
@@ -104,6 +107,7 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
                     throw new UDFArgumentException(
                         "-num_fields MUST be greater than 1: " + _numFields);
                 }
+                this._l2norm = !cl.hasOption("disable_norm");
             } else {
                 throw new UDFArgumentException("Unsupported option: " + cl.getArgList().get(0));
             }
@@ -284,6 +288,10 @@ public final class FeaturePairsUDTF extends UDTFWithOptions {
 
             this._features =
                     Feature.parseFFMFeatures(arg, fvOI, _features, _numFeatures, _numFields);
+
+            if (_l2norm) {
+                Feature.l2normalize(_features);
+            }
 
             // W0
             f0.set(0);

@@ -59,6 +59,12 @@ public class L2NormalizationUDFTest {
             WritableUtils.val(new String[] {"aaa:" + 1.0f / l2norm, "bbb:" + -0.5f / l2norm}),
             udf.evaluate(WritableUtils.val(new String[] {"aaa:1.0", "bbb:-0.5"})));
 
+        l2norm = MathUtils.l2norm(new float[] {1.0f, 2.0f, 3.0f});
+        assertEquals(
+            WritableUtils.val(new String[] {"1:123:" + 1.0f / l2norm, "2:456:" + 2.0f / l2norm,
+                    "3:789:" + 3.0f / l2norm}),
+            udf.evaluate(WritableUtils.val(new String[] {"1:123:1", "2:456:2", "3:789:3"})));
+
         List<Text> expected = udf.evaluate(WritableUtils.val(new String[] {"bbb:-0.5", "aaa:1.0"}));
         Collections.sort(expected);
         List<Text> actual = udf.evaluate(WritableUtils.val(new String[] {"aaa:1.0", "bbb:-0.5"}));
