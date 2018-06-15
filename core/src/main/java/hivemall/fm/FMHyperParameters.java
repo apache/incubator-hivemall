@@ -107,7 +107,11 @@ class FMHyperParameters {
         this.eta = EtaEstimator.get(cl, DEFAULT_ETA0);
         this.numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), numFeatures);
         this.l2norm = cl.hasOption("enable_norm");
-        this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
+        if (cl.hasOption("iter")) {
+            this.iters = Primitives.parseInt(cl.getOptionValue("iter"), iters);
+        } else {
+            this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
+        }
         this.conversionCheck = !cl.hasOption("disable_cvtest");
         this.convergenceRate =
                 Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);

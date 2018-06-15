@@ -122,6 +122,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         opts.addOption("c", "classification", false, "Act as classification");
         opts.addOption("seed", true, "Seed value [default: -1 (random)]");
         opts.addOption("iters", "iterations", true, "The number of iterations [default: 10]");
+        opts.addOption("iter", true, "The number of iterations [default: 10]."
+                + " Note this is alias of `iters` for backward compatibility");
         opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("f", "factors", true, "The number of the latent variables [default: 5]");
         opts.addOption("sigma", true, "The standard deviation for initializing V [default: 0.1]");

@@ -107,6 +107,8 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("k", "factor", true, "The number of latent factor [default: 10]");
+        opts.addOption("f", "factors", true, "The number of latent factor [default: 10]."
+                + " Note this is alias for `factors` option.");
         opts.addOption("r", "lambda", true, "The regularization factor [default: 0.03]");
         opts.addOption("mu", "mean_rating", true, "The mean rating [default: 0.0]");
         opts.addOption("update_mean", "update_mu", false,
@@ -138,7 +140,11 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
         if (argOIs.length >= 4) {
             String rawArgs = HiveUtils.getConstString(argOIs[3]);
             cl = parseOptions(rawArgs);
-            this.factor = Primitives.parseInt(cl.getOptionValue("factor"), 10);
+            if (cl.hasOption("factors")) {
+                this.factor = Primitives.parseInt(cl.getOptionValue("factors"), 10);
+            } else {
+                this.factor = Primitives.parseInt(cl.getOptionValue("factor"), 10);
+            }
             this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), 0.03f);
             this.meanRating = Primitives.parseFloat(cl.getOptionValue("mu"), 0.f);
             this.updateMeanRating = cl.hasOption("update_mean");
