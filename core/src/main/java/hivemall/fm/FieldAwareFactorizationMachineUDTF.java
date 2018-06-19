@@ -18,7 +18,6 @@
  */
 package hivemall.fm;
 
-import hivemall.common.ConversionState;
 import hivemall.fm.FMHyperParameters.FFMHyperParameters;
 import hivemall.utils.collections.Fastutil;
 import hivemall.utils.collections.arrays.DoubleArray3D;
