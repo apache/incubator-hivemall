@@ -336,7 +336,7 @@ public abstract class FactorizationMachineModel {
     public void check(@Nonnull Feature[] x) throws HiveException {}
 
     public enum VInitScheme {
-        random /* default */, gaussian;
+        adjustedRandom /* default */, random, gaussian;
 
         @Nonnegative
         float maxInitValue;
@@ -346,7 +346,7 @@ public abstract class FactorizationMachineModel {
 
         @Nonnull
         public static VInitScheme resolve(@Nullable String opt) {
-            return resolve(opt, random);
+            return resolve(opt, adjustedRandom);
         }
 
         @Nonnull
@@ -354,10 +354,13 @@ public abstract class FactorizationMachineModel {
                 @Nonnull VInitScheme defaultScheme) {
             if (opt == null) {
                 return defaultScheme;
-            } else if ("gaussian".equalsIgnoreCase(opt)) {
-                return gaussian;
+            } else if ("adjusted_random".equalsIgnoreCase(opt)
+                    || "adjustedRandom".equalsIgnoreCase(opt)) {
+                return adjustedRandom;
             } else if ("random".equalsIgnoreCase(opt)) {
                 return random;
+            } else if ("gaussian".equalsIgnoreCase(opt)) {
+                return gaussian;
             }
             return defaultScheme;
         }
@@ -371,7 +374,7 @@ public abstract class FactorizationMachineModel {
         }
 
         public void initRandom(int factor, long seed) {
-            int size = (this == random) ? 1 : factor;
+            final int size = (this == random || this == adjustedRandom) ? 1 : factor;
             this.rand = new Random[size];
             for (int i = 0; i < size; i++) {
                 rand[i] = new Random(seed + i);
@@ -383,8 +386,11 @@ public abstract class FactorizationMachineModel {
     protected final float[] initV() {
         final float[] ret = new float[_factor];
         switch (_initScheme) {
+            case adjustedRandom:
+                adjustedRandomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
+                break;
             case random:
-                uniformFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
+                randomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
                 break;
             case gaussian:
                 gaussianFill(ret, _initScheme.rand, _initScheme.initStdDev);
@@ -396,7 +402,17 @@ public abstract class FactorizationMachineModel {
         return ret;
     }
 
-    protected static final void uniformFill(final float[] a, final Random rand,
+    protected static final void adjustedRandomFill(@Nonnull final float[] a,
+            @Nonnull final Random rand, final float maxInitValue) {
+        final int len = a.length;
+        final float basev = maxInitValue / len;
+        for (int i = 0; i < len; i++) {
+            float v = rand.nextFloat() * basev;
+            a[i] = v;
+        }
+    }
+
+    protected static final void randomFill(@Nonnull final float[] a, @Nonnull final Random rand,
             final float maxInitValue) {
         final int len = a.length;
         for (int i = 0; i < len; i++) {
@@ -405,7 +421,7 @@ public abstract class FactorizationMachineModel {
         }
     }
 
-    protected static final void gaussianFill(final float[] a, final Random[] rand,
+    protected static final void gaussianFill(@Nonnull final float[] a, @Nonnull final Random[] rand,
             final double stddev) {
         for (int i = 0, len = a.length; i < len; i++) {
             float v = (float) MathUtils.gaussian(0.d, stddev, rand[i]);

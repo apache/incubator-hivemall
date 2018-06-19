@@ -139,7 +139,8 @@ class FMHyperParameters {
         float maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 0.5f);
         double initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.1d);
 
-        VInitScheme defaultInit = classification ? VInitScheme.gaussian : VInitScheme.random;
+        VInitScheme defaultInit =
+                classification ? VInitScheme.gaussian : VInitScheme.adjustedRandom;
         VInitScheme vInit = VInitScheme.resolve(vInitOpt, defaultInit);
         vInit.setMaxInitValue(maxInitValue);
         initStdDev = Math.max(initStdDev, 1.0d / factor);
