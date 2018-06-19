@@ -91,7 +91,11 @@ class FMHyperParameters {
 
     void processOptions(@Nonnull CommandLine cl) throws UDFArgumentException {
         this.classification = cl.hasOption("classification");
-        this.factors = Primitives.parseInt(cl.getOptionValue("factors"), factors);
+        if (cl.hasOption("factor")) {
+            this.factors = Primitives.parseInt(cl.getOptionValue("factor"), factors);
+        } else {
+            this.factors = Primitives.parseInt(cl.getOptionValue("factors"), factors);
+        }
         this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), lambda);
         this.lambdaW0 = Primitives.parseFloat(cl.getOptionValue("lambda_w0"), lambda);
         this.lambdaW = Primitives.parseFloat(cl.getOptionValue("lambda_wi"), lambda);

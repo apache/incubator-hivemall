@@ -126,6 +126,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 + " Note this is alias of `iters` for backward compatibility");
         opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("f", "factors", true, "The number of the latent variables [default: 5]");
+        opts.addOption("k", "factor", true,
+            "The number of the latent variables [default: 5]" + " Alias of `-factors` option");
         opts.addOption("sigma", true, "The standard deviation for initializing V [default: 0.1]");
         opts.addOption("lambda0", "lambda", true,
             "The initial lambda value for regularization [default: 0.0001]");

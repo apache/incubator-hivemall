@@ -106,9 +106,9 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("k", "factor", true, "The number of latent factor [default: 10]");
-        opts.addOption("f", "factors", true, "The number of latent factor [default: 10]."
+        opts.addOption("k", "factor", true, "The number of latent factor [default: 10] "
                 + " Note this is alias for `factors` option.");
+        opts.addOption("f", "factors", true, "The number of latent factor [default: 10]");
         opts.addOption("r", "lambda", true, "The regularization factor [default: 0.03]");
         opts.addOption("mu", "mean_rating", true, "The mean rating [default: 0.0]");
         opts.addOption("update_mean", "update_mu", false,
@@ -119,7 +119,9 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
             "The maximum initial value in the rank matrix [default: 1.0]");
         opts.addOption("min_init_stddev", true,
             "The minimum standard deviation of initial rank matrix [default: 0.1]");
-        opts.addOption("iter", "iterations", true, "The number of iterations [default: 1]");
+        opts.addOption("iters", "iterations", true, "The number of iterations [default: 1]");
+        opts.addOption("iter", true,
+            "The number of iterations [default: 1] Alias for `-iterations`");
         opts.addOption("disable_cv", "disable_cvtest", false,
             "Whether to disable convergence check [default: enabled]");
         opts.addOption("cv_rate", "convergence_rate", true,
@@ -151,7 +153,11 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
             rankInitOpt = cl.getOptionValue("rankinit");
             maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 1.f);
             initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.1d);
-            this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
+            if (cl.hasOption("iter")) {
+                this.iterations = Primitives.parseInt(cl.getOptionValue("iter"), 1);
+            } else {
+                this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
+            }
             if (iterations < 1) {
                 throw new UDFArgumentException(
                     "'-iterations' must be greater than or equal to 1: " + iterations);
