@@ -49,11 +49,6 @@ define_additional() {
   echo "Added to resources/ddl/define-additional.hive";
 }
 
-define_td() {
-  echo "\ncreate temporary function $function_name as '$class_path';" >> resources/ddl/define-udfs.td.hql
-  echo "Added to resources/ddl/define-udfs.td.hql";
-}
-
 read -p "Function name (e.g., 'hivemall_version'): " function_name
 read -p "Class path (e.g., 'hivemall.HivemallVersionUDF'): " class_path
 
@@ -63,9 +58,7 @@ if [[ $prefix == 'hivemall.xgboost' ]]; then
   define_additional
 elif [[ $prefix == 'hivemall.nlp' ]]; then
   define_additional
-  define_td
 else
   define_all
   define_all_as_permanent
-  define_td
 fi
