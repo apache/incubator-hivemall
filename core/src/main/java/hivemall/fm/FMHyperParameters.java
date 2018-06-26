@@ -37,7 +37,7 @@ class FMHyperParameters {
     int factors = 5;
 
     // regularization
-    float lambda = 0.0001f;
+    float lambda = 0.002f;
     float lambdaW0;
     float lambdaW;
     float lambdaV;
