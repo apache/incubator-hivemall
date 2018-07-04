@@ -29,6 +29,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 
 class FMHyperParameters {
     protected static final float DEFAULT_ETA0 = 0.1f;
+    protected static final float DEFAULT_LAMBDA = 0.002f;
 
     // -------------------------------------
     // Model parameters
@@ -37,7 +38,7 @@ class FMHyperParameters {
     int factors = 5;
 
     // regularization
-    float lambda = 0.002f;
+    float lambda = DEFAULT_LAMBDA;
     float lambdaW0;
     float lambdaW;
     float lambdaV;

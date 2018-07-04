@@ -255,8 +255,8 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     protected final float eta(@Nonnull final Entry theta, @Nonnegative final int f, final long t,
             final float grad) {
         if (_useAdaGrad) {
-            theta.addGradient(f, grad);
             double gg = theta.getSumOfSquaredGradients(f);
+            theta.addGradient(f, grad);
             return (float) (_eta.eta(t) / Math.sqrt(_eps + gg));
         } else {
             return _eta.eta(t);

@@ -18,6 +18,9 @@
  */
 package hivemall.fm;
 
+import static hivemall.fm.FMHyperParameters.DEFAULT_ETA0;
+import static hivemall.fm.FMHyperParameters.DEFAULT_LAMBDA;
+
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
@@ -130,20 +133,19 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             "The number of the latent variables [default: 5]" + " Alias of `-factors` option");
         opts.addOption("sigma", true, "The standard deviation for initializing V [default: 0.1]");
         opts.addOption("lambda0", "lambda", true,
-            "The initial lambda value for regularization [default: 0.0001]");
+            "The initial lambda value for regularization [default: " + DEFAULT_LAMBDA + "]");
         opts.addOption("lambdaW0", "lambda_w0", true,
-            "The initial lambda value for W0 regularization [default: 0.0001]");
+            "The initial lambda value for W0 regularization [default: " + DEFAULT_LAMBDA + "]");
         opts.addOption("lambdaWi", "lambda_wi", true,
-            "The initial lambda value for Wi regularization [default: 0.0001]");
+            "The initial lambda value for Wi regularization [default: " + DEFAULT_LAMBDA + "]");
         opts.addOption("lambdaV", "lambda_v", true,
-            "The initial lambda value for V regularization [default: 0.0001]");
+            "The initial lambda value for V regularization [default: " + DEFAULT_LAMBDA + "]");
         // regression
         opts.addOption("min", "min_target", true, "The minimum value of target variable");
         opts.addOption("max", "max_target", true, "The maximum value of target variable");
         // learning rates
         opts.addOption("eta", true, "The initial learning rate");
-        opts.addOption("eta0", true,
-            "The initial learning rate [default " + FMHyperParameters.DEFAULT_ETA0 + "]");
+        opts.addOption("eta0", true, "The initial learning rate [default " + DEFAULT_ETA0 + "]");
         opts.addOption("t", "total_steps", true, "The total number of training examples");
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
@@ -301,8 +303,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
         boolean validation = false;
         if ((_va_rand != null) && _t >= _validationThreshold) {
-            final float rnd = _va_rand.nextFloat();
-            validation = rnd < _validationRatio;
+            validation = _va_rand.nextFloat() < _validationRatio;
         }
 
         recordTrain(x, y, validation);
