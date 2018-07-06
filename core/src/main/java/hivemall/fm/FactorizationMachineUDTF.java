@@ -378,18 +378,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         srcBuf.clear();
     }
 
-    protected void processValidationSample(@Nonnull final Feature[] x, final double y)
-            throws HiveException {
-        if (_adaptiveRegularization) {
-            trainLambda(x, y); // adaptive regularization
-        }
-        if (_earlyStopping) {
-            double p = _model.predict(x);
-            double loss = _lossFunction.loss(p, y);
-            _validationState.incrLoss(loss);
-        }
-    }
-
     public void train(@Nonnull final Feature[] x, final double y, final boolean validation)
             throws HiveException {
         _model.check(x);
@@ -402,6 +390,18 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             }
         } catch (Exception ex) {
             throw new HiveException("Exception caused in the " + _t + "-th call of train()", ex);
+        }
+    }
+
+    protected void processValidationSample(@Nonnull final Feature[] x, final double y)
+            throws HiveException {
+        if (_adaptiveRegularization) {
+            trainLambda(x, y); // adaptive regularization
+        }
+        if (_earlyStopping) {
+            double p = _model.predict(x);
+            double loss = _lossFunction.loss(p, y);
+            _validationState.incrLoss(loss);
         }
     }
 
