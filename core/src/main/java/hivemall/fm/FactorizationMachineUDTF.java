@@ -20,8 +20,6 @@ package hivemall.fm;
 
 import static hivemall.fm.FMHyperParameters.DEFAULT_ETA0;
 import static hivemall.fm.FMHyperParameters.DEFAULT_LAMBDA;
-import static hivemall.utils.lang.SizeOf.FALSE_BYTE;
-import static hivemall.utils.lang.SizeOf.TRUE_BYTE;
 
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
@@ -116,6 +114,10 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
      * The number of training examples processed
      */
     protected long _t;
+    /**
+     * The total number of training examples
+     */
+    protected long _numTrainingExamples;
 
     // file IO
     private ByteBuffer _inputBuf;
@@ -235,6 +237,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
         this._model = null;
         this._t = 0L;
+        this._numTrainingExamples = 0L;
 
         if (LOG.isInfoEnabled()) {
             LOG.info(_params);
@@ -301,16 +304,10 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             y = (y > 0.d) ? 1.d : -1.d;
         }
 
-        ++_t;
+        recordTrain(x, y);
+        _numTrainingExamples++;
 
-        boolean validation = false;
-        if ((_va_rand != null) && _t >= _validationThreshold) {
-            validation = _va_rand.nextFloat() < _validationRatio;
-        }
-
-        recordTrain(x, y, validation);
-
-        train(x, y, validation);
+        train(x, y);
     }
 
     @Nullable
@@ -322,8 +319,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         return features;
     }
 
-    protected void recordTrain(@Nonnull final Feature[] x, final double y, final boolean validation)
-            throws HiveException {
+    private void recordTrain(@Nonnull final Feature[] x, final double y) throws HiveException {
         if (_iterations <= 1) {
             return;
         }
@@ -351,7 +347,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
 
         int xBytes = Feature.requiredBytes(x);
-        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes + SizeOf.BYTE;
+        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes;
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
         if (remain < requiredBytes) {
@@ -364,7 +360,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             f.writeTo(inputBuf);
         }
         inputBuf.putDouble(y);
-        inputBuf.put(validation ? TRUE_BYTE : FALSE_BYTE);
     }
 
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
@@ -378,14 +373,14 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         srcBuf.clear();
     }
 
-    public void train(@Nonnull final Feature[] x, final double y, final boolean validation)
-            throws HiveException {
-        _model.check(x);
+    private void train(@Nonnull final Feature[] x, final double y) throws HiveException {
+        _model.check(x); // REVIEWME mostly for FMIntFeatureMapModel (could be removed after the first iteration)
 
         try {
-            if (validation) {
+            if (isValidationExample()) {
                 processValidationSample(x, y);
             } else {
+                ++_t;
                 trainTheta(x, y);
             }
         } catch (Exception ex) {
@@ -393,15 +388,23 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
     }
 
+    private boolean isValidationExample() {
+        if (_va_rand != null && _t >= _validationThreshold) {
+            return _va_rand.nextFloat() < _validationRatio;
+        }
+        return false;
+    }
+
     protected void processValidationSample(@Nonnull final Feature[] x, final double y)
             throws HiveException {
-        if (_adaptiveRegularization) {
-            trainLambda(x, y); // adaptive regularization
-        }
         if (_earlyStopping) {
             double p = _model.predict(x);
             double loss = _lossFunction.loss(p, y);
             _validationState.incrLoss(loss);
+        }
+        if (_adaptiveRegularization) {
+            ++_t;
+            trainLambda(x, y); // adaptive regularization
         }
     }
 
@@ -443,7 +446,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
      *      grad_lambdafg = (grad l(p,y)) * (-2 * alpha * (\sum_{l} x_l * v'_lf) * \sum_{l \in group(g)} x_l * v_lf) - \sum_{l \in group(g)} x^2_l * v_lf * v'_lf)
      * </pre>
      */
-    protected void trainLambda(final Feature[] x, final double y) throws HiveException {
+    private void trainLambda(final Feature[] x, final double y) throws HiveException {
         final float eta = _etaEstimator.eta(_t);
         final double p = _model.predict(x);
         final double lossGrad = _model.dloss(p, y);
@@ -571,7 +574,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         final NioStatefulSegment fileIO = this._fileIO;
         assert (inputBuf != null);
         assert (fileIO != null);
-        final long numTrainingExamples = _t;
 
         boolean lossIncreasedLastIter = false;
 
@@ -601,23 +603,21 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                             x[j] = instantiateFeature(inputBuf);
                         }
                         double y = inputBuf.getDouble();
-                        boolean validation = (inputBuf.get() == TRUE_BYTE);
 
                         // invoke train
-                        ++_t;
-                        train(x, y, validation);
+                        train(x, y);
                     }
                     // stop if validation loss is consecutively increased over recent 2 iterations
                     final boolean lossIncreased = _validationState.isLossIncreased();
                     if ((lossIncreasedLastIter && lossIncreased)
-                            || _cvState.isConverged(numTrainingExamples)) {
+                            || _cvState.isConverged(_numTrainingExamples)) {
                         break;
                     }
                     lossIncreasedLastIter = lossIncreased;
                     inputBuf.rewind();
                 }
                 LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
-                        + NumberUtils.formatNumber(numTrainingExamples)
+                        + NumberUtils.formatNumber(_numTrainingExamples)
                         + " training examples on memory (thus " + NumberUtils.formatNumber(_t)
                         + " training updates in total) ");
             } else {// read training examples in the temporary file and invoke train for each example
@@ -634,7 +634,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 }
                 if (LOG.isInfoEnabled()) {
                     File tmpFile = fileIO.getFile();
-                    LOG.info("Wrote " + numTrainingExamples
+                    LOG.info("Wrote " + _numTrainingExamples
                             + " records to a temporary file for iterative training: "
                             + tmpFile.getAbsolutePath() + " (" + FileUtils.prettyFileSize(tmpFile)
                             + ")");
@@ -685,11 +685,9 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                                 x[j] = instantiateFeature(inputBuf);
                             }
                             double y = inputBuf.getDouble();
-                            boolean validation = inputBuf.getShort() == 1;
 
                             // invoke training
-                            ++_t;
-                            train(x, y, validation);
+                            train(x, y);
 
                             remain -= recordBytes;
                         }
@@ -698,13 +696,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                     // stop if validation loss is consecutively increased over recent 2 iterations
                     final boolean lossIncreased = _validationState.isLossIncreased();
                     if ((lossIncreasedLastIter && lossIncreased)
-                            || _cvState.isConverged(numTrainingExamples)) {
+                            || _cvState.isConverged(_numTrainingExamples)) {
                         break;
                     }
                     lossIncreasedLastIter = lossIncreased;
                 }
                 LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
-                        + NumberUtils.formatNumber(numTrainingExamples)
+                        + NumberUtils.formatNumber(_numTrainingExamples)
                         + " training examples on a secondary storage (thus "
                         + NumberUtils.formatNumber(_t) + " training updates in total)");
             }
