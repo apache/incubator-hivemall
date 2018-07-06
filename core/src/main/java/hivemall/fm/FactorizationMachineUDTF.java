@@ -20,6 +20,8 @@ package hivemall.fm;
 
 import static hivemall.fm.FMHyperParameters.DEFAULT_ETA0;
 import static hivemall.fm.FMHyperParameters.DEFAULT_LAMBDA;
+import static hivemall.utils.lang.SizeOf.FALSE_BYTE;
+import static hivemall.utils.lang.SizeOf.TRUE_BYTE;
 
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
@@ -155,7 +157,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         opts.addOption("cv_rate", "convergence_rate", true,
             "Threshold to determine convergence [default: 0.005]");
         // adaptive regularization and early stopping with randomly hold-out validation samples
-        opts.addOption("auto_stop", "early_stopping", false,
+        opts.addOption("early_stopping", false,
             "Stop at the iteration that achieves the best validation on partial samples [default: OFF]");
         opts.addOption("va_ratio", "validation_ratio", true,
             "Ratio of training data used for validation [default: 0.05f]");
@@ -349,7 +351,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
 
         int xBytes = Feature.requiredBytes(x);
-        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes + SizeOf.SHORT;
+        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes + SizeOf.BYTE;
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
         if (remain < requiredBytes) {
@@ -362,7 +364,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             f.writeTo(inputBuf);
         }
         inputBuf.putDouble(y);
-        inputBuf.putShort((short) (validation ? 1 : 0));
+        inputBuf.put(validation ? TRUE_BYTE : FALSE_BYTE);
     }
 
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
@@ -374,10 +376,6 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             throw new HiveException("Exception causes while writing a buffer to file", e);
         }
         srcBuf.clear();
-    }
-
-    protected void checkInputVector(@Nonnull final Feature[] x) throws HiveException {
-        _model.check(x);
     }
 
     protected void processValidationSample(@Nonnull final Feature[] x, final double y)
@@ -394,7 +392,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
     public void train(@Nonnull final Feature[] x, final double y, final boolean validation)
             throws HiveException {
-        checkInputVector(x);
+        _model.check(x);
 
         try {
             if (validation) {
@@ -603,7 +601,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                             x[j] = instantiateFeature(inputBuf);
                         }
                         double y = inputBuf.getDouble();
-                        boolean validation = inputBuf.getShort() == 1;
+                        boolean validation = (inputBuf.get() == TRUE_BYTE);
 
                         // invoke train
                         ++_t;

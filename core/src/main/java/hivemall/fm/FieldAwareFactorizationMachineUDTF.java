@@ -181,11 +181,6 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
     }
 
     @Override
-    protected void checkInputVector(@Nonnull final Feature[] x) throws HiveException {
-        _ffmModel.check(x);
-    }
-
-    @Override
     protected void processValidationSample(@Nonnull final Feature[] x, final double y)
             throws HiveException {
         if (_earlyStopping) {
