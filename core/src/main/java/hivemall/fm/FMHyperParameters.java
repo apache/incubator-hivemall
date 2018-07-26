@@ -154,7 +154,7 @@ class FMHyperParameters {
 
         // FFM hyper parameters
         boolean globalBias = false;
-        boolean linearCoeff = true;
+        boolean linearCoeff = false;
 
         // feature hashing
         int numFields = Feature.DEFAULT_NUM_FIELDS;
