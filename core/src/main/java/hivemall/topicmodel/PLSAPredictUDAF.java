@@ -21,16 +21,16 @@ package hivemall.topicmodel;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.CommandLineUtils;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.struct.SortableKeyValue;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -384,23 +384,25 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             myAggr.merge(wcList, probMap);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Object terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
-            float[] topicDistr = myAggr.get();
 
-            SortedMap<Float, Integer> sortedDistr =
-                    new TreeMap<Float, Integer>(Collections.reverseOrder());
+            final float[] topicDistr = myAggr.get();
+            final SortableKeyValue<Float, Integer>[] sorted =
+                    new SortableKeyValue[topicDistr.length];
             for (int i = 0; i < topicDistr.length; i++) {
-                sortedDistr.put(topicDistr[i], i);
+                sorted[i] = new SortableKeyValue<>(topicDistr[i], i);
             }
+            Arrays.sort(sorted, Collections.reverseOrder());
 
-            List<Object[]> result = new ArrayList<Object[]>();
-            for (Map.Entry<Float, Integer> e : sortedDistr.entrySet()) {
+            final List<Object[]> result = new ArrayList<Object[]>(sorted.length);
+            for (SortableKeyValue<Float, Integer> e : sorted) {
                 Object[] struct = new Object[2];
-                struct[0] = new IntWritable(e.getValue().intValue()); // label
-                struct[1] = new FloatWritable(e.getKey().floatValue()); // probability
+                struct[0] = new IntWritable(e.getValue()); // label
+                struct[1] = new FloatWritable(e.getKey()); // probability
                 result.add(struct);
             }
             return result;
