@@ -20,6 +20,11 @@ package hivemall.topicmodel;
 
 import hivemall.utils.math.MathUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -27,11 +32,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -265,4 +265,41 @@ public class LDAPredictUDAFTest {
         Assert.assertEquals(LDAUDTF.DEFAULT_TOPICS, doc2Distr.length);
         Assert.assertEquals(1.d, MathUtils.sum(doc2Distr), 1E-5d);
     }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testTerminateWithSameTopicProbability() throws Exception {
+        udaf = new LDAPredictUDAF();
+
+        inputOIs = new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                    PrimitiveObjectInspector.PrimitiveCategory.STRING),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                    PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                    PrimitiveObjectInspector.PrimitiveCategory.INT),
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(
+                    PrimitiveObjectInspector.PrimitiveCategory.FLOAT),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-topics 2")};
+
+        evaluator = udaf.getEvaluator(new SimpleGenericUDAFParameterInfo(inputOIs, false, false));
+
+        agg = (LDAPredictUDAF.OnlineLDAPredictAggregationBuffer) evaluator.getNewAggregationBuffer();
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        // Assume that all words in a document are NOT in vocabulary that composes a LDA model.
+        // Hence, the document should be assigned to topic #1 (#2) with probability 0.5 (0.5).
+        for (int i = 0; i < 18; i++) {
+            evaluator.iterate(agg, new Object[] {words[i], 0.f, labels[i], lambdas[i]});
+        }
+
+        // Probability for each of the two topics should be same.
+        List<Object[]> result = (List<Object[]>) evaluator.terminate(agg);
+        Assert.assertEquals(result.size(), 2);
+        Assert.assertEquals(result.get(0)[1], result.get(1)[1]);
+    }
+
 }
