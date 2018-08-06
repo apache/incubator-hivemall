@@ -22,18 +22,19 @@ import hivemall.utils.lang.Preconditions;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-public final class KeySortableValue<K, V extends Comparable<V>>
-        implements Comparable<KeySortableValue<K, V>> {
+public final class KeySortablePair<K extends Comparable<K>, V>
+        implements Comparable<KeySortablePair<K, V>> {
 
     @Nonnull
     private final K k;
-    @Nonnull
+    @Nullable
     private final V v;
 
-    public KeySortableValue(@CheckForNull K k, @Nonnull V v) {
+    public KeySortablePair(@CheckForNull K k, @Nullable V v) {
         this.k = Preconditions.checkNotNull(k);
-        this.v = Preconditions.checkNotNull(v);
+        this.v = v;
     }
 
     @Nonnull
@@ -41,14 +42,14 @@ public final class KeySortableValue<K, V extends Comparable<V>>
         return k;
     }
 
-    @Nonnull
+    @Nullable
     public V getValue() {
         return v;
     }
 
     @Override
-    public int compareTo(KeySortableValue<K, V> o) {
-        return v.compareTo(o.v);
+    public int compareTo(KeySortablePair<K, V> o) {
+        return k.compareTo(o.k);
     }
 
     @Override
@@ -56,7 +57,7 @@ public final class KeySortableValue<K, V extends Comparable<V>>
         final int prime = 31;
         int result = 1;
         result = prime * result + k.hashCode();
-        result = prime * result + v.hashCode();
+        result = prime * result + ((v == null) ? 0 : v.hashCode());
         return result;
     }
 
@@ -69,10 +70,13 @@ public final class KeySortableValue<K, V extends Comparable<V>>
             return false;
         if (getClass() != obj.getClass())
             return false;
-        KeySortableValue<K, V> other = (KeySortableValue<K, V>) obj;
+        KeySortablePair<K, V> other = (KeySortablePair<K, V>) obj;
         if (!k.equals(other.k))
             return false;
-        if (!v.equals(other.v))
+        if (v == null) {
+            if (other.v != null)
+                return false;
+        } else if (!v.equals(other.v))
             return false;
         return true;
     }

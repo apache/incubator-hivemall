@@ -27,16 +27,16 @@ import java.util.PriorityQueue;
 
 import org.junit.Test;
 
-public class KeySortableValueTest {
+public class ValueSortablePairTest {
 
     @Test
-    public void test1() {
-        KeySortableValue<Float, Integer> v1 = new KeySortableValue<>(1.f, -1);
-        KeySortableValue<Float, Integer> v2 = new KeySortableValue<>(2.f, 3);
-        KeySortableValue<Float, Integer> v3 = new KeySortableValue<>(3.f, 2);
-        KeySortableValue<Float, Integer> v4 = new KeySortableValue<>(4.f, 0);
+    public void testPriorityQueue() {
+        ValueSortablePair<Float, Integer> v1 = new ValueSortablePair<>(1.f, -1);
+        ValueSortablePair<Float, Integer> v2 = new ValueSortablePair<>(2.f, 3);
+        ValueSortablePair<Float, Integer> v3 = new ValueSortablePair<>(3.f, 2);
+        ValueSortablePair<Float, Integer> v4 = new ValueSortablePair<>(4.f, 0);
 
-        PriorityQueue<KeySortableValue<Float, Integer>> pq =
+        PriorityQueue<ValueSortablePair<Float, Integer>> pq =
                 new PriorityQueue<>(11, Collections.reverseOrder());
         pq.add(v1);
         pq.add(v2);
@@ -53,13 +53,13 @@ public class KeySortableValueTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void test2() {
-        KeySortableValue<Float, Integer> v1 = new KeySortableValue<>(1.f, -1);
-        KeySortableValue<Float, Integer> v2 = new KeySortableValue<>(2.f, 3);
-        KeySortableValue<Float, Integer> v3 = new KeySortableValue<>(3.f, 2);
-        KeySortableValue<Float, Integer> v4 = new KeySortableValue<>(4.f, 0);
+    public void testArraySort() {
+        ValueSortablePair<Float, Integer> v1 = new ValueSortablePair<>(1.f, -1);
+        ValueSortablePair<Float, Integer> v2 = new ValueSortablePair<>(2.f, 3);
+        ValueSortablePair<Float, Integer> v3 = new ValueSortablePair<>(3.f, 2);
+        ValueSortablePair<Float, Integer> v4 = new ValueSortablePair<>(4.f, 0);
 
-        KeySortableValue<Float, Integer>[] arr = new KeySortableValue[] {v1, v2, v3, v4};
+        ValueSortablePair<Float, Integer>[] arr = new ValueSortablePair[] {v1, v2, v3, v4};
         Arrays.sort(arr, Collections.reverseOrder());
 
         assertEquals(3, arr[0].getValue().intValue());

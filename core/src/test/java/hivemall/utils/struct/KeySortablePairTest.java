@@ -21,21 +21,22 @@ package hivemall.utils.struct;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.PriorityQueue;
 
 import org.junit.Test;
 
-public class SortableKeyValueTest {
+public class KeySortablePairTest {
 
     @Test
-    public void test() {
-        SortableKeyValue<Float, Integer> v1 = new SortableKeyValue<>(3.f, 1);
-        SortableKeyValue<Float, Integer> v2 = new SortableKeyValue<>(1.f, 2);
-        SortableKeyValue<Float, Integer> v3 = new SortableKeyValue<>(4.f, 3);
-        SortableKeyValue<Float, Integer> v4 = new SortableKeyValue<>(-1.f, 4);
+    public void testPriorityQueue() {
+        KeySortablePair<Float, Integer> v1 = new KeySortablePair<>(3.f, 1);
+        KeySortablePair<Float, Integer> v2 = new KeySortablePair<>(1.f, 2);
+        KeySortablePair<Float, Integer> v3 = new KeySortablePair<>(4.f, 3);
+        KeySortablePair<Float, Integer> v4 = new KeySortablePair<>(-1.f, 4);
 
-        PriorityQueue<SortableKeyValue<Float, Integer>> pq =
+        PriorityQueue<KeySortablePair<Float, Integer>> pq =
                 new PriorityQueue<>(11, Collections.reverseOrder());
         pq.add(v1);
         pq.add(v2);
@@ -48,6 +49,23 @@ public class SortableKeyValueTest {
         assertEquals(Float.valueOf(-1.f), pq.poll().getKey());
 
         assertTrue(pq.isEmpty());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testArraySort() {
+        KeySortablePair<Float, Integer> v1 = new KeySortablePair<>(3.f, 1);
+        KeySortablePair<Float, Integer> v2 = new KeySortablePair<>(1.f, 2);
+        KeySortablePair<Float, Integer> v3 = new KeySortablePair<>(4.f, 3);
+        KeySortablePair<Float, Integer> v4 = new KeySortablePair<>(-1.f, 4);
+
+        KeySortablePair<Float, Integer>[] arr = new KeySortablePair[] {v1, v2, v3, v4};
+        Arrays.sort(arr, Collections.reverseOrder());
+
+        assertEquals(Float.valueOf(4.f), arr[0].getKey());
+        assertEquals(Float.valueOf(3.f), arr[1].getKey());
+        assertEquals(Float.valueOf(1.f), arr[2].getKey());
+        assertEquals(Float.valueOf(-1.f), arr[3].getKey());
     }
 
 }

@@ -21,7 +21,7 @@ package hivemall.topicmodel;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.CommandLineUtils;
 import hivemall.utils.lang.Primitives;
-import hivemall.utils.struct.SortableKeyValue;
+import hivemall.utils.struct.KeySortablePair;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -391,15 +391,15 @@ public final class LDAPredictUDAF extends AbstractGenericUDAFResolver {
             OnlineLDAPredictAggregationBuffer myAggr = (OnlineLDAPredictAggregationBuffer) agg;
 
             final float[] topicDistr = myAggr.get();
-            final SortableKeyValue<Float, Integer>[] sorted =
-                    new SortableKeyValue[topicDistr.length];
+            final KeySortablePair<Float, Integer>[] sorted =
+                    new KeySortablePair[topicDistr.length];
             for (int i = 0; i < topicDistr.length; i++) {
-                sorted[i] = new SortableKeyValue<>(topicDistr[i], i);
+                sorted[i] = new KeySortablePair<>(topicDistr[i], i);
             }
             Arrays.sort(sorted, Collections.reverseOrder());
 
             final List<Object[]> result = new ArrayList<Object[]>(sorted.length);
-            for (SortableKeyValue<Float, Integer> e : sorted) {
+            for (KeySortablePair<Float, Integer> e : sorted) {
                 Object[] struct = new Object[2];
                 struct[0] = new IntWritable(e.getValue()); // label
                 struct[1] = new FloatWritable(e.getKey()); // probability
