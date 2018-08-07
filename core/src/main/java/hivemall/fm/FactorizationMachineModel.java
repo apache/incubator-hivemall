@@ -271,7 +271,7 @@ public abstract class FactorizationMachineModel {
      * sum_f_dash      := \sum_{j} x_j * v'_lj, this is independent of the groups
      * sum_f(g)        := \sum_{j \in group(g)} x_j * v_jf
      * sum_f_dash_f(g) := \sum_{j \in group(g)} x^2_j * v_jf * v'_jf
-     *                 := \sum_{j \in group(g)} x_j * v'_jf * x_j * v_jf 
+     *                 := \sum_{j \in group(g)} x_j * v'_jf * x_j * v_jf
      * v_jf'           := v_jf - alpha ( grad_v_jf + 2 * lambda_v_f * v_jf)
      * </pre>
      */
@@ -399,9 +399,8 @@ public abstract class FactorizationMachineModel {
     protected static final void uniformFill(final float[] a, final Random rand,
             final float maxInitValue) {
         final int len = a.length;
-        final float basev = maxInitValue / len;
         for (int i = 0; i < len; i++) {
-            float v = rand.nextFloat() * basev;
+            float v = rand.nextFloat() * maxInitValue;
             a[i] = v;
         }
     }

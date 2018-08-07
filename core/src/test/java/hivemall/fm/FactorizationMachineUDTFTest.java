@@ -92,6 +92,141 @@ public class FactorizationMachineUDTFTest {
     }
 
     @Test
+    public void testAdaptiveRegularization() throws HiveException, IOException {
+        println("Adaptive regularization test");
+
+        final String options = "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.01 -seed 31 ";
+
+        FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector, options)};
+
+        udtf.initialize(argOIs);
+
+        BufferedReader data = readFile("5107786.txt.gz");
+        List<List<String>> featureVectors = new ArrayList<>();
+        List<Double> ys = new ArrayList<>();
+        String line = data.readLine();
+        while (line != null) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+            double y = Double.parseDouble(tokenizer.nextToken());
+            List<String> features = new ArrayList<String>();
+            while (tokenizer.hasMoreTokens()) {
+                String f = tokenizer.nextToken();
+                features.add(f);
+            }
+            udtf.process(new Object[] {features, y});
+            featureVectors.add(features);
+            ys.add(y);
+            line = data.readLine();
+        }
+        udtf.finalizeTraining();
+        data.close();
+
+        double loss = udtf._cvState.getAverageLoss(featureVectors.size());
+        println("Average loss without adaptive regularization: " + loss);
+
+        // train with adaptive regularization
+        udtf = new FactorizationMachineUDTF();
+        argOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            options + "-adaptive_regularization -validation_threshold 1");
+        udtf.initialize(argOIs);
+        udtf.initModel(udtf._params);
+        for (int i = 0, n = featureVectors.size(); i < n; i++) {
+            udtf.process(new Object[] {featureVectors.get(i), ys.get(i)});
+        }
+        udtf.finalizeTraining();
+
+        double loss_adareg = udtf._cvState.getAverageLoss(featureVectors.size());
+        println("Average loss with adaptive regularization: " + loss_adareg);
+        Assert.assertTrue("Adaptive regularization should achieve lower loss", loss > loss_adareg);
+    }
+
+    @Test
+    public void testEarlyStopping() throws HiveException, IOException {
+        println("Early stopping test");
+
+        int iters = 20;
+
+        // train with 20 iterations
+        FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters
+                            + " -early_stopping -validation_threshold 1 -disable_cv")};
+
+        udtf.initialize(argOIs);
+
+        BufferedReader data = readFile("5107786.txt.gz");
+        List<List<String>> featureVectors = new ArrayList<>();
+        List<Double> ys = new ArrayList<>();
+        String line = data.readLine();
+        while (line != null) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+            double y = Double.parseDouble(tokenizer.nextToken());
+            List<String> features = new ArrayList<String>();
+            while (tokenizer.hasMoreTokens()) {
+                String f = tokenizer.nextToken();
+                features.add(f);
+            }
+            udtf.process(new Object[] {features, y});
+            featureVectors.add(features);
+            ys.add(y);
+            line = data.readLine();
+        }
+        udtf.finalizeTraining();
+        data.close();
+
+        double loss = udtf._validationState.getAverageLoss(featureVectors.size());
+        Assert.assertTrue(
+            "Training seems to be failed because average loss is greater than 0.1: " + loss,
+            loss <= 0.1);
+
+        Assert.assertNotNull("Early stopping validation has not been conducted",
+            udtf._validationState);
+        println("Performed " + udtf._validationState.getCurrentIteration() + " iterations out of "
+                + iters);
+        Assert.assertNotEquals("Early stopping did not happen", iters,
+            udtf._validationState.getCurrentIteration());
+
+        // store the best state achieved by early stopping
+        iters = udtf._validationState.getCurrentIteration() - 2; // best loss was at (N-2)-th iter
+        double cumulativeLoss = udtf._validationState.getCumulativeLoss();
+        println("Cumulative loss: " + cumulativeLoss);
+
+        // train with the number of early-stopped iterations
+        udtf = new FactorizationMachineUDTF();
+        argOIs[2] = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-factors 5 -min 1 -max 5 -init_v gaussian -eta0 0.002 -seed 31 -iters " + iters
+                    + " -early_stopping -validation_threshold 1 -disable_cv");
+        udtf.initialize(argOIs);
+        udtf.initModel(udtf._params);
+        for (int i = 0, n = featureVectors.size(); i < n; i++) {
+            udtf.process(new Object[] {featureVectors.get(i), ys.get(i)});
+        }
+        udtf.finalizeTraining();
+
+        println("Performed " + udtf._validationState.getCurrentIteration() + " iterations out of "
+                + iters);
+        Assert.assertEquals("Training finished earlier than expected", iters,
+            udtf._validationState.getCurrentIteration());
+
+        println("Cumulative loss: " + udtf._validationState.getCumulativeLoss());
+        Assert.assertTrue("Cumulative loss should be better than " + cumulativeLoss,
+            cumulativeLoss > udtf._validationState.getCumulativeLoss());
+    }
+
+    @Test
     public void testEnableL2Norm() throws HiveException, IOException {
         FactorizationMachineUDTF udtf = new FactorizationMachineUDTF();
         ObjectInspector[] argOIs = new ObjectInspector[] {

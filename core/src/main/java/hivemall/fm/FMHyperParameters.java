@@ -28,7 +28,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 
 class FMHyperParameters {
-    private static final float DEFAULT_ETA0 = 0.05f;
+    protected static final float DEFAULT_ETA0 = 0.1f;
 
     // -------------------------------------
     // Model parameters
@@ -37,10 +37,10 @@ class FMHyperParameters {
     int factors = 5;
 
     // regularization
-    float lambda = 0.01f;
-    float lambdaW0 = 0.01f;
-    float lambdaW = 0.01f;
-    float lambdaV = 0.01f;
+    float lambda = 0.0001f;
+    float lambdaW0;
+    float lambdaW;
+    float lambdaV;
 
     // V initialization
     double sigma = 0.1d;
@@ -62,9 +62,11 @@ class FMHyperParameters {
 
     boolean l2norm; // enable by default for FFM. disabled by default for FM.
 
-    int iters = 1;
+    int iters = 10;
     boolean conversionCheck = true;
     double convergenceRate = 0.005d;
+
+    boolean earlyStopping = false;
 
     // adaptive regularization
     boolean adaptiveRegularization = false;
@@ -92,7 +94,7 @@ class FMHyperParameters {
         this.factors = Primitives.parseInt(cl.getOptionValue("factors"), factors);
         this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), lambda);
         this.lambdaW0 = Primitives.parseFloat(cl.getOptionValue("lambda_w0"), lambda);
-        this.lambdaW = Primitives.parseFloat(cl.getOptionValue("lambda_w"), lambda);
+        this.lambdaW = Primitives.parseFloat(cl.getOptionValue("lambda_wi"), lambda);
         this.lambdaV = Primitives.parseFloat(cl.getOptionValue("lambda_v"), lambda);
         this.sigma = Primitives.parseDouble(cl.getOptionValue("sigma"), sigma);
         this.seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
@@ -109,6 +111,7 @@ class FMHyperParameters {
         this.conversionCheck = !cl.hasOption("disable_cvtest");
         this.convergenceRate =
                 Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
+        this.earlyStopping = cl.hasOption("early_stopping");
         this.adaptiveRegularization = cl.hasOption("adaptive_regularization");
         this.validationRatio =
                 Primitives.parseFloat(cl.getOptionValue("validation_ratio"), validationRatio);
@@ -170,7 +173,13 @@ class FMHyperParameters {
             }
 
             this.globalBias = cl.hasOption("global_bias");
-            this.linearCoeff = !cl.hasOption("no_coeff");
+            this.linearCoeff = cl.hasOption("linear_term");
+
+            if (cl.hasOption("enable_norm") && cl.hasOption("disable_norm")) {
+                throw new UDFArgumentException(
+                    "-enable_norm and -disable_norm MUST NOT be used simultaneously");
+            }
+            this.l2norm = !cl.hasOption("disable_norm");
 
             // feature hashing
             if (numFeatures == -1) {

@@ -36,13 +36,12 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
 
     @Nonnull
     protected final FFMHyperParameters _params;
-    protected final float _eta0;
     protected final float _eps;
 
     protected final boolean _useAdaGrad;
     protected final boolean _useFTRL;
 
-    // FTEL
+    // FTRL
     private final float _alpha;
     private final float _beta;
     private final float _lambda1;
@@ -51,11 +50,6 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     public FieldAwareFactorizationMachineModel(@Nonnull FFMHyperParameters params) {
         super(params);
         this._params = params;
-        if (params.useAdaGrad) {
-            this._eta0 = 1.0f;
-        } else {
-            this._eta0 = params.eta.eta0();
-        }
         this._eps = params.eps;
         this._useAdaGrad = params.useAdaGrad;
         this._useFTRL = params.useFTRL;
@@ -123,17 +117,18 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
         }
 
         final double Xi = x.getValue();
-        float gradWi = (float) (dloss * Xi);
 
         final Entry theta = getEntryW(x);
         float wi = theta.getW();
 
-        final float eta = eta(theta, t, gradWi);
-        float nextWi = wi - eta * (gradWi + 2.f * _lambdaW * wi);
+        float grad = (float) (dloss * Xi + 2.f * _lambdaW * wi);
+
+        final float eta = eta(theta, t, grad);
+        float nextWi = wi - eta * grad;
         if (!NumberUtils.isFinite(nextWi)) {
             throw new IllegalStateException(
-                "Got " + nextWi + " for next W[" + x.getFeature() + "]\n" + "Xi=" + Xi + ", gradWi="
-                        + gradWi + ", wi=" + wi + ", dloss=" + dloss + ", eta=" + eta + ", t=" + t);
+                "Got " + nextWi + " for next W[" + x.getFeature() + "]\n" + "Xi=" + Xi + ", grad="
+                        + grad + ", wi=" + wi + ", dloss=" + dloss + ", eta=" + eta + ", t=" + t);
         }
         if (MathUtils.closeToZero(nextWi, 1E-9f)) {
             removeEntry(theta);
@@ -189,16 +184,17 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
 
         final double Xi = x.getValue();
         final double h = Xi * sumViX;
-        final float gradV = (float) (dloss * h);
         final float lambdaVf = getLambdaV(f);
-
         final float currentV = theta.getV(f);
-        final float eta = eta(theta, f, t, gradV);
-        final float nextV = currentV - eta * (gradV + 2.f * lambdaVf * currentV);
+
+        final float grad = (float) (dloss * h + 2.f * lambdaVf * currentV);
+
+        final float eta = eta(theta, f, t, grad);
+        final float nextV = currentV - eta * grad;
         if (!NumberUtils.isFinite(nextV)) {
             throw new IllegalStateException(
                 "Got " + nextV + " for next V" + f + '[' + x.getFeatureIndex() + "]\n" + "Xi=" + Xi
-                        + ", Vif=" + currentV + ", h=" + h + ", gradV=" + gradV + ", lambdaVf="
+                        + ", Vif=" + currentV + ", h=" + h + ", grad=" + grad + ", lambdaVf="
                         + lambdaVf + ", dloss=" + dloss + ", sumViX=" + sumViX + ", t=" + t);
         }
         if (MathUtils.closeToZero(nextV, 1E-9f)) {
@@ -259,9 +255,9 @@ public abstract class FieldAwareFactorizationMachineModel extends FactorizationM
     protected final float eta(@Nonnull final Entry theta, @Nonnegative final int f, final long t,
             final float grad) {
         if (_useAdaGrad) {
-            double gg = theta.getSumOfSquaredGradients(f);
             theta.addGradient(f, grad);
-            return (float) (_eta0 / Math.sqrt(_eps + gg));
+            double gg = theta.getSumOfSquaredGradients(f);
+            return (float) (_eta.eta(t) / Math.sqrt(_eps + gg));
         } else {
             return _eta.eta(t);
         }

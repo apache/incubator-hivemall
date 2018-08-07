@@ -59,6 +59,11 @@ public final class L2NormalizationUDF extends UDF {
                 float v = Float.parseFloat(ft[1]);
                 weights[i] = v;
                 squaredSum += (v * v);
+            } else if (ftlen == 3) {
+                features[i] = ft[0] + ':' + ft[1];
+                float v = Float.parseFloat(ft[2]);
+                weights[i] = v;
+                squaredSum += (v * v);
             } else {
                 throw new HiveException("Invalid feature value representation: " + s);
             }
