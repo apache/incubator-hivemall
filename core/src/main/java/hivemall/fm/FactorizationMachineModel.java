@@ -392,6 +392,9 @@ public abstract class FactorizationMachineModel {
             case adjustedRandom:
                 adjustedRandomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
                 break;
+            case libffmRandom:
+                libffmRandomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
+                break;
             case random:
                 randomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
                 break;
