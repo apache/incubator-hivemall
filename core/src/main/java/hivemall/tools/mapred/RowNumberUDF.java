@@ -28,7 +28,8 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.LongWritable;
 
-@Description(name = "rownum", value = "_FUNC_() - Returns a generated row number `sprintf(`%d%04d`,sequence,taskId)` in long",
+@Description(name = "rownum",
+        value = "_FUNC_() - Returns a generated row number `sprintf(`%d%04d`,sequence,taskId)` in long",
         extended = "SELECT rownum() as rownum, xxx from ...")
 @UDFType(deterministic = false, stateful = true)
 public final class RowNumberUDF extends UDF {
