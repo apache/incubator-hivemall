@@ -24,6 +24,9 @@ public final class Primitives {
     public static final int INT_BYTES = Integer.SIZE / Byte.SIZE;
     public static final int DOUBLE_BYTES = Double.SIZE / Byte.SIZE;
 
+    public static final Byte TRUE_BYTE = 1;
+    public static final Byte FALSE_BYTE = 0;
+
     private Primitives() {}
 
     public static short parseShort(final String s, final short defaultValue) {

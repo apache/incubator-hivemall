@@ -111,6 +111,9 @@
 
 * [Kaggle Titanic Tutorial](binaryclass/titanic_rf.md)
 
+* [Criteo Tutorial](binaryclass/criteo.md)
+    * [Data preparation](binaryclass/criteo_dataset.md)
+    * [Field-Aware Factorization Machines](binaryclass/criteo_ffm.md)
 
 ## Part VII - Multiclass Classification
 

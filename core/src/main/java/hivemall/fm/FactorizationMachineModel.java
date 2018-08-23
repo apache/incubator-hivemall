@@ -271,7 +271,7 @@ public abstract class FactorizationMachineModel {
      * sum_f_dash      := \sum_{j} x_j * v'_lj, this is independent of the groups
      * sum_f(g)        := \sum_{j \in group(g)} x_j * v_jf
      * sum_f_dash_f(g) := \sum_{j \in group(g)} x^2_j * v_jf * v'_jf
-     *                 := \sum_{j \in group(g)} x_j * v'_jf * x_j * v_jf 
+     *                 := \sum_{j \in group(g)} x_j * v'_jf * x_j * v_jf
      * v_jf'           := v_jf - alpha ( grad_v_jf + 2 * lambda_v_f * v_jf)
      * </pre>
      */
@@ -336,7 +336,7 @@ public abstract class FactorizationMachineModel {
     public void check(@Nonnull Feature[] x) throws HiveException {}
 
     public enum VInitScheme {
-        random /* default */, gaussian;
+        adjustedRandom /* default */, libffmRandom, random, gaussian;
 
         @Nonnegative
         float maxInitValue;
@@ -346,7 +346,7 @@ public abstract class FactorizationMachineModel {
 
         @Nonnull
         public static VInitScheme resolve(@Nullable String opt) {
-            return resolve(opt, random);
+            return resolve(opt, adjustedRandom);
         }
 
         @Nonnull
@@ -354,10 +354,16 @@ public abstract class FactorizationMachineModel {
                 @Nonnull VInitScheme defaultScheme) {
             if (opt == null) {
                 return defaultScheme;
-            } else if ("gaussian".equalsIgnoreCase(opt)) {
-                return gaussian;
+            } else if ("adjusted_random".equalsIgnoreCase(opt)
+                    || "adjustedRandom".equalsIgnoreCase(opt)) {
+                return adjustedRandom;
+            } else if ("libffm_random".equalsIgnoreCase(opt) || "libffmRandom".equalsIgnoreCase(opt)
+                    || "libffm".equalsIgnoreCase(opt)) {
+                return VInitScheme.libffmRandom;
             } else if ("random".equalsIgnoreCase(opt)) {
                 return random;
+            } else if ("gaussian".equalsIgnoreCase(opt)) {
+                return gaussian;
             }
             return defaultScheme;
         }
@@ -371,7 +377,7 @@ public abstract class FactorizationMachineModel {
         }
 
         public void initRandom(int factor, long seed) {
-            int size = (this == random) ? 1 : factor;
+            final int size = (this != gaussian) ? 1 : factor;
             this.rand = new Random[size];
             for (int i = 0; i < size; i++) {
                 rand[i] = new Random(seed + i);
@@ -383,8 +389,14 @@ public abstract class FactorizationMachineModel {
     protected final float[] initV() {
         final float[] ret = new float[_factor];
         switch (_initScheme) {
+            case adjustedRandom:
+                adjustedRandomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
+                break;
+            case libffmRandom:
+                libffmRandomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
+                break;
             case random:
-                uniformFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
+                randomFill(ret, _initScheme.rand[0], _initScheme.maxInitValue);
                 break;
             case gaussian:
                 gaussianFill(ret, _initScheme.rand, _initScheme.initStdDev);
@@ -396,19 +408,42 @@ public abstract class FactorizationMachineModel {
         return ret;
     }
 
-    protected static final void uniformFill(final float[] a, final Random rand,
-            final float maxInitValue) {
-        final int len = a.length;
-        final float basev = maxInitValue / len;
-        for (int i = 0; i < len; i++) {
+    protected static final void adjustedRandomFill(@Nonnull final float[] a,
+            @Nonnull final Random rand, final float maxInitValue) {
+        final int k = a.length;
+        final float basev = maxInitValue / k;
+        for (int i = 0; i < k; i++) {
             float v = rand.nextFloat() * basev;
             a[i] = v;
         }
     }
 
-    protected static final void gaussianFill(final float[] a, final Random[] rand,
+    // libffm's V initialization scheme: 1/sqrt(k)
+    // https://github.com/guestwalk/libffm/blob/master/ffm.cpp#L287
+    protected static final void libffmRandomFill(@Nonnull final float[] a,
+            @Nonnull final Random rand, final float maxInitValue) {
+        final int k = a.length;
+        final float basev = maxInitValue / (float) Math.sqrt(k);
+        for (int i = 0; i < k; i++) {
+            float v = rand.nextFloat() * basev;
+            a[i] = v;
+        }
+    }
+
+    protected static final void randomFill(@Nonnull final float[] a, @Nonnull final Random rand,
+            final float maxInitValue) {
+        final int k = a.length;
+        for (int i = 0; i < k; i++) {
+            float v = rand.nextFloat() * maxInitValue;
+            a[i] = v;
+        }
+    }
+
+    // libfm uses gaussian for initialization
+    // https://github.com/srendle/libfm/blob/30b9c799c41d043f31565cbf827bf41d0dc3e2ab/src/fm_core/fm_model.h#L96
+    protected static final void gaussianFill(@Nonnull final float[] a, @Nonnull final Random[] rand,
             final double stddev) {
-        for (int i = 0, len = a.length; i < len; i++) {
+        for (int i = 0, k = a.length; i < k; i++) {
             float v = (float) MathUtils.gaussian(0.d, stddev, rand[i]);
             a[i] = v;
         }

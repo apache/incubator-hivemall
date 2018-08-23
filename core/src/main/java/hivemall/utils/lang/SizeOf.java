@@ -29,4 +29,5 @@ public final class SizeOf {
     public static final int CHAR = Character.SIZE / Byte.SIZE;
 
     private SizeOf() {}
+
 }
