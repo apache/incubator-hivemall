@@ -20,9 +20,6 @@ package hivemall.utils.lang;
 
 public final class SizeOf {
 
-    public static final Byte TRUE_BYTE = 1;
-    public static final Byte FALSE_BYTE = 0;
-
     public static final int BYTE = Byte.SIZE / Byte.SIZE;
     public static final int INT = Integer.SIZE / Byte.SIZE;
     public static final int SHORT = Short.SIZE / Byte.SIZE;
