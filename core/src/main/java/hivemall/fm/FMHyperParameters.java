@@ -134,20 +134,23 @@ class FMHyperParameters {
     }
 
     @Nonnull
-    private static VInitScheme instantiateVInit(@Nonnull CommandLine cl, int factor, long seed,
+    private VInitScheme instantiateVInit(@Nonnull CommandLine cl, int factor, long seed,
             final boolean classification) {
         String vInitOpt = cl.getOptionValue("init_v");
         float maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 0.5f);
         double initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.1d);
 
-        VInitScheme defaultInit =
-                classification ? VInitScheme.gaussian : VInitScheme.adjustedRandom;
-        VInitScheme vInit = VInitScheme.resolve(vInitOpt, defaultInit);
+        VInitScheme vInit = VInitScheme.resolve(vInitOpt, getDefaultVinitScheme());
         vInit.setMaxInitValue(maxInitValue);
         initStdDev = Math.max(initStdDev, 1.0d / factor);
         vInit.setInitStdDev(initStdDev);
         vInit.initRandom(factor, seed);
         return vInit;
+    }
+
+    @Nonnull
+    protected VInitScheme getDefaultVinitScheme() {
+        return classification ? VInitScheme.gaussian : VInitScheme.adjustedRandom;
     }
 
     public static final class FFMHyperParameters extends FMHyperParameters {
@@ -165,13 +168,18 @@ class FMHyperParameters {
 
         // FTRL
         boolean useFTRL = false;
-        float alphaFTRL = 0.2f; // Learning Rate
-        float betaFTRL = 1.f; // Smoothing parameter for AdaGrad
-        float lambda1 = 0.001f; // L1 Regularization
+        float alphaFTRL = 0.5f; // Learning Rate
+        float betaFTRL = 1.0f; // Smoothing parameter for AdaGrad
+        float lambda1 = 0.0002f; // L1 Regularization
         float lambda2 = 0.0001f; // L2 Regularization
 
         FFMHyperParameters() {
             super();
+        }
+
+        @Nonnull
+        protected VInitScheme getDefaultVinitScheme() {
+            return VInitScheme.random;
         }
 
         @Override

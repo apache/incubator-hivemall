@@ -177,7 +177,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         // initialization of V
         opts.addOption("init_v", true,
             "Initialization strategy of matrix V [adjusted_random, libffm, random, gaussian]"
-                    + "(default: 'adjusted_random' for regression / 'gaussian' for classification)");
+                    + "(FM default: 'adjusted_random' for regression, 'gaussian' for classification, FFM default: random)");
         opts.addOption("maxval", "max_init_value", true,
             "The maximum initial value in the matrix V [default: 0.5]");
         opts.addOption("min_init_stddev", true,
