@@ -59,6 +59,12 @@ public class L1NormalizationUDFTest {
             WritableUtils.val(new String[] {"aaa:" + normalized[0], "bbb:" + normalized[1]}),
             udf.evaluate(WritableUtils.val(new String[] {"aaa:1.0", "bbb:-0.5"})));
 
+        normalized = MathUtils.l1normalize(new float[] {1.0f, 2.0f, 3.0f});
+        assertEquals(
+            WritableUtils.val(new String[] {"1:123:" + normalized[0], "2:456:" + normalized[1],
+                    "3:789:" + normalized[2]}),
+            udf.evaluate(WritableUtils.val(new String[] {"1:123:1", "2:456:2", "3:789:3"})));
+
         List<Text> expected = udf.evaluate(WritableUtils.val(new String[] {"bbb:-0.5", "aaa:1.0"}));
         Collections.sort(expected);
         List<Text> actual = udf.evaluate(WritableUtils.val(new String[] {"aaa:1.0", "bbb:-0.5"}));

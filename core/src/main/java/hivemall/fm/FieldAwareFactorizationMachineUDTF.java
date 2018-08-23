@@ -52,7 +52,7 @@ import org.apache.hadoop.io.Text;
 
 /**
  * Field-aware Factorization Machines.
- * 
+ *
  * @link https://www.csie.ntu.edu.tw/~cjlin/libffm/
  * @since v0.5-rc.1
  */
@@ -70,7 +70,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
     private int _numFields;
     // ----------------------------------------
 
-    private transient FFMStringFeatureMapModel _ffmModel;
+    protected transient FFMStringFeatureMapModel _ffmModel;
 
     private transient IntArrayList _fieldList;
     @Nullable
@@ -85,12 +85,13 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         Options opts = super.getOptions();
         opts.addOption("w0", "global_bias", false,
             "Whether to include global bias term w0 [default: OFF]");
-        opts.addOption("disable_wi", "no_coeff", false,
-            "Not to include linear term [default: OFF]");
+        opts.addOption("enable_wi", "linear_term", false, "Include linear term [default: OFF]");
+        opts.addOption("no_norm", "disable_norm", false, "Disable instance-wise L2 normalization");
         // feature hashing
         opts.addOption("feature_hashing", true,
             "The number of bits for feature hashing in range [18,31] [default: -1]. No feature hashing for -1.");
-        opts.addOption("num_fields", true, "The number of fields [default: 256]");
+        opts.addOption("num_fields", true,
+            "The number of fields [default: " + Feature.DEFAULT_NUM_FIELDS + "]");
         // optimizer
         opts.addOption("opt", "optimizer", true,
             "Gradient Descent optimizer [default: ftrl, adagrad, sgd]");
@@ -98,11 +99,11 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         opts.addOption("eps", true, "A constant used in the denominator of AdaGrad [default: 1.0]");
         // FTRL
         opts.addOption("alpha", "alphaFTRL", true,
-            "Alpha value (learning rate) of Follow-The-Regularized-Reader [default: 0.2]");
+            "Alpha value (learning rate) of Follow-The-Regularized-Reader [default: 0.5]");
         opts.addOption("beta", "betaFTRL", true,
             "Beta value (a learning smoothing parameter) of Follow-The-Regularized-Reader [default: 1.0]");
         opts.addOption("l1", "lambda1", true,
-            "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.001]");
+            "L1 regularization value of Follow-The-Regularized-Reader that controls model Sparseness [default: 0.0002]");
         opts.addOption("l2", "lambda2", true,
             "L2 regularization value of Follow-The-Regularized-Reader [default: 0.0001]");
         return opts;
@@ -180,13 +181,12 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
     }
 
     @Override
-    public void train(@Nonnull final Feature[] x, final double y,
-            final boolean adaptiveRegularization) throws HiveException {
-        _ffmModel.check(x);
-        try {
-            trainTheta(x, y);
-        } catch (Exception ex) {
-            throw new HiveException("Exception caused in the " + _t + "-th call of train()", ex);
+    protected void processValidationSample(@Nonnull final Feature[] x, final double y)
+            throws HiveException {
+        if (_earlyStopping) {
+            double p = _model.predict(x);
+            double loss = _lossFunction.loss(p, y);
+            _validationState.incrLoss(loss);
         }
     }
 
@@ -292,7 +292,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
         forward(forwardObjs);
 
         final Entry entryW = new Entry(_ffmModel._buf, 1);
-        final Entry entryV = new Entry(_ffmModel._buf, _ffmModel._factor);
+        final Entry entryV = new Entry(_ffmModel._buf, factors);
         final float[] Vf = new float[factors];
 
         for (Int2LongMap.Entry e : Fastutil.fastIterable(_ffmModel._map)) {
@@ -303,7 +303,7 @@ public final class FieldAwareFactorizationMachineUDTF extends FactorizationMachi
             final long offset = e.getLongValue();
             if (Entry.isEntryW(i)) {// set Wi
                 entryW.setOffset(offset);
-                float w = entryV.getW();
+                float w = entryW.getW();
                 if (w == 0.f) {
                     continue; // skip w_i=0
                 }

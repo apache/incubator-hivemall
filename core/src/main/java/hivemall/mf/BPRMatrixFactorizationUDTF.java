@@ -137,8 +137,12 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("k", "factor", true, "The number of latent factor [default: 10]");
-        opts.addOption("iter", "iterations", true, "The number of iterations [default: 30]");
+        opts.addOption("k", "factor", true,
+            "The number of latent factor [default: 10] Alias for `-factors`");
+        opts.addOption("f", "factors", true, "The number of latent factor [default: 10]");
+        opts.addOption("iters", "iterations", true, "The number of iterations [default: 30]");
+        opts.addOption("iter", true,
+            "The number of iterations [default: 30] Alias for `-iterations");
         opts.addOption("loss", "loss_function", true,
             "Loss function [default: lnLogistic, logistic, sigmoid]");
         // initialization
@@ -191,8 +195,16 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
             String rawArgs = HiveUtils.getConstString(argOIs[3]);
             cl = parseOptions(rawArgs);
 
-            this.factor = Primitives.parseInt(cl.getOptionValue("factor"), factor);
-            this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), iterations);
+            if (cl.hasOption("factor")) {
+                this.factor = Primitives.parseInt(cl.getOptionValue("factor"), factor);
+            } else {
+                this.factor = Primitives.parseInt(cl.getOptionValue("factors"), factor);
+            }
+            if (cl.hasOption("iter")) {
+                this.iterations = Primitives.parseInt(cl.getOptionValue("iter"), iterations);
+            } else {
+                this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), iterations);
+            }
             if (iterations < 1) {
                 throw new UDFArgumentException(
                     "'-iterations' must be greater than or equals to 1: " + iterations);

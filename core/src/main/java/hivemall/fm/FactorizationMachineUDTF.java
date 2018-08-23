@@ -18,6 +18,11 @@
  */
 package hivemall.fm;
 
+import static hivemall.fm.FMHyperParameters.DEFAULT_ETA0;
+import static hivemall.fm.FMHyperParameters.DEFAULT_LAMBDA;
+import static hivemall.utils.lang.Primitives.FALSE_BYTE;
+import static hivemall.utils.lang.Primitives.TRUE_BYTE;
+
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
@@ -65,6 +70,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
+import com.google.common.base.Preconditions;
+
 @Description(name = "train_fm",
         value = "_FUNC_(array<string> x, double y [, const string options]) - Returns a prediction model")
 public class FactorizationMachineUDTF extends UDTFWithOptions {
@@ -89,7 +96,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     protected int _factors;
     protected boolean _parseFeatureAsInt;
 
+    protected boolean _earlyStopping;
+    protected ConversionState _validationState;
+
     // adaptive regularization
+    protected boolean _adaptiveRegularization;
     @Nullable
     protected Random _va_rand;
     protected float _validationRatio;
@@ -107,6 +118,10 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
      * The number of training examples processed
      */
     protected long _t;
+    /**
+     * The number of validation examples
+     */
+    protected long _numValidations;
 
     // file IO
     private ByteBuffer _inputBuf;
@@ -117,24 +132,28 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         Options opts = new Options();
         opts.addOption("c", "classification", false, "Act as classification");
         opts.addOption("seed", true, "Seed value [default: -1 (random)]");
-        opts.addOption("iters", "iterations", true, "The number of iterations [default: 1]");
+        opts.addOption("iters", "iterations", true, "The number of iterations [default: 10]");
+        opts.addOption("iter", true, "The number of iterations [default: 10]."
+                + " Note this is alias of `iters` for backward compatibility");
         opts.addOption("p", "num_features", true, "The size of feature dimensions [default: -1]");
         opts.addOption("f", "factors", true, "The number of the latent variables [default: 5]");
+        opts.addOption("k", "factor", true,
+            "The number of the latent variables [default: 5]" + " Alias of `-factors` option");
         opts.addOption("sigma", true, "The standard deviation for initializing V [default: 0.1]");
         opts.addOption("lambda0", "lambda", true,
-            "The initial lambda value for regularization [default: 0.01]");
+            "The initial lambda value for regularization [default: " + DEFAULT_LAMBDA + "]");
         opts.addOption("lambdaW0", "lambda_w0", true,
-            "The initial lambda value for W0 regularization [default: 0.01]");
+            "The initial lambda value for W0 regularization [default: " + DEFAULT_LAMBDA + "]");
         opts.addOption("lambdaWi", "lambda_wi", true,
-            "The initial lambda value for Wi regularization [default: 0.01]");
+            "The initial lambda value for Wi regularization [default: " + DEFAULT_LAMBDA + "]");
         opts.addOption("lambdaV", "lambda_v", true,
-            "The initial lambda value for V regularization [default: 0.01]");
+            "The initial lambda value for V regularization [default: " + DEFAULT_LAMBDA + "]");
         // regression
         opts.addOption("min", "min_target", true, "The minimum value of target variable");
         opts.addOption("max", "max_target", true, "The maximum value of target variable");
         // learning rates
         opts.addOption("eta", true, "The initial learning rate");
-        opts.addOption("eta0", true, "The initial learning rate [default 0.05]");
+        opts.addOption("eta0", true, "The initial learning rate [default " + DEFAULT_ETA0 + "]");
         opts.addOption("t", "total_steps", true, "The total number of training examples");
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
@@ -143,19 +162,22 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             "Whether to disable convergence check [default: OFF]");
         opts.addOption("cv_rate", "convergence_rate", true,
             "Threshold to determine convergence [default: 0.005]");
-        // adaptive regularization
+        // adaptive regularization and early stopping with randomly hold-out validation samples
+        opts.addOption("early_stopping", false,
+            "Stop at the iteration that achieves the best validation on partial samples [default: OFF]");
+        opts.addOption("va_ratio", "validation_ratio", true,
+            "Ratio of training data used for validation [default: 0.05f]");
+        opts.addOption("va_threshold", "validation_threshold", true,
+            "Threshold to start validation. "
+                    + "At least N training examples are used before validation [default: 1000]");
         if (isAdaptiveRegularizationSupported()) {
             opts.addOption("adareg", "adaptive_regularization", false,
                 "Whether to enable adaptive regularization [default: OFF]");
-            opts.addOption("va_ratio", "validation_ratio", true,
-                "Ratio of training data used for validation [default: 0.05f]");
-            opts.addOption("va_threshold", "validation_threshold", true,
-                "Threshold to start validation. "
-                        + "At least N training examples are used before validation [default: 1000]");
         }
         // initialization of V
-        opts.addOption("init_v", true, "Initialization strategy of matrix V [random, gaussian]"
-                + "(default: 'random' for regression / 'gaussian' for classification)");
+        opts.addOption("init_v", true,
+            "Initialization strategy of matrix V [adjusted_random, libffm, random, gaussian]"
+                    + "(FM default: 'adjusted_random' for regression, 'gaussian' for classification, FFM default: random)");
         opts.addOption("maxval", "max_init_value", true,
             "The maximum initial value in the matrix V [default: 0.5]");
         opts.addOption("min_init_stddev", true,
@@ -188,9 +210,12 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         this._iterations = params.iters;
         this._factors = params.factors;
         this._parseFeatureAsInt = params.parseFeatureAsInt;
-        if (params.adaptiveRegularization) {
+        this._earlyStopping = params.earlyStopping;
+        this._adaptiveRegularization = params.adaptiveRegularization;
+        if (_earlyStopping || _adaptiveRegularization) {
             this._va_rand = new Random(params.seed + 31L);
         }
+        this._validationState = new ConversionState();
         this._validationRatio = params.validationRatio;
         this._validationThreshold = params.validationThreshold;
         this._lossFunction = params.classification ? LossFunctions.getLossFunction(LossType.LogLoss)
@@ -216,6 +241,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
         this._model = null;
         this._t = 0L;
+        this._numValidations = 0L;
 
         if (LOG.isInfoEnabled()) {
             LOG.info(_params);
@@ -276,16 +302,23 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             return;
         }
         this._probes = x;
+        _model.check(x); // mostly for FMIntFeatureMapModel
 
         double y = PrimitiveObjectInspectorUtils.getDouble(args[1], _yOI);
         if (_classification) {
             y = (y > 0.d) ? 1.d : -1.d;
         }
 
-        ++_t;
-        recordTrain(x, y);
-        boolean adaptiveRegularization = (_va_rand != null) && _t >= _validationThreshold;
-        train(x, y, adaptiveRegularization);
+        boolean validation = isValidationExample();
+        recordTrain(x, y, validation);
+        train(x, y, validation);
+    }
+
+    private boolean isValidationExample() {
+        if (_va_rand != null && _t >= _validationThreshold) {
+            return _va_rand.nextFloat() < _validationRatio;
+        }
+        return false;
     }
 
     @Nullable
@@ -297,7 +330,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         return features;
     }
 
-    protected void recordTrain(@Nonnull final Feature[] x, final double y) throws HiveException {
+    private void recordTrain(@Nonnull final Feature[] x, final double y, final boolean validation)
+            throws HiveException {
         if (_iterations <= 1) {
             return;
         }
@@ -325,7 +359,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         }
 
         int xBytes = Feature.requiredBytes(x);
-        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes;
+        int recordBytes = SizeOf.INT + SizeOf.DOUBLE + xBytes + SizeOf.BYTE;
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
         if (remain < requiredBytes) {
@@ -338,6 +372,12 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
             f.writeTo(inputBuf);
         }
         inputBuf.putDouble(y);
+        if (validation) {
+            ++_numValidations;
+            inputBuf.put(TRUE_BYTE);
+        } else {
+            inputBuf.put(FALSE_BYTE);
+        }
     }
 
     private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
@@ -351,24 +391,29 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
         srcBuf.clear();
     }
 
-    public void train(@Nonnull final Feature[] x, final double y,
-            final boolean adaptiveRegularization) throws HiveException {
-        _model.check(x);
-
+    private void train(@Nonnull final Feature[] x, final double y, final boolean validation)
+            throws HiveException {
         try {
-            if (adaptiveRegularization) {
-                assert (_va_rand != null);
-                final float rnd = _va_rand.nextFloat();
-                if (rnd < _validationRatio) {
-                    trainLambda(x, y); // adaptive regularization
-                } else {
-                    trainTheta(x, y);
-                }
+            if (validation) {
+                processValidationSample(x, y);
             } else {
+                ++_t;
                 trainTheta(x, y);
             }
         } catch (Exception ex) {
             throw new HiveException("Exception caused in the " + _t + "-th call of train()", ex);
+        }
+    }
+
+    protected void processValidationSample(@Nonnull final Feature[] x, final double y)
+            throws HiveException {
+        if (_earlyStopping) {
+            double p = _model.predict(x);
+            double loss = _lossFunction.loss(p, y);
+            _validationState.incrLoss(loss);
+        }
+        if (_adaptiveRegularization) {
+            trainLambda(x, y); // adaptive regularization
         }
     }
 
@@ -410,7 +455,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
      *      grad_lambdafg = (grad l(p,y)) * (-2 * alpha * (\sum_{l} x_l * v'_lf) * \sum_{l \in group(g)} x_l * v_lf) - \sum_{l \in group(g)} x^2_l * v_lf * v'_lf)
      * </pre>
      */
-    protected void trainLambda(final Feature[] x, final double y) throws HiveException {
+    private void trainLambda(final Feature[] x, final double y) throws HiveException {
         final float eta = _etaEstimator.eta(_t);
         final double p = _model.predict(x);
         final double lossGrad = _model.dloss(p, y);
@@ -534,12 +579,11 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     }
 
     protected void runTrainingIteration(int iterations) throws HiveException {
-        final ByteBuffer inputBuf = this._inputBuf;
-        final NioStatefulSegment fileIO = this._fileIO;
-        assert (inputBuf != null);
-        assert (fileIO != null);
+        final ByteBuffer inputBuf = Preconditions.checkNotNull(this._inputBuf);
+        final NioStatefulSegment fileIO = Preconditions.checkNotNull(this._fileIO);
+
         final long numTrainingExamples = _t;
-        final boolean adaregr = _va_rand != null;
+        boolean lossIncreasedLastIter = false;
 
         final Reporter reporter = getReporter();
         final Counter iterCounter = (reporter == null) ? null
@@ -553,6 +597,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                 inputBuf.flip();
 
                 for (int iter = 2; iter <= iterations; iter++) {
+                    _validationState.next();
                     _cvState.next();
                     reportProgress(reporter);
                     setCounterValue(iterCounter, iter);
@@ -566,19 +611,25 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                             x[j] = instantiateFeature(inputBuf);
                         }
                         double y = inputBuf.getDouble();
+                        boolean validation = (inputBuf.get() == TRUE_BYTE);
+
                         // invoke train
-                        ++_t;
-                        train(x, y, adaregr);
+                        train(x, y, validation);
                     }
-                    if (_cvState.isConverged(numTrainingExamples)) {
+                    // stop if validation loss is consecutively increased over recent 2 iterations
+                    final boolean lossIncreased = _validationState.isLossIncreased();
+                    if ((lossIncreasedLastIter && lossIncreased)
+                            || _cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
+                    lossIncreasedLastIter = lossIncreased;
                     inputBuf.rewind();
                 }
                 LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on memory (thus " + NumberUtils.formatNumber(_t)
-                        + " training updates in total) ");
+                        + " training updates in total), used " + _numValidations
+                        + " validation examples");
             } else {// read training examples in the temporary file and invoke train for each example
 
                 // write training examples in buffer to a temporary file
@@ -601,6 +652,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
                 // run iterations
                 for (int iter = 2; iter <= iterations; iter++) {
+                    _validationState.next();
                     _cvState.next();
                     setCounterValue(iterCounter, iter);
 
@@ -643,23 +695,28 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
                                 x[j] = instantiateFeature(inputBuf);
                             }
                             double y = inputBuf.getDouble();
+                            boolean validation = (inputBuf.get() == TRUE_BYTE);
 
                             // invoke training
-                            ++_t;
-                            train(x, y, adaregr);
+                            train(x, y, validation);
 
                             remain -= recordBytes;
                         }
                         inputBuf.compact();
                     }
-                    if (_cvState.isConverged(numTrainingExamples)) {
+                    // stop if validation loss is consecutively increased over recent 2 iterations
+                    final boolean lossIncreased = _validationState.isLossIncreased();
+                    if ((lossIncreasedLastIter && lossIncreased)
+                            || _cvState.isConverged(numTrainingExamples)) {
                         break;
                     }
+                    lossIncreasedLastIter = lossIncreased;
                 }
                 LOG.info("Performed " + _cvState.getCurrentIteration() + " iterations of "
                         + NumberUtils.formatNumber(numTrainingExamples)
                         + " training examples on a secondary storage (thus "
-                        + NumberUtils.formatNumber(_t) + " training updates in total)");
+                        + NumberUtils.formatNumber(_t) + " training updates in total), used "
+                        + _numValidations + " validation examples");
             }
         } finally {
             // delete the temporary file and release resources

@@ -28,7 +28,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 
 class FMHyperParameters {
-    private static final float DEFAULT_ETA0 = 0.05f;
+    protected static final float DEFAULT_ETA0 = 0.1f;
+    protected static final float DEFAULT_LAMBDA = 0.0001f;
 
     // -------------------------------------
     // Model parameters
@@ -37,10 +38,10 @@ class FMHyperParameters {
     int factors = 5;
 
     // regularization
-    float lambda = 0.01f;
-    float lambdaW0 = 0.01f;
-    float lambdaW = 0.01f;
-    float lambdaV = 0.01f;
+    float lambda = DEFAULT_LAMBDA;
+    float lambdaW0;
+    float lambdaW;
+    float lambdaV;
 
     // V initialization
     double sigma = 0.1d;
@@ -62,9 +63,11 @@ class FMHyperParameters {
 
     boolean l2norm; // enable by default for FFM. disabled by default for FM.
 
-    int iters = 1;
+    int iters = 10;
     boolean conversionCheck = true;
     double convergenceRate = 0.005d;
+
+    boolean earlyStopping = false;
 
     // adaptive regularization
     boolean adaptiveRegularization = false;
@@ -89,10 +92,14 @@ class FMHyperParameters {
 
     void processOptions(@Nonnull CommandLine cl) throws UDFArgumentException {
         this.classification = cl.hasOption("classification");
-        this.factors = Primitives.parseInt(cl.getOptionValue("factors"), factors);
+        if (cl.hasOption("factor")) {
+            this.factors = Primitives.parseInt(cl.getOptionValue("factor"), factors);
+        } else {
+            this.factors = Primitives.parseInt(cl.getOptionValue("factors"), factors);
+        }
         this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), lambda);
         this.lambdaW0 = Primitives.parseFloat(cl.getOptionValue("lambda_w0"), lambda);
-        this.lambdaW = Primitives.parseFloat(cl.getOptionValue("lambda_w"), lambda);
+        this.lambdaW = Primitives.parseFloat(cl.getOptionValue("lambda_wi"), lambda);
         this.lambdaV = Primitives.parseFloat(cl.getOptionValue("lambda_v"), lambda);
         this.sigma = Primitives.parseDouble(cl.getOptionValue("sigma"), sigma);
         this.seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
@@ -105,10 +112,15 @@ class FMHyperParameters {
         this.eta = EtaEstimator.get(cl, DEFAULT_ETA0);
         this.numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), numFeatures);
         this.l2norm = cl.hasOption("enable_norm");
-        this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
+        if (cl.hasOption("iter")) {
+            this.iters = Primitives.parseInt(cl.getOptionValue("iter"), iters);
+        } else {
+            this.iters = Primitives.parseInt(cl.getOptionValue("iterations"), iters);
+        }
         this.conversionCheck = !cl.hasOption("disable_cvtest");
         this.convergenceRate =
                 Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
+        this.earlyStopping = cl.hasOption("early_stopping");
         this.adaptiveRegularization = cl.hasOption("adaptive_regularization");
         this.validationRatio =
                 Primitives.parseFloat(cl.getOptionValue("validation_ratio"), validationRatio);
@@ -122,14 +134,13 @@ class FMHyperParameters {
     }
 
     @Nonnull
-    private static VInitScheme instantiateVInit(@Nonnull CommandLine cl, int factor, long seed,
+    private VInitScheme instantiateVInit(@Nonnull CommandLine cl, int factor, long seed,
             final boolean classification) {
         String vInitOpt = cl.getOptionValue("init_v");
         float maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 0.5f);
         double initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.1d);
 
-        VInitScheme defaultInit = classification ? VInitScheme.gaussian : VInitScheme.random;
-        VInitScheme vInit = VInitScheme.resolve(vInitOpt, defaultInit);
+        VInitScheme vInit = VInitScheme.resolve(vInitOpt, getDefaultVinitScheme());
         vInit.setMaxInitValue(maxInitValue);
         initStdDev = Math.max(initStdDev, 1.0d / factor);
         vInit.setInitStdDev(initStdDev);
@@ -137,11 +148,16 @@ class FMHyperParameters {
         return vInit;
     }
 
+    @Nonnull
+    protected VInitScheme getDefaultVinitScheme() {
+        return classification ? VInitScheme.gaussian : VInitScheme.adjustedRandom;
+    }
+
     public static final class FFMHyperParameters extends FMHyperParameters {
 
         // FFM hyper parameters
         boolean globalBias = false;
-        boolean linearCoeff = true;
+        boolean linearCoeff = false;
 
         // feature hashing
         int numFields = Feature.DEFAULT_NUM_FIELDS;
@@ -152,13 +168,18 @@ class FMHyperParameters {
 
         // FTRL
         boolean useFTRL = false;
-        float alphaFTRL = 0.2f; // Learning Rate
-        float betaFTRL = 1.f; // Smoothing parameter for AdaGrad
-        float lambda1 = 0.001f; // L1 Regularization
+        float alphaFTRL = 0.5f; // Learning Rate
+        float betaFTRL = 1.0f; // Smoothing parameter for AdaGrad
+        float lambda1 = 0.0002f; // L1 Regularization
         float lambda2 = 0.0001f; // L2 Regularization
 
         FFMHyperParameters() {
             super();
+        }
+
+        @Nonnull
+        protected VInitScheme getDefaultVinitScheme() {
+            return VInitScheme.random;
         }
 
         @Override
@@ -170,7 +191,13 @@ class FMHyperParameters {
             }
 
             this.globalBias = cl.hasOption("global_bias");
-            this.linearCoeff = !cl.hasOption("no_coeff");
+            this.linearCoeff = cl.hasOption("linear_term");
+
+            if (cl.hasOption("enable_norm") && cl.hasOption("disable_norm")) {
+                throw new UDFArgumentException(
+                    "-enable_norm and -disable_norm MUST NOT be used simultaneously");
+            }
+            this.l2norm = !cl.hasOption("disable_norm");
 
             // feature hashing
             if (numFeatures == -1) {
