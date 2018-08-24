@@ -584,6 +584,9 @@ public final class LossFunctions {
         }
     }
 
+    /**
+     * logistic loss function where target is 0 (negative) or 1 (positive).
+     */
     public static float logisticLoss(final float target, final float predicted) {
         if (predicted > -100.d) {
             return target - (float) MathUtils.sigmoid(predicted);

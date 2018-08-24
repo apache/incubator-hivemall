@@ -48,7 +48,7 @@ public final class DenseOptimizerFactory {
                 && "adagrad".equalsIgnoreCase(optimizerName) == false) {
             throw new IllegalArgumentException(
                 "`-regularization rda` is only supported for AdaGrad but `-optimizer "
-                        + optimizerName);
+                        + optimizerName + "`. Please specify `-regularization l1` and so on.");
         }
 
         final Optimizer optimizerImpl;

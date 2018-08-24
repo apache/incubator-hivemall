@@ -70,9 +70,8 @@ public interface Optimizer {
          */
         protected float update(@Nonnull final IWeightValue weight, final float gradient) {
             float oldWeight = weight.get();
-            float g = _reg.regularize(oldWeight, gradient);
-            float delta = computeDelta(weight, g);
-            float newWeight = oldWeight - _eta.eta(_numStep) * delta;
+            float delta = computeDelta(weight, gradient);
+            float newWeight = oldWeight - _eta.eta(_numStep) * _reg.regularize(oldWeight, delta);
             weight.set(newWeight);
             return newWeight;
         }
@@ -123,10 +122,10 @@ public interface Optimizer {
 
         @Override
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
-            float new_scaled_sum_sqgrad =
-                    weight.getSumOfSquaredGradients() + gradient * (gradient / scale);
-            weight.setSumOfSquaredGradients(new_scaled_sum_sqgrad);
-            return gradient / ((float) Math.sqrt(new_scaled_sum_sqgrad * scale) + eps);
+            float old_scaled_gg = weight.getSumOfSquaredGradients();
+            float new_scaled_gg = old_scaled_gg + gradient * (gradient / scale);
+            weight.setSumOfSquaredGradients(new_scaled_gg);
+            return (float) (gradient / Math.sqrt(eps + ((double) old_scaled_gg) * scale));
         }
 
         @Override
@@ -156,7 +155,8 @@ public interface Optimizer {
             float new_scaled_sum_sqgrad = (decay * old_scaled_sum_sqgrad)
                     + ((1.f - decay) * gradient * (gradient / scale));
             float delta = (float) Math.sqrt(
-                (old_sum_squared_delta_x + eps) / (new_scaled_sum_sqgrad * scale + eps)) * gradient;
+                (old_sum_squared_delta_x + eps) / ((double) new_scaled_sum_sqgrad * scale + eps))
+                    * gradient;
             float new_sum_squared_delta_x =
                     (decay * old_sum_squared_delta_x) + ((1.f - decay) * delta * delta);
             weight.setSumOfSquaredGradients(new_scaled_sum_sqgrad);
