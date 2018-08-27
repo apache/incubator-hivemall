@@ -177,7 +177,11 @@ public final class SparseOptimizerFactory {
             } else {
                 auxWeight.set(weight);
             }
-            return update(auxWeight, gradient);
+            final float newWeight = update(auxWeight, gradient);
+            if (newWeight == 0.f) {
+                auxWeights.remove(feature);
+            }
+            return newWeight;
         }
 
     }
