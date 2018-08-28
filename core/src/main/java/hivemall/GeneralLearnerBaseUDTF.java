@@ -498,7 +498,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         for (Map.Entry<Object, FloatAccumulator> e : accumulated.entrySet()) {
             Object feature = e.getKey();
             FloatAccumulator v = e.getValue();
-            float new_weight = v.get(); // w_i - (eta / M) * (delta_1 + delta_2 + ... + delta_M)
+            final float new_weight = v.get(); // w_i - (eta / M) * (delta_1 + delta_2 + ... + delta_M)
             if (new_weight == 0.f) {
                 model.delete(feature);
                 continue;
