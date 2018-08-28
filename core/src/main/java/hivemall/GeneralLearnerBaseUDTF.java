@@ -475,10 +475,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             float weight = model.getWeight(feature);
 
             // compute new weight, but still not set to the model
-            final float new_weight = optimizer.update(feature, weight, dloss * xi);
-            if (new_weight == 0.f) {
-                continue;
-            }
+            float new_weight = optimizer.update(feature, weight, dloss * xi);
 
             // (w_i - eta * delta_1) + (w_i - eta * delta_2) + ... + (w_i - eta * delta_M)
             FloatAccumulator acc = accumulated.get(feature);
@@ -502,6 +499,10 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             Object feature = e.getKey();
             FloatAccumulator v = e.getValue();
             float new_weight = v.get(); // w_i - (eta / M) * (delta_1 + delta_2 + ... + delta_M)
+            if (new_weight == 0.f) {
+                model.delete(feature);
+                continue;
+            }
             model.setWeight(feature, new_weight);
         }
 
