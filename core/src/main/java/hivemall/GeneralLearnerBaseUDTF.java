@@ -452,9 +452,13 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         cvState.incrLoss(loss); // retain cumulative loss to check convergence
 
         final float dloss = lossFunction.dloss(predicted, target);
+        if (dloss == 0.f) {
+            optimizer.proceedStep();
+            return;
+        }
+
         if (is_mini_batch) {
             accumulateUpdate(features, dloss);
-
             if (sampled >= mini_batch_size) {
                 batchUpdate();
             }
@@ -494,7 +498,11 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         for (Map.Entry<Object, FloatAccumulator> e : accumulated.entrySet()) {
             Object feature = e.getKey();
             FloatAccumulator v = e.getValue();
-            float new_weight = v.get(); // w_i - (eta / M) * (delta_1 + delta_2 + ... + delta_M)
+            final float new_weight = v.get(); // w_i - (eta / M) * (delta_1 + delta_2 + ... + delta_M)
+            if (new_weight == 0.f) {
+                model.delete(feature);
+                continue;
+            }
             model.setWeight(feature, new_weight);
         }
 
@@ -507,7 +515,11 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
             float weight = model.getWeight(feature);
-            float new_weight = optimizer.update(feature, weight, dloss * xi);
+            final float new_weight = optimizer.update(feature, weight, dloss * xi);
+            if (new_weight == 0.f) {
+                model.delete(feature);
+                continue;
+            }
             model.setWeight(feature, new_weight);
         }
     }
@@ -701,9 +713,14 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 if (!probe.isTouched()) {
                     continue; // skip outputting untouched weights
                 }
+                final float v = probe.get();
+                final float cv = probe.getCovariance();
+                if (v == 0.f && cv == 0.f) {
+                    continue;
+                }
+                fv.set(v);
+                cov.set(cv);
                 Object k = itor.getKey();
-                fv.set(probe.get());
-                cov.set(probe.getCovariance());
                 forwardMapObj[0] = k;
                 forwardMapObj[1] = fv;
                 forwardMapObj[2] = cov;
@@ -720,8 +737,12 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                 if (!probe.isTouched()) {
                     continue; // skip outputting untouched weights
                 }
+                final float v = probe.get();
+                if (v == 0.f) {
+                    continue;
+                }
+                fv.set(v);
                 Object k = itor.getKey();
-                fv.set(probe.get());
                 forwardMapObj[0] = k;
                 forwardMapObj[1] = fv;
                 forward(forwardMapObj);

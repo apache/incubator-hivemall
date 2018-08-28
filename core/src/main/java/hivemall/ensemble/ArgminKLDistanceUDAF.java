@@ -38,8 +38,8 @@ public final class ArgminKLDistanceUDAF extends UDAF {
             float sum_inv_covar;
 
             PartialResult() {
-                this.sum_mean_div_covar = 0f;
-                this.sum_inv_covar = 0f;
+                this.sum_mean_div_covar = 0.f;
+                this.sum_inv_covar = 0.f;
             }
         }
 
@@ -54,7 +54,10 @@ public final class ArgminKLDistanceUDAF extends UDAF {
             if (partial == null) {
                 this.partial = new PartialResult();
             }
-            float covar_f = covar.get();
+            final float covar_f = covar.get();
+            if (covar_f == 0.f) {// avoid null division
+                return true;
+            }
             partial.sum_mean_div_covar += (mean.get() / covar_f);
             partial.sum_inv_covar += (1.f / covar_f);
             return true;
@@ -80,7 +83,10 @@ public final class ArgminKLDistanceUDAF extends UDAF {
             if (partial == null) {
                 return null;
             }
-            float mean = (1f / partial.sum_inv_covar) * partial.sum_mean_div_covar;
+            if (partial.sum_inv_covar == 0.f) {// avoid null division
+                return new FloatWritable(0.f);
+            }
+            float mean = (1.f / partial.sum_inv_covar) * partial.sum_mean_div_covar;
             return new FloatWritable(mean);
         }
     }
