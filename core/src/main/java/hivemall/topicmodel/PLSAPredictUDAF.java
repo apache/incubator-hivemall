@@ -391,8 +391,7 @@ public final class PLSAPredictUDAF extends AbstractGenericUDAFResolver {
             PLSAPredictAggregationBuffer myAggr = (PLSAPredictAggregationBuffer) agg;
 
             final float[] topicDistr = myAggr.get();
-            final KeySortablePair<Float, Integer>[] sorted =
-                    new KeySortablePair[topicDistr.length];
+            final KeySortablePair<Float, Integer>[] sorted = new KeySortablePair[topicDistr.length];
             for (int i = 0; i < topicDistr.length; i++) {
                 sorted[i] = new KeySortablePair<>(topicDistr[i], i);
             }
