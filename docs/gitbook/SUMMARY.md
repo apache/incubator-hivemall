@@ -25,6 +25,7 @@
     * [Installation](getting_started/installation.md)
     * [Install as permanent functions](getting_started/permanent-functions.md)
     * [Input Format](getting_started/input-format.md)
+    * [Step-by-Step Tutorial on Supervised Learning](getting_started/tutorial.md)
 
 * [List of Functions](misc/funcs.md)
 
