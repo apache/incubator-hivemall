@@ -69,15 +69,15 @@ FROM
 ```
 
 
-On the TD console, Hivemall function [`hivemall_version()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#others) shows current Hivemall version that is available on TD, for example:
+Hivemall function [`hivemall_version()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#others) shows current Hivemall version, for example:
 
 ```sql
 select hivemall_version()
 ```
 
-> "0.5.1-20180703-SNAPSHOT-31924dc" (as of July 23, 2018)
+> "0.5.1-incubating-SNAPSHOT"
 
-Below we list ML and relevant problems that Hivemall and TD can solve:
+Below we list ML and relevant problems that Hivemall can solve:
 
 - Binary and multi-class classification
 - Regression
