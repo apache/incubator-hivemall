@@ -26,14 +26,7 @@
 [Apache Hive](https://hive.apache.org/) is a data warehousing solution that enables us to process large-scale data in the form of SQL easily. Assume that you have a table named `purchase_history` which can be artificially created as:
 
 ```sql
-create table if not exists purchase_history
-(id bigint, day_of_week string, price int, category string, label int)
-;
-```
-
-
-```sql
-insert overwrite table purchase_history
+create table if not exists purchase_history as
 select 1 as id, "Saturday" as day_of_week, "male" as gender, 600 as price, "book" as category, 1 as label
 union all
 select 2 as id, "Friday" as day_of_week, "female" as gender, 4800 as price, "sports" as category, 0 as label
@@ -49,7 +42,7 @@ select 5 as id, "Wednesday" as day_of_week, "female" as gender, 1000 as price, "
 The syntax of Hive queries, namely **HiveQL**, is very similar to SQL:
 
 ```sql
-select count(1) from purchase_log
+select count(1) from purchase_history;
 ```
 
 > 5
@@ -72,7 +65,7 @@ FROM
 Hivemall function [`hivemall_version()`](../misc/funcs.html#others) shows current Hivemall version, for example:
 
 ```sql
-select hivemall_version()
+select hivemall_version();
 ```
 
 > "0.5.1-incubating-SNAPSHOT"
@@ -123,16 +116,12 @@ Each of those features is a string value in Hive, and "feature vector" means an 
 ["price:600.0", "day of week#Saturday", "gender#male", "category#book"]
 ```
 
+See also more detailed [document for input format](../getting_started/input-format.html)).
+
 Therefore, what we first need to do is to convert the records into an array of feature strings, and Hivemall functions [`quantitative_features()`](../getting_started/input-format.html#quantitative-features), [`categorical_features()`](../getting_started/input-format.html#categorical-features) and [`array_concat()`](../misc/generic_funcs.html#array) provide a simple way to create the pairs of feature vector and target value:
 
 ```sql
-create table if not exists training
-(id bigint, features array<string>, label int)
-;
-```
-
-```sql
-insert overwrite table training
+create table if not exists training as
 select
   id,
   array_concat( -- concatenate two arrays of quantitative and categorical features into single array
@@ -151,6 +140,8 @@ from
 ;
 ```
 
+The training table is as follows:
+
 |id | features |  label |
 |:---:|:---|:---|
 |1 |["price:600.0","day of week#Saturday","gender#male","category#book"] | 1 |
@@ -168,14 +159,7 @@ Note that you can apply extra Hivemall functions (e.g., [`rescale()`](../misc/fu
 Once the original table `purchase_history` has been converted into pairs of `features` and `label`, you can build a binary classifier by running the following query:
 
 ```sql
-create table if not exists classifier
-(id bigint, day_of_week string, price int, category string, label int)
-;
-```
-
-
-```sql
-insert overwrite table classifier
+create table if not exists classifier as
 select
   train_classifier(
     features, -- feature vector
@@ -219,7 +203,7 @@ Notice that weight is learned for each possible value in a categorical feature, 
 Of course, you can optimize hyper-parameters to build more accurate prediction model. Check the output of the following query to see all available options, including learning rate, number of iterations and regularization parameters, and their default values:
 
 ```sql
-select train_classifier(array(), 0, '-help')
+select train_classifier(array(), 0, '-help');
 ```
 
 ### Step 3. Prediction
@@ -231,13 +215,7 @@ How about the probability of purchase by a `male` customer who sees a `food` pro
 To differentiate potential purchases, create a `unforeseen_samples` table with these unknown combinations of features:
 
 ```sql
-create table if not exists unforeseen_samples
- (id bigint, features array<string>)
-;
-```
-
-```sql
-insert overwrite table unforeseen_samples
+create table if not exists unforeseen_samples as
 select 1 as id, array("gender#male", "category#food", "day of week#Friday", "price:120") as features
 union all
 select 2 as id, array("gender#male", "category#sports", "day of week#Friday", "price:1000") as features
@@ -271,10 +249,9 @@ group by
 
 Output for single sample can be:
 
-```
-id, probability
- 1, 1.0261879540562902e-10
-```
+|id| probability|
+|---:|---:|
+| 1| 1.0261879540562902e-10|
 
 ### Evaluation
 
@@ -312,6 +289,10 @@ from (
 ;
 ```
 
+|auc|	logloss|
+|---:|---:|
+|0.5|	9.200000003614099|
+
 Since we are trying to solve the binary classification problem, the accuracy is measured by [Area Under the ROC Curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve) [`auc()`](../eval/auc.html) and/or [Logarithmic Loss](http://wiki.fast.ai/index.php/Log_Loss) [`logloss()`](../eval/regression.html#logarithmic-loss).
 
 ## Regression
@@ -321,13 +302,7 @@ If you use [`train_regressor()`](../misc/funcs.html#regression) instead of [`tra
 Imagine the following `customers` table:
 
 ```sql
-create table if not exists customers
-(id bigint, gender String, age int, country string, num_purchases int)
-;
-```
-
-```sql
-insert overwrite table customers
+create table if not exists customers as
 select 1 as id, "male" as gender, 23 as age, "Japan" as country, 12 as num_purchases
 union all
 select 2 as id, "female" as gender, 43 as age, "US" as country, 4 as num_purchases
@@ -379,16 +354,11 @@ from
 [`train_regressor()`](../misc/funcs.html#regression) requires you to specify an appropriate loss function. One option is to replace the classifier-specific loss function `logloss` with `squared` as:
 
 ```sql
-create table if not exists regressor
-(feature string, weight float)
-```
-
-```sql
-insert overwrite table regressor
+create table if not exists regressor as
 select
   train_regressor(
     features, -- feature vector
-    num_purchases, -- target value
+    label, -- target value
     '-loss_function squared -optimizer AdaGrad -regularization l2' -- hyper-parameters
   ) as (feature, weight)
 from
@@ -401,7 +371,7 @@ from
 Run the function with `-help` option to list available options:
 
 ```sql
-select train_regressor(array(), 0, '-help')
+select train_regressor(array(), 0, '-help');
 ```
 
 ### Step 3. Prediction
@@ -409,13 +379,7 @@ select train_regressor(array(), 0, '-help')
 Prepare dummy new customers:
 
 ```sql
-create table if not exists new_customers
-(id bigint, features array<string>)
-;
-```
-
-```sql
-insert overwrite table new_customers
+create table if not exists new_customers as
 select 1 as id, array("gender#male", "age:10", "country#Japan") as features
 union all
 select 2 as id, array("gender#female", "age:60", "country#US") as features
@@ -447,10 +411,9 @@ group by
 
 Output is like:
 
-```
-id, predicted_num_purchases
- 1, 3.645142912864685
-```
+|id| predicted_num_purchases|
+|---:|---:|
+| 1| 3.645142912864685|
 
 ### Evaluation
 
@@ -475,14 +438,20 @@ predictions as (
     t1.id
 )
 select
-  rmse(t1.predicted_num_purchases, t2.num_purchases) as rmse,
-  mae(t1.predicted_num_purchases, t2.num_purchases) as mae
+  rmse(t1.predicted_num_purchases, t2.label) as rmse,
+  mae(t1.predicted_num_purchases, t2.label) as mae
 from
   predictions t1
 join
   training t2 on (t1.id = t2.id)
 ;
 ```
+
+Output is like:
+
+|rmse|	mae|
+|---:|---:|
+|10.665060285725504|	8.341085218265652|
 
 ## Next steps
 
