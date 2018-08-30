@@ -69,7 +69,7 @@ FROM
 ```
 
 
-Hivemall function [`hivemall_version()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#others) shows current Hivemall version, for example:
+Hivemall function [`hivemall_version()`](../misc/funcs.html#others) shows current Hivemall version, for example:
 
 ```sql
 select hivemall_version()
@@ -104,7 +104,7 @@ Imagine a scenario that we like to build a binary classifier from the mock `purc
 |Thursday | male | 200 | food | 0 |
 |Wednesday | female | 1000 | electronics | 1 |
 
-Use Hivemall [`train_classifier()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#binary-classification) UDF to tackle the problem as follows.
+Use Hivemall [`train_classifier()`](../misc/funcs.html#binary-classification) UDF to tackle the problem as follows.
 
 ### Step 1. Feature representation
 
@@ -123,7 +123,7 @@ Each of those features is a string value in Hive, and "feature vector" means an 
 ["price:600.0", "day of week#Saturday", "gender#male", "category#book"]
 ```
 
-Therefore, what we first need to do is to convert the records into an array of feature strings, and Hivemall functions [`quantitative_features()`](https://hivemall.incubator.apache.org/userguide/getting_started/input-format.html#quantitative-features), [`categorical_features()`](https://hivemall.incubator.apache.org/userguide/getting_started/input-format.html#categorical-features) and [`array_concat()`](https://hivemall.incubator.apache.org/userguide/misc/generic_funcs.html#array) provide a simple way to create the pairs of feature vector and target value:
+Therefore, what we first need to do is to convert the records into an array of feature strings, and Hivemall functions [`quantitative_features()`](../getting_started/input-format.html#quantitative-features), [`categorical_features()`](../getting_started/input-format.html#categorical-features) and [`array_concat()`](../misc/generic_funcs.html#array) provide a simple way to create the pairs of feature vector and target value:
 
 ```sql
 create table if not exists training
@@ -161,7 +161,7 @@ from
 
 The output table `training` will be directly used as an input to Hivemall's ML functions in the next step.
 
-Note that you can apply extra Hivemall functions (e.g., [`rescale()`](https://hivemall.incubator.apache.org/userguide/misc/funcs.html#feature-scaling), [`feature_hashing()`](https://hivemall.incubator.apache.org/userguide/misc/funcs.html#feature-hashing), [`l1_normalize()`](https://hivemall.incubator.apache.org/userguide/misc/funcs.html#feature-scaling)) for the features in this step to make your prediction model more accurate and stable; it is known as *feature engineering* in the context of ML. See our [documentation](http://hivemall.incubator.apache.org/userguide/ft_engineering/scaling.html) for more information.
+Note that you can apply extra Hivemall functions (e.g., [`rescale()`](../misc/funcs.html#feature-scaling), [`feature_hashing()`](../misc/funcs.html#feature-hashing), [`l1_normalize()`](../misc/funcs.html#feature-scaling)) for the features in this step to make your prediction model more accurate and stable; it is known as *feature engineering* in the context of ML. See our [documentation](../ft_engineering/scaling.html) for more information.
 
 ### Step 2. Training
 
@@ -278,7 +278,7 @@ id, probability
 
 ### Evaluation
 
-If you have test samples for evaluation, use Hivemall's [evaluation UDFs](http://hivemall.incubator.apache.org/userguide/eval/binary_classification_measures.html) to measure the accuracy of prediction.
+If you have test samples for evaluation, use Hivemall's [evaluation UDFs](../eval/binary_classification_measures.html) to measure the accuracy of prediction.
 
 For instance, prediction accuracy over the `training` samples can be measured as:
 
@@ -312,11 +312,11 @@ from (
 ;
 ```
 
-Since we are trying to solve the binary classification problem, the accuracy is measured by [Area Under the ROC Curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve) [`auc()`](http://hivemall.incubator.apache.org/userguide/eval/auc.html) and/or [Logarithmic Loss](http://wiki.fast.ai/index.php/Log_Loss) [`logloss()`](http://hivemall.incubator.apache.org/userguide/eval/regression.html#logarithmic-loss).
+Since we are trying to solve the binary classification problem, the accuracy is measured by [Area Under the ROC Curve](https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve) [`auc()`](../eval/auc.html) and/or [Logarithmic Loss](http://wiki.fast.ai/index.php/Log_Loss) [`logloss()`](../eval/regression.html#logarithmic-loss).
 
 ## Regression
 
-If you use [`train_regressor()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#regression) instead of [`train_classifier()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#binary-classification), you can also solve a regression problem with almost same queries.
+If you use [`train_regressor()`](../misc/funcs.html#regression) instead of [`train_classifier()`](../misc/funcs.html#binary-classification), you can also solve a regression problem with almost same queries.
 
 Imagine the following `customers` table:
 
@@ -376,7 +376,7 @@ from
 
 ### Step 2. Training
 
-[`train_regressor()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#regression) requires you to specify an appropriate loss function. One option is to replace the classifier-specific loss function `logloss` with `squared` as:
+[`train_regressor()`](../misc/funcs.html#regression) requires you to specify an appropriate loss function. One option is to replace the classifier-specific loss function `logloss` with `squared` as:
 
 ```sql
 create table if not exists regressor
@@ -424,7 +424,7 @@ select 3 as id, array("gender#other", "age:50", "country#UK") as features
 ;
 ```
 
-A way of prediction is almost the same as classification, but not need to pass through the [`sigmoid()`](http://hivemall.incubator.apache.org/userguide/misc/generic_funcs.html#math) function:
+A way of prediction is almost the same as classification, but not need to pass through the [`sigmoid()`](../misc/generic_funcs.html#math) function:
 
 ```sql
 with features_exploded as (
@@ -454,7 +454,7 @@ id, predicted_num_purchases
 
 ### Evaluation
 
-Use [Root Mean Square Error](https://en.wikipedia.org/wiki/Root-mean-square_deviation) [`rmse()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#evaluation) or [Mean Absolute Error](https://en.wikipedia.org/wiki/Mean_absolute_error) [`mae()`](http://hivemall.incubator.apache.org/userguide/misc/funcs.html#evaluation) UDFs for evaluation of regressors:
+Use [Root Mean Square Error](https://en.wikipedia.org/wiki/Root-mean-square_deviation) [`rmse()`](../misc/funcs.html#evaluation) or [Mean Absolute Error](https://en.wikipedia.org/wiki/Mean_absolute_error) [`mae()`](../misc/funcs.html#evaluation) UDFs for evaluation of regressors:
 
 ```sql
 with features_exploded as (
@@ -488,6 +488,5 @@ join
 
 See the following resources for further information:
 
-- Detailed documentation of `train_classifier` and `train_regressor`
-  - http://hivemall.incubator.apache.org/userguide/misc/prediction.html
+- [Detailed documentation](./prediction.html) of `train_classifier` and `train_regressor`
   - Query examples for some public datasets are also available in it.
