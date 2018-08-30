@@ -79,13 +79,13 @@ select hivemall_version()
 
 Below we list ML and relevant problems that Hivemall can solve:
 
-- Binary and multi-class classification
-- Regression
-- Recommendation
-- Anomaly detection
-- Natural language processing
-- Clustering (i.e., topic modeling)
-- Data sketching
+- [Binary and multi-class classification](../binaryclass/general.html)
+- [Regression](../regression/general.html)
+- [Recommendation](../recommend/cf.html)
+- [Anomaly detection](../anomaly/lof.html)
+- [Natural language processing](../misc/tokenizer.html)
+- [Clustering](../misc/tokenizer.html) (i.e., topic modeling)
+- [Data sketching](../misc/funcs.html#sketching)
 - Evaluation
 
 Our [YouTube demo video](https://www.youtube.com/watch?v=cMUsuA9KZ_c) would be helpful to understand more about an overview of Hivemall.
@@ -475,8 +475,8 @@ predictions as (
     t1.id
 )
 select
-  rmse(t1.predicted_num_purchases, t2.label) as rmse,
-  mae(t1.predicted_num_purchases, t2.label) as mae
+  rmse(t1.predicted_num_purchases, t2.num_purchases) as rmse,
+  mae(t1.predicted_num_purchases, t2.num_purchases) as mae
 from
   predictions t1
 join
