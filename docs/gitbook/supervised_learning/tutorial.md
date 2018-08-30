@@ -475,8 +475,8 @@ predictions as (
     t1.id
 )
 select
-  rmse(t1.predicted_num_purchases, t2.num_purchases) as rmse,
-  mae(t1.predicted_num_purchases, t2.num_purchases) as mae
+  rmse(t1.predicted_num_purchases, t2.label) as rmse,
+  mae(t1.predicted_num_purchases, t2.label) as mae
 from
   predictions t1
 join
