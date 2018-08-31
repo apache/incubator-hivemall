@@ -17,7 +17,7 @@
   under the License.
 -->
 
-# Step-by-Step Tutorial on Supervised Learning with Apache Hivemall
+# Step-by-Step Tutorial on Supervised Learning
 
 <!-- toc -->
 
