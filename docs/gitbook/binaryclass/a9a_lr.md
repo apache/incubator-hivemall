@@ -20,7 +20,7 @@
 This pages shows an example of applying logistic regression for a9a binary classification task.
 
 > #### Caution
-> 
+>
 > `logloss()` became deprecated since v0.5.0 release. Use smarter [general classifier](./a9a_generic.md) instead.
 
 <!-- toc -->
@@ -37,6 +37,7 @@ set hivevar:num_test_instances=16281;
 ```
 
 # training
+
 ```sql
 create table a9a_model1 
 as
@@ -53,10 +54,11 @@ group by feature;
 ```
 
 > #### Note
-> 
+>
 > `-total_steps` option is optional for logress() function. We recommend you NOT to use options (e.g., `total_steps` and `eta0`) if you are not familiar with those options. Hivemall then uses an autonomic ETA (learning rate) estimator.
 
 # prediction
+
 ```sql
 create or replace view a9a_predict1 
 as
@@ -81,6 +83,7 @@ group by
 ```
 
 # evaluation
+
 ```sql
 create or replace view a9a_submit1 as
 select 
@@ -96,4 +99,5 @@ from
 select count(1) / ${num_test_instances} from a9a_submit1 
 where actual == predicted;
 ```
+
 > 0.8430071862907684
