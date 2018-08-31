@@ -23,30 +23,6 @@
 
 ## What is Hivemall?
 
-[Apache Hive](https://hive.apache.org/) is a data warehousing solution that enables us to process large-scale data in the form of SQL easily. Assume that you have a table named `purchase_history` which can be artificially created as:
-
-```sql
-create table if not exists purchase_history as
-select 1 as id, "Saturday" as day_of_week, "male" as gender, 600 as price, "book" as category, 1 as label
-union all
-select 2 as id, "Friday" as day_of_week, "female" as gender, 4800 as price, "sports" as category, 0 as label
-union all
-select 3 as id, "Friday" as day_of_week, "other" as gender, 18000 as price, "entertainment" as category, 0 as label
-union all
-select 4 as id, "Thursday" as day_of_week, "male" as gender, 200 as price, "food" as category, 0 as label
-union all
-select 5 as id, "Wednesday" as day_of_week, "female" as gender, 1000 as price, "electronics" as category, 1 as label
-;
-```
-
-The syntax of Hive queries, namely **HiveQL**, is very similar to SQL:
-
-```sql
-select count(1) from purchase_history;
-```
-
-> 5
-
 [Apache Hivemall](https://github.com/apache/incubator-hivemall) is a collection of user-defined functions (UDFs) for HiveQL which is strongly optimized for machine learning (ML) and data science. To give an example, you can efficiently build a logistic regression model with the stochastic gradient descent (SGD) optimization by issuing the following ~10 lines of query:
 
 ```sql
@@ -97,6 +73,22 @@ Imagine a scenario that we like to build a binary classifier from the mock `purc
 |Thursday | male | 200 | food | 0 |
 |Wednesday | female | 1000 | electronics | 1 |
 
+You can create this table as follows:
+
+```sql
+create table if not exists purchase_history as
+select 1 as id, "Saturday" as day_of_week, "male" as gender, 600 as price, "book" as category, 1 as label
+union all
+select 2 as id, "Friday" as day_of_week, "female" as gender, 4800 as price, "sports" as category, 0 as label
+union all
+select 3 as id, "Friday" as day_of_week, "other" as gender, 18000 as price, "entertainment" as category, 0 as label
+union all
+select 4 as id, "Thursday" as day_of_week, "male" as gender, 200 as price, "food" as category, 0 as label
+union all
+select 5 as id, "Wednesday" as day_of_week, "female" as gender, 1000 as price, "electronics" as category, 1 as label
+;
+```
+
 Use Hivemall [`train_classifier()`](../misc/funcs.html#binary-classification) UDF to tackle the problem as follows.
 
 ### Step 1. Feature representation
@@ -110,13 +102,15 @@ To be more precise, Hivemall represents single feature in a concatenation of **i
 - Categorical feature: `<index>#<value>`
   - e.g., `gender#male`
 
+Feature index and feature value are separated by comma. When comma is omitted, the value is considered to be `1.0`. So, a categorical feature `gender#male` a [one-hot representation](https://www.quora.com/What-is-one-hot-encoding-and-when-is-it-used-in-data-science) of `index := gender#male` and `value := 1.0`. Note that `#` is not a special character for categorical feature.
+
 Each of those features is a string value in Hive, and "feature vector" means an array of string values like:
 
 ```
 ["price:600.0", "day of week#Saturday", "gender#male", "category#book"]
 ```
 
-See also more detailed [document for input format](../getting_started/input-format.html)).
+See also more detailed [document for input format](../getting_started/input-format.html).
 
 Therefore, what we first need to do is to convert the records into an array of feature strings, and Hivemall functions [`quantitative_features()`](../getting_started/input-format.html#quantitative-features), [`categorical_features()`](../getting_started/input-format.html#categorical-features) and [`array_concat()`](../misc/generic_funcs.html#array) provide a simple way to create the pairs of feature vector and target value:
 
