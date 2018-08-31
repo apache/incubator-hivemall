@@ -37,7 +37,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     perceptron(add_bias(features),label) as (feature,weight)
+     train_perceptron(add_bias(features),label) as (feature,weight)
   from 
      news20b_train_x3
  ) t 
