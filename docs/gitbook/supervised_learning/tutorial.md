@@ -241,7 +241,7 @@ group by
 ;
 ```
 
-_Note: `sigmoid()` should be applied only for logistic loss and you can't get a probability with other loss functions for a classification._
+_Note: `sigmoid()` should be applied only for logistic loss and you can't get a probability with other loss functions for a classification. See also [this video](https://www.coursera.org/lecture/machine-learning/decision-boundary-WuL1H)._
 
 Output for single sample can be:
 
