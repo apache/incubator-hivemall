@@ -241,6 +241,8 @@ group by
 ;
 ```
 
+_Note: `sigmoid()` should be applied only for logistic loss and you can't get a probability with other loss functions for a classification._
+
 Output for single sample can be:
 
 |id| probability|
