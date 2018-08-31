@@ -90,6 +90,7 @@
 
 * [a9a Tutorial](binaryclass/a9a.md)
     * [Data preparation](binaryclass/a9a_dataset.md)
+    * [General Binary classifier](binaryclass/a9a_generic.md)
     * [Logistic Regression](binaryclass/a9a_lr.md)
     * [Mini-batch gradient descent](binaryclass/a9a_minibatch.md)
 
