@@ -79,7 +79,8 @@
 
 ## Part V - Supervised Learning
 
-* [How Prediction Works](misc/prediction.md)
+* [How Prediction Works](supervised_learning/prediction.md)
+* [Step-by-Step Tutorial on Supervised Learning](supervised_learning/tutorial.md)
 
 ## Part VI - Binary Classification
 
