@@ -146,7 +146,9 @@ The training table is as follows:
 
 The output table `training` will be directly used as an input to Hivemall's ML functions in the next step.
 
-Note that you can apply extra Hivemall functions (e.g., [`rescale()`](../misc/funcs.html#feature-scaling), [`feature_hashing()`](../misc/funcs.html#feature-hashing), [`l1_normalize()`](../misc/funcs.html#feature-scaling)) for the features in this step to make your prediction model more accurate and stable; it is known as *feature engineering* in the context of ML. See our [documentation](../ft_engineering/scaling.html) for more information.
+> #### Note
+>
+> You can apply extra Hivemall functions (e.g., [`rescale()`](../misc/funcs.html#feature-scaling), [`feature_hashing()`](../misc/funcs.html#feature-hashing), [`l1_normalize()`](../misc/funcs.html#feature-scaling)) for the features in this step to make your prediction model more accurate and stable; it is known as *feature engineering* in the context of ML. See our [documentation](../ft_engineering/scaling.html) for more information.
 
 ### Step 2. Training
 
@@ -241,7 +243,9 @@ group by
 ;
 ```
 
-_Note: `sigmoid()` should be applied only for logistic loss and you can't get a probability with other loss functions for a classification. See also [this video](https://www.coursera.org/lecture/machine-learning/decision-boundary-WuL1H)._
+> #### Note
+>
+> `sigmoid()` should be applied only for logistic loss and you can't get a probability with other loss functions for a classification. See also [this video](https://www.coursera.org/lecture/machine-learning/decision-boundary-WuL1H).
 
 Output for single sample can be:
 
