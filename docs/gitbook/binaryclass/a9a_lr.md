@@ -17,6 +17,12 @@
   under the License.
 -->
 
+This pages shows an example of applying logistic regression for a9a binary classification task.
+
+> #### Caution
+> 
+> `logloss()` became deprecated since v0.5.0 release. Use smarter [general classifier](./a9a_generic.md) instead.
+
 <!-- toc -->
 
 # UDF preparation
@@ -45,8 +51,10 @@ from
  ) t 
 group by feature;
 ```
-_"-total_steps" option is optional for logress() function._  
-_I recommend you NOT to use options (e.g., total_steps and eta0) if you are not familiar with those options. Hivemall then uses an autonomic ETA (learning rate) estimator._
+
+> #### Note
+> 
+> `-total_steps` option is optional for logress() function. We recommend you NOT to use options (e.g., `total_steps` and `eta0`) if you are not familiar with those options. Hivemall then uses an autonomic ETA (learning rate) estimator.
 
 # prediction
 ```sql

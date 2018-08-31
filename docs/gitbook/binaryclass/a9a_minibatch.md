@@ -17,8 +17,14 @@
   under the License.
 -->
         
-This page explains how to apply [Mini-Batch Gradient Descent](https://class.coursera.org/ml-003/lecture/106) for the training of logistic regression explained in [this example](./a9a_lr.html). 
+This page explains how to apply [Mini-Batch Gradient Descent](https://class.coursera.org/ml-003/lecture/106) for the training of logistic regression explained in [this example](./a9a_lr.html).  
 So, refer [this page](./a9a_lr.html) first. This content depends on it.
+
+> #### Caution
+> 
+> `logloss()` became deprecated since v0.5.0 release. Use smarter [general classifier](./a9a_generic.md) instead. You can use `-mini_batch` option in general classifier as well.
+
+<!-- toc -->
 
 # Training
 
