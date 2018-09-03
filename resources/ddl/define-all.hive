@@ -522,6 +522,21 @@ create temporary function sigmoid as 'hivemall.tools.math.SigmoidGenericUDF';
 drop temporary function if exists l2_norm;
 create temporary function l2_norm as 'hivemall.tools.math.L2NormUDAF';
 
+drop temporary function if exists infinity;
+create temporary function infinity as 'hivemall.tools.math.InfinityUDF';
+
+drop temporary function if exists is_infinite;
+create temporary function is_infinite as 'hivemall.tools.math.IsInfiniteUDF';
+
+drop temporary function if exists is_finite;
+create temporary function is_finite as 'hivemall.tools.math.IsFiniteUDF';
+
+drop temporary function if exists nan;
+create temporary function nan as 'hivemall.tools.math.NanUDF';
+
+drop temporary function if exists is_nan;
+create temporary function is_nan as 'hivemall.tools.math.IsNanUDF';
+
 -----------------------------
 -- Matrix/Vector functions --
 -----------------------------
