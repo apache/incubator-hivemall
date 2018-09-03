@@ -17,13 +17,13 @@
 # under the License.
 #
 
-FROM openjdk:7
+FROM openjdk:8
 
 WORKDIR /root/
 
 ARG PREBUILD=true
-ARG HADOOP_VERSION=2.7.3
-ARG HIVE_VERSION=2.1.1
+ARG HADOOP_VERSION=2.7.7
+ARG HIVE_VERSION=2.3.3
 
 ENV BASE_URL='https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename='
 ENV HADOOP_HOME='/usr/local/hadoop'
@@ -34,13 +34,16 @@ ENV HADOOP_OPTS=' \
       -Dsystem:user.name=root \
       -Dderby.stream.error.file=/root/derby.log'
 ENV PATH="${HADOOP_HOME}/bin:${HIVE_HOME}/bin:${PATH}"
+ENV JAVA_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+ENV JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
 
 COPY . ${HIVEMALL_PATH}/
 
 RUN set -eux && \
-    apt update && \
-    apt install -y --no-install-recommends openssh-server maven g++ make ruby npm && \
-    ln -s /usr/bin/nodejs /usr/bin/node && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends openssh-server maven g++ make ruby && \
+    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+    apt-get install -y nodejs && \
     npm install -g gitbook-cli && \
     \
     wget ${BASE_URL}hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz -O - \
