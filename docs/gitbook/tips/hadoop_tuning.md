@@ -24,7 +24,7 @@
 Please refer the following guides for Hadoop tuning:
 
 * http://hadoopbook.com/
-* https://www.slideshare.net/cloudera/mr-perf
+* http://www.slideshare.net/cloudera/mr-perf
 
 ---
 # Mapper-side configuration
@@ -75,13 +75,13 @@ feature_dimensions (2^24 by the default) * 4 bytes (float) * 2 (iff covariance i
 ```
 > 2^24 * 4 bytes * 2 * 1.2 ≈ 161MB
 
-When [SpaceEfficientDenseModel](https://github.com/apache/incubator-hivemall/blob/master/src/main/java/hivemall/io/SpaceEfficientDenseModel.java) is used, the formula changes as follows:
+When [SpaceEfficientDenseModel](https://github.com/myui/hivemall/blob/master/src/main/java/hivemall/io/SpaceEfficientDenseModel.java) is used, the formula changes as follows:
 ```
 feature_dimensions (assume here 2^25) * 2 bytes (short) * 2 (iff covariance is calculated) * 1.2 (heuristics)
 ```
 > 2^25 * 2 bytes * 2 * 1.2 ≈ 161MB
 
-Note: Hivemall uses a [sparse representation](https://github.com/apache/incubator-hivemall/blob/master/src/main/java/hivemall/io/SparseModel.java) of prediction model (using a hash table) by the default. Use "[-densemodel](https://github.com/apache/incubator-hivemall/blob/master/src/main/java/hivemall/LearnerBaseUDTF.java#L87)" option to use a dense model.
+Note: Hivemall uses a [sparse representation](https://github.com/myui/hivemall/blob/master/src/main/java/hivemall/io/SparseModel.java) of prediction model (using a hash table) by the default. Use "[-densemodel](https://github.com/myui/hivemall/blob/master/src/main/java/hivemall/LearnerBaseUDTF.java#L87)" option to use a dense model.
 
 # Execution Engine of Hive
 
