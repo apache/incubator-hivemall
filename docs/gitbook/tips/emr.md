@@ -21,7 +21,7 @@
         
 ## Prerequisite
 Learn how to use Hive with Elastic MapReduce (EMR).  
-http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-hive.html
+https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-hive.html
 
 Before launching an EMR job, 
 * create ${s3bucket}/emr/outputs for outputs
