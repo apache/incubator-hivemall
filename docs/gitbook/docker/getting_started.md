@@ -31,7 +31,7 @@ This page introduces how to run Hivemall on Docker.
  * Docker Engine 1.6+
  * Docker Compose 1.10+
 
-## 1. Build image
+## Build image
 
 You have two options in order to build a **hivemall** docker image:
 
@@ -50,7 +50,7 @@ $ docker build -f resources/docker/Dockerfile .
 > #### Note
 > You can [skip](./getting_started.html#running-pre-built-docker-image-in-docker-hub) building images if you try to use a pre-build docker image from Docker Hub. However, since the Docker Hub repository is experimental one, the distributed image is NOT built on the "latest" commit in [our master branch](https://github.com/apache/incubator-hivemall).
 
-## 2. Run container
+## Run container
 
 If you built an image by yourself, it can be launched by either `docker-compose` or `docker` command:
 
@@ -103,7 +103,7 @@ $ docker pull hivemall/latest:20170517
 $ docker run -p 8088:8088 -p 50070:50070 -p 19888:19888 -it hivemall/latest:20170517
 ```
 
-## 3. Run Hivemall on Docker
+## Run Hivemall on Docker
 
   1. Type `hive` to run (`.hiverc` automatically loads Hivemall functions)
   2. Try your Hivemall queries!
