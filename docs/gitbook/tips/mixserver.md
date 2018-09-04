@@ -46,7 +46,7 @@ _Caution: hivemall-mixserv.jar is large in size and thus only used for Mix serve
 We assume in this example that Mix servers are running on host01, host03 and host03.
 The default port used by Mix server is 11212 and the port is configurable through "-port" option of run_mixserv.sh. 
 
-See [MixServer.java](https://github.com/myui/hivemall/blob/master/mixserv/src/main/java/hivemall/mix/server/MixServer.java#L90) to get detail of the Mix server options.
+See [MixServer.java](https://github.com/apache/incubator-hivemall/blob/master/mixserv/src/main/java/hivemall/mix/server/MixServer.java#L90-L104) to get detail of the Mix server options.
 
 We recommended to use multiple MIX servers to get better MIX throughput (3-5 or so would be enough for normal cluster size). The MIX protocol of Hivemall is *horizontally scalable* by adding MIX server nodes.
 
