@@ -27,7 +27,7 @@ public final class IsInfiniteUDF extends UDF {
         if (num == null) {
             return null;
         } else {
-            return !num.isNaN() && num.isInfinite();
+            return num.isInfinite();
         }
     }
 }
