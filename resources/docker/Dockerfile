@@ -75,8 +75,8 @@ RUN set -eux && \
       -exec sh -c 'f={} && ln -s $f /root/bin/${f##*/}' \; && \
     ln -s ${HIVEMALL_PATH}/resources/docker/home/.hiverc /root && \
     ln -s ${HIVEMALL_PATH}/resources/ddl/define-all.hive /root/hivemall/define-all.hive && \
-    ln -s ${HIVEMALL_PATH}/target/hivemall-core-${HIVEMALL_VERSION}-with-dependencies.jar \
-      /root/hivemall/hivemall-core-with-dependencies.jar && \
+    ln -s ${HIVEMALL_PATH}/target/hivemall-all-${HIVEMALL_VERSION}.jar \
+      /root/hivemall/hivemall-all.jar && \
     rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* /root/.m2/* /root/.npm/*
 
 VOLUME ["/opt/hivemall/", "/root/data/"]

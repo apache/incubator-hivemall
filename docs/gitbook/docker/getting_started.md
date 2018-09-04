@@ -17,6 +17,8 @@
   under the License.
 -->
 
+# Getting started with Hivemall on Docker
+
 This page introduces how to run Hivemall on Docker.
 
 <!-- toc -->
@@ -24,22 +26,22 @@ This page introduces how to run Hivemall on Docker.
 > #### Caution
 > This docker image contains a single-node Hadoop enviroment for evaluating Hivemall. Not suited for production uses.
 
-# Requirements
+## Requirements
 
  * Docker Engine 1.6+
  * Docker Compose 1.10+
 
-# 1. Build image
+## 1. Build image
 
 You have two options in order to build a **hivemall** docker image:
 
-## Using `docker-compose`
+### Using `docker-compose`
   
 ```
 $ docker-compose -f resources/docker/docker-compose.yml build
 ```
 
-## Using `docker` command
+### Using `docker` command
   
 ```
 $ docker build -f resources/docker/Dockerfile .
@@ -48,11 +50,11 @@ $ docker build -f resources/docker/Dockerfile .
 > #### Note
 > You can [skip](./getting_started.html#running-pre-built-docker-image-in-docker-hub) building images if you try to use a pre-build docker image from Docker Hub. However, since the Docker Hub repository is experimental one, the distributed image is NOT built on the "latest" commit in [our master branch](https://github.com/apache/incubator-hivemall).
 
-# 2. Run container
+## 2. Run container
 
 If you built an image by yourself, it can be launched by either `docker-compose` or `docker` command:
 
-## By `docker-compose`
+### By `docker-compose`
 
 ```
 $ docker-compose -f resources/docker/docker-compose.yml up -d && docker attach hivemall
@@ -68,7 +70,7 @@ volumes:
   - "/path/to/data/:/root/data/" # mount resources to container-side  `/root/data` directory
 ```
 
-## By `docker` command
+### By `docker` command
 
 Find a local docker image by `docker images`, and hit:
 
@@ -84,7 +86,7 @@ Similarly to the `volumes` option in the `docker-compose` file, `docker run` has
 $ docker run ... -v /path/to/local/hivemall:/opt/hivemall
 ```
 
-## Running pre-built Docker image in Docker Hub
+### Running pre-built Docker image in Docker Hub
 
 > #### Caution
 > This part is experimental. Hivemall in the pre-built image might be out-of-date compared to the latest version in [our master branch](https://github.com/apache/incubator-hivemall).
@@ -101,12 +103,12 @@ $ docker pull hivemall/latest:20170517
 $ docker run -p 8088:8088 -p 50070:50070 -p 19888:19888 -it hivemall/latest:20170517
 ```
 
-# 3. Run Hivemall on Docker
+## 3. Run Hivemall on Docker
 
   1. Type `hive` to run (`.hiverc` automatically loads Hivemall functions)
   2. Try your Hivemall queries!
 
-## Accessing Hadoop management GUIs
+### Accessing Hadoop management GUIs
 
 * YARN http://localhost:8088/
 * HDFS http://localhost:50070/
@@ -114,7 +116,7 @@ $ docker run -p 8088:8088 -p 50070:50070 -p 19888:19888 -it hivemall/latest:2017
 
 Note that you need to expose local ports e.g., by `-p 8088:8088 -p 50070:50070 -p 19888:19888` on running docker image.
 
-## Load data into HDFS (optional)
+### Load data into HDFS (optional)
 
 You can find an example script to load data into HDFS in `$HOME/bin/prepare_iris.sh`.
   The script loads iris dataset into `iris` database:
@@ -137,7 +139,7 @@ OK
 
 Once you prepared the `iris` database, you are ready to move on to [our multi-class classification tutorial](../multiclass/iris_dataset.html).
 
-## Build Hivemall (optional)
+### Build Hivemall (optional)
 
 In the container, Hivemall resource is stored in `$HIVEMALL_PATH`.
 You can build Hivemall package by `cd $HIVEMALL_PATH && ./bin/build.sh`.
