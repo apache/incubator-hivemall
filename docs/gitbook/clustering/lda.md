@@ -19,7 +19,7 @@
 
 Topic modeling is a way to analyze massive documents by clustering them into some ***topics***. In particular, **Latent Dirichlet Allocation** (LDA) is one of the most popular topic modeling techniques; papers introduce the method are as follows:
 
-- D. M. Blei, et al. [Latent Dirichlet Allocation](https://www.jmlr.org/papers/v3/blei03a.html). Journal of Machine Learning Research 3, pp. 993-1022, 2003.
+- D. M. Blei, et al. [Latent Dirichlet Allocation](http://www.jmlr.org/papers/v3/blei03a.html). Journal of Machine Learning Research 3, pp. 993-1022, 2003.
 - M. D. Hoffman, et al. [Online Learning for Latent Dirichlet Allocation](https://papers.nips.cc/paper/3902-online-learning-for-latent-dirichlet-allocation). NIPS 2010.
 
 Hivemall enables you to analyze your data such as, but not limited to, documents based on LDA. This page gives usage instructions of the feature.
