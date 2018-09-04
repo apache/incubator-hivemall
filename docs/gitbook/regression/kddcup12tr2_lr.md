@@ -83,7 +83,7 @@ order by
 ```
 ## Evaluation
 
-[scoreKDD.py](https://github.com/myui/hivemall/blob/master/resources/examples/kddtrack2/scoreKDD.py)
+[scoreKDD.py](https://github.com/apache/incubator-hivemall/blob/master/resources/examples/kddtrack2/scoreKDD.py)
 
 ```sh
 hadoop fs -getmerge /user/hive/warehouse/kdd12track2.db/lr_predict lr_predict.tbl

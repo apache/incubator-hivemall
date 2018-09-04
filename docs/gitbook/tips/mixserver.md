@@ -18,7 +18,6 @@
 -->
         
 In this page, we will explain how to use model mixing on Hivemall. The model mixing is useful for a better prediction performance and faster convergence in training classifiers. 
-You can find a brief explanation of the internal design of MIX protocol in [this slide](http://www.slideshare.net/myui/hivemall-mix-internal).
 
 <!-- toc -->
 
@@ -33,8 +32,8 @@ Running Mix Server
 ===================
 
 First, put the following files on server(s) that are accessible from Hadoop worker nodes:
-* [target/hivemall-mixserv.jar](https://github.com/myui/hivemall/releases)
-* [bin/run_mixserv.sh](https://github.com/myui/hivemall/raw/master/bin/run_mixserv.sh)
+* [target/hivemall-mixserv.jar](https://github.com/apache/incubator-hivemall/releases)
+* [bin/run_mixserv.sh](https://github.com/apache/incubator-hivemall/raw/master/bin/run_mixserv.sh)
 
 _Caution: hivemall-mixserv.jar is large in size and thus only used for Mix servers._
 
@@ -46,7 +45,7 @@ _Caution: hivemall-mixserv.jar is large in size and thus only used for Mix serve
 We assume in this example that Mix servers are running on host01, host03 and host03.
 The default port used by Mix server is 11212 and the port is configurable through "-port" option of run_mixserv.sh. 
 
-See [MixServer.java](https://github.com/myui/hivemall/blob/master/mixserv/src/main/java/hivemall/mix/server/MixServer.java#L90) to get detail of the Mix server options.
+See [MixServer.java](https://github.com/apache/incubator-hivemall/blob/master/mixserv/src/main/java/hivemall/mix/server/MixServer.java#L90) to get detail of the Mix server options.
 
 We recommended to use multiple MIX servers to get better MIX throughput (3-5 or so would be enough for normal cluster size). The MIX protocol of Hivemall is *horizontally scalable* by adding MIX server nodes.
 
@@ -55,7 +54,7 @@ Using Mix Protocol through Hivemall
 
 [Install Hivemall](../getting_started/installation.html) on Hive.
 
-_Make sure that [hivemall-with-dependencies.jar](https://github.com/myui/hivemall/raw/master/target/hivemall-with-dependencies.jar) is used for installation. The jar contains minimum requirement jars (netty,jsr305) for running Hivemall on Hive._
+_Make sure that [hivemall-with-dependencies.jar](https://github.com/apache/incubator-hivemall/raw/master/target/hivemall-with-dependencies.jar) is used for installation. The jar contains minimum requirement jars (netty,jsr305) for running Hivemall on Hive._
 
 Now, we explain that how to use mixing in [an example using KDD2010a dataset](../binaryclass/kdd2010a_dataset.html).
 

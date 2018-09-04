@@ -50,7 +50,7 @@ STORED AS TEXTFILE LOCATION '/dataset/kdd10a/test';
 ```
 
 # Putting data into HDFS
-[conv.awk](https://raw.githubusercontent.com/myui/hivemall/master/scripts/misc/conv.awk)
+[conv.awk](https://raw.githubusercontent.com/apache/incubator-hivemall/master/resources/misc/conv.awk)
 ```sh
 awk -f conv.awk kdda | hadoop fs -put - /dataset/kdd10a/train/kdda
 awk -f conv.awk kdda.t | hadoop fs -put - /dataset/kdd10a/test/kdda.t

@@ -26,7 +26,7 @@ http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-hive.html
 Before launching an EMR job, 
 * create ${s3bucket}/emr/outputs for outputs
 * optionally, create ${s3bucket}/emr/logs for logging
-* put [emr_hivemall_bootstrap.sh](https://raw.github.com/myui/hivemall/master/scripts/misc/emr_hivemall_bootstrap.sh) on ${s3bucket}/emr/conf
+* put [emr_hivemall_bootstrap.sh](https://raw.githubusercontent.com/apache/incubator-hivemall/master/resources/misc/emr_hivemall_bootstrap.sh) on ${s3bucket}/emr/conf
 
 Then, lunch an EMR job with hive in an interactive mode.
 I'm usually lunching EMR instances with cheap Spot instances through [CLI client](http://aws.amazon.com/developertools/2264) as follows:

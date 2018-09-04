@@ -88,7 +88,7 @@ Hivemall supports [feature hashing/hashing trick](http://en.wikipedia.org/wiki/F
 
 The mhash function takes a feature (i.e., *index*) of TEXT format and generates a hash number of a range from 1 to 2^24 (=16777216) by the default setting.
 
-Feature hashing is useful where the dimension of feature vector (i.e., the number of elements in *features*) is so large. Consider applying [mhash function]((../ft_engineering/hashing.html#mhash-function)) when a prediction model does not fit in memory and OutOfMemory exception happens.
+Feature hashing is useful where the dimension of feature vector (i.e., the number of elements in *features*) is so large. Consider applying [mhash function](../ft_engineering/hashing.html#mhash-function)) when a prediction model does not fit in memory and OutOfMemory exception happens.
 
 In general, you don't need to use mhash when the dimension of feature vector is less than 16777216.
 If feature *index* is very long TEXT (e.g., "xxxxxxx-yyyyyy-weight:55.3") and uses huge memory spaces, consider using mhash as follows:

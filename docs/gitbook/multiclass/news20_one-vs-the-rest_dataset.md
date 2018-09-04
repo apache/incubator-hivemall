@@ -39,7 +39,7 @@ select collect_set(label) from news20mc_train;
 SET hivevar:possible_labels="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,16,19,18,20";
 ```
 
-[one-vs-rest.awk](https://github.com/myui/hivemall/blob/master/resources/misc/one-vs-rest.awk)
+[one-vs-rest.awk](https://github.com/apache/incubator-hivemall/blob/master/resources/misc/one-vs-rest.awk)
 
 ```
 create or replace view news20_onevsrest_train
