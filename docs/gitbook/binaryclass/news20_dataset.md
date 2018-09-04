@@ -18,7 +18,7 @@
 -->
         
 Get the news20b dataset.
-http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#news20.binary
+https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#news20.binary
 
 ```sh
 cat <<EOF > conv.awk

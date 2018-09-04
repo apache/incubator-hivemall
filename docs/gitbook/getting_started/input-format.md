@@ -18,13 +18,13 @@
 -->
         
 This page explains the input format of training data in Hivemall. 
-Here, we use [EBNF](http://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form)-like notation for describing the format.
+Here, we use [EBNF](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form)-like notation for describing the format.
 
 <!-- toc -->
 
 # Input Format for Classification 
 
-The classifiers of Hivemall takes 2 (or 3) arguments: *features*, *label*, and *options* (a.k.a. [hyperparameters](http://en.wikipedia.org/wiki/Hyperparameter)). The first two arguments of training functions represents training examples. 
+The classifiers of Hivemall takes 2 (or 3) arguments: *features*, *label*, and *options* (a.k.a. [hyperparameters](https://en.wikipedia.org/wiki/Hyperparameter)). The first two arguments of training functions represents training examples. 
 
 In Statistics, *features* and *label* are called [Explanatory variable and Response Variable](http://www.oswego.edu/~srp/stats/variable_types.htm), respectively.
 
@@ -33,7 +33,7 @@ In Statistics, *features* and *label* are called [Explanatory variable and Respo
 The format of *features* is common between (binary and multi-class) classification and regression.
 Hivemall accepts `ARRAY&lt;INT|BIGINT|TEXT>` for the type of *features* column.
 
-Hivemall uses a *sparse* data format (cf. [Compressed Row Storage](http://netlib.org/linalg/html_templates/node91.html)) which is similar to [LIBSVM](http://stackoverflow.com/questions/12112558/read-write-data-in-libsvm-format) and [Vowpal Wabbit](https://github.com/JohnLangford/vowpal_wabbit/wiki/Input-format).
+Hivemall uses a *sparse* data format (cf. [Compressed Row Storage](https://netlib.org/linalg/html_templates/node91.html)) which is similar to [LIBSVM](https://stackoverflow.com/questions/12112558/read-write-data-in-libsvm-format) and [Vowpal Wabbit](https://github.com/JohnLangford/vowpal_wabbit/wiki/Input-format).
 
 The format of each feature in an array is as follows:
 ```
@@ -84,7 +84,7 @@ The [add_bias](../tips/addbias.html) function is Hivemall appends "0:1.0" as an 
 
 ## Feature hashing
 
-Hivemall supports [feature hashing/hashing trick](http://en.wikipedia.org/wiki/Feature_hashing) through [mhash function](../ft_engineering/hashing.html#mhash-function).
+Hivemall supports [feature hashing/hashing trick](https://en.wikipedia.org/wiki/Feature_hashing) through [mhash function](../ft_engineering/hashing.html#mhash-function).
 
 The mhash function takes a feature (i.e., *index*) of TEXT format and generates a hash number of a range from 1 to 2^24 (=16777216) by the default setting.
 

@@ -43,7 +43,7 @@ I'm usually lunching EMR instances with cheap Spot instances through [CLI client
    --args "instance.isMaster=true,s3://${s3bucket}/emr/conf/emr_hivemall_bootstrap.sh" --bootstrap-name "hivemall setup"
  --bootstrap-action s3://elasticmapreduce/bootstrap-actions/install-ganglia --bootstrap-name "install ganglia"
 ```
-_To use YARN instead of old Hadoop, specify "[--ami-version 3.0.0](http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-ami.html#ami-versions-supported)". Hivemall works on both old Hadoop and YARN._
+_To use YARN instead of old Hadoop, specify "[--ami-version 3.0.0](https://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-ami.html#ami-versions-supported)". Hivemall works on both old Hadoop and YARN._
 
 Or, lunch an interactive EMR job using the EMR GUI wizard.
 

@@ -21,7 +21,7 @@ In a context of anomaly detection, there are two types of anomalies, ***outlier*
 
 In some cases, we might want to detect outlier and change-point simultaneously in order to figure out characteristics of a time series both in a local and global scale. **ChangeFinder** is an anomaly detection technique which enables us to detect both of outliers and change-points in a single framework. A key reference for the technique is:
 
-* K. Yamanishi and J. Takeuchi. [A Unifying Framework for Detecting Outliers and Change Points from Non-Stationary Time Series Data](http://dl.acm.org/citation.cfm?id=775148). KDD'02.
+* K. Yamanishi and J. Takeuchi. [A Unifying Framework for Detecting Outliers and Change Points from Non-Stationary Time Series Data](https://dl.acm.org/citation.cfm?id=775148). KDD'02.
 
 <!-- toc -->
 

@@ -17,7 +17,7 @@
   under the License.
 -->
         
-[http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#kdd2010 (algebra)](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#kdd2010 (algebra))
+[https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#kdd2010 (algebra)](https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#kdd2010 (algebra))
 
 * the number of classes: 2
 * the number of data: 8,407,752 (training) / 510,302 (testing)

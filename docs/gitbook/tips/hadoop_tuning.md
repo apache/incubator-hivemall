@@ -24,7 +24,7 @@
 Please refer the following guides for Hadoop tuning:
 
 * http://hadoopbook.com/
-* http://www.slideshare.net/cloudera/mr-perf
+* https://www.slideshare.net/cloudera/mr-perf
 
 ---
 # Mapper-side configuration

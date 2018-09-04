@@ -19,7 +19,7 @@
         
 This article explains *amplify* technique that is useful for improving prediction score.
 
-Iterations are mandatory in machine learning (e.g., in [stochastic gradient descent](http://en.wikipedia.org/wiki/Stochastic_gradient_descent)) to get good prediction models. However, MapReduce is known to be not suited for iterative algorithms because IN/OUT of each MapReduce job is through HDFS.
+Iterations are mandatory in machine learning (e.g., in [stochastic gradient descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent)) to get good prediction models. However, MapReduce is known to be not suited for iterative algorithms because IN/OUT of each MapReduce job is through HDFS.
 
 In this example, we show how Hivemall deals with this problem. We use [KDD Cup 2012, Track 2 Task](../regression/kddcup12tr2_dataset.html) as an example.
 
@@ -77,7 +77,7 @@ Using *trainning_x3*  instead of the plain training table results in higher and 
 A problem in `amplify()` is that the shuffle (copy) and merge phase of the stage 1 could become a bottleneck.
 When the training table is so large that involves 100 Map tasks, the merge operator needs to merge at least 100 files by (external) merge sort! 
 
-Note that the actual bottleneck is not M/R iterations but shuffling training instance. Iteration without shuffling (as in [the Spark example](http://spark.incubator.apache.org/examples.html)) causes very slow convergence and results in requiring more iterations. Shuffling cannot be avoided even in iterative MapReduce variants.
+Note that the actual bottleneck is not M/R iterations but shuffling training instance. Iteration without shuffling (as in [the Spark example](https://spark.incubator.apache.org/examples.html)) causes very slow convergence and results in requiring more iterations. Shuffling cannot be avoided even in iterative MapReduce variants.
 
 <img src="../resources/images/amplify_elapsed.png" alt="amplify_elapsed"/>
 

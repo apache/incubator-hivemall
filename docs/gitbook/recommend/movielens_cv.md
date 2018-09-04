@@ -17,7 +17,7 @@
   under the License.
 -->
         
-[Cross-validation](http://en.wikipedia.org/wiki/Cross-validation_%28statistics%29) is a model validation technique for assessing how a prediction model will generalize to an independent data set. This example shows a way to perform [k-fold cross validation](http://en.wikipedia.org/wiki/Cross-validation_%28statistics%29#k-fold_cross-validation) to evaluate prediction performance.
+[Cross-validation](https://en.wikipedia.org/wiki/Cross-validation_%28statistics%29) is a model validation technique for assessing how a prediction model will generalize to an independent data set. This example shows a way to perform [k-fold cross validation](https://en.wikipedia.org/wiki/Cross-validation_%28statistics%29#k-fold_cross-validation) to evaluate prediction performance.
 
 *Caution:* Matrix factorization is supported in Hivemall v0.3 or later.
 
@@ -79,4 +79,4 @@ Then, issue SQL queies in [generate_cv.sql](https://gist.github.com/myui/2e20182
 
 > 0.8502739040257945 (RMSE)
 
-_We recommend to use [Tez](http://tez.apache.org/) for running queries having many stages._
+_We recommend to use [Tez](https://tez.apache.org/) for running queries having many stages._

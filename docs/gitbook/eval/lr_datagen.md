@@ -21,7 +21,7 @@
 
 # create a dual table
 
-Create a [dual table](http://en.wikipedia.org/wiki/DUAL_table) as follows:
+Create a [dual table](https://en.wikipedia.org/wiki/DUAL_table) as follows:
 ```sql
 CREATE TABLE dual (
   dummy int

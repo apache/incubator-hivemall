@@ -38,8 +38,8 @@ Once a prediction model has been constructed based on the samples, the model can
 
 In order to train prediction models, an algorithm so-called ***stochastic gradient descent*** (SGD) is normally applied. You can learn more about this from the following external resources:
 
-- [scikit-learn documentation](http://scikit-learn.org/stable/modules/sgd.html)
-- [Spark MLlib documentation](http://spark.apache.org/docs/latest/mllib-optimization.html)
+- [scikit-learn documentation](https://scikit-learn.org/stable/modules/sgd.html)
+- [Spark MLlib documentation](https://spark.apache.org/docs/latest/mllib-optimization.html)
 
 Importantly, depending on types of output value, prediction problem can be categorized into **regression** and **classification** problem.
 

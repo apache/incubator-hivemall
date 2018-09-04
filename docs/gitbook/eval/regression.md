@@ -73,5 +73,5 @@ from t;
 
 # References
 
-* R2 http://en.wikipedia.org/wiki/Coefficient_of_determination
+* R2 https://en.wikipedia.org/wiki/Coefficient_of_determination
 * Evaluation Metrics https://www.kaggle.com/wiki/Metrics

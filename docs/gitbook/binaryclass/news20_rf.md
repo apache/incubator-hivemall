@@ -21,7 +21,7 @@ Hivemall Random Forest supports libsvm-like sparse inputs.
 
 > #### Note
 > This feature, i.e., Sparse input support in Random Forest, is supported since Hivemall v0.5.0 or later._
-> [`feature_hashing`](http://hivemall.incubator.apache.org/userguide/ft_engineering/hashing.html#featurehashing-function) function is useful to prepare feature vectors for Random Forest.
+> [`feature_hashing`](https://hivemall.incubator.apache.org/userguide/ft_engineering/hashing.html#featurehashing-function) function is useful to prepare feature vectors for Random Forest.
 
 <!-- toc -->
 

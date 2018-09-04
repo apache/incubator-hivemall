@@ -17,7 +17,7 @@
   under the License.
 -->
         
-Map-side join on Tez causes [ClassCastException](http://markmail.org/message/7cwbgupnhah6ggkv) when a serialized table contains array column(s).
+Map-side join on Tez causes [ClassCastException](https://markmail.org/message/7cwbgupnhah6ggkv) when a serialized table contains array column(s).
 
 [Workaround] Try setting _hive.mapjoin.optimized.hashtable_ off as follows:
 ```sql
