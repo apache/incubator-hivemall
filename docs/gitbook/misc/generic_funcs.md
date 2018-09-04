@@ -480,7 +480,17 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 # Math
 
+- `infinity()` - Returns the constant representing positive infinity.
+
+- `is_finite(x)` - Determine if x is infinite.
+
+- `is_infinite(x)` - Determine if x is infinite.
+
+- `is_nan(x)` - Determine if x is not-a-number.
+
 - `l2_norm(double xi)` - Return L2 norm of a vector which has the given values in each dimension
+
+- `nan()` - Returns the constant representing not-a-number.
 
 - `sigmoid(x)` - Returns 1.0 / (1.0 + exp(-x))
 

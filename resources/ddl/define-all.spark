@@ -520,6 +520,21 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION sigmoid AS 'hivemall.tools.math.Sigmoi
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS l2_norm")
 sqlContext.sql("CREATE TEMPORARY FUNCTION l2_norm AS 'hivemall.tools.math.L2NormUDAF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS infinity")
+sqlContext.sql("CREATE TEMPORARY FUNCTION infinity AS 'hivemall.tools.math.InfinityUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS is_infinite")
+sqlContext.sql("CREATE TEMPORARY FUNCTION is_infinite AS 'hivemall.tools.math.IsInfiniteUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS is_finite")
+sqlContext.sql("CREATE TEMPORARY FUNCTION is_finite AS 'hivemall.tools.math.IsFiniteUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS nan")
+sqlContext.sql("CREATE TEMPORARY FUNCTION nan AS 'hivemall.tools.math.NanUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS is_nan")
+sqlContext.sql("CREATE TEMPORARY FUNCTION is_nan AS 'hivemall.tools.math.IsNanUDF'")
+
 /**
  * Matrix/Vector functions
  */
