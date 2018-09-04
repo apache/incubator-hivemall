@@ -83,7 +83,8 @@ order by
 ```
 ## Evaluation
 
-[scoreKDD.py](https://github.com/apache/incubator-hivemall/blob/master/resources/examples/kddtrack2/scoreKDD.py)
+You can download scoreKDD.py from [KDD Cup 2012, Track 2 site](https://www.kaggle.com/c/kddcup2012-track2/data). After logging-in to Kaggle, download
+scoreKDD.py.
 
 ```sh
 hadoop fs -getmerge /user/hive/warehouse/kdd12track2.db/lr_predict lr_predict.tbl
