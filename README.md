@@ -52,6 +52,12 @@ All Hivemall functions are defined under [resources/ddl](resources/ddl). In orde
 $ ./bin/update_ddls.sh
 ```
 
+Moreover, don't forget to update function list in the document as well:
+
+```
+$ ./bin/update_func_md.sh
+```
+
 Note that, before creating a pull request including Java code, please make sure your code follows our coding conventions by applying formatter:
 
 ```

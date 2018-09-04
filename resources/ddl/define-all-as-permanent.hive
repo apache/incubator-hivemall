@@ -530,6 +530,21 @@ CREATE FUNCTION sigmoid as 'hivemall.tools.math.SigmoidGenericUDF' USING JAR '${
 DROP FUNCTION IF EXISTS l2_norm;
 CREATE FUNCTION l2_norm as 'hivemall.tools.math.L2NormUDAF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS infinity;
+CREATE FUNCTION infinity as 'hivemall.tools.math.InfinityUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS is_infinite;
+CREATE FUNCTION is_infinite as 'hivemall.tools.math.IsInfiniteUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS is_finite;
+CREATE FUNCTION is_finite as 'hivemall.tools.math.IsFiniteUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS nan;
+CREATE FUNCTION nan as 'hivemall.tools.math.NanUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS is_nan;
+CREATE FUNCTION is_nan as 'hivemall.tools.math.IsNanUDF' USING JAR '${hivemall_jar}';
+
 -----------------------------
 -- Matrix/Vector functions --
 -----------------------------
