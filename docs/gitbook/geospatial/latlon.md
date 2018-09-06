@@ -48,7 +48,7 @@ y &=
 \end{aligned}
 {% endmath %}
 
-Refer [this page](http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames) for detail. Zoom level is well described in [this page](http://wiki.openstreetmap.org/wiki/Zoom_levels).
+Refer [this page](https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames) for detail. Zoom level is well described in [this page](https://wiki.openstreetmap.org/wiki/Zoom_levels).
 
 ### Usage
 
@@ -80,7 +80,7 @@ from
 
 # Distance function
 
-`haversine_distance(double lat1, double lon1, double lat2, double lon2, [const boolean mile=false])` returns [Haversine distance](http://www.movable-type.co.uk/scripts/latlong.html) between given two Geo locations.
+`haversine_distance(double lat1, double lon1, double lat2, double lon2, [const boolean mile=false])` returns [Haversine distance](https://www.movable-type.co.uk/scripts/latlong.html) between given two Geo locations.
 
 ```sql
 -- Tokyo (lat: 35.6833, lon: 139.7667)

@@ -253,7 +253,7 @@ Accuracy would gives `0.76555` for a Kaggle submission.
 > `tree_export` feature is supported from Hivemall v0.5.0 or later.
 > Better to limit tree depth on training by `-depth` option to plot a Decision Tree.
 
-Hivemall provide `tree_export` to export a decision tree into [Graphviz](http://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
+Hivemall provide `tree_export` to export a decision tree into [Graphviz](https://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
 
 ```
 > select tree_export("","-help");
@@ -283,7 +283,7 @@ from
 ;
 ```
 
-[Here is an example](https://gist.github.com/myui/a83ba3795bad9b278cf8bcc59f946e2c#file-titanic-dot) plotting a decision tree using Graphviz or [Vis.js](http://viz-js.com/).
+[Here is an example](https://gist.github.com/myui/a83ba3795bad9b278cf8bcc59f946e2c#file-titanic-dot) plotting a decision tree using Graphviz or [Vis.js](https://viz-js.com/).
 
 ---
 

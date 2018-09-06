@@ -17,7 +17,7 @@
   under the License.
 -->
 
-This document explains how to compute [TF-IDF](http://en.wikipedia.org/wiki/Tf%E2%80%93idf) with Apache Hive/Hivemall.
+This document explains how to compute [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) with Apache Hive/Hivemall.
 
 What you need to compute TF-IDF is a table/view composing (docid, word) pair, 2 views, and 1 query.
 

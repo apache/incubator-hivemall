@@ -21,15 +21,15 @@
         
 ## Prerequisite
 Learn how to use Hive with Elastic MapReduce (EMR).  
-http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-hive.html
+https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-hive.html
 
 Before launching an EMR job, 
 * create ${s3bucket}/emr/outputs for outputs
 * optionally, create ${s3bucket}/emr/logs for logging
-* put [emr_hivemall_bootstrap.sh](https://raw.github.com/myui/hivemall/master/scripts/misc/emr_hivemall_bootstrap.sh) on ${s3bucket}/emr/conf
+* put [emr_hivemall_bootstrap.sh](https://raw.githubusercontent.com/apache/incubator-hivemall/master/resources/misc/emr_hivemall_bootstrap.sh) on ${s3bucket}/emr/conf
 
 Then, lunch an EMR job with hive in an interactive mode.
-I'm usually lunching EMR instances with cheap Spot instances through [CLI client](http://aws.amazon.com/developertools/2264) as follows:
+I'm usually lunching EMR instances with cheap Spot instances through [CLI client](https://aws.amazon.com/tools/) as follows:
 ```
 ./elastic-mapreduce --create --alive \
  --name "Hive cluster" \
@@ -43,7 +43,7 @@ I'm usually lunching EMR instances with cheap Spot instances through [CLI client
    --args "instance.isMaster=true,s3://${s3bucket}/emr/conf/emr_hivemall_bootstrap.sh" --bootstrap-name "hivemall setup"
  --bootstrap-action s3://elasticmapreduce/bootstrap-actions/install-ganglia --bootstrap-name "install ganglia"
 ```
-_To use YARN instead of old Hadoop, specify "[--ami-version 3.0.0](http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-ami.html#ami-versions-supported)". Hivemall works on both old Hadoop and YARN._
+_To use YARN instead of old Hadoop, specify "[--ami-version 3.0.0](https://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/emr-plan-ami.html#ami-versions-supported)". Hivemall works on both old Hadoop and YARN._
 
 Or, lunch an interactive EMR job using the EMR GUI wizard.
 

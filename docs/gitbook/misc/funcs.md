@@ -310,7 +310,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `tile(double lat, double lon, int zoom)`::bigint - Returns a tile number 2^2n where n is zoom level. _FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom
   ```
-  refer http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail
+  refer https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail
   ```
 
 - `tilex2lon(int x, int zoom)`::double - Returns longitude of the given tile x and zoom level

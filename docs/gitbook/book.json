@@ -36,7 +36,7 @@
             "url": "https://github.com/apache/incubator-hivemall/"
         },
         "sitemap": {
-            "hostname": "http://hivemall.incubator.apache.org/"
+            "hostname": "https://hivemall.incubator.apache.org/"
         },
         "etoc": {
           "mindepth": 1,
@@ -59,7 +59,7 @@
     },
     "links": {
       "sidebar": {
-        "<i class=\"fa fa-home\"></i> Home": "http://hivemall.incubator.apache.org/"
+        "<i class=\"fa fa-home\"></i> Home": "https://hivemall.incubator.apache.org/"
       }
     }
 }

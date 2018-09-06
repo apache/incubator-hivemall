@@ -18,7 +18,7 @@
 -->
         
 Get the dataset from 
-http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#webspam
+https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#webspam
 
 # Putting data on HDFS
 ```sql

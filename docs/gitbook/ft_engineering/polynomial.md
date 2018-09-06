@@ -19,7 +19,7 @@
 
 <!-- toc -->
 
-[Polynomial features](http://en.wikipedia.org/wiki/Polynomial_kernel) allows you to do [non-linear regression](https://class.coursera.org/ml-005/lecture/23)/classification with a linear model.
+[Polynomial features](https://en.wikipedia.org/wiki/Polynomial_kernel) allows you to do [non-linear regression](https://class.coursera.org/ml-005/lecture/23)/classification with a linear model.
 
 > #### Caution
 >
@@ -27,7 +27,7 @@
 
 # Polynomial Features
 
-As [a similar to one in Scikit-Learn](http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html), `polynomial_feature(array<String> features, int degree [, boolean interactionOnly=false, boolean truncate=true])` is a function to generate polynomial and interaction features.
+As [a similar to one in Scikit-Learn](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html), `polynomial_feature(array<String> features, int degree [, boolean interactionOnly=false, boolean truncate=true])` is a function to generate polynomial and interaction features.
 
 ```sql
 select polynomial_features(array("a:0.5","b:0.2"), 2);

@@ -325,7 +325,7 @@ WHERE
 > `tree_export` feature is supported from Hivemall v0.5.0 or later.
 > Better to limit tree depth on training by `-depth` option to plot a Decision Tree.
 
-Hivemall provide `tree_export` to export a decision tree into [Graphviz](http://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
+Hivemall provide `tree_export` to export a decision tree into [Graphviz](https://www.graphviz.org/) or human-readable Javascript format. You can find the usage by issuing the following query:
 
 ```
 > select tree_export("","-help");
@@ -389,4 +389,4 @@ digraph Tree {
 
 <img src="../resources/images/iris.png" alt="Iris Graphviz output"/>
 
-You can draw a graph by `dot -Tpng iris.dot -o iris.png` or using [Viz.js](http://viz-js.com/).
+You can draw a graph by `dot -Tpng iris.dot -o iris.png` or using [Viz.js](https://viz-js.com/).

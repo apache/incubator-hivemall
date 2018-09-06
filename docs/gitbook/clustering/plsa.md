@@ -19,12 +19,12 @@
 
 As described in [our user guide for Latent Dirichlet Allocation (LDA)](lda.md), Hivemall enables you to apply clustering for your data based on a topic modeling technique. While LDA is one of the most popular techniques, there is another approach named **Probabilistic Latent Semantic Analysis** (pLSA). In fact, pLSA is the predecessor of LDA, but it has an advantage in terms of running time.
 
-- T. Hofmann. [Probabilistic Latent Semantic Indexing](http://dl.acm.org/citation.cfm?id=312649). SIGIR 1999, pp. 50-57.
-- T. Hofmann. [Probabilistic Latent Semantic Analysis](http://www.iro.umontreal.ca/~nie/IFT6255/Hofmann-UAI99.pdf). UAI 1999, pp. 289-296.
+- T. Hofmann. [Probabilistic Latent Semantic Indexing](https://dl.acm.org/citation.cfm?id=312649). SIGIR 1999, pp. 50-57.
+- T. Hofmann. [Probabilistic Latent Semantic Analysis](https://www.iro.umontreal.ca/~nie/IFT6255/Hofmann-UAI99.pdf). UAI 1999, pp. 289-296.
 
 In order to efficiently handle large-scale data, our pLSA implementation is based on the following incremental variant of the original pLSA algorithm:
 
-- H. Wu, et al. [Incremental Probabilistic Latent Semantic Analysis for Automatic Question Recommendation](http://dl.acm.org/citation.cfm?id=1454026). RecSys 2008, pp. 99-106.
+- H. Wu, et al. [Incremental Probabilistic Latent Semantic Analysis for Automatic Question Recommendation](https://dl.acm.org/citation.cfm?id=1454026). RecSys 2008, pp. 99-106.
 
 <!-- toc -->
 

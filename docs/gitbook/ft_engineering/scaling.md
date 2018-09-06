@@ -36,7 +36,7 @@ select l2_normalize(array('apple:1.0', 'banana:0.5'))
 > ["apple:0.8944272","banana:0.4472136"]
 
 # Min-Max Normalization
-http://en.wikipedia.org/wiki/Feature_scaling#Rescaling
+https://en.wikipedia.org/wiki/Feature_scaling#Rescaling
 ```sql
 select min(target), max(target)
 from (
@@ -63,7 +63,7 @@ from
 ```
 
 # Feature scaling by zscore
-http://en.wikipedia.org/wiki/Standard_score
+https://en.wikipedia.org/wiki/Standard_score
 
 ```sql
 select avg(target), stddev_pop(target)

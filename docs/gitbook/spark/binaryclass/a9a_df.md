@@ -19,14 +19,14 @@
 
 a9a
 ===
-http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#a9a
+https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#a9a
 
 Data preparation
 ================
 
 ```sh
-$ wget http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a9a
-$ wget http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a9a.t
+$ wget https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a9a
+$ wget https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a9a.t
 ```
 
 ```scala

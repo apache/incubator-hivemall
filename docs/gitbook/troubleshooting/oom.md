@@ -31,7 +31,7 @@ Then, the number of training examples used for each trainer is reduced (as the n
 
 # OOM in shuffle/merge
 
-If OOM caused during the merge step, try setting a larger **mapred.reduce.tasks** value before training and revise [shuffle/reduce parameters](http://hadoop.apache.org/docs/r1.0.4/mapred_tutorial.html#Shuffle%2FReduce+Parameters).
+If OOM caused during the merge step, try setting a larger **mapred.reduce.tasks** value before training and revise [shuffle/reduce parameters](https://hadoop.apache.org/docs/r1.0.4/mapred_tutorial.html#Shuffle%2FReduce+Parameters).
 ```
 SET mapred.reduce.tasks=64;
 ```

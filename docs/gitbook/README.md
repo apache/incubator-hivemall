@@ -29,7 +29,7 @@ Apache Hivemall offers a variety of functionalities: <strong>regression, classif
 
 ## Architecture
 
-Apache Hivemall is mainly designed to run on [Apache Hive](https://hive.apache.org/) but it also supports [Apache Pig](https://pig.apache.org/) and [Apache Spark](http://spark.apache.org/) for the runtime.
+Apache Hivemall is mainly designed to run on [Apache Hive](https://hive.apache.org/) but it also supports [Apache Pig](https://pig.apache.org/) and [Apache Spark](https://spark.apache.org/) for the runtime.
 Thus, it can be considered as a cross platform library for machine learning; prediction models built by a batch query of Apache Hive can be used on Apache Spark/Pig, and conversely, prediction models build by Apache Spark can be used from Apache Hive/Pig.
 
 <div style="text-align:center"><img src="./resources/images/techstack.png" width="80%" height="80%"/></div>

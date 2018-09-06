@@ -18,7 +18,7 @@
 -->
         
 The task is predicting the click through rate (CTR) of advertisement, meaning that we are to predict the probability of each ad being clicked. 
-http://www.kddcup2012.org/c/kddcup2012-track2
+https://www.kaggle.com/c/kddcup2012-track2
 
 ---
 
@@ -210,7 +210,7 @@ create table training_orcfile (
 ```
 _Caution: Joining between training table and user table takes a long time. Consider not to use gender and age and avoid joins if your Hadoop cluster is small._
 
-[kddconv.awk](https://github.com/myui/hivemall/blob/master/resources/examples/kddtrack2/kddconv.awk)
+[kddconv.awk](https://github.com/apache/incubator-hivemall/blob/master/resources/examples/kddtrack2/kddconv.awk)
 
 ```sql
 add file /tmp/kddconv.awk;

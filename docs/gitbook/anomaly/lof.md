@@ -17,7 +17,7 @@
   under the License.
 -->
         
-This article introduces how to find outliers using [Local Outlier Detection (LOF)](http://en.wikipedia.org/wiki/Local_outlier_factor) on Hivemall.
+This article introduces how to find outliers using [Local Outlier Detection (LOF)](https://en.wikipedia.org/wiki/Local_outlier_factor) on Hivemall.
 
 <!-- toc -->
 
@@ -38,7 +38,7 @@ ROW FORMAT DELIMITED
 STORED AS TEXTFILE LOCATION '/dataset/lof/hundred_balls';
 ```
 
-Download [hundred_balls.txt](https://gist.githubusercontent.com/myui/f8b44ab925bc198e6d11b18fdd21269d/raw/bed05f811e4c351ed959e0159405690f2f11e577/hundred_balls.txt) that is originally provides in [this article](http://next.rikunabi.com/tech/docs/ct_s03600.jsp?p=002259).
+Download [hundred_balls.txt](https://gist.githubusercontent.com/myui/f8b44ab925bc198e6d11b18fdd21269d/raw/bed05f811e4c351ed959e0159405690f2f11e577/hundred_balls.txt) that is originally provides in [this article](https://next.rikunabi.com/tech/docs/ct_s03600.jsp?p=002259).
 
 In this example, Rowid `87` is apparently an outlier.
 

@@ -73,7 +73,7 @@ To evaluate a recommendation model, this tutorial uses two type cross validation
 - Leave-one-out cross validation
 - $$K$$-hold cross validation
 
-The former is used in the [SLIM's paper](http://glaros.dtc.umn.edu/gkhome/fetch/papers/SLIM2011icdm.pdf) and the latter is used in [Mendeley's slide](http://slideshare.net/MarkLevy/efficient-slides/).
+The former is used in the [SLIM's paper](http://glaros.dtc.umn.edu/gkhome/fetch/papers/SLIM2011icdm.pdf) and the latter is used in [Mendeley's slide](https://www.slideshare.net/MarkLevy/efficient-slides/).
 
 ### Leave-one-out cross validation
 
