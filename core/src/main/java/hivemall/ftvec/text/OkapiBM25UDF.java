@@ -33,9 +33,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.DoubleWritable;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
-@SuppressWarnings("deprecation")
 @Description(name = "okapi_bm25",
         value = "_FUNC_(double tf_word, int dl, double avgdl, int N, int n [, const string options]) - Return an Okapi BM25 score in float")
 //TODO: What does stateful mean?
