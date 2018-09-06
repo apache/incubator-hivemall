@@ -52,20 +52,21 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     private PrimitiveObjectInspector numDocsWithWordOI;
 
 
-    public OkapiBM25UDF() {
-    }
+    public OkapiBM25UDF() {}
 
     @Nonnull
     @Override
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("tf_word", "termFrequencyOfWordInDoc", false,
-                "Term frequency of a word in a document");
+            "Term frequency of a word in a document");
         opts.addOption("dl", "docLength", false, "Length of document in words");
         opts.addOption("avgdl", "averageDocLength", false, "Average length of documents in words");
         opts.addOption("N", "numDocs", false, "Number of documents");
-        opts.addOption("n", "numDocsWithWord", false, "Number of documents containing the word q_i");
-        opts.addOption("k_1", "k_1", true, "Hyperparameter with type double, usually in range 1.2 and 2.0 [default: 1.2]");
+        opts.addOption("n", "numDocsWithWord", false,
+            "Number of documents containing the word q_i");
+        opts.addOption("k_1", "k_1", true,
+            "Hyperparameter with type double, usually in range 1.2 and 2.0 [default: 1.2]");
         opts.addOption("b", "b", true, "Hyperparameter with type double [default: 0.75]");
         return opts;
     }
@@ -84,8 +85,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int numArgOIs = argOIs.length;
         if (numArgOIs < 5) {
-            throw new UDFArgumentException(
-                    "argOIs.length must be greater than or equal to 5");
+            throw new UDFArgumentException("argOIs.length must be greater than or equal to 5");
         } else if (numArgOIs == 6) {
             String opts = HiveUtils.getConstString(argOIs[5]);
             processOptions(opts);
@@ -94,8 +94,8 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         this.termFrequencyOI = HiveUtils.asDoubleOI(argOIs[0]);
         this.docLengthOI = HiveUtils.asIntegerOI(argOIs[1]);
         this.averageDocLengthOI = HiveUtils.asDoubleOI(argOIs[2]);
-        this.numDocsOI= HiveUtils.asIntegerOI(argOIs[3]);
-        this.numDocsWithWordOI= HiveUtils.asIntegerOI(argOIs[4]);
+        this.numDocsOI = HiveUtils.asIntegerOI(argOIs[3]);
+        this.numDocsWithWordOI = HiveUtils.asIntegerOI(argOIs[4]);
 
         return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
     }
@@ -114,12 +114,14 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         int numDocs = PrimitiveObjectInspectorUtils.getInt(arg3, numDocsOI);
         int numDocsWithWord = PrimitiveObjectInspectorUtils.getInt(arg4, numDocsWithWordOI);
 
-        double result = calculateBM25(termFrequency, docLength, averageDocLength, numDocs, numDocsWithWord);
+        double result =
+                calculateBM25(termFrequency, docLength, averageDocLength, numDocs, numDocsWithWord);
 
         return new DoubleWritable(result);
     }
 
-    private double calculateBM25(double termFrequency, int docLength, double averageDocLength, int numDocs, int numDocsWithWord) {
+    private double calculateBM25(double termFrequency, int docLength, double averageDocLength,
+            int numDocs, int numDocsWithWord) {
         double numerator = termFrequency * (k1 + 1);
         double denominator = termFrequency + k1 * (1 - b + b * docLength / averageDocLength);
         double idf = Math.log((numDocs - numDocsWithWord + 0.5) / (numDocsWithWord + 0.5));

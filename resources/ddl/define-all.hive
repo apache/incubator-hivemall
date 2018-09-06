@@ -881,3 +881,6 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
+
+drop temporary function if exists okapi_bm25;
+create temporary function okapi_bm25 as 'hivemall.ftvec.text.OkapiBM25UDF';
