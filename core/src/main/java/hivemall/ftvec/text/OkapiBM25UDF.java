@@ -23,6 +23,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import hivemall.utils.hadoop.HiveUtils;
 import org.apache.hadoop.hive.ql.udf.UDFType;
@@ -33,6 +34,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.DoubleWritable;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 
 @Description(name = "okapi_bm25",
         value = "_FUNC_(double tf_word, int dl, double avgdl, int N, int n [, const string options]) - Return an Okapi BM25 score in float")
@@ -40,6 +42,7 @@ import javax.annotation.Nonnull;
 @UDFType(deterministic = true, stateful = false)
 public final class OkapiBM25UDF extends UDFWithOptions {
 
+    private static final double EPSILON = 1e-8;
     private static final double DEFAULT_K1 = 1.2;
     private static final double DEFAULT_B = 0.75;
     private double k1 = DEFAULT_K1;
@@ -108,11 +111,40 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         Object arg3 = arguments[3].get();
         Object arg4 = arguments[4].get();
 
+        if (arg0 == null || arg1 == null || arg2 == null || arg3 == null || arg4 == null) {
+            return null;
+        }
+
         double termFrequency = PrimitiveObjectInspectorUtils.getDouble(arg0, termFrequencyOI);
         int docLength = PrimitiveObjectInspectorUtils.getInt(arg1, docLengthOI);
         double averageDocLength = PrimitiveObjectInspectorUtils.getDouble(arg2, averageDocLengthOI);
         int numDocs = PrimitiveObjectInspectorUtils.getInt(arg3, numDocsOI);
         int numDocsWithWord = PrimitiveObjectInspectorUtils.getInt(arg4, numDocsWithWordOI);
+
+        if (termFrequency < 0.0) {
+            throw new UDFArgumentException("#termFrequency must be positive");
+        }
+
+        if (docLength < 1) {
+            throw new UDFArgumentException("#docLength must be greater than or equal to 1");
+        }
+
+        if (averageDocLength < 0.0) {
+            throw new UDFArgumentException("#averageDocLength cannot be negative");
+        }
+
+        if (Math.abs(averageDocLength) < EPSILON) {
+            throw new UDFArgumentException("#averageDocLength cannot be 0");
+        }
+
+        if (numDocs < 1) {
+            throw new UDFArgumentException("#numDocs must be greater than or equal to 1");
+        }
+
+        if (numDocsWithWord < 1) {
+            throw new UDFArgumentException("#numDocsWithWord must be greater than or equal to 1");
+        }
+
 
         double result =
                 calculateBM25(termFrequency, docLength, averageDocLength, numDocs, numDocsWithWord);
