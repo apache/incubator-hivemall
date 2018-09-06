@@ -161,7 +161,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     }
 
     @Override
-    public String getDisplayString(String[] strings) {
-        return null;
+    public String getDisplayString(String[] children) {
+        return "okapi_bm25(" + Arrays.toString(children) + ")";
     }
 }
