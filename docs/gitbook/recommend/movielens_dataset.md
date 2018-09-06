@@ -20,7 +20,7 @@
 # Data preparation
 
 First, downlod MovieLens dataset from the following site.
-> http://www.grouplens.org/system/files/ml-1m.zip
+> http://files.grouplens.org/datasets/movielens/ml-1m.zip
 
 Get detail about the dataset in the README.
 > http://files.grouplens.org/papers/ml-1m-README.txt

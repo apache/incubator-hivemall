@@ -22,7 +22,7 @@ Prerequisites
 
 * Spark v2.1 or later
 * Java 7 or later
-* `hivemall-spark-xxx-with-dependencies.jar` that can be found in [the ASF distribution mirror](http://www.apache.org/dyn/closer.cgi/incubator/hivemall/).
+* `hivemall-spark-xxx-with-dependencies.jar` that can be found in [the ASF distribution mirror](https://www.apache.org/dyn/closer.cgi/incubator/hivemall/).
 * [define-all.spark](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/define-all.spark)
 * [import-packages.spark](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/import-packages.spark)
 
@@ -32,7 +32,7 @@ Prerequisites
 Installation
 ============
 
-First, you download a compiled Spark package from [the Spark official web page](http://spark.apache.org/downloads.html) and invoke spark-shell with a compiled Hivemall binary.
+First, you download a compiled Spark package from [the Spark official web page](https://spark.apache.org/downloads.html) and invoke spark-shell with a compiled Hivemall binary.
 
 ```
 $ ./bin/spark-shell --jars hivemall-spark-xxx-with-dependencies.jar

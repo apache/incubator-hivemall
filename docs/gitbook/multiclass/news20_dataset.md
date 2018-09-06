@@ -18,7 +18,7 @@
 -->
         
 Get the news20 dataset.
-http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass.html#news20
+https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass.html#news20
 
 ```sh
 $ cat <<EOF > conv.awk

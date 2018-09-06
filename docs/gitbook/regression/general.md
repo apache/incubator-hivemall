@@ -26,7 +26,7 @@ In our regression tutorials, you can tackle realistic prediction problems by usi
 
 Our `train_regressor` function enables you to solve the regression problems with flexible configurable options. Let us try the function below.
 
-It should be noted that the sample queries require you to prepare [E2006-tfidf data](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression.html#E2006-tfidf). See [our E2006-tfidf tutorial page](../regression/e2006_dataset.md) for further instructions.
+It should be noted that the sample queries require you to prepare [E2006-tfidf data](https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression.html#E2006-tfidf). See [our E2006-tfidf tutorial page](../regression/e2006_dataset.md) for further instructions.
 
 <!-- toc -->
 

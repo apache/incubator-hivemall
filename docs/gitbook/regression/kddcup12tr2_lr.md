@@ -18,7 +18,7 @@
 -->
         
 The task is predicting the click through rate (CTR) of advertisement, meaning that we are to predict the probability of each ad being clicked.   
-http://www.kddcup2012.org/c/kddcup2012-track2
+https://www.kaggle.com/c/kddcup2012-track2
 
 _Caution: This example just shows a baseline result. Use token tables and amplifier to get better AUC score._
 
@@ -83,7 +83,8 @@ order by
 ```
 ## Evaluation
 
-[scoreKDD.py](https://github.com/myui/hivemall/blob/master/resources/examples/kddtrack2/scoreKDD.py)
+You can download scoreKDD.py from [KDD Cup 2012, Track 2 site](https://www.kaggle.com/c/kddcup2012-track2/data). After logging-in to Kaggle, download
+scoreKDD.py.
 
 ```sh
 hadoop fs -getmerge /user/hive/warehouse/kdd12track2.db/lr_predict lr_predict.tbl

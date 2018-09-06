@@ -31,7 +31,7 @@ We assume that you have already run the [a9a binary classification task](../bina
 
     Put mysql-connector-java.jar (JDBC driver) on $SQOOP_HOME/lib.
 
-- [Sqoop](http://sqoop.apache.org/)
+- [Sqoop](https://sqoop.apache.org/)
 
     Sqoop 1.4.5 does not support Hadoop v2.6.0. So, you need to build packages for Hadoop 2.6.
     To do that you need to edit build.xml and ivy.xml as shown in [this patch](https://gist.github.com/myui/e8db4a31b574103133c6).

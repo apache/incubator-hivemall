@@ -19,7 +19,7 @@
 
 Hivemall has a generic function for classification: `train_classifier`. Compared to the other functions we will see in the later chapters, `train_classifier` provides simpler and configureable generic interface which can be utilized to build binary classification models in a variety of settings.
 
-Here, we briefly introduce usage of the function. Before trying sample queries, you first need to prepare [a9a data](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#a9a). See [our a9a tutorial page](a9a_dataset.md) for further instructions.
+Here, we briefly introduce usage of the function. Before trying sample queries, you first need to prepare [a9a data](https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#a9a). See [our a9a tutorial page](a9a_dataset.md) for further instructions.
 
 <!-- toc -->
 

@@ -28,7 +28,7 @@ It is a useful technique to 1) improve prediction results by omitting redundant 
 # Supported Feature Selection algorithms
 
 * Chi-square (Chi2)
-    * In statistics, the $$\chi^2$$ test is applied to test the independence of two even events. Chi-square statistics between every feature variable and the target variable can be applied to Feature Selection. Refer [this article](http://nlp.stanford.edu/IR-book/html/htmledition/feature-selectionchi2-feature-selection-1.html) for Mathematical details.
+    * In statistics, the $$\chi^2$$ test is applied to test the independence of two even events. Chi-square statistics between every feature variable and the target variable can be applied to Feature Selection. Refer [this article](https://nlp.stanford.edu/IR-book/html/htmledition/feature-selectionchi2-feature-selection-1.html) for Mathematical details.
 * Signal Noise Ratio (SNR)
     * The Signal Noise Ratio (SNR) is a univariate feature ranking metric, which can be used as a feature selection criterion for binary classification problems. SNR is defined as $$|\mu_{1} - \mu_{2}| / (\sigma_{1} + \sigma_{2})$$, where $$\mu_{k}$$ is the mean value of the variable in classes $$k$$, and $$\sigma_{k}$$ is the standard deviations of the variable in classes $$k$$. Clearly, features with larger SNR are useful for classification.
 

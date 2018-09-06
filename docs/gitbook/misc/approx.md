@@ -63,7 +63,7 @@ from
 
 > #### Note
 >
-> `p` controls expected precision and memory consumption tradeoff and `default p=15` generally works well. Find More information on [this paper](https://research.google.com/pubs/pub40671.html).
+> `p` controls expected precision and memory consumption tradeoff and `default p=15` generally works well. Find More information on [this paper](https://ai.google/research/pubs/pub40671).
 
 ## Function Signature
 

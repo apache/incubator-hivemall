@@ -19,8 +19,8 @@
         
 This page introduces how to find change-points using **Singular Spectrum Transformation** (SST) on Hivemall. The following papers describe the details of this technique:
 
-* T. Idé and K. Inoue. [Knowledge Discovery from Heterogeneous Dynamic Systems using Change-Point Correlations](http://epubs.siam.org/doi/abs/10.1137/1.9781611972757.63). SDM'05.
-* T. Idé and K. Tsuda. [Change-Point Detection using Krylov Subspace Learning](http://epubs.siam.org/doi/abs/10.1137/1.9781611972771.54). SDM'07.
+* T. Idé and K. Inoue. [Knowledge Discovery from Heterogeneous Dynamic Systems using Change-Point Correlations](https://epubs.siam.org/doi/abs/10.1137/1.9781611972757.63). SDM'05.
+* T. Idé and K. Tsuda. [Change-Point Detection using Krylov Subspace Learning](https://epubs.siam.org/doi/abs/10.1137/1.9781611972771.54). SDM'07.
 
 <!-- toc -->
 

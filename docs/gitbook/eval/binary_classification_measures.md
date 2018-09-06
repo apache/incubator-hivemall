@@ -131,7 +131,7 @@ Hivemall's `fmeasure` function provides the option which can switch `micro`(defa
 
 You can learn more about this from the following external resource:
 
-- [scikit-learn's F1-score](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
+- [scikit-learn's F1-score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)
 
 
 ### Micro average
@@ -220,4 +220,4 @@ select fmeasure(truth, predicted, '-beta 2. -average binary') from data;
 
 You can learn more about this from the following external resource:
 
-- [scikit-learn's FMeasure](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.fbeta_score.html)
+- [scikit-learn's FMeasure](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.fbeta_score.html)

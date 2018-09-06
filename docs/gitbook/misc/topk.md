@@ -33,7 +33,7 @@ This function is particularly useful for applying a similarity/distance function
 * The third argument `value` is used for the comparison.
 * `Any number types` or `timestamp` are accepted for the type of `value`.
 * If k is less than 0, reverse order is used and `tail-K` records are returned for each `group`.
-* Note that this function returns [a pseudo ranking](http://www.michaelpollmeier.com/selecting-top-k-items-from-a-list-efficiently-in-java-groovy/) for top-k. It always returns `at-most K` records for each group. The ranking scheme is similar to `dense_rank` but slightly different in certain cases.
+* Note that this function returns [a pseudo ranking](https://www.michaelpollmeier.com/selecting-top-k-items-from-a-list-efficiently-in-java-groovy/) for top-k. It always returns `at-most K` records for each group. The ranking scheme is similar to `dense_rank` but slightly different in certain cases.
 
 # Usage
 
@@ -110,7 +110,7 @@ The ranking semantics of `each_top_k` follows SQL's `dense_rank` and then limits
 
 ## top-k clicks 
 
-http://stackoverflow.com/questions/9390698/hive-getting-top-n-records-in-group-by-query/32559050#32559050
+https://stackoverflow.com/questions/9390698/hive-getting-top-n-records-in-group-by-query/32559050#32559050
 
 ```sql
 set hivevar:k=5;

@@ -591,7 +591,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 - `each_top_k(int K, Object group, double cmpKey, *)` - Returns top-K values (or tail-K values when k is less than 0)
 
-- `generate_series(const int|bigint start, const int|bigint end)` - Generate a series of values, from start to end. A similar function to PostgreSQL's [generate_serics](http://www.postgresql.org/docs/current/static/functions-srf.html)
+- `generate_series(const int|bigint start, const int|bigint end)` - Generate a series of values, from start to end. A similar function to PostgreSQL's [generate_serics](https://www.postgresql.org/docs/current/static/functions-srf.html)
   ```sql
   SELECT generate_series(2,4);
 

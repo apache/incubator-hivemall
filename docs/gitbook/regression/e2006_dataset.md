@@ -20,7 +20,7 @@
 Prerequisite
 ============
 
-* [E2006-tfidf Dataset](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression.html#E2006-tfidf)
+* [E2006-tfidf Dataset](https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression.html#E2006-tfidf)
 * [conv.awk](https://github.com/apache/incubator-hivemall/blob/master/resources/misc/conv.awk)
 
 Data preparation
