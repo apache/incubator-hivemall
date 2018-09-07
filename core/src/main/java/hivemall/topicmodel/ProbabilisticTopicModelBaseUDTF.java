@@ -57,6 +57,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
+import com.google.common.base.Preconditions;
+
 public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(ProbabilisticTopicModelBaseUDTF.class);
 
@@ -159,11 +161,17 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             this.model = createModel();
         }
 
-        final int length = wordCountsOI.getListLength(args[0]);
+        Preconditions.checkArgument(args.length >= 1);
+        Object arg0 = args[0];
+        if (arg0 == null) {
+            return;
+        }
+
+        final int length = wordCountsOI.getListLength(arg0);
         final String[] wordCounts = new String[length];
         int j = 0;
         for (int i = 0; i < length; i++) {
-            Object o = wordCountsOI.getListElement(args[0], i);
+            Object o = wordCountsOI.getListElement(arg0, i);
             if (o == null) {
                 throw new HiveException("Given feature vector contains invalid null elements");
             }
@@ -268,6 +276,10 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
+        if (model.getDocCount() == 0L) {
+            this.model = null;
+            throw new HiveException("No training exmples to learn. Please revise input data.");
+        }
         finalizeTraining();
         forwardModel();
         this.model = null;
@@ -275,10 +287,6 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
 
     @VisibleForTesting
     void finalizeTraining() throws HiveException {
-        if (model.getDocCount() == 0L) {
-            this.model = null;
-            return;
-        }
         if (miniBatchCount > 0) { // update for remaining samples
             model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
         }
@@ -462,6 +470,9 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             topicIdx.set(k);
 
             final SortedMap<Float, List<String>> topicWords = model.getTopicWords(k);
+            if (topicWords == null) {
+                continue;
+            }
             for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
                 score.set(e.getKey().floatValue());
                 for (String v : e.getValue()) {
