@@ -57,6 +57,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
+import com.google.common.base.Preconditions;
+
 public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(ProbabilisticTopicModelBaseUDTF.class);
 
@@ -159,11 +161,17 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             this.model = createModel();
         }
 
-        final int length = wordCountsOI.getListLength(args[0]);
+        Preconditions.checkArgument(args.length >= 1);
+        Object arg0 = args[0];
+        if (arg0 == null) {
+            return;
+        }
+
+        final int length = wordCountsOI.getListLength(arg0);
         final String[] wordCounts = new String[length];
         int j = 0;
         for (int i = 0; i < length; i++) {
-            Object o = wordCountsOI.getListElement(args[0], i);
+            Object o = wordCountsOI.getListElement(arg0, i);
             if (o == null) {
                 throw new HiveException("Given feature vector contains invalid null elements");
             }
