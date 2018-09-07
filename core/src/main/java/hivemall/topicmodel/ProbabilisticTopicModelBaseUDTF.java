@@ -470,6 +470,9 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
             topicIdx.set(k);
 
             final SortedMap<Float, List<String>> topicWords = model.getTopicWords(k);
+            if (topicWords == null) {
+                continue;
+            }
             for (Map.Entry<Float, List<String>> e : topicWords.entrySet()) {
                 score.set(e.getKey().floatValue());
                 for (String v : e.getValue()) {
