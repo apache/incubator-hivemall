@@ -276,6 +276,10 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
+        if (model.getDocCount() == 0L) {
+            this.model = null;
+            return;
+        }
         finalizeTraining();
         forwardModel();
         this.model = null;
@@ -283,10 +287,6 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
 
     @VisibleForTesting
     void finalizeTraining() throws HiveException {
-        if (model.getDocCount() == 0L) {
-            this.model = null;
-            return;
-        }
         if (miniBatchCount > 0) { // update for remaining samples
             model.train(Arrays.copyOfRange(miniBatch, 0, miniBatchCount));
         }
