@@ -99,7 +99,7 @@ public class OkapiBM25UDFTest {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                HiveUtils.getConstStringObjectInspector("-k1 1.5 -b 0.8")
+                HiveUtils.getConstStringObjectInspector("-b 0.8")
         });
 
         GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
@@ -110,7 +110,7 @@ public class OkapiBM25UDFTest {
                 VALID_NUM_DOCS_WITH_WORD
         };
 
-        DoubleWritable expected = WritableUtils.val(0.305108702817);
+        DoubleWritable expected = WritableUtils.val(0.314307452223);
         DoubleWritable actual = udf.evaluate(args);
         assertEquals(expected.get(), actual.get(), EPSILON);
     }
