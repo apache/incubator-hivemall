@@ -23,7 +23,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import hivemall.utils.hadoop.HiveUtils;
 import org.apache.hadoop.hive.ql.udf.UDFType;
@@ -31,7 +30,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
@@ -68,7 +67,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         opts.addOption("N", "numDocs", false, "Number of documents");
         opts.addOption("n", "numDocsWithWord", false,
             "Number of documents containing the word q_i");
-        opts.addOption("k_1", "k_1", true,
+        opts.addOption("k1", "k1", true,
             "Hyperparameter with type double, usually in range 1.2 and 2.0 [default: 1.2]");
         opts.addOption("b", "b", true, "Hyperparameter with type double [default: 0.75]");
         return opts;
@@ -79,8 +78,8 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     protected CommandLine processOptions(@Nonnull String opts) throws UDFArgumentException {
         CommandLine cl = parseOptions(opts);
 
-        this.k1 = Double.parseDouble(cl.getOptionValue("k1", Double.toString(DEFAULT_K1)));
-        this.b = Double.parseDouble(cl.getOptionValue("b", Double.toString(DEFAULT_B)));
+        k1 = Double.parseDouble(cl.getOptionValue("k1", Double.toString(DEFAULT_K1)));
+        b = Double.parseDouble(cl.getOptionValue("b", Double.toString(DEFAULT_B)));
         return cl;
     }
 
@@ -104,7 +103,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     }
 
     @Override
-    public Object evaluate(DeferredObject[] arguments) throws HiveException {
+    public DoubleWritable evaluate(DeferredObject[] arguments) throws HiveException {
         Object arg0 = arguments[0].get();
         Object arg1 = arguments[1].get();
         Object arg2 = arguments[2].get();
@@ -112,7 +111,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         Object arg4 = arguments[4].get();
 
         if (arg0 == null || arg1 == null || arg2 == null || arg3 == null || arg4 == null) {
-            return null;
+            throw new UDFArgumentException("Required arguments cannot be null");
         }
 
         double termFrequency = PrimitiveObjectInspectorUtils.getDouble(arg0, termFrequencyOI);
@@ -156,7 +155,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             int numDocs, int numDocsWithWord) {
         double numerator = termFrequency * (k1 + 1);
         double denominator = termFrequency + k1 * (1 - b + b * docLength / averageDocLength);
-        double idf = Math.log((numDocs - numDocsWithWord + 0.5) / (numDocsWithWord + 0.5));
+        double idf = Math.log10((numDocs - numDocsWithWord + 0.5) / (numDocsWithWord + 0.5));
         return idf * numerator / denominator;
     }
 
