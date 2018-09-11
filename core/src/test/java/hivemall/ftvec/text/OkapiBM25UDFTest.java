@@ -33,7 +33,14 @@ import org.junit.Test;
 public class OkapiBM25UDFTest {
 
     private static final double EPSILON = 1e-8;
-    OkapiBM25UDF udf = null;
+    private static final GenericUDF.DeferredJavaObject VALID_TERM_FREQ = new GenericUDF.DeferredJavaObject(new Double(0.5));
+    private static final GenericUDF.DeferredJavaObject VALID_DOC_LEN = new GenericUDF.DeferredJavaObject(new Integer(9));
+    private static final GenericUDF.DeferredJavaObject VALID_AVG_DOC_LEN = new GenericUDF.DeferredJavaObject(new Double(10.35));
+    private static final GenericUDF.DeferredJavaObject VALID_NUM_DOCS = new GenericUDF.DeferredJavaObject(new Integer(20));
+    private static final GenericUDF.DeferredJavaObject VALID_NUM_DOCS_WITH_WORD = new GenericUDF.DeferredJavaObject(new Integer(5));
+
+    private OkapiBM25UDF udf = null;
+    
 
     @Before
     public void init() throws Exception {
@@ -43,20 +50,14 @@ public class OkapiBM25UDFTest {
     @Test
     public void testEvaluate() throws Exception {
 
-        udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
-                PrimitiveObjectInspectorFactory.javaIntObjectInspector
-        });
+        initializeUDFWithoutOptions();
 
         GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(new Double(0.5)),
-                new GenericUDF.DeferredJavaObject(new Integer(9)),
-                new GenericUDF.DeferredJavaObject(new Double(10.35)),
-                new GenericUDF.DeferredJavaObject(new Integer(20)),
-                new GenericUDF.DeferredJavaObject(new Integer(5))
+                VALID_TERM_FREQ,
+                VALID_DOC_LEN,
+                VALID_AVG_DOC_LEN,
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
         };
 
         DoubleWritable expected = WritableUtils.val(0.312753184602);
@@ -77,11 +78,11 @@ public class OkapiBM25UDFTest {
         });
 
         GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(new Double(0.5)),
-                new GenericUDF.DeferredJavaObject(new Integer(9)),
-                new GenericUDF.DeferredJavaObject(new Double(10.35)),
-                new GenericUDF.DeferredJavaObject(new Integer(20)),
-                new GenericUDF.DeferredJavaObject(new Integer(5))
+                VALID_TERM_FREQ,
+                VALID_DOC_LEN,
+                VALID_AVG_DOC_LEN,
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
         };
 
         DoubleWritable expected = WritableUtils.val(0.303498158345);
@@ -102,11 +103,11 @@ public class OkapiBM25UDFTest {
         });
 
         GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(new Double(0.5)),
-                new GenericUDF.DeferredJavaObject(new Integer(9)),
-                new GenericUDF.DeferredJavaObject(new Double(10.35)),
-                new GenericUDF.DeferredJavaObject(new Integer(20)),
-                new GenericUDF.DeferredJavaObject(new Integer(5))
+                VALID_TERM_FREQ,
+                VALID_DOC_LEN,
+                VALID_AVG_DOC_LEN,
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
         };
 
         DoubleWritable expected = WritableUtils.val(0.305108702817);
@@ -115,8 +116,67 @@ public class OkapiBM25UDFTest {
     }
 
     @Test(expected = HiveException.class)
-    public void testTermFrequencyIsNull() throws Exception {
+    public void testInputArgIsNull() throws Exception {
 
+        initializeUDFWithoutOptions();
+
+        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
+                new GenericUDF.DeferredJavaObject(null),
+                VALID_DOC_LEN,
+                VALID_AVG_DOC_LEN,
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
+        };
+
+        udf.evaluate(args);
+    }
+
+    @Test(expected = HiveException.class)
+    public void testTermFrequencyIsNegative() throws Exception {
+        initializeUDFWithoutOptions();
+
+        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
+                new GenericUDF.DeferredJavaObject(new Double(-1.0)),
+                VALID_DOC_LEN,
+                VALID_AVG_DOC_LEN,
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
+        };
+
+        udf.evaluate(args);
+    }
+
+    @Test(expected = HiveException.class)
+    public void testDocLengthIsLessThanOne() throws Exception {
+        initializeUDFWithoutOptions();
+
+        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
+                VALID_TERM_FREQ,
+                new GenericUDF.DeferredJavaObject(new Integer(0)),
+                VALID_AVG_DOC_LEN,
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
+        };
+
+        udf.evaluate(args);
+    }
+
+    @Test(expected = HiveException.class)
+    public void testAvgDocLengthIsNegative() throws Exception {
+        initializeUDFWithoutOptions();
+
+        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
+                VALID_TERM_FREQ,
+                VALID_DOC_LEN,
+                new GenericUDF.DeferredJavaObject(new Double(-10)),
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
+        };
+
+        udf.evaluate(args);
+    }
+
+    private void initializeUDFWithoutOptions() throws Exception {
         udf.initialize(new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
@@ -124,15 +184,5 @@ public class OkapiBM25UDFTest {
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector
         });
-
-        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(null),
-                new GenericUDF.DeferredJavaObject(new Integer(9)),
-                new GenericUDF.DeferredJavaObject(new Double(10.35)),
-                new GenericUDF.DeferredJavaObject(new Integer(20)),
-                new GenericUDF.DeferredJavaObject(new Integer(5))
-        };
-
-        udf.evaluate(args);
     }
 }
