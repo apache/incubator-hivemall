@@ -144,7 +144,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         }
 
         if (averageDocLength < 0.0) {
-            throw new UDFArgumentException("#averageDocLength cannot be negative");
+            throw new UDFArgumentException("#averageDocLength must be positive");
         }
 
         if (Math.abs(averageDocLength) < EPSILON) {
