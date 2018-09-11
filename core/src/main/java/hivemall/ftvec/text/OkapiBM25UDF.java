@@ -36,7 +36,7 @@ import javax.annotation.Nonnull;
 import java.util.Arrays;
 
 @Description(name = "okapi_bm25",
-        value = "_FUNC_(int f, int dl, double avgdl, int N, int n [, const string options]) - Return an Okapi BM25 score in double")
+        value = "_FUNC_(int termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options]) - Return an Okapi BM25 score in double")
 @UDFType(deterministic = true, stateful = false)
 public final class OkapiBM25UDF extends UDFWithOptions {
 
@@ -52,7 +52,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     private PrimitiveObjectInspector docLengthOI;
     private PrimitiveObjectInspector averageDocLengthOI;
     private PrimitiveObjectInspector numDocsOI;
-    private PrimitiveObjectInspector numDocsWithWordOI;
+    private PrimitiveObjectInspector numDocsWithTermOI;
 
 
     public OkapiBM25UDF() {}
@@ -65,7 +65,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         opts.addOption("dl", "docLength", false, "Length of document in words");
         opts.addOption("avgdl", "averageDocLength", false, "Average length of documents in words");
         opts.addOption("N", "numDocs", false, "Number of documents");
-        opts.addOption("n", "numDocsWithWord", false,
+        opts.addOption("n", "numDocsWithTerm", false,
             "Number of documents containing the word q_i");
         opts.addOption(K1_OPT_NAME, "k1", true,
             "Hyperparameter with type double, usually in range 1.2 and 2.0 [default: 1.2]");
@@ -112,7 +112,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         this.docLengthOI = HiveUtils.asIntegerOI(argOIs[1]);
         this.averageDocLengthOI = HiveUtils.asDoubleOI(argOIs[2]);
         this.numDocsOI = HiveUtils.asIntegerOI(argOIs[3]);
-        this.numDocsWithWordOI = HiveUtils.asIntegerOI(argOIs[4]);
+        this.numDocsWithTermOI = HiveUtils.asIntegerOI(argOIs[4]);
 
         return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
     }
@@ -133,7 +133,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         int docLength = PrimitiveObjectInspectorUtils.getInt(arg1, docLengthOI);
         double averageDocLength = PrimitiveObjectInspectorUtils.getDouble(arg2, averageDocLengthOI);
         int numDocs = PrimitiveObjectInspectorUtils.getInt(arg3, numDocsOI);
-        int numDocsWithWord = PrimitiveObjectInspectorUtils.getInt(arg4, numDocsWithWordOI);
+        int numDocsWithTerm = PrimitiveObjectInspectorUtils.getInt(arg4, numDocsWithTermOI);
 
         if (frequency < 0) {
             throw new UDFArgumentException("#frequency must be positive");
@@ -155,27 +155,27 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             throw new UDFArgumentException("#numDocs must be greater than or equal to 1");
         }
 
-        if (numDocsWithWord < 1) {
-            throw new UDFArgumentException("#numDocsWithWord must be greater than or equal to 1");
+        if (numDocsWithTerm < 1) {
+            throw new UDFArgumentException("#numDocsWithTerm must be greater than or equal to 1");
         }
 
 
         double result =
-                calculateBM25(frequency, docLength, averageDocLength, numDocs, numDocsWithWord);
+                calculateBM25(frequency, docLength, averageDocLength, numDocs, numDocsWithTerm);
 
         return new DoubleWritable(result);
     }
 
     private double calculateBM25(int frequency, int docLength, double averageDocLength, int numDocs,
-            int numDocsWithWord) {
+            int numDocsWithTerm) {
         double numerator = frequency * (k1 + 1);
         double denominator = frequency + k1 * (1 - b + b * docLength / averageDocLength);
-        double idf = calculateIDF(numDocs, numDocsWithWord);
+        double idf = calculateIDF(numDocs, numDocsWithTerm);
         return idf * numerator / denominator;
     }
 
-    private static double calculateIDF(int numDocs, int numDocsWithWord) {
-        return Math.log10(1.0 + (numDocs - numDocsWithWord + 0.5) / (numDocsWithWord + 0.5));
+    private static double calculateIDF(int numDocs, int numDocsWithTerm) {
+        return Math.log10(1.0 + (numDocs - numDocsWithTerm + 0.5) / (numDocsWithTerm + 0.5));
     }
 
     @Override
