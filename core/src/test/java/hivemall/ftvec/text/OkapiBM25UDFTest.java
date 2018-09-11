@@ -176,6 +176,51 @@ public class OkapiBM25UDFTest {
         udf.evaluate(args);
     }
 
+    @Test(expected = HiveException.class)
+    public void testAvgDocLengthIsZero() throws Exception {
+        initializeUDFWithoutOptions();
+
+        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
+                VALID_TERM_FREQ,
+                VALID_DOC_LEN,
+                new GenericUDF.DeferredJavaObject(new Double(0.0)),
+                VALID_NUM_DOCS,
+                VALID_NUM_DOCS_WITH_WORD
+        };
+
+        udf.evaluate(args);
+    }
+
+    @Test(expected = HiveException.class)
+    public void testNumDocsIsLessThanOne() throws Exception {
+        initializeUDFWithoutOptions();
+
+        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
+                VALID_TERM_FREQ,
+                VALID_DOC_LEN,
+                VALID_AVG_DOC_LEN,
+                new GenericUDF.DeferredJavaObject(new Integer(0)),
+                VALID_NUM_DOCS_WITH_WORD
+        };
+
+        udf.evaluate(args);
+    }
+
+    @Test(expected = HiveException.class)
+    public void testNumDocsWithWordIsLessThanOne() throws Exception {
+        initializeUDFWithoutOptions();
+
+        GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
+                VALID_TERM_FREQ,
+                VALID_DOC_LEN,
+                VALID_AVG_DOC_LEN,
+                VALID_NUM_DOCS,
+                new GenericUDF.DeferredJavaObject(new Integer(0))
+        };
+
+        udf.evaluate(args);
+    }
+
     private void initializeUDFWithoutOptions() throws Exception {
         udf.initialize(new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
