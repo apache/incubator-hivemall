@@ -61,8 +61,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("f", "frequencyOfTermInDoc", false,
-            "Raw frequency of a word in a document");
+        opts.addOption("f", "frequencyOfTermInDoc", false, "Raw frequency of a word in a document");
         opts.addOption("dl", "docLength", false, "Length of document in words");
         opts.addOption("avgdl", "averageDocLength", false, "Average length of documents in words");
         opts.addOption("N", "numDocs", false, "Number of documents");
@@ -70,7 +69,8 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             "Number of documents containing the word q_i");
         opts.addOption(K1_OPT_NAME, "k1", true,
             "Hyperparameter with type double, usually in range 1.2 and 2.0 [default: 1.2]");
-        opts.addOption(B_OPT_NAME, "b", true, "Hyperparameter with type double in range 0.0 and 1.0 [default: 0.75]");
+        opts.addOption(B_OPT_NAME, "b", true,
+            "Hyperparameter with type double in range 0.0 and 1.0 [default: 0.75]");
         return opts;
     }
 
@@ -79,15 +79,19 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     protected CommandLine processOptions(@Nonnull String opts) throws UDFArgumentException {
         CommandLine cl = parseOptions(opts);
 
-        double k1Option = Double.parseDouble(cl.getOptionValue(K1_OPT_NAME, Double.toString(DEFAULT_K1)));
+        double k1Option =
+                Double.parseDouble(cl.getOptionValue(K1_OPT_NAME, Double.toString(DEFAULT_K1)));
         if (k1Option < 0.0) {
-            throw new UDFArgumentException(String.format("#%s hyperparameter must be positive", K1_OPT_NAME));
+            throw new UDFArgumentException(
+                String.format("#%s hyperparameter must be positive", K1_OPT_NAME));
         }
         k1 = k1Option;
 
-        double bOption= Double.parseDouble(cl.getOptionValue(B_OPT_NAME, Double.toString(DEFAULT_B)));
+        double bOption =
+                Double.parseDouble(cl.getOptionValue(B_OPT_NAME, Double.toString(DEFAULT_B)));
         if (bOption < 0.0 || bOption > 1.0) {
-            throw new UDFArgumentException(String.format("#%s hyperparameter must be in the range [0.0, 1.0]", B_OPT_NAME));
+            throw new UDFArgumentException(
+                String.format("#%s hyperparameter must be in the range [0.0, 1.0]", B_OPT_NAME));
         }
         b = bOption;
 
@@ -162,8 +166,8 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         return new DoubleWritable(result);
     }
 
-    private double calculateBM25(int frequency, int docLength, double averageDocLength,
-            int numDocs, int numDocsWithWord) {
+    private double calculateBM25(int frequency, int docLength, double averageDocLength, int numDocs,
+            int numDocsWithWord) {
         double numerator = frequency * (k1 + 1);
         double denominator = frequency + k1 * (1 - b + b * docLength / averageDocLength);
         double idf = calculateIDF(numDocs, numDocsWithWord);
