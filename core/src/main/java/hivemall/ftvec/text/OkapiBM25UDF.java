@@ -45,6 +45,8 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     private static final double DEFAULT_B = 0.75;
     private double k1 = DEFAULT_K1;
     private double b = DEFAULT_B;
+    private static final String K1_OPT_NAME = "k1";
+    private static final String B_OPT_NAME = "b";
 
     private PrimitiveObjectInspector frequencyOI;
     private PrimitiveObjectInspector docLengthOI;
@@ -66,9 +68,9 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         opts.addOption("N", "numDocs", false, "Number of documents");
         opts.addOption("n", "numDocsWithWord", false,
             "Number of documents containing the word q_i");
-        opts.addOption("k1", "k1", true,
+        opts.addOption(K1_OPT_NAME, "k1", true,
             "Hyperparameter with type double, usually in range 1.2 and 2.0 [default: 1.2]");
-        opts.addOption("b", "b", true, "Hyperparameter with type double [default: 0.75]");
+        opts.addOption(B_OPT_NAME, "b", true, "Hyperparameter with type double in range 0.0 and 1.0 [default: 0.75]");
         return opts;
     }
 
@@ -77,8 +79,18 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     protected CommandLine processOptions(@Nonnull String opts) throws UDFArgumentException {
         CommandLine cl = parseOptions(opts);
 
-        k1 = Double.parseDouble(cl.getOptionValue("k1", Double.toString(DEFAULT_K1)));
-        b = Double.parseDouble(cl.getOptionValue("b", Double.toString(DEFAULT_B)));
+        double k1Option = Double.parseDouble(cl.getOptionValue(K1_OPT_NAME, Double.toString(DEFAULT_K1)));
+        if (k1Option < 0.0) {
+            throw new UDFArgumentException(String.format("#%s hyperparameter must be positive", K1_OPT_NAME));
+        }
+        k1 = k1Option;
+
+        double bOption= Double.parseDouble(cl.getOptionValue(B_OPT_NAME, Double.toString(DEFAULT_B)));
+        if (bOption < 0.0 || bOption > 1.0) {
+            throw new UDFArgumentException(String.format("#%s hyperparameter must be in the range [0.0, 1.0]", B_OPT_NAME));
+        }
+        b = bOption;
+
         return cl;
     }
 
