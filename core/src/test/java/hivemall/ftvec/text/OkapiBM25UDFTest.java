@@ -33,7 +33,7 @@ import org.junit.Test;
 public class OkapiBM25UDFTest {
 
     private static final double EPSILON = 1e-8;
-    private static final GenericUDF.DeferredJavaObject VALID_TERM_FREQ = new GenericUDF.DeferredJavaObject(new Double(0.5));
+    private static final GenericUDF.DeferredJavaObject VALID_TERM_FREQ = new GenericUDF.DeferredJavaObject(new Integer(3));
     private static final GenericUDF.DeferredJavaObject VALID_DOC_LEN = new GenericUDF.DeferredJavaObject(new Integer(9));
     private static final GenericUDF.DeferredJavaObject VALID_AVG_DOC_LEN = new GenericUDF.DeferredJavaObject(new Double(10.35));
     private static final GenericUDF.DeferredJavaObject VALID_NUM_DOCS = new GenericUDF.DeferredJavaObject(new Integer(20));
@@ -60,7 +60,7 @@ public class OkapiBM25UDFTest {
                 VALID_NUM_DOCS_WITH_WORD
         };
 
-        DoubleWritable expected = WritableUtils.val(0.312753184602);
+        DoubleWritable expected = WritableUtils.val(0.727425937348);
         DoubleWritable actual = udf.evaluate(args);
         assertEquals(expected.get(), actual.get(), EPSILON);
     }
@@ -69,7 +69,7 @@ public class OkapiBM25UDFTest {
     public void testEvaluateWithCustomK1() throws Exception {
 
         udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
@@ -85,7 +85,7 @@ public class OkapiBM25UDFTest {
                 VALID_NUM_DOCS_WITH_WORD
         };
 
-        DoubleWritable expected = WritableUtils.val(0.303498158345);
+        DoubleWritable expected = WritableUtils.val(0.775227505584);
         DoubleWritable actual = udf.evaluate(args);
         assertEquals(expected.get(), actual.get(), EPSILON);
     }
@@ -94,7 +94,7 @@ public class OkapiBM25UDFTest {
     public void testEvaluateWithCustomK1AndB() throws Exception {
 
         udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
@@ -110,7 +110,7 @@ public class OkapiBM25UDFTest {
                 VALID_NUM_DOCS_WITH_WORD
         };
 
-        DoubleWritable expected = WritableUtils.val(0.314307452223);
+        DoubleWritable expected = WritableUtils.val(0.728823042222);
         DoubleWritable actual = udf.evaluate(args);
         assertEquals(expected.get(), actual.get(), EPSILON);
     }
@@ -136,7 +136,7 @@ public class OkapiBM25UDFTest {
         initializeUDFWithoutOptions();
 
         GenericUDF.DeferredObject[] args = new GenericUDF.DeferredObject[] {
-                new GenericUDF.DeferredJavaObject(new Double(-1.0)),
+                new GenericUDF.DeferredJavaObject(new Integer(-1)),
                 VALID_DOC_LEN,
                 VALID_AVG_DOC_LEN,
                 VALID_NUM_DOCS,
@@ -223,7 +223,7 @@ public class OkapiBM25UDFTest {
 
     private void initializeUDFWithoutOptions() throws Exception {
         udf.initialize(new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
                 PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,

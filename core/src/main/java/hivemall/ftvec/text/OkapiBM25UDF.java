@@ -36,7 +36,7 @@ import javax.annotation.Nonnull;
 import java.util.Arrays;
 
 @Description(name = "okapi_bm25",
-        value = "_FUNC_(double tf_word, int dl, double avgdl, int N, int n [, const string options]) - Return an Okapi BM25 score in double")
+        value = "_FUNC_(int f, int dl, double avgdl, int N, int n [, const string options]) - Return an Okapi BM25 score in double")
 @UDFType(deterministic = true, stateful = false)
 public final class OkapiBM25UDF extends UDFWithOptions {
 
@@ -46,7 +46,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     private double k1 = DEFAULT_K1;
     private double b = DEFAULT_B;
 
-    private PrimitiveObjectInspector termFrequencyOI;
+    private PrimitiveObjectInspector frequencyOI;
     private PrimitiveObjectInspector docLengthOI;
     private PrimitiveObjectInspector averageDocLengthOI;
     private PrimitiveObjectInspector numDocsOI;
@@ -59,8 +59,8 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("tf_word", "termFrequencyOfWordInDoc", false,
-            "Term frequency of a word in a document");
+        opts.addOption("f", "frequencyOfTermInDoc", false,
+            "Raw frequency of a word in a document");
         opts.addOption("dl", "docLength", false, "Length of document in words");
         opts.addOption("avgdl", "averageDocLength", false, "Average length of documents in words");
         opts.addOption("N", "numDocs", false, "Number of documents");
@@ -92,7 +92,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             processOptions(opts);
         }
 
-        this.termFrequencyOI = HiveUtils.asDoubleOI(argOIs[0]);
+        this.frequencyOI = HiveUtils.asIntegerOI(argOIs[0]);
         this.docLengthOI = HiveUtils.asIntegerOI(argOIs[1]);
         this.averageDocLengthOI = HiveUtils.asDoubleOI(argOIs[2]);
         this.numDocsOI = HiveUtils.asIntegerOI(argOIs[3]);
@@ -113,14 +113,14 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             throw new UDFArgumentException("Required arguments cannot be null");
         }
 
-        double termFrequency = PrimitiveObjectInspectorUtils.getDouble(arg0, termFrequencyOI);
+        int frequency = PrimitiveObjectInspectorUtils.getInt(arg0, frequencyOI);
         int docLength = PrimitiveObjectInspectorUtils.getInt(arg1, docLengthOI);
         double averageDocLength = PrimitiveObjectInspectorUtils.getDouble(arg2, averageDocLengthOI);
         int numDocs = PrimitiveObjectInspectorUtils.getInt(arg3, numDocsOI);
         int numDocsWithWord = PrimitiveObjectInspectorUtils.getInt(arg4, numDocsWithWordOI);
 
-        if (termFrequency < 0.0) {
-            throw new UDFArgumentException("#termFrequency must be positive");
+        if (frequency < 0) {
+            throw new UDFArgumentException("#frequency must be positive");
         }
 
         if (docLength < 1) {
@@ -145,15 +145,15 @@ public final class OkapiBM25UDF extends UDFWithOptions {
 
 
         double result =
-                calculateBM25(termFrequency, docLength, averageDocLength, numDocs, numDocsWithWord);
+                calculateBM25(frequency, docLength, averageDocLength, numDocs, numDocsWithWord);
 
         return new DoubleWritable(result);
     }
 
-    private double calculateBM25(double termFrequency, int docLength, double averageDocLength,
+    private double calculateBM25(int frequency, int docLength, double averageDocLength,
             int numDocs, int numDocsWithWord) {
-        double numerator = termFrequency * (k1 + 1);
-        double denominator = termFrequency + k1 * (1 - b + b * docLength / averageDocLength);
+        double numerator = frequency * (k1 + 1);
+        double denominator = frequency + k1 * (1 - b + b * docLength / averageDocLength);
         double idf = Math.log10((numDocs - numDocsWithWord + 0.5) / (numDocsWithWord + 0.5));
         return idf * numerator / denominator;
     }
