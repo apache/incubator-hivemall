@@ -36,8 +36,7 @@ import javax.annotation.Nonnull;
 import java.util.Arrays;
 
 @Description(name = "okapi_bm25",
-        value = "_FUNC_(double tf_word, int dl, double avgdl, int N, int n [, const string options]) - Return an Okapi BM25 score in float")
-//TODO: What does stateful mean?
+        value = "_FUNC_(double tf_word, int dl, double avgdl, int N, int n [, const string options]) - Return an Okapi BM25 score in double")
 @UDFType(deterministic = true, stateful = false)
 public final class OkapiBM25UDF extends UDFWithOptions {
 
