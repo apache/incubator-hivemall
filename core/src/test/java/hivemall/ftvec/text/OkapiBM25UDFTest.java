@@ -60,7 +60,7 @@ public class OkapiBM25UDFTest {
                 VALID_NUM_DOCS_WITH_WORD
         };
 
-        DoubleWritable expected = WritableUtils.val(0.727425937348);
+        DoubleWritable expected = WritableUtils.val(0.940637195691);
         DoubleWritable actual = udf.evaluate(args);
         assertEquals(expected.get(), actual.get(), EPSILON);
     }
@@ -85,13 +85,13 @@ public class OkapiBM25UDFTest {
                 VALID_NUM_DOCS_WITH_WORD
         };
 
-        DoubleWritable expected = WritableUtils.val(0.775227505584);
+        DoubleWritable expected = WritableUtils.val(1.00244958206);
         DoubleWritable actual = udf.evaluate(args);
         assertEquals(expected.get(), actual.get(), EPSILON);
     }
 
     @Test
-    public void testEvaluateWithCustomK1AndB() throws Exception {
+    public void testEvaluateWithCustomB() throws Exception {
 
         udf.initialize(new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.javaIntObjectInspector,
@@ -110,7 +110,7 @@ public class OkapiBM25UDFTest {
                 VALID_NUM_DOCS_WITH_WORD
         };
 
-        DoubleWritable expected = WritableUtils.val(0.728823042222);
+        DoubleWritable expected = WritableUtils.val(0.942443797219);
         DoubleWritable actual = udf.evaluate(args);
         assertEquals(expected.get(), actual.get(), EPSILON);
     }

@@ -154,8 +154,12 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             int numDocs, int numDocsWithWord) {
         double numerator = frequency * (k1 + 1);
         double denominator = frequency + k1 * (1 - b + b * docLength / averageDocLength);
-        double idf = Math.log10((numDocs - numDocsWithWord + 0.5) / (numDocsWithWord + 0.5));
+        double idf = calculateIDF(numDocs, numDocsWithWord);
         return idf * numerator / denominator;
+    }
+
+    private static double calculateIDF(int numDocs, int numDocsWithWord) {
+        return Math.log10(1.0 + (numDocs - numDocsWithWord + 0.5) / (numDocsWithWord + 0.5));
     }
 
     @Override
