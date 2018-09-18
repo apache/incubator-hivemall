@@ -27,7 +27,7 @@ public final class IsNanUDF extends UDF {
         if (num == null) {
             return null;
         } else {
-            return num.isNaN(num);
+            return Double.isNaN(num);
         }
     }
 }
