@@ -110,7 +110,7 @@ public final class OnlineLDAModel extends AbstractProbabilisticTopicModel {
         this._kappa = kappa;
         this._delta = delta;
 
-        this._isAutoD = (_D < 0L);
+        this._isAutoD = (_D <= 0L);
 
         // initialize a random number generator
         this._gd = new GammaDistribution(SHAPE, SCALE);
