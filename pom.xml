@@ -221,17 +221,6 @@
 			</roles>
 		</developer>
 		<developer>
-			<id>rxin</id>
-			<name>Reynold Xin</name>
-			<email>rxin[at]databricks.com</email>
-			<url>http://rxin.org</url>
-			<organization>Databricks Inc.</organization>
-			<organizationUrl>https://databricks.com/</organizationUrl>
-			<roles>
-				<role>Mentor</role>
-			</roles>
-		</developer>
-		<developer>
 			<id>meng</id>
 			<name>Xiangrui Meng</name>
 			<email>meng[at]databricks.com</email>
@@ -240,17 +229,6 @@
 			<organizationUrl>https://databricks.com/</organizationUrl>
 			<roles>
 				<role>Mentor</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>weimer</id>
-			<name>Markus Weimer</name>
-			<email>markus[at]weimo.de</email>
-			<url>http://www.markusweimer.com/</url>
-			<organization>Microsoft Corporation</organization>
-			<organizationUrl>https://www.microsoft.com/</organizationUrl>
-			<roles>
-				<role>Past Mentor (resigned on Mar 1, 2018)</role>
 			</roles>
 		</developer>
 	</developers>
