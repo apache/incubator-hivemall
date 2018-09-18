@@ -276,10 +276,17 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
-        if (model.getDocCount() == 0L) {
+        if (model == null) {
+            logger.warn(
+                "Model is not initialized bacause no training exmples to learn. Better to revise input data.");
+            return;
+        } else if (model.getDocCount() == 0L) {
+            logger.warn(
+                "model.getDocCount() is zero because no training exmples to learn. Better to revise input data.");
             this.model = null;
-            throw new HiveException("No training exmples to learn. Please revise input data.");
+            return;
         }
+
         finalizeTraining();
         forwardModel();
         this.model = null;
