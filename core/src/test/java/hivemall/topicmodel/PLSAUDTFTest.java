@@ -18,18 +18,20 @@
  */
 package hivemall.topicmodel;
 
+import hivemall.TestUtils;
+import hivemall.utils.lang.mutable.MutableInt;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.Arrays;
 
-import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.generic.Collector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -180,6 +182,33 @@ public class PLSAUDTFTest {
             new Object[][] {{Arrays.asList("fruits:1", "healthy:1", "vegetables:1")},
                     {Arrays.asList("apples:1", "avocados:1", "colds:1", "flu:1", "like:2",
                         "oranges:1")}});
+    }
+
+    @Test
+    public void testSingleRow() throws HiveException {
+        PLSAUDTF udtf = new PLSAUDTF();
+        final int numTopics = 2;
+        ObjectInspector[] argOIs = new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-topics " + numTopics)};
+        udtf.initialize(argOIs);
+
+        String[] doc1 = new String[] {"1", "2", "3"};
+        udtf.process(new Object[] {Arrays.asList(doc1)});
+
+        final MutableInt cnt = new MutableInt(0);
+        udtf.setCollector(new Collector() {
+            @Override
+            public void collect(Object arg0) throws HiveException {
+                cnt.addValue(1);
+            }
+        });
+        udtf.close();
+
+        Assert.assertEquals(doc1.length * numTopics, cnt.getValue());
     }
 
     private static void println(String msg) {

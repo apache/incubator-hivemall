@@ -45,7 +45,7 @@ public final class LDAUDTF extends ProbabilisticTopicModelBaseUDTF {
 
         this.alpha = 1.f / topics;
         this.eta = 1.f / topics;
-        this.numDocs = -1L;
+        this.numDocs = 0L;
         this.tau0 = 64.d;
         this.kappa = 0.7;
         this.delta = DEFAULT_DELTA;
@@ -72,7 +72,7 @@ public final class LDAUDTF extends ProbabilisticTopicModelBaseUDTF {
         if (cl != null) {
             this.alpha = Primitives.parseFloat(cl.getOptionValue("alpha"), 1.f / topics);
             this.eta = Primitives.parseFloat(cl.getOptionValue("eta"), 1.f / topics);
-            this.numDocs = Primitives.parseLong(cl.getOptionValue("num_docs"), -1L);
+            this.numDocs = Primitives.parseLong(cl.getOptionValue("num_docs"), 0L);
             this.tau0 = Primitives.parseDouble(cl.getOptionValue("tau0"), 64.d);
             if (tau0 <= 0.d) {
                 throw new UDFArgumentException("'-tau0' must be positive: " + tau0);
