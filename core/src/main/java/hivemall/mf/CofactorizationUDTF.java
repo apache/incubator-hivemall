@@ -44,9 +44,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     /** The regularization factor */
     protected float lambda;
     /** The scaling hyperparameter for zero entries in the rank matrix */
-    protected float scale_zeros;
+    protected float scale_zero;
     /** The scaling hyperparameter for non-zero entries in the rank matrix */
-    protected float scale_nonzeros;
+    protected float scale_nonzero;
     /** The preferred size of the batch for training */
     protected int batchSize;
     /** The initial mean rating */
@@ -89,9 +89,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 + " Note this is alias for `factors` option.");
         opts.addOption("f", "factors", true, "The number of latent factor [default: 10]");
         opts.addOption("r", "lambda", true, "The regularization factor [default: 0.03]");
-        opts.addOption("c0", "scale_zeros", true,
+        opts.addOption("c0", "scale_zero", true,
                 "The scaling hyperparameter for zero entries in the rank matrix [default: 0.1]");
-        opts.addOption("c1", "scale_nonzeros", true,
+        opts.addOption("c1", "scale_nonzero", true,
                 "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
         opts.addOption("b", "batch_size", true, "The batch size for training [default: 1024]");
         opts.addOption("mu", "mean_rating", true, "The mean rating [default: 0.0]");
