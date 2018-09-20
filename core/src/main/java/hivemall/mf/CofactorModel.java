@@ -32,18 +32,24 @@ public class CofactorModel extends FactorizedModel {
     private Int2ObjectMap<Rating[]> contextItems;
     private Int2ObjectMap<Rating> contextBias;
     private DoKMatrix cooccurMatrix;
-    private int numItems;
+
+    // hyperparameters
+    private double c0, c1;
 
     public CofactorModel(@Nonnull RatingInitializer ratingInitializer, @Nonnegative int factor,
-                         @Nonnull RankInitScheme initScheme, @Nonnull int numItems) {
+                         @Nonnull RankInitScheme initScheme, @Nonnull int numItems,
+                         @Nonnull double c0, @Nonnull int c1) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
         super(ratingInitializer, factor, 0.f, initScheme, EXPECTED_SIZE);
         this.contextItems = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
         this.contextBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
-        this.numItems = numItems;
         this.cooccurMatrix = new DoKMatrix(numItems, numItems);
+        checkHyperparameterC(c0);
+        checkHyperparameterC(c1);
+        this.c0 = c0;
+        this.c1 = c1;
     }
 
     @Nullable
@@ -105,5 +111,9 @@ public class CofactorModel extends FactorizedModel {
     public void incrementCooccurrence(final int row, final int col) {
          final double count = this.cooccurMatrix.get(row, col, 0.d);
          this.cooccurMatrix.set(row, col, count + 1);
+    }
+
+    private static void checkHyperparameterC(final double c) {
+        assert c >= 0.d && c <= 1.d;
     }
 }
