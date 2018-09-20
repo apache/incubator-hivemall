@@ -34,11 +34,11 @@ public class CofactorModel extends FactorizedModel {
     private DoKMatrix cooccurMatrix;
 
     // hyperparameters
-    private final double c0, c1;
+    private final float c0, c1;
 
     public CofactorModel(@Nonnull RatingInitializer ratingInitializer, @Nonnegative int factor,
                          @Nonnull RankInitScheme initScheme, @Nonnull int numItems,
-                         @Nonnull double c0, @Nonnull int c1) {
+                         @Nonnull float c0, @Nonnull float c1) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
@@ -113,7 +113,7 @@ public class CofactorModel extends FactorizedModel {
          this.cooccurMatrix.set(row, col, count + 1);
     }
 
-    private static void checkHyperparameterC(final double c) {
-        assert c >= 0.d && c <= 1.d;
+    private static void checkHyperparameterC(final float c) {
+        assert c >= 0.f && c <= 1.f;
     }
 }
