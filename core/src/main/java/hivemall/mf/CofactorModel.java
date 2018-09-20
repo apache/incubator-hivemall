@@ -34,7 +34,7 @@ public class CofactorModel extends FactorizedModel {
     private DoKMatrix cooccurMatrix;
 
     // hyperparameters
-    private double c0, c1;
+    private final double c0, c1;
 
     public CofactorModel(@Nonnull RatingInitializer ratingInitializer, @Nonnegative int factor,
                          @Nonnull RankInitScheme initScheme, @Nonnull int numItems,
