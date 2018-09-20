@@ -18,6 +18,7 @@
  */
 package hivemall.mf;
 
+import hivemall.math.matrix.sparse.DoKMatrix;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
@@ -30,15 +31,19 @@ public class CofactorModel extends FactorizedModel {
     private static final int EXPECTED_SIZE = 136861;
     private Int2ObjectMap<Rating[]> contextItems;
     private Int2ObjectMap<Rating> contextBias;
+    private DoKMatrix cooccurMatrix;
+    private int numItems;
 
     public CofactorModel(@Nonnull RatingInitializer ratingInitializer, @Nonnegative int factor,
-                         @Nonnull RankInitScheme initScheme) {
+                         @Nonnull RankInitScheme initScheme, @Nonnull int numItems) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
         super(ratingInitializer, factor, 0.f, initScheme, EXPECTED_SIZE);
         this.contextItems = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
         this.contextBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
+        this.numItems = numItems;
+        this.cooccurMatrix = new DoKMatrix(numItems, numItems);
     }
 
     @Nullable
@@ -95,5 +100,10 @@ public class CofactorModel extends FactorizedModel {
             contextBias.put(c, b);
         }
         b.setWeight(value);
+    }
+
+    public void incrementCooccurrence(final int row, final int col) {
+         final double count = this.cooccurMatrix.get(row, col, 0.d);
+         this.cooccurMatrix.set(row, col, count + 1);
     }
 }
