@@ -30,17 +30,17 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 @NotThreadSafe
-public final class FactorizedModel {
+public class FactorizedModel {
 
     @Nonnull
-    private final RatingInitializer ratingInitializer;
+    protected final RatingInitializer ratingInitializer;
     @Nonnegative
-    private final int factor;
+    protected final int factor;
 
     // rank matrix initialization
-    private final RankInitScheme initScheme;
+    protected final RankInitScheme initScheme;
 
-    private int minIndex, maxIndex;
+    protected int minIndex, maxIndex;
     @Nonnull
     private Rating meanRating;
     private Int2ObjectMap<Rating[]> users;
@@ -48,7 +48,7 @@ public final class FactorizedModel {
     private Int2ObjectMap<Rating> userBias;
     private Int2ObjectMap<Rating> itemBias;
 
-    private final Random[] randU, randI;
+    protected final Random[] randU, randI;
 
     public FactorizedModel(@Nonnull RatingInitializer ratingInitializer, @Nonnegative int factor,
             @Nonnull RankInitScheme initScheme) {
@@ -80,9 +80,9 @@ public final class FactorizedModel {
         random /* default */, gaussian;
 
         @Nonnegative
-        private float maxInitValue;
+        protected float maxInitValue;
         @Nonnegative
-        private double initStdDev;
+        protected double initStdDev;
 
         @Nonnull
         public static RankInitScheme resolve(@Nullable String opt) {
@@ -253,7 +253,7 @@ public final class FactorizedModel {
         b.setWeight(value);
     }
 
-    private static void uniformFill(final Rating[] a, final Random rand, final float maxInitValue,
+    protected static void uniformFill(final Rating[] a, final Random rand, final float maxInitValue,
             final RatingInitializer init) {
         for (int i = 0, len = a.length; i < len; i++) {
             float v = rand.nextFloat() * maxInitValue / len;
@@ -261,7 +261,7 @@ public final class FactorizedModel {
         }
     }
 
-    private static void gaussianFill(final Rating[] a, final Random[] rand, final double stddev,
+    protected static void gaussianFill(final Rating[] a, final Random[] rand, final double stddev,
             final RatingInitializer init) {
         for (int i = 0, len = a.length; i < len; i++) {
             float v = (float) MathUtils.gaussian(0.d, stddev, rand[i]);
