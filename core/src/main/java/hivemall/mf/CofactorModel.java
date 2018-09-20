@@ -69,4 +69,31 @@ public class CofactorModel extends FactorizedModel {
         }
         return v;
     }
+
+    @Nonnull
+    public Rating contextBias(final int c) {
+        Rating b = contextBias.get(c);
+        if (b == null) {
+            b = ratingInitializer.newRating(0.f); // dummy
+            contextBias.put(c, b);
+        }
+        return b;
+    }
+
+    public float getContextBias(final int c) {
+        final Rating b = contextBias.get(c);
+        if (b == null) {
+            return 0.f;
+        }
+        return b.getWeight();
+    }
+
+    public void setContextBias(final int c, final float value) {
+        Rating b = contextBias.get(c);
+        if (b == null) {
+            b = ratingInitializer.newRating(value);
+            contextBias.put(c, b);
+        }
+        b.setWeight(value);
+    }
 }
