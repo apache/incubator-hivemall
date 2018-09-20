@@ -117,7 +117,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = null;
-        String rankInitOpt = null;
+        String rankInitOpt = "gaussian";
         float maxInitValue = 1.f;
         double initStdDev = 0.1d;
         boolean conversionCheck = true;
@@ -132,6 +132,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 this.factor = Primitives.parseInt(cl.getOptionValue("factor"), 10);
             }
             this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), 0.03f);
+            this.scale_zero = Primitives.parseFloat(cl.getOptionValue("scale_zero"), 0.1f);
+            this.scale_nonzero = Primitives.parseFloat(cl.getOptionValue("scale_nonzero"), 1.0f);
+            this.batchSize = Primitives.parseInt(cl.getOptionValue("batch_size"), 1024);
             this.meanRating = Primitives.parseFloat(cl.getOptionValue("mu"), 0.f);
             this.updateMeanRating = cl.hasOption("update_mean");
             rankInitOpt = cl.getOptionValue("rankinit");
