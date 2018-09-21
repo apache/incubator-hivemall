@@ -51,6 +51,11 @@ public abstract class Regularization {
             return 0.f;
         }
 
+        @Override
+        public float regularize(final float weight, final float gradient) {
+            return gradient;
+        }
+
     }
 
     public static final class L1 extends Regularization {
