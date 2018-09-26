@@ -264,10 +264,12 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
         int user = PrimitiveObjectInspectorUtils.getInt(args[0], userOI);
         Feature[] itemRatings = parseFeatures(args[1]);
+        assert itemRatings != null;
 
         this.itemRatingProbes = itemRatings;
 
         addToBatch(user, itemRatings);
+        updateCooccurrences(itemRatings);
         recordTrain(user, itemRatings, false);
         trainBatch();
     }
@@ -309,24 +311,32 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
             return;
         }
         numTraining += batch.size();
-//        trainTheta();
+        trainTheta();
         batch.clear();
+    }
+
+    private void trainTheta() {
+
     }
 
     private void addToBatch(final int user, final Feature[] x) {
         TrainingSample sample = new TrainingSample(user, x);
         batch.add(sample);
-        updateCooccurrences(x);
     }
 
-
+    /**
+     * Update co-occurrence matrix in the CofactorModel.
+     * @param x Feature vector containing non-zero-valued features only.
+     */
     private void updateCooccurrences(Feature[] x) {
         for (int i = 0; i < x.length; i++) {
             assert x[i].getValue() == 0.d;
+            int idx_i = x[i].getFeatureIndex();
             for (int j = i + 1; j < x.length; j++) {
                 assert x[j].getValue() == 0.d;
-                model.incrementCooccurrence(i, j);
-                model.incrementCooccurrence(j, i);
+                int idx_j = x[j].getFeatureIndex();
+                model.incrementCooccurrence(idx_i, idx_j);
+                model.incrementCooccurrence(idx_j, idx_i);
             }
         }
     }
