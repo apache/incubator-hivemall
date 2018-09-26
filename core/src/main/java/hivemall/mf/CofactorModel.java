@@ -44,7 +44,6 @@ public class CofactorModel {
     private Rating meanRating;
     private Int2ObjectMap<Rating[]> users;
     private Int2ObjectMap<Rating[]> items;
-    private Int2ObjectMap<Rating> userBias;
     private Int2ObjectMap<Rating> itemBias;
     private Int2ObjectMap<Rating[]> contextItems;
     private Int2ObjectMap<Rating> contextBias;
@@ -70,7 +69,6 @@ public class CofactorModel {
 
         this.users = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
         this.items = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
-        this.userBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
         this.itemBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
         this.contextItems = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
         this.contextBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
@@ -267,33 +265,6 @@ public class CofactorModel {
             this.minIndex = Math.min(minIndex, i);
         }
         return v;
-    }
-
-    @Nonnull
-    public Rating userBias(final int u) {
-        Rating b = userBias.get(u);
-        if (b == null) {
-            b = ratingInitializer.newRating(0.f); // dummy
-            userBias.put(u, b);
-        }
-        return b;
-    }
-
-    public float getUserBias(final int u) {
-        final Rating b = userBias.get(u);
-        if (b == null) {
-            return 0.f;
-        }
-        return b.getWeight();
-    }
-
-    public void setUserBias(final int u, final float value) {
-        Rating b = userBias.get(u);
-        if (b == null) {
-            b = ratingInitializer.newRating(value);
-            userBias.put(u, b);
-        }
-        b.setWeight(value);
     }
 
     @Nonnull
