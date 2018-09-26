@@ -259,18 +259,20 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
         int user = PrimitiveObjectInspectorUtils.getInt(args[0], userOI);
         int item = PrimitiveObjectInspectorUtils.getInt(args[1], itemOI);
-        double rating = PrimitiveObjectInspectorUtils.getFloat(args[2], ratingOI);
+        float rating = PrimitiveObjectInspectorUtils.getFloat(args[2], ratingOI);
 
-        addToBatch(user, item, (float) rating);
-        recordTrain(user, item, (float) rating, false);
+        addToBatch(user, item, rating);
+        recordTrain(user, item, rating, false);
         if (batch.size() == batchSize) {
-            train(batch, );
+            trainBatch();
             batch.clear();
         }
 
     }
 
-    private void recordTrain() {
+    private void trainBatch() {
+        numTraining += batch.size();
+        trainTheta();
     }
 
     private void addToBatch(int user, int item, float rating) {
