@@ -34,7 +34,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 
 import java.nio.ByteBuffer;
 
-public class CofactorizationUDTF extends UDTFWithOptions {
+public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitializer {
     private static final Log logger = LogFactory.getLog(CofactorizationUDTF.class);
     private static final int RECORD_BYTES = (Integer.SIZE + Integer.SIZE + Double.SIZE) / 8;
 
@@ -171,6 +171,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         rankInit.setInitStdDev(initStdDev);
         this.cvState = new ConversionState(conversionCheck, convergenceRate);
         return cl;
+    }
+
+
+    @Override
+    public Rating newRating(float v) {
+        return new Rating(v);
     }
 
     @Override
