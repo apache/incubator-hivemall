@@ -32,14 +32,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -73,6 +71,10 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     protected int iterations;
     /** Whether to use bias clause */
     protected boolean useBiasClause;
+    /** Whether to use normalization */
+    protected boolean useL2Norm;
+    /** Whether to parse feature as integer */
+    protected boolean parseFeatureAsInt;
 
     /** Initialization strategy of rank matrix */
     protected CofactorModel.RankInitScheme rankInit;
@@ -88,8 +90,7 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
     // Input OIs and Context
     protected PrimitiveObjectInspector userOI;
-    protected PrimitiveObjectInspector itemOI;
-    protected PrimitiveObjectInspector ratingOI;
+    protected ListObjectInspector itemRatingsOI;
 
     // Used for iterations
     protected NioStatefulSegment fileIO;
@@ -97,18 +98,17 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     private long lastWritePos;
     List<TrainingSample> batch;
 
-    private float[] userProbe, itemProbe;
+    private Feature[] itemRatingProbes;
     private int numValidations;
+    private int numTraining;
 
     static class TrainingSample {
         protected int user;
-        protected int item;
-        protected Rating rating;
+        protected Feature[] x;
 
-        protected TrainingSample(int user, int item, Rating rating) {
+        protected TrainingSample(int user, Feature[] x) {
             this.user = user;
-            this.item = item;
-            this.rating = rating;
+            this.x = x;
         }
     }
 
@@ -142,6 +142,11 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         opts.addOption("cv_rate", "convergence_rate", true,
                 "Threshold to determine convergence [default: 0.005]");
         opts.addOption("disable_bias", "no_bias", false, "Turn off bias clause");
+        // feature representation
+        opts.addOption("int_feature", "feature_as_integer", false,
+                "Parse a feature as integer [default: OFF]");
+        // normalization
+        opts.addOption("disable_norm", "disable_l2norm", false, "Disable instance-wise L2 normalization");
         return opts;
     }
 
@@ -193,6 +198,8 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
                 throw new UDFArgumentException(
                         "Cannot set both `update_mean` and `no_bias` option");
             }
+            this.parseFeatureAsInt = cl.hasOption("int_feature");
+            this.useL2Norm = !cl.hasOption("disable_l2norm");
         }
         this.rankInit = CofactorModel.RankInitScheme.resolve(rankInitOpt);
         rankInit.setMaxInitValue(maxInitValue);
@@ -206,11 +213,11 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
             throw new UDFArgumentException(
-                    "_FUNC_ takes 3 arguments: INT user, INT item, INT numItems, FLOAT rating [, CONSTANT STRING options]");
+                    "_FUNC_ takes 3 arguments: INT user, array<string> itemRatings [, CONSTANT STRING options]");
         }
         this.userOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
-        this.itemOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
-        this.ratingOI = HiveUtils.asDoubleCompatibleOI(argOIs[3]);
+        this.itemRatingsOI = HiveUtils.asListOI(argOIs[1]);
+        HiveUtils.validateFeatureOI(itemRatingsOI.getListElementObjectInspector());
 
         processOptions(argOIs);
 
@@ -218,8 +225,6 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         this.batch = new ArrayList<TrainingSample>(batchSize);
         this.count = 0L;
         this.lastWritePos = 0L;
-        this.userProbe = new float[factor];
-        this.itemProbe = new float[factor];
 
         List<String> fieldNames = new ArrayList<String>();
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -253,35 +258,79 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (args.length < 3) {
+        if (args.length < 2) {
             throw new HiveException("should have 3 or more args, but have " + args.length);
         }
 
         int user = PrimitiveObjectInspectorUtils.getInt(args[0], userOI);
-        int item = PrimitiveObjectInspectorUtils.getInt(args[1], itemOI);
-        float rating = PrimitiveObjectInspectorUtils.getFloat(args[2], ratingOI);
+        Feature[] itemRatings = parseFeatures(args[1]);
 
-        addToBatch(user, item, rating);
-        recordTrain(user, item, rating, false);
-        if (batch.size() == batchSize) {
-            trainBatch();
-            batch.clear();
+        this.itemRatingProbes = itemRatings;
+
+        addToBatch(user, itemRatings);
+        recordTrain(user, itemRatings, false);
+        trainBatch();
+    }
+
+    @Nullable
+    protected Feature[] parseFeatures(@Nonnull final Object arg) throws HiveException {
+        Feature[] rawFeatures = Feature.parseFeatures(arg, itemRatingsOI, itemRatingProbes, parseFeatureAsInt);
+        Feature[] nnzFeatures = createNnzFeatureArray(rawFeatures);
+        if (useL2Norm) {
+            Feature.l2normalize(nnzFeatures);
         }
+        return nnzFeatures;
+    }
 
+    protected Feature[] createNnzFeatureArray(Feature[] x) {
+        int nnz = countNnzFeatures(x);
+        Feature[] nnzFeatures = new Feature[nnz];
+        int i = 0;
+        for (Feature f: x) {
+            if (f.getValue() != 0.d) {
+                nnzFeatures[i++] = f;
+            }
+        }
+        return nnzFeatures;
+    }
+
+    private int countNnzFeatures(Feature[] x) {
+        int nnz = 0;
+        for (Feature f : x) {
+            if (f.getValue() != 0.d) {
+                nnz++;
+            }
+        }
+        return nnz;
     }
 
     private void trainBatch() {
+        if (batch.size() < batchSize) {
+            return;
+        }
         numTraining += batch.size();
-        trainTheta();
+//        trainTheta();
+        batch.clear();
     }
 
-    private void addToBatch(int user, int item, float rating) {
-        Rating _rating = new Rating(rating);
-        TrainingSample sample = new TrainingSample(user, item, _rating);
+    private void addToBatch(final int user, final Feature[] x) {
+        TrainingSample sample = new TrainingSample(user, x);
         batch.add(sample);
+        updateCooccurrences(x);
     }
 
-    private void recordTrain(@Nonnull final int user, final int item, final float rating, final boolean validation)
+
+    private void updateCooccurrences(Feature[] x) {
+        // assume features in x are all non-zero
+        for (int i = 0; i < x.length; i++) {
+            for (int j = i + 1; j < x.length; j++) {
+                model.incrementCooccurrence(i, j);
+                model.incrementCooccurrence(j, i);
+            }
+        }
+    }
+
+    private void recordTrain(@Nonnull final int user, final Feature[] x, final boolean validation)
             throws HiveException {
         if (iterations <= 1) {
             return;
@@ -309,15 +358,20 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
             this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
+        int xBytes = Feature.requiredBytes(x);
+        int recordBytes = SizeOf.INT + xBytes + SizeOf.BYTE;
+        int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
-        if (remain < REQUIRED_BYTES) {
+        if (remain < requiredBytes) {
             writeBuffer(inputBuf, dst);
         }
 
-        inputBuf.putInt(RECORD_BYTES);
+        inputBuf.putInt(recordBytes);
         inputBuf.putInt(user);
-        inputBuf.putInt(item);
-        inputBuf.putFloat(rating);
+        inputBuf.putInt(x.length);
+        for (Feature f : x) {
+            f.writeTo(inputBuf);
+        }
         if (validation) {
             ++numValidations;
             inputBuf.put(TRUE_BYTE);
@@ -339,6 +393,8 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
     @Override
     public void close() throws HiveException {
-
+        if (!batch.isEmpty()) {
+            trainBatch();
+        }
     }
 }
