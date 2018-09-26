@@ -321,9 +321,10 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
 
     private void updateCooccurrences(Feature[] x) {
-        // assume features in x are all non-zero
         for (int i = 0; i < x.length; i++) {
+            assert x[i].getValue() == 0.d;
             for (int j = i + 1; j < x.length; j++) {
+                assert x[j].getValue() == 0.d;
                 model.incrementCooccurrence(i, j);
                 model.incrementCooccurrence(j, i);
             }
