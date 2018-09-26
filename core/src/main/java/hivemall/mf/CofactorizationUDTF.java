@@ -63,6 +63,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     // Model itself
     protected CofactorModel model;
+    protected int numItems;
 
     // Variable managing status of learning
     /** The number of processed training examples */
@@ -94,6 +95,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         opts.addOption("c1", "scale_nonzero", true,
                 "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
         opts.addOption("b", "batch_size", true, "The batch size for training [default: 1024]");
+        opts.addOption("n", "num_items", false, "Number of items");
         opts.addOption("mu", "mean_rating", true, "The mean rating [default: 0.0]");
         opts.addOption("update_mean", "update_mu", false,
                 "Whether update (and return) the mean rating or not");
@@ -135,6 +137,11 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             this.scale_zero = Primitives.parseFloat(cl.getOptionValue("scale_zero"), 0.1f);
             this.scale_nonzero = Primitives.parseFloat(cl.getOptionValue("scale_nonzero"), 1.0f);
             this.batchSize = Primitives.parseInt(cl.getOptionValue("batch_size"), 1024);
+            if (cl.hasOption("num_items")) {
+                this.numItems = Primitives.parseInt(cl.getOptionValue("num_items"), 1024);
+            } else {
+                throw new UDFArgumentException("-num_items must be specified");
+            }
             this.meanRating = Primitives.parseFloat(cl.getOptionValue("mu"), 0.f);
             this.updateMeanRating = cl.hasOption("update_mean");
             rankInitOpt = cl.getOptionValue("rankinit");
