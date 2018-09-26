@@ -30,9 +30,16 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitializer {
     private static final Log logger = LogFactory.getLog(CofactorizationUDTF.class);
@@ -185,6 +192,68 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         return cl;
     }
 
+    @Override
+    public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
+        if (argOIs.length < 3) {
+            throw new UDFArgumentException(
+                    "_FUNC_ takes 3 arguments: INT user, INT item, INT numItems, FLOAT rating [, CONSTANT STRING options]");
+        }
+        this.userOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
+        this.itemOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
+        this.ratingOI = HiveUtils.asDoubleCompatibleOI(argOIs[3]);
+
+        processOptions(argOIs);
+
+        this.model = new CofactorModel(this, factor, rankInit, numItems, scale_zero, scale_nonzero);
+        this.batch = new ArrayList<TrainingSample>(batchSize);
+        this.count = 0L;
+        this.lastWritePos = 0L;
+        this.userProbe = new float[factor];
+        this.itemProbe = new float[factor];
+
+        if (mapredContext != null && iterations > 1) {
+            // invoke only at task node (initialize is also invoked in compilation)
+            final File file;
+            try {
+                file = File.createTempFile("hivemall_mf", ".sgmt");
+                file.deleteOnExit();
+                if (!file.canWrite()) {
+                    throw new UDFArgumentException(
+                            "Cannot write a temporary file: " + file.getAbsolutePath());
+                }
+            } catch (IOException ioe) {
+                throw new UDFArgumentException(ioe);
+            } catch (Throwable e) {
+                throw new UDFArgumentException(e);
+            }
+            this.fileIO = new NioFixedSegment(file, RECORD_BYTES, false);
+            this.inputBuf = ByteBuffer.allocateDirect(65536); // 64 KiB
+        }
+
+        List<String> fieldNames = new ArrayList<String>();
+        List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
+        fieldNames.add("idx");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+        fieldNames.add("Pu");
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        fieldNames.add("Qi");
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+        if (useBiasClause) {
+            fieldNames.add("Bu");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
+            fieldNames.add("Bi");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
+            fieldNames.add("Bc");
+            fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
+            if (updateMeanRating) {
+                fieldNames.add("mu");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
+            }
+        }
+        return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
+    }
 
     @Override
     public Rating newRating(float v) {
@@ -193,7 +262,7 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
     @Override
     public void process(Object[] objects) throws HiveException {
-        
+
     }
 
     @Override
