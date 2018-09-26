@@ -20,9 +20,12 @@ package hivemall.mf;
 
 import hivemall.UDTFWithOptions;
 import hivemall.common.ConversionState;
+import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.NioFixedSegment;
+import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.SizeOf;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
@@ -34,16 +37,22 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hivemall.utils.lang.Primitives.FALSE_BYTE;
+import static hivemall.utils.lang.Primitives.TRUE_BYTE;
+
 public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitializer {
     private static final Log logger = LogFactory.getLog(CofactorizationUDTF.class);
-    private static final int RECORD_BYTES = (Integer.SIZE + Integer.SIZE + Double.SIZE) / 8;
+    private static final int RECORD_BYTES = SizeOf.INT + SizeOf.INT + SizeOf.FLOAT;
+    private static final int REQUIRED_BYTES = SizeOf.INT + RECORD_BYTES;
 
     // Option variables
     /** The number of latent factors */
@@ -83,12 +92,13 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     protected PrimitiveObjectInspector ratingOI;
 
     // Used for iterations
-    protected NioFixedSegment fileIO;
+    protected NioStatefulSegment fileIO;
     protected ByteBuffer inputBuf;
     private long lastWritePos;
     List<TrainingSample> batch;
 
     private float[] userProbe, itemProbe;
+    private int numValidations;
 
     static class TrainingSample {
         protected int user;
@@ -211,25 +221,6 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         this.userProbe = new float[factor];
         this.itemProbe = new float[factor];
 
-        if (mapredContext != null && iterations > 1) {
-            // invoke only at task node (initialize is also invoked in compilation)
-            final File file;
-            try {
-                file = File.createTempFile("hivemall_mf", ".sgmt");
-                file.deleteOnExit();
-                if (!file.canWrite()) {
-                    throw new UDFArgumentException(
-                            "Cannot write a temporary file: " + file.getAbsolutePath());
-                }
-            } catch (IOException ioe) {
-                throw new UDFArgumentException(ioe);
-            } catch (Throwable e) {
-                throw new UDFArgumentException(e);
-            }
-            this.fileIO = new NioFixedSegment(file, RECORD_BYTES, false);
-            this.inputBuf = ByteBuffer.allocateDirect(65536); // 64 KiB
-        }
-
         List<String> fieldNames = new ArrayList<String>();
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
         fieldNames.add("idx");
@@ -261,8 +252,87 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     }
 
     @Override
-    public void process(Object[] objects) throws HiveException {
+    public void process(Object[] args) throws HiveException {
+        if (args.length < 3) {
+            throw new HiveException("should have 3 or more args, but have " + args.length);
+        }
 
+        int user = PrimitiveObjectInspectorUtils.getInt(args[0], userOI);
+        int item = PrimitiveObjectInspectorUtils.getInt(args[1], itemOI);
+        double rating = PrimitiveObjectInspectorUtils.getFloat(args[2], ratingOI);
+
+        addToBatch(user, item, (float) rating);
+        recordTrain(user, item, (float) rating, false);
+        if (batch.size() == batchSize) {
+            train(batch, );
+            batch.clear();
+        }
+
+    }
+
+    private void recordTrain() {
+    }
+
+    private void addToBatch(int user, int item, float rating) {
+        Rating _rating = new Rating(rating);
+        TrainingSample sample = new TrainingSample(user, item, _rating);
+        batch.add(sample);
+    }
+
+    private void recordTrain(@Nonnull final int user, final int item, final float rating, final boolean validation)
+            throws HiveException {
+        if (iterations <= 1) {
+            return;
+        }
+
+        ByteBuffer inputBuf = this.inputBuf;
+        NioStatefulSegment dst = this.fileIO;
+        if (inputBuf == null) {
+            final File file;
+            try {
+                file = File.createTempFile("hivemall_cofactor", ".sgmt");
+                file.deleteOnExit();
+                if (!file.canWrite()) {
+                    throw new UDFArgumentException(
+                            "Cannot write a temporary file: " + file.getAbsolutePath());
+                }
+                logger.info("Record training examples to a file: " + file.getAbsolutePath());
+            } catch (IOException ioe) {
+                throw new UDFArgumentException(ioe);
+            } catch (Throwable e) {
+                throw new UDFArgumentException(e);
+            }
+
+            this.inputBuf = inputBuf = ByteBuffer.allocateDirect(1024 * 1024); // 1 MiB
+            this.fileIO = dst = new NioStatefulSegment(file, false);
+        }
+
+        int remain = inputBuf.remaining();
+        if (remain < REQUIRED_BYTES) {
+            writeBuffer(inputBuf, dst);
+        }
+
+        inputBuf.putInt(RECORD_BYTES);
+        inputBuf.putInt(user);
+        inputBuf.putInt(item);
+        inputBuf.putFloat(rating);
+        if (validation) {
+            ++numValidations;
+            inputBuf.put(TRUE_BYTE);
+        } else {
+            inputBuf.put(FALSE_BYTE);
+        }
+    }
+
+    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
+            throws HiveException {
+        srcBuf.flip();
+        try {
+            dst.write(srcBuf);
+        } catch (IOException e) {
+            throw new HiveException("Exception causes while writing a buffer to file", e);
+        }
+        srcBuf.clear();
     }
 
     @Override
