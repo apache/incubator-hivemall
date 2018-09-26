@@ -79,9 +79,21 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     protected NioFixedSegment fileIO;
     protected ByteBuffer inputBuf;
     private long lastWritePos;
+    List<TrainingSample> batch;
 
     private float[] userProbe, itemProbe;
 
+    static class TrainingSample {
+        protected int user;
+        protected int item;
+        protected Rating rating;
+
+        protected TrainingSample(int user, int item, Rating rating) {
+            this.user = user;
+            this.item = item;
+            this.rating = rating;
+        }
+    }
 
     @Override
     protected Options getOptions() {
