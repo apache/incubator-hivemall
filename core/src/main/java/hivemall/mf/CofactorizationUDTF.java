@@ -221,7 +221,7 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
         processOptions(argOIs);
 
-        this.model = new CofactorModel(this, factor, rankInit, numItems, scale_zero, scale_nonzero);
+        this.model = new CofactorModel(this, factor, rankInit, scale_zero, scale_nonzero);
         this.batch = new ArrayList<TrainingSample>(batchSize);
         this.count = 0L;
         this.lastWritePos = 0L;
@@ -269,7 +269,6 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         this.itemRatingProbes = itemRatings;
 
         addToBatch(user, itemRatings);
-        updateCooccurrences(itemRatings);
         recordTrain(user, itemRatings, false);
         trainBatch();
     }
@@ -322,23 +321,6 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     private void addToBatch(final int user, final Feature[] x) {
         TrainingSample sample = new TrainingSample(user, x);
         batch.add(sample);
-    }
-
-    /**
-     * Update co-occurrence matrix in the CofactorModel.
-     * @param x Feature vector containing non-zero-valued features only.
-     */
-    private void updateCooccurrences(Feature[] x) {
-        for (int i = 0; i < x.length; i++) {
-            assert x[i].getValue() == 0.d;
-            int idx_i = x[i].getFeatureIndex();
-            for (int j = i + 1; j < x.length; j++) {
-                assert x[j].getValue() == 0.d;
-                int idx_j = x[j].getFeatureIndex();
-                model.incrementCooccurrence(idx_i, idx_j);
-                model.incrementCooccurrence(idx_j, idx_i);
-            }
-        }
     }
 
     private void recordTrain(@Nonnull final int user, final Feature[] x, final boolean validation)

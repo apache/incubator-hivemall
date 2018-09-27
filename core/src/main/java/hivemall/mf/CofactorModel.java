@@ -55,8 +55,7 @@ public class CofactorModel {
     private final float c0, c1;
 
     public CofactorModel(@Nonnull RatingInitializer ratingInitializer, @Nonnegative int factor,
-                         @Nonnull RankInitScheme initScheme, @Nonnull int numItems,
-                         @Nonnull float c0, @Nonnull float c1) {
+                         @Nonnull RankInitScheme initScheme, @Nonnull float c0, @Nonnull float c1) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
@@ -72,7 +71,6 @@ public class CofactorModel {
         this.itemBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
         this.contextItems = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
         this.contextBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
-        this.cooccurMatrix = new DoKMatrix(numItems, numItems);
 
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
@@ -138,11 +136,6 @@ public class CofactorModel {
             contextBias.put(c, b);
         }
         b.setWeight(value);
-    }
-
-    public void incrementCooccurrence(final int row, final int col) {
-         final double count = this.cooccurMatrix.get(row, col, 0.d);
-         this.cooccurMatrix.set(row, col, count + 1);
     }
 
     private static void checkHyperparameterC(final float c) {
