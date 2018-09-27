@@ -42,11 +42,11 @@ public class CofactorModel {
     protected int minIndex, maxIndex;
     @Nonnull
     private Rating meanRating;
-    private Int2ObjectMap<Rating[]> users;
-    private Int2ObjectMap<Rating[]> items;
-    private Int2ObjectMap<Rating> itemBias;
-    private Int2ObjectMap<Rating[]> contextItems;
-    private Int2ObjectMap<Rating> contextBias;
+    private Int2ObjectMap<Rating[]> theta;
+    private Int2ObjectMap<Rating[]> beta;
+    private Int2ObjectMap<Rating> betaBias;
+    private Int2ObjectMap<Rating[]> gamma;
+    private Int2ObjectMap<Rating> gammaBias;
     private DoKMatrix cooccurMatrix;
 
     protected final Random[] randU, randI;
@@ -66,11 +66,11 @@ public class CofactorModel {
         this.maxIndex = 0;
         this.meanRating = ratingInitializer.newRating(0.f);
 
-        this.users = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
-        this.items = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
-        this.itemBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
-        this.contextItems = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
-        this.contextBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
+        this.theta = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
+        this.beta = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
+        this.betaBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
+        this.gamma = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
+        this.gammaBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
 
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
@@ -82,14 +82,19 @@ public class CofactorModel {
 
     }
 
+    private void updateTheta() {
+
+    }
+
+
     @Nullable
-    public Rating[] getContextVector(final int c) {
-        return getContextVector(c, false);
+    public Rating[] getGammaVector(final int c) {
+        return getGammaVector(c, false);
     }
 
     @Nullable
-    public Rating[] getContextVector(final int c, final boolean init) {
-        Rating[] v = contextItems.get(c);
+    public Rating[] getGammaVector(final int c, final boolean init) {
+        Rating[] v = gamma.get(c);
         if (init && v == null) {
             v = new Rating[factor];
             switch (initScheme) {
@@ -104,7 +109,7 @@ public class CofactorModel {
                             "Unsupported rank initialization scheme: " + initScheme);
 
             }
-            contextItems.put(c, v);
+            gamma.put(c, v);
             this.maxIndex = Math.max(maxIndex, c);
             this.minIndex = Math.min(minIndex, c);
         }
@@ -112,28 +117,28 @@ public class CofactorModel {
     }
 
     @Nonnull
-    public Rating contextBias(final int c) {
-        Rating b = contextBias.get(c);
+    public Rating gammaBias(final int c) {
+        Rating b = gammaBias.get(c);
         if (b == null) {
             b = ratingInitializer.newRating(0.f); // dummy
-            contextBias.put(c, b);
+            gammaBias.put(c, b);
         }
         return b;
     }
 
-    public float getContextBias(final int c) {
-        final Rating b = contextBias.get(c);
+    public float getGammaBias(final int c) {
+        final Rating b = gammaBias.get(c);
         if (b == null) {
             return 0.f;
         }
         return b.getWeight();
     }
 
-    public void setContextBias(final int c, final float value) {
-        Rating b = contextBias.get(c);
+    public void setGammaBias(final int c, final float value) {
+        Rating b = gammaBias.get(c);
         if (b == null) {
             b = ratingInitializer.newRating(value);
-            contextBias.put(c, b);
+            gammaBias.put(c, b);
         }
         b.setWeight(value);
     }
@@ -203,13 +208,13 @@ public class CofactorModel {
     }
 
     @Nullable
-    public Rating[] getUserVector(final int u) {
-        return getUserVector(u, false);
+    public Rating[] getThetaVector(final int u) {
+        return getThetaVector(u, false);
     }
 
     @Nullable
-    public Rating[] getUserVector(final int u, final boolean init) {
-        Rating[] v = users.get(u);
+    public Rating[] getThetaVector(final int u, final boolean init) {
+        Rating[] v = theta.get(u);
         if (init && v == null) {
             v = new Rating[factor];
             switch (initScheme) {
@@ -224,7 +229,7 @@ public class CofactorModel {
                             "Unsupported rank initialization scheme: " + initScheme);
 
             }
-            users.put(u, v);
+            theta.put(u, v);
             this.maxIndex = Math.max(maxIndex, u);
             this.minIndex = Math.min(minIndex, u);
         }
@@ -232,13 +237,13 @@ public class CofactorModel {
     }
 
     @Nullable
-    public Rating[] getItemVector(final int i) {
-        return getItemVector(i, false);
+    public Rating[] getBetaVector(final int i) {
+        return getBetaVector(i, false);
     }
 
     @Nullable
-    public Rating[] getItemVector(int i, boolean init) {
-        Rating[] v = items.get(i);
+    public Rating[] getBetaVector(int i, boolean init) {
+        Rating[] v = beta.get(i);
         if (init && v == null) {
             v = new Rating[factor];
             switch (initScheme) {
@@ -253,7 +258,7 @@ public class CofactorModel {
                             "Unsupported rank initialization scheme: " + initScheme);
 
             }
-            items.put(i, v);
+            beta.put(i, v);
             this.maxIndex = Math.max(maxIndex, i);
             this.minIndex = Math.min(minIndex, i);
         }
@@ -262,33 +267,33 @@ public class CofactorModel {
 
     @Nonnull
     public Rating itemBias(final int i) {
-        Rating b = itemBias.get(i);
+        Rating b = betaBias.get(i);
         if (b == null) {
             b = ratingInitializer.newRating(0.f); // dummy
-            itemBias.put(i, b);
+            betaBias.put(i, b);
         }
         return b;
     }
 
 
     @Nullable
-    public Rating getItemBiasObject(final int i) {
-        return itemBias.get(i);
+    public Rating getBetaBiasObject(final int i) {
+        return betaBias.get(i);
     }
 
-    public float getItemBias(final int i) {
-        final Rating b = itemBias.get(i);
+    public float getBetaBias(final int i) {
+        final Rating b = betaBias.get(i);
         if (b == null) {
             return 0.f;
         }
         return b.getWeight();
     }
 
-    public void setItemBias(final int i, final float value) {
-        Rating b = itemBias.get(i);
+    public void setBetaBias(final int i, final float value) {
+        Rating b = betaBias.get(i);
         if (b == null) {
             b = ratingInitializer.newRating(value);
-            itemBias.put(i, b);
+            betaBias.put(i, b);
         }
         b.setWeight(value);
     }
