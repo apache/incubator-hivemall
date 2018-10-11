@@ -22,7 +22,6 @@ import hivemall.UDTFWithOptions;
 import hivemall.common.ConversionState;
 import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.NioFixedSegment;
 import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
@@ -31,10 +30,11 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -89,8 +89,9 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     protected ConversionState cvState;
 
     // Input OIs and Context
-    protected PrimitiveObjectInspector userOI;
-    protected ListObjectInspector itemRatingsOI;
+    protected StringObjectInspector parentOI;
+    protected ListObjectInspector childrenOI;
+    protected ListObjectInspector sppmiVectorOI;
 
     // Used for iterations
     protected NioStatefulSegment fileIO;
@@ -98,17 +99,25 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     private long lastWritePos;
     List<TrainingSample> batch;
 
-    private Feature[] itemRatingProbes;
+    private Feature parentProbe;
+    private Feature[] childrenProbe;
+    private Feature[] sppmiVectorProbe;
     private int numValidations;
     private int numTraining;
 
     static class TrainingSample {
-        protected int user;
-        protected Feature[] x;
+        protected Feature parent;
+        protected Feature[] children;
+        protected Feature[] sppmiVector;
 
-        protected TrainingSample(int user, Feature[] x) {
-            this.user = user;
-            this.x = x;
+        protected TrainingSample(Feature parent, Feature[] children, Feature[] sppmiVector) {
+            this.parent = parent;
+            this.children = children;
+            this.sppmiVector = sppmiVector;
+        }
+
+        protected boolean hasSppmiVector() {
+            return sppmiVector == null;
         }
     }
 
@@ -213,11 +222,13 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
             throw new UDFArgumentException(
-                    "_FUNC_ takes 3 arguments: INT user, array<string> itemRatings [, CONSTANT STRING options]");
+                    "_FUNC_ takes 3 arguments: array<string> x, array<string> sppmiVector [, CONSTANT STRING options]");
         }
-        this.userOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
-        this.itemRatingsOI = HiveUtils.asListOI(argOIs[1]);
-        HiveUtils.validateFeatureOI(itemRatingsOI.getListElementObjectInspector());
+        this.parentOI = HiveUtils.asStringOI(argOIs[0]);
+        this.childrenOI = HiveUtils.asListOI(argOIs[1]);
+        HiveUtils.validateFeatureOI(childrenOI.getListElementObjectInspector());
+        this.sppmiVectorOI = HiveUtils.asListOI(argOIs[2]);
+        HiveUtils.validateFeatureOI(sppmiVectorOI.getListElementObjectInspector());
 
         processOptions(argOIs);
 
@@ -258,28 +269,35 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (args.length < 2) {
-            throw new HiveException("should have 3 or more args, but have " + args.length);
+        if (args.length != 3) {
+            throw new HiveException("should have 3 args, but have " + args.length);
         }
 
-        int user = PrimitiveObjectInspectorUtils.getInt(args[0], userOI);
-        Feature[] itemRatings = parseFeatures(args[1]);
-        assert itemRatings != null;
+        String parentString = parentOI.getPrimitiveJavaObject(args[0]);
+        Feature parent = Feature.parseFeature(parentString,false);
+        assert parent != null;
 
-        this.itemRatingProbes = itemRatings;
+        Feature[] children = parseFeatures(args[1], childrenOI, childrenProbe);
+        assert children != null;
 
-        addToBatch(user, itemRatings);
-        recordTrain(user, itemRatings, false);
+        boolean hasSppmi = args[3] == null;
+        Feature[] sppmiVector = null;
+        if (hasSppmi) {
+             sppmiVector = parseFeatures(args[2], sppmiVectorOI, sppmiVectorProbe);
+        }
+
+        this.childrenProbe = children;
+        this.sppmiVectorProbe = sppmiVector;
+
+        addToBatch(parent, children, sppmiVector);
+        recordTrain(parent, sppmiVector, false);
         trainBatch();
     }
 
     @Nullable
-    protected Feature[] parseFeatures(@Nonnull final Object arg) throws HiveException {
-        Feature[] rawFeatures = Feature.parseFeatures(arg, itemRatingsOI, itemRatingProbes, parseFeatureAsInt);
+    protected Feature[] parseFeatures(@Nonnull final Object arg, ListObjectInspector listOI, Feature[] probe) throws HiveException {
+        Feature[] rawFeatures = Feature.parseFeatures(arg, listOI, probe, false);
         Feature[] nnzFeatures = createNnzFeatureArray(rawFeatures);
-        if (useL2Norm) {
-            Feature.l2normalize(nnzFeatures);
-        }
         return nnzFeatures;
     }
 
@@ -318,12 +336,12 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
 
     }
 
-    private void addToBatch(final int user, final Feature[] x) {
-        TrainingSample sample = new TrainingSample(user, x);
+    private void addToBatch(final Feature parent, final Feature[] children, final Feature[] sppmiVector) {
+        TrainingSample sample = new TrainingSample(parent, children, sppmiVector);
         batch.add(sample);
     }
 
-    private void recordTrain(@Nonnull final int user, final Feature[] x, final boolean validation)
+    private void recordTrain(final Feature[] x, final Feature[] sppmi, final boolean validation)
             throws HiveException {
         if (iterations <= 1) {
             return;
@@ -360,7 +378,6 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         }
 
         inputBuf.putInt(recordBytes);
-        inputBuf.putInt(user);
         inputBuf.putInt(x.length);
         for (Feature f : x) {
             f.writeTo(inputBuf);
@@ -389,5 +406,7 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         if (!batch.isEmpty()) {
             trainBatch();
         }
+
+        // train for t iterations
     }
 }
