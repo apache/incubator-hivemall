@@ -38,6 +38,36 @@ import java.util.Random;
 
 public class CofactorModel {
 
+    public enum RankInitScheme {
+        random /* default */, gaussian;
+
+        @Nonnegative
+        protected float maxInitValue;
+        @Nonnegative
+        protected double initStdDev;
+
+        @Nonnull
+        public static CofactorModel.RankInitScheme resolve(@Nullable String opt) {
+            if (opt == null) {
+                return random;
+            } else if ("gaussian".equalsIgnoreCase(opt)) {
+                return gaussian;
+            } else if ("random".equalsIgnoreCase(opt)) {
+                return random;
+            }
+            return random;
+        }
+
+        public void setMaxInitValue(float maxInitValue) {
+            this.maxInitValue = maxInitValue;
+        }
+
+        public void setInitStdDev(double initStdDev) {
+            this.initStdDev = initStdDev;
+        }
+
+    }
+
     private static final int EXPECTED_SIZE = 136861;
     @Nonnegative
     protected final int factor;
@@ -118,59 +148,21 @@ public class CofactorModel {
         String key = f.getFeature();
         biases.put(key, value);
     }
-
-
-    @Nullable
+    
     public RealVector getGammaVector(final Feature f) {
         return getFactorVector(f, gamma,false);
     }
 
-    @Nullable
     public RealVector getGammaVector(final Feature f, final boolean init) {
         return getFactorVector(f, gamma,init);
     }
 
-    @Nonnull
     public double getGammaBias(final Feature f) {
         return getBias(f, gammaBias);
     }
 
     public void setGammaBias(final Feature f, final double value) {
         setBias(f, gammaBias, value);
-    }
-
-    private static void checkHyperparameterC(final float c) {
-        assert c >= 0.f && c <= 1.f;
-    }
-
-    public enum RankInitScheme {
-        random /* default */, gaussian;
-
-        @Nonnegative
-        protected float maxInitValue;
-        @Nonnegative
-        protected double initStdDev;
-
-        @Nonnull
-        public static CofactorModel.RankInitScheme resolve(@Nullable String opt) {
-            if (opt == null) {
-                return random;
-            } else if ("gaussian".equalsIgnoreCase(opt)) {
-                return gaussian;
-            } else if ("random".equalsIgnoreCase(opt)) {
-                return random;
-            }
-            return random;
-        }
-
-        public void setMaxInitValue(float maxInitValue) {
-            this.maxInitValue = maxInitValue;
-        }
-
-        public void setInitStdDev(double initStdDev) {
-            this.initStdDev = initStdDev;
-        }
-
     }
 
     @Nonnull
@@ -190,22 +182,18 @@ public class CofactorModel {
         meanRating = value;
     }
 
-    @Nullable
     public RealVector getThetaVector(final Feature f) {
         return getFactorVector(f, theta, false);
     }
 
-    @Nullable
     public RealVector getThetaVector(final Feature f, boolean init) {
         return getFactorVector(f, theta, init);
     }
 
-    @Nullable
     public RealVector getBetaVector(final Feature f) {
         return getFactorVector(f, beta, false);
     }
 
-    @Nullable
     public RealVector getBetaVector(final Feature f, boolean init) {
         return getFactorVector(f, beta, init);
     }
@@ -214,7 +202,6 @@ public class CofactorModel {
      * Update latent factors of the users in the provided mini-batch.
      */
     public void updateTheta(List<CofactorizationUDTF.TrainingSample> samples) {
-
 
     }
 
@@ -238,5 +225,9 @@ public class CofactorModel {
             double v = MathUtils.gaussian(0.d, stddev, rand[i]);
             a.append(v);
         }
+    }
+
+    private static void checkHyperparameterC(final float c) {
+        assert c >= 0.f && c <= 1.f;
     }
 }
