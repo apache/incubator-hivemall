@@ -30,9 +30,9 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 
@@ -61,7 +61,7 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     protected float scale_zero;
     /** The scaling hyperparameter for non-zero entries in the rank matrix */
     protected float scale_nonzero;
-    /** The preferred size of the batch for training */
+    /** The preferred size of the miniBatch for training */
     protected int batchSize;
     /** The initial mean rating */
     protected float meanRating;
@@ -91,19 +91,60 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     // Input OIs and Context
     protected StringObjectInspector parentOI;
     protected ListObjectInspector childrenOI;
+    protected BooleanObjectInspector isParentAnItemOI;
     protected ListObjectInspector sppmiVectorOI;
 
     // Used for iterations
     protected NioStatefulSegment fileIO;
     protected ByteBuffer inputBuf;
     private long lastWritePos;
-    List<TrainingSample> batch;
 
     private Feature parentProbe;
     private Feature[] childrenProbe;
     private Feature[] sppmiVectorProbe;
+    private boolean isParentAnItemProbe;
     private int numValidations;
     private int numTraining;
+    private MiniBatch miniBatch;
+
+    static class MiniBatch {
+        protected int maxSize;
+        private List<TrainingSample> users;
+        private List<TrainingSample> items;
+
+        protected MiniBatch(int maxSize) {
+            this.maxSize = maxSize;
+        }
+
+        protected void add(TrainingSample sample) {
+            if (size() == this.maxSize) {
+                return;
+            }
+
+            if (sample.isItem()) {
+                items.add(sample);
+            } else {
+                users.add(sample);
+            }
+        }
+
+        protected void clear() {
+            users.clear();
+            items.clear();
+        }
+
+        protected int size() {
+            return items.size() + users.size();
+        }
+
+        protected List<TrainingSample> getItems() {
+            return items;
+        }
+
+        protected List<TrainingSample> getUsers() {
+            return users;
+        }
+    }
 
     static class TrainingSample {
         protected Feature parent;
@@ -116,8 +157,8 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
             this.sppmiVector = sppmiVector;
         }
 
-        protected boolean hasSppmiVector() {
-            return sppmiVector == null;
+        protected boolean isItem() {
+            return sppmiVector != null;
         }
     }
 
@@ -132,7 +173,7 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
                 "The scaling hyperparameter for zero entries in the rank matrix [default: 0.1]");
         opts.addOption("c1", "scale_nonzero", true,
                 "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
-        opts.addOption("b", "batch_size", true, "The batch size for training [default: 1024]");
+        opts.addOption("b", "batch_size", true, "The miniBatch size for training [default: 1024]");
         opts.addOption("n", "num_items", false, "Number of items");
         opts.addOption("mu", "mean_rating", true, "The mean rating [default: 0.0]");
         opts.addOption("update_mean", "update_mu", false,
@@ -227,13 +268,14 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         this.parentOI = HiveUtils.asStringOI(argOIs[0]);
         this.childrenOI = HiveUtils.asListOI(argOIs[1]);
         HiveUtils.validateFeatureOI(childrenOI.getListElementObjectInspector());
-        this.sppmiVectorOI = HiveUtils.asListOI(argOIs[2]);
+        this.isParentAnItemOI = HiveUtils.asBooleanOI(argOIs[2]);
+        this.sppmiVectorOI = HiveUtils.asListOI(argOIs[3]);
         HiveUtils.validateFeatureOI(sppmiVectorOI.getListElementObjectInspector());
 
         processOptions(argOIs);
 
-        this.model = new CofactorModel(this, factor, rankInit, scale_zero, scale_nonzero);
-        this.batch = new ArrayList<TrainingSample>(batchSize);
+        this.model = new CofactorModel(factor, rankInit, scale_zero, scale_nonzero);
+        this.miniBatch = new MiniBatch(this.batchSize);
         this.count = 0L;
         this.lastWritePos = 0L;
 
@@ -280,17 +322,19 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         Feature[] children = parseFeatures(args[1], childrenOI, childrenProbe);
         assert children != null;
 
-        boolean hasSppmi = args[3] == null;
+        Boolean isParentAnItem = isParentAnItemOI.get(args[2]);
         Feature[] sppmiVector = null;
-        if (hasSppmi) {
+        if (isParentAnItem) {
              sppmiVector = parseFeatures(args[2], sppmiVectorOI, sppmiVectorProbe);
         }
 
+        this.parentProbe = parent;
         this.childrenProbe = children;
+        this.isParentAnItemProbe = isParentAnItem;
         this.sppmiVectorProbe = sppmiVector;
 
         addToBatch(parent, children, sppmiVector);
-        recordTrain(parent, sppmiVector, false);
+        recordTrain(parent, children, sppmiVector);
         trainBatch();
     }
 
@@ -324,24 +368,38 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
     }
 
     private void trainBatch() {
-        if (batch.size() < batchSize) {
+        if (miniBatch.size() < batchSize) {
             return;
         }
-        numTraining += batch.size();
-        trainTheta();
-        batch.clear();
+        numTraining += miniBatch.size();
+        List<TrainingSample> users = miniBatch.getUsers();
+        updateTheta(users);
+        List<TrainingSample> items = miniBatch.getItems();
+        updateBeta(items);
+        updateGamma(items);
+        updateBiases(items);
+        miniBatch.clear();
     }
 
-    private void trainTheta() {
+    private void updateBiases(List<TrainingSample> items) {
+    }
+
+    private void updateGamma(List<TrainingSample> items) {
+    }
+
+    private void updateBeta(List<TrainingSample> items) {
+    }
+
+    private void updateTheta(List<TrainingSample> users) {
 
     }
 
     private void addToBatch(final Feature parent, final Feature[] children, final Feature[] sppmiVector) {
         TrainingSample sample = new TrainingSample(parent, children, sppmiVector);
-        batch.add(sample);
+        miniBatch.add(sample);
     }
 
-    private void recordTrain(final Feature[] x, final Feature[] sppmi, final boolean validation)
+    private void recordTrain(final Feature parent, final Feature[] children, final Feature[] sppmiVector)
             throws HiveException {
         if (iterations <= 1) {
             return;
@@ -369,8 +427,12 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
             this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
-        int xBytes = Feature.requiredBytes(x);
-        int recordBytes = SizeOf.INT + xBytes + SizeOf.BYTE;
+        int parentBytes = parent.bytes();
+        int childrenBytes = Feature.requiredBytes(children);
+        int isParentAnItemBytes = SizeOf.BYTE;
+        int sppmiVectorBytes = sppmiVector != null ? Feature.requiredBytes(sppmiVector) : 0;
+
+        int recordBytes = parentBytes + childrenBytes + isParentAnItemBytes + sppmiVectorBytes;
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
         if (remain < requiredBytes) {
@@ -378,15 +440,20 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
         }
 
         inputBuf.putInt(recordBytes);
-        inputBuf.putInt(x.length);
-        for (Feature f : x) {
-            f.writeTo(inputBuf);
-        }
-        if (validation) {
-            ++numValidations;
+        parent.writeTo(inputBuf);
+        writeFeaturesToBuffer(children, inputBuf);
+        if (sppmiVector != null) {
             inputBuf.put(TRUE_BYTE);
+            writeFeaturesToBuffer(sppmiVector, inputBuf);
         } else {
             inputBuf.put(FALSE_BYTE);
+        }
+    }
+
+    private static void writeFeaturesToBuffer(Feature[] features, ByteBuffer buffer) {
+        buffer.putInt(features.length);
+        for (Feature f : features) {
+            f.writeTo(buffer);
         }
     }
 
