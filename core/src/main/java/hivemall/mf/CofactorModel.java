@@ -223,7 +223,7 @@ public class CofactorModel {
     }
 
     public void setBetaBias(final Feature f, final double value) {
-        betaBias.put(f.getFeature(), value);
+        setBias(f, betaBias, value);
     }
 
     protected static void uniformFill(final RealVector a, final Random rand, final float maxInitValue) {
