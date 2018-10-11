@@ -171,7 +171,7 @@ public abstract class Feature {
     }
 
     @Nonnull
-    static Feature parseFeature(@Nonnull final String fv, final boolean asIntFeature)
+    public static Feature parseFeature(@Nonnull final String fv, final boolean asIntFeature)
             throws HiveException {
         final int pos1 = fv.indexOf(':');
         if (pos1 == -1) {
