@@ -510,14 +510,9 @@ public final class MatrixUtils {
     }
 
     /**
-     * Find the first singular vector/value of a matrix A based on the Power method. <<<<<<< HEAD
-     *
-     * =======
+     * Find the first singular vector/value of a matrix A based on the Power method.
      * 
-     * >>>>>>> Applied spotless-maven-plugin formatter
-     * 
-     * @see http
-     *      ://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
+     * @see http://www.cs.yale.edu/homes/el327/datamining2013aFiles/07_singular_value_decomposition.pdf
      * @param A target matrix
      * @param x0 initial vector
      * @param nIter number of iterations for the Power method
