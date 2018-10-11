@@ -47,7 +47,7 @@ import java.util.List;
 import static hivemall.utils.lang.Primitives.FALSE_BYTE;
 import static hivemall.utils.lang.Primitives.TRUE_BYTE;
 
-public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitializer {
+public class CofactorizationUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(CofactorizationUDTF.class);
     private static final int RECORD_BYTES = SizeOf.INT + SizeOf.INT + SizeOf.FLOAT;
     private static final int REQUIRED_BYTES = SizeOf.INT + RECORD_BYTES;
@@ -302,11 +302,6 @@ public class CofactorizationUDTF extends UDTFWithOptions implements RatingInitia
             }
         }
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
-    }
-
-    @Override
-    public Rating newRating(float v) {
-        return new Rating(v);
     }
 
     @Override
