@@ -148,7 +148,7 @@ public class CofactorModel {
         String key = f.getFeature();
         biases.put(key, value);
     }
-    
+
     public RealVector getGammaVector(final Feature f) {
         return getFactorVector(f, gamma,false);
     }
@@ -163,15 +163,6 @@ public class CofactorModel {
 
     public void setGammaBias(final Feature f, final double value) {
         setBias(f, gammaBias, value);
-    }
-
-    @Nonnull
-    private static Random[] newRandoms(@Nonnull final int size, final long seed) {
-        final Random[] rand = new Random[size];
-        for (int i = 0, len = rand.length; i < len; i++) {
-            rand[i] = new Random(seed + i);
-        }
-        return rand;
     }
 
     public double getMeanRating() {
@@ -198,6 +189,14 @@ public class CofactorModel {
         return getFactorVector(f, beta, init);
     }
 
+    public double getBetaBias(final Feature f) {
+        return getBias(f, betaBias);
+    }
+
+    public void setBetaBias(final Feature f, final double value) {
+        setBias(f, betaBias, value);
+    }
+
     /**
      * Update latent factors of the users in the provided mini-batch.
      */
@@ -205,12 +204,13 @@ public class CofactorModel {
 
     }
 
-    public double getBetaBias(final Feature f) {
-        return getBias(f, betaBias);
-    }
-
-    public void setBetaBias(final Feature f, final double value) {
-        setBias(f, betaBias, value);
+    @Nonnull
+    private static Random[] newRandoms(@Nonnull final int size, final long seed) {
+        final Random[] rand = new Random[size];
+        for (int i = 0, len = rand.length; i < len; i++) {
+            rand[i] = new Random(seed + i);
+        }
+        return rand;
     }
 
     protected static void uniformFill(final RealVector a, final Random rand, final float maxInitValue) {
