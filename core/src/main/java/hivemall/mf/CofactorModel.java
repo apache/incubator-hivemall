@@ -18,59 +18,61 @@
  */
 package hivemall.mf;
 
+import hivemall.fm.Feature;
 import hivemall.math.matrix.sparse.DoKMatrix;
 import hivemall.utils.math.MathUtils;
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class CofactorModel {
 
     private static final int EXPECTED_SIZE = 136861;
-    @Nonnull
-    protected final RatingInitializer ratingInitializer;
     @Nonnegative
     protected final int factor;
 
     // rank matrix initialization
     protected final RankInitScheme initScheme;
 
-    protected int minIndex, maxIndex;
     @Nonnull
-    private Rating meanRating;
-    private Int2ObjectMap<Rating[]> theta;
-    private Int2ObjectMap<Rating[]> beta;
-    private Int2ObjectMap<Rating> betaBias;
-    private Int2ObjectMap<Rating[]> gamma;
-    private Int2ObjectMap<Rating> gammaBias;
-    private DoKMatrix cooccurMatrix;
+    private double meanRating;
+
+    private Map<String, RealVector> theta;
+    private Map<String, RealVector> beta;
+    private Map<String, Double> betaBias;
+    private Map<String, RealVector> gamma;
+    private Map<String, Double> gammaBias;
 
     protected final Random[] randU, randI;
 
     // hyperparameters
     private final float c0, c1;
 
-    public CofactorModel(@Nonnull RatingInitializer ratingInitializer, @Nonnegative int factor,
-                         @Nonnull RankInitScheme initScheme, @Nonnull float c0, @Nonnull float c1) {
+    public CofactorModel(@Nonnegative int factor, @Nonnull RankInitScheme initScheme,
+                         @Nonnull float c0, @Nonnull float c1) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
-        this.ratingInitializer = ratingInitializer;
         this.factor = factor;
         this.initScheme = initScheme;
-        this.minIndex = 0;
-        this.maxIndex = 0;
-        this.meanRating = ratingInitializer.newRating(0.f);
+        this.meanRating = 0.d;
 
-        this.theta = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
-        this.beta = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
-        this.betaBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
-        this.gamma = new Int2ObjectOpenHashMap<Rating[]>(EXPECTED_SIZE);
-        this.gammaBias = new Int2ObjectOpenHashMap<Rating>(EXPECTED_SIZE);
+        this.theta = new HashMap<>();
+        this.beta = new HashMap<>();
+        this.betaBias = new HashMap<>();
+        this.gamma = new HashMap<>();
+        this.gammaBias = new HashMap<>();
 
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
@@ -82,65 +84,59 @@ public class CofactorModel {
 
     }
 
-    private void updateTheta() {
-
-    }
-
-
-    @Nullable
-    public Rating[] getGammaVector(final int c) {
-        return getGammaVector(c, false);
-    }
-
-    @Nullable
-    public Rating[] getGammaVector(final int c, final boolean init) {
-        Rating[] v = gamma.get(c);
-        if (init && v == null) {
-            v = new Rating[factor];
+    private RealVector getFactorVector(Feature f, Map<String, RealVector> weights, boolean init) {
+        String key = f.getFeature();
+        RealVector v = null;
+        if (init && !weights.containsKey(key)) {
+            v = new ArrayRealVector(factor);
             switch (initScheme) {
                 case random:
-                    uniformFill(v, randU[0], initScheme.maxInitValue, ratingInitializer);
+                    uniformFill(v, randI[0], initScheme.maxInitValue);
                     break;
                 case gaussian:
-                    gaussianFill(v, randU, initScheme.initStdDev, ratingInitializer);
+                    gaussianFill(v, randI, initScheme.initStdDev);
                     break;
                 default:
                     throw new IllegalStateException(
                             "Unsupported rank initialization scheme: " + initScheme);
 
             }
-            gamma.put(c, v);
-            this.maxIndex = Math.max(maxIndex, c);
-            this.minIndex = Math.min(minIndex, c);
+            weights.put(key, v);
         }
         return v;
     }
 
+    private double getBias(Feature f, Map<String, Double> biases) {
+        String key = f.getFeature();
+        if (!biases.containsKey(key)) {
+            biases.put(key, 0.d);
+        }
+        return biases.get(key);
+    }
+
+    private void setBias(Feature f, Map<String, Double> biases, double value) {
+        String key = f.getFeature();
+        biases.put(key, value);
+    }
+
+
+    @Nullable
+    public RealVector getGammaVector(final Feature f) {
+        return getFactorVector(f, gamma,false);
+    }
+
+    @Nullable
+    public RealVector getGammaVector(final Feature f, final boolean init) {
+        return getFactorVector(f, gamma,init);
+    }
+
     @Nonnull
-    public Rating gammaBias(final int c) {
-        Rating b = gammaBias.get(c);
-        if (b == null) {
-            b = ratingInitializer.newRating(0.f); // dummy
-            gammaBias.put(c, b);
-        }
-        return b;
+    public double getGammaBias(final Feature f) {
+        return getBias(f, gammaBias);
     }
 
-    public float getGammaBias(final int c) {
-        final Rating b = gammaBias.get(c);
-        if (b == null) {
-            return 0.f;
-        }
-        return b.getWeight();
-    }
-
-    public void setGammaBias(final int c, final float value) {
-        Rating b = gammaBias.get(c);
-        if (b == null) {
-            b = ratingInitializer.newRating(value);
-            gammaBias.put(c, b);
-        }
-        b.setWeight(value);
+    public void setGammaBias(final Feature f, final double value) {
+        setBias(f, gammaBias, value);
     }
 
     private static void checkHyperparameterC(final float c) {
@@ -186,131 +182,61 @@ public class CofactorModel {
         return rand;
     }
 
-    public int getMinIndex() {
-        return minIndex;
-    }
-
-    public int getMaxIndex() {
-        return maxIndex;
-    }
-
-    @Nonnull
-    public Rating meanRating() {
+    public double getMeanRating() {
         return meanRating;
     }
 
-    public float getMeanRating() {
-        return meanRating.getWeight();
-    }
-
-    public void setMeanRating(final float rating) {
-        meanRating.setWeight(rating);
+    public void setMeanRating(final double value) {
+        meanRating = value;
     }
 
     @Nullable
-    public Rating[] getThetaVector(final int u) {
-        return getThetaVector(u, false);
+    public RealVector getThetaVector(final Feature f) {
+        return getFactorVector(f, theta, false);
     }
 
     @Nullable
-    public Rating[] getThetaVector(final int u, final boolean init) {
-        Rating[] v = theta.get(u);
-        if (init && v == null) {
-            v = new Rating[factor];
-            switch (initScheme) {
-                case random:
-                    uniformFill(v, randU[0], initScheme.maxInitValue, ratingInitializer);
-                    break;
-                case gaussian:
-                    gaussianFill(v, randU, initScheme.initStdDev, ratingInitializer);
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Unsupported rank initialization scheme: " + initScheme);
-
-            }
-            theta.put(u, v);
-            this.maxIndex = Math.max(maxIndex, u);
-            this.minIndex = Math.min(minIndex, u);
-        }
-        return v;
+    public RealVector getThetaVector(final Feature f, boolean init) {
+        return getFactorVector(f, theta, init);
     }
 
     @Nullable
-    public Rating[] getBetaVector(final int i) {
-        return getBetaVector(i, false);
+    public RealVector getBetaVector(final Feature f) {
+        return getFactorVector(f, beta, false);
     }
 
     @Nullable
-    public Rating[] getBetaVector(int i, boolean init) {
-        Rating[] v = beta.get(i);
-        if (init && v == null) {
-            v = new Rating[factor];
-            switch (initScheme) {
-                case random:
-                    uniformFill(v, randI[0], initScheme.maxInitValue, ratingInitializer);
-                    break;
-                case gaussian:
-                    gaussianFill(v, randI, initScheme.initStdDev, ratingInitializer);
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Unsupported rank initialization scheme: " + initScheme);
-
-            }
-            beta.put(i, v);
-            this.maxIndex = Math.max(maxIndex, i);
-            this.minIndex = Math.min(minIndex, i);
-        }
-        return v;
+    public RealVector getBetaVector(final Feature f, boolean init) {
+        return getFactorVector(f, beta, init);
     }
 
-    @Nonnull
-    public Rating itemBias(final int i) {
-        Rating b = betaBias.get(i);
-        if (b == null) {
-            b = ratingInitializer.newRating(0.f); // dummy
-            betaBias.put(i, b);
-        }
-        return b;
+    /**
+     * Update latent factors of the users in the provided mini-batch.
+     */
+    public void updateTheta(List<CofactorizationUDTF.TrainingSample> samples) {
+
+
     }
 
-
-    @Nullable
-    public Rating getBetaBiasObject(final int i) {
-        return betaBias.get(i);
+    public double getBetaBias(final Feature f) {
+        return getBias(f, betaBias);
     }
 
-    public float getBetaBias(final int i) {
-        final Rating b = betaBias.get(i);
-        if (b == null) {
-            return 0.f;
-        }
-        return b.getWeight();
+    public void setBetaBias(final Feature f, final double value) {
+        betaBias.put(f.getFeature(), value);
     }
 
-    public void setBetaBias(final int i, final float value) {
-        Rating b = betaBias.get(i);
-        if (b == null) {
-            b = ratingInitializer.newRating(value);
-            betaBias.put(i, b);
-        }
-        b.setWeight(value);
-    }
-
-    protected static void uniformFill(final Rating[] a, final Random rand, final float maxInitValue,
-                                      final RatingInitializer init) {
-        for (int i = 0, len = a.length; i < len; i++) {
-            float v = rand.nextFloat() * maxInitValue / len;
-            a[i] = init.newRating(v);
+    protected static void uniformFill(final RealVector a, final Random rand, final float maxInitValue) {
+        for (int i = 0, len = a.getDimension(); i < len; i++) {
+            double v = rand.nextDouble() * maxInitValue / len;
+            a.append(v);
         }
     }
 
-    protected static void gaussianFill(final Rating[] a, final Random[] rand, final double stddev,
-                                       final RatingInitializer init) {
-        for (int i = 0, len = a.length; i < len; i++) {
-            float v = (float) MathUtils.gaussian(0.d, stddev, rand[i]);
-            a[i] = init.newRating(v);
+    protected static void gaussianFill(final RealVector a, final Random[] rand, final double stddev) {
+        for (int i = 0, len = a.getDimension(); i < len; i++) {
+            double v = MathUtils.gaussian(0.d, stddev, rand[i]);
+            a.append(v);
         }
     }
 }
