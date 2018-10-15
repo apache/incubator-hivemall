@@ -49,6 +49,18 @@ public class CofactorModelTest {
         Assert.assertTrue(matricesAreEqual(actualWTW, expectedWTW));
     }
 
+    @Test
+    public void initIdentity() throws HiveException {
+        RealMatrix actual = CofactorModel.initIdentity(3, 2.f);
+        RealMatrix expected = new Array2DRowRealMatrix(new double[][] {
+                {2.0, 0, 0},
+                {0, 2.0, 0},
+                {0, 0, 2.0}
+        });
+
+        Assert.assertTrue(matricesAreEqual(actual, expected));
+    }
+
     private static boolean matricesAreEqual(RealMatrix A, RealMatrix B) {
         double[][] dataA = A.getData(), dataB = B.getData();
         if (dataA.length != dataB.length || dataA[0].length != dataB[0].length) {
