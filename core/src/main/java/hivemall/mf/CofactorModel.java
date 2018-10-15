@@ -92,15 +92,20 @@ public class CofactorModel {
 
     // hyperparameters
     private final float c0, c1;
+    private final float lambdaTheta, lambdaBeta, lambdaGamma;
 
     public CofactorModel(@Nonnegative int factor, @Nonnull RankInitScheme initScheme,
-                         @Nonnull float c0, @Nonnull float c1) {
+                         @Nonnull float c0, @Nonnull float c1, float lambdaTheta,
+                         float lambdaBeta, float lambdaGamma) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
         this.factor = factor;
         this.initScheme = initScheme;
         this.meanRating = 0.d;
+        this.lambdaTheta = lambdaTheta;
+        this.lambdaBeta = lambdaBeta;
+        this.lambdaGamma = lambdaGamma;
 
         this.theta = new HashMap<>();
         this.beta = new HashMap<>();
