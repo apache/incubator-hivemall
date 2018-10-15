@@ -55,8 +55,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     // Option variables
     /** The number of latent factors */
     protected int factor;
-    /** The regularization factor */
-    protected float lambda;
     /** The scaling hyperparameter for zero entries in the rank matrix */
     protected float scale_zero;
     /** The scaling hyperparameter for non-zero entries in the rank matrix */
@@ -75,6 +73,10 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected boolean useL2Norm;
     /** Whether to parse feature as integer */
     protected boolean parseFeatureAsInt;
+    /** regularization hyperparameters */
+    protected float lambdaTheta;
+    protected float lambdaBeta;
+    protected float lambdaGamma;
 
     /** Initialization strategy of rank matrix */
     protected CofactorModel.RankInitScheme rankInit;
@@ -217,7 +219,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             } else {
                 this.factor = Primitives.parseInt(cl.getOptionValue("factor"), 10);
             }
-            this.lambda = Primitives.parseFloat(cl.getOptionValue("lambda"), 0.03f);
+            this.lambdaTheta = Primitives.parseFloat(cl.getOptionValue("lambda_theta"), 1e-5f);
+            this.lambdaBeta = Primitives.parseFloat(cl.getOptionValue("lambda_beta"), 1e-5f);
+            this.lambdaGamma = Primitives.parseFloat(cl.getOptionValue("lambda_gamma"), 1e+0f);
             this.scale_zero = Primitives.parseFloat(cl.getOptionValue("scale_zero"), 0.1f);
             this.scale_nonzero = Primitives.parseFloat(cl.getOptionValue("scale_nonzero"), 1.0f);
             this.batchSize = Primitives.parseInt(cl.getOptionValue("batch_size"), 1024);
@@ -274,7 +278,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         processOptions(argOIs);
 
-        this.model = new CofactorModel(factor, rankInit, scale_zero, scale_nonzero);
+        this.model = new CofactorModel(factor, rankInit, scale_zero, scale_nonzero, lambdaTheta, lambdaBeta, lambdaGamma);
         this.miniBatch = new MiniBatch(this.batchSize);
         this.count = 0L;
         this.lastWritePos = 0L;
