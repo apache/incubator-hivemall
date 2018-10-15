@@ -87,9 +87,6 @@ public class CofactorModel {
     private Map<String, RealVector> gamma;
     private Map<String, Double> gammaBias;
 
-    // storing trainable users and items
-    private Set<String> trainableUsers;
-    private Set<String> trainableItems;
 
     protected final Random[] randU, randI;
 
@@ -110,9 +107,6 @@ public class CofactorModel {
         this.betaBias = new HashMap<>();
         this.gamma = new HashMap<>();
         this.gammaBias = new HashMap<>();
-
-        this.trainableUsers = new HashSet<>();
-        this.trainableItems = new HashSet<>();
 
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
@@ -159,11 +153,14 @@ public class CofactorModel {
         biases.put(key, value);
     }
 
-    public void recordAsParent(String parentName, Boolean isParentAnItem) {
+    public void recordAsParent(Feature parent, Boolean isParentAnItem) {
         if (isParentAnItem) {
-            trainableItems.add(parentName);
+            getBetaVector(parent, true);
+            getGammaVector(parent, true);
+            getBetaBias(parent);
+            getGammaBias(parent);
         } else {
-            trainableUsers.add(parentName);
+            getThetaVector(parent, true);
         }
     }
 
@@ -172,7 +169,7 @@ public class CofactorModel {
     }
 
     public RealVector getGammaVector(final Feature f, final boolean init) {
-        return getFactorVector(f, gamma,init);
+        return getFactorVector(f, gamma, init);
     }
 
     public double getGammaBias(final Feature f) {
