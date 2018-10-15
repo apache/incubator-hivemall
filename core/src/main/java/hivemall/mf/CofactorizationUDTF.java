@@ -323,6 +323,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
              sppmiVector = parseFeatures(args[2], sppmiVectorOI, sppmiVectorProbe);
         }
 
+        model.recordAsParent(parentString, isParentAnItem);
+
         this.parentProbe = parent;
         this.childrenProbe = children;
         this.isParentAnItemProbe = isParentAnItem;

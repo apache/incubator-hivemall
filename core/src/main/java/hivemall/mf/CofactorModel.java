@@ -32,9 +32,11 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 public class CofactorModel {
 
@@ -78,11 +80,16 @@ public class CofactorModel {
     @Nonnull
     private double meanRating;
 
+    // storing trainable latent factors and weights
     private Map<String, RealVector> theta;
     private Map<String, RealVector> beta;
     private Map<String, Double> betaBias;
     private Map<String, RealVector> gamma;
     private Map<String, Double> gammaBias;
+
+    // storing trainable users and items
+    private Set<String> trainableUsers;
+    private Set<String> trainableItems;
 
     protected final Random[] randU, randI;
 
@@ -103,6 +110,9 @@ public class CofactorModel {
         this.betaBias = new HashMap<>();
         this.gamma = new HashMap<>();
         this.gammaBias = new HashMap<>();
+
+        this.trainableUsers = new HashSet<>();
+        this.trainableItems = new HashSet<>();
 
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
@@ -147,6 +157,14 @@ public class CofactorModel {
     private void setBias(Feature f, Map<String, Double> biases, double value) {
         String key = f.getFeature();
         biases.put(key, value);
+    }
+
+    public void recordAsParent(String parentName, Boolean isParentAnItem) {
+        if (isParentAnItem) {
+            trainableItems.add(parentName);
+        } else {
+            trainableUsers.add(parentName);
+        }
     }
 
     public RealVector getGammaVector(final Feature f) {
