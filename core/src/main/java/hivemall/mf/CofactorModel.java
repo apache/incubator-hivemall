@@ -218,8 +218,7 @@ public class CofactorModel {
 //        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
         RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
         if (identity == null) {
-            identity = new Array2DRowRealMatrix(MatrixUtils.eye(factor));
-            identity = identity.scalarMultiply(lambdaTheta);
+            identity = initIdentity(factor, lambdaTheta);
         }
 
         RealMatrix BTBpR = BTB.add(identity);
@@ -245,6 +244,12 @@ public class CofactorModel {
             RealMatrix newThetaMatrix = solve(B, A);
             setFactorVector(sample.parent.getFeature(), theta, newThetaMatrix.getRowVector(0));
         }
+    }
+
+    protected static RealMatrix initIdentity(int numFactors, float lambdaTheta) {
+        RealMatrix I = new Array2DRowRealMatrix(MatrixUtils.eye(numFactors));
+        I = I.scalarMultiply(lambdaTheta);
+        return I;
     }
 
     private RealMatrix solve(RealMatrix b, RealMatrix a) {
