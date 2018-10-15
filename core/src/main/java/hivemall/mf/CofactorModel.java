@@ -119,71 +119,68 @@ public class CofactorModel {
 
     }
 
-    private RealVector getFactorVector(Feature f, Map<String, RealVector> weights, boolean init) {
-        String key = f.getFeature();
-        RealVector v = null;
-        if (init && !weights.containsKey(key)) {
-            v = new ArrayRealVector(factor);
-            switch (initScheme) {
-                case random:
-                    uniformFill(v, randI[0], initScheme.maxInitValue);
-                    break;
-                case gaussian:
-                    gaussianFill(v, randI, initScheme.initStdDev);
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Unsupported rank initialization scheme: " + initScheme);
-
-            }
-            weights.put(key, v);
+    private void initFactorVector(String key, Map<String, RealVector> weights) {
+        if (weights.containsKey(key)) {
+            return;
         }
-        return v;
+        RealVector v = new ArrayRealVector(factor);
+        switch (initScheme) {
+            case random:
+                uniformFill(v, randI[0], initScheme.maxInitValue);
+                break;
+            case gaussian:
+                gaussianFill(v, randI, initScheme.initStdDev);
+                break;
+            default:
+                throw new IllegalStateException(
+                        "Unsupported rank initialization scheme: " + initScheme);
+
+        }
+        weights.put(key, v);
     }
 
-    private void setFactorVector(Feature f, Map<String, RealVector> weights, RealVector factorVector) {
-        assert weights.containsKey(f);
-        weights.put(f.getFeature(), factorVector);
+    private static RealVector getFactorVector(String key, Map<String, RealVector> weights) {
+        return weights.get(key);
     }
 
-    private double getBias(Feature f, Map<String, Double> biases) {
-        String key = f.getFeature();
+    private static void setFactorVector(String key, Map<String, RealVector> weights, RealVector factorVector) {
+        assert weights.containsKey(key);
+        weights.put(key, factorVector);
+    }
+
+    private static double getBias(String key, Map<String, Double> biases) {
         if (!biases.containsKey(key)) {
             biases.put(key, 0.d);
         }
         return biases.get(key);
     }
 
-    private void setBias(Feature f, Map<String, Double> biases, double value) {
-        String key = f.getFeature();
+    private static void setBias(String key, Map<String, Double> biases, double value) {
         biases.put(key, value);
     }
 
     public void recordAsParent(Feature parent, Boolean isParentAnItem) {
+        String key = parent.getFeature();
         if (isParentAnItem) {
-            getBetaVector(parent, true);
-            getGammaVector(parent, true);
-            getBetaBias(parent);
-            getGammaBias(parent);
+            initFactorVector(key, beta);
+            initFactorVector(key, gamma);
+            getBetaBias(key);
+            getGammaBias(key);
         } else {
-            getThetaVector(parent, true);
+            initFactorVector(key, theta);
         }
     }
 
-    public RealVector getGammaVector(final Feature f) {
-        return getFactorVector(f, gamma,false);
+    public RealVector getGammaVector(final String key) {
+        return getFactorVector(key, gamma);
     }
 
-    public RealVector getGammaVector(final Feature f, final boolean init) {
-        return getFactorVector(f, gamma, init);
+    public double getGammaBias(final String key) {
+        return getBias(key, gammaBias);
     }
 
-    public double getGammaBias(final Feature f) {
-        return getBias(f, gammaBias);
-    }
-
-    public void setGammaBias(final Feature f, final double value) {
-        setBias(f, gammaBias, value);
+    public void setGammaBias(final String key, final double value) {
+        setBias(key, gammaBias, value);
     }
 
     public double getMeanRating() {
@@ -194,28 +191,20 @@ public class CofactorModel {
         meanRating = value;
     }
 
-    public RealVector getThetaVector(final Feature f) {
-        return getFactorVector(f, theta, false);
+    public RealVector getThetaVector(final String key) {
+        return getFactorVector(key, theta);
     }
 
-    public RealVector getThetaVector(final Feature f, boolean init) {
-        return getFactorVector(f, theta, init);
+    public RealVector getBetaVector(final String key) {
+        return getFactorVector(key, beta);
     }
 
-    public RealVector getBetaVector(final Feature f) {
-        return getFactorVector(f, beta, false);
+    public double getBetaBias(final String key) {
+        return getBias(key, betaBias);
     }
 
-    public RealVector getBetaVector(final Feature f, boolean init) {
-        return getFactorVector(f, beta, init);
-    }
-
-    public double getBetaBias(final Feature f) {
-        return getBias(f, betaBias);
-    }
-
-    public void setBetaBias(final Feature f, final double value) {
-        setBias(f, betaBias, value);
+    public void setBetaBias(final String key, final double value) {
+        setBias(key, betaBias, value);
     }
 
     /**
@@ -226,7 +215,8 @@ public class CofactorModel {
         // items should only be trainable if the dataset contains a major entry for that item (which it may not)
 
         // variable names follow cofacto.py
-        RealMatrix BTB = precomputeBetaTBeta();
+//        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
+        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
         if (identity == null) {
             identity = new Array2DRowRealMatrix(MatrixUtils.eye(factor));
             identity = identity.scalarMultiply(lambdaTheta);
@@ -248,12 +238,12 @@ public class CofactorModel {
 
             RealMatrix A = calculateA(trainableItems);
 
-            RealMatrix delta = calculateDelta(trainableItems);
+            RealMatrix delta = calculateDelta(trainableItems, beta, factor, c1 - c0);
             RealMatrix B = BTBpR.add(delta);
 
             // solve and update factors
             RealMatrix newThetaMatrix = solve(B, A);
-            setFactorVector(sample.parent, theta, newThetaMatrix.getRowVector(0));
+            setFactorVector(sample.parent.getFeature(), theta, newThetaMatrix.getRowVector(0));
         }
     }
 
@@ -265,22 +255,32 @@ public class CofactorModel {
 
     }
 
-    private RealMatrix calculateDelta(List<Feature> items) {
-        RealMatrix delta = new Array2DRowRealMatrix(factor, factor);
+    private RealMatrix calculateDelta(List<Feature> children, Map<String, RealVector> weights, int numFactors, float constant) {
+        RealMatrix delta = new Array2DRowRealMatrix(numFactors, numFactors);
         int i = 0, j = 0;
-        for (int f = 0; f < factor; f++) {
-            for (int ff = 0; ff < factor; ff++) {
-                double val = (c1 - c0) * dotItemFactorsAlongDims(items, f, ff);
+        for (int f = 0; f < numFactors; f++) {
+            for (int ff = 0; ff < numFactors; ff++) {
+                double val = constant * dotFactorsAlongDims(children, weights, f, ff);
                 delta.setEntry(f, ff, val);
             }
         }
         return delta;
     }
 
-    private double dotItemFactorsAlongDims(List<Feature> items, int dim1, int dim2) {
+    private static double dotFactorsAlongDims(List<Feature> keys, Map<String, RealVector> weights, int dim1, int dim2) {
         double result = 0.d;
-        for (Feature item : items) {
-            RealVector vec = getBetaVector(item);
+        for (Feature f : keys) {
+            double rating = f.getValue();
+            RealVector vec = getFactorVector(f.getFeature(), weights);
+            result += rating * vec.getEntry(dim1) * vec.getEntry(dim2);
+        }
+        return result;
+    }
+
+    private static double dotFactorsAlongDims(Map<String, RealVector> weights, int dim1, int dim2) {
+        double result = 0.d;
+        for (String key : weights.keySet()) {
+            RealVector vec = getFactorVector(key, weights);
             result += vec.getEntry(dim1) * vec.getEntry(dim2);
         }
         return result;
@@ -293,7 +293,7 @@ public class CofactorModel {
         // What it does: sums factor n of each item in B_u
         RealVector v = new ArrayRealVector(items.size());
         for (Feature item : items) {
-            v.add(getBetaVector(item));
+            v.add(getBetaVector(item.getFeature()));
         }
         for (int a = 0; a < v.getDimension(); a++) {
             v.setEntry(a, v.getEntry(a) / c1);
@@ -304,18 +304,20 @@ public class CofactorModel {
         return A;
     }
 
-    private RealMatrix precomputeBetaTBeta() {
-        RealMatrix BTB = new Array2DRowRealMatrix(factor, factor);
-        for (RealVector u : beta.values()) {
-            for (RealVector v : beta.values()) {
-                accumulateInBetaTBeta(u, v, BTB);
+    protected static RealMatrix computeWeightsTWeights(Map<String, RealVector> weights, int numFactors, float constant) {
+        RealMatrix WTW = new Array2DRowRealMatrix(numFactors, numFactors);
+        int i = 0, j = 0;
+        for (int f = 0; f < numFactors; f++) {
+            for (int ff = 0; ff < numFactors; ff++) {
+                double val = constant * dotFactorsAlongDims(weights, f, ff);
+                WTW.setEntry(f, ff, val);
             }
         }
-        return BTB;
+        return WTW;
     }
 
 
-    private void accumulateInBetaTBeta(RealVector u, RealVector v, RealMatrix BTB) {
+    protected static void accumulateInMatrix(RealVector u, RealVector v, RealMatrix BTB, float c0) {
         for (int i = 0; i < u.getDimension(); i++) {
             double val = u.getEntry(i);
             for (int j = 0; j < v.getDimension(); j++) {
