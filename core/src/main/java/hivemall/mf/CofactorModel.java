@@ -255,7 +255,7 @@ public class CofactorModel {
 
     }
 
-    private RealMatrix calculateDelta(List<Feature> children, Map<String, RealVector> weights, int numFactors, float constant) {
+    private static RealMatrix calculateDelta(List<Feature> children, Map<String, RealVector> weights, int numFactors, float constant) {
         RealMatrix delta = new Array2DRowRealMatrix(numFactors, numFactors);
         int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
