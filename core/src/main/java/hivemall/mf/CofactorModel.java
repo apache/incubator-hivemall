@@ -263,10 +263,10 @@ public class CofactorModel {
         return I;
     }
 
-    protected static RealVector solve(RealMatrix b, RealVector a) {
+    protected static RealVector solve(RealMatrix B, RealVector a) {
         // b * x = a
         // solves for x
-        SingularValueDecomposition svd = new SingularValueDecomposition(b);
+        SingularValueDecomposition svd = new SingularValueDecomposition(B);
         return svd.getSolver().solve(a);
 
     }
