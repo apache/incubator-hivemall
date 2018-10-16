@@ -216,12 +216,7 @@ public class CofactorModel {
 
         // variable names follow cofacto.py
 //        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
-        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
-        if (identity == null) {
-            identity = initIdentity(factor, lambdaTheta);
-        }
-
-        RealMatrix BTBpR = BTB.add(identity);
+        RealMatrix BTBpR = calculateBTBpR(beta, factor, c0, identity, lambdaTheta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             // filter for trainable items
@@ -233,9 +228,21 @@ public class CofactorModel {
             RealMatrix B = BTBpR.add(delta);
 
             // solve and update factors
-            RealMatrix newThetaMatrix = solve(B, A);
-            setFactorVector(sample.parent.getFeature(), theta, newThetaMatrix.getRowVector(0));
+            RealVector newThetaVec = solve(B, A.getRowVector(0));
+            setFactorVector(sample.parent.getFeature(), theta, newThetaVec);
         }
+    }
+
+    /**
+     * Calculate BTB plus regularization matrix
+     */
+    protected static RealMatrix calculateBTBpR(Map<String, RealVector> beta, int factor, float c0, RealMatrix identity, float lambdaTheta) {
+        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
+        if (identity == null) {
+            identity = initIdentity(factor, lambdaTheta);
+        }
+        RealMatrix BTBpR = BTB.add(identity);
+        return BTBpR;
     }
 
     private static List<Feature> filterTrainableFeatures(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> weights) {
@@ -256,7 +263,7 @@ public class CofactorModel {
         return I;
     }
 
-    private RealMatrix solve(RealMatrix b, RealMatrix a) {
+    protected static RealVector solve(RealMatrix b, RealVector a) {
         // b * x = a
         // solves for x
         SingularValueDecomposition svd = new SingularValueDecomposition(b);
