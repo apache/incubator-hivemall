@@ -237,21 +237,41 @@ public class CofactorModel {
      */
     public void updateBeta(List<CofactorizationUDTF.TrainingSample> samples) {
         // variable names follow cofacto.py
+        RealMatrix TTTpR = calculateWTWpR(theta, factor, c0, identity, lambdaBeta);
 
+        for (CofactorizationUDTF.TrainingSample sample : samples) {
+            // filter for trainable items
+            List<Feature> trainableUsers = filterTrainableFeatures(sample.children, theta);
+            // TODO: is this correct behaviour?
+            if (trainableUsers.isEmpty()) {
+                continue;
+            }
+
+            List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, gamma);
+            RealVector RSD = calculateRSD(sample.parent, trainableCooccurringItems, factor, betaBias, gammaBias, gamma);
+            RealVector ApRSD = calculateA(trainableUsers, theta, c1).add(RSD);
+
+            RealMatrix GTG = calculateDelta(trainableCooccurringItems, gamma, factor, 1.f);
+            RealMatrix delta = calculateDelta(trainableUsers, theta, factor, c1 - c0);
+            RealMatrix B = TTTpR.add(delta).add(GTG);
+
+            // solve and update factors
+            RealVector newBetaVec = solve(B, ApRSD);
+            setFactorVector(sample.parent.getFeature(), beta, newBetaVec);
+        }
 
     }
 
-    protected static RealVector calculateRSD(Feature thisItem, Feature[] sppmi, int numFactors,
+    protected static RealVector calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
                                     Map<String, Double> betaBias, Map<String, Double> gammaBias, Map<String, RealVector> gamma) {
-        // why require a filtered contextItems list? Because need to get gamma
-        List<Feature> filteredSppmi = filterTrainableFeatures(sppmi, gamma);
+
         String i = thisItem.getFeature();
         double b = getBias(i, betaBias);
 
         RealVector accumulator = new ArrayRealVector(numFactors);
 
         // m_ij is named the same as in cofacto.py
-        for (Feature cooccurrence : filteredSppmi) {
+        for (Feature cooccurrence : trainableItems) {
             String j = cooccurrence.getFeature();
             double scale = cooccurrence.getValue() - b - getBias(j, gammaBias);
             RealVector g = getFactorVector(j, gamma);
@@ -276,7 +296,7 @@ public class CofactorModel {
         return idMatrix.scalarMultiply(lambda);
     }
 
-    private static List<Feature> filterTrainableFeatures(Feature[] features, Map<String, RealVector> weights) {
+    protected static List<Feature> filterTrainableFeatures(Feature[] features, Map<String, RealVector> weights) {
         List<Feature> trainableFeatures = new ArrayList<>();
         String fName;
         for (Feature f : features) {
