@@ -241,6 +241,25 @@ public class CofactorModel {
 
     }
 
+    protected static RealVector calculateRSD(Feature thisItem, Feature[] sppmi, int numFactors,
+                                    Map<String, Double> betaBias, Map<String, Double> gammaBias, Map<String, RealVector> gamma) {
+        // why require a filtered contextItems list? Because need to get gamma
+        List<Feature> filteredSppmi = filterTrainableFeatures(sppmi, gamma);
+        String i = thisItem.getFeature();
+        double b = getBias(i, betaBias);
+
+        RealVector accumulator = new ArrayRealVector(numFactors);
+
+        // m_ij is named the same as in cofacto.py
+        for (Feature cooccurrence : filteredSppmi) {
+            String j = cooccurrence.getFeature();
+            double scale = cooccurrence.getValue() - b - getBias(j, gammaBias);
+            RealVector g = getFactorVector(j, gamma);
+            addInPlace(accumulator, g, scale);
+        }
+        return accumulator;
+    }
+
     /**
      * Calculate W' x W plus regularization matrix
      */

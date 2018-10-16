@@ -40,12 +40,13 @@ public class CofactorModelTest {
     private static final String TOOTHBRUSH = "toothbrush";
     private static final String TOOTHPASTE = "toothpaste";
     private static final String SHAVER = "shaver";
+    private static final double DUMMY_VALUE = 0.d;
 
     @Before
 
     @Test
     public void precomputeWTW() throws HiveException {
-        Map<String, RealVector> weights = getTestWeights();
+        Map<String, RealVector> weights = getTestBeta();
 
         RealMatrix expectedWTW = new Array2DRowRealMatrix(new double[][]{
                 {0.63, -0.238},
@@ -58,7 +59,7 @@ public class CofactorModelTest {
 
     @Test
     public void calculateA() throws HiveException {
-        Map<String, RealVector> weights = getTestWeights();
+        Map<String, RealVector> weights = getTestBeta();
         List<Feature> items = getSubsetFeatureList_explicitFeedback();
         RealVector actual = CofactorModel.calculateA(items, weights, 0.5f);
         double[] expected = new double[]{-2.05, 3.15};
@@ -67,7 +68,7 @@ public class CofactorModelTest {
 
     @Test
     public void calculateDelta() throws HiveException {
-        Map<String, RealVector> weights = getTestWeights();
+        Map<String, RealVector> weights = getTestBeta();
         List<Feature> items = getSubsetFeatureList_explicitFeedback();
 
         RealMatrix actual = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, 0.9f);
@@ -82,7 +83,7 @@ public class CofactorModelTest {
     @Test
     public void solve_implicitFeedback() throws HiveException {
         final float c0 = 0.1f, c1 = 1.f, lambdaTheta = 1e-5f;
-        Map<String, RealVector> weights = getTestWeights();
+        Map<String, RealVector> weights = getTestBeta();
         RealMatrix identity = null;
         RealMatrix BTBpR = CofactorModel.calculateWTWpR(weights, NUM_FACTORS, c0, identity, lambdaTheta);
 
@@ -104,6 +105,21 @@ public class CofactorModelTest {
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
 
+    @Test
+    public void calculateRSD() {
+
+        Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
+        RealVector actual = CofactorModel.calculateRSD(
+                currentItem,
+                getToothbrushSPPMIVector(),
+                NUM_FACTORS,
+                getTestBetaBias(),
+                getTestGammaBias(),
+                getTestGamma());
+        double[] expected = new double[]{-1.12, 0.47};
+        Assert.assertArrayEquals(actual.toArray(), expected, EPSILON);
+    }
+
     private static boolean matricesAreEqual(RealMatrix A, RealMatrix B) {
         double[][] dataA = A.getData(), dataB = B.getData();
         if (dataA.length != dataB.length || dataA[0].length != dataB[0].length) {
@@ -119,11 +135,35 @@ public class CofactorModelTest {
         return true;
     }
 
-    private static Map<String, RealVector> getTestWeights() {
+    private static Map<String, RealVector> getTestBeta() {
         Map<String, RealVector> weights = new HashMap<>();
         weights.put(TOOTHBRUSH, new ArrayRealVector(new double[]{0.5, 0.3}));
         weights.put(TOOTHPASTE, new ArrayRealVector(new double[]{1.1, 0.9}));
         weights.put(SHAVER, new ArrayRealVector(new double[]{-2.2, 1.6}));
+        return weights;
+    }
+
+    private static Map<String, Double> getTestBetaBias() {
+        Map<String, Double> weights = new HashMap<>();
+        weights.put(TOOTHBRUSH, 0.1);
+        weights.put(TOOTHPASTE, -1.9);
+        weights.put(SHAVER, 2.3);
+        return weights;
+    }
+
+    private static Map<String, Double> getTestGammaBias() {
+        Map<String, Double> weights = new HashMap<>();
+        weights.put(TOOTHBRUSH, 3.4);
+        weights.put(TOOTHPASTE, -0.5);
+        weights.put(SHAVER, 1.1);
+        return weights;
+    }
+
+    private static Map<String, RealVector> getTestGamma() {
+        Map<String, RealVector> weights = new HashMap<>();
+        weights.put(TOOTHBRUSH, new ArrayRealVector(new double[]{1.3, -0.2}));
+        weights.put(TOOTHPASTE, new ArrayRealVector(new double[]{1.6, 0.1}));
+        weights.put(SHAVER, new ArrayRealVector(new double[]{3.2, -0.4}));
         return weights;
     }
 
@@ -132,6 +172,12 @@ public class CofactorModelTest {
         items.add(new StringFeature(TOOTHBRUSH, 5.d));
         items.add(new StringFeature(SHAVER, 3.d));
         return items;
+    }
+
+    private static Feature[] getToothbrushSPPMIVector() {
+        return new Feature[]{
+                new StringFeature(TOOTHPASTE, 0.7),
+                new StringFeature(SHAVER, 0.3)};
     }
 
     private static List<Feature> getSubsetFeatureList_implicitFeedback() {
