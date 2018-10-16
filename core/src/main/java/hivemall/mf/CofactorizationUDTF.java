@@ -374,25 +374,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
         numTraining += miniBatch.size();
         List<TrainingSample> users = miniBatch.getUsers();
-        updateTheta(users);
+        model.updateTheta(users);
         List<TrainingSample> items = miniBatch.getItems();
-        updateBeta(items);
-        updateGamma(items);
-        updateBiases(items);
+        model.updateBeta(items);
+//        model.updateGamma(items);
+//        model.updateBiases(items);
         miniBatch.clear();
-    }
-
-    private void updateBiases(List<TrainingSample> items) {
-    }
-
-    private void updateGamma(List<TrainingSample> items) {
-    }
-
-    private void updateBeta(List<TrainingSample> items) {
-    }
-
-    private void updateTheta(List<TrainingSample> users) {
-
     }
 
     private void addToBatch(final Feature parent, final Feature[] children, final Feature[] sppmiVector) {
