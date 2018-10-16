@@ -220,6 +220,10 @@ public class CofactorModel {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             // filter for trainable items
             List<Feature> trainableItems = filterTrainableFeatures(sample.children, beta);
+            // TODO: is this correct behaviour?
+            if (trainableItems.isEmpty()) {
+                continue;
+            }
 
             RealVector A = calculateA(trainableItems, beta, c1);
 
