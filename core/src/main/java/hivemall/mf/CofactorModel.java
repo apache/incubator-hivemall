@@ -238,6 +238,18 @@ public class CofactorModel {
         }
     }
 
+    private static List<Feature> filterTrainableFeatures(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> weights) {
+        List<Feature> trainableFeatures = new ArrayList<>();
+        String fName;
+        for (Feature f : sample.children) {
+            fName = f.getFeature();
+            if (isTrainable(fName, weights)) {
+                trainableFeatures.add(f);
+            }
+        }
+        return trainableFeatures;
+    }
+
     protected static RealMatrix initIdentity(int numFactors, float lambdaTheta) {
         RealMatrix I = new Array2DRowRealMatrix(MatrixUtils.eye(numFactors));
         I = I.scalarMultiply(lambdaTheta);
