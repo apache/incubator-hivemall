@@ -215,20 +215,19 @@ public class CofactorModel {
         // items should only be trainable if the dataset contains a major entry for that item (which it may not)
 
         // variable names follow cofacto.py
-//        RealMatrix BTB = calculateWTW(beta, factor, c0);
         RealMatrix BTBpR = calculateWTWpR(beta, factor, c0, identity, lambdaTheta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             // filter for trainable items
             List<Feature> trainableItems = filterTrainableFeatures(sample, beta);
 
-            RealMatrix A = calculateA(trainableItems, beta, c1);
+            RealVector A = calculateA(trainableItems, beta, c1);
 
             RealMatrix delta = calculateDelta(trainableItems, beta, factor, c1 - c0);
             RealMatrix B = BTBpR.add(delta);
 
             // solve and update factors
-            RealVector newThetaVec = solve(B, A.getRowVector(0));
+            RealVector newThetaVec = solve(B, A);
             setFactorVector(sample.parent.getFeature(), theta, newThetaVec);
         }
     }
@@ -309,7 +308,7 @@ public class CofactorModel {
         return result;
     }
 
-    protected static RealMatrix calculateA(List<Feature> items, Map<String, RealVector> weights, float constant) {
+    protected static RealVector calculateA(List<Feature> items, Map<String, RealVector> weights, float constant) {
         // Equivalent to: a = x_u.dot(c1 * B_u)
         // x_u is a (1, i) matrix of all ones
         // B_u is a (i, F) matrix
@@ -322,10 +321,7 @@ public class CofactorModel {
         for (int a = 0; a < v.getDimension(); a++) {
             v.setEntry(a, v.getEntry(a) * constant);
         }
-        // convert RealVector to 1-row RealMatrix
-        RealMatrix A = new Array2DRowRealMatrix(1, items.size());
-        A.setRowVector(0, v);
-        return A;
+        return v;
     }
 
     /**
