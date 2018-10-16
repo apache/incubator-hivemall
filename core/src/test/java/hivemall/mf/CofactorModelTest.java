@@ -52,20 +52,8 @@ public class CofactorModelTest {
                 {-0.238, 0.346}
         });
 
-        RealMatrix actualWTW = CofactorModel.computeWeightsTWeights(weights, 2, 0.1f);
+        RealMatrix actualWTW = CofactorModel.calculateWTW(weights, 2, 0.1f);
         Assert.assertTrue(matricesAreEqual(actualWTW, expectedWTW));
-    }
-
-    @Test
-    public void initIdentity() throws HiveException {
-        RealMatrix actual = CofactorModel.initIdentity(3, 2.f);
-        RealMatrix expected = new Array2DRowRealMatrix(new double[][] {
-                {2.0, 0, 0},
-                {0, 2.0, 0},
-                {0, 0, 2.0}
-        });
-
-        Assert.assertTrue(matricesAreEqual(actual, expected));
     }
 
     @Test
@@ -98,7 +86,7 @@ public class CofactorModelTest {
         final float c0 = 0.1f, c1 = 1.f, lambdaTheta = 1e-5f;
         Map<String, RealVector> weights = getTestWeights();
         RealMatrix identity = null;
-        RealMatrix BTBpR = CofactorModel.calculateBTBpR(weights, NUM_FACTORS, c0, identity, lambdaTheta);
+        RealMatrix BTBpR = CofactorModel.calculateWTWpR(weights, NUM_FACTORS, c0, identity, lambdaTheta);
 
         List<Feature> items = getSubsetFeatureList_implicitFeedback();
 
