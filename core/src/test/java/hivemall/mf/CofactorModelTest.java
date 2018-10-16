@@ -36,7 +36,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class CofactorModelTest {
-    private static final double EPSILON = 1e-8;
+    private static final double EPSILON = 1e-3;
+    private static final int NUM_FACTORS = 2;
     private static final String TOOTHBRUSH = "toothbrush";
     private static final String TOOTHPASTE = "toothpaste";
     private static final String SHAVER = "shaver";
@@ -71,14 +72,28 @@ public class CofactorModelTest {
     @Test
     public void calculateA() throws HiveException {
         Map<String, RealVector> weights = getTestWeights();
-        List<Feature> items = new ArrayList<>();
-        items.add(new StringFeature(TOOTHBRUSH, 5.d));
-        items.add(new StringFeature(SHAVER, 3.d));
+        List<Feature> items = getSubsetFeatureList();
         RealMatrix actual = CofactorModel.calculateA(items, weights, 0.5f);
         System.out.println(actual.toString());
         RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
                 {-2.05, 3.15}
         });
+        Assert.assertTrue(matricesAreEqual(actual, expected));
+    }
+
+    @Test
+    public void calculateDelta() throws HiveException {
+        Map<String, RealVector> weights = getTestWeights();
+        List<Feature> items = getSubsetFeatureList();
+
+        RealMatrix actual = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, 0.9f);
+        RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
+                { 4.581, -3.033},
+                { -3.033, 2.385}
+        });
+
+        System.out.println(actual);
+
         Assert.assertTrue(matricesAreEqual(actual, expected));
     }
 
@@ -103,6 +118,13 @@ public class CofactorModelTest {
         weights.put(TOOTHPASTE, new ArrayRealVector(new double[]{1.1, 0.9}));
         weights.put(SHAVER, new ArrayRealVector(new double[]{-2.2, 1.6}));
         return weights;
+    }
+
+    private static List<Feature> getSubsetFeatureList() {
+        List<Feature> items = new ArrayList<>();
+        items.add(new StringFeature(TOOTHBRUSH, 5.d));
+        items.add(new StringFeature(SHAVER, 3.d));
+        return items;
     }
 
 }
