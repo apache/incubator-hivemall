@@ -24,7 +24,6 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.junit.Assert;
 import org.junit.Before;
@@ -72,9 +71,8 @@ public class CofactorModelTest {
     @Test
     public void calculateA() throws HiveException {
         Map<String, RealVector> weights = getTestWeights();
-        List<Feature> items = getSubsetFeatureList();
+        List<Feature> items = getSubsetFeatureList_explicitFeedback();
         RealMatrix actual = CofactorModel.calculateA(items, weights, 0.5f);
-        System.out.println(actual.toString());
         RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
                 {-2.05, 3.15}
         });
@@ -84,7 +82,7 @@ public class CofactorModelTest {
     @Test
     public void calculateDelta() throws HiveException {
         Map<String, RealVector> weights = getTestWeights();
-        List<Feature> items = getSubsetFeatureList();
+        List<Feature> items = getSubsetFeatureList_explicitFeedback();
 
         RealMatrix actual = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, 0.9f);
         RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
@@ -92,9 +90,34 @@ public class CofactorModelTest {
                 { -3.033, 2.385}
         });
 
-        System.out.println(actual);
-
         Assert.assertTrue(matricesAreEqual(actual, expected));
+    }
+
+    @Test
+    public void solve_implicitFeedback() throws HiveException {
+        final float c0 = 0.1f, c1 = 1.f, lambdaTheta = 1e-5f;
+        Map<String, RealVector> weights = getTestWeights();
+        RealMatrix identity = null;
+        RealMatrix BTBpR = CofactorModel.calculateBTBpR(weights, NUM_FACTORS, c0, identity, lambdaTheta);
+
+        List<Feature> items = getSubsetFeatureList_implicitFeedback();
+
+        RealMatrix A = CofactorModel.calculateA(items, weights, c1);
+        Assert.assertTrue(matricesAreEqual(A, new Array2DRowRealMatrix(new double[][]{
+                {-1.7,  1.9}
+        })));
+
+        RealMatrix delta = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, c1 - c0);
+        RealMatrix B = BTBpR.add(delta);
+
+        Assert.assertTrue(matricesAreEqual(B, new Array2DRowRealMatrix(new double[][]{
+                { 5.21101, -3.271  },
+                {-3.271  ,  2.73101}
+        })));
+
+        RealVector actual = CofactorModel.solve(B, A.getRowVector(0));
+        RealVector expected = new ArrayRealVector(new double[]{0.44514062, 1.22886953});
+        Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
 
     private static boolean matricesAreEqual(RealMatrix A, RealMatrix B) {
@@ -120,10 +143,17 @@ public class CofactorModelTest {
         return weights;
     }
 
-    private static List<Feature> getSubsetFeatureList() {
+    private static List<Feature> getSubsetFeatureList_explicitFeedback() {
         List<Feature> items = new ArrayList<>();
         items.add(new StringFeature(TOOTHBRUSH, 5.d));
         items.add(new StringFeature(SHAVER, 3.d));
+        return items;
+    }
+
+    private static List<Feature> getSubsetFeatureList_implicitFeedback() {
+        List<Feature> items = new ArrayList<>();
+        items.add(new StringFeature(TOOTHBRUSH, 1.d));
+        items.add(new StringFeature(SHAVER, 1.d));
         return items;
     }
 
