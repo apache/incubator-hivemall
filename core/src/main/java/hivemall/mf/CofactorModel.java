@@ -264,7 +264,8 @@ public class CofactorModel {
 
     }
 
-    private static RealMatrix calculateDelta(List<Feature> children, Map<String, RealVector> weights, int numFactors, float constant) {
+    protected static RealMatrix calculateDelta(List<Feature> children, Map<String, RealVector> weights, int numFactors, float constant) {
+        // equivalent to `B_u.T.dot((c1 - c0) * B_u)` in cofacto.py
         RealMatrix delta = new Array2DRowRealMatrix(numFactors, numFactors);
         int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
@@ -279,9 +280,8 @@ public class CofactorModel {
     private static double dotFactorsAlongDims(List<Feature> keys, Map<String, RealVector> weights, int dim1, int dim2) {
         double result = 0.d;
         for (Feature f : keys) {
-            double rating = f.getValue();
             RealVector vec = getFactorVector(f.getFeature(), weights);
-            result += rating * vec.getEntry(dim1) * vec.getEntry(dim2);
+            result += vec.getEntry(dim1) * vec.getEntry(dim2);
         }
         return result;
     }
