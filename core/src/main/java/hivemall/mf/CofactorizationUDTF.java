@@ -62,9 +62,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     /** The preferred size of the miniBatch for training */
     protected int batchSize;
     /** The initial mean rating */
-    protected float meanRating;
+    protected float globalBias;
     /** Whether update (and return) the mean rating or not */
-    protected boolean updateMeanRating;
+    protected boolean updateGlobalBias;
     /** The number of iterations */
     protected int iterations;
     /** Whether to use bias clause */
@@ -177,9 +177,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
         opts.addOption("b", "batch_size", true, "The miniBatch size for training [default: 1024]");
         opts.addOption("n", "num_items", false, "Number of items");
-        opts.addOption("mu", "mean_rating", true, "The mean rating [default: 0.0]");
-        opts.addOption("update_mean", "update_mu", false,
-                "Whether update (and return) the mean rating or not");
+        opts.addOption("gb", "global_bias", true, "The global bias [default: 0.0]");
+        opts.addOption("update_gb", "update_gb", false,
+                "Whether update (and return) the global bias or not");
         opts.addOption("rankinit", true,
                 "Initialization strategy of rank matrix [random, gaussian] (default: gaussian)");
         opts.addOption("maxval", "max_init_value", true,
@@ -230,8 +230,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             } else {
                 throw new UDFArgumentException("-num_items must be specified");
             }
-            this.meanRating = Primitives.parseFloat(cl.getOptionValue("mu"), 0.f);
-            this.updateMeanRating = cl.hasOption("update_mean");
+            this.globalBias = Primitives.parseFloat(cl.getOptionValue("gb"), 0.f);
+            this.updateGlobalBias = cl.hasOption("update_gb");
             rankInitOpt = cl.getOptionValue("rankinit");
             maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 1.f);
             initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.01d);
@@ -248,9 +248,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
             boolean noBias = cl.hasOption("no_bias");
             this.useBiasClause = !noBias;
-            if (noBias && updateMeanRating) {
+            if (noBias && updateGlobalBias) {
                 throw new UDFArgumentException(
-                        "Cannot set both `update_mean` and `no_bias` option");
+                        "Cannot set both `update_gb` and `no_bias` option");
             }
             this.parseFeatureAsInt = cl.hasOption("int_feature");
             this.useL2Norm = !cl.hasOption("disable_l2norm");
@@ -300,7 +300,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
             fieldNames.add("Bc");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
-            if (updateMeanRating) {
+            if (updateGlobalBias) {
                 fieldNames.add("mu");
                 fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
             }
