@@ -72,7 +72,7 @@ public class CofactorModel {
     protected final RankInitScheme initScheme;
 
     @Nonnull
-    private double meanRating;
+    private double globalBias;
 
     // storing trainable latent factors and weights
     private Map<String, RealVector> theta;
@@ -98,7 +98,7 @@ public class CofactorModel {
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
         this.factor = factor;
         this.initScheme = initScheme;
-        this.meanRating = 0.d;
+        this.globalBias = 0.d;
         this.lambdaTheta = lambdaTheta;
         this.lambdaBeta = lambdaBeta;
         this.lambdaGamma = lambdaGamma;
@@ -183,12 +183,12 @@ public class CofactorModel {
         setBias(key, gammaBias, value);
     }
 
-    public double getMeanRating() {
-        return meanRating;
+    public double getGlobalBias() {
+        return globalBias;
     }
 
-    public void setMeanRating(final double value) {
-        meanRating = value;
+    public void setGlobalBias(final double value) {
+        globalBias = value;
     }
 
     public RealVector getThetaVector(final String key) {
