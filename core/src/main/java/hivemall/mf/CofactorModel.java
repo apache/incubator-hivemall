@@ -219,7 +219,7 @@ public class CofactorModel {
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             // filter for trainable items
-            List<Feature> trainableItems = filterTrainableFeatures(sample, beta);
+            List<Feature> trainableItems = filterTrainableFeatures(sample.children, beta);
 
             RealVector A = calculateA(trainableItems, beta, c1);
 
@@ -257,10 +257,10 @@ public class CofactorModel {
         return idMatrix.scalarMultiply(lambda);
     }
 
-    private static List<Feature> filterTrainableFeatures(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> weights) {
+    private static List<Feature> filterTrainableFeatures(Feature[] features, Map<String, RealVector> weights) {
         List<Feature> trainableFeatures = new ArrayList<>();
         String fName;
-        for (Feature f : sample.children) {
+        for (Feature f : features) {
             fName = f.getFeature();
             if (isTrainable(fName, weights)) {
                 trainableFeatures.add(f);
