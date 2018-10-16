@@ -76,8 +76,8 @@ public class CofactorModelTest {
 
         RealMatrix actual = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, 0.9f);
         RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
-                { 4.581, -3.033},
-                { -3.033, 2.385}
+                {4.581, -3.033},
+                {-3.033, 2.385}
         });
 
         Assert.assertTrue(matricesAreEqual(actual, expected));
@@ -93,14 +93,14 @@ public class CofactorModelTest {
         List<Feature> items = getSubset_itemFeatureList_implicitFeedback();
 
         RealVector A = CofactorModel.calculateA(items, weights, c1);
-        Assert.assertArrayEquals(A.toArray(), new double[]{-1.7,  1.9}, EPSILON);
+        Assert.assertArrayEquals(A.toArray(), new double[]{-1.7, 1.9}, EPSILON);
 
         RealMatrix delta = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, c1 - c0);
         RealMatrix B = BTBpR.add(delta);
 
         Assert.assertTrue(matricesAreEqual(B, new Array2DRowRealMatrix(new double[][]{
-                { 5.21101, -3.271  },
-                {-3.271  ,  2.73101}
+                {5.21101, -3.271},
+                {-3.271, 2.73101}
         })));
 
         RealVector actual = CofactorModel.solve(B, A);
