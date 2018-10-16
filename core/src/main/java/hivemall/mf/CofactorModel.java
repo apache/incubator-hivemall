@@ -215,8 +215,8 @@ public class CofactorModel {
         // items should only be trainable if the dataset contains a major entry for that item (which it may not)
 
         // variable names follow cofacto.py
-//        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
-        RealMatrix BTBpR = calculateBTBpR(beta, factor, c0, identity, lambdaTheta);
+//        RealMatrix BTB = calculateWTW(beta, factor, c0);
+        RealMatrix BTBpR = calculateWTWpR(beta, factor, c0, identity, lambdaTheta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             // filter for trainable items
@@ -234,15 +234,28 @@ public class CofactorModel {
     }
 
     /**
-     * Calculate BTB plus regularization matrix
+     * Update latent factors of the items in the provided mini-batch.
      */
-    protected static RealMatrix calculateBTBpR(Map<String, RealVector> beta, int factor, float c0, RealMatrix identity, float lambdaTheta) {
-        RealMatrix BTB = computeWeightsTWeights(beta, factor, c0);
-        if (identity == null) {
-            identity = initIdentity(factor, lambdaTheta);
+    public void updateBeta(List<CofactorizationUDTF.TrainingSample> samples) {
+        // variable names follow cofacto.py
+
+
+    }
+
+    /**
+     * Calculate W' x W plus regularization matrix
+     */
+    protected static RealMatrix calculateWTWpR(Map<String, RealVector> W, int numFactors, float c0, RealMatrix idMatrix, float lambda) {
+        RealMatrix WTW = calculateWTW(W, numFactors, c0);
+        RealMatrix R = calculateR(idMatrix, lambda, numFactors);
+        return WTW.add(R);
+    }
+
+    private static RealMatrix calculateR(RealMatrix idMatrix, float lambda, int numFactors) {
+        if (idMatrix == null) {
+            idMatrix = new Array2DRowRealMatrix(MatrixUtils.eye(numFactors));
         }
-        RealMatrix BTBpR = BTB.add(identity);
-        return BTBpR;
+        return idMatrix.scalarMultiply(lambda);
     }
 
     private static List<Feature> filterTrainableFeatures(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> weights) {
@@ -255,12 +268,6 @@ public class CofactorModel {
             }
         }
         return trainableFeatures;
-    }
-
-    protected static RealMatrix initIdentity(int numFactors, float lambdaTheta) {
-        RealMatrix I = new Array2DRowRealMatrix(MatrixUtils.eye(numFactors));
-        I = I.scalarMultiply(lambdaTheta);
-        return I;
     }
 
     protected static RealVector solve(RealMatrix B, RealVector a) {
@@ -335,7 +342,7 @@ public class CofactorModel {
         }
     }
 
-    protected static RealMatrix computeWeightsTWeights(Map<String, RealVector> weights, int numFactors, float constant) {
+    protected static RealMatrix calculateWTW(Map<String, RealVector> weights, int numFactors, float constant) {
         RealMatrix WTW = new Array2DRowRealMatrix(numFactors, numFactors);
         int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
