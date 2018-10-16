@@ -60,11 +60,9 @@ public class CofactorModelTest {
     public void calculateA() throws HiveException {
         Map<String, RealVector> weights = getTestWeights();
         List<Feature> items = getSubsetFeatureList_explicitFeedback();
-        RealMatrix actual = CofactorModel.calculateA(items, weights, 0.5f);
-        RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
-                {-2.05, 3.15}
-        });
-        Assert.assertTrue(matricesAreEqual(actual, expected));
+        RealVector actual = CofactorModel.calculateA(items, weights, 0.5f);
+        double[] expected = new double[]{-2.05, 3.15};
+        Assert.assertArrayEquals(actual.toArray(), expected, EPSILON);
     }
 
     @Test
@@ -90,10 +88,8 @@ public class CofactorModelTest {
 
         List<Feature> items = getSubsetFeatureList_implicitFeedback();
 
-        RealMatrix A = CofactorModel.calculateA(items, weights, c1);
-        Assert.assertTrue(matricesAreEqual(A, new Array2DRowRealMatrix(new double[][]{
-                {-1.7,  1.9}
-        })));
+        RealVector A = CofactorModel.calculateA(items, weights, c1);
+        Assert.assertArrayEquals(A.toArray(), new double[]{-1.7,  1.9}, EPSILON);
 
         RealMatrix delta = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, c1 - c0);
         RealMatrix B = BTBpR.add(delta);
@@ -103,7 +99,7 @@ public class CofactorModelTest {
                 {-3.271  ,  2.73101}
         })));
 
-        RealVector actual = CofactorModel.solve(B, A.getRowVector(0));
+        RealVector actual = CofactorModel.solve(B, A);
         RealVector expected = new ArrayRealVector(new double[]{0.44514062, 1.22886953});
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
