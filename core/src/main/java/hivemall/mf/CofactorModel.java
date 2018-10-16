@@ -350,17 +350,6 @@ public class CofactorModel {
         return WTW;
     }
 
-
-    protected static void accumulateInMatrix(RealVector u, RealVector v, RealMatrix BTB, float c0) {
-        for (int i = 0; i < u.getDimension(); i++) {
-            double val = u.getEntry(i);
-            for (int j = 0; j < v.getDimension(); j++) {
-                double newEntry = BTB.getEntry(i, j) + c0 * val * v.getEntry(j);
-                BTB.setEntry(i, j, newEntry);
-            }
-        }
-    }
-
     private static boolean isTrainable(String name, Map<String, RealVector> weights) {
         return weights.containsKey(name);
     }
