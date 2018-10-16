@@ -18,26 +18,34 @@
  */
 package hivemall.mf;
 
+import hivemall.fm.Feature;
+import hivemall.fm.StringFeature;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 public class CofactorModelTest {
     private static final double EPSILON = 1e-8;
+    private static final String TOOTHBRUSH = "toothbrush";
+    private static final String TOOTHPASTE = "toothpaste";
+    private static final String SHAVER = "shaver";
+
+    @Before
 
     @Test
     public void precomputeWTW() throws HiveException {
-        Map<String, RealVector> weights = new HashMap<>();
-        weights.put("toothbrush", new ArrayRealVector(new double[]{0.5, 0.3}));
-        weights.put("toothpaste", new ArrayRealVector(new double[]{1.1, 0.9}));
-        weights.put("shaver", new ArrayRealVector(new double[]{-2.2, 1.6}));
+        Map<String, RealVector> weights = getTestWeights();
 
         RealMatrix expectedWTW = new Array2DRowRealMatrix(new double[][]{
                 {0.63, -0.238},
@@ -45,7 +53,6 @@ public class CofactorModelTest {
         });
 
         RealMatrix actualWTW = CofactorModel.computeWeightsTWeights(weights, 2, 0.1f);
-        System.out.println(actualWTW.toString());
         Assert.assertTrue(matricesAreEqual(actualWTW, expectedWTW));
     }
 
@@ -58,6 +65,20 @@ public class CofactorModelTest {
                 {0, 0, 2.0}
         });
 
+        Assert.assertTrue(matricesAreEqual(actual, expected));
+    }
+
+    @Test
+    public void calculateA() throws HiveException {
+        Map<String, RealVector> weights = getTestWeights();
+        List<Feature> items = new ArrayList<>();
+        items.add(new StringFeature(TOOTHBRUSH, 5.d));
+        items.add(new StringFeature(SHAVER, 3.d));
+        RealMatrix actual = CofactorModel.calculateA(items, weights, 0.5f);
+        System.out.println(actual.toString());
+        RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
+                {-2.05, 3.15}
+        });
         Assert.assertTrue(matricesAreEqual(actual, expected));
     }
 
@@ -74,6 +95,14 @@ public class CofactorModelTest {
             }
         }
         return true;
+    }
+
+    private static Map<String, RealVector> getTestWeights() {
+        Map<String, RealVector> weights = new HashMap<>();
+        weights.put(TOOTHBRUSH, new ArrayRealVector(new double[]{0.5, 0.3}));
+        weights.put(TOOTHPASTE, new ArrayRealVector(new double[]{1.1, 0.9}));
+        weights.put(SHAVER, new ArrayRealVector(new double[]{-2.2, 1.6}));
+        return weights;
     }
 
 }

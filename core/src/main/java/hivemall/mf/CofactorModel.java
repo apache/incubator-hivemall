@@ -223,19 +223,11 @@ public class CofactorModel {
 
         RealMatrix BTBpR = BTB.add(identity);
 
-        String itemName;
-
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             // filter for trainable items
-            List<Feature> trainableItems = new ArrayList<>();
-            for (Feature item : sample.children) {
-                itemName = item.getFeature();
-                if (isTrainable(itemName, true)) {
-                    trainableItems.add(item);
-                }
-            }
+            List<Feature> trainableItems = filterTrainableFeatures(sample, beta);
 
-            RealMatrix A = calculateA(trainableItems);
+            RealMatrix A = calculateA(trainableItems, beta, c1);
 
             RealMatrix delta = calculateDelta(trainableItems, beta, factor, c1 - c0);
             RealMatrix B = BTBpR.add(delta);
@@ -291,22 +283,37 @@ public class CofactorModel {
         return result;
     }
 
-    private RealMatrix calculateA(List<Feature> items) {
+    protected static RealMatrix calculateA(List<Feature> items, Map<String, RealVector> weights, float constant) {
         // Equivalent to: a = x_u.dot(c1 * B_u)
         // x_u is a (1, i) matrix of all ones
         // B_u is a (i, F) matrix
         // What it does: sums factor n of each item in B_u
         RealVector v = new ArrayRealVector(items.size());
         for (Feature item : items) {
-            v.add(getBetaVector(item.getFeature()));
+            double y_ui = item.getValue(); // rating
+            addInPlace(v, getFactorVector(item.getFeature(), weights), y_ui);
         }
         for (int a = 0; a < v.getDimension(); a++) {
-            v.setEntry(a, v.getEntry(a) / c1);
+            v.setEntry(a, v.getEntry(a) * constant);
         }
         // convert RealVector to 1-row RealMatrix
         RealMatrix A = new Array2DRowRealMatrix(1, items.size());
         A.setRowVector(0, v);
         return A;
+    }
+
+    /**
+     * Add v to u in-place without creating a new RealVector instance.
+     * @param u vector to which v will be added
+     * @param v vector containing new values to be added to u
+     * @param scalar value to multiply each entry in v before adding to u
+     */
+    private static void addInPlace(RealVector u, RealVector v, double scalar) {
+        assert u.getDimension() == v.getDimension();
+        for (int i = 0; i < u.getDimension(); i++) {
+            double newVal = u.getEntry(i) + scalar * v.getEntry(i);
+            u.setEntry(i, newVal);
+        }
     }
 
     protected static RealMatrix computeWeightsTWeights(Map<String, RealVector> weights, int numFactors, float constant) {
@@ -332,8 +339,8 @@ public class CofactorModel {
         }
     }
 
-    private boolean isTrainable(String name, boolean isItem) {
-        return isItem ? beta.containsKey(name) : theta.containsKey(name);
+    private static boolean isTrainable(String name, Map<String, RealVector> weights) {
+        return weights.containsKey(name);
     }
 
     @Nonnull
