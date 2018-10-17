@@ -267,18 +267,18 @@ public class CofactorModel {
     }
 
     protected static RealVector calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
-                                    Map<String, Double> betaBias, Map<String, Double> gammaBias, Map<String, RealVector> gamma) {
+                                    Map<String, Double> fixedBias, Map<String, Double> changingBias, Map<String, RealVector> weights) {
 
         String i = thisItem.getFeature();
-        double b = getBias(i, betaBias);
+        double b = getBias(i, fixedBias);
 
         RealVector accumulator = new ArrayRealVector(numFactors);
 
         // m_ij is named the same as in cofacto.py
         for (Feature cooccurrence : trainableItems) {
             String j = cooccurrence.getFeature();
-            double scale = cooccurrence.getValue() - b - getBias(j, gammaBias);
-            RealVector g = getFactorVector(j, gamma);
+            double scale = cooccurrence.getValue() - b - getBias(j, changingBias);
+            RealVector g = getFactorVector(j, weights);
             addInPlace(accumulator, g, scale);
         }
         return accumulator;
