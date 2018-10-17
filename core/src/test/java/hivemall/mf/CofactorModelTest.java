@@ -110,7 +110,6 @@ public class CofactorModelTest {
 
     @Test
     public void calculateRSD() {
-
         Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
         RealVector actual = CofactorModel.calculateRSD(
                 currentItem,
@@ -124,7 +123,7 @@ public class CofactorModelTest {
     }
 
     @Test
-    public void solve_updateOneItemWithImplicitFeedback() throws HiveException {
+    public void calculateNewBetaVector() throws HiveException {
         final float c0 = 0.1f, c1 = 1.f, lambdaBeta = 1e-5f;
         RealMatrix identity = null;
 
@@ -134,24 +133,15 @@ public class CofactorModelTest {
         Map<String, RealVector> theta = getTestTheta();
 
         // solve for new weights for toothbrush
-        Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
-
-        // get users who preferred / clicked / chose toothbrush (implicit rating)
-        List<Feature> trainableUsers = getSubset_userFeatureList_implicitFeedback();
+        CofactorizationUDTF.TrainingSample currentItem = new CofactorizationUDTF.TrainingSample(
+                new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                getSubset_userFeatureVector_implicitFeedback(),
+                getToothbrushSPPMIVector());
 
         RealMatrix TTTpR = CofactorModel.calculateWTWpR(theta, NUM_FACTORS, c0, identity, lambdaBeta);
 
-        // get items that cooccur with toothbrush
-        List<Feature> trainableCooccurringItems = getToothbrushSPPMIList();
-        RealVector RSD = CofactorModel.calculateRSD(currentItem, trainableCooccurringItems, NUM_FACTORS, betaBias, gammaBias, gamma);
-        RealVector ApRSD = CofactorModel.calculateA(trainableUsers, theta, c1).add(RSD);
-
-        RealMatrix GTG = CofactorModel.calculateDelta(trainableCooccurringItems, gamma, NUM_FACTORS, 1.f);
-        RealMatrix delta = CofactorModel.calculateDelta(trainableUsers, theta, NUM_FACTORS, c1 - c0);
-        RealMatrix B = TTTpR.add(delta).add(GTG);
-
         // solve and update factors
-        RealVector actual = CofactorModel.solve(B, ApRSD);
+        RealVector actual = CofactorModel.calculateNewBetaVector(currentItem, theta, gamma, gammaBias, betaBias, NUM_FACTORS, TTTpR, c0, c1);
 
         RealVector expected = new ArrayRealVector(new double[]{0.02884247, -0.44823876});
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
@@ -263,6 +253,14 @@ public class CofactorModelTest {
         users.add(new StringFeature(MAKOTO, 1.d));
         users.add(new StringFeature(JACKSON, 1.d));
         return users;
+    }
+
+    private static Feature[] getSubset_userFeatureVector_implicitFeedback() {
+        // Makoto and Jackson both prefer a particular item
+        Feature[] f = new Feature[2];
+        f[0] = new StringFeature(MAKOTO, 1.d);
+        f[1] = new StringFeature(JACKSON, 1.d);
+        return f;
     }
 
 }

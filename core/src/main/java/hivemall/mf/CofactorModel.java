@@ -240,29 +240,38 @@ public class CofactorModel {
      * Update latent factors of the items in the provided mini-batch.
      */
     public void updateBeta(List<CofactorizationUDTF.TrainingSample> samples) {
-        // variable names follow cofacto.py
+        // precomputed matrix
         RealMatrix TTTpR = calculateWTWpR(theta, factor, c0, identity, lambdaBeta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            // filter for trainable users
-            List<Feature> trainableUsers = filterTrainableFeatures(sample.children, theta);
-            // TODO: is this correct behaviour?
-            if (trainableUsers.isEmpty()) {
-                continue;
+            RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, TTTpR, c0, c1);
+            if (newBetaVec != null) {
+                setFactorVector(sample.parent.getFeature(), beta, newBetaVec);
             }
-
-            List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, gamma);
-            RealVector RSD = calculateRSD(sample.parent, trainableCooccurringItems, factor, betaBias, gammaBias, gamma);
-            RealVector ApRSD = calculateA(trainableUsers, theta, c1).add(RSD);
-
-            RealMatrix GTG = calculateDelta(trainableCooccurringItems, gamma, factor, 1.f);
-            RealMatrix delta = calculateDelta(trainableUsers, theta, factor, c1 - c0);
-            RealMatrix B = TTTpR.add(delta).add(GTG);
-
-            // solve and update factors
-            RealVector newBetaVec = solve(B, ApRSD);
-            setFactorVector(sample.parent.getFeature(), beta, newBetaVec);
         }
+    }
+
+    protected static RealVector calculateNewBetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> theta,
+                                                       Map<String, RealVector> gamma, Map<String, Double> gammaBias,
+                                                       Map<String, Double> betaBias, int numFactors, RealMatrix TTTpR, float c0, float c1) {
+        // filter for trainable users
+        List<Feature> trainableUsers = filterTrainableFeatures(sample.children, theta);
+        // TODO: is this correct behaviour?
+        if (trainableUsers.isEmpty()) {
+            return null;
+        }
+
+        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, gamma);
+        RealVector RSD = calculateRSD(sample.parent, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
+        RealVector ApRSD = calculateA(trainableUsers, theta, c1).add(RSD);
+
+        RealMatrix GTG = calculateDelta(trainableCooccurringItems, gamma, numFactors, 1.f);
+        RealMatrix delta = calculateDelta(trainableUsers, theta, numFactors, c1 - c0);
+        RealMatrix B = TTTpR.add(delta).add(GTG);
+
+        // solve and update factors
+        RealVector newBetaVec = solve(B, ApRSD);
+        return newBetaVec;
     }
 
     /**
