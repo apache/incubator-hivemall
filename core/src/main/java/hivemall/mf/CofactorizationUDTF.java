@@ -267,7 +267,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
             throw new UDFArgumentException(
-                    "_FUNC_ takes 3 arguments: array<string> x, array<string> sppmi [, CONSTANT STRING options]");
+                    "_FUNC_ takes 5 arguments: array<string> context, array<string> features, boolean is_item, array<string> sppmi [, CONSTANT STRING options]");
         }
         this.contextOI = HiveUtils.asStringOI(argOIs[0]);
         this.featuresOI = HiveUtils.asListOI(argOIs[1]);
@@ -310,8 +310,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (args.length != 3) {
-            throw new HiveException("should have 3 args, but have " + args.length);
+        if (args.length != 4) {
+            throw new HiveException("should have 4 args, but have " + args.length);
         }
 
         String contextString = contextOI.getPrimitiveJavaObject(args[0]);
@@ -323,7 +323,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         Boolean isParentAnItem = isItemOI.get(args[2]);
         Feature[] sppmi = null;
         if (isParentAnItem) {
-             sppmi = parseFeatures(args[2], sppmiOI, sppmiProbe);
+             sppmi = parseFeatures(args[3], sppmiOI, sppmiProbe);
         }
 
         model.recordContext(context, isParentAnItem);
