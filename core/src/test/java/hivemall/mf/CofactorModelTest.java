@@ -84,26 +84,18 @@ public class CofactorModelTest {
     }
 
     @Test
-    public void solve_updateUserWithImplicitFeedback() throws HiveException {
+    public void calculateNewThetaVector() throws HiveException {
         final float c0 = 0.1f, c1 = 1.f, lambdaTheta = 1e-5f;
-        Map<String, RealVector> weights = getTestBeta();
+        Map<String, RealVector> beta = getTestBeta();
         RealMatrix identity = null;
-        RealMatrix BTBpR = CofactorModel.calculateWTWpR(weights, NUM_FACTORS, c0, identity, lambdaTheta);
+        RealMatrix BTBpR = CofactorModel.calculateWTWpR(beta, NUM_FACTORS, c0, identity, lambdaTheta);
 
-        List<Feature> items = getSubset_itemFeatureList_implicitFeedback();
+        CofactorizationUDTF.TrainingSample currentUser = new CofactorizationUDTF.TrainingSample(
+                new StringFeature(JACKSON, DUMMY_VALUE),
+                getSubset_itemFeatureVector_implicitFeedback(),
+                null);
 
-        RealVector A = CofactorModel.calculateA(items, weights, c1);
-        Assert.assertArrayEquals(A.toArray(), new double[]{-1.7, 1.9}, EPSILON);
-
-        RealMatrix delta = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, c1 - c0);
-        RealMatrix B = BTBpR.add(delta);
-
-        Assert.assertTrue(matricesAreEqual(B, new Array2DRowRealMatrix(new double[][]{
-                {5.21101, -3.271},
-                {-3.271, 2.73101}
-        })));
-
-        RealVector actual = CofactorModel.solve(B, A);
+        RealVector actual = CofactorModel.calculateNewThetaVector(currentUser, beta, NUM_FACTORS, BTBpR, c0, c1);
         RealVector expected = new ArrayRealVector(new double[]{0.44514062, 1.22886953});
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
@@ -240,19 +232,11 @@ public class CofactorModelTest {
         return sppmi;
     }
 
-    private static List<Feature> getSubset_itemFeatureList_implicitFeedback() {
-        List<Feature> items = new ArrayList<>();
-        items.add(new StringFeature(TOOTHBRUSH, 1.d));
-        items.add(new StringFeature(SHAVER, 1.d));
+    private static Feature[] getSubset_itemFeatureVector_implicitFeedback() {
+        Feature[] items = new Feature[2];
+        items[0] = new StringFeature(TOOTHBRUSH, 1.d);
+        items[1] = new StringFeature(SHAVER, 1.d);
         return items;
-    }
-
-    private static List<Feature> getSubset_userFeatureList_implicitFeedback() {
-        // Makoto and Jackson both prefer a particular item
-        List<Feature> users = new ArrayList<>();
-        users.add(new StringFeature(MAKOTO, 1.d));
-        users.add(new StringFeature(JACKSON, 1.d));
-        return users;
     }
 
     private static Feature[] getSubset_userFeatureVector_implicitFeedback() {
