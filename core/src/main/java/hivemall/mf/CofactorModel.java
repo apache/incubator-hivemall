@@ -164,8 +164,6 @@ public class CofactorModel {
         if (isParentAnItem) {
             initFactorVector(key, beta);
             initFactorVector(key, gamma);
-            getBetaBias(key);
-            getGammaBias(key);
         } else {
             initFactorVector(key, theta);
         }
