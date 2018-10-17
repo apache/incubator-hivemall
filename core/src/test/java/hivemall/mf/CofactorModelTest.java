@@ -74,11 +74,11 @@ public class CofactorModelTest {
     }
 
     @Test
-    public void calculateDelta() throws HiveException {
+    public void calculateWTWSubset() throws HiveException {
         Map<String, RealVector> weights = getTestBeta();
         List<Feature> items = getSubset_itemFeatureList_explicitFeedback();
 
-        RealMatrix actual = CofactorModel.calculateDelta(items, weights, NUM_FACTORS, 0.9f);
+        RealMatrix actual = CofactorModel.calculateWTWSubset(items, weights, NUM_FACTORS, 0.9f);
         RealMatrix expected = new Array2DRowRealMatrix(new double[][]{
                 {4.581, -3.033},
                 {-3.033, 2.385}
