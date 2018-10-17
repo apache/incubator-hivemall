@@ -21,8 +21,12 @@ package hivemall.mf;
 import hivemall.UDTFWithOptions;
 import hivemall.common.ConversionState;
 import hivemall.fm.Feature;
+import hivemall.fm.IntFeature;
+import hivemall.fm.StringFeature;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.io.FileUtils;
 import hivemall.utils.io.NioStatefulSegment;
+import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
 import org.apache.commons.cli.CommandLine;
@@ -48,37 +52,35 @@ import static hivemall.utils.lang.Primitives.FALSE_BYTE;
 import static hivemall.utils.lang.Primitives.TRUE_BYTE;
 
 public class CofactorizationUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(CofactorizationUDTF.class);
+    private static final Log LOG = LogFactory.getLog(CofactorizationUDTF.class);
     private static final int RECORD_BYTES = SizeOf.INT + SizeOf.INT + SizeOf.FLOAT;
     private static final int REQUIRED_BYTES = SizeOf.INT + RECORD_BYTES;
 
     // Option variables
-    /** The number of latent factors */
+    // The number of latent factors
     protected int factor;
-    /** The scaling hyperparameter for zero entries in the rank matrix */
+    // The scaling hyperparameter for zero entries in the rank matrix
     protected float scale_zero;
-    /** The scaling hyperparameter for non-zero entries in the rank matrix */
+    // The scaling hyperparameter for non-zero entries in the rank matrix
     protected float scale_nonzero;
-    /** The preferred size of the miniBatch for training */
+    // The preferred size of the miniBatch for training
     protected int batchSize;
-    /** The initial mean rating */
+    // The initial mean rating
     protected float globalBias;
-    /** Whether update (and return) the mean rating or not */
+    // Whether update (and return) the mean rating or not
     protected boolean updateGlobalBias;
-    /** The number of iterations */
-    protected int iterations;
-    /** Whether to use bias clause */
+    // The number of iterations
+    protected int maxIters;
+    // Whether to use bias clause
     protected boolean useBiasClause;
-    /** Whether to use normalization */
+    // Whether to use normalization
     protected boolean useL2Norm;
-    /** Whether to parse feature as integer */
-    protected boolean parseFeatureAsInt;
-    /** regularization hyperparameters */
+    // regularization hyperparameters
     protected float lambdaTheta;
     protected float lambdaBeta;
     protected float lambdaGamma;
 
-    /** Initialization strategy of rank matrix */
+    // Initialization strategy of rank matrix
     protected CofactorModel.RankInitScheme rankInit;
 
     // Model itself
@@ -86,7 +88,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected int numItems;
 
     // Variable managing status of learning
-    /** The number of processed training examples */
+    // The number of processed training examples
     protected long count;
     protected ConversionState cvState;
 
@@ -107,7 +109,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private boolean isItemProbe;
     private int numValidations;
     private int numTraining;
-    private MiniBatch miniBatch;
 
     static class MiniBatch {
         protected int maxSize;
@@ -236,13 +237,13 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 1.f);
             initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.01d);
             if (cl.hasOption("iter")) {
-                this.iterations = Primitives.parseInt(cl.getOptionValue("iter"), 1);
+                this.maxIters = Primitives.parseInt(cl.getOptionValue("iter"), 1);
             } else {
-                this.iterations = Primitives.parseInt(cl.getOptionValue("iterations"), 1);
+                this.maxIters = Primitives.parseInt(cl.getOptionValue("maxIters"), 1);
             }
-            if (iterations < 1) {
+            if (maxIters < 1) {
                 throw new UDFArgumentException(
-                        "'-iterations' must be greater than or equal to 1: " + iterations);
+                        "'-maxIters' must be greater than or equal to 1: " + maxIters);
             }
             conversionCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
@@ -279,7 +280,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         processOptions(argOIs);
 
         this.model = new CofactorModel(factor, rankInit, scale_zero, scale_nonzero, lambdaTheta, lambdaBeta, lambdaGamma);
-        this.miniBatch = new MiniBatch(this.batchSize);
         this.count = 0L;
         this.lastWritePos = 0L;
 
@@ -315,7 +315,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
 
         String contextString = contextOI.getPrimitiveJavaObject(args[0]);
-        Feature context = Feature.parseFeature(contextString,false);
+        Feature context = Feature.parseFeature(contextString, false);
 
         Feature[] features = parseFeatures(args[1], featuresOI, featuresProbe);
         assert features != null;
@@ -323,7 +323,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         Boolean isParentAnItem = isItemOI.get(args[2]);
         Feature[] sppmi = null;
         if (isParentAnItem) {
-             sppmi = parseFeatures(args[3], sppmiOI, sppmiProbe);
+            sppmi = parseFeatures(args[3], sppmiOI, sppmiProbe);
         }
 
         model.recordContext(context, isParentAnItem);
@@ -347,7 +347,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         int nnz = countNnzFeatures(x);
         Feature[] nnzFeatures = new Feature[nnz];
         int i = 0;
-        for (Feature f: x) {
+        for (Feature f : x) {
             if (f.getValue() != 0.d) {
                 nnzFeatures[i++] = f;
             }
@@ -375,9 +375,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         miniBatch.clear();
     }
 
-    private void recordTrain(final Feature parent, final Feature[] children, final Feature[] sppmiVector)
+    private void recordTrain(final Feature context, final Feature[] features, final Feature[] sppmi)
             throws HiveException {
-
+        numTraining++;
         ByteBuffer inputBuf = this.inputBuf;
         NioStatefulSegment dst = this.fileIO;
         if (inputBuf == null) {
@@ -389,7 +389,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                     throw new UDFArgumentException(
                             "Cannot write a temporary file: " + file.getAbsolutePath());
                 }
-                logger.info("Record training examples to a file: " + file.getAbsolutePath());
+                LOG.info("Record training examples to a file: " + file.getAbsolutePath());
             } catch (IOException ioe) {
                 throw new UDFArgumentException(ioe);
             } catch (Throwable e) {
@@ -400,12 +400,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
-        int parentBytes = parent.bytes();
-        int childrenBytes = Feature.requiredBytes(children);
+        int contextBytes = context.bytes();
+        int featuresBytes = SizeOf.INT + Feature.requiredBytes(features);
         int isParentAnItemBytes = SizeOf.BYTE;
-        int sppmiVectorBytes = sppmiVector != null ? Feature.requiredBytes(sppmiVector) : 0;
+        int sppmiBytes = sppmi != null ? SizeOf.INT + Feature.requiredBytes(sppmi) : 0;
 
-        int recordBytes = parentBytes + childrenBytes + isParentAnItemBytes + sppmiVectorBytes;
+        int recordBytes = contextBytes + SizeOf.INT + featuresBytes + isParentAnItemBytes + SizeOf.INT + sppmiBytes;
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
         if (remain < requiredBytes) {
@@ -413,11 +413,11 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
 
         inputBuf.putInt(recordBytes);
-        parent.writeTo(inputBuf);
-        writeFeaturesToBuffer(children, inputBuf);
-        if (sppmiVector != null) {
+        context.writeTo(inputBuf);
+        writeFeaturesToBuffer(features, inputBuf);
+        if (sppmi != null) {
             inputBuf.put(TRUE_BYTE);
-            writeFeaturesToBuffer(sppmiVector, inputBuf);
+            writeFeaturesToBuffer(sppmi, inputBuf);
         } else {
             inputBuf.put(FALSE_BYTE);
         }
