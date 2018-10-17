@@ -269,25 +269,32 @@ public class CofactorModel {
      * Update latent factors of the items in the provided mini-batch.
      */
     public void updateGamma(List<CofactorizationUDTF.TrainingSample> samples) {
-        // variable names follow cofacto.py
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            // filter for trainable items
-            List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, beta);
-            // TODO: is this correct behaviour?
-            if (trainableCooccurringItems.isEmpty()) {
-                continue;
+            RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, identity, lambdaGamma);
+            if (newGammaVec != null) {
+                setFactorVector(sample.parent.getFeature(), gamma, newGammaVec);
             }
-
-            RealMatrix B = calculateDelta(trainableCooccurringItems, beta, factor, 1.f)
-                    .add(calculateR(identity, lambdaGamma, factor));
-            RealVector rsd = calculateRSD(sample.parent, trainableCooccurringItems, factor, gammaBias, betaBias, beta);
-
-            // solve and update factors
-            RealVector newGammaVec = solve(B, rsd);
-            setFactorVector(sample.parent.getFeature(), gamma, newGammaVec);
         }
     }
 
+    protected static RealVector calculateNewGammaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
+                                                      Map<String, Double> gammaBias, Map<String, Double> betaBias,
+                                                      int numFactors, RealMatrix idMatrix, float lambdaGamma) {
+        // filter for trainable items
+        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, beta);
+        // TODO: is this correct behaviour?
+        if (trainableCooccurringItems.isEmpty()) {
+            return null;
+        }
+
+        RealMatrix B = calculateDelta(trainableCooccurringItems, beta, numFactors, 1.f)
+                .add(calculateR(idMatrix, lambdaGamma, numFactors));
+        RealVector rsd = calculateRSD(sample.parent, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
+
+        // solve and update factors
+        RealVector newGammaVec = solve(B, rsd);
+        return newGammaVec;
+    }
 
 
     protected static RealVector calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,

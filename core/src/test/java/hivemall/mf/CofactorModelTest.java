@@ -114,7 +114,7 @@ public class CofactorModelTest {
         Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
         RealVector actual = CofactorModel.calculateRSD(
                 currentItem,
-                getToothbrushSPPMIVector(),
+                getToothbrushSPPMIList(),
                 NUM_FACTORS,
                 getTestBetaBias(),
                 getTestGammaBias(),
@@ -124,38 +124,22 @@ public class CofactorModelTest {
     }
 
     @Test
-    public void solve_updateOneItemWithImplicitFeedback() throws HiveException {
-        final float c0 = 0.1f, c1 = 1.f, lambdaBeta = 1e-5f;
+    public void calculateNewGammaVector() throws HiveException {
+        final float lambdaGamma = 1e-5f;
         RealMatrix identity = null;
 
         Map<String, Double> betaBias = getTestBetaBias();
         Map<String, Double> gammaBias = getTestGammaBias();
-        Map<String, RealVector> gamma = getTestGamma();
-        Map<String, RealVector> theta = getTestTheta();
+        Map<String, RealVector> beta = getTestBeta();
 
-        // solve for new weights for toothbrush
-        Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
+        CofactorizationUDTF.TrainingSample currentItem = new CofactorizationUDTF.TrainingSample(
+                new StringFeature(TOOTHBRUSH, DUMMY_VALUE), null, getToothbrushSPPMIVector());
 
-        // get users who preferred / clicked / chose toothbrush (implicit rating)
-        List<Feature> trainableUsers = getSubset_userFeatureList_implicitFeedback();
-
-        RealMatrix TTTpR = CofactorModel.calculateWTWpR(theta, NUM_FACTORS, c0, identity, lambdaBeta);
-
-        // get items that cooccur with toothbrush
-        List<Feature> trainableCooccurringItems = getToothbrushSPPMIVector();
-        RealVector RSD = CofactorModel.calculateRSD(currentItem, trainableCooccurringItems, NUM_FACTORS, betaBias, gammaBias, gamma);
-        RealVector ApRSD = CofactorModel.calculateA(trainableUsers, theta, c1).add(RSD);
-
-        RealMatrix GTG = CofactorModel.calculateDelta(trainableCooccurringItems, gamma, NUM_FACTORS, 1.f);
-        RealMatrix delta = CofactorModel.calculateDelta(trainableUsers, theta, NUM_FACTORS, c1 - c0);
-        RealMatrix B = TTTpR.add(delta).add(GTG);
-
-        // solve and update factors
-        RealVector actual = CofactorModel.solve(B, ApRSD);
-
-        RealVector expected = new ArrayRealVector(new double[]{0.02884247, -0.44823876});
+        RealVector actual = CofactorModel.calculateNewGammaVector(currentItem, beta, gammaBias, betaBias, NUM_FACTORS, identity, lambdaGamma);
+        RealVector expected = new ArrayRealVector(new double[]{0.95722067, -2.05881636});
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
+
 
     @Test
     public void solve_updateOneContextItemWithImplicitFeedback() throws HiveException {
@@ -170,7 +154,7 @@ public class CofactorModelTest {
         Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
 
         // get items that cooccur with toothbrush
-        List<Feature> trainableCooccurringItems = getToothbrushSPPMIVector();
+        List<Feature> trainableCooccurringItems = getToothbrushSPPMIList();
         RealVector rsd = CofactorModel.calculateRSD(currentItem, trainableCooccurringItems, NUM_FACTORS, gammaBias, betaBias, beta);
         Assert.assertArrayEquals(rsd.toArray(), new double[]{11, -9.36}, EPSILON);
 
@@ -249,10 +233,17 @@ public class CofactorModelTest {
         return items;
     }
 
-    private static List<Feature> getToothbrushSPPMIVector() {
+    private static List<Feature> getToothbrushSPPMIList() {
         List<Feature> sppmi = new ArrayList<>();
         sppmi.add(new StringFeature(TOOTHPASTE, 0.7));
         sppmi.add(new StringFeature(SHAVER, 0.3));
+        return sppmi;
+    }
+
+    private static Feature[] getToothbrushSPPMIVector() {
+        Feature[] sppmi = new Feature[2];
+        sppmi[0] = new StringFeature(TOOTHPASTE, 0.7);
+        sppmi[1] = new StringFeature(SHAVER, 0.3);
         return sppmi;
     }
 
