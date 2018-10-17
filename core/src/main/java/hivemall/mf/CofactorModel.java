@@ -218,22 +218,30 @@ public class CofactorModel {
         RealMatrix BTBpR = calculateWTWpR(beta, factor, c0, identity, lambdaTheta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            // filter for trainable items
-            List<Feature> trainableItems = filterTrainableFeatures(sample.children, beta);
-            // TODO: is this correct behaviour?
-            if (trainableItems.isEmpty()) {
-                continue;
+            RealVector newThetaVec = calculateNewThetaVector(sample, beta, factor, BTBpR, c0, c1);
+            if (newThetaVec != null) {
+                setFactorVector(sample.parent.getFeature(), theta, newThetaVec);
             }
-
-            RealVector A = calculateA(trainableItems, beta, c1);
-
-            RealMatrix delta = calculateDelta(trainableItems, beta, factor, c1 - c0);
-            RealMatrix B = BTBpR.add(delta);
-
-            // solve and update factors
-            RealVector newThetaVec = solve(B, A);
-            setFactorVector(sample.parent.getFeature(), theta, newThetaVec);
         }
+    }
+
+    protected static RealVector calculateNewThetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
+                                                        int numFactors, RealMatrix BTBpR, float c0, float c1) {
+        // filter for trainable items
+        List<Feature> trainableItems = filterTrainableFeatures(sample.children, beta);
+        // TODO: is this correct behaviour?
+        if (trainableItems.isEmpty()) {
+            return null;
+        }
+
+        RealVector A = calculateA(trainableItems, beta, c1);
+
+        RealMatrix delta = calculateDelta(trainableItems, beta, numFactors, c1 - c0);
+        RealMatrix B = BTBpR.add(delta);
+
+        // solve and update factors
+        RealVector newThetaVec = solve(B, A);
+        return newThetaVec;
     }
 
     /**
