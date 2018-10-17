@@ -37,9 +37,13 @@ import java.util.ArrayList;
 public class CofactorModelTest {
     private static final double EPSILON = 1e-3;
     private static final int NUM_FACTORS = 2;
+
+    // items
     private static final String TOOTHBRUSH = "toothbrush";
     private static final String TOOTHPASTE = "toothpaste";
     private static final String SHAVER = "shaver";
+
+    // users
     private static final String MAKOTO = "makoto";
     private static final String TAKUYA = "takuya";
     private static final String JACKSON = "jackson";
