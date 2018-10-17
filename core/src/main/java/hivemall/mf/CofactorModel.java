@@ -234,7 +234,7 @@ public class CofactorModel {
 
         RealVector A = calculateA(trainableItems, beta, c1);
 
-        RealMatrix delta = calculateDelta(trainableItems, beta, numFactors, c1 - c0);
+        RealMatrix delta = calculateWTWSubset(trainableItems, beta, numFactors, c1 - c0);
         RealMatrix B = BTBpR.add(delta);
 
         // solve and update factors
@@ -271,8 +271,8 @@ public class CofactorModel {
         RealVector RSD = calculateRSD(sample.parent, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
         RealVector ApRSD = calculateA(trainableUsers, theta, c1).add(RSD);
 
-        RealMatrix GTG = calculateDelta(trainableCooccurringItems, gamma, numFactors, 1.f);
-        RealMatrix delta = calculateDelta(trainableUsers, theta, numFactors, c1 - c0);
+        RealMatrix GTG = calculateWTWSubset(trainableCooccurringItems, gamma, numFactors, 1.f);
+        RealMatrix delta = calculateWTWSubset(trainableUsers, theta, numFactors, c1 - c0);
         RealMatrix B = TTTpR.add(delta).add(GTG);
 
         // solve and update factors
@@ -302,7 +302,7 @@ public class CofactorModel {
             return null;
         }
 
-        RealMatrix B = calculateDelta(trainableCooccurringItems, beta, numFactors, 1.f)
+        RealMatrix B = calculateWTWSubset(trainableCooccurringItems, beta, numFactors, 1.f)
                 .add(calculateR(idMatrix, lambdaGamma, numFactors));
         RealVector rsd = calculateRSD(sample.parent, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
 
@@ -366,13 +366,25 @@ public class CofactorModel {
 
     }
 
-    protected static RealMatrix calculateDelta(List<Feature> children, Map<String, RealVector> weights, int numFactors, float constant) {
+    protected static RealMatrix calculateWTW(Map<String, RealVector> weights, int numFactors, float constant) {
+        RealMatrix WTW = new Array2DRowRealMatrix(numFactors, numFactors);
+        int i = 0, j = 0;
+        for (int f = 0; f < numFactors; f++) {
+            for (int ff = 0; ff < numFactors; ff++) {
+                double val = constant * dotFactorsAlongDims(weights, f, ff);
+                WTW.setEntry(f, ff, val);
+            }
+        }
+        return WTW;
+    }
+
+    protected static RealMatrix calculateWTWSubset(List<Feature> subset, Map<String, RealVector> weights, int numFactors, float constant) {
         // equivalent to `B_u.T.dot((c1 - c0) * B_u)` in cofacto.py
         RealMatrix delta = new Array2DRowRealMatrix(numFactors, numFactors);
         int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
             for (int ff = 0; ff < numFactors; ff++) {
-                double val = constant * dotFactorsAlongDims(children, weights, f, ff);
+                double val = constant * dotFactorsAlongDims(subset, weights, f, ff);
                 delta.setEntry(f, ff, val);
             }
         }
@@ -425,18 +437,6 @@ public class CofactorModel {
             double newVal = u.getEntry(i) + scalar * v.getEntry(i);
             u.setEntry(i, newVal);
         }
-    }
-
-    protected static RealMatrix calculateWTW(Map<String, RealVector> weights, int numFactors, float constant) {
-        RealMatrix WTW = new Array2DRowRealMatrix(numFactors, numFactors);
-        int i = 0, j = 0;
-        for (int f = 0; f < numFactors; f++) {
-            for (int ff = 0; ff < numFactors; ff++) {
-                double val = constant * dotFactorsAlongDims(weights, f, ff);
-                WTW.setEntry(f, ff, val);
-            }
-        }
-        return WTW;
     }
 
     private static boolean isTrainable(String name, Map<String, RealVector> weights) {
