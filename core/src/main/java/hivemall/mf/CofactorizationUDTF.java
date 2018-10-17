@@ -336,7 +336,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         addToBatch(parent, children, sppmiVector);
         recordTrain(parent, children, sppmiVector);
-        trainBatch();
+        trainMiniBatch();
     }
 
     @Nullable
@@ -368,7 +368,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         return nnz;
     }
 
-    private void trainBatch() {
+    private void trainMiniBatch() {
         if (miniBatch.size() < batchSize) {
             return;
         }
