@@ -373,12 +373,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             return;
         }
         numTraining += miniBatch.size();
-        List<TrainingSample> users = miniBatch.getUsers();
-        model.updateTheta(users);
-        List<TrainingSample> items = miniBatch.getItems();
-        model.updateBeta(items);
-        model.updateGamma(items);
-        model.updateBetaBias(items);
+        model.updateWithUsers(miniBatch.getUsers());
+        model.updateWithItems(miniBatch.getItems());
         miniBatch.clear();
     }
 

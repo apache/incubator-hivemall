@@ -205,10 +205,21 @@ public class CofactorModel {
         setBias(key, betaBias, value);
     }
 
+    public void updateWithUsers(List<CofactorizationUDTF.TrainingSample> users) {
+        updateTheta(users);
+    }
+
+    public void updateWithItems(List<CofactorizationUDTF.TrainingSample> items) {
+        updateBeta(items);
+        updateGamma(items);
+        updateBetaBias(items);
+        updateGammaBias(items);
+    }
+
     /**
      * Update latent factors of the users in the provided mini-batch.
      */
-    public void updateTheta(List<CofactorizationUDTF.TrainingSample> samples) {
+    private void updateTheta(List<CofactorizationUDTF.TrainingSample> samples) {
         // initialize item factors
         // items should only be trainable if the dataset contains a major entry for that item (which it may not)
 
@@ -245,7 +256,7 @@ public class CofactorModel {
     /**
      * Update latent factors of the items in the provided mini-batch.
      */
-    public void updateBeta(List<CofactorizationUDTF.TrainingSample> samples) {
+    private void updateBeta(List<CofactorizationUDTF.TrainingSample> samples) {
         // precomputed matrix
         RealMatrix TTTpR = calculateWTWpR(theta, factor, c0, identity, lambdaBeta);
 
@@ -283,7 +294,7 @@ public class CofactorModel {
     /**
      * Update latent factors of the items in the provided mini-batch.
      */
-    public void updateGamma(List<CofactorizationUDTF.TrainingSample> samples) {
+    private void updateGamma(List<CofactorizationUDTF.TrainingSample> samples) {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, identity, lambdaGamma);
             if (newGammaVec != null) {
@@ -311,7 +322,7 @@ public class CofactorModel {
         return newGammaVec;
     }
 
-    public void updateBetaBias(List<CofactorizationUDTF.TrainingSample> samples) {
+    private void updateBetaBias(List<CofactorizationUDTF.TrainingSample> samples) {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             Double newBetaBias = calculateNewBias(sample, beta, gamma, gammaBias);
             // TODO: is this correct behaviour?
