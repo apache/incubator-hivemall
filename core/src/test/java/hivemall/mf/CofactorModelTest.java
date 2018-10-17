@@ -181,13 +181,13 @@ public class CofactorModelTest {
         CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
         Feature user = new StringFeature(JACKSON, DUMMY_VALUE);
         Assert.assertNull(model.getThetaVector(JACKSON));
-        model.recordAsParent(user, false);
+        model.recordContext(user, false);
         Assert.assertNotNull(model.getThetaVector(JACKSON));
 
         Feature item = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
         Assert.assertNull(model.getBetaVector(TOOTHBRUSH));
         Assert.assertNull(model.getGammaVector(TOOTHBRUSH));
-        model.recordAsParent(item, true);
+        model.recordContext(item, true);
         Assert.assertNotNull(model.getBetaVector(TOOTHBRUSH));
         Assert.assertNotNull(model.getGammaVector(TOOTHBRUSH));
     }

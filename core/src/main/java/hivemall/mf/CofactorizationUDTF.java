@@ -91,20 +91,20 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected ConversionState cvState;
 
     // Input OIs and Context
-    protected StringObjectInspector parentOI;
-    protected ListObjectInspector childrenOI;
-    protected BooleanObjectInspector isParentAnItemOI;
-    protected ListObjectInspector sppmiVectorOI;
+    protected StringObjectInspector contextOI;
+    protected ListObjectInspector featuresOI;
+    protected BooleanObjectInspector isItemOI;
+    protected ListObjectInspector sppmiOI;
 
     // Used for iterations
     protected NioStatefulSegment fileIO;
     protected ByteBuffer inputBuf;
     private long lastWritePos;
 
-    private Feature parentProbe;
-    private Feature[] childrenProbe;
-    private Feature[] sppmiVectorProbe;
-    private boolean isParentAnItemProbe;
+    private Feature contextProbe;
+    private Feature[] featuresProbe;
+    private Feature[] sppmiProbe;
+    private boolean isItemProbe;
     private int numValidations;
     private int numTraining;
     private MiniBatch miniBatch;
@@ -149,18 +149,18 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     }
 
     static class TrainingSample {
-        protected Feature parent;
-        protected Feature[] children;
-        protected Feature[] sppmiVector;
+        protected Feature context;
+        protected Feature[] features;
+        protected Feature[] sppmi;
 
-        protected TrainingSample(Feature parent, Feature[] children, Feature[] sppmiVector) {
-            this.parent = parent;
-            this.children = children;
-            this.sppmiVector = sppmiVector;
+        protected TrainingSample(Feature context, Feature[] features, Feature[] sppmi) {
+            this.context = context;
+            this.features = features;
+            this.sppmi = sppmi;
         }
 
         protected boolean isItem() {
-            return sppmiVector != null;
+            return sppmi != null;
         }
     }
 
@@ -267,14 +267,14 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
             throw new UDFArgumentException(
-                    "_FUNC_ takes 3 arguments: array<string> x, array<string> sppmiVector [, CONSTANT STRING options]");
+                    "_FUNC_ takes 3 arguments: array<string> x, array<string> sppmi [, CONSTANT STRING options]");
         }
-        this.parentOI = HiveUtils.asStringOI(argOIs[0]);
-        this.childrenOI = HiveUtils.asListOI(argOIs[1]);
-        HiveUtils.validateFeatureOI(childrenOI.getListElementObjectInspector());
-        this.isParentAnItemOI = HiveUtils.asBooleanOI(argOIs[2]);
-        this.sppmiVectorOI = HiveUtils.asListOI(argOIs[3]);
-        HiveUtils.validateFeatureOI(sppmiVectorOI.getListElementObjectInspector());
+        this.contextOI = HiveUtils.asStringOI(argOIs[0]);
+        this.featuresOI = HiveUtils.asListOI(argOIs[1]);
+        HiveUtils.validateFeatureOI(featuresOI.getListElementObjectInspector());
+        this.isItemOI = HiveUtils.asBooleanOI(argOIs[2]);
+        this.sppmiOI = HiveUtils.asListOI(argOIs[3]);
+        HiveUtils.validateFeatureOI(sppmiOI.getListElementObjectInspector());
 
         processOptions(argOIs);
 
@@ -314,29 +314,26 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             throw new HiveException("should have 3 args, but have " + args.length);
         }
 
-        String parentString = parentOI.getPrimitiveJavaObject(args[0]);
-        Feature parent = Feature.parseFeature(parentString,false);
-        assert parent != null;
+        String contextString = contextOI.getPrimitiveJavaObject(args[0]);
+        Feature context = Feature.parseFeature(contextString,false);
 
-        Feature[] children = parseFeatures(args[1], childrenOI, childrenProbe);
-        assert children != null;
+        Feature[] features = parseFeatures(args[1], featuresOI, featuresProbe);
+        assert features != null;
 
-        Boolean isParentAnItem = isParentAnItemOI.get(args[2]);
-        Feature[] sppmiVector = null;
+        Boolean isParentAnItem = isItemOI.get(args[2]);
+        Feature[] sppmi = null;
         if (isParentAnItem) {
-             sppmiVector = parseFeatures(args[2], sppmiVectorOI, sppmiVectorProbe);
+             sppmi = parseFeatures(args[2], sppmiOI, sppmiProbe);
         }
 
-        model.recordAsParent(parent, isParentAnItem);
+        model.recordContext(context, isParentAnItem);
 
-        this.parentProbe = parent;
-        this.childrenProbe = children;
-        this.isParentAnItemProbe = isParentAnItem;
-        this.sppmiVectorProbe = sppmiVector;
+        this.contextProbe = context;
+        this.featuresProbe = features;
+        this.isItemProbe = isParentAnItem;
+        this.sppmiProbe = sppmi;
 
-        addToBatch(parent, children, sppmiVector);
-        recordTrain(parent, children, sppmiVector);
-        trainMiniBatch();
+        recordTrain(context, features, sppmi);
     }
 
     @Nullable
@@ -378,16 +375,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         miniBatch.clear();
     }
 
-    private void addToBatch(final Feature parent, final Feature[] children, final Feature[] sppmiVector) {
-        TrainingSample sample = new TrainingSample(parent, children, sppmiVector);
-        miniBatch.add(sample);
-    }
-
     private void recordTrain(final Feature parent, final Feature[] children, final Feature[] sppmiVector)
             throws HiveException {
-        if (iterations <= 1) {
-            return;
-        }
 
         ByteBuffer inputBuf = this.inputBuf;
         NioStatefulSegment dst = this.fileIO;

@@ -159,8 +159,8 @@ public class CofactorModel {
         biases.put(key, value);
     }
 
-    public void recordAsParent(Feature parent, Boolean isParentAnItem) {
-        String key = parent.getFeature();
+    public void recordContext(Feature context, Boolean isParentAnItem) {
+        String key = context.getFeature();
         if (isParentAnItem) {
             initFactorVector(key, beta);
             initFactorVector(key, gamma);
@@ -229,7 +229,7 @@ public class CofactorModel {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             RealVector newThetaVec = calculateNewThetaVector(sample, beta, factor, BTBpR, c0, c1);
             if (newThetaVec != null) {
-                setFactorVector(sample.parent.getFeature(), theta, newThetaVec);
+                setFactorVector(sample.context.getFeature(), theta, newThetaVec);
             }
         }
     }
@@ -237,7 +237,7 @@ public class CofactorModel {
     protected static RealVector calculateNewThetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
                                                         int numFactors, RealMatrix BTBpR, float c0, float c1) {
         // filter for trainable items
-        List<Feature> trainableItems = filterTrainableFeatures(sample.children, beta);
+        List<Feature> trainableItems = filterTrainableFeatures(sample.features, beta);
         // TODO: is this correct behaviour?
         if (trainableItems.isEmpty()) {
             return null;
@@ -263,7 +263,7 @@ public class CofactorModel {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, TTTpR, c0, c1);
             if (newBetaVec != null) {
-                setFactorVector(sample.parent.getFeature(), beta, newBetaVec);
+                setFactorVector(sample.context.getFeature(), beta, newBetaVec);
             }
         }
     }
@@ -272,14 +272,14 @@ public class CofactorModel {
                                                        Map<String, RealVector> gamma, Map<String, Double> gammaBias,
                                                        Map<String, Double> betaBias, int numFactors, RealMatrix TTTpR, float c0, float c1) {
         // filter for trainable users
-        List<Feature> trainableUsers = filterTrainableFeatures(sample.children, theta);
+        List<Feature> trainableUsers = filterTrainableFeatures(sample.features, theta);
         // TODO: is this correct behaviour?
         if (trainableUsers.isEmpty()) {
             return null;
         }
 
-        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, gamma);
-        RealVector RSD = calculateRSD(sample.parent, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
+        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, gamma);
+        RealVector RSD = calculateRSD(sample.context, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
         RealVector ApRSD = calculateA(trainableUsers, theta, c1).add(RSD);
 
         RealMatrix GTG = calculateWTWSubset(trainableCooccurringItems, gamma, numFactors, 1.f);
@@ -298,7 +298,7 @@ public class CofactorModel {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, identity, lambdaGamma);
             if (newGammaVec != null) {
-                setFactorVector(sample.parent.getFeature(), gamma, newGammaVec);
+                setFactorVector(sample.context.getFeature(), gamma, newGammaVec);
             }
         }
     }
@@ -307,7 +307,7 @@ public class CofactorModel {
                                                       Map<String, Double> gammaBias, Map<String, Double> betaBias,
                                                       int numFactors, RealMatrix idMatrix, float lambdaGamma) {
         // filter for trainable items
-        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, beta);
+        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
         // TODO: is this correct behaviour?
         if (trainableCooccurringItems.isEmpty()) {
             return null;
@@ -315,7 +315,7 @@ public class CofactorModel {
 
         RealMatrix B = calculateWTWSubset(trainableCooccurringItems, beta, numFactors, 1.f)
                 .add(calculateR(idMatrix, lambdaGamma, numFactors));
-        RealVector rsd = calculateRSD(sample.parent, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
+        RealVector rsd = calculateRSD(sample.context, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
 
         // solve and update factors
         RealVector newGammaVec = solve(B, rsd);
@@ -327,7 +327,7 @@ public class CofactorModel {
             Double newBetaBias = calculateNewBias(sample, beta, gamma, gammaBias);
             // TODO: is this correct behaviour?
             if (newBetaBias != null) {
-                setBetaBias(sample.parent.getFeature(), newBetaBias);
+                setBetaBias(sample.context.getFeature(), newBetaBias);
             }
         }
     }
@@ -337,7 +337,7 @@ public class CofactorModel {
             Double newGammaBias = calculateNewBias(sample, gamma, beta, betaBias);
             // TODO: is this correct behaviour?
             if (newGammaBias != null) {
-                setBetaBias(sample.parent.getFeature(), newGammaBias);
+                setBetaBias(sample.context.getFeature(), newGammaBias);
             }
         }
     }
@@ -345,12 +345,12 @@ public class CofactorModel {
     protected static Double calculateNewBias(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
                                                Map<String, RealVector> gamma, Map<String, Double> biases) {
         // filter for trainable items
-        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, beta);
+        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
         if (trainableCooccurringItems.isEmpty()) {
             return null;
         }
 
-        double rsd = calculateBiasRSD(sample.parent, trainableCooccurringItems, beta, gamma, biases);
+        double rsd = calculateBiasRSD(sample.context, trainableCooccurringItems, beta, gamma, biases);
         return rsd / trainableCooccurringItems.size();
 
     }
