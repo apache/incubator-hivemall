@@ -244,7 +244,7 @@ public class CofactorModel {
         RealMatrix TTTpR = calculateWTWpR(theta, factor, c0, identity, lambdaBeta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            // filter for trainable items
+            // filter for trainable users
             List<Feature> trainableUsers = filterTrainableFeatures(sample.children, theta);
             // TODO: is this correct behaviour?
             if (trainableUsers.isEmpty()) {
