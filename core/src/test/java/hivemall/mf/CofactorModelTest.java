@@ -48,7 +48,7 @@ public class CofactorModelTest {
     @Before
 
     @Test
-    public void precomputeWTW() throws HiveException {
+    public void calculateWTW() throws HiveException {
         Map<String, RealVector> weights = getTestBeta();
 
         RealMatrix expectedWTW = new Array2DRowRealMatrix(new double[][]{
