@@ -157,6 +157,36 @@ public class CofactorModelTest {
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
 
+    @Test
+    public void solve_updateOneContextItemWithImplicitFeedback() throws HiveException {
+        final float lambdaGamma = 1e-5f;
+        RealMatrix identity = null;
+
+        Map<String, Double> betaBias = getTestBetaBias();
+        Map<String, Double> gammaBias = getTestGammaBias();
+        Map<String, RealVector> beta = getTestBeta();
+
+        // solve for new weights for toothbrush
+        Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
+
+        // get items that cooccur with toothbrush
+        List<Feature> trainableCooccurringItems = getToothbrushSPPMIVector();
+        RealVector rsd = CofactorModel.calculateRSD(currentItem, trainableCooccurringItems, NUM_FACTORS, gammaBias, betaBias, beta);
+        Assert.assertArrayEquals(rsd.toArray(), new double[]{11, -9.36}, EPSILON);
+
+        RealMatrix B = CofactorModel.calculateDelta(trainableCooccurringItems, beta, NUM_FACTORS, 1.f)
+                .add(CofactorModel.calculateR(identity, lambdaGamma, NUM_FACTORS));
+        Assert.assertTrue(matricesAreEqual(B, new Array2DRowRealMatrix(new double[][]{
+                {6.05001, -2.53},
+                {-2.53, 3.37001}
+        })));
+
+        // solve and update factors
+        RealVector actual = CofactorModel.solve(B, rsd);
+        RealVector expected = new ArrayRealVector(new double[]{0.95722067, -2.05881636});
+        Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
+    }
+
     private static boolean matricesAreEqual(RealMatrix A, RealMatrix B) {
         double[][] dataA = A.getData(), dataB = B.getData();
         if (dataA.length != dataB.length || dataA[0].length != dataB[0].length) {
