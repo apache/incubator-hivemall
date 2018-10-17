@@ -378,7 +378,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         List<TrainingSample> items = miniBatch.getItems();
         model.updateBeta(items);
         model.updateGamma(items);
-//        model.updateBiases(items);
+        model.updateBetaBias(items);
         miniBatch.clear();
     }
 

@@ -161,6 +161,22 @@ public class CofactorModelTest {
     }
 
     @Test
+    public void calculateNewBias_forBetaBias_returnsNonNull() throws HiveException {
+        Map<String, Double> gammaBias = getTestGammaBias();
+        Map<String, RealVector> beta = getTestBeta();
+        Map<String, RealVector> gamma = getTestGamma();
+
+        CofactorizationUDTF.TrainingSample currentItem = new CofactorizationUDTF.TrainingSample(
+                new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                null,
+                getToothbrushSPPMIVector());
+        Double actual = CofactorModel.calculateNewBias(currentItem, beta, gamma, gammaBias);
+        Assert.assertNotNull(actual);
+        double expected = -0.955d;
+        Assert.assertEquals(actual, expected, EPSILON);
+    }
+
+    @Test
     public void recordAsParent() throws HiveException {
         CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
         Feature user = new StringFeature(JACKSON, DUMMY_VALUE);
@@ -208,6 +224,14 @@ public class CofactorModelTest {
         return weights;
     }
 
+    private static Map<String, RealVector> getTestGamma() {
+        Map<String, RealVector> weights = new HashMap<>();
+        weights.put(TOOTHBRUSH, new ArrayRealVector(new double[]{1.3, -0.2}));
+        weights.put(TOOTHPASTE, new ArrayRealVector(new double[]{1.6, 0.1}));
+        weights.put(SHAVER, new ArrayRealVector(new double[]{3.2, -0.4}));
+        return weights;
+    }
+
     private static Map<String, Double> getTestBetaBias() {
         Map<String, Double> weights = new HashMap<>();
         weights.put(TOOTHBRUSH, 0.1);
@@ -221,14 +245,6 @@ public class CofactorModelTest {
         weights.put(TOOTHBRUSH, 3.4);
         weights.put(TOOTHPASTE, -0.5);
         weights.put(SHAVER, 1.1);
-        return weights;
-    }
-
-    private static Map<String, RealVector> getTestGamma() {
-        Map<String, RealVector> weights = new HashMap<>();
-        weights.put(TOOTHBRUSH, new ArrayRealVector(new double[]{1.3, -0.2}));
-        weights.put(TOOTHPASTE, new ArrayRealVector(new double[]{1.6, 0.1}));
-        weights.put(SHAVER, new ArrayRealVector(new double[]{3.2, -0.4}));
         return weights;
     }
 

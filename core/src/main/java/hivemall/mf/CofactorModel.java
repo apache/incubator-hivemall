@@ -311,6 +311,43 @@ public class CofactorModel {
         return newGammaVec;
     }
 
+    public void updateBetaBias(List<CofactorizationUDTF.TrainingSample> samples) {
+        for (CofactorizationUDTF.TrainingSample sample : samples) {
+            Double newBetaBias = calculateNewBias(sample, beta, gamma, gammaBias);
+            // TODO: is this correct behaviour?
+            if (newBetaBias != null) {
+                setBetaBias(sample.parent.getFeature(), newBetaBias);
+            }
+        }
+    }
+
+    protected static Double calculateNewBias(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
+                                               Map<String, RealVector> gamma, Map<String, Double> biases) {
+        // filter for trainable items
+        List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, beta);
+        if (trainableCooccurringItems.isEmpty()) {
+            return null;
+        }
+
+        double rsd = calculateBiasRSD(sample.parent, trainableCooccurringItems, beta, gamma, biases);
+        return rsd / trainableCooccurringItems.size();
+
+    }
+
+    protected static double calculateBiasRSD(Feature thisItem, List<Feature> trainableItems, Map<String, RealVector> beta,
+                                           Map<String, RealVector> gamma, Map<String, Double> biases) {
+        double result = 0.d;
+        String i = thisItem.getFeature();
+        RealVector thisFactorVec = getFactorVector(i, beta);
+
+        for (Feature cooccurrence : trainableItems) {
+            String j = cooccurrence.getFeature();
+            double value = cooccurrence.getValue() - thisFactorVec.dotProduct(getFactorVector(j, gamma)) - getBias(j, biases);
+            result += value;
+        }
+        return result;
+    }
+
 
     protected static RealVector calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
                                     Map<String, Double> fixedBias, Map<String, Double> changingBias, Map<String, RealVector> weights) {
