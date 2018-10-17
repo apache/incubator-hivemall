@@ -321,6 +321,16 @@ public class CofactorModel {
         }
     }
 
+    public void updateGammaBias(List<CofactorizationUDTF.TrainingSample> samples) {
+        for (CofactorizationUDTF.TrainingSample sample : samples) {
+            Double newGammaBias = calculateNewBias(sample, gamma, beta, betaBias);
+            // TODO: is this correct behaviour?
+            if (newGammaBias != null) {
+                setBetaBias(sample.parent.getFeature(), newGammaBias);
+            }
+        }
+    }
+
     protected static Double calculateNewBias(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
                                                Map<String, RealVector> gamma, Map<String, Double> biases) {
         // filter for trainable items
