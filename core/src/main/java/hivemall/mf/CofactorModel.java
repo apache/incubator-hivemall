@@ -263,8 +263,32 @@ public class CofactorModel {
             RealVector newBetaVec = solve(B, ApRSD);
             setFactorVector(sample.parent.getFeature(), beta, newBetaVec);
         }
-
     }
+
+    /**
+     * Update latent factors of the items in the provided mini-batch.
+     */
+    public void updateGamma(List<CofactorizationUDTF.TrainingSample> samples) {
+        // variable names follow cofacto.py
+        for (CofactorizationUDTF.TrainingSample sample : samples) {
+            // filter for trainable items
+            List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmiVector, beta);
+            // TODO: is this correct behaviour?
+            if (trainableCooccurringItems.isEmpty()) {
+                continue;
+            }
+
+            RealMatrix B = calculateDelta(trainableCooccurringItems, beta, factor, 1.f)
+                    .add(calculateR(identity, lambdaGamma, factor));
+            RealVector rsd = calculateRSD(sample.parent, trainableCooccurringItems, factor, gammaBias, betaBias, beta);
+
+            // solve and update factors
+            RealVector newGammaVec = solve(B, rsd);
+            setFactorVector(sample.parent.getFeature(), gamma, newGammaVec);
+        }
+    }
+
+
 
     protected static RealVector calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
                                     Map<String, Double> fixedBias, Map<String, Double> changingBias, Map<String, RealVector> weights) {
@@ -293,7 +317,7 @@ public class CofactorModel {
         return WTW.add(R);
     }
 
-    private static RealMatrix calculateR(RealMatrix idMatrix, float lambda, int numFactors) {
+    protected static RealMatrix calculateR(RealMatrix idMatrix, float lambda, int numFactors) {
         if (idMatrix == null) {
             idMatrix = new Array2DRowRealMatrix(MatrixUtils.eye(numFactors));
         }
