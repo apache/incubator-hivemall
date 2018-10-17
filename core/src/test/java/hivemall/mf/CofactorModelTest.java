@@ -124,6 +124,40 @@ public class CofactorModelTest {
     }
 
     @Test
+    public void solve_updateOneItemWithImplicitFeedback() throws HiveException {
+        final float c0 = 0.1f, c1 = 1.f, lambdaBeta = 1e-5f;
+        RealMatrix identity = null;
+
+        Map<String, Double> betaBias = getTestBetaBias();
+        Map<String, Double> gammaBias = getTestGammaBias();
+        Map<String, RealVector> gamma = getTestGamma();
+        Map<String, RealVector> theta = getTestTheta();
+
+        // solve for new weights for toothbrush
+        Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
+
+        // get users who preferred / clicked / chose toothbrush (implicit rating)
+        List<Feature> trainableUsers = getSubset_userFeatureList_implicitFeedback();
+
+        RealMatrix TTTpR = CofactorModel.calculateWTWpR(theta, NUM_FACTORS, c0, identity, lambdaBeta);
+
+        // get items that cooccur with toothbrush
+        List<Feature> trainableCooccurringItems = getToothbrushSPPMIList();
+        RealVector RSD = CofactorModel.calculateRSD(currentItem, trainableCooccurringItems, NUM_FACTORS, betaBias, gammaBias, gamma);
+        RealVector ApRSD = CofactorModel.calculateA(trainableUsers, theta, c1).add(RSD);
+
+        RealMatrix GTG = CofactorModel.calculateDelta(trainableCooccurringItems, gamma, NUM_FACTORS, 1.f);
+        RealMatrix delta = CofactorModel.calculateDelta(trainableUsers, theta, NUM_FACTORS, c1 - c0);
+        RealMatrix B = TTTpR.add(delta).add(GTG);
+
+        // solve and update factors
+        RealVector actual = CofactorModel.solve(B, ApRSD);
+
+        RealVector expected = new ArrayRealVector(new double[]{0.02884247, -0.44823876});
+        Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
+    }
+
+    @Test
     public void calculateNewGammaVector() throws HiveException {
         final float lambdaGamma = 1e-5f;
         RealMatrix identity = null;
@@ -136,37 +170,6 @@ public class CofactorModelTest {
                 new StringFeature(TOOTHBRUSH, DUMMY_VALUE), null, getToothbrushSPPMIVector());
 
         RealVector actual = CofactorModel.calculateNewGammaVector(currentItem, beta, gammaBias, betaBias, NUM_FACTORS, identity, lambdaGamma);
-        RealVector expected = new ArrayRealVector(new double[]{0.95722067, -2.05881636});
-        Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
-    }
-
-
-    @Test
-    public void solve_updateOneContextItemWithImplicitFeedback() throws HiveException {
-        final float lambdaGamma = 1e-5f;
-        RealMatrix identity = null;
-
-        Map<String, Double> betaBias = getTestBetaBias();
-        Map<String, Double> gammaBias = getTestGammaBias();
-        Map<String, RealVector> beta = getTestBeta();
-
-        // solve for new weights for toothbrush
-        Feature currentItem = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
-
-        // get items that cooccur with toothbrush
-        List<Feature> trainableCooccurringItems = getToothbrushSPPMIList();
-        RealVector rsd = CofactorModel.calculateRSD(currentItem, trainableCooccurringItems, NUM_FACTORS, gammaBias, betaBias, beta);
-        Assert.assertArrayEquals(rsd.toArray(), new double[]{11, -9.36}, EPSILON);
-
-        RealMatrix B = CofactorModel.calculateDelta(trainableCooccurringItems, beta, NUM_FACTORS, 1.f)
-                .add(CofactorModel.calculateR(identity, lambdaGamma, NUM_FACTORS));
-        Assert.assertTrue(matricesAreEqual(B, new Array2DRowRealMatrix(new double[][]{
-                {6.05001, -2.53},
-                {-2.53, 3.37001}
-        })));
-
-        // solve and update factors
-        RealVector actual = CofactorModel.solve(B, rsd);
         RealVector expected = new ArrayRealVector(new double[]{0.95722067, -2.05881636});
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
