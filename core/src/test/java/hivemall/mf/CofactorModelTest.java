@@ -156,6 +156,23 @@ public class CofactorModelTest {
         Assert.assertArrayEquals(actual.toArray(), expected.toArray(), EPSILON);
     }
 
+    @Test
+    public void recordAsParent() throws HiveException {
+        CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
+        Feature user = new StringFeature(JACKSON, DUMMY_VALUE);
+        Assert.assertNull(model.getThetaVector(JACKSON));
+        model.recordAsParent(user, false);
+        Assert.assertNotNull(model.getThetaVector(JACKSON));
+
+        Feature item = new StringFeature(TOOTHBRUSH, DUMMY_VALUE);
+        Assert.assertNull(model.getBetaVector(TOOTHBRUSH));
+        Assert.assertNull(model.getGammaVector(TOOTHBRUSH));
+        model.recordAsParent(item, true);
+        Assert.assertNotNull(model.getBetaVector(TOOTHBRUSH));
+        Assert.assertNotNull(model.getGammaVector(TOOTHBRUSH));
+    }
+
+
     private static boolean matricesAreEqual(RealMatrix A, RealMatrix B) {
         double[][] dataA = A.getData(), dataB = B.getData();
         if (dataA.length != dataB.length || dataA[0].length != dataB[0].length) {
