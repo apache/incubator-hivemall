@@ -21,7 +21,6 @@ package hivemall.mf;
 import hivemall.UDTFWithOptions;
 import hivemall.common.ConversionState;
 import hivemall.fm.Feature;
-import hivemall.fm.IntFeature;
 import hivemall.fm.StringFeature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
@@ -39,6 +38,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
+import org.apache.hadoop.mapred.Counters;
+import org.apache.hadoop.mapred.Reporter;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -53,8 +54,6 @@ import static hivemall.utils.lang.Primitives.TRUE_BYTE;
 
 public class CofactorizationUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(CofactorizationUDTF.class);
-    private static final int RECORD_BYTES = SizeOf.INT + SizeOf.INT + SizeOf.FLOAT;
-    private static final int REQUIRED_BYTES = SizeOf.INT + RECORD_BYTES;
 
     // Option variables
     // The number of latent factors
@@ -88,9 +87,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected int numItems;
 
     // Variable managing status of learning
+
     // The number of processed training examples
     protected long count;
+
     protected ConversionState cvState;
+    private ConversionState validationState;
 
     // Input OIs and Context
     protected StringObjectInspector contextOI;
@@ -107,8 +109,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private Feature[] featuresProbe;
     private Feature[] sppmiProbe;
     private boolean isItemProbe;
-    private int numValidations;
-    private int numTraining;
+    private long numValidations;
+    private long numTraining;
+
 
     static class MiniBatch {
         protected int maxSize;
@@ -253,7 +256,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException(
                         "Cannot set both `update_gb` and `no_bias` option");
             }
-            this.parseFeatureAsInt = cl.hasOption("int_feature");
             this.useL2Norm = !cl.hasOption("disable_l2norm");
         }
         this.rankInit = CofactorModel.RankInitScheme.resolve(rankInitOpt);
@@ -365,14 +367,10 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         return nnz;
     }
 
-    private void trainMiniBatch() {
-        if (miniBatch.size() < batchSize) {
-            return;
-        }
-        numTraining += miniBatch.size();
+    private Double trainMiniBatch(MiniBatch miniBatch) {
         model.updateWithUsers(miniBatch.getUsers());
         model.updateWithItems(miniBatch.getItems());
-        miniBatch.clear();
+        return model.calculateLoss(miniBatch.getUsers(), miniBatch.getItems());
     }
 
     private void recordTrain(final Feature context, final Feature[] features, final Feature[] sppmi)
@@ -443,10 +441,134 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
-        if (!batch.isEmpty()) {
-            trainBatch();
+        // The number of iterations
+        try {
+            boolean lossIncreasedLastIter = false;
+
+            final Reporter reporter = getReporter();
+            final Counters.Counter iterCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "iteration");
+
+            // write training examples in buffer to a temporary file
+            if (inputBuf.remaining() > 0) {
+                writeBuffer(inputBuf, fileIO);
+            }
+            try {
+                fileIO.flush();
+            } catch (IOException e) {
+                throw new HiveException(
+                        "Failed to flush a file: " + fileIO.getFile().getAbsolutePath(), e);
+            }
+            if (LOG.isInfoEnabled()) {
+                File tmpFile = fileIO.getFile();
+                LOG.info("Wrote " + numTraining
+                        + " records to a temporary file for iterative training: "
+                        + tmpFile.getAbsolutePath() + " (" + FileUtils.prettyFileSize(tmpFile)
+                        + ")");
+            }
+
+            for (int iteration = 0; iteration < maxIters; iteration++) {
+                // train the model on a full batch (i.e., all the data) using mini-batch updates
+//                validationState.next();
+                cvState.next();
+                reportProgress(reporter);
+                setCounterValue(iterCounter, iteration);
+                runTrainingIteration();
+
+                LOG.info("Performed " + cvState.getCurrentIteration() + " iterations of "
+                        + NumberUtils.formatNumber(maxIters));
+//                        + " training examples on a secondary storage (thus "
+//                        + NumberUtils.formatNumber(_t) + " training updates in total), used "
+//                        + _numValidations + " validation examples");
+            }
+        } finally {
+            // delete the temporary file and release resources
+            try {
+                fileIO.close(true);
+            } catch (IOException e) {
+                throw new HiveException(
+                        "Failed to close a file: " + fileIO.getFile().getAbsolutePath(), e);
+            }
+            this.inputBuf = null;
+            this.fileIO = null;
+        }
+    }
+
+    private void runTrainingIteration() throws HiveException {
+        fileIO.resetPosition();
+        MiniBatch miniBatch = new MiniBatch(batchSize);
+        // read minibatch from disk into memory
+        while (readMiniBatchFromFile(miniBatch)) {
+            Double trainLoss = trainMiniBatch(miniBatch);
+            if (trainLoss != null) {
+                cvState.incrLoss(trainLoss);
+            }
         }
 
-        // train for t iterations
+    }
+
+    @Nonnull
+    protected static Feature instantiateFeature(@Nonnull final ByteBuffer input) {
+        return new StringFeature(input);
+    }
+
+    private boolean readMiniBatchFromFile(MiniBatch miniBatch) throws HiveException {
+        // writes training examples to a buffer in the temporary file
+        final int bytesRead;
+        try {
+            bytesRead = fileIO.read(inputBuf);
+        } catch (IOException e) {
+            throw new HiveException(
+                    "Failed to read a file: " + fileIO.getFile().getAbsolutePath(), e);
+        }
+        if (bytesRead == 0) { // reached file EOF
+            return false;
+        }
+        assert (bytesRead > 0) : bytesRead;
+
+        // reads training examples from a buffer
+        inputBuf.flip();
+        int remain = inputBuf.remaining();
+        if (remain < SizeOf.INT) {
+            throw new HiveException("Illegal file format was detected");
+        }
+        while (remain >= SizeOf.INT) {
+            int initialPos = inputBuf.position();
+            int recordBytes = inputBuf.getInt();
+            remain -= SizeOf.INT;
+
+            if (remain < recordBytes) {
+                // whole record can't fit in memory,
+                // so end the mini-batch here
+                inputBuf.position(initialPos);
+                break;
+            }
+            final TrainingSample sample = readSampleFromBuffer(inputBuf);
+            miniBatch.add(sample);
+            remain -= recordBytes;
+        }
+        inputBuf.compact();
+        return true;
+    }
+
+    private static TrainingSample readSampleFromBuffer(ByteBuffer inputBuf) {
+        final Feature context = instantiateFeature(inputBuf);
+        final int numFeatures = inputBuf.getInt();
+        final Feature[] features = new Feature[numFeatures];
+        for (int j = 0; j < numFeatures; j++) {
+            features[j] = instantiateFeature(inputBuf);
+        }
+        final boolean isItem = (inputBuf.get() == TRUE_BYTE);
+        final Feature[] sppmi;
+        if (isItem) {
+            final int numSppmi = inputBuf.getInt();
+            sppmi = new Feature[numSppmi];
+            for (int j = 0; j < numFeatures; j++) {
+                sppmi[j] = instantiateFeature(inputBuf);
+            }
+        } else {
+            sppmi = null;
+        }
+        return new TrainingSample(context, features, sppmi);
     }
 }
