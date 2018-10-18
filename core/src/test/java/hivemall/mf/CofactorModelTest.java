@@ -244,7 +244,7 @@ public class CofactorModelTest {
 
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
                 0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
-        int iterations = 20;
+        int iterations = 5;
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples();
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples();
 
@@ -265,6 +265,16 @@ public class CofactorModelTest {
 //            System.out.println("bBeta = " + model.getBetaBiases().toString());
 //            System.out.println("bGamma = " + model.getGammaBiases().toString());
 //            System.out.println("========================================================");
+//            System.out.println("===================  ITERATION " + i + " ======================");
+//            for (CofactorizationUDTF.TrainingSample user : users) {
+//                System.out.print(user.context.getFeature() + " -> ");
+//                for (CofactorizationUDTF.TrainingSample item : items) {
+//                    double score = model.predict(user.context, item.context);
+//                    boolean prediction = score > 0.5;
+//                    System.out.print("(" + item.context.getFeature() + ":" + String.format("%.3f", score) + "), ");
+//                }
+//                System.out.println();
+//            }
             Assert.assertNotNull(loss);
             Assert.assertTrue(loss < prevLoss);
             prevLoss = loss;
@@ -277,17 +287,17 @@ public class CofactorModelTest {
                 new CofactorizationUDTF.TrainingSample(
                         new StringFeature(TOOTHPASTE, DUMMY_VALUE),
                         new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d), new StringFeature(JACKSON, 1.d)},
-                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.5d)}));
+                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
         samples.add(
                 new CofactorizationUDTF.TrainingSample(
                     new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
-                    new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
-                    new Feature[]{new StringFeature(TOOTHPASTE, 1.5d), new StringFeature(SHAVER, 0.9d)}));
+                    new Feature[]{new StringFeature(MAKOTO, 1.d)},
+                    new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
         samples.add(
                 new CofactorizationUDTF.TrainingSample(
                         new StringFeature(SHAVER, DUMMY_VALUE),
                         new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
-                        new Feature[]{new StringFeature(TOOTHBRUSH, 0.9d)}));
+                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
         return samples;
     }
 
@@ -306,7 +316,7 @@ public class CofactorModelTest {
         samples.add(
                 new CofactorizationUDTF.TrainingSample(
                         new StringFeature(JACKSON, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.d), new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                        new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
                         null));
         return samples;
     }
