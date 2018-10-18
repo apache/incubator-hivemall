@@ -243,7 +243,7 @@ public class CofactorModel {
             return null;
         }
 
-        RealVector A = calculateA(trainableItems, beta, c1);
+        RealVector A = calculateA(trainableItems, beta, numFactors, c1);
 
         RealMatrix delta = calculateWTWSubset(trainableItems, beta, numFactors, c1 - c0);
         RealMatrix B = BTBpR.add(delta);
@@ -280,7 +280,7 @@ public class CofactorModel {
 
         List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, gamma);
         RealVector RSD = calculateRSD(sample.context, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
-        RealVector ApRSD = calculateA(trainableUsers, theta, c1).add(RSD);
+        RealVector ApRSD = calculateA(trainableUsers, theta, numFactors, c1).add(RSD);
 
         RealMatrix GTG = calculateWTWSubset(trainableCooccurringItems, gamma, numFactors, 1.f);
         RealMatrix delta = calculateWTWSubset(trainableUsers, theta, numFactors, c1 - c0);
@@ -467,12 +467,12 @@ public class CofactorModel {
         return result;
     }
 
-    protected static RealVector calculateA(List<Feature> items, Map<String, RealVector> weights, float constant) {
+    protected static RealVector calculateA(List<Feature> items, Map<String, RealVector> weights, int numFactors, float constant) {
         // Equivalent to: a = x_u.dot(c1 * B_u)
         // x_u is a (1, i) matrix of all ones
         // B_u is a (i, F) matrix
         // What it does: sums factor n of each item in B_u
-        RealVector v = new ArrayRealVector(items.size());
+        RealVector v = new ArrayRealVector(numFactors);
         for (Feature item : items) {
             double y_ui = item.getValue(); // rating
             addInPlace(v, getFactorVector(item.getFeature(), weights), y_ui);

@@ -48,6 +48,7 @@ public class CofactorModelTest {
     private static final String TAKUYA = "takuya";
     private static final String JACKSON = "jackson";
     private static final String ALIEN = "alien";
+
     private static final double DUMMY_VALUE = 0.d;
 
     @Before
@@ -69,7 +70,7 @@ public class CofactorModelTest {
     public void calculateA() throws HiveException {
         Map<String, RealVector> weights = getTestBeta();
         List<Feature> items = getSubset_itemFeatureList_explicitFeedback();
-        RealVector actual = CofactorModel.calculateA(items, weights, 0.5f);
+        RealVector actual = CofactorModel.calculateA(items, weights, NUM_FACTORS, 0.5f);
         double[] expected = new double[]{-2.05, 3.15};
         Assert.assertArrayEquals(actual.toArray(), expected, EPSILON);
     }
