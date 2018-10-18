@@ -377,13 +377,15 @@ public class CofactorModel {
 
     protected static double calculateBiasRSD(Feature thisItem, List<Feature> trainableItems, Map<String, RealVector> beta,
                                            Map<String, RealVector> gamma, Map<String, Double> biases) {
-        double result = 0.d;
+        double result = 0.d, cooccurBias;
         String i = thisItem.getFeature();
-        RealVector thisFactorVec = getFactorVector(i, beta);
+        RealVector thisFactorVec = getFactorVector(i, beta), cooccurVec;
 
         for (Feature cooccurrence : trainableItems) {
             String j = cooccurrence.getFeature();
-            double value = cooccurrence.getValue() - thisFactorVec.dotProduct(getFactorVector(j, gamma)) - getBias(j, biases);
+            cooccurVec = getFactorVector(j, gamma);
+            cooccurBias = getBias(j, biases);
+            double value = cooccurrence.getValue() - thisFactorVec.dotProduct(cooccurVec) - cooccurBias;
             result += value;
         }
         return result;

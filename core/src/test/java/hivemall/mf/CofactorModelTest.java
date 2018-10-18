@@ -275,18 +275,18 @@ public class CofactorModelTest {
         List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
         samples.add(
                 new CofactorizationUDTF.TrainingSample(
-                    new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
-                    new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
-                    new Feature[]{new StringFeature(TOOTHPASTE, 1.5d), new StringFeature(SHAVER, 0.9d)}));
-        samples.add(
-                new CofactorizationUDTF.TrainingSample(
                         new StringFeature(TOOTHPASTE, DUMMY_VALUE),
                         new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d), new StringFeature(JACKSON, 1.d)},
                         new Feature[]{new StringFeature(TOOTHBRUSH, 1.5d)}));
         samples.add(
                 new CofactorizationUDTF.TrainingSample(
+                    new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                    new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
+                    new Feature[]{new StringFeature(TOOTHPASTE, 1.5d), new StringFeature(SHAVER, 0.9d)}));
+        samples.add(
+                new CofactorizationUDTF.TrainingSample(
                         new StringFeature(SHAVER, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d)},
+                        new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
                         new Feature[]{new StringFeature(TOOTHBRUSH, 0.9d)}));
         return samples;
     }
@@ -301,12 +301,12 @@ public class CofactorModelTest {
         samples.add(
                 new CofactorizationUDTF.TrainingSample(
                         new StringFeature(TAKUYA, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                        new Feature[]{new StringFeature(TOOTHPASTE, 1.d)},
                         null));
         samples.add(
                 new CofactorizationUDTF.TrainingSample(
                         new StringFeature(JACKSON, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.d)},
+                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.d), new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
                         null));
         return samples;
     }
