@@ -322,17 +322,17 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         Feature[] features = parseFeatures(args[1], featuresOI, featuresProbe);
         assert features != null;
 
-        Boolean isParentAnItem = isItemOI.get(args[2]);
+        Boolean isItem = isItemOI.get(args[2]);
         Feature[] sppmi = null;
-        if (isParentAnItem) {
+        if (isItem) {
             sppmi = parseFeatures(args[3], sppmiOI, sppmiProbe);
         }
 
-        model.recordContext(context, isParentAnItem);
+        model.recordContext(context, isItem);
 
         this.contextProbe = context;
         this.featuresProbe = features;
-        this.isItemProbe = isParentAnItem;
+        this.isItemProbe = isItem;
         this.sppmiProbe = sppmi;
 
         recordTrain(context, features, sppmi);
