@@ -223,12 +223,34 @@ public class CofactorModelTest {
         Assert.assertEquals(actual, expected, EPSILON);
     }
 
+    @Test
+    public void calculateEmbedLoss() throws HiveException {
+        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_sppmi();
+        Map<String, RealVector> beta = getTestBeta();
+        Map<String, RealVector> gamma = getTestGamma();
+        Map<String, Double> betaBias = getTestBetaBias();
+        Map<String, Double> gammaBias = getTestGammaBias();
+
+        double actual = CofactorModel.calculateEmbedLoss(samples, beta, gamma, betaBias, gammaBias);
+        double expected = 5.7373d;
+        Assert.assertEquals(actual, expected, EPSILON);
+    }
+
     private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_allUsersInTheta() {
         List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
         samples.add(new CofactorizationUDTF.TrainingSample(
                 new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
                 getSubset_userFeatureVector_implicitFeedback(),
                 null));
+        return samples;
+    }
+
+    private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_sppmi() {
+        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
+        samples.add(new CofactorizationUDTF.TrainingSample(
+                new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                null,
+                getToothbrushSPPMIVector()));
         return samples;
     }
 
