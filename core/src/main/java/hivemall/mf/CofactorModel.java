@@ -205,6 +205,26 @@ public class CofactorModel {
         setBias(key, betaBias, value);
     }
 
+    public Map<String, RealVector> getTheta() {
+        return theta;
+    }
+
+    public Map<String, RealVector> getBeta() {
+        return beta;
+    }
+
+    public Map<String, RealVector> getGamma() {
+        return gamma;
+    }
+
+    public Map<String, Double> getBetaBiases() {
+        return betaBias;
+    }
+
+    public Map<String, Double> getGammaBiases() {
+        return gammaBias;
+    }
+
     public void updateWithUsers(List<CofactorizationUDTF.TrainingSample> users) {
         updateTheta(users);
     }
