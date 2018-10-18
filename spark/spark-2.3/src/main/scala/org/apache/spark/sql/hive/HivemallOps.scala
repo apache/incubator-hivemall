@@ -32,9 +32,11 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{AnalysisBarrier, Generate, JoinTopK, LogicalPlan}
-import org.apache.spark.sql.execution.UserProvidedPlanner
+import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.execution.UserProvidedLogicalPlans
 import org.apache.spark.sql.execution.datasources.csv.{CsvToStruct, StructToCsv}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.optimizer.VarianceThreshold
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -97,7 +99,11 @@ final class HivemallOps(df: DataFrame) extends Logging {
   import internal.HivemallOpsImpl._
 
   private lazy val _sparkSession = df.sparkSession
-  private lazy val _strategy = new UserProvidedPlanner(_sparkSession.sqlContext.conf)
+
+  private lazy val _userDefinedStrategies: Seq[Strategy] = Seq(
+    new UserProvidedLogicalPlans(_sparkSession.sqlContext.conf))
+  private lazy val _userDefinedOptimizations: Seq[Rule[LogicalPlan]] = Seq(
+    new VarianceThreshold(_sparkSession.sqlContext.conf))
 
   /**
    * @see [[hivemall.regression.GeneralRegressorUDTF]]
@@ -1151,8 +1157,8 @@ final class HivemallOps(df: DataFrame) extends Logging {
   @inline private def withTypedPlanInCustomStrategy(logicalPlan: => LogicalPlan)
     : DataFrame = {
     // Inject custom strategies
-    if (!_sparkSession.experimental.extraStrategies.contains(_strategy)) {
-      _sparkSession.experimental.extraStrategies = Seq(_strategy)
+    if (_sparkSession.experimental.extraStrategies == Nil) {
+      _sparkSession.experimental.extraStrategies = _userDefinedStrategies
     }
     withTypedPlan(logicalPlan)
   }
