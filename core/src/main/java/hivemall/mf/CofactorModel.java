@@ -34,83 +34,6 @@ import java.util.*;
 
 public class CofactorModel {
 
-    public Double calculateLoss(List<CofactorizationUDTF.TrainingSample> users, List<CofactorizationUDTF.TrainingSample> items) {
-        // for speed - can calculate loss on a small subset of the training data
-        double mf_loss = calculateMFLoss(users, theta, beta, c0, c1) + calculateMFLoss(items, beta, theta, c0, c1);
-        double embed_loss = calculateEmbedLoss(items, beta, gamma, betaBias, gammaBias);
-        return mf_loss + embed_loss + sumL2Loss(theta, lambdaTheta) + sumL2Loss(beta, lambdaBeta) + sumL2Loss(gamma, lambdaGamma);
-
-    }
-
-    protected static double calculateEmbedLoss(List<CofactorizationUDTF.TrainingSample> items, Map<String, RealVector> beta,
-                                               Map<String, RealVector> gamma, Map<String, Double> betaBias,
-                                               Map<String, Double> gammaBias) {
-        double loss = 0.d, val, bBias, gBias;
-        RealVector bFactors, gFactors;
-        String bKey, gKey;
-        for (CofactorizationUDTF.TrainingSample item: items) {
-            bKey = item.context.getFeature();
-            bFactors = getFactorVector(bKey, beta);
-            bBias = getBias(bKey, betaBias);
-            for (Feature cooccurrence : item.sppmi) {
-                if (!isTrainable(cooccurrence.getFeature(), beta)) {
-                    continue;
-                }
-                gKey = cooccurrence.getFeature();
-                gFactors = getFactorVector(gKey, gamma);
-                gBias = getBias(gKey, gammaBias);
-                val = cooccurrence.getValue() - bFactors.dotProduct(gFactors) - bBias - gBias;
-                loss += val * val;
-            }
-        }
-        return loss;
-    }
-
-    protected static double calculateMFLoss(List<CofactorizationUDTF.TrainingSample> samples, Map<String, RealVector> contextWeights,
-                                   Map<String, RealVector> featureWeights, float c0, float c1) {
-        double loss = 0.d, err, predicted, y;
-        RealVector contextFactors, ratedFactors;
-
-        for (CofactorizationUDTF.TrainingSample sample : samples) {
-            contextFactors = getFactorVector(sample.context.getFeature(), contextWeights);
-            // all items / users
-            for (RealVector unratedFactors : featureWeights.values()) {
-                predicted = contextFactors.dotProduct(unratedFactors);
-                err = (0.d - predicted);
-                loss += c0 * err * err;
-            }
-            // only rated items / users
-            for (Feature f : sample.features) {
-                if (!isTrainable(f.getFeature(), featureWeights)) {
-                    continue;
-                }
-                ratedFactors = getFactorVector(f.getFeature(), featureWeights);
-                predicted = contextFactors.dotProduct(ratedFactors);
-                y = f.getValue();
-                err = y - predicted;
-                loss += (c1 - c0) * err * err;
-            }
-        }
-        return loss;
-    }
-
-    protected static double sumL2Loss(Map<String, RealVector> weights, float lambda) {
-        double loss = 0.d;
-        for (RealVector v : weights.values()) {
-            loss += L2Distance(v);
-        }
-        return lambda * loss;
-    }
-
-    protected static double L2Distance(RealVector v) {
-        double result = 0.d;
-        for (int i = 0; i < v.getDimension(); i++) {
-            double val = v.getEntry(i);
-            result +=  val * val;
-        }
-        return Math.sqrt(result);
-    }
-
     public enum RankInitScheme {
         random /* default */, gaussian;
 
@@ -558,6 +481,83 @@ public class CofactorModel {
             v.setEntry(a, v.getEntry(a) * constant);
         }
         return v;
+    }
+
+    public Double calculateLoss(List<CofactorizationUDTF.TrainingSample> users, List<CofactorizationUDTF.TrainingSample> items) {
+        // for speed - can calculate loss on a small subset of the training data
+        double mf_loss = calculateMFLoss(users, theta, beta, c0, c1) + calculateMFLoss(items, beta, theta, c0, c1);
+        double embed_loss = calculateEmbedLoss(items, beta, gamma, betaBias, gammaBias);
+        return mf_loss + embed_loss + sumL2Loss(theta, lambdaTheta) + sumL2Loss(beta, lambdaBeta) + sumL2Loss(gamma, lambdaGamma);
+
+    }
+
+    protected static double calculateEmbedLoss(List<CofactorizationUDTF.TrainingSample> items, Map<String, RealVector> beta,
+                                               Map<String, RealVector> gamma, Map<String, Double> betaBias,
+                                               Map<String, Double> gammaBias) {
+        double loss = 0.d, val, bBias, gBias;
+        RealVector bFactors, gFactors;
+        String bKey, gKey;
+        for (CofactorizationUDTF.TrainingSample item: items) {
+            bKey = item.context.getFeature();
+            bFactors = getFactorVector(bKey, beta);
+            bBias = getBias(bKey, betaBias);
+            for (Feature cooccurrence : item.sppmi) {
+                if (!isTrainable(cooccurrence.getFeature(), beta)) {
+                    continue;
+                }
+                gKey = cooccurrence.getFeature();
+                gFactors = getFactorVector(gKey, gamma);
+                gBias = getBias(gKey, gammaBias);
+                val = cooccurrence.getValue() - bFactors.dotProduct(gFactors) - bBias - gBias;
+                loss += val * val;
+            }
+        }
+        return loss;
+    }
+
+    protected static double calculateMFLoss(List<CofactorizationUDTF.TrainingSample> samples, Map<String, RealVector> contextWeights,
+                                            Map<String, RealVector> featureWeights, float c0, float c1) {
+        double loss = 0.d, err, predicted, y;
+        RealVector contextFactors, ratedFactors;
+
+        for (CofactorizationUDTF.TrainingSample sample : samples) {
+            contextFactors = getFactorVector(sample.context.getFeature(), contextWeights);
+            // all items / users
+            for (RealVector unratedFactors : featureWeights.values()) {
+                predicted = contextFactors.dotProduct(unratedFactors);
+                err = (0.d - predicted);
+                loss += c0 * err * err;
+            }
+            // only rated items / users
+            for (Feature f : sample.features) {
+                if (!isTrainable(f.getFeature(), featureWeights)) {
+                    continue;
+                }
+                ratedFactors = getFactorVector(f.getFeature(), featureWeights);
+                predicted = contextFactors.dotProduct(ratedFactors);
+                y = f.getValue();
+                err = y - predicted;
+                loss += (c1 - c0) * err * err;
+            }
+        }
+        return loss;
+    }
+
+    protected static double sumL2Loss(Map<String, RealVector> weights, float lambda) {
+        double loss = 0.d;
+        for (RealVector v : weights.values()) {
+            loss += L2Distance(v);
+        }
+        return lambda * loss;
+    }
+
+    protected static double L2Distance(RealVector v) {
+        double result = 0.d;
+        for (int i = 0; i < v.getDimension(); i++) {
+            double val = v.getEntry(i);
+            result +=  val * val;
+        }
+        return Math.sqrt(result);
     }
 
     /**
