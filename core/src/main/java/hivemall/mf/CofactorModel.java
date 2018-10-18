@@ -40,9 +40,9 @@ public class CofactorModel {
         random /* default */, gaussian;
 
         @Nonnegative
-        protected float maxInitValue;
+        private float maxInitValue;
         @Nonnegative
-        protected double initStdDev;
+        private double initStdDev;
 
         @Nonnull
         public static CofactorModel.RankInitScheme resolve(@Nullable String opt) {
@@ -68,20 +68,20 @@ public class CofactorModel {
 
     private static final int EXPECTED_SIZE = 136861;
     @Nonnegative
-    protected final int factor;
+    private final int factor;
 
     // rank matrix initialization
-    protected final RankInitScheme initScheme;
+    private final RankInitScheme initScheme;
 
     @Nonnull
     private double globalBias;
 
     // storing trainable latent factors and weights
-    private Map<String, RealVector> theta;
-    private Map<String, RealVector> beta;
-    private Object2DoubleMap<String> betaBias;
-    private Map<String, RealVector> gamma;
-    private Object2DoubleMap<String> gammaBias;
+    private final Map<String, RealVector> theta;
+    private final Map<String, RealVector> beta;
+    private final Object2DoubleMap<String> betaBias;
+    private final Map<String, RealVector> gamma;
+    private final Object2DoubleMap<String> gammaBias;
 
     // precomputed identity matrix
     private RealMatrix identity;
@@ -93,8 +93,7 @@ public class CofactorModel {
     private final float lambdaTheta, lambdaBeta, lambdaGamma;
 
     public CofactorModel(@Nonnegative int factor, @Nonnull RankInitScheme initScheme,
-                         @Nonnull float c0, @Nonnull float c1, float lambdaTheta,
-                         float lambdaBeta, float lambdaGamma) {
+                         float c0, float c1, float lambdaTheta, float lambdaBeta, float lambdaGamma) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
@@ -154,7 +153,7 @@ public class CofactorModel {
         if (!biases.containsKey(key)) {
             biases.put(key, 0.d);
         }
-        return biases.get(key);
+        return biases.getDouble(key);
     }
 
     private static void setBias(String key, Object2DoubleMap<String> biases, double value) {
@@ -271,8 +270,7 @@ public class CofactorModel {
         RealMatrix B = BTBpR.add(delta);
 
         // solve and update factors
-        RealVector newThetaVec = solve(B, A);
-        return newThetaVec;
+        return solve(B, A);
     }
 
     /**
@@ -309,8 +307,7 @@ public class CofactorModel {
         RealMatrix B = TTTpR.add(delta).add(GTG);
 
         // solve and update factors
-        RealVector newBetaVec = solve(B, ApRSD);
-        return newBetaVec;
+        return solve(B, ApRSD);
     }
 
     /**
@@ -340,8 +337,7 @@ public class CofactorModel {
         RealVector rsd = calculateRSD(sample.context, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
 
         // solve and update factors
-        RealVector newGammaVec = solve(B, rsd);
-        return newGammaVec;
+        return solve(B, rsd);
     }
 
     private void updateBetaBias(List<CofactorizationUDTF.TrainingSample> samples) {
