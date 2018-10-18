@@ -47,6 +47,7 @@ public class CofactorModelTest {
     private static final String MAKOTO = "makoto";
     private static final String TAKUYA = "takuya";
     private static final String JACKSON = "jackson";
+    private static final String ALIEN = "alien";
     private static final double DUMMY_VALUE = 0.d;
 
     @Before
@@ -192,6 +193,54 @@ public class CofactorModelTest {
         Assert.assertNotNull(model.getGammaVector(TOOTHBRUSH));
     }
 
+    @Test
+    public void L2Distance() throws HiveException {
+        RealVector v = new ArrayRealVector(new double[]{0.1, 2.3, 5.3});
+        double actual = CofactorModel.L2Distance(v);
+        double expected = 5.7784d;
+        Assert.assertEquals(actual, expected, EPSILON);
+    }
+
+    @Test
+    public void calculateMFLoss_allFeaturesAreTrainable() throws HiveException {
+        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
+        Map<String, RealVector> beta = getTestBeta();
+        Map<String, RealVector> theta = getTestTheta();
+        double actual = CofactorModel.calculateMFLoss(samples, beta, theta, 0.1f, 1.f);
+        double expected = 0.7157;
+        Assert.assertEquals(actual, expected, EPSILON);
+    }
+
+    @Test
+    public void calculateMFLoss_oneFeatureNotTrainable() throws HiveException {
+        // tests case where a user found in the item's feature array
+        // was not also distributed to the same UDTF instance
+        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_oneUserNotInTheta();
+        Map<String, RealVector> beta = getTestBeta();
+        Map<String, RealVector> theta = getTestTheta();
+        double actual = CofactorModel.calculateMFLoss(samples, beta, theta, 0.1f, 1.f);
+        double expected = 0.7157;
+        Assert.assertEquals(actual, expected, EPSILON);
+    }
+
+    private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_allUsersInTheta() {
+        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
+        samples.add(new CofactorizationUDTF.TrainingSample(
+                new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                getSubset_userFeatureVector_implicitFeedback(),
+                null));
+        return samples;
+    }
+
+    private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_oneUserNotInTheta() {
+        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
+        samples.add(new CofactorizationUDTF.TrainingSample(
+                new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                getSuperset_userFeatureVector_implicitFeedback(),
+                null));
+        return samples;
+    }
+
 
     private static boolean matricesAreEqual(RealMatrix A, RealMatrix B) {
         double[][] dataA = A.getData(), dataB = B.getData();
@@ -281,6 +330,16 @@ public class CofactorModelTest {
         Feature[] f = new Feature[2];
         f[0] = new StringFeature(MAKOTO, 1.d);
         f[1] = new StringFeature(JACKSON, 1.d);
+        return f;
+    }
+
+    private static Feature[] getSuperset_userFeatureVector_implicitFeedback() {
+        // Makoto, Jackson and Alien prefer a particular item
+        Feature[] f = new Feature[3];
+        f[0] = new StringFeature(MAKOTO, 1.d);
+        f[1] = new StringFeature(JACKSON, 1.d);
+        f[2] = new StringFeature(ALIEN, 1.d);
+        assert !getTestGamma().containsKey(ALIEN);
         return f;
     }
 
