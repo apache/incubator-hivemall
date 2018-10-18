@@ -505,6 +505,15 @@ public class CofactorModel {
         return v;
     }
 
+    public Double predict(Feature user, Feature item) {
+        String userName = user.getFeature(), itemName = item.getFeature();
+        if (!isTrainable(userName, theta) || !isTrainable(itemName, beta)) {
+            return null;
+        }
+        RealVector u = getThetaVector(userName), i = getBetaVector(itemName);
+        return u.dotProduct(i);
+    }
+
     public Double calculateLoss(List<CofactorizationUDTF.TrainingSample> users, List<CofactorizationUDTF.TrainingSample> items) {
         // for speed - can calculate loss on a small subset of the training data
         double mf_loss = calculateMFLoss(users, theta, beta, c0, c1) + calculateMFLoss(items, beta, theta, c0, c1);
