@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
 @NotThreadSafe
-public class FactorizedModel {
+public final class FactorizedModel {
 
     @Nonnull
     protected final RatingInitializer ratingInitializer;
