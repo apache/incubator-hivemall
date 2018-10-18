@@ -20,6 +20,8 @@ package hivemall.mf;
 
 import hivemall.fm.Feature;
 import hivemall.fm.StringFeature;
+import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -125,8 +127,8 @@ public class CofactorModelTest {
         final float c0 = 0.1f, c1 = 1.f, lambdaBeta = 1e-5f;
         RealMatrix identity = null;
 
-        Map<String, Double> betaBias = getTestBetaBias();
-        Map<String, Double> gammaBias = getTestGammaBias();
+        Object2DoubleMap<String> betaBias = getTestBetaBias();
+        Object2DoubleMap<String> gammaBias = getTestGammaBias();
         Map<String, RealVector> gamma = getTestGamma();
         Map<String, RealVector> theta = getTestTheta();
 
@@ -150,8 +152,8 @@ public class CofactorModelTest {
         final float lambdaGamma = 1e-5f;
         RealMatrix identity = null;
 
-        Map<String, Double> betaBias = getTestBetaBias();
-        Map<String, Double> gammaBias = getTestGammaBias();
+        Object2DoubleMap<String> betaBias = getTestBetaBias();
+        Object2DoubleMap<String> gammaBias = getTestGammaBias();
         Map<String, RealVector> beta = getTestBeta();
 
         CofactorizationUDTF.TrainingSample currentItem = new CofactorizationUDTF.TrainingSample(
@@ -164,7 +166,7 @@ public class CofactorModelTest {
 
     @Test
     public void calculateNewBias_forBetaBias_returnsNonNull() throws HiveException {
-        Map<String, Double> gammaBias = getTestGammaBias();
+        Object2DoubleMap<String> gammaBias = getTestGammaBias();
         Map<String, RealVector> beta = getTestBeta();
         Map<String, RealVector> gamma = getTestGamma();
 
@@ -229,8 +231,8 @@ public class CofactorModelTest {
         List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
         Map<String, RealVector> beta = getTestBeta();
         Map<String, RealVector> gamma = getTestGamma();
-        Map<String, Double> betaBias = getTestBetaBias();
-        Map<String, Double> gammaBias = getTestGammaBias();
+        Object2DoubleMap<String> betaBias = getTestBetaBias();
+        Object2DoubleMap<String> gammaBias = getTestGammaBias();
 
         double actual = CofactorModel.calculateEmbedLoss(samples, beta, gamma, betaBias, gammaBias);
         double expected = 5.7373d;
@@ -394,16 +396,16 @@ public class CofactorModelTest {
         return weights;
     }
 
-    private static Map<String, Double> getTestBetaBias() {
-        Map<String, Double> weights = new HashMap<>();
+    private static Object2DoubleMap<String> getTestBetaBias() {
+        Object2DoubleMap<String> weights = new Object2DoubleArrayMap<>();
         weights.put(TOOTHBRUSH, 0.1);
         weights.put(TOOTHPASTE, -1.9);
         weights.put(SHAVER, 2.3);
         return weights;
     }
 
-    private static Map<String, Double> getTestGammaBias() {
-        Map<String, Double> weights = new HashMap<>();
+    private static Object2DoubleMap<String> getTestGammaBias() {
+        Object2DoubleMap<String> weights = new Object2DoubleArrayMap<>();
         weights.put(TOOTHBRUSH, 3.4);
         weights.put(TOOTHPASTE, -0.5);
         weights.put(SHAVER, 1.1);
