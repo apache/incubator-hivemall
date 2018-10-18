@@ -337,7 +337,7 @@ public class CofactorModel {
             Double newGammaBias = calculateNewBias(sample, gamma, beta, betaBias);
             // TODO: is this correct behaviour?
             if (newGammaBias != null) {
-                setBetaBias(sample.context.getFeature(), newGammaBias);
+                setGammaBias(sample.context.getFeature(), newGammaBias);
             }
         }
     }
@@ -590,14 +590,14 @@ public class CofactorModel {
     protected static void uniformFill(final RealVector a, final Random rand, final float maxInitValue) {
         for (int i = 0, len = a.getDimension(); i < len; i++) {
             double v = rand.nextDouble() * maxInitValue / len;
-            a.append(v);
+            a.setEntry(i, v);
         }
     }
 
     protected static void gaussianFill(final RealVector a, final Random[] rand, final double stddev) {
         for (int i = 0, len = a.getDimension(); i < len; i++) {
             double v = MathUtils.gaussian(0.d, stddev, rand[i]);
-            a.append(v);
+            a.setEntry(i, v);
         }
     }
 

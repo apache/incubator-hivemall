@@ -226,7 +226,7 @@ public class CofactorModelTest {
 
     @Test
     public void calculateEmbedLoss() throws HiveException {
-        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_sppmi();
+        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
         Map<String, RealVector> beta = getTestBeta();
         Map<String, RealVector> gamma = getTestGamma();
         Map<String, Double> betaBias = getTestBetaBias();
@@ -237,20 +237,100 @@ public class CofactorModelTest {
         Assert.assertEquals(actual, expected, EPSILON);
     }
 
+    @Test
+    public void smallTrainingTest() throws HiveException {
+        CofactorModel.RankInitScheme init = CofactorModel.RankInitScheme.gaussian;
+        init.setInitStdDev(1.0f);
+
+        CofactorModel model = new CofactorModel(NUM_FACTORS, init,
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
+        int iterations = 20;
+        List<CofactorizationUDTF.TrainingSample> users = getUserSamples();
+        List<CofactorizationUDTF.TrainingSample> items = getItemSamples();
+
+        // record features
+        recordContexts(model, users, false);
+        recordContexts(model, items, true);
+
+        double prevLoss = Double.MAX_VALUE;
+        for (int i = 0; i < iterations; i++) {
+            model.updateWithUsers(users);
+            model.updateWithItems(items);
+            Double loss = model.calculateLoss(users, items);
+//            System.out.println("===================  ITERATION " + i + " ======================");
+//            System.out.println("Loss = " + loss);
+//            System.out.println("Theta = " + model.getTheta().toString());
+//            System.out.println("Beta = " + model.getBeta().toString());
+//            System.out.println("Gamma = " + model.getGamma().toString());
+//            System.out.println("bBeta = " + model.getBetaBiases().toString());
+//            System.out.println("bGamma = " + model.getGammaBiases().toString());
+//            System.out.println("========================================================");
+            Assert.assertNotNull(loss);
+            Assert.assertTrue(loss < prevLoss);
+            prevLoss = loss;
+        }
+    }
+
+    private static List<CofactorizationUDTF.TrainingSample> getItemSamples() {
+        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
+        samples.add(
+                new CofactorizationUDTF.TrainingSample(
+                    new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                    new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
+                    new Feature[]{new StringFeature(TOOTHPASTE, 1.5d), new StringFeature(SHAVER, 0.9d)}));
+        samples.add(
+                new CofactorizationUDTF.TrainingSample(
+                        new StringFeature(TOOTHPASTE, DUMMY_VALUE),
+                        new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d), new StringFeature(JACKSON, 1.d)},
+                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.5d)}));
+        samples.add(
+                new CofactorizationUDTF.TrainingSample(
+                        new StringFeature(SHAVER, DUMMY_VALUE),
+                        new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d)},
+                        new Feature[]{new StringFeature(TOOTHBRUSH, 0.9d)}));
+        return samples;
+    }
+
+    private static List<CofactorizationUDTF.TrainingSample> getUserSamples() {
+        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
+        samples.add(
+                new CofactorizationUDTF.TrainingSample(
+                        new StringFeature(MAKOTO, DUMMY_VALUE),
+                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.d), new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                        null));
+        samples.add(
+                new CofactorizationUDTF.TrainingSample(
+                        new StringFeature(TAKUYA, DUMMY_VALUE),
+                        new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                        null));
+        samples.add(
+                new CofactorizationUDTF.TrainingSample(
+                        new StringFeature(JACKSON, DUMMY_VALUE),
+                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.d)},
+                        null));
+        return samples;
+    }
+
+    private void recordContexts(CofactorModel model, List<CofactorizationUDTF.TrainingSample> samples, boolean isItem) {
+        for (CofactorizationUDTF.TrainingSample sample : samples) {
+            model.recordContext(sample.context, isItem);
+        }
+    }
+
+    private static List<CofactorizationUDTF.TrainingSample> getSamples_userAsContext_allItemsInBeta() {
+        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
+        samples.add(new CofactorizationUDTF.TrainingSample(
+                new StringFeature(TAKUYA, DUMMY_VALUE),
+                getSubset_itemFeatureVector_implicitFeedback(),
+                null));
+        return samples;
+    }
+
     private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_allUsersInTheta() {
         List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
         samples.add(new CofactorizationUDTF.TrainingSample(
                 new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
                 getSubset_userFeatureVector_implicitFeedback(),
-                null));
-        return samples;
-    }
-
-    private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_sppmi() {
-        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
-        samples.add(new CofactorizationUDTF.TrainingSample(
-                new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
-                null,
                 getToothbrushSPPMIVector()));
         return samples;
     }
@@ -365,5 +445,4 @@ public class CofactorModelTest {
         assert !getTestGamma().containsKey(ALIEN);
         return f;
     }
-
 }
