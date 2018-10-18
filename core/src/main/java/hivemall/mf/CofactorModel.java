@@ -21,6 +21,8 @@ package hivemall.mf;
 import hivemall.fm.Feature;
 import hivemall.utils.math.MathUtils;
 import hivemall.utils.math.MatrixUtils;
+import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -77,9 +79,9 @@ public class CofactorModel {
     // storing trainable latent factors and weights
     private Map<String, RealVector> theta;
     private Map<String, RealVector> beta;
-    private Map<String, Double> betaBias;
+    private Object2DoubleMap<String> betaBias;
     private Map<String, RealVector> gamma;
-    private Map<String, Double> gammaBias;
+    private Object2DoubleMap<String> gammaBias;
 
     // precomputed identity matrix
     private RealMatrix identity;
@@ -105,9 +107,9 @@ public class CofactorModel {
 
         this.theta = new HashMap<>();
         this.beta = new HashMap<>();
-        this.betaBias = new HashMap<>();
+        this.betaBias = new Object2DoubleArrayMap<>();
         this.gamma = new HashMap<>();
-        this.gammaBias = new HashMap<>();
+        this.gammaBias = new Object2DoubleArrayMap<>();
 
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
@@ -148,14 +150,14 @@ public class CofactorModel {
         weights.put(key, factorVector);
     }
 
-    private static double getBias(String key, Map<String, Double> biases) {
+    private static double getBias(String key, Object2DoubleMap<String> biases) {
         if (!biases.containsKey(key)) {
             biases.put(key, 0.d);
         }
         return biases.get(key);
     }
 
-    private static void setBias(String key, Map<String, Double> biases, double value) {
+    private static void setBias(String key, Object2DoubleMap<String> biases, double value) {
         biases.put(key, value);
     }
 
@@ -217,11 +219,11 @@ public class CofactorModel {
         return gamma;
     }
 
-    public Map<String, Double> getBetaBiases() {
+    public Object2DoubleMap<String> getBetaBiases() {
         return betaBias;
     }
 
-    public Map<String, Double> getGammaBiases() {
+    public Object2DoubleMap<String> getGammaBiases() {
         return gammaBias;
     }
 
@@ -289,8 +291,8 @@ public class CofactorModel {
     }
 
     protected static RealVector calculateNewBetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> theta,
-                                                       Map<String, RealVector> gamma, Map<String, Double> gammaBias,
-                                                       Map<String, Double> betaBias, int numFactors, RealMatrix TTTpR, float c0, float c1) {
+                                                       Map<String, RealVector> gamma, Object2DoubleMap<String> gammaBias,
+                                                       Object2DoubleMap<String> betaBias, int numFactors, RealMatrix TTTpR, float c0, float c1) {
         // filter for trainable users
         List<Feature> trainableUsers = filterTrainableFeatures(sample.features, theta);
         // TODO: is this correct behaviour?
@@ -324,7 +326,7 @@ public class CofactorModel {
     }
 
     protected static RealVector calculateNewGammaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
-                                                      Map<String, Double> gammaBias, Map<String, Double> betaBias,
+                                                      Object2DoubleMap<String> gammaBias, Object2DoubleMap<String> betaBias,
                                                       int numFactors, RealMatrix idMatrix, float lambdaGamma) {
         // filter for trainable items
         List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
@@ -363,7 +365,7 @@ public class CofactorModel {
     }
 
     protected static Double calculateNewBias(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
-                                               Map<String, RealVector> gamma, Map<String, Double> biases) {
+                                               Map<String, RealVector> gamma, Object2DoubleMap<String> biases) {
         // filter for trainable items
         List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
         if (trainableCooccurringItems.isEmpty()) {
@@ -376,7 +378,7 @@ public class CofactorModel {
     }
 
     protected static double calculateBiasRSD(Feature thisItem, List<Feature> trainableItems, Map<String, RealVector> beta,
-                                           Map<String, RealVector> gamma, Map<String, Double> biases) {
+                                           Map<String, RealVector> gamma, Object2DoubleMap<String> biases) {
         double result = 0.d, cooccurBias;
         String i = thisItem.getFeature();
         RealVector thisFactorVec = getFactorVector(i, beta), cooccurVec;
@@ -393,7 +395,7 @@ public class CofactorModel {
 
 
     protected static RealVector calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
-                                    Map<String, Double> fixedBias, Map<String, Double> changingBias, Map<String, RealVector> weights) {
+                                    Object2DoubleMap<String> fixedBias, Object2DoubleMap<String> changingBias, Map<String, RealVector> weights) {
 
         String i = thisItem.getFeature();
         double b = getBias(i, fixedBias);
@@ -523,8 +525,8 @@ public class CofactorModel {
     }
 
     protected static double calculateEmbedLoss(List<CofactorizationUDTF.TrainingSample> items, Map<String, RealVector> beta,
-                                               Map<String, RealVector> gamma, Map<String, Double> betaBias,
-                                               Map<String, Double> gammaBias) {
+                                               Map<String, RealVector> gamma, Object2DoubleMap<String> betaBias,
+                                               Object2DoubleMap<String> gammaBias) {
         double loss = 0.d, val, bBias, gBias;
         RealVector bFactors, gFactors;
         String bKey, gKey;
