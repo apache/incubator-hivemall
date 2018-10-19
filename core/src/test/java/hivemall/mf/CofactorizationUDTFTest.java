@@ -61,7 +61,7 @@ public class CofactorizationUDTFTest {
 
         Feature[] expected = new Feature[]{item2};
 
-        Feature[] actual = udtf.createNnzFeatureArray(new Feature[]{
+        Feature[] actual = CofactorizationUDTF.createNnzFeatureArray(new Feature[]{
                 item1, item2, item3
         });
 
