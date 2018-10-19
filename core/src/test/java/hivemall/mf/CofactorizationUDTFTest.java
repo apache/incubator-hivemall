@@ -85,7 +85,37 @@ public class CofactorizationUDTFTest {
         Assert.assertEquals(actualSample.context, sample[0]);
         Assert.assertTrue(Arrays.deepEquals(actualSample.features, CofactorizationUDTF.parseFeatures(sample[1], udtf.featuresOI, null)));
         Assert.assertEquals(actualSample.isItem(), sample[2]);
-        Assert.assertTrue(Arrays.deepEquals(actualSample.features, CofactorizationUDTF.parseFeatures(sample[3], udtf.sppmiOI, null)));
+        Assert.assertTrue(Arrays.deepEquals(actualSample.sppmi, CofactorizationUDTF.parseFeatures(sample[3], udtf.sppmiOI, null)));
+    }
+
+    @Test
+    public void readMiniBatchFromFile_twoSamples_success() throws HiveException, IOException {
+        Object[] item = getItemSample();
+        Object[] user = getUserSample();
+
+        udtf.process(item);
+        udtf.process(user);
+        udtf.prepareForRead();
+
+        CofactorizationUDTF.MiniBatch miniBatch = new CofactorizationUDTF.MiniBatch();
+
+        boolean didRead = udtf.readMiniBatchFromFile(miniBatch);
+        Assert.assertTrue(didRead);
+        Assert.assertEquals(miniBatch.size(), 2);
+        Assert.assertEquals(miniBatch.getItems().size(), 1);
+        Assert.assertEquals(miniBatch.getUsers().size(), 1);
+
+        CofactorizationUDTF.TrainingSample actualItem = miniBatch.getItems().get(0);
+        Assert.assertEquals(actualItem.context, item[0]);
+        Assert.assertTrue(Arrays.deepEquals(actualItem.features, CofactorizationUDTF.parseFeatures(item[1], udtf.featuresOI, null)));
+        Assert.assertEquals(actualItem.isItem(), item[2]);
+        Assert.assertTrue(Arrays.deepEquals(actualItem.sppmi, CofactorizationUDTF.parseFeatures(item[3], udtf.sppmiOI, null)));
+
+        CofactorizationUDTF.TrainingSample actualUser = miniBatch.getUsers().get(0);
+        Assert.assertEquals(actualUser.context, user[0]);
+        Assert.assertTrue(Arrays.deepEquals(actualUser.features, CofactorizationUDTF.parseFeatures(user[1], udtf.featuresOI, null)));
+        Assert.assertEquals(actualUser.isItem(), user[2]);
+        Assert.assertTrue(Arrays.deepEquals(actualUser.sppmi, CofactorizationUDTF.parseFeatures(user[3], udtf.sppmiOI, null)));
     }
 
     @Test
@@ -100,6 +130,10 @@ public class CofactorizationUDTFTest {
 
     private static Object[] getItemSample() {
         return new Object[]{"string1", getDummyFeatures(), true, getDummyFeatures()};
+    }
+
+    private static Object[] getUserSample() {
+        return new Object[]{"user", getDummyFeatures(), false, null};
     }
 
     private static List<String> getDummyFeatures() {
