@@ -28,6 +28,7 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -39,11 +40,11 @@ public class CofactorModel {
     public enum RankInitScheme {
         random /* default */, gaussian;
 
+
         @Nonnegative
         private float maxInitValue;
         @Nonnegative
         private double initStdDev;
-
         @Nonnull
         public static CofactorModel.RankInitScheme resolve(@Nullable String opt) {
             if (opt == null) {
@@ -64,9 +65,9 @@ public class CofactorModel {
             this.initStdDev = initStdDev;
         }
 
+
     }
 
-    private static final int EXPECTED_SIZE = 136861;
     @Nonnegative
     private final int factor;
 
@@ -77,20 +78,25 @@ public class CofactorModel {
     private double globalBias;
 
     // storing trainable latent factors and weights
-    private final Map<String, RealVector> theta;
-    private final Map<String, RealVector> beta;
+    private final Map<String, double[]> theta;
+    private final Map<String, double[]> beta;
     private final Object2DoubleMap<String> betaBias;
-    private final Map<String, RealVector> gamma;
+    private final Map<String, double[]> gamma;
     private final Object2DoubleMap<String> gammaBias;
 
-    // precomputed identity matrix
-    private RealMatrix identity;
-
-    protected final Random[] randU, randI;
+    private final Random[] randU, randI;
 
     // hyperparameters
     private final float c0, c1;
     private final float lambdaTheta, lambdaBeta, lambdaGamma;
+
+    // solve
+    private final RealMatrix B;
+    private final RealVector A;
+
+    // error message strings
+    private static final String ARRAY_NOT_SQUARE_ERR = "Array is not square";
+    private static final String DIFFERENT_DIMS_ERR = "Matrix or array do not match in size";
 
     public CofactorModel(@Nonnegative int factor, @Nonnull RankInitScheme initScheme,
                          float c0, float c1, float lambdaTheta, float lambdaBeta, float lambdaGamma) {
@@ -110,6 +116,9 @@ public class CofactorModel {
         this.gamma = new HashMap<>();
         this.gammaBias = new Object2DoubleArrayMap<>();
 
+        this.B = new Array2DRowRealMatrix(this.factor, this.factor);
+        this.A = new ArrayRealVector(this.factor);
+
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
 
@@ -120,11 +129,11 @@ public class CofactorModel {
 
     }
 
-    private void initFactorVector(String key, Map<String, RealVector> weights) {
+    private void initFactorVector(String key, Map<String, double[]> weights) {
         if (weights.containsKey(key)) {
             return;
         }
-        RealVector v = new ArrayRealVector(factor);
+        double[] v = new double[factor];
         switch (initScheme) {
             case random:
                 uniformFill(v, randI[0], initScheme.maxInitValue);
@@ -140,13 +149,15 @@ public class CofactorModel {
         weights.put(key, v);
     }
 
-    private static RealVector getFactorVector(String key, Map<String, RealVector> weights) {
+    private static double[] getFactorVector(String key, Map<String, double[]> weights) {
         return weights.get(key);
     }
 
-    private static void setFactorVector(String key, Map<String, RealVector> weights, RealVector factorVector) {
-        assert weights.containsKey(key);
-        weights.put(key, factorVector);
+    private static void setFactorVector(String key, Map<String, double[]> weights, RealVector factorVector) throws HiveException {
+        double[] vec = weights.get(key);
+        if (vec != null) {
+            copyData(vec, factorVector);
+        }
     }
 
     private static double getBias(String key, Object2DoubleMap<String> biases) {
@@ -170,7 +181,7 @@ public class CofactorModel {
         }
     }
 
-    public RealVector getGammaVector(final String key) {
+    public double[] getGammaVector(final String key) {
         return getFactorVector(key, gamma);
     }
 
@@ -190,11 +201,11 @@ public class CofactorModel {
         globalBias = value;
     }
 
-    public RealVector getThetaVector(final String key) {
+    public double[] getThetaVector(final String key) {
         return getFactorVector(key, theta);
     }
 
-    public RealVector getBetaVector(final String key) {
+    public double[] getBetaVector(final String key) {
         return getFactorVector(key, beta);
     }
 
@@ -206,15 +217,15 @@ public class CofactorModel {
         setBias(key, betaBias, value);
     }
 
-    public Map<String, RealVector> getTheta() {
+    public Map<String, double[]> getTheta() {
         return theta;
     }
 
-    public Map<String, RealVector> getBeta() {
+    public Map<String, double[]> getBeta() {
         return beta;
     }
 
-    public Map<String, RealVector> getGamma() {
+    public Map<String, double[]> getGamma() {
         return gamma;
     }
 
@@ -226,11 +237,11 @@ public class CofactorModel {
         return gammaBias;
     }
 
-    public void updateWithUsers(List<CofactorizationUDTF.TrainingSample> users) {
+    public void updateWithUsers(List<CofactorizationUDTF.TrainingSample> users) throws HiveException {
         updateTheta(users);
     }
 
-    public void updateWithItems(List<CofactorizationUDTF.TrainingSample> items) {
+    public void updateWithItems(List<CofactorizationUDTF.TrainingSample> items) throws HiveException {
         updateBeta(items);
         updateGamma(items);
         updateBetaBias(items);
@@ -240,23 +251,23 @@ public class CofactorModel {
     /**
      * Update latent factors of the users in the provided mini-batch.
      */
-    private void updateTheta(List<CofactorizationUDTF.TrainingSample> samples) {
+    private void updateTheta(List<CofactorizationUDTF.TrainingSample> samples) throws HiveException {
         // initialize item factors
         // items should only be trainable if the dataset contains a major entry for that item (which it may not)
 
         // variable names follow cofacto.py
-        RealMatrix BTBpR = calculateWTWpR(beta, factor, c0, identity, lambdaTheta);
+        double[][] BTBpR = calculateWTWpR(beta, factor, c0, lambdaTheta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            RealVector newThetaVec = calculateNewThetaVector(sample, beta, factor, BTBpR, c0, c1);
+            RealVector newThetaVec = calculateNewThetaVector(sample, beta, factor, B, A, BTBpR, c0, c1);
             if (newThetaVec != null) {
                 setFactorVector(sample.context.getFeature(), theta, newThetaVec);
             }
         }
     }
 
-    protected static RealVector calculateNewThetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
-                                                        int numFactors, RealMatrix BTBpR, float c0, float c1) {
+    protected static RealVector calculateNewThetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, double[]> beta,
+                                                        int numFactors, RealMatrix B, RealVector A, double[][] BTBpR, float c0, float c1) throws HiveException {
         // filter for trainable items
         List<Feature> trainableItems = filterTrainableFeatures(sample.features, beta);
         // TODO: is this correct behaviour?
@@ -264,33 +275,34 @@ public class CofactorModel {
             return null;
         }
 
-        RealVector A = calculateA(trainableItems, beta, numFactors, c1);
+        double[] a = calculateA(trainableItems, beta, numFactors, c1);
 
-        RealMatrix delta = calculateWTWSubset(trainableItems, beta, numFactors, c1 - c0);
-        RealMatrix B = BTBpR.add(delta);
+        double[][] delta = calculateWTWSubset(trainableItems, beta, numFactors, c1 - c0);
+        double[][] b = addInPlace(BTBpR, delta);
 
         // solve and update factors
-        return solve(B, A);
+        return solve(B, b, A, a);
     }
 
     /**
      * Update latent factors of the items in the provided mini-batch.
      */
-    private void updateBeta(List<CofactorizationUDTF.TrainingSample> samples) {
+    private void updateBeta(List<CofactorizationUDTF.TrainingSample> samples) throws HiveException {
         // precomputed matrix
-        RealMatrix TTTpR = calculateWTWpR(theta, factor, c0, identity, lambdaBeta);
+        double[][] TTTpR = calculateWTWpR(theta, factor, c0, lambdaBeta);
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, TTTpR, c0, c1);
+            RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, B, A, TTTpR, c0, c1);
             if (newBetaVec != null) {
                 setFactorVector(sample.context.getFeature(), beta, newBetaVec);
             }
         }
     }
 
-    protected static RealVector calculateNewBetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> theta,
-                                                       Map<String, RealVector> gamma, Object2DoubleMap<String> gammaBias,
-                                                       Object2DoubleMap<String> betaBias, int numFactors, RealMatrix TTTpR, float c0, float c1) {
+    protected static RealVector calculateNewBetaVector(CofactorizationUDTF.TrainingSample sample, Map<String, double[]> theta,
+                                                       Map<String, double[]> gamma, Object2DoubleMap<String> gammaBias,
+                                                       Object2DoubleMap<String> betaBias, int numFactors, RealMatrix B, RealVector A,
+                                                       double[][] TTTpR, float c0, float c1) throws HiveException {
         // filter for trainable users
         List<Feature> trainableUsers = filterTrainableFeatures(sample.features, theta);
         // TODO: is this correct behaviour?
@@ -299,32 +311,32 @@ public class CofactorModel {
         }
 
         List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, gamma);
-        RealVector RSD = calculateRSD(sample.context, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
-        RealVector ApRSD = calculateA(trainableUsers, theta, numFactors, c1).add(RSD);
+        double[] RSD = calculateRSD(sample.context, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
+        double[] ApRSD = addInPlace(calculateA(trainableUsers, theta, numFactors, c1), RSD, 1.f);
 
-        RealMatrix GTG = calculateWTWSubset(trainableCooccurringItems, gamma, numFactors, 1.f);
-        RealMatrix delta = calculateWTWSubset(trainableUsers, theta, numFactors, c1 - c0);
-        RealMatrix B = TTTpR.add(delta).add(GTG);
+        double[][] GTG = calculateWTWSubset(trainableCooccurringItems, gamma, numFactors, 1.f);
+        double[][] delta = calculateWTWSubset(trainableUsers, theta, numFactors, c1 - c0);
+        double[][] b = addInPlace(TTTpR, addInPlace(delta, GTG));
 
         // solve and update factors
-        return solve(B, ApRSD);
+        return solve(B, b, A, ApRSD);
     }
 
     /**
      * Update latent factors of the items in the provided mini-batch.
      */
-    private void updateGamma(List<CofactorizationUDTF.TrainingSample> samples) {
+    private void updateGamma(List<CofactorizationUDTF.TrainingSample> samples) throws HiveException {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, identity, lambdaGamma);
+            RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, B, A, lambdaGamma);
             if (newGammaVec != null) {
                 setFactorVector(sample.context.getFeature(), gamma, newGammaVec);
             }
         }
     }
 
-    protected static RealVector calculateNewGammaVector(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
-                                                      Object2DoubleMap<String> gammaBias, Object2DoubleMap<String> betaBias,
-                                                      int numFactors, RealMatrix idMatrix, float lambdaGamma) {
+    protected static RealVector calculateNewGammaVector(CofactorizationUDTF.TrainingSample sample, Map<String, double[]> beta,
+                                                        Object2DoubleMap<String> gammaBias, Object2DoubleMap<String> betaBias,
+                                                        int numFactors, RealMatrix B, RealVector A, float lambdaGamma) throws HiveException {
         // filter for trainable items
         List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
         // TODO: is this correct behaviour?
@@ -332,12 +344,18 @@ public class CofactorModel {
             return null;
         }
 
-        RealMatrix B = calculateWTWSubset(trainableCooccurringItems, beta, numFactors, 1.f)
-                .add(calculateR(idMatrix, lambdaGamma, numFactors));
-        RealVector rsd = calculateRSD(sample.context, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
+        double[][] b = regularize(calculateWTWSubset(trainableCooccurringItems, beta, numFactors, 1.f), lambdaGamma);
+        double[] rsd = calculateRSD(sample.context, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
 
         // solve and update factors
-        return solve(B, rsd);
+        return solve(B, b, A, rsd);
+    }
+
+    private static double[][] regularize(double[][] A, float lambda) {
+        for (int i = 0; i < A.length; i++) {
+            A[i][i] += lambda;
+        }
+        return A;
     }
 
     private void updateBetaBias(List<CofactorizationUDTF.TrainingSample> samples) {
@@ -360,8 +378,8 @@ public class CofactorModel {
         }
     }
 
-    protected static Double calculateNewBias(CofactorizationUDTF.TrainingSample sample, Map<String, RealVector> beta,
-                                               Map<String, RealVector> gamma, Object2DoubleMap<String> biases) {
+    protected static Double calculateNewBias(CofactorizationUDTF.TrainingSample sample, Map<String, double[]> beta,
+                                             Map<String, double[]> gamma, Object2DoubleMap<String> biases) {
         // filter for trainable items
         List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
         if (trainableCooccurringItems.isEmpty()) {
@@ -373,36 +391,38 @@ public class CofactorModel {
 
     }
 
-    protected static double calculateBiasRSD(Feature thisItem, List<Feature> trainableItems, Map<String, RealVector> beta,
-                                           Map<String, RealVector> gamma, Object2DoubleMap<String> biases) {
+    protected static double calculateBiasRSD(Feature thisItem, List<Feature> trainableItems, Map<String, double[]> beta,
+                                             Map<String, double[]> gamma, Object2DoubleMap<String> biases) {
         double result = 0.d, cooccurBias;
         String i = thisItem.getFeature();
-        RealVector thisFactorVec = getFactorVector(i, beta), cooccurVec;
+        double[] thisFactorVec = getFactorVector(i, beta);
+        double[] cooccurVec;
 
         for (Feature cooccurrence : trainableItems) {
             String j = cooccurrence.getFeature();
             cooccurVec = getFactorVector(j, gamma);
             cooccurBias = getBias(j, biases);
-            double value = cooccurrence.getValue() - thisFactorVec.dotProduct(cooccurVec) - cooccurBias;
+            double value = cooccurrence.getValue() - dotProduct(thisFactorVec, cooccurVec) - cooccurBias;
             result += value;
         }
         return result;
     }
 
 
-    protected static RealVector calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
-                                    Object2DoubleMap<String> fixedBias, Object2DoubleMap<String> changingBias, Map<String, RealVector> weights) {
+    protected static double[] calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
+                                           Object2DoubleMap<String> fixedBias, Object2DoubleMap<String> changingBias,
+                                           Map<String, double[]> weights) throws HiveException {
 
         String i = thisItem.getFeature();
         double b = getBias(i, fixedBias);
 
-        RealVector accumulator = new ArrayRealVector(numFactors);
+        double[] accumulator = new double[numFactors];
 
         // m_ij is named the same as in cofacto.py
         for (Feature cooccurrence : trainableItems) {
             String j = cooccurrence.getFeature();
             double scale = cooccurrence.getValue() - b - getBias(j, changingBias);
-            RealVector g = getFactorVector(j, weights);
+            double[] g = getFactorVector(j, weights);
             addInPlace(accumulator, g, scale);
         }
         return accumulator;
@@ -411,20 +431,29 @@ public class CofactorModel {
     /**
      * Calculate W' x W plus regularization matrix
      */
-    protected static RealMatrix calculateWTWpR(Map<String, RealVector> W, int numFactors, float c0, RealMatrix idMatrix, float lambda) {
-        RealMatrix WTW = calculateWTW(W, numFactors, c0);
-        RealMatrix R = calculateR(idMatrix, lambda, numFactors);
-        return WTW.add(R);
+    protected static double[][] calculateWTWpR(Map<String, double[]> W, int numFactors, float c0, float lambda) {
+        double[][] WTW = calculateWTW(W, numFactors, c0);
+        return regularize(WTW, lambda);
     }
 
-    protected static RealMatrix calculateR(RealMatrix idMatrix, float lambda, int numFactors) {
-        if (idMatrix == null) {
-            idMatrix = new Array2DRowRealMatrix(MatrixUtils.eye(numFactors));
+    private static void checkCondition(boolean condition, String errorMessage) throws HiveException {
+        if (!condition) {
+            throw new HiveException(errorMessage);
         }
-        return idMatrix.scalarMultiply(lambda);
     }
 
-    protected static List<Feature> filterTrainableFeatures(Feature[] features, Map<String, RealVector> weights) {
+
+    private static double[][] addInPlace(@Nonnull double[][] A, @Nonnull double[][] B) throws HiveException {
+        checkCondition(A.length == A[0].length && A.length == B.length && B.length == B[0].length, ARRAY_NOT_SQUARE_ERR);
+        for (int i = 0; i < A.length; i++) {
+            for (int j = 0; j < A[0].length; j++) {
+                A[i][j] += B[i][j];
+            }
+        }
+        return A;
+    }
+
+    protected static List<Feature> filterTrainableFeatures(Feature[] features, Map<String, double[]> weights) {
         List<Feature> trainableFeatures = new ArrayList<>();
         String fName;
         for (Feature f : features) {
@@ -436,71 +465,103 @@ public class CofactorModel {
         return trainableFeatures;
     }
 
-    protected static RealVector solve(RealMatrix B, RealVector a) {
+    protected static RealVector solve(RealMatrix B, double[][] dataB, RealVector A, double[] dataA) throws HiveException {
         // b * x = a
         // solves for x
+        copyData(B, dataB);
+        copyData(A, dataA);
         SingularValueDecomposition svd = new SingularValueDecomposition(B);
-        return svd.getSolver().solve(a);
-
+        return svd.getSolver().solve(A);
     }
 
-    protected static RealMatrix calculateWTW(Map<String, RealVector> weights, int numFactors, float constant) {
-        RealMatrix WTW = new Array2DRowRealMatrix(numFactors, numFactors);
+    private static void copyData(RealMatrix dst, double[][] src) throws HiveException {
+        checkCondition(dst.getRowDimension() == src.length && dst.getColumnDimension() == src[0].length, DIFFERENT_DIMS_ERR);
+        for (int i = 0; i < dst.getRowDimension(); i++) {
+            for (int j = 0; j < dst.getColumnDimension(); j++) {
+                dst.setEntry(i, j, src[i][j]);
+            }
+        }
+    }
+
+    private static void copyData(RealVector dst, double[] src) throws HiveException {
+        checkCondition(dst.getDimension() == src.length, DIFFERENT_DIMS_ERR);
+        for (int i = 0; i < dst.getDimension(); i++) {
+            dst.setEntry(i, src[i]);
+        }
+    }
+
+    private static void copyData(double[] dst, RealVector src) throws HiveException {
+        checkCondition(dst.length == src.getDimension(), DIFFERENT_DIMS_ERR);
+        for (int i = 0; i < dst.length; i++) {
+            dst[i] = src.getEntry(i);
+        }
+    }
+
+
+    protected static double[][] calculateWTW(Map<String, double[]> weights, int numFactors, float constant) {
+        double[][] WTW = new double[numFactors][numFactors];
         int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
             for (int ff = 0; ff < numFactors; ff++) {
                 double val = constant * dotFactorsAlongDims(weights, f, ff);
-                WTW.setEntry(f, ff, val);
+                WTW[f][ff] = val;
             }
         }
         return WTW;
     }
 
-    protected static RealMatrix calculateWTWSubset(List<Feature> subset, Map<String, RealVector> weights, int numFactors, float constant) {
+    protected static double[][] calculateWTWSubset(List<Feature> subset, Map<String, double[]> weights, int numFactors, float constant) {
         // equivalent to `B_u.T.dot((c1 - c0) * B_u)` in cofacto.py
-        RealMatrix delta = new Array2DRowRealMatrix(numFactors, numFactors);
+        double[][] delta = new double[numFactors][numFactors];
         int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
             for (int ff = 0; ff < numFactors; ff++) {
                 double val = constant * dotFactorsAlongDims(subset, weights, f, ff);
-                delta.setEntry(f, ff, val);
+                delta[f][ff] = val;
             }
         }
         return delta;
     }
 
-    private static double dotFactorsAlongDims(List<Feature> keys, Map<String, RealVector> weights, int dim1, int dim2) {
+    private static double dotFactorsAlongDims(List<Feature> keys, Map<String, double[]> weights, int dim1, int dim2) {
         double result = 0.d;
         for (Feature f : keys) {
-            RealVector vec = getFactorVector(f.getFeature(), weights);
-            result += vec.getEntry(dim1) * vec.getEntry(dim2);
+            double[] vec = getFactorVector(f.getFeature(), weights);
+            result += vec[dim1] * vec[dim2];
         }
         return result;
     }
 
-    private static double dotFactorsAlongDims(Map<String, RealVector> weights, int dim1, int dim2) {
+    private static double dotFactorsAlongDims(Map<String, double[]> weights, int dim1, int dim2) {
         double result = 0.d;
         for (String key : weights.keySet()) {
-            RealVector vec = getFactorVector(key, weights);
-            result += vec.getEntry(dim1) * vec.getEntry(dim2);
+            double[] vec = getFactorVector(key, weights);
+            result += vec[dim1] * vec[dim2];
         }
         return result;
     }
 
-    protected static RealVector calculateA(List<Feature> items, Map<String, RealVector> weights, int numFactors, float constant) {
+    protected static double[] calculateA(List<Feature> items, Map<String, double[]> weights, int numFactors, float constant) throws HiveException {
         // Equivalent to: a = x_u.dot(c1 * B_u)
         // x_u is a (1, i) matrix of all ones
         // B_u is a (i, F) matrix
         // What it does: sums factor n of each item in B_u
-        RealVector v = new ArrayRealVector(numFactors);
+//        clearArray(A);
+        double[] A = new double[numFactors];
         for (Feature item : items) {
             double y_ui = item.getValue(); // rating
-            addInPlace(v, getFactorVector(item.getFeature(), weights), y_ui);
+            addInPlace(A, getFactorVector(item.getFeature(), weights), y_ui);
         }
-        for (int a = 0; a < v.getDimension(); a++) {
-            v.setEntry(a, v.getEntry(a) * constant);
+        for (int a = 0; a < A.length; a++) {
+            A[a] *= constant;
         }
-        return v;
+        return A;
+    }
+
+    private static void clearArray(double[] a) {
+        for (int i = 0; i < a.length; i++) {
+            a[i] = 0.d;
+        }
     }
 
     public Double predict(Feature user, Feature item) {
@@ -508,8 +569,16 @@ public class CofactorModel {
         if (!isTrainable(userName, theta) || !isTrainable(itemName, beta)) {
             return null;
         }
-        RealVector u = getThetaVector(userName), i = getBetaVector(itemName);
-        return u.dotProduct(i);
+        double[] u = getThetaVector(userName), i = getBetaVector(itemName);
+        return dotProduct(u, i);
+    }
+
+    private static double dotProduct(double[] u, double[] v) {
+        double result = 0.d;
+        for (int i = 0; i < u.length; i++) {
+            result += u[i] * v[i];
+        }
+        return result;
     }
 
     public Double calculateLoss(List<CofactorizationUDTF.TrainingSample> users, List<CofactorizationUDTF.TrainingSample> items) {
@@ -520,11 +589,11 @@ public class CofactorModel {
 
     }
 
-    protected static double calculateEmbedLoss(List<CofactorizationUDTF.TrainingSample> items, Map<String, RealVector> beta,
-                                               Map<String, RealVector> gamma, Object2DoubleMap<String> betaBias,
+    protected static double calculateEmbedLoss(List<CofactorizationUDTF.TrainingSample> items, Map<String, double[]> beta,
+                                               Map<String, double[]> gamma, Object2DoubleMap<String> betaBias,
                                                Object2DoubleMap<String> gammaBias) {
         double loss = 0.d, val, bBias, gBias;
-        RealVector bFactors, gFactors;
+        double[] bFactors, gFactors;
         String bKey, gKey;
         for (CofactorizationUDTF.TrainingSample item: items) {
             bKey = item.context.getFeature();
@@ -537,23 +606,23 @@ public class CofactorModel {
                 gKey = cooccurrence.getFeature();
                 gFactors = getFactorVector(gKey, gamma);
                 gBias = getBias(gKey, gammaBias);
-                val = cooccurrence.getValue() - bFactors.dotProduct(gFactors) - bBias - gBias;
+                val = cooccurrence.getValue() - dotProduct(bFactors, gFactors) - bBias - gBias;
                 loss += val * val;
             }
         }
         return loss;
     }
 
-    protected static double calculateMFLoss(List<CofactorizationUDTF.TrainingSample> samples, Map<String, RealVector> contextWeights,
-                                            Map<String, RealVector> featureWeights, float c0, float c1) {
+    protected static double calculateMFLoss(List<CofactorizationUDTF.TrainingSample> samples, Map<String, double[]> contextWeights,
+                                            Map<String, double[]> featureWeights, float c0, float c1) {
         double loss = 0.d, err, predicted, y;
-        RealVector contextFactors, ratedFactors;
+        double[] contextFactors, ratedFactors;
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             contextFactors = getFactorVector(sample.context.getFeature(), contextWeights);
             // all items / users
-            for (RealVector unratedFactors : featureWeights.values()) {
-                predicted = contextFactors.dotProduct(unratedFactors);
+            for (double[] unratedFactors : featureWeights.values()) {
+                predicted = dotProduct(contextFactors, unratedFactors);
                 err = (0.d - predicted);
                 loss += c0 * err * err;
             }
@@ -563,7 +632,7 @@ public class CofactorModel {
                     continue;
                 }
                 ratedFactors = getFactorVector(f.getFeature(), featureWeights);
-                predicted = contextFactors.dotProduct(ratedFactors);
+                predicted = dotProduct(contextFactors, ratedFactors);
                 y = f.getValue();
                 err = y - predicted;
                 loss += (c1 - c0) * err * err;
@@ -572,43 +641,42 @@ public class CofactorModel {
         return loss;
     }
 
-    protected static double sumL2Loss(Map<String, RealVector> weights, float lambda) {
+    protected static double sumL2Loss(Map<String, double[]> weights, float lambda) {
         double loss = 0.d;
-        for (RealVector v : weights.values()) {
+        for (double[] v : weights.values()) {
             loss += L2Distance(v);
         }
         return lambda * loss;
     }
 
-    protected static double L2Distance(RealVector v) {
+    protected static double L2Distance(double[] vec) {
         double result = 0.d;
-        for (int i = 0; i < v.getDimension(); i++) {
-            double val = v.getEntry(i);
-            result +=  val * val;
+        for (double v : vec) {
+            result +=  v * v;
         }
         return Math.sqrt(result);
     }
 
     /**
      * Add v to u in-place without creating a new RealVector instance.
-     * @param u vector to which v will be added
-     * @param v vector containing new values to be added to u
+     * @param u array to which v will be added
+     * @param v array containing new values to be added to u
      * @param scalar value to multiply each entry in v before adding to u
      */
-    private static void addInPlace(RealVector u, RealVector v, double scalar) {
-        assert u.getDimension() == v.getDimension();
-        for (int i = 0; i < u.getDimension(); i++) {
-            double newVal = u.getEntry(i) + scalar * v.getEntry(i);
-            u.setEntry(i, newVal);
+    private static double[] addInPlace(double[] u, double[] v, double scalar) throws HiveException {
+        checkCondition(u.length == v.length, DIFFERENT_DIMS_ERR);
+        for (int i = 0; i < u.length; i++) {
+            u[i] += scalar * v[i];
         }
+        return u;
     }
 
-    private static boolean isTrainable(String name, Map<String, RealVector> weights) {
+    private static boolean isTrainable(String name, Map<String, double[]> weights) {
         return weights.containsKey(name);
     }
 
     @Nonnull
-    private static Random[] newRandoms(@Nonnull final int size, final long seed) {
+    private static Random[] newRandoms(final int size, final long seed) {
         final Random[] rand = new Random[size];
         for (int i = 0, len = rand.length; i < len; i++) {
             rand[i] = new Random(seed + i);
@@ -616,17 +684,17 @@ public class CofactorModel {
         return rand;
     }
 
-    protected static void uniformFill(final RealVector a, final Random rand, final float maxInitValue) {
-        for (int i = 0, len = a.getDimension(); i < len; i++) {
+    protected static void uniformFill(final double[] a, final Random rand, final float maxInitValue) {
+        for (int i = 0, len = a.length; i < len; i++) {
             double v = rand.nextDouble() * maxInitValue / len;
-            a.setEntry(i, v);
+            a[i] = v;
         }
     }
 
-    protected static void gaussianFill(final RealVector a, final Random[] rand, final double stddev) {
-        for (int i = 0, len = a.getDimension(); i < len; i++) {
+    protected static void gaussianFill(final double[] a, final Random[] rand, final double stddev) {
+        for (int i = 0, len = a.length; i < len; i++) {
             double v = MathUtils.gaussian(0.d, stddev, rand[i]);
-            a.setEntry(i, v);
+            a[i] = v;
         }
     }
 

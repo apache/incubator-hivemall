@@ -367,7 +367,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         return nnz;
     }
 
-    private Double trainMiniBatch(MiniBatch miniBatch) {
+    private Double trainMiniBatch(MiniBatch miniBatch) throws HiveException {
         model.updateWithUsers(miniBatch.getUsers());
         model.updateWithItems(miniBatch.getItems());
         return model.calculateLoss(miniBatch.getUsers(), miniBatch.getItems());
@@ -441,7 +441,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
-        // The number of iterations
         try {
             boolean lossIncreasedLastIter = false;
 
