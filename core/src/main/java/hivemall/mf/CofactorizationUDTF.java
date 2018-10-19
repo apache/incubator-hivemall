@@ -24,6 +24,7 @@ import hivemall.fm.Feature;
 import hivemall.fm.StringFeature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.FileUtils;
+import hivemall.utils.io.NIOUtils;
 import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
@@ -105,7 +106,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected ByteBuffer inputBuf;
     private long lastWritePos;
 
-    private Feature contextProbe;
+    private String contextProbe;
     private Feature[] featuresProbe;
     private Feature[] sppmiProbe;
     private boolean isItemProbe;
@@ -149,11 +150,11 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     }
 
     static class TrainingSample {
-        protected Feature context;
+        protected String context;
         protected Feature[] features;
         protected Feature[] sppmi;
 
-        protected TrainingSample(Feature context, Feature[] features, Feature[] sppmi) {
+        protected TrainingSample(String context, Feature[] features, Feature[] sppmi) {
             this.context = context;
             this.features = features;
             this.sppmi = sppmi;
@@ -266,7 +267,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
             throw new UDFArgumentException(
-                    "_FUNC_ takes 5 arguments: array<string> context, array<string> features, boolean is_item, array<string> sppmi [, CONSTANT STRING options]");
+                    "_FUNC_ takes 5 arguments: string context, array<string> features, boolean is_item, array<string> sppmi [, CONSTANT STRING options]");
         }
         this.contextOI = HiveUtils.asStringOI(argOIs[0]);
         this.featuresOI = HiveUtils.asListOI(argOIs[1]);
@@ -291,18 +292,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         fieldNames.add("Qi");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
                 PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
-        if (useBiasClause) {
-            fieldNames.add("Bu");
-            fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
-            fieldNames.add("Bi");
-            fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
-            fieldNames.add("Bc");
-            fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
-            if (updateGlobalBias) {
-                fieldNames.add("mu");
-                fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
-            }
-        }
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
@@ -312,9 +301,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             throw new HiveException("should have 4 args, but have " + args.length);
         }
 
-        String contextString = contextOI.getPrimitiveJavaObject(args[0]);
-        Feature context = Feature.parseFeature(contextString, false);
-
+        String context = contextOI.getPrimitiveJavaObject(args[0]);
         Feature[] features = parseFeatures(args[1], featuresOI, featuresProbe);
         if (features == null) {
             throw new HiveException("features must not be null");
@@ -370,7 +357,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         return model.calculateLoss(miniBatch.getUsers(), miniBatch.getItems());
     }
 
-    private void recordTrain(final Feature context, final Feature[] features, final Feature[] sppmi)
+    private void recordTrain(final String context, final Feature[] features, final Feature[] sppmi)
             throws HiveException {
         numTraining++;
         ByteBuffer inputBuf = this.inputBuf;
@@ -395,7 +382,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
-        int contextBytes = context.bytes();
+        int contextBytes = SizeOf.INT + SizeOf.CHAR * context.length();
         int featuresBytes = SizeOf.INT + Feature.requiredBytes(features);
         int isParentAnItemBytes = SizeOf.BYTE;
         int sppmiBytes = sppmi != null ? SizeOf.INT + Feature.requiredBytes(sppmi) : 0;
@@ -408,7 +395,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
 
         inputBuf.putInt(recordBytes);
-        context.writeTo(inputBuf);
+        NIOUtils.putString(context, inputBuf);
         writeFeaturesToBuffer(features, inputBuf);
         if (sppmi != null) {
             inputBuf.put(TRUE_BYTE);
@@ -548,23 +535,19 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     }
 
     private static TrainingSample readSampleFromBuffer(ByteBuffer inputBuf) {
-        final Feature context = instantiateFeature(inputBuf);
-        final int numFeatures = inputBuf.getInt();
+        final String context = NIOUtils.getString(inputBuf);
+        final Feature[] features = instantiateFeatureArray(inputBuf);
+        final boolean isItem = (inputBuf.get() == TRUE_BYTE);
+        final Feature[] sppmi = isItem ? instantiateFeatureArray(inputBuf) : null;
+        return new TrainingSample(context, features, sppmi);
+    }
+
+    private static Feature[] instantiateFeatureArray(@Nonnull final ByteBuffer buffer) {
+        final int numFeatures = buffer.getInt();
         final Feature[] features = new Feature[numFeatures];
         for (int j = 0; j < numFeatures; j++) {
-            features[j] = instantiateFeature(inputBuf);
+            features[j] = instantiateFeature(buffer);
         }
-        final boolean isItem = (inputBuf.get() == TRUE_BYTE);
-        final Feature[] sppmi;
-        if (isItem) {
-            final int numSppmi = inputBuf.getInt();
-            sppmi = new Feature[numSppmi];
-            for (int j = 0; j < numFeatures; j++) {
-                sppmi[j] = instantiateFeature(inputBuf);
-            }
-        } else {
-            sppmi = null;
-        }
-        return new TrainingSample(context, features, sppmi);
+        return features;
     }
 }
