@@ -279,7 +279,7 @@ public class CofactorModel {
         double[] a = calculateA(trainableItems, beta, numFactors, c1);
 
         double[][] delta = calculateWTWSubset(trainableItems, beta, numFactors, c1 - c0);
-        double[][] b = addInPlace(BTBpR, delta);
+        double[][] b = addInPlace(delta, BTBpR);
 
         // solve and update factors
         return solve(B, b, A, a);
@@ -318,7 +318,8 @@ public class CofactorModel {
 
         double[][] GTG = calculateWTWSubset(trainableCooccurringItems, gamma, numFactors, 1.f);
         double[][] delta = calculateWTWSubset(trainableUsers, theta, numFactors, c1 - c0);
-        double[][] b = addInPlace(TTTpR, addInPlace(delta, GTG));
+        // never add into the precomputed `TTTpR` array, only add into temporary arrays like `delta` and `GTG`
+        double[][] b = addInPlace(addInPlace(delta, GTG), TTTpR);
 
         // solve and update factors
         return solve(B, b, A, ApRSD);
