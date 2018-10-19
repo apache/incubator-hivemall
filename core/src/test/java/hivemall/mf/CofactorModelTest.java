@@ -314,27 +314,30 @@ public class CofactorModelTest {
             model.updateWithUsers(users);
             model.updateWithItems(items);
             Double loss = model.calculateLoss(users, items);
-//            System.out.println("===================  ITERATION " + i + " ======================");
-//            System.out.println("Loss = " + loss);
-//            System.out.println("Theta = " + mapToString(model.getTheta()));
-//            System.out.println("Beta = " + mapToString(model.getBeta()));
-//            System.out.println("Gamma = " + mapToString(model.getGamma()));
-//            System.out.println("bBeta = " + model.getBetaBiases());
-//            System.out.println("bGamma = " + model.getGammaBiases());
             Assert.assertNotNull(loss);
             Assert.assertTrue(loss < prevLoss);
             prevLoss = loss;
         }
 
+        // assert that the user-item predictions after N iterations is identical to expected predictions
+        StringBuilder predicted = new StringBuilder();
+        String expected = "makoto -> (toothpaste:0.976), (toothbrush:0.942), (shaver:1.076), \n" +
+                "takuya -> (toothpaste:1.001), (toothbrush:-0.167), (shaver:0.173), \n" +
+                "jackson -> (toothpaste:1.031), (toothbrush:0.715), (shaver:0.906), \n";
+
         for (CofactorizationUDTF.TrainingSample user : users) {
-            System.out.print(user.context.getFeature() + " -> ");
+            predicted.append(user.context.getFeature()).append(" -> ");
             for (CofactorizationUDTF.TrainingSample item : items) {
                 double score = model.predict(user.context, item.context);
-                boolean prediction = score > 0.5;
-                System.out.print("(" + item.context.getFeature() + ":" + String.format("%.3f", score) + "), ");
+                predicted.append("(")
+                        .append(item.context.getFeature())
+                        .append(":")
+                        .append(String.format("%.3f", score))
+                        .append("), ");
             }
-            System.out.println();
+            predicted.append('\n');
         }
+        Assert.assertEquals(predicted.toString(), expected);
     }
 
     private static String mapToString(Map<String,double[]> weights) {
