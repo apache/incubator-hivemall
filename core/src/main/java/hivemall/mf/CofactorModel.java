@@ -698,14 +698,14 @@ public class CofactorModel {
         return rand;
     }
 
-    protected static void uniformFill(final double[] a, final Random rand, final float maxInitValue) {
+    private static void uniformFill(final double[] a, final Random rand, final float maxInitValue) {
         for (int i = 0, len = a.length; i < len; i++) {
             double v = rand.nextDouble() * maxInitValue / len;
             a[i] = v;
         }
     }
 
-    protected static void gaussianFill(final double[] a, final Random[] rand, final double stddev) {
+    private static void gaussianFill(final double[] a, final Random[] rand, final double stddev) {
         for (int i = 0, len = a.length; i < len; i++) {
             double v = MathUtils.gaussian(0.d, stddev, rand[i]);
             a[i] = v;
