@@ -302,8 +302,8 @@ public class CofactorModelTest {
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
                 0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
         int iterations = 5;
-        List<CofactorizationUDTF.TrainingSample> users = getUserSamples();
-        List<CofactorizationUDTF.TrainingSample> items = getItemSamples();
+        List<CofactorizationUDTF.TrainingSample> users = getUserSamples(false);
+        List<CofactorizationUDTF.TrainingSample> items = getItemSamples(false);
 
         // record features
         recordContexts(model, users, false);
@@ -323,6 +323,40 @@ public class CofactorModelTest {
         String expected = "makoto -> (toothpaste:0.976), (toothbrush:0.942), (shaver:1.076), \n" +
                 "takuya -> (toothpaste:1.001), (toothbrush:-0.167), (shaver:0.173), \n" +
                 "jackson -> (toothpaste:1.031), (toothbrush:0.715), (shaver:0.906), \n";
+        String predictionString = generatePredictionString(model, users, items);
+        System.out.println(predictionString);
+        Assert.assertEquals(predictionString, expected);
+    }
+
+    @Test
+    public void smallTrainingTest_explicitFeedback() throws HiveException {
+        CofactorModel.RankInitScheme init = CofactorModel.RankInitScheme.gaussian;
+        init.setInitStdDev(1.0f);
+
+        CofactorModel model = new CofactorModel(NUM_FACTORS, init,
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
+        int iterations = 5;
+        List<CofactorizationUDTF.TrainingSample> users = getUserSamples(true);
+        List<CofactorizationUDTF.TrainingSample> items = getItemSamples(true);
+
+        // record features
+        recordContexts(model, users, false);
+        recordContexts(model, items, true);
+
+        double prevLoss = Double.MAX_VALUE;
+        for (int i = 0; i < iterations; i++) {
+            model.updateWithUsers(users);
+            model.updateWithItems(items);
+            Double loss = model.calculateLoss(users, items);
+            Assert.assertNotNull(loss);
+            Assert.assertTrue(loss < prevLoss);
+            prevLoss = loss;
+        }
+
+        // assert that the user-item predictions after N iterations is identical to expected predictions
+        String expected = "makoto -> (toothpaste:3.000), (toothbrush:4.346), (shaver:2.530), \n" +
+                "takuya -> (toothpaste:4.998), (toothbrush:0.409), (shaver:-0.565), \n" +
+                "jackson -> (toothpaste:1.001), (toothbrush:2.556), (shaver:1.618), \n";
         String predictionString = generatePredictionString(model, users, items);
         System.out.println(predictionString);
         Assert.assertEquals(predictionString, expected);
@@ -366,43 +400,79 @@ public class CofactorModelTest {
         return sb.toString();
     }
 
-    private static List<CofactorizationUDTF.TrainingSample> getItemSamples() {
+    private static List<CofactorizationUDTF.TrainingSample> getItemSamples(boolean isExplicit) {
         List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
-        samples.add(
-                new CofactorizationUDTF.TrainingSample(
-                        new StringFeature(TOOTHPASTE, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d), new StringFeature(JACKSON, 1.d)},
-                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
-        samples.add(
-                new CofactorizationUDTF.TrainingSample(
-                    new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
-                    new Feature[]{new StringFeature(MAKOTO, 1.d)},
-                    new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
-        samples.add(
-                new CofactorizationUDTF.TrainingSample(
-                        new StringFeature(SHAVER, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
-                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
+        if (isExplicit) {
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(TOOTHPASTE, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TAKUYA, 5.d), new StringFeature(MAKOTO, 3.d), new StringFeature(JACKSON, 1.d)},
+                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(MAKOTO, 4.5d)},
+                            new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(SHAVER, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(JACKSON, 2.d), new StringFeature(MAKOTO, 2.3d)},
+                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
+        } else {
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(TOOTHPASTE, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d), new StringFeature(JACKSON, 1.d)},
+                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(TOOTHBRUSH, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(MAKOTO, 1.d)},
+                            new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(SHAVER, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
+                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
+        }
         return samples;
     }
 
-    private static List<CofactorizationUDTF.TrainingSample> getUserSamples() {
+    private static List<CofactorizationUDTF.TrainingSample> getUserSamples(boolean isExplicit) {
         List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
-        samples.add(
-                new CofactorizationUDTF.TrainingSample(
-                        new StringFeature(MAKOTO, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TOOTHBRUSH, 1.d), new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
-                        null));
-        samples.add(
-                new CofactorizationUDTF.TrainingSample(
-                        new StringFeature(TAKUYA, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TOOTHPASTE, 1.d)},
-                        null));
-        samples.add(
-                new CofactorizationUDTF.TrainingSample(
-                        new StringFeature(JACKSON, DUMMY_VALUE),
-                        new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
-                        null));
+        if (isExplicit) {
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(MAKOTO, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TOOTHBRUSH, 4.5d), new StringFeature(TOOTHPASTE, 3.d), new StringFeature(SHAVER, 2.3d)},
+                            null));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(TAKUYA, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TOOTHPASTE, 5.d)},
+                            null));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(JACKSON, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 2.d)},
+                            null));
+        } else {
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(MAKOTO, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.d), new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                            null));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(TAKUYA, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TOOTHPASTE, 1.d)},
+                            null));
+            samples.add(
+                    new CofactorizationUDTF.TrainingSample(
+                            new StringFeature(JACKSON, DUMMY_VALUE),
+                            new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                            null));
+        }
         return samples;
     }
 
