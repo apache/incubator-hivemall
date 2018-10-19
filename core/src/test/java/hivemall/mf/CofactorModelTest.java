@@ -97,6 +97,8 @@ public class CofactorModelTest {
         Map<String, double[]> beta = getTestBeta();
 
         double[][] BTBpR = CofactorModel.calculateWTWpR(beta, NUM_FACTORS, c0, lambdaTheta);
+        double[][] initialBTBpR = copyArray(BTBpR);
+
         RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
         RealVector A = new ArrayRealVector(NUM_FACTORS);
 
@@ -106,6 +108,10 @@ public class CofactorModelTest {
                 null);
 
         RealVector actual = CofactorModel.calculateNewThetaVector(currentUser, beta, NUM_FACTORS, B, A, BTBpR, c0, c1);
+
+        // ensure that TTTpR has not been accidentally changed after one update
+        Assert.assertTrue(matricesAreEqual(initialBTBpR, BTBpR));
+
         double[] expected = new double[]{0.44514062, 1.22886953};
         Assert.assertArrayEquals(actual.toArray(), expected, EPSILON);
     }
@@ -143,12 +149,26 @@ public class CofactorModelTest {
                 getToothbrushSPPMIVector());
 
         double[][] TTTpR = CofactorModel.calculateWTWpR(theta, NUM_FACTORS, c0, lambdaBeta);
+        double[][] initialTTTpR = copyArray(TTTpR);
 
         // solve and update factors
         RealVector actual = CofactorModel.calculateNewBetaVector(currentItem, theta, gamma, gammaBias, betaBias, NUM_FACTORS, B, A, TTTpR, c0, c1);
 
+        // ensure that TTTpR has not been accidentally changed after one update
+        Assert.assertTrue(matricesAreEqual(initialTTTpR, TTTpR));
+
         double[] expected = new double[]{0.02884247, -0.44823876};
         Assert.assertArrayEquals(actual.toArray(), expected, EPSILON);
+    }
+
+    private static double[][] copyArray(double[][] A) {
+        double[][] newA = new double[A.length][A[0].length];
+        for (int i = 0; i < A.length; i++) {
+            for (int j = 0; j < A[0].length; j++) {
+                newA[i][j] = A[i][j];
+            }
+        }
+        return newA;
     }
 
     @Test
@@ -246,6 +266,35 @@ public class CofactorModelTest {
     }
 
     @Test
+    public void dotProduct() {
+        double[] u = new double[]{0.1, 5.1, 3.2};
+        double[] v = new double[]{1, 2, 3};
+        Assert.assertEquals(CofactorModel.dotProduct(u, v), 19.9, EPSILON);
+    }
+
+    @Test
+    public void addInPlaceArray1D() throws HiveException {
+        double[] u = new double[]{0.1, 5.1, 3.2};
+        double[] v = new double[]{1, 2, 3};
+
+        double[] actual = CofactorModel.addInPlace(u, v, 1.f);
+        double[] expected = new double[]{1.1, 7.1, 6.2};
+        Assert.assertArrayEquals(u, expected, EPSILON);
+        Assert.assertArrayEquals(actual, expected, EPSILON);
+    }
+
+    @Test
+    public void addInPlaceArray2D() throws HiveException {
+        double[][] u = new double[][]{{0.1, 5.1}, {3.2, 1.2}};
+        double[][] v = new double[][]{{1, 2}, {3, 4}};
+
+        double[][] actual = CofactorModel.addInPlace(u, v);
+        double[][] expected = new double[][]{{1.1, 7.1}, {6.2, 5.2}};
+        Assert.assertTrue(matricesAreEqual(u, expected));
+        Assert.assertTrue(matricesAreEqual(actual, expected));
+    }
+
+    @Test
     public void smallTrainingTest() throws HiveException {
         CofactorModel.RankInitScheme init = CofactorModel.RankInitScheme.gaussian;
         init.setInitStdDev(1.0f);
@@ -267,26 +316,46 @@ public class CofactorModelTest {
             Double loss = model.calculateLoss(users, items);
 //            System.out.println("===================  ITERATION " + i + " ======================");
 //            System.out.println("Loss = " + loss);
-//            System.out.println("Theta = " + model.getTheta().toString());
-//            System.out.println("Beta = " + model.getBeta().toString());
-//            System.out.println("Gamma = " + model.getGamma().toString());
-//            System.out.println("bBeta = " + model.getBetaBiases().toString());
-//            System.out.println("bGamma = " + model.getGammaBiases().toString());
-//            System.out.println("========================================================");
-//            System.out.println("===================  ITERATION " + i + " ======================");
-//            for (CofactorizationUDTF.TrainingSample user : users) {
-//                System.out.print(user.context.getFeature() + " -> ");
-//                for (CofactorizationUDTF.TrainingSample item : items) {
-//                    double score = model.predict(user.context, item.context);
-//                    boolean prediction = score > 0.5;
-//                    System.out.print("(" + item.context.getFeature() + ":" + String.format("%.3f", score) + "), ");
-//                }
-//                System.out.println();
-//            }
+//            System.out.println("Theta = " + mapToString(model.getTheta()));
+//            System.out.println("Beta = " + mapToString(model.getBeta()));
+//            System.out.println("Gamma = " + mapToString(model.getGamma()));
+//            System.out.println("bBeta = " + model.getBetaBiases());
+//            System.out.println("bGamma = " + model.getGammaBiases());
             Assert.assertNotNull(loss);
             Assert.assertTrue(loss < prevLoss);
             prevLoss = loss;
         }
+
+        for (CofactorizationUDTF.TrainingSample user : users) {
+            System.out.print(user.context.getFeature() + " -> ");
+            for (CofactorizationUDTF.TrainingSample item : items) {
+                double score = model.predict(user.context, item.context);
+                boolean prediction = score > 0.5;
+                System.out.print("(" + item.context.getFeature() + ":" + String.format("%.3f", score) + "), ");
+            }
+            System.out.println();
+        }
+    }
+
+    private static String mapToString(Map<String,double[]> weights) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String,double[]> entry : weights.entrySet()) {
+            sb.append(entry.getKey() + ": " + arrayToString(entry.getValue(), 3) + ", ");
+        }
+        return sb.toString();
+    }
+
+    private static String arrayToString(double[] A, int decimals) {
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (int i = 0; i < A.length; i++) {
+            sb.append(String.format("%." + decimals + "f", A[i]));
+            if (i != A.length - 1) {
+                sb.append(", ");
+            }
+        }
+        sb.append(']');
+        return sb.toString();
     }
 
     private static List<CofactorizationUDTF.TrainingSample> getItemSamples() {
