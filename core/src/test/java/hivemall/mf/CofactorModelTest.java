@@ -295,7 +295,7 @@ public class CofactorModelTest {
     }
 
     @Test
-    public void smallTrainingTest() throws HiveException {
+    public void smallTrainingTest_implicitFeedback() throws HiveException {
         CofactorModel.RankInitScheme init = CofactorModel.RankInitScheme.gaussian;
         init.setInitStdDev(1.0f);
 
@@ -320,11 +320,16 @@ public class CofactorModelTest {
         }
 
         // assert that the user-item predictions after N iterations is identical to expected predictions
-        StringBuilder predicted = new StringBuilder();
         String expected = "makoto -> (toothpaste:0.976), (toothbrush:0.942), (shaver:1.076), \n" +
                 "takuya -> (toothpaste:1.001), (toothbrush:-0.167), (shaver:0.173), \n" +
                 "jackson -> (toothpaste:1.031), (toothbrush:0.715), (shaver:0.906), \n";
+        String predictionString = generatePredictionString(model, users, items);
+        System.out.println(predictionString);
+        Assert.assertEquals(predictionString, expected);
+    }
 
+    private static String generatePredictionString(CofactorModel model, List<CofactorizationUDTF.TrainingSample> users, List<CofactorizationUDTF.TrainingSample> items) {
+        StringBuilder predicted = new StringBuilder();
         for (CofactorizationUDTF.TrainingSample user : users) {
             predicted.append(user.context.getFeature()).append(" -> ");
             for (CofactorizationUDTF.TrainingSample item : items) {
@@ -337,7 +342,7 @@ public class CofactorModelTest {
             }
             predicted.append('\n');
         }
-        Assert.assertEquals(predicted.toString(), expected);
+        return predicted.toString();
     }
 
     private static String mapToString(Map<String,double[]> weights) {
