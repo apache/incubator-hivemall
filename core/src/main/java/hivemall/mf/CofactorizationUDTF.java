@@ -329,13 +329,16 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Nullable
     @VisibleForTesting
-    protected static Feature[] parseFeatures(@Nonnull final Object arg, ListObjectInspector listOI, Feature[] probe) throws HiveException {
+    protected static Feature[] parseFeatures(@Nullable final Object arg, ListObjectInspector listOI, Feature[] probe) throws HiveException {
+        if (arg == null) {
+            return null;
+        }
         Feature[] rawFeatures = Feature.parseFeatures(arg, listOI, probe, false);
         return createNnzFeatureArray(rawFeatures);
     }
 
     @VisibleForTesting
-    protected static Feature[] createNnzFeatureArray(Feature[] x) {
+    protected static Feature[] createNnzFeatureArray(@Nonnull Feature[] x) {
         int nnz = countNnzFeatures(x);
         Feature[] nnzFeatures = new Feature[nnz];
         int i = 0;
@@ -347,7 +350,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         return nnzFeatures;
     }
 
-    private static int countNnzFeatures(Feature[] x) {
+    private static int countNnzFeatures(@Nonnull Feature[] x) {
         int nnz = 0;
         for (Feature f : x) {
             if (f.getValue() != 0.d) {
