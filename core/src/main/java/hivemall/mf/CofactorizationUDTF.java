@@ -123,10 +123,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
 
         protected void add(TrainingSample sample) {
-            if (size() == this.maxSize) {
-                return;
-            }
-
             if (sample.isItem()) {
                 items.add(sample);
             } else {
@@ -320,7 +316,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         Feature context = Feature.parseFeature(contextString, false);
 
         Feature[] features = parseFeatures(args[1], featuresOI, featuresProbe);
-        assert features != null;
+        if (features == null) {
+            throw new HiveException("features must not be null");
+        }
 
         Boolean isItem = isItemOI.get(args[2]);
         Feature[] sppmi = null;
@@ -341,8 +339,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @Nullable
     protected Feature[] parseFeatures(@Nonnull final Object arg, ListObjectInspector listOI, Feature[] probe) throws HiveException {
         Feature[] rawFeatures = Feature.parseFeatures(arg, listOI, probe, false);
-        Feature[] nnzFeatures = createNnzFeatureArray(rawFeatures);
-        return nnzFeatures;
+        return createNnzFeatureArray(rawFeatures);
     }
 
     protected Feature[] createNnzFeatureArray(Feature[] x) {

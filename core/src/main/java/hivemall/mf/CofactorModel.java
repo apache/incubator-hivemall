@@ -20,8 +20,8 @@ package hivemall.mf;
 
 import hivemall.annotations.VisibleForTesting;
 import hivemall.fm.Feature;
+import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.MathUtils;
-import hivemall.utils.math.MatrixUtils;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -34,7 +34,12 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
 
 public class CofactorModel {
 
@@ -125,8 +130,8 @@ public class CofactorModel {
         this.randU = newRandoms(factor, 31L);
         this.randI = newRandoms(factor, 41L);
 
-        checkHyperparameterC(c0);
-        checkHyperparameterC(c1);
+        Preconditions.checkArgument(c0 >= 0.f && c0 <= 1.f);
+        Preconditions.checkArgument(c1 >= 0.f && c1 <= 1.f);
         this.c0 = c0;
         this.c1 = c1;
 
@@ -158,9 +163,10 @@ public class CofactorModel {
 
     private static void setFactorVector(String key, Map<String, double[]> weights, RealVector factorVector) throws HiveException {
         double[] vec = weights.get(key);
-        if (vec != null) {
-            copyData(vec, factorVector);
+        if (vec == null) {
+            throw new HiveException();
         }
+        copyData(vec, factorVector);
     }
 
     private static double getBias(String key, Object2DoubleMap<String> biases) {
@@ -171,9 +177,9 @@ public class CofactorModel {
         biases.put(key, value);
     }
 
-    public void recordContext(Feature context, Boolean isParentAnItem) {
+    public void recordContext(Feature context, Boolean isItem) {
         String key = context.getFeature();
-        if (isParentAnItem) {
+        if (isItem) {
             initFactorVector(key, beta);
             initFactorVector(key, gamma);
         } else {
@@ -254,7 +260,6 @@ public class CofactorModel {
     private void updateTheta(List<CofactorizationUDTF.TrainingSample> samples) throws HiveException {
         // initialize item factors
         // items should only be trainable if the dataset contains a major entry for that item (which it may not)
-
         // variable names follow cofacto.py
         double[][] BTBpR = calculateWTWpR(beta, factor, c0, lambdaTheta);
 
@@ -449,8 +454,8 @@ public class CofactorModel {
         }
     }
 
-
-    private static double[][] addInPlace(@Nonnull double[][] A, @Nonnull double[][] B) throws HiveException {
+    @VisibleForTesting
+    protected static double[][] addInPlace(@Nonnull double[][] A, @Nonnull double[][] B) throws HiveException {
         checkCondition(A.length == A[0].length && A.length == B.length && B.length == B[0].length, ARRAY_NOT_SQUARE_ERR);
         for (int i = 0; i < A.length; i++) {
             for (int j = 0; j < A[0].length; j++) {
@@ -485,8 +490,8 @@ public class CofactorModel {
 
     private static void copyData(RealMatrix dst, double[][] src) throws HiveException {
         checkCondition(dst.getRowDimension() == src.length && dst.getColumnDimension() == src[0].length, DIFFERENT_DIMS_ERR);
-        for (int i = 0; i < dst.getRowDimension(); i++) {
-            for (int j = 0; j < dst.getColumnDimension(); j++) {
+        for (int i = 0, rows = dst.getRowDimension(); i < rows; i++) {
+            for (int j = 0, cols = dst.getColumnDimension(); j < cols; j++) {
                 dst.setEntry(i, j, src[i][j]);
             }
         }
@@ -509,7 +514,6 @@ public class CofactorModel {
     @VisibleForTesting
     protected static double[][] calculateWTW(Map<String, double[]> weights, int numFactors, float constant) {
         double[][] WTW = new double[numFactors][numFactors];
-        int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
             for (int ff = 0; ff < numFactors; ff++) {
                 double val = constant * dotFactorsAlongDims(weights, f, ff);
@@ -523,7 +527,6 @@ public class CofactorModel {
     protected static double[][] calculateWTWSubset(List<Feature> subset, Map<String, double[]> weights, int numFactors, float constant) {
         // equivalent to `B_u.T.dot((c1 - c0) * B_u)` in cofacto.py
         double[][] delta = new double[numFactors][numFactors];
-        int i = 0, j = 0;
         for (int f = 0; f < numFactors; f++) {
             for (int ff = 0; ff < numFactors; ff++) {
                 double val = constant * dotFactorsAlongDims(subset, weights, f, ff);
@@ -544,8 +547,7 @@ public class CofactorModel {
 
     private static double dotFactorsAlongDims(Map<String, double[]> weights, int dim1, int dim2) {
         double result = 0.d;
-        for (String key : weights.keySet()) {
-            double[] vec = getFactorVector(key, weights);
+        for (double[] vec : weights.values()) {
             result += vec[dim1] * vec[dim2];
         }
         return result;
@@ -584,7 +586,8 @@ public class CofactorModel {
         return dotProduct(u, i);
     }
 
-    private static double dotProduct(double[] u, double[] v) {
+    @VisibleForTesting
+    protected static double dotProduct(double[] u, double[] v) {
         double result = 0.d;
         for (int i = 0; i < u.length; i++) {
             result += u[i] * v[i];
@@ -678,7 +681,8 @@ public class CofactorModel {
      * @param v array containing new values to be added to u
      * @param scalar value to multiply each entry in v before adding to u
      */
-    private static double[] addInPlace(double[] u, double[] v, double scalar) throws HiveException {
+    @VisibleForTesting
+    protected static double[] addInPlace(double[] u, double[] v, double scalar) throws HiveException {
         checkCondition(u.length == v.length, DIFFERENT_DIMS_ERR);
         for (int i = 0; i < u.length; i++) {
             u[i] += scalar * v[i];
@@ -711,9 +715,5 @@ public class CofactorModel {
             double v = MathUtils.gaussian(0.d, stddev, rand[i]);
             a[i] = v;
         }
-    }
-
-    private static void checkHyperparameterC(final float c) {
-        assert c >= 0.f && c <= 1.f;
     }
 }
