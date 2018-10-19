@@ -102,7 +102,7 @@ public class CofactorModel {
 
     // error message strings
     private static final String ARRAY_NOT_SQUARE_ERR = "Array is not square";
-    private static final String DIFFERENT_DIMS_ERR = "Matrix or array do not match in size";
+    private static final String DIFFERENT_DIMS_ERR = "Matrix, vector or array do not match in size";
 
     public CofactorModel(@Nonnegative int factor, @Nonnull RankInitScheme initScheme,
                          float c0, float c1, float lambdaTheta, float lambdaBeta, float lambdaGamma) {
@@ -177,13 +177,12 @@ public class CofactorModel {
         biases.put(key, value);
     }
 
-    public void recordContext(Feature context, Boolean isItem) {
-        String key = context.getFeature();
+    public void recordContext(String context, Boolean isItem) {
         if (isItem) {
-            initFactorVector(key, beta);
-            initFactorVector(key, gamma);
+            initFactorVector(context, beta);
+            initFactorVector(context, gamma);
         } else {
-            initFactorVector(key, theta);
+            initFactorVector(context, theta);
         }
     }
 
@@ -266,7 +265,7 @@ public class CofactorModel {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             RealVector newThetaVec = calculateNewThetaVector(sample, beta, factor, B, A, BTBpR, c0, c1);
             if (newThetaVec != null) {
-                setFactorVector(sample.context.getFeature(), theta, newThetaVec);
+                setFactorVector(sample.context, theta, newThetaVec);
             }
         }
     }
@@ -300,7 +299,7 @@ public class CofactorModel {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, B, A, TTTpR, c0, c1);
             if (newBetaVec != null) {
-                setFactorVector(sample.context.getFeature(), beta, newBetaVec);
+                setFactorVector(sample.context, beta, newBetaVec);
             }
         }
     }
@@ -337,7 +336,7 @@ public class CofactorModel {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, B, A, lambdaGamma);
             if (newGammaVec != null) {
-                setFactorVector(sample.context.getFeature(), gamma, newGammaVec);
+                setFactorVector(sample.context, gamma, newGammaVec);
             }
         }
     }
@@ -372,7 +371,7 @@ public class CofactorModel {
             Double newBetaBias = calculateNewBias(sample, beta, gamma, gammaBias);
             // TODO: is this correct behaviour?
             if (newBetaBias != null) {
-                setBetaBias(sample.context.getFeature(), newBetaBias);
+                setBetaBias(sample.context, newBetaBias);
             }
         }
     }
@@ -382,7 +381,7 @@ public class CofactorModel {
             Double newGammaBias = calculateNewBias(sample, gamma, beta, betaBias);
             // TODO: is this correct behaviour?
             if (newGammaBias != null) {
-                setGammaBias(sample.context.getFeature(), newGammaBias);
+                setGammaBias(sample.context, newGammaBias);
             }
         }
     }
@@ -402,11 +401,10 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
-    protected static double calculateBiasRSD(Feature thisItem, List<Feature> trainableItems, Map<String, double[]> beta,
+    protected static double calculateBiasRSD(String thisItem, List<Feature> trainableItems, Map<String, double[]> beta,
                                              Map<String, double[]> gamma, Object2DoubleMap<String> biases) {
         double result = 0.d, cooccurBias;
-        String i = thisItem.getFeature();
-        double[] thisFactorVec = getFactorVector(i, beta);
+        double[] thisFactorVec = getFactorVector(thisItem, beta);
         double[] cooccurVec;
 
         for (Feature cooccurrence : trainableItems) {
@@ -420,12 +418,11 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
-    protected static double[] calculateRSD(Feature thisItem, List<Feature> trainableItems, int numFactors,
+    protected static double[] calculateRSD(String thisItem, List<Feature> trainableItems, int numFactors,
                                            Object2DoubleMap<String> fixedBias, Object2DoubleMap<String> changingBias,
                                            Map<String, double[]> weights) throws HiveException {
 
-        String i = thisItem.getFeature();
-        double b = getBias(i, fixedBias);
+        double b = getBias(thisItem, fixedBias);
 
         double[] accumulator = new double[numFactors];
 
@@ -577,12 +574,11 @@ public class CofactorModel {
         }
     }
 
-    public Double predict(Feature user, Feature item) {
-        String userName = user.getFeature(), itemName = item.getFeature();
-        if (!isTrainable(userName, theta) || !isTrainable(itemName, beta)) {
+    public Double predict(String user, String item) {
+        if (!isTrainable(user, theta) || !isTrainable(item, beta)) {
             return null;
         }
-        double[] u = getThetaVector(userName), i = getBetaVector(itemName);
+        double[] u = getThetaVector(user), i = getBetaVector(item);
         return dotProduct(u, i);
     }
 
@@ -611,7 +607,7 @@ public class CofactorModel {
         double[] bFactors, gFactors;
         String bKey, gKey;
         for (CofactorizationUDTF.TrainingSample item: items) {
-            bKey = item.context.getFeature();
+            bKey = item.context;
             bFactors = getFactorVector(bKey, beta);
             bBias = getBias(bKey, betaBias);
             for (Feature cooccurrence : item.sppmi) {
@@ -635,7 +631,7 @@ public class CofactorModel {
         double[] contextFactors, ratedFactors;
 
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            contextFactors = getFactorVector(sample.context.getFeature(), contextWeights);
+            contextFactors = getFactorVector(sample.context, contextWeights);
             // all items / users
             for (double[] unratedFactors : featureWeights.values()) {
                 predicted = dotProduct(contextFactors, unratedFactors);
