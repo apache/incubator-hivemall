@@ -113,8 +113,10 @@ public class CofactorModel {
         this.theta = new HashMap<>();
         this.beta = new HashMap<>();
         this.betaBias = new Object2DoubleArrayMap<>();
+        this.betaBias.defaultReturnValue(0.d);
         this.gamma = new HashMap<>();
         this.gammaBias = new Object2DoubleArrayMap<>();
+        this.gammaBias.defaultReturnValue(0.d);
 
         this.B = new Array2DRowRealMatrix(this.factor, this.factor);
         this.A = new ArrayRealVector(this.factor);
@@ -161,9 +163,6 @@ public class CofactorModel {
     }
 
     private static double getBias(String key, Object2DoubleMap<String> biases) {
-        if (!biases.containsKey(key)) {
-            biases.put(key, 0.d);
-        }
         return biases.getDouble(key);
     }
 
