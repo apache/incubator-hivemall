@@ -19,6 +19,7 @@
 package hivemall.mf;
 
 import hivemall.UDTFWithOptions;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
 import hivemall.fm.Feature;
 import hivemall.fm.StringFeature;
@@ -97,12 +98,15 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     // Input OIs and Context
     private StringObjectInspector contextOI;
-    private ListObjectInspector featuresOI;
+    @VisibleForTesting
+    protected ListObjectInspector featuresOI;
     private BooleanObjectInspector isItemOI;
-    private ListObjectInspector sppmiOI;
+    @VisibleForTesting
+    protected ListObjectInspector sppmiOI;
 
     // Used for iterations
-    private NioStatefulSegment fileIO;
+    @VisibleForTesting
+    protected NioStatefulSegment fileIO;
     private ByteBuffer inputBuf;
     private long lastWritePos;
 
@@ -115,12 +119,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
 
     static class MiniBatch {
-        protected int maxSize;
         private List<TrainingSample> users;
         private List<TrainingSample> items;
 
-        protected MiniBatch(int maxSize) {
-            this.maxSize = maxSize;
+        protected MiniBatch() {
+            users = new ArrayList<>();
+            items = new ArrayList<>();
         }
 
         protected void add(TrainingSample sample) {
@@ -212,8 +216,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         boolean conversionCheck = true;
         double convergenceRate = 0.005d;
 
-        if (argOIs.length >= 4) {
-            String rawArgs = HiveUtils.getConstString(argOIs[3]);
+        if (argOIs.length >= 5) {
+            String rawArgs = HiveUtils.getConstString(argOIs[4]);
             cl = parseOptions(rawArgs);
             if (cl.hasOption("factors")) {
                 this.factor = Primitives.parseInt(cl.getOptionValue("factors"), 10);
@@ -324,12 +328,14 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     }
 
     @Nullable
-    protected Feature[] parseFeatures(@Nonnull final Object arg, ListObjectInspector listOI, Feature[] probe) throws HiveException {
+    @VisibleForTesting
+    protected static Feature[] parseFeatures(@Nonnull final Object arg, ListObjectInspector listOI, Feature[] probe) throws HiveException {
         Feature[] rawFeatures = Feature.parseFeatures(arg, listOI, probe, false);
         return createNnzFeatureArray(rawFeatures);
     }
 
-    protected Feature[] createNnzFeatureArray(Feature[] x) {
+    @VisibleForTesting
+    protected static Feature[] createNnzFeatureArray(Feature[] x) {
         int nnz = countNnzFeatures(x);
         Feature[] nnzFeatures = new Feature[nnz];
         int i = 0;
@@ -341,7 +347,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         return nnzFeatures;
     }
 
-    private int countNnzFeatures(Feature[] x) {
+    private static int countNnzFeatures(Feature[] x) {
         int nnz = 0;
         for (Feature f : x) {
             if (f.getValue() != 0.d) {
@@ -363,33 +369,20 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         ByteBuffer inputBuf = this.inputBuf;
         NioStatefulSegment dst = this.fileIO;
         if (inputBuf == null) {
-            final File file;
-            try {
-                file = File.createTempFile("hivemall_cofactor", ".sgmt");
-                file.deleteOnExit();
-                if (!file.canWrite()) {
-                    throw new UDFArgumentException(
-                            "Cannot write a temporary file: " + file.getAbsolutePath());
-                }
-                LOG.info("Record training examples to a file: " + file.getAbsolutePath());
-            } catch (IOException ioe) {
-                throw new UDFArgumentException(ioe);
-            } catch (Throwable e) {
-                throw new UDFArgumentException(e);
-            }
-
+            final File file = createTempFile();
             this.inputBuf = inputBuf = ByteBuffer.allocateDirect(1024 * 1024); // 1 MiB
             this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
-        int contextBytes = SizeOf.INT + SizeOf.CHAR * context.length();
-        int featuresBytes = SizeOf.INT + Feature.requiredBytes(features);
-        int isParentAnItemBytes = SizeOf.BYTE;
-        int sppmiBytes = sppmi != null ? SizeOf.INT + Feature.requiredBytes(sppmi) : 0;
+        writeRecordToBuffer(inputBuf, dst, context, features, sppmi);
+    }
 
-        int recordBytes = contextBytes + SizeOf.INT + featuresBytes + isParentAnItemBytes + SizeOf.INT + sppmiBytes;
+    private static void writeRecordToBuffer(@Nonnull final ByteBuffer inputBuf, @Nonnull final NioStatefulSegment dst, @Nonnull final String context,
+                                            @Nonnull final Feature[] features, @Nullable final Feature[] sppmi) throws HiveException {
+        int recordBytes = calculateRecordBytes(context, features, sppmi);
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
+
         if (remain < requiredBytes) {
             writeBuffer(inputBuf, dst);
         }
@@ -403,6 +396,32 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         } else {
             inputBuf.put(FALSE_BYTE);
         }
+    }
+
+    private static int calculateRecordBytes(String context, Feature[] features, Feature[] sppmi) {
+        int contextBytes = SizeOf.INT + SizeOf.CHAR * context.length();
+        int featuresBytes = SizeOf.INT + Feature.requiredBytes(features);
+        int isItemBytes = SizeOf.BYTE;
+        int sppmiBytes = sppmi != null ? SizeOf.INT + Feature.requiredBytes(sppmi) : 0;
+        return contextBytes + featuresBytes + isItemBytes + sppmiBytes;
+    }
+
+    private static File createTempFile() throws UDFArgumentException {
+        final File file;
+        try {
+            file = File.createTempFile("hivemall_cofactor", ".sgmt");
+            file.deleteOnExit();
+            if (!file.canWrite()) {
+                throw new UDFArgumentException(
+                        "Cannot write a temporary file: " + file.getAbsolutePath());
+            }
+            LOG.info("Record training examples to a file: " + file.getAbsolutePath());
+        } catch (IOException ioe) {
+            throw new UDFArgumentException(ioe);
+        } catch (Throwable e) {
+            throw new UDFArgumentException(e);
+        }
+        return file;
     }
 
     private static void writeFeaturesToBuffer(Feature[] features, ByteBuffer buffer) {
@@ -432,16 +451,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             final Counters.Counter iterCounter = (reporter == null) ? null
                     : reporter.getCounter("hivemall.mf.Cofactor$Counter", "iteration");
 
-            // write training examples in buffer to a temporary file
-            if (inputBuf.remaining() > 0) {
-                writeBuffer(inputBuf, fileIO);
-            }
-            try {
-                fileIO.flush();
-            } catch (IOException e) {
-                throw new HiveException(
-                        "Failed to flush a file: " + fileIO.getFile().getAbsolutePath(), e);
-            }
+            prepareForRead();
+
             if (LOG.isInfoEnabled()) {
                 File tmpFile = fileIO.getFile();
                 LOG.info("Wrote " + numTraining
@@ -477,25 +488,43 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
     }
 
+    @VisibleForTesting
+    protected void prepareForRead() throws HiveException {
+        // write training examples in buffer to a temporary file
+        if (inputBuf.remaining() > 0) {
+            writeBuffer(inputBuf, fileIO);
+        }
+        try {
+            fileIO.flush();
+        } catch (IOException e) {
+            throw new HiveException(
+                    "Failed to flush a file: " + fileIO.getFile().getAbsolutePath(), e);
+        }
+        fileIO.resetPosition();
+    }
+
     private void runTrainingIteration() throws HiveException {
         fileIO.resetPosition();
-        MiniBatch miniBatch = new MiniBatch(batchSize);
+        MiniBatch miniBatch = new MiniBatch();
         // read minibatch from disk into memory
         while (readMiniBatchFromFile(miniBatch)) {
             Double trainLoss = trainMiniBatch(miniBatch);
             if (trainLoss != null) {
                 cvState.incrLoss(trainLoss);
             }
+            miniBatch.clear();
         }
 
     }
 
     @Nonnull
-    protected static Feature instantiateFeature(@Nonnull final ByteBuffer input) {
+    private static Feature instantiateFeature(@Nonnull final ByteBuffer input) {
         return new StringFeature(input);
     }
 
-    private boolean readMiniBatchFromFile(MiniBatch miniBatch) throws HiveException {
+    @VisibleForTesting
+    protected boolean readMiniBatchFromFile(MiniBatch miniBatch) throws HiveException {
+        inputBuf.clear();
         // writes training examples to a buffer in the temporary file
         final int bytesRead;
         try {
@@ -507,7 +536,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         if (bytesRead == 0) { // reached file EOF
             return false;
         }
-        assert (bytesRead > 0) : bytesRead;
 
         // reads training examples from a buffer
         inputBuf.flip();
