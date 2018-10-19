@@ -58,52 +58,52 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     // Option variables
     // The number of latent factors
-    protected int factor;
+    private int factor;
     // The scaling hyperparameter for zero entries in the rank matrix
-    protected float scale_zero;
+    private float scale_zero;
     // The scaling hyperparameter for non-zero entries in the rank matrix
-    protected float scale_nonzero;
+    private float scale_nonzero;
     // The preferred size of the miniBatch for training
-    protected int batchSize;
+    private int batchSize;
     // The initial mean rating
-    protected float globalBias;
+    private float globalBias;
     // Whether update (and return) the mean rating or not
-    protected boolean updateGlobalBias;
+    private boolean updateGlobalBias;
     // The number of iterations
-    protected int maxIters;
+    private int maxIters;
     // Whether to use bias clause
-    protected boolean useBiasClause;
+    private boolean useBiasClause;
     // Whether to use normalization
-    protected boolean useL2Norm;
+    private boolean useL2Norm;
     // regularization hyperparameters
-    protected float lambdaTheta;
-    protected float lambdaBeta;
-    protected float lambdaGamma;
+    private float lambdaTheta;
+    private float lambdaBeta;
+    private float lambdaGamma;
 
     // Initialization strategy of rank matrix
-    protected CofactorModel.RankInitScheme rankInit;
+    private CofactorModel.RankInitScheme rankInit;
 
     // Model itself
-    protected CofactorModel model;
-    protected int numItems;
+    private CofactorModel model;
+    private int numItems;
 
     // Variable managing status of learning
 
     // The number of processed training examples
-    protected long count;
+    private long count;
 
-    protected ConversionState cvState;
+    private ConversionState cvState;
     private ConversionState validationState;
 
     // Input OIs and Context
-    protected StringObjectInspector contextOI;
-    protected ListObjectInspector featuresOI;
-    protected BooleanObjectInspector isItemOI;
-    protected ListObjectInspector sppmiOI;
+    private StringObjectInspector contextOI;
+    private ListObjectInspector featuresOI;
+    private BooleanObjectInspector isItemOI;
+    private ListObjectInspector sppmiOI;
 
     // Used for iterations
-    protected NioStatefulSegment fileIO;
-    protected ByteBuffer inputBuf;
+    private NioStatefulSegment fileIO;
+    private ByteBuffer inputBuf;
     private long lastWritePos;
 
     private String contextProbe;
