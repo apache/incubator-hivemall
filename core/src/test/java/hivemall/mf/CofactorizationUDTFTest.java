@@ -74,7 +74,7 @@ public class CofactorizationUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaBooleanObjectInspector,
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                HiveUtils.getConstStringObjectInspector("-max_iters 1 -factors 10")
+                HiveUtils.getConstStringObjectInspector("-max_iters 5 -factors 100")
         };
         udtf.initialize(argOIs);
     }
@@ -108,11 +108,17 @@ public class CofactorizationUDTFTest {
 
         TestingSample testSample = new TestingSample();
         BufferedReader test = readFile("ml30k-cofactor.test.gz");
+        double err = 0.d;
+        int numTest = 0;
+
         while ((line = test.readLine()) != null) {
+            numTest++;
             parseLine(line, testSample);
             double prediction = udtf.model.predict(testSample.user, testSample.item);
-            double err = Math.abs(testSample.rating - prediction);
+            err += Math.abs(testSample.rating - prediction);
+//            Assert.assertTrue(err < Double.MAX_VALUE && err > Double.MIN_VALUE);
         }
+        System.out.println(err / numTest);
     }
 
     @Nonnull

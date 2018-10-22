@@ -24,11 +24,7 @@ import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.MathUtils;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.linear.SingularValueDecomposition;
+import org.apache.commons.math3.linear.*;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 import javax.annotation.Nonnegative;
@@ -137,11 +133,11 @@ public class CofactorModel {
 
     }
 
-    private void initFactorVector(String key, Map<String, double[]> weights) {
+    private void initFactorVector(final String key, final Map<String, double[]> weights) {
         if (weights.containsKey(key)) {
             return;
         }
-        double[] v = new double[factor];
+        final double[] v = new double[factor];
         switch (initScheme) {
             case random:
                 uniformFill(v, randI[0], initScheme.maxInitValue);
@@ -476,32 +472,41 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
-    protected static RealVector solve(RealMatrix B, double[][] dataB, RealVector A, double[] dataA) throws HiveException {
+    protected static RealVector solve(final RealMatrix B, final double[][] dataB, final RealVector A, final double[] dataA) throws HiveException {
         // b * x = a
         // solves for x
         copyData(B, dataB);
         copyData(A, dataA);
-        SingularValueDecomposition svd = new SingularValueDecomposition(B);
-        return svd.getSolver().solve(A);
+
+        final LUDecomposition LU = new LUDecomposition(B);
+        final DecompositionSolver solver = LU.getSolver();
+
+        if (solver.isNonSingular()) {
+            return LU.getSolver().solve(A);
+        } else {
+            SingularValueDecomposition svd = new SingularValueDecomposition(B);
+            return svd.getSolver().solve(A);
+        }
     }
 
-    private static void copyData(RealMatrix dst, double[][] src) throws HiveException {
+    private static void copyData(final RealMatrix dst, final double[][] src) throws HiveException {
         checkCondition(dst.getRowDimension() == src.length && dst.getColumnDimension() == src[0].length, DIFFERENT_DIMS_ERR);
         for (int i = 0, rows = dst.getRowDimension(); i < rows; i++) {
+            final double[] src_i = src[i];
             for (int j = 0, cols = dst.getColumnDimension(); j < cols; j++) {
-                dst.setEntry(i, j, src[i][j]);
+                dst.setEntry(i, j, src_i[j]);
             }
         }
     }
 
-    private static void copyData(RealVector dst, double[] src) throws HiveException {
+    private static void copyData(final RealVector dst, final double[] src) throws HiveException {
         checkCondition(dst.getDimension() == src.length, DIFFERENT_DIMS_ERR);
         for (int i = 0; i < dst.getDimension(); i++) {
             dst.setEntry(i, src[i]);
         }
     }
 
-    private static void copyData(double[] dst, RealVector src) throws HiveException {
+    private static void copyData(final double[] dst, final RealVector src) throws HiveException {
         checkCondition(dst.length == src.getDimension(), DIFFERENT_DIMS_ERR);
         for (int i = 0; i < dst.length; i++) {
             dst[i] = src.getEntry(i);
@@ -509,12 +514,15 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
-    protected static double[][] calculateWTW(Map<String, double[]> weights, int numFactors, float constant) {
-        double[][] WTW = new double[numFactors][numFactors];
-        for (int f = 0; f < numFactors; f++) {
-            for (int ff = 0; ff < numFactors; ff++) {
-                double val = constant * dotFactorsAlongDims(weights, f, ff);
-                WTW[f][ff] = val;
+    protected static double[][] calculateWTW(final Map<String, double[]> weights, final int numFactors, final float constant) {
+        final double[][] WTW = new double[numFactors][numFactors];
+        for (double[] vec : weights.values()) {
+            for (int i = 0; i < numFactors; i++) {
+                final double[] WTW_f = WTW[i];
+                for (int j = 0; j < numFactors; j++) {
+                    double val = constant * vec[i] * vec[j];
+                    WTW_f[j] += val;
+                }
             }
         }
         return WTW;
@@ -523,31 +531,18 @@ public class CofactorModel {
     @VisibleForTesting
     protected static double[][] calculateWTWSubset(List<Feature> subset, Map<String, double[]> weights, int numFactors, float constant) {
         // equivalent to `B_u.T.dot((c1 - c0) * B_u)` in cofacto.py
-        double[][] delta = new double[numFactors][numFactors];
-        for (int f = 0; f < numFactors; f++) {
-            for (int ff = 0; ff < numFactors; ff++) {
-                double val = constant * dotFactorsAlongDims(subset, weights, f, ff);
-                delta[f][ff] = val;
+        final double[][] delta = new double[numFactors][numFactors];
+        for (Feature f : subset) {
+            final double[] vec = getFactorVector(f.getFeature(), weights);
+            for (int i = 0; i < numFactors; i++) {
+                final double[] delta_f = delta[i];
+                for (int j = 0; j < numFactors; j++) {
+                    double val = constant * vec[i] * vec[j];
+                    delta_f[j] += val;
+                }
             }
         }
         return delta;
-    }
-
-    private static double dotFactorsAlongDims(List<Feature> keys, Map<String, double[]> weights, int dim1, int dim2) {
-        double result = 0.d;
-        for (Feature f : keys) {
-            double[] vec = getFactorVector(f.getFeature(), weights);
-            result += vec[dim1] * vec[dim2];
-        }
-        return result;
-    }
-
-    private static double dotFactorsAlongDims(Map<String, double[]> weights, int dim1, int dim2) {
-        double result = 0.d;
-        for (double[] vec : weights.values()) {
-            result += vec[dim1] * vec[dim2];
-        }
-        return result;
     }
 
     @VisibleForTesting
