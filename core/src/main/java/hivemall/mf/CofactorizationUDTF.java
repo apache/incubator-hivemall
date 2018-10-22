@@ -85,8 +85,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private CofactorModel.RankInitScheme rankInit;
 
     // Model itself
-    private CofactorModel model;
-    private int numItems;
+    @VisibleForTesting
+    protected CofactorModel model;
 
     // Variable managing status of learning
 
