@@ -201,9 +201,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = null;
-        String rankInitOpt = "gaussian";
+        String rankInitOpt = null;
         float maxInitValue = 1.f;
-        double initStdDev = 0.1d;
+        double initStdDev = 1.d;
         boolean conversionCheck = true;
         double convergenceRate = 0.005d;
 
@@ -222,17 +222,17 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             this.scale_nonzero = Primitives.parseFloat(cl.getOptionValue("scale_nonzero"), 1.0f);
             this.globalBias = Primitives.parseFloat(cl.getOptionValue("gb"), 0.f);
             this.updateGlobalBias = cl.hasOption("update_gb");
-            rankInitOpt = cl.getOptionValue("rankinit");
+            rankInitOpt = cl.getOptionValue("rankinit", "gaussian");
             maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 1.f);
             initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.01d);
             if (cl.hasOption("iter")) {
                 this.maxIters = Primitives.parseInt(cl.getOptionValue("iter"), 1);
             } else {
-                this.maxIters = Primitives.parseInt(cl.getOptionValue("maxIters"), 1);
+                this.maxIters = Primitives.parseInt(cl.getOptionValue("max_iters"), 1);
             }
             if (maxIters < 1) {
                 throw new UDFArgumentException(
-                        "'-maxIters' must be greater than or equal to 1: " + maxIters);
+                        "'-max_iters' must be greater than or equal to 1: " + maxIters);
             }
             conversionCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
@@ -246,7 +246,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
         this.rankInit = CofactorModel.RankInitScheme.resolve(rankInitOpt);
         rankInit.setMaxInitValue(maxInitValue);
-        initStdDev = Math.max(initStdDev, 1.0d / factor);
         rankInit.setInitStdDev(initStdDev);
         this.cvState = new ConversionState(conversionCheck, convergenceRate);
         return cl;
@@ -347,7 +346,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private Double trainMiniBatch(MiniBatch miniBatch) throws HiveException {
         model.updateWithUsers(miniBatch.getUsers());
         model.updateWithItems(miniBatch.getItems());
-        return model.calculateLoss(miniBatch.getUsers(), miniBatch.getItems());
+        return 0.d;
+//        return model.calculateLoss(miniBatch.getUsers(), miniBatch.getItems());
     }
 
     private void recordTrain(final String context, final Feature[] features, final Feature[] sppmi)
@@ -496,9 +496,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         // read minibatch from disk into memory
         while (readMiniBatchFromFile(miniBatch)) {
             Double trainLoss = trainMiniBatch(miniBatch);
-            if (trainLoss != null) {
-                cvState.incrLoss(trainLoss);
-            }
+//            if (trainLoss != null) {
+//                cvState.incrLoss(trainLoss);
+//            }
             miniBatch.clear();
         }
 
