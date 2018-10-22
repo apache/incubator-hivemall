@@ -51,8 +51,6 @@ public class CofactorModelTest {
     private static final String JACKSON = "jackson";
     private static final String ALIEN = "alien";
 
-    private static final double DUMMY_VALUE = 0.d;
-
     @Test
     public void calculateWTW() {
         Map<String, double[]> weights = getTestBeta();

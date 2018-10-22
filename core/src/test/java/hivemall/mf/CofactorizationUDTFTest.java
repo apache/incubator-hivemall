@@ -21,6 +21,7 @@ package hivemall.mf;
 import hivemall.fm.Feature;
 import hivemall.fm.StringFeature;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -30,14 +31,39 @@ import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.Nonnull;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 public class CofactorizationUDTFTest {
 
     CofactorizationUDTF udtf;
+
+    private static class TrainingSample {
+        private String context;
+        private List<String> features;
+        private List<String> sppmi;
+
+        private TrainingSample() {}
+
+        private Object[] toArray() {
+            boolean isItem = sppmi != null;
+            return new Object[]{context, features, isItem, sppmi};
+        }
+    }
+
+    private static class TestingSample {
+        private String user;
+        private String item;
+        private double rating;
+
+        private TestingSample() {}
+    }
 
     @Before
     public void setUp() throws HiveException {
@@ -48,7 +74,7 @@ public class CofactorizationUDTFTest {
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                 PrimitiveObjectInspectorFactory.javaBooleanObjectInspector,
                 ObjectInspectorFactory.getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                HiveUtils.getConstStringObjectInspector("-num_items 100 -factors 10")
+                HiveUtils.getConstStringObjectInspector("-max_iters 1 -factors 10")
         };
         udtf.initialize(argOIs);
     }
@@ -66,6 +92,62 @@ public class CofactorizationUDTFTest {
         });
 
         Assert.assertArrayEquals(actual, expected);
+    }
+
+    @Test
+    public void testTrain() throws HiveException, IOException {
+        TrainingSample trainSample = new TrainingSample();
+
+        BufferedReader train = readFile("ml30k-cofactor.train.gz");
+        String line;
+        while ((line = train.readLine()) != null) {
+            parseLine(line, trainSample);
+            udtf.process(trainSample.toArray());
+        }
+        udtf.close();
+
+        TestingSample testSample = new TestingSample();
+        BufferedReader test = readFile("ml30k-cofactor.test.gz");
+        while ((line = test.readLine()) != null) {
+            parseLine(line, testSample);
+            double prediction = udtf.model.predict(testSample.user, testSample.item);
+            double err = Math.abs(testSample.rating - prediction);
+        }
+    }
+
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        InputStream is = BPRMatrixFactorizationUDTFTest.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
+    }
+
+    private static void parseLine(@Nonnull String line, @Nonnull TrainingSample sample) {
+        String[] cols = StringUtils.split(line, ' ');
+        Assert.assertNotNull(cols);
+        Assert.assertTrue(cols.length == 3 || cols.length == 4);
+        sample.context = cols[0];
+        boolean isItem = Integer.parseInt(cols[1]) == 1;
+        sample.features = parseFeatures(cols[2]);
+        sample.sppmi = cols.length == 4 ? parseFeatures(cols[3]) : null;
+    }
+
+    private static void parseLine(@Nonnull String line, @Nonnull TestingSample sample) {
+        String[] cols = StringUtils.split(line, ' ');
+        Assert.assertNotNull(cols);
+        Assert.assertEquals(cols.length, 3);
+        sample.user = cols[0];
+        sample.item = cols[1];
+        sample.rating = Double.parseDouble(cols[2]);
+    }
+
+    private static List<String> parseFeatures(@Nonnull String string) {
+        String[] entries = StringUtils.split(string, ',');
+        List<String> features = new ArrayList<>();
+        features.addAll(Arrays.asList(entries));
+        return features;
     }
 
     @Test
