@@ -64,8 +64,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private float scale_zero;
     // The scaling hyperparameter for non-zero entries in the rank matrix
     private float scale_nonzero;
-    // The preferred size of the miniBatch for training
-    private int batchSize;
     // The initial mean rating
     private float globalBias;
     // Whether update (and return) the mean rating or not
@@ -89,10 +87,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected CofactorModel model;
 
     // Variable managing status of learning
-
-    // The number of processed training examples
-    private long count;
-
     private ConversionState cvState;
     private ConversionState validationState;
 
@@ -181,7 +175,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         opts.addOption("c1", "scale_nonzero", true,
                 "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
         opts.addOption("b", "batch_size", true, "The miniBatch size for training [default: 1024]");
-        opts.addOption("n", "num_items", false, "Number of items");
         opts.addOption("gb", "global_bias", true, "The global bias [default: 0.0]");
         opts.addOption("update_gb", "update_gb", false,
                 "Whether update (and return) the global bias or not");
@@ -194,14 +187,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         opts.addOption("iters", "iterations", true, "The number of iterations [default: 1]");
         opts.addOption("iter", true,
                 "The number of iterations [default: 1] Alias for `-iterations`");
+        opts.addOption("max_iters", "max_iters", true, "The number of iterations [default: 1]");
         opts.addOption("disable_cv", "disable_cvtest", false,
                 "Whether to disable convergence check [default: enabled]");
         opts.addOption("cv_rate", "convergence_rate", true,
                 "Threshold to determine convergence [default: 0.005]");
         opts.addOption("disable_bias", "no_bias", false, "Turn off bias clause");
-        // feature representation
-        opts.addOption("int_feature", "feature_as_integer", false,
-                "Parse a feature as integer [default: OFF]");
         // normalization
         opts.addOption("disable_norm", "disable_l2norm", false, "Disable instance-wise L2 normalization");
         return opts;
@@ -229,12 +220,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             this.lambdaGamma = Primitives.parseFloat(cl.getOptionValue("lambda_gamma"), 1e+0f);
             this.scale_zero = Primitives.parseFloat(cl.getOptionValue("scale_zero"), 0.1f);
             this.scale_nonzero = Primitives.parseFloat(cl.getOptionValue("scale_nonzero"), 1.0f);
-            this.batchSize = Primitives.parseInt(cl.getOptionValue("batch_size"), 1024);
-            if (cl.hasOption("num_items")) {
-                this.numItems = Primitives.parseInt(cl.getOptionValue("num_items"), 1024);
-            } else {
-                throw new UDFArgumentException("-num_items must be specified");
-            }
             this.globalBias = Primitives.parseFloat(cl.getOptionValue("gb"), 0.f);
             this.updateGlobalBias = cl.hasOption("update_gb");
             rankInitOpt = cl.getOptionValue("rankinit");
@@ -283,7 +268,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         processOptions(argOIs);
 
         this.model = new CofactorModel(factor, rankInit, scale_zero, scale_nonzero, lambdaTheta, lambdaBeta, lambdaGamma);
-        this.count = 0L;
         this.lastWritePos = 0L;
 
         List<String> fieldNames = new ArrayList<String>();
