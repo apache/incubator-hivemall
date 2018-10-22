@@ -511,7 +511,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @VisibleForTesting
     protected boolean readMiniBatchFromFile(MiniBatch miniBatch) throws HiveException {
-        inputBuf.clear();
         // writes training examples to a buffer in the temporary file
         final int bytesRead;
         try {
