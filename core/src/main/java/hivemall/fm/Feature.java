@@ -382,11 +382,4 @@ public abstract class Feature {
             f.value *= invNorm;
         }
     }
-
-    @Override
-    public boolean equals(Object other) {
-        Feature otherFeature = (Feature) other;
-        return Math.abs(this.value - otherFeature.getValue()) < 1e-5f
-                && this.getFeature().equals(otherFeature.getFeature());
-    }
 }

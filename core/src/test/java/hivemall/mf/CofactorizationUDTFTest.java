@@ -165,9 +165,28 @@ public class CofactorizationUDTFTest {
 
         CofactorizationUDTF.TrainingSample actualSample = miniBatch.getItems().get(0);
         Assert.assertEquals(actualSample.context, sample[0]);
-        Assert.assertTrue(Arrays.deepEquals(actualSample.features, CofactorizationUDTF.parseFeatures(sample[1], udtf.featuresOI, null)));
+        Assert.assertTrue(featureArraysAreEqual(actualSample.features, CofactorizationUDTF.parseFeatures(sample[1], udtf.featuresOI, null)));
         Assert.assertEquals(actualSample.isItem(), sample[2]);
-        Assert.assertTrue(Arrays.deepEquals(actualSample.sppmi, CofactorizationUDTF.parseFeatures(sample[3], udtf.sppmiOI, null)));
+        Assert.assertTrue(featureArraysAreEqual(actualSample.sppmi, CofactorizationUDTF.parseFeatures(sample[3], udtf.sppmiOI, null)));
+    }
+
+    private static boolean featureArraysAreEqual(Feature[] f1, Feature[] f2) {
+        if (f1 == null || f2 == null) {
+            return false;
+        }
+        if (f1.length != f2.length) {
+            return false;
+        }
+        for (int i = 0; i < f1.length; i++) {
+            if (!featuresAreEqual(f1[i], f2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean featuresAreEqual(Feature f1, Feature f2) {
+        return f1.getFeature().equals(f2.getFeature()) && f1.getValue() == f2.getValue();
     }
 
     @Test
