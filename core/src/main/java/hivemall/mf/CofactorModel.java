@@ -45,6 +45,7 @@ public class CofactorModel {
         private float maxInitValue;
         @Nonnegative
         private double initStdDev;
+
         @Nonnull
         public static CofactorModel.RankInitScheme resolve(@Nullable String opt) {
             if (opt == null) {
@@ -56,9 +57,11 @@ public class CofactorModel {
             }
             return random;
         }
+
         public void setMaxInitValue(float maxInitValue) {
             this.maxInitValue = maxInitValue;
         }
+
         public void setInitStdDev(double initStdDev) {
             this.initStdDev = initStdDev;
         }
@@ -252,6 +255,7 @@ public class CofactorModel {
         updateGamma(items);
         updateBetaBias(items);
         updateGammaBias(items);
+        updateGlobalBias(items);
     }
 
     /**
@@ -294,7 +298,7 @@ public class CofactorModel {
         // precomputed matrix
         final double[][] TTTpR = calculateWTWpR(theta, factor, c0, lambdaBeta);
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, B, A, TTTpR, c0, c1);
+            RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, B, A, TTTpR, c0, c1, globalBias);
             if (newBetaVec != null) {
                 setFactorVector(sample.context, beta, newBetaVec);
             }
@@ -305,14 +309,15 @@ public class CofactorModel {
     protected static RealVector calculateNewBetaVector(@Nonnull final CofactorizationUDTF.TrainingSample sample, @Nonnull final Map<String, double[]> theta,
                                                        @Nonnull final Map<String, double[]> gamma, @Nonnull final Object2DoubleMap<String> gammaBias,
                                                        @Nonnull final Object2DoubleMap<String> betaBias, final int numFactors, @Nonnull final RealMatrix B,
-                                                       @Nonnull final RealVector A, @Nonnull final double[][] TTTpR, final float c0, final float c1) throws HiveException {
+                                                       @Nonnull final RealVector A, @Nonnull final double[][] TTTpR, @Nonnegative final float c0,
+                                                       @Nonnegative final float c1, final double globalBias) throws HiveException {
         // filter for trainable users
         final List<Feature> trainableUsers = filterTrainableFeatures(sample.features, theta);
         if (trainableUsers.isEmpty()) {
             return null;
         }
         final List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, gamma);
-        final double[] RSD = calculateRSD(sample.context, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma);
+        final double[] RSD = calculateRSD(sample.context, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma, globalBias);
         final double[] ApRSD = addInPlace(calculateA(trainableUsers, theta, numFactors, c1), RSD, 1.f);
 
         final double[][] GTG = calculateWTWSubset(trainableCooccurringItems, gamma, numFactors, 1.f);
@@ -329,7 +334,7 @@ public class CofactorModel {
      */
     private void updateGamma(@Nonnull final List<CofactorizationUDTF.TrainingSample> samples) throws HiveException {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, B, A, lambdaGamma);
+            RealVector newGammaVec = calculateNewGammaVector(sample, beta, gammaBias, betaBias, factor, B, A, lambdaGamma, globalBias);
             if (newGammaVec != null) {
                 setFactorVector(sample.context, gamma, newGammaVec);
             }
@@ -339,15 +344,15 @@ public class CofactorModel {
     @VisibleForTesting
     protected static RealVector calculateNewGammaVector(@Nonnull final CofactorizationUDTF.TrainingSample sample, @Nonnull final Map<String, double[]> beta,
                                                         @Nonnull final Object2DoubleMap<String> gammaBias, @Nonnull final Object2DoubleMap<String> betaBias,
-                                                        final int numFactors, final RealMatrix B, @Nonnull final RealVector A,
-                                                        @Nonnull final float lambdaGamma) throws HiveException {
+                                                        @Nonnegative final int numFactors, @Nonnull final RealMatrix B, @Nonnull final RealVector A,
+                                                        @Nonnegative final float lambdaGamma, final double globalBias) throws HiveException {
         // filter for trainable items
         final List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
         if (trainableCooccurringItems.isEmpty()) {
             return null;
         }
         final double[][] b = regularize(calculateWTWSubset(trainableCooccurringItems, beta, numFactors, 1.f), lambdaGamma);
-        final double[] rsd = calculateRSD(sample.context, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta);
+        final double[] rsd = calculateRSD(sample.context, trainableCooccurringItems, numFactors, gammaBias, betaBias, beta, globalBias);
         // solve and update factors
         return solve(B, b, A, rsd);
     }
@@ -361,8 +366,7 @@ public class CofactorModel {
 
     private void updateBetaBias(@Nonnull final List<CofactorizationUDTF.TrainingSample> samples) {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            Double newBetaBias = calculateNewBias(sample, beta, gamma, gammaBias);
-            // TODO: is this correct behaviour?
+            Double newBetaBias = calculateNewBias(sample, beta, gamma, gammaBias, globalBias);
             if (newBetaBias != null) {
                 setBetaBias(sample.context, newBetaBias);
             }
@@ -371,39 +375,82 @@ public class CofactorModel {
 
     public void updateGammaBias(@Nonnull final List<CofactorizationUDTF.TrainingSample> samples) {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
-            Double newGammaBias = calculateNewBias(sample, gamma, beta, betaBias);
-            // TODO: is this correct behaviour?
+            Double newGammaBias = calculateNewBias(sample, gamma, beta, betaBias, globalBias);
             if (newGammaBias != null) {
                 setGammaBias(sample.context, newGammaBias);
             }
         }
     }
 
+    private void updateGlobalBias(@Nonnull final List<CofactorizationUDTF.TrainingSample> samples) {
+        Double newGlobalBias = calculateNewGlobalBias(samples, beta, gamma, betaBias, gammaBias);
+        if (newGlobalBias != null) {
+            setGlobalBias(newGlobalBias);
+        }
+    }
+
+    @Nullable
+    protected static Double calculateNewGlobalBias(@Nonnull final List<CofactorizationUDTF.TrainingSample> samples, @Nonnull Map<String, double[]> beta,
+                                                 @Nonnull Map<String, double[]> gamma, @Nonnull final Object2DoubleMap<String> betaBias,
+                                                 @Nonnull final Object2DoubleMap<String> gammaBias) {
+        double newGlobalBias = 0.d;
+        int numEntriesInSPPMI = 0;
+        for (CofactorizationUDTF.TrainingSample sample : samples) {
+            // filter for trainable items
+            final List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
+            if (trainableCooccurringItems.isEmpty()) {
+                continue;
+            }
+            numEntriesInSPPMI += trainableCooccurringItems.size();
+            newGlobalBias += calculateGlobalBiasRSD(sample.context, trainableCooccurringItems, beta, gamma, betaBias, gammaBias);
+        }
+        if (numEntriesInSPPMI == 0) {
+            return null;
+        }
+        return newGlobalBias / numEntriesInSPPMI;
+    }
+
     @VisibleForTesting
     protected static Double calculateNewBias(@Nonnull final CofactorizationUDTF.TrainingSample sample, @Nonnull final Map<String, double[]> beta,
-                                             @Nonnull final Map<String, double[]> gamma, @Nonnull final Object2DoubleMap<String> biases) {
+                                             @Nonnull final Map<String, double[]> gamma, @Nonnull final Object2DoubleMap<String> biases,
+                                             final double globalBias) {
         // filter for trainable items
         final List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, beta);
         if (trainableCooccurringItems.isEmpty()) {
             return null;
         }
-
-        double rsd = calculateBiasRSD(sample.context, trainableCooccurringItems, beta, gamma, biases);
+        double rsd = calculateBiasRSD(sample.context, trainableCooccurringItems, beta, gamma, biases, globalBias);
         return rsd / trainableCooccurringItems.size();
 
     }
 
     @VisibleForTesting
-    protected static double calculateBiasRSD(@Nonnull final String thisItem, @Nonnull final List<Feature> trainableItems, @Nonnull final Map<String, double[]> beta,
-                                             @Nonnull final Map<String, double[]> gamma, @Nonnull final Object2DoubleMap<String> biases) {
+    protected static double calculateGlobalBiasRSD(@Nonnull final String thisItem, @Nonnull final List<Feature> trainableItems,
+                                                   @Nonnull final Map<String, double[]> beta, @Nonnull final Map<String, double[]> gamma,
+                                                   @Nonnull final Object2DoubleMap<String> betaBias, @Nonnull final Object2DoubleMap<String> gammaBias) {
         double result = 0.d;
         final double[] thisFactorVec = getFactorVector(thisItem, beta);
+        final double thisBias = getBias(thisItem, betaBias);
+        for (Feature cooccurrence : trainableItems) {
+            String j = cooccurrence.getFeature();
+            final double[] cooccurVec = getFactorVector(j, gamma);
+            double cooccurBias = getBias(j, gammaBias);
+            double value = cooccurrence.getValue() - dotProduct(thisFactorVec, cooccurVec) - thisBias - cooccurBias;
+            result += value;
+        }
+        return result;
+    }
 
+    @VisibleForTesting
+    protected static double calculateBiasRSD(@Nonnull final String thisItem, @Nonnull final List<Feature> trainableItems, @Nonnull final Map<String, double[]> beta,
+                                             @Nonnull final Map<String, double[]> gamma, @Nonnull final Object2DoubleMap<String> biases, final double globalBias) {
+        double result = 0.d;
+        final double[] thisFactorVec = getFactorVector(thisItem, beta);
         for (Feature cooccurrence : trainableItems) {
             String j = cooccurrence.getFeature();
             final double[] cooccurVec = getFactorVector(j, gamma);
             double cooccurBias = getBias(j, biases);
-            double value = cooccurrence.getValue() - dotProduct(thisFactorVec, cooccurVec) - cooccurBias;
+            double value = cooccurrence.getValue() - dotProduct(thisFactorVec, cooccurVec) - cooccurBias - globalBias;
             result += value;
         }
         return result;
@@ -413,13 +460,13 @@ public class CofactorModel {
     @Nonnull
     protected static double[] calculateRSD(@Nonnull final String thisItem, @Nonnull final List<Feature> trainableItems, final int numFactors,
                                            @Nonnull final Object2DoubleMap<String> fixedBias, @Nonnull final Object2DoubleMap<String> changingBias,
-                                           @Nonnull final Map<String, double[]> weights) throws HiveException {
+                                           @Nonnull final Map<String, double[]> weights, final double globalBias) throws HiveException {
 
         final double b = getBias(thisItem, fixedBias);
         final double[] accumulator = new double[numFactors];
         for (Feature cooccurrence : trainableItems) {
             final String j = cooccurrence.getFeature();
-            double scale = cooccurrence.getValue() - b - getBias(j, changingBias);
+            double scale = cooccurrence.getValue() - b - getBias(j, changingBias) - globalBias;
             final double[] g = getFactorVector(j, weights);
             addInPlace(accumulator, g, scale);
         }
@@ -595,7 +642,7 @@ public class CofactorModel {
         double loss = 0.d, val, bBias, gBias;
         double[] bFactors, gFactors;
         String bKey, gKey;
-        for (CofactorizationUDTF.TrainingSample item: items) {
+        for (CofactorizationUDTF.TrainingSample item : items) {
             bKey = item.context;
             bFactors = getFactorVector(bKey, beta);
             bBias = getBias(bKey, betaBias);
@@ -655,15 +702,16 @@ public class CofactorModel {
     protected static double L2Distance(@Nonnull final double[] vec) {
         double result = 0.d;
         for (double v : vec) {
-            result +=  v * v;
+            result += v * v;
         }
         return Math.sqrt(result);
     }
 
     /**
      * Add v to u in-place without creating a new RealVector instance.
-     * @param u array to which v will be added
-     * @param v array containing new values to be added to u
+     *
+     * @param u      array to which v will be added
+     * @param v      array containing new values to be added to u
      * @param scalar value to multiply each entry in v before adding to u
      */
     @VisibleForTesting
