@@ -231,7 +231,7 @@ public class CofactorModelTest {
 
     @Test
     public void recordAsParent() throws HiveException {
-        CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
+        CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f);
 
         Assert.assertNull(model.getThetaVector(JACKSON));
         model.recordContext(JACKSON, false);
@@ -323,7 +323,7 @@ public class CofactorModelTest {
         init.setInitStdDev(1.0f);
 
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
-                0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f);
         int iterations = 5;
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
@@ -358,7 +358,7 @@ public class CofactorModelTest {
         init.setInitStdDev(1.0f);
 
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
-                0.1f, 1.f, 1e-5f, 1e-5f, 1.f);
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f);
         int iterations = 5;
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
