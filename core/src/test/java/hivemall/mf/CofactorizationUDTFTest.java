@@ -177,6 +177,9 @@ public class CofactorizationUDTFTest {
     }
 
     private static boolean featureArraysAreEqual(Feature[] f1, Feature[] f2) {
+        if (f1 == null && f2 == null) {
+            return true;
+        }
         if (f1 == null || f2 == null) {
             return false;
         }
@@ -214,15 +217,15 @@ public class CofactorizationUDTFTest {
 
         CofactorizationUDTF.TrainingSample actualItem = miniBatch.getItems().get(0);
         Assert.assertEquals(actualItem.context, item[0]);
-        Assert.assertTrue(Arrays.deepEquals(actualItem.features, CofactorizationUDTF.parseFeatures(item[1], udtf.featuresOI, null)));
+        Assert.assertTrue(featureArraysAreEqual(actualItem.features, CofactorizationUDTF.parseFeatures(item[1], udtf.featuresOI, null)));
         Assert.assertEquals(actualItem.isItem(), item[2]);
-        Assert.assertTrue(Arrays.deepEquals(actualItem.sppmi, CofactorizationUDTF.parseFeatures(item[3], udtf.sppmiOI, null)));
+        Assert.assertTrue(featureArraysAreEqual(actualItem.sppmi, CofactorizationUDTF.parseFeatures(item[3], udtf.sppmiOI, null)));
 
         CofactorizationUDTF.TrainingSample actualUser = miniBatch.getUsers().get(0);
         Assert.assertEquals(actualUser.context, user[0]);
-        Assert.assertTrue(Arrays.deepEquals(actualUser.features, CofactorizationUDTF.parseFeatures(user[1], udtf.featuresOI, null)));
+        Assert.assertTrue(featureArraysAreEqual(actualUser.features, CofactorizationUDTF.parseFeatures(user[1], udtf.featuresOI, null)));
         Assert.assertEquals(actualUser.isItem(), user[2]);
-        Assert.assertTrue(Arrays.deepEquals(actualUser.sppmi, CofactorizationUDTF.parseFeatures(user[3], udtf.sppmiOI, null)));
+        Assert.assertTrue(featureArraysAreEqual(actualUser.sppmi, CofactorizationUDTF.parseFeatures(user[3], udtf.sppmiOI, null)));
     }
 
     @Test
