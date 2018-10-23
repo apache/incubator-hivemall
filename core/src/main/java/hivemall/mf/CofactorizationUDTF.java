@@ -41,6 +41,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
 
@@ -51,6 +53,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static hivemall.utils.lang.Primitives.FALSE_BYTE;
 import static hivemall.utils.lang.Primitives.TRUE_BYTE;
@@ -469,6 +472,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 //                        + NumberUtils.formatNumber(_t) + " training updates in total), used "
 //                        + _numValidations + " validation examples");
             }
+
+            forwardModel();
         } finally {
             // delete the temporary file and release resources
             try {
@@ -479,6 +484,45 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             }
             this.inputBuf = null;
             this.fileIO = null;
+        }
+    }
+
+    private void forwardModel() throws HiveException {
+        if (model == null) {
+            return;
+        }
+
+        final Text context = new Text();
+        FloatWritable[] theta = HiveUtils.newFloatArray(factor, 0.f);
+        FloatWritable[] beta = HiveUtils.newFloatArray(factor, 0.f);
+        final Object[] forwardObj = new Object[] {context, theta, beta};
+
+        int numForwarded = 0;
+
+        for (Map.Entry<String, double[]> entry : model.getTheta().entrySet()) {
+            context.set(entry.getKey());
+            copyTo(entry.getValue(), theta);
+            beta = null;
+            forward(forwardObj);
+            numForwarded++;
+        }
+
+        for (Map.Entry<String, double[]> entry : model.getBeta().entrySet()) {
+            context.set(entry.getKey());
+            copyTo(entry.getValue(), beta);
+            theta = null;
+            forward(forwardObj);
+            numForwarded++;
+        }
+
+        this.model = null; // help GC
+        LOG.info("Forwarded the prediction model of " + numForwarded + " rows.]");
+
+    }
+
+    private void copyTo(@Nonnull final double[] src, @Nonnull final FloatWritable[] dst) {
+        for (int k = 0, size = factor; k < size; k++) {
+            dst[k].set((float) src[k]);
         }
     }
 
