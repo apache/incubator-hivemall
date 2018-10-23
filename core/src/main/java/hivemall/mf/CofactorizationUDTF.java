@@ -34,6 +34,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
@@ -54,6 +55,12 @@ import java.util.List;
 import static hivemall.utils.lang.Primitives.FALSE_BYTE;
 import static hivemall.utils.lang.Primitives.TRUE_BYTE;
 
+/**
+ * Cofactorization for implicit and explicit recommendation
+ */
+@Description(name = "train_cofactor",
+        value = "_FUNC_(string context, array<string> features, boolean is_item, array<string> sppmi [, String options])"
+                + " - Returns a relation <string context, array<float> theta, array<float> beta>")
 public class CofactorizationUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(CofactorizationUDTF.class);
 
