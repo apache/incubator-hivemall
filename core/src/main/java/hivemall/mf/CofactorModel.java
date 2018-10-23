@@ -99,13 +99,13 @@ public class CofactorModel {
 
     public CofactorModel(@Nonnegative final int factor, @Nonnull final RankInitScheme initScheme,
                          @Nonnegative final float c0, @Nonnegative final float c1, @Nonnegative final float lambdaTheta,
-                         @Nonnegative final float lambdaBeta, @Nonnegative final float lambdaGamma) {
+                         @Nonnegative final float lambdaBeta, @Nonnegative final float lambdaGamma, final float globalBias) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
         this.factor = factor;
         this.initScheme = initScheme;
-        this.globalBias = 0.d;
+        this.globalBias = globalBias;
         this.lambdaTheta = lambdaTheta;
         this.lambdaBeta = lambdaBeta;
         this.lambdaGamma = lambdaGamma;
