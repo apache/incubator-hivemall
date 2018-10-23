@@ -278,12 +278,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         List<String> fieldNames = new ArrayList<String>();
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-        fieldNames.add("idx");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
-        fieldNames.add("Pu");
+        fieldNames.add("context");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        fieldNames.add("theta");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
                 PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
-        fieldNames.add("Qi");
+        fieldNames.add("beta");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
                 PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
