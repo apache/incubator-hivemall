@@ -401,6 +401,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
+    @Nonnull
     protected static double[] calculateRSD(@Nonnull final String thisItem, @Nonnull final List<Feature> trainableItems, final int numFactors,
                                            @Nonnull final Object2DoubleMap<String> fixedBias, @Nonnull final Object2DoubleMap<String> changingBias,
                                            @Nonnull final Map<String, double[]> weights) throws HiveException {
@@ -420,6 +421,7 @@ public class CofactorModel {
      * Calculate W' x W plus regularization matrix
      */
     @VisibleForTesting
+    @Nonnull
     protected static double[][] calculateWTWpR(@Nonnull final Map<String, double[]> W, @Nonnegative final int numFactors, @Nonnegative final float c0, @Nonnegative final float lambda) {
         double[][] WTW = calculateWTW(W, numFactors, c0);
         return regularize(WTW, lambda);
@@ -432,6 +434,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
+    @Nonnull
     protected static double[][] addInPlace(@Nonnull final double[][] A, @Nonnull final double[][] B) throws HiveException {
         checkCondition(A.length == A[0].length && A.length == B.length && B.length == B[0].length, ARRAY_NOT_SQUARE_ERR);
         for (int i = 0; i < A.length; i++) {
@@ -443,6 +446,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
+    @Nonnull
     protected static List<Feature> filterTrainableFeatures(@Nonnull final Feature[] features, @Nonnull final Map<String, double[]> weights) {
         final List<Feature> trainableFeatures = new ArrayList<>();
         String fName;
@@ -498,6 +502,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
+    @Nonnull
     protected static double[][] calculateWTW(@Nonnull final Map<String, double[]> weights, @Nonnull final int numFactors, @Nonnull final float constant) {
         final double[][] WTW = new double[numFactors][numFactors];
         for (double[] vec : weights.values()) {
@@ -513,6 +518,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
+    @Nonnull
     protected static double[][] calculateWTWSubset(@Nonnull final List<Feature> subset, @Nonnull final Map<String, double[]> weights, @Nonnegative final int numFactors, @Nonnegative final float constant) {
         // equivalent to `B_u.T.dot((c1 - c0) * B_u)` in cofacto.py
         final double[][] delta = new double[numFactors][numFactors];
@@ -530,6 +536,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
+    @Nonnull
     protected static double[] calculateA(@Nonnull final List<Feature> items, @Nonnull final Map<String, double[]> weights, @Nonnegative final int numFactors, @Nonnegative final float constant) throws HiveException {
         // Equivalent to: a = x_u.dot(c1 * B_u)
         // x_u is a (1, i) matrix of all ones
@@ -546,12 +553,7 @@ public class CofactorModel {
         return A;
     }
 
-    private static void clearArray(double[] a) {
-        for (int i = 0; i < a.length; i++) {
-            a[i] = 0.d;
-        }
-    }
-
+    @Nullable
     public Double predict(@Nonnull final String user, @Nonnull final String item) {
         if (!theta.containsKey(user) || !beta.containsKey(item)) {
             return null;
@@ -569,7 +571,7 @@ public class CofactorModel {
         return result;
     }
 
-    public Double calculateLoss(@Nonnull final List<CofactorizationUDTF.TrainingSample> users, @Nonnull final List<CofactorizationUDTF.TrainingSample> items) {
+    public double calculateLoss(@Nonnull final List<CofactorizationUDTF.TrainingSample> users, @Nonnull final List<CofactorizationUDTF.TrainingSample> items) {
         // for speed - can calculate loss on a small subset of the training data
         double mf_loss = calculateMFLoss(users, theta, beta, c0, c1) + calculateMFLoss(items, beta, theta, c0, c1);
         double embed_loss = calculateEmbedLoss(items, beta, gamma, betaBias, gammaBias);
@@ -656,6 +658,7 @@ public class CofactorModel {
      * @param scalar value to multiply each entry in v before adding to u
      */
     @VisibleForTesting
+    @Nonnull
     protected static double[] addInPlace(@Nonnull final double[] u, @Nonnull final double[] v, final double scalar) throws HiveException {
         checkCondition(u.length == v.length, DIFFERENT_DIMS_ERR);
         for (int i = 0; i < u.length; i++) {
