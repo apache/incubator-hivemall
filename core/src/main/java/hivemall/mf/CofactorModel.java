@@ -149,6 +149,7 @@ public class CofactorModel {
         weights.put(key, v);
     }
 
+    @Nullable
     private static double[] getFactorVector(String key, Map<String, double[]> weights) {
         return weights.get(key);
     }
@@ -178,6 +179,7 @@ public class CofactorModel {
         }
     }
 
+    @Nullable
     public double[] getGammaVector(@Nonnull final String key) {
         return getFactorVector(key, gamma);
     }
@@ -198,10 +200,12 @@ public class CofactorModel {
         globalBias = value;
     }
 
+    @Nullable
     public double[] getThetaVector(@Nonnull final String key) {
         return getFactorVector(key, theta);
     }
 
+    @Nullable
     public double[] getBetaVector(@Nonnull final String key) {
         return getFactorVector(key, beta);
     }
@@ -214,31 +218,36 @@ public class CofactorModel {
         setBias(key, betaBias, value);
     }
 
+    @Nonnull
     public Map<String, double[]> getTheta() {
         return theta;
     }
 
+    @Nonnull
     public Map<String, double[]> getBeta() {
         return beta;
     }
 
+    @Nonnull
     public Map<String, double[]> getGamma() {
         return gamma;
     }
 
+    @Nonnull
     public Object2DoubleMap<String> getBetaBiases() {
         return betaBias;
     }
 
+    @Nonnull
     public Object2DoubleMap<String> getGammaBiases() {
         return gammaBias;
     }
 
-    public void updateWithUsers(List<CofactorizationUDTF.TrainingSample> users) throws HiveException {
+    public void updateWithUsers(@Nonnull final List<CofactorizationUDTF.TrainingSample> users) throws HiveException {
         updateTheta(users);
     }
 
-    public void updateWithItems(List<CofactorizationUDTF.TrainingSample> items) throws HiveException {
+    public void updateWithItems(@Nonnull final List<CofactorizationUDTF.TrainingSample> items) throws HiveException {
         updateBeta(items);
         updateGamma(items);
         updateBetaBias(items);
