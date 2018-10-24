@@ -40,7 +40,7 @@ notifications:
   email: false
 
 script:
-  - ./bin/run_travis_tests.sh
+  - travis_wait 10 ./bin/run_travis_tests.sh
 
 after_success:
   - mvn clean cobertura:cobertura coveralls:report
