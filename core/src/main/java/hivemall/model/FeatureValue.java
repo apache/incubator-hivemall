@@ -177,4 +177,9 @@ public final class FeatureValue {
         }
     }
 
+    @Override
+    public String toString() {
+        return feature + ":" + value;
+    }
+
 }

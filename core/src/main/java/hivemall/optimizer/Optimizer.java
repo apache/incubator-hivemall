@@ -71,7 +71,9 @@ public interface Optimizer {
         protected float update(@Nonnull final IWeightValue weight, final float gradient) {
             float oldWeight = weight.get();
             float delta = computeDelta(weight, gradient);
-            float newWeight = oldWeight - _eta.eta(_numStep) * _reg.regularize(oldWeight, delta);
+            float eta = _eta.eta(_numStep);
+            float reg = _reg.regularize(oldWeight, delta);
+            float newWeight = oldWeight - eta * reg;
             weight.set(newWeight);
             return newWeight;
         }
