@@ -76,6 +76,8 @@ import org.apache.hadoop.mapred.Reporter;
 
 public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     private static final Log logger = LogFactory.getLog(GeneralLearnerBaseUDTF.class);
+    private static final float MAX_DLOSS = 1e+12f;
+    private static final float MIN_DLOSS = -1e+12f;
 
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector targetOI;
@@ -167,6 +169,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         Options opts = super.getOptions();
         opts.addOption("loss", "loss_function", true, getLossOptionDescription());
         opts.addOption("iter", "iterations", true,
+            "The maximum number of iterations [default: 10]");
+        opts.addOption("iters", "iterations", true,
             "The maximum number of iterations [default: 10]");
         // conversion check
         opts.addOption("disable_cv", "disable_cvtest", false,
@@ -451,10 +455,15 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         float loss = lossFunction.loss(predicted, target);
         cvState.incrLoss(loss); // retain cumulative loss to check convergence
 
-        final float dloss = lossFunction.dloss(predicted, target);
+        float dloss = lossFunction.dloss(predicted, target);
         if (dloss == 0.f) {
             optimizer.proceedStep();
             return;
+        }
+        if (dloss < MIN_DLOSS) {
+            dloss = MIN_DLOSS;
+        } else if (dloss > MAX_DLOSS) {
+            dloss = MAX_DLOSS;
         }
 
         if (is_mini_batch) {
