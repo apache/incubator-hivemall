@@ -22,13 +22,23 @@ import static hivemall.utils.hadoop.HiveUtils.lazyInteger;
 import static hivemall.utils.hadoop.HiveUtils.lazyLong;
 import static hivemall.utils.hadoop.HiveUtils.lazyString;
 
+import hivemall.TestUtils;
+import hivemall.model.FeatureValue;
+import hivemall.utils.lang.StringUtils;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.StringTokenizer;
+import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 
-import hivemall.TestUtils;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
@@ -344,6 +354,76 @@ public class GeneralRegressorUDTFTest {
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                         "-loss SquaredLoss")},
             new Object[][] {{Arrays.asList("1:-2", "2:-1"), 10.f}});
+    }
+
+    @Test
+    public void testGradientClippingSGD() throws IOException, HiveException {
+        String filePath = "clipping_data.tsv.gz";
+        String options = "-loss squaredloss -opt SGD -reg no -eta0 0.01 -iter 1";
+
+        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
+
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector, params});
+
+        BufferedReader reader = readFile(filePath);
+        String line = reader.readLine();
+        for (int i = 0; line != null; i++) {
+            //System.out.println("> " + i);
+            //System.out.println(line);
+
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+            double y = Double.parseDouble(tokenizer.nextToken());
+            List<String> X = new ArrayList<String>();
+            while (tokenizer.hasMoreTokens()) {
+                String f = tokenizer.nextToken();
+                X.add(f);
+            }
+            FeatureValue[] features = udtf.parseFeatures(X);
+            if (DEBUG) {
+                printLine(features, y);
+            }
+
+            float yhat = udtf.predict(features);
+            //System.out.println(yhat);
+            if (Float.isNaN(yhat)) {
+                Assert.fail("NaN cause in line: " + i);
+            }
+
+            udtf.process(new Object[] {X, y});
+
+            line = reader.readLine();
+        }
+
+        udtf.finalizeTraining();
+    }
+
+    private static void printLine(FeatureValue[] features, final double y) {
+        Arrays.sort(features, new Comparator<FeatureValue>() {
+            @Override
+            public int compare(FeatureValue o1, FeatureValue o2) {
+                int f1 = Integer.parseInt(o1.getFeatureAsString());
+                int f2 = Integer.parseInt(o2.getFeatureAsString());
+                return Integer.compare(f1, f2);
+            }
+        });
+        System.out.print(y);
+        System.out.print(' ');
+        System.out.println(StringUtils.join(features, ' '));
+    }
+
+    @Nonnull
+    private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
+        InputStream is = GeneralRegressorUDTFTest.class.getResourceAsStream(fileName);
+        if (fileName.endsWith(".gz")) {
+            is = new GZIPInputStream(is);
+        }
+        return new BufferedReader(new InputStreamReader(is));
     }
 
     private static void println(String msg) {
