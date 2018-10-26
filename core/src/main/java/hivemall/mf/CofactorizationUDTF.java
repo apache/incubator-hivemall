@@ -105,6 +105,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @VisibleForTesting
     protected ListObjectInspector featuresOI;
     private BooleanObjectInspector isItemOI;
+    private BooleanObjectInspector isValidationOI;
     @VisibleForTesting
     protected ListObjectInspector sppmiOI;
 
@@ -112,15 +113,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @VisibleForTesting
     protected NioStatefulSegment fileIO;
     private ByteBuffer inputBuf;
-    private long lastWritePos;
-
-    private String contextProbe;
-    private Feature[] featuresProbe;
-    private Feature[] sppmiProbe;
-    private boolean isItemProbe;
-    private long numValidations;
-    private long numTraining;
-
+    protected long numValidations;
+    protected long numTraining;
 
     static class MiniBatch {
         private List<TrainingSample> users;
@@ -161,11 +155,13 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         protected String context;
         protected Feature[] features;
         protected Feature[] sppmi;
+        protected boolean isValidation;
 
-        protected TrainingSample(String context, Feature[] features, Feature[] sppmi) {
+        protected TrainingSample(@Nonnull final String context, @Nonnull final Feature[] features, final boolean isValidation, @Nullable final Feature[] sppmi) {
             this.context = context;
             this.features = features;
             this.sppmi = sppmi;
+            this.isValidation = isValidation;
         }
 
         protected boolean isItem() {
@@ -218,7 +214,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         double convergenceRate = 0.005d;
 
         if (argOIs.length >= 5) {
-            String rawArgs = HiveUtils.getConstString(argOIs[4]);
+            String rawArgs = HiveUtils.getConstString(argOIs[5]);
             cl = parseOptions(rawArgs);
             if (cl.hasOption("factors")) {
                 this.factor = Primitives.parseInt(cl.getOptionValue("factors"), 10);
@@ -263,21 +259,21 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length < 3) {
+        if (argOIs.length < 5) {
             throw new UDFArgumentException(
-                    "_FUNC_ takes 5 arguments: string context, array<string> features, boolean is_item, array<string> sppmi [, CONSTANT STRING options]");
+                    "_FUNC_ takes 5 arguments: string context, array<string> features, boolean is_validation, boolean is_item, array<string> sppmi [, CONSTANT STRING options]");
         }
         this.contextOI = HiveUtils.asStringOI(argOIs[0]);
         this.featuresOI = HiveUtils.asListOI(argOIs[1]);
         HiveUtils.validateFeatureOI(featuresOI.getListElementObjectInspector());
-        this.isItemOI = HiveUtils.asBooleanOI(argOIs[2]);
-        this.sppmiOI = HiveUtils.asListOI(argOIs[3]);
+        this.isValidationOI = HiveUtils.asBooleanOI(argOIs[2]);
+        this.isItemOI = HiveUtils.asBooleanOI(argOIs[3]);
+        this.sppmiOI = HiveUtils.asListOI(argOIs[4]);
         HiveUtils.validateFeatureOI(sppmiOI.getListElementObjectInspector());
 
         processOptions(argOIs);
 
         this.model = new CofactorModel(factor, rankInit, scale_zero, scale_nonzero, lambdaTheta, lambdaBeta, lambdaGamma, globalBias);
-        this.lastWritePos = 0L;
 
         List<String> fieldNames = new ArrayList<String>();
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -294,30 +290,23 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (args.length != 4) {
-            throw new HiveException("should have 4 args, but have " + args.length);
+        if (args.length != 5) {
+            throw new HiveException("should have 5 args, but have " + args.length);
         }
 
         String context = contextOI.getPrimitiveJavaObject(args[0]);
-        Feature[] features = parseFeatures(args[1], featuresOI, featuresProbe);
+        final Feature[] features = parseFeatures(args[1], featuresOI, null);
         if (features == null) {
             throw new HiveException("features must not be null");
         }
-
-        Boolean isItem = isItemOI.get(args[2]);
+        boolean isValidation = isValidationOI.get(args[2]);
+        boolean isItem = isItemOI.get(args[3]);
         Feature[] sppmi = null;
         if (isItem) {
-            sppmi = parseFeatures(args[3], sppmiOI, sppmiProbe);
+            sppmi = parseFeatures(args[4], sppmiOI, null);
         }
 
-        model.recordContext(context, isItem);
-
-        this.contextProbe = context;
-        this.featuresProbe = features;
-        this.isItemProbe = isItem;
-        this.sppmiProbe = sppmi;
-
-        recordTrain(context, features, sppmi);
+        recordSample(context, features, isValidation, isItem, sppmi);
     }
 
     @Nullable
@@ -360,9 +349,21 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 //        return model.calculateLoss(miniBatch.getUsers(), miniBatch.getItems());
     }
 
-    private void recordTrain(final String context, final Feature[] features, final Feature[] sppmi)
+    private void recordSample(@Nonnull final String context, @Nonnull final Feature[] features, final boolean isValidation, final boolean isItem, @Nullable final Feature[] sppmi)
             throws HiveException {
-        numTraining++;
+        // record training contexts in the model
+        if (!isValidation) {
+            model.recordContext(context, isItem);
+        }
+
+        // update count of sample types
+        if (isValidation) {
+            numValidations++;
+        } else {
+            numTraining++;
+        }
+
+        // write the sample to file
         ByteBuffer inputBuf = this.inputBuf;
         NioStatefulSegment dst = this.fileIO;
         if (inputBuf == null) {
@@ -371,22 +372,27 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
-        writeRecordToBuffer(inputBuf, dst, context, features, sppmi);
+        writeSampleToBuffer(inputBuf, dst, context, features, isValidation, sppmi);
     }
 
-    private static void writeRecordToBuffer(@Nonnull final ByteBuffer inputBuf, @Nonnull final NioStatefulSegment dst, @Nonnull final String context,
-                                            @Nonnull final Feature[] features, @Nullable final Feature[] sppmi) throws HiveException {
-        int recordBytes = calculateRecordBytes(context, features, sppmi);
+    private static void writeSampleToBuffer(@Nonnull final ByteBuffer inputBuf, @Nonnull final NioStatefulSegment dst, @Nonnull final String context,
+                                            @Nonnull final Feature[] features, final boolean isValidation, @Nullable final Feature[] sppmi) throws HiveException {
+        int recordBytes = calculateRecordBytes(context, features, isValidation, sppmi);
         int requiredBytes = SizeOf.INT + recordBytes;
         int remain = inputBuf.remaining();
 
         if (remain < requiredBytes) {
-            writeBuffer(inputBuf, dst);
+            writeBufferToFile(inputBuf, dst);
         }
 
         inputBuf.putInt(recordBytes);
         NIOUtils.putString(context, inputBuf);
         writeFeaturesToBuffer(features, inputBuf);
+        if (isValidation) {
+            inputBuf.put(TRUE_BYTE);
+        } else {
+            inputBuf.put(FALSE_BYTE);
+        }
         if (sppmi != null) {
             inputBuf.put(TRUE_BYTE);
             writeFeaturesToBuffer(sppmi, inputBuf);
@@ -395,12 +401,13 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
     }
 
-    private static int calculateRecordBytes(String context, Feature[] features, Feature[] sppmi) {
+    private static int calculateRecordBytes(@Nonnull final String context, @Nonnull final Feature[] features, final boolean isValidation, @Nullable final Feature[] sppmi) {
         int contextBytes = SizeOf.INT + SizeOf.CHAR * context.length();
         int featuresBytes = SizeOf.INT + Feature.requiredBytes(features);
+        int isValidationBytes = SizeOf.BYTE;
         int isItemBytes = SizeOf.BYTE;
         int sppmiBytes = sppmi != null ? SizeOf.INT + Feature.requiredBytes(sppmi) : 0;
-        return contextBytes + featuresBytes + isItemBytes + sppmiBytes;
+        return contextBytes + featuresBytes + isValidationBytes + isItemBytes + sppmiBytes;
     }
 
     private static File createTempFile() throws UDFArgumentException {
@@ -428,7 +435,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
     }
 
-    private static void writeBuffer(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
+    private static void writeBufferToFile(@Nonnull ByteBuffer srcBuf, @Nonnull NioStatefulSegment dst)
             throws HiveException {
         srcBuf.flip();
         try {
@@ -484,6 +491,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             }
             this.inputBuf = null;
             this.fileIO = null;
+            this.model = null;
         }
     }
 
@@ -493,30 +501,28 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
 
         final Text context = new Text();
-        FloatWritable[] theta = HiveUtils.newFloatArray(factor, 0.f);
-        FloatWritable[] beta = HiveUtils.newFloatArray(factor, 0.f);
+        final FloatWritable[] theta = HiveUtils.newFloatArray(factor, 0.f);
+        final FloatWritable[] beta = HiveUtils.newFloatArray(factor, 0.f);
         final Object[] forwardObj = new Object[] {context, theta, beta};
 
-        int numForwarded = 0;
+        int numUsersForwarded = 0, numItemsForwarded = 0;
 
         for (Map.Entry<String, double[]> entry : model.getTheta().entrySet()) {
             context.set(entry.getKey());
             copyTo(entry.getValue(), theta);
-            beta = null;
+            forwardObj[2] = null;
             forward(forwardObj);
-            numForwarded++;
+            numUsersForwarded++;
         }
 
         for (Map.Entry<String, double[]> entry : model.getBeta().entrySet()) {
             context.set(entry.getKey());
             copyTo(entry.getValue(), beta);
-            theta = null;
+            forwardObj[1] = null;
             forward(forwardObj);
-            numForwarded++;
+            numItemsForwarded++;
         }
-
-        this.model = null; // help GC
-        LOG.info("Forwarded the prediction model of " + numForwarded + " rows.]");
+        LOG.info("Forwarded the prediction model of " + numUsersForwarded + " user rows (theta) and " + numItemsForwarded + " item rows (beta).]");
 
     }
 
@@ -530,7 +536,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected void prepareForRead() throws HiveException {
         // write training examples in buffer to a temporary file
         if (inputBuf.remaining() > 0) {
-            writeBuffer(inputBuf, fileIO);
+            writeBufferToFile(inputBuf, fileIO);
         }
         try {
             fileIO.flush();
@@ -586,8 +592,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             remain -= SizeOf.INT;
 
             if (remain < recordBytes) {
-                // whole record can't fit in memory,
-                // so end the mini-batch here
+                // whole record can't fit in buffer, so end the mini-batch here
                 inputBuf.position(initialPos);
                 break;
             }
@@ -595,16 +600,21 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             miniBatch.add(sample);
             remain -= recordBytes;
         }
+        // prepare buffer for next minibatch
         inputBuf.compact();
         return true;
     }
 
-    private static TrainingSample readSampleFromBuffer(ByteBuffer inputBuf) {
+    private static TrainingSample readSampleFromBuffer(ByteBuffer inputBuf) throws HiveException {
         final String context = NIOUtils.getString(inputBuf);
+        if (context == null) {
+            throw new HiveException("`context` read from disk is null");
+        }
         final Feature[] features = instantiateFeatureArray(inputBuf);
+        final boolean isValidation = (inputBuf.get() == TRUE_BYTE);
         final boolean isItem = (inputBuf.get() == TRUE_BYTE);
         final Feature[] sppmi = isItem ? instantiateFeatureArray(inputBuf) : null;
-        return new TrainingSample(context, features, sppmi);
+        return new TrainingSample(context, features, isValidation, sppmi);
     }
 
     private static Feature[] instantiateFeatureArray(@Nonnull final ByteBuffer buffer) {

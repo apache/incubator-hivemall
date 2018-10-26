@@ -98,9 +98,7 @@ public class CofactorModelTest {
         RealVector A = new ArrayRealVector(NUM_FACTORS);
 
         CofactorizationUDTF.TrainingSample currentUser = new CofactorizationUDTF.TrainingSample(
-                JACKSON,
-                getSubset_itemFeatureVector_implicitFeedback(),
-                null);
+                JACKSON, getSubset_itemFeatureVector_implicitFeedback(), false, null);
 
         RealVector actual = CofactorModel.calculateNewThetaVector(currentUser, beta, NUM_FACTORS, B, A, BTBpR, c0, c1);
         Assert.assertNotNull(actual);
@@ -431,32 +429,38 @@ public class CofactorModelTest {
                     new CofactorizationUDTF.TrainingSample(
                             TOOTHBRUSH,
                             new Feature[]{new StringFeature(MAKOTO, 4.5d)},
+                            false,
                             new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             TOOTHPASTE,
                             new Feature[]{new StringFeature(TAKUYA, 5.d), new StringFeature(MAKOTO, 3.d), new StringFeature(JACKSON, 1.d)},
+                            false,
                             new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             SHAVER,
                             new Feature[]{new StringFeature(JACKSON, 2.d), new StringFeature(MAKOTO, 2.3d)},
+                            false,
                             new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
         } else {
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             TOOTHBRUSH,
                             new Feature[]{new StringFeature(MAKOTO, 1.d)},
+                            false,
                             new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             TOOTHPASTE,
                             new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d), new StringFeature(JACKSON, 1.d)},
+                            false,
                             new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             SHAVER,
                             new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
+                            false,
                             new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
         }
         return samples;
@@ -469,38 +473,44 @@ public class CofactorModelTest {
                     new CofactorizationUDTF.TrainingSample(
                             MAKOTO,
                             new Feature[]{new StringFeature(TOOTHBRUSH, 4.5d), new StringFeature(TOOTHPASTE, 3.d), new StringFeature(SHAVER, 2.3d)},
+                            false,
                             null));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             TAKUYA,
                             new Feature[]{new StringFeature(TOOTHPASTE, 5.d)},
+                            false,
                             null));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             JACKSON,
                             new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 2.d)},
+                            false,
                             null));
         } else {
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             MAKOTO,
                             new Feature[]{new StringFeature(TOOTHBRUSH, 1.d), new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                            false,
                             null));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             TAKUYA,
                             new Feature[]{new StringFeature(TOOTHPASTE, 1.d)},
+                            false,
                             null));
             samples.add(
                     new CofactorizationUDTF.TrainingSample(
                             JACKSON,
                             new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
+                            false,
                             null));
         }
         return samples;
     }
 
-    private void recordContexts(CofactorModel model, List<CofactorizationUDTF.TrainingSample> samples, boolean isItem) {
+    private void recordContexts(CofactorModel model, List<CofactorizationUDTF.TrainingSample> samples, boolean isItem) throws HiveException {
         for (CofactorizationUDTF.TrainingSample sample : samples) {
             model.recordContext(sample.context, isItem);
         }
@@ -511,6 +521,7 @@ public class CofactorModelTest {
         samples.add(new CofactorizationUDTF.TrainingSample(
                 TAKUYA,
                 getSubset_itemFeatureVector_implicitFeedback(),
+                false,
                 null));
         return samples;
     }
@@ -520,6 +531,7 @@ public class CofactorModelTest {
         samples.add(new CofactorizationUDTF.TrainingSample(
                 TOOTHBRUSH,
                 getSubset_userFeatureVector_implicitFeedback(),
+                false,
                 getToothbrushSPPMIVector()));
         return samples;
     }
@@ -529,6 +541,7 @@ public class CofactorModelTest {
         samples.add(new CofactorizationUDTF.TrainingSample(
                 TOOTHBRUSH,
                 getSuperset_userFeatureVector_implicitFeedback(),
+                false,
                 null));
         return samples;
     }
