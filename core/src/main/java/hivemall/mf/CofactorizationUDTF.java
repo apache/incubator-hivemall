@@ -119,27 +119,38 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     static class MiniBatch {
         private List<TrainingSample> users;
         private List<TrainingSample> items;
+        private List<TrainingSample> validationSamples;
 
         protected MiniBatch() {
             users = new ArrayList<>();
             items = new ArrayList<>();
+            validationSamples = new ArrayList<>();
         }
 
         protected void add(TrainingSample sample) {
-            if (sample.isItem()) {
-                items.add(sample);
+            if (sample.isValidation) {
+                validationSamples.add(sample);
             } else {
-                users.add(sample);
+                if (sample.isItem()) {
+                    items.add(sample);
+                } else {
+                    users.add(sample);
+                }
             }
         }
 
         protected void clear() {
             users.clear();
             items.clear();
+            validationSamples.clear();
         }
 
-        protected int size() {
+        protected int trainingSize() {
             return items.size() + users.size();
+        }
+
+        protected int validationSize() {
+            return validationSamples.size();
         }
 
         protected List<TrainingSample> getItems() {
@@ -148,6 +159,10 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         protected List<TrainingSample> getUsers() {
             return users;
+        }
+
+        public List<TrainingSample> getValidationSamples() {
+            return validationSamples;
         }
     }
 
@@ -552,13 +567,17 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         MiniBatch miniBatch = new MiniBatch();
         // read minibatch from disk into memory
         while (readMiniBatchFromFile(miniBatch)) {
-            Double trainLoss = trainMiniBatch(miniBatch);
-//            if (trainLoss != null) {
-//                cvState.incrLoss(trainLoss);
-//            }
+            train(miniBatch);
+            validate(miniBatch.getValidationSamples());
             miniBatch.clear();
         }
+    }
 
+    private void validate(List<TrainingSample> samples) {
+        for (TrainingSample sample : samples) {
+//            final double loss = model.calculateConvergenceMetric();
+//            validationState.incrLoss(loss);
+        }
     }
 
     @Nonnull

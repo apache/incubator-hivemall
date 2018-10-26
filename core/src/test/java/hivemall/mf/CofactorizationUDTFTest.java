@@ -212,7 +212,7 @@ public class CofactorizationUDTFTest {
 
         boolean didRead = udtf.readMiniBatchFromFile(miniBatch);
         Assert.assertTrue(didRead);
-        Assert.assertEquals(miniBatch.size(), 1);
+        Assert.assertEquals(miniBatch.trainingSize(), 1);
         Assert.assertEquals(miniBatch.getItems().size(), 1);
 
         CofactorizationUDTF.TrainingSample actualSample = miniBatch.getItems().get(0);
@@ -230,15 +230,14 @@ public class CofactorizationUDTFTest {
 
         boolean didRead = udtf.readMiniBatchFromFile(miniBatch);
         Assert.assertTrue(didRead);
-        Assert.assertEquals(miniBatch.size(), 1);
-        Assert.assertEquals(miniBatch.getItems().size(), 1);
+        Assert.assertEquals(miniBatch.validationSize(), 1);
 
-        CofactorizationUDTF.TrainingSample actualSample = miniBatch.getItems().get(0);
+        CofactorizationUDTF.TrainingSample actualSample = miniBatch.getValidationSamples().get(0);
         assertSamplesAreEqual(validSample, actualSample);
     }
 
     @Test
-    public void readMiniBatchFromFile_twoSamples_success() throws HiveException {
+    public void readMiniBatchFromFile_twoTrainingSamples_success() throws HiveException {
         initialize(false, "");
 
         Object[] item = getItemTrainSample();
@@ -252,7 +251,7 @@ public class CofactorizationUDTFTest {
 
         boolean didRead = udtf.readMiniBatchFromFile(miniBatch);
         Assert.assertTrue(didRead);
-        Assert.assertEquals(miniBatch.size(), 2);
+        Assert.assertEquals(miniBatch.trainingSize(), 2);
         Assert.assertEquals(miniBatch.getItems().size(), 1);
         Assert.assertEquals(miniBatch.getUsers().size(), 1);
 
