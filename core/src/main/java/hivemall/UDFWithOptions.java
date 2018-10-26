@@ -112,6 +112,30 @@ public abstract class UDFWithOptions extends GenericUDF {
         return cl;
     }
 
+    /**
+     * Raise {@link UDFArgumentException} if the given condition is false.
+     *
+     * @throws UDFArgumentException
+     */
+    protected static void assumeTrue(final boolean condition, @Nonnull final String errMsg)
+            throws UDFArgumentException {
+        if (!condition) {
+            throw new UDFArgumentException(errMsg);
+        }
+    }
+
+    /**
+     * Raise {@link UDFArgumentException} if the given condition is true.
+     *
+     * @throws UDFArgumentException
+     */
+    protected static void assumeFalse(final boolean condition, @Nonnull final String errMsg)
+            throws UDFArgumentException {
+        if (condition) {
+            throw new UDFArgumentException(errMsg);
+        }
+    }
+
     @Nonnull
     protected abstract CommandLine processOptions(@Nonnull String optionValue)
             throws UDFArgumentException;
