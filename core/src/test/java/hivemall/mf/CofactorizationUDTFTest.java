@@ -113,7 +113,7 @@ public class CofactorizationUDTFTest {
 
     @Test
     public void testTrain() throws HiveException, IOException {
-        initialize(true, "-max_iters 1 -factors 10 -scale_zero 0.03 -scale_nonzero 0.3");
+        initialize(true, "-max_iters 1 -factors 2 -c0 0.03 -c1 0.3");
 
         TrainingSample trainSample = new TrainingSample();
 
