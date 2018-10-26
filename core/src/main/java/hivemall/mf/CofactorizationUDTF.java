@@ -89,6 +89,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private float lambdaBeta;
     private float lambdaGamma;
 
+    // validation metric
+    private ValidationMetric validationMetric;
+
     // Initialization strategy of rank matrix
     private CofactorModel.RankInitScheme rankInit;
 
@@ -184,21 +187,38 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
     }
 
+    enum ValidationMetric {
+        AUC, OBJECTIVE;
+
+        static ValidationMetric resolve(@Nonnull final String opt) {
+            switch (opt.toLowerCase()) {
+                case "auc":
+                    return AUC;
+                case "objective":
+                case "loss":
+                    return OBJECTIVE;
+                default:
+                    throw new IllegalArgumentException(opt + " is not a supported Validation Metric.");
+            }
+        }
+    }
+
     @Override
     protected Options getOptions() {
         Options opts = new Options();
         opts.addOption("k", "factor", true, "The number of latent factor [default: 10] "
                 + " Note this is alias for `factors` option.");
         opts.addOption("f", "factors", true, "The number of latent factor [default: 10]");
-        opts.addOption("r", "lambda", true, "The regularization factor [default: 0.03]");
-        opts.addOption("c0", "scale_zero", true,
+        opts.addOption("lt", "lambda_theta", true, "The theta regularization factor [default: 1e-5]");
+        opts.addOption("lb", "lambda_beta", true, "The beta regularization factor [default: 1e-5]");
+        opts.addOption("lg", "lambda_gamma", true, "The gamma regularization factor [default: 1.0]");
+        opts.addOption("c0", "c0", true,
                 "The scaling hyperparameter for zero entries in the rank matrix [default: 0.1]");
-        opts.addOption("c1", "scale_nonzero", true,
+        opts.addOption("c1", "c1", true,
                 "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
-        opts.addOption("b", "batch_size", true, "The miniBatch size for training [default: 1024]");
         opts.addOption("gb", "global_bias", true, "The global bias [default: 0.0]");
-        opts.addOption("update_gb", "update_gb", false,
-                "Whether update (and return) the global bias or not");
+        opts.addOption("update_gb", "update_global_bias", true,
+                "Whether update (and return) the global bias or not [default: false]");
         opts.addOption("rankinit", true,
                 "Initialization strategy of rank matrix [random, gaussian] (default: gaussian)");
         opts.addOption("maxval", "max_init_value", true,
@@ -216,6 +236,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         opts.addOption("disable_bias", "no_bias", false, "Turn off bias clause");
         // normalization
         opts.addOption("disable_norm", "disable_l2norm", false, "Disable instance-wise L2 normalization");
+        opts.addOption("val_metric", "validation_metric", true, "Metric to use for validation ['AUC', 'OBJECTIVE']");
         return opts;
     }
 
@@ -227,6 +248,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         double initStdDev = 1.d;
         boolean conversionCheck = true;
         double convergenceRate = 0.005d;
+        String validationMetricOpt = "AUC";
 
         if (argOIs.length >= 5) {
             String rawArgs = HiveUtils.getConstString(argOIs[5]);
@@ -257,6 +279,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             }
             conversionCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
+            validationMetricOpt = cl.getOptionValue("validation_metric", validationMetricOpt);
+
             boolean noBias = cl.hasOption("no_bias");
             this.useBiasClause = !noBias;
             if (noBias && updateGlobalBias) {
@@ -269,6 +293,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         rankInit.setMaxInitValue(maxInitValue);
         rankInit.setInitStdDev(initStdDev);
         this.cvState = new ConversionState(conversionCheck, convergenceRate);
+        this.validationMetric = ValidationMetric.resolve(validationMetricOpt);
         return cl;
     }
 
@@ -357,11 +382,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         return nnz;
     }
 
-    private Double trainMiniBatch(MiniBatch miniBatch) throws HiveException {
+    private void train(MiniBatch miniBatch) throws HiveException {
         model.updateWithUsers(miniBatch.getUsers());
         model.updateWithItems(miniBatch.getItems());
-        return 0.d;
-//        return model.calculateLoss(miniBatch.getUsers(), miniBatch.getItems());
     }
 
     private void recordSample(@Nonnull final String context, @Nonnull final Feature[] features, final boolean isValidation, final boolean isItem, @Nullable final Feature[] sppmi)
