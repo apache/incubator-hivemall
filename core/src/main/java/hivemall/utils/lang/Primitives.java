@@ -78,6 +78,10 @@ public final class Primitives {
         return v.doubleValue();
     }
 
+    public static boolean isFinite(final double value) {
+        return Double.NEGATIVE_INFINITY < value && value < Double.POSITIVE_INFINITY;
+    }
+
     public static int compare(final int x, final int y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
