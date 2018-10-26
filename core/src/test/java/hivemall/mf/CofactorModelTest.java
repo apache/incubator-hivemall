@@ -30,7 +30,6 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ public class CofactorModelTest {
 
     @Test
     public void calculateWTW() {
-        Map<String, double[]> weights = getTestBeta();
+        CofactorModel.Weights weights = getTestBeta();
 
         double[][] expectedWTW = new double[][]{
                 {0.63, -0.238},
@@ -65,7 +64,7 @@ public class CofactorModelTest {
 
     @Test
     public void calculateA() throws HiveException {
-        Map<String, double[]> weights = getTestBeta();
+        CofactorModel.Weights weights = getTestBeta();
         List<Feature> items = getSubset_itemFeatureList_explicitFeedback();
         double[] actual = CofactorModel.calculateA(items, weights, NUM_FACTORS, 0.5f);
         double[] expected = new double[]{-2.05, 3.15};
@@ -74,7 +73,7 @@ public class CofactorModelTest {
 
     @Test
     public void calculateWTWSubset() throws HiveException {
-        Map<String, double[]> weights = getTestBeta();
+        CofactorModel.Weights weights = getTestBeta();
         List<Feature> items = getSubset_itemFeatureList_explicitFeedback();
 
         double[][] actual = CofactorModel.calculateWTWSubset(items, weights, NUM_FACTORS, 0.9f);
@@ -89,7 +88,7 @@ public class CofactorModelTest {
     @Test
     public void calculateNewThetaVector() throws HiveException {
         final float c0 = 0.1f, c1 = 1.f, lambdaTheta = 1e-5f;
-        Map<String, double[]> beta = getTestBeta();
+        CofactorModel.Weights beta = getTestBeta();
 
         double[][] BTBpR = CofactorModel.calculateWTWpR(beta, NUM_FACTORS, c0, lambdaTheta);
         double[][] initialBTBpR = copyArray(BTBpR);
@@ -130,8 +129,8 @@ public class CofactorModelTest {
 
         Object2DoubleMap<String> betaBias = getTestBetaBias();
         Object2DoubleMap<String> gammaBias = getTestGammaBias();
-        Map<String, double[]> gamma = getTestGamma();
-        Map<String, double[]> theta = getTestTheta();
+        CofactorModel.Weights gamma = getTestGamma();
+        CofactorModel.Weights theta = getTestTheta();
 
         RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
         RealVector A = new ArrayRealVector(NUM_FACTORS);
@@ -161,8 +160,8 @@ public class CofactorModelTest {
 
     @Test
     public void calculateNewGlobalBias() {
-        Map<String, double[]> beta = getTestBeta();
-        Map<String, double[]> gamma = getTestGamma();
+        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights gamma = getTestGamma();
         Object2DoubleMap<String> betaBias = getTestBetaBias();
         Object2DoubleMap<String> gammaBias = getTestGammaBias();
 
@@ -188,7 +187,7 @@ public class CofactorModelTest {
 
         Object2DoubleMap<String> betaBias = getTestBetaBias();
         Object2DoubleMap<String> gammaBias = getTestGammaBias();
-        Map<String, double[]> beta = getTestBeta();
+        CofactorModel.Weights beta = getTestBeta();
 
         RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
         RealVector A = new ArrayRealVector(NUM_FACTORS);
@@ -211,8 +210,8 @@ public class CofactorModelTest {
     @Test
     public void calculateNewBias_forBetaBias_returnsNonNull() throws HiveException {
         Object2DoubleMap<String> gammaBias = getTestGammaBias();
-        Map<String, double[]> beta = getTestBeta();
-        Map<String, double[]> gamma = getTestGamma();
+        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights gamma = getTestGamma();
 
         CofactorizationUDTF.TrainingSample currentItem = getItemSamples(false).get(0);
 
@@ -253,8 +252,8 @@ public class CofactorModelTest {
     @Test
     public void calculateMFLoss_allFeaturesAreTrainable() throws HiveException {
         List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
-        Map<String, double[]> beta = getTestBeta();
-        Map<String, double[]> theta = getTestTheta();
+        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights theta = getTestTheta();
         double actual = CofactorModel.calculateMFLoss(samples, beta, theta, 0.1f, 1.f);
         double expected = 0.7157;
         Assert.assertEquals(actual, expected, EPSILON);
@@ -265,8 +264,8 @@ public class CofactorModelTest {
         // tests case where a user found in the item's feature array
         // was not also distributed to the same UDTF instance
         List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_oneUserNotInTheta();
-        Map<String, double[]> beta = getTestBeta();
-        Map<String, double[]> theta = getTestTheta();
+        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights theta = getTestTheta();
         double actual = CofactorModel.calculateMFLoss(samples, beta, theta, 0.1f, 1.f);
         double expected = 0.7157;
         Assert.assertEquals(actual, expected, EPSILON);
@@ -275,8 +274,8 @@ public class CofactorModelTest {
     @Test
     public void calculateEmbedLoss() {
         List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
-        Map<String, double[]> beta = getTestBeta();
-        Map<String, double[]> gamma = getTestGamma();
+        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights gamma = getTestGamma();
         Object2DoubleMap<String> betaBias = getTestBetaBias();
         Object2DoubleMap<String> gammaBias = getTestGammaBias();
 
@@ -401,7 +400,7 @@ public class CofactorModelTest {
         return predicted.toString();
     }
 
-    private static String mapToString(Map<String, double[]> weights) {
+    private static String mapToString(CofactorModel.Weights weights) {
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, double[]> entry : weights.entrySet()) {
             sb.append(entry.getKey() + ": " + arrayToString(entry.getValue(), 3) + ", ");
@@ -561,24 +560,24 @@ public class CofactorModelTest {
         return true;
     }
 
-    private static Map<String, double[]> getTestTheta() {
-        Map<String, double[]> weights = new HashMap<>();
+    private static CofactorModel.Weights getTestTheta() {
+        CofactorModel.Weights weights = new CofactorModel.Weights();
         weights.put(MAKOTO, new double[]{0.8, -0.7});
         weights.put(TAKUYA, new double[]{-0.05, 1.7});
         weights.put(JACKSON, new double[]{1.8, -0.3});
         return weights;
     }
 
-    private static Map<String, double[]> getTestBeta() {
-        Map<String, double[]> weights = new HashMap<>();
+    private static CofactorModel.Weights getTestBeta() {
+        CofactorModel.Weights weights = new CofactorModel.Weights();
         weights.put(TOOTHBRUSH, new double[]{0.5, 0.3});
         weights.put(TOOTHPASTE, new double[]{1.1, 0.9});
         weights.put(SHAVER, new double[]{-2.2, 1.6});
         return weights;
     }
 
-    private static Map<String, double[]> getTestGamma() {
-        Map<String, double[]> weights = new HashMap<>();
+    private static CofactorModel.Weights getTestGamma() {
+        CofactorModel.Weights weights = new CofactorModel.Weights();
         weights.put(TOOTHBRUSH, new double[]{1.3, -0.2});
         weights.put(TOOTHPASTE, new double[]{1.6, 0.1});
         weights.put(SHAVER, new double[]{3.2, -0.4});
