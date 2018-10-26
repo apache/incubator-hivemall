@@ -19,34 +19,37 @@
 package hivemall.ftvec.text;
 
 import hivemall.UDFWithOptions;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.StringUtils;
+
+import javax.annotation.Nonnull;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import hivemall.utils.hadoop.HiveUtils;
 import org.apache.hadoop.hive.ql.udf.UDFType;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
-import javax.annotation.Nonnull;
-import java.util.Arrays;
-
-@Description(name = "okapi_bm25",
+@Description(name = "bm25",
         value = "_FUNC_(int termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options]) - Return an Okapi BM25 score in double")
 @UDFType(deterministic = true, stateful = false)
 public final class OkapiBM25UDF extends UDFWithOptions {
 
-    private static final double EPSILON = 1e-8;
-    private static final double DEFAULT_K1 = 1.2;
-    private static final double DEFAULT_B = 0.75;
-    private double k1 = DEFAULT_K1;
-    private double b = DEFAULT_B;
-    private static final String K1_OPT_NAME = "k1";
-    private static final String B_OPT_NAME = "b";
+    private double k1 = 1.2d;
+    private double b = 0.75d;
+
+    // BM25+ https://en.wikipedia.org/wiki/Okapi_BM25#General_references
+    private double delta = 0.d;
+
+    // epsilon in https://en.wikipedia.org/wiki/Okapi_BM25#The_ranking_function
+    private double minIDF = 1e-8;
 
     private PrimitiveObjectInspector frequencyOI;
     private PrimitiveObjectInspector docLengthOI;
@@ -54,52 +57,55 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     private PrimitiveObjectInspector numDocsOI;
     private PrimitiveObjectInspector numDocsWithTermOI;
 
+    @Nonnull
+    private final DoubleWritable result = new DoubleWritable();
 
     public OkapiBM25UDF() {}
 
-    @Nonnull
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("f", "frequencyOfTermInDoc", false, "Raw frequency of a word in a document");
-        opts.addOption("dl", "docLength", false, "Length of document in words");
-        opts.addOption("avgdl", "averageDocLength", false, "Average length of documents in words");
-        opts.addOption("N", "numDocs", false, "Number of documents");
-        opts.addOption("n", "numDocsWithTerm", false,
-            "Number of documents containing the word q_i");
-        opts.addOption(K1_OPT_NAME, "k1", true,
+        opts.addOption("k1", true,
             "Hyperparameter with type double, usually in range 1.2 and 2.0 [default: 1.2]");
-        opts.addOption(B_OPT_NAME, "b", true,
+        opts.addOption("b", true,
             "Hyperparameter with type double in range 0.0 and 1.0 [default: 0.75]");
+        opts.addOption("d", "delta", true, "Hyperparameter delta of BM25+ [default: 0.0]");
+        opts.addOption("min_idf", "epsilon", true, "Hyperparameter delta of BM25+ [default: 1e-8]");
         return opts;
     }
 
-    @Nonnull
     @Override
     protected CommandLine processOptions(@Nonnull String opts) throws UDFArgumentException {
         CommandLine cl = parseOptions(opts);
 
-        double k1Option =
-                Double.parseDouble(cl.getOptionValue(K1_OPT_NAME, Double.toString(DEFAULT_K1)));
-        if (k1Option < 0.0) {
-            throw new UDFArgumentException(
-                String.format("#%s hyperparameter must be positive", K1_OPT_NAME));
-        }
-        k1 = k1Option;
+        this.k1 = Primitives.parseDouble(cl.getOptionValue("k1"), k1);
 
-        double bOption =
-                Double.parseDouble(cl.getOptionValue(B_OPT_NAME, Double.toString(DEFAULT_B)));
-        if (bOption < 0.0 || bOption > 1.0) {
-            throw new UDFArgumentException(
-                String.format("#%s hyperparameter must be in the range [0.0, 1.0]", B_OPT_NAME));
+        if (Primitives.isFinite(k1) == false || k1 < 0.0) {
+            throw new UDFArgumentException("k1 must be a non-negative finite value: " + k1);
         }
-        b = bOption;
+
+        this.b = Primitives.parseDouble(cl.getOptionValue("b"), b);
+        if (Double.isNaN(b) || b < 0.0 || b > 1.0) {
+            throw new UDFArgumentException(
+                "b1 hyperparameter must be in the range [0.0, 1.0]: " + b);
+        }
+
+        this.delta = Primitives.parseDouble(cl.getOptionValue("delta"), delta);
+        if (Primitives.isFinite(delta) == false) {
+            throw new UDFArgumentException("Delta must be a finite value: " + delta);
+        }
+
+        this.minIDF = Primitives.parseDouble(cl.getOptionValue("min_idf"), minIDF);
+        if (minIDF < 0.d) {
+            throw new UDFArgumentException("min_idf must not be negative value: " + minIDF);
+        }
 
         return cl;
     }
 
     @Override
-    public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
+    public ObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
+            throws UDFArgumentException {
         final int numArgOIs = argOIs.length;
         if (numArgOIs < 5) {
             throw new UDFArgumentException("argOIs.length must be greater than or equal to 5");
@@ -118,7 +124,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
     }
 
     @Override
-    public DoubleWritable evaluate(DeferredObject[] arguments) throws HiveException {
+    public DoubleWritable evaluate(@Nonnull DeferredObject[] arguments) throws HiveException {
         Object arg0 = arguments[0].get();
         Object arg1 = arguments[1].get();
         Object arg2 = arguments[2].get();
@@ -135,51 +141,32 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         int numDocs = PrimitiveObjectInspectorUtils.getInt(arg3, numDocsOI);
         int numDocsWithTerm = PrimitiveObjectInspectorUtils.getInt(arg4, numDocsWithTermOI);
 
-        if (frequency < 0) {
-            throw new UDFArgumentException("#frequency must be positive");
-        }
+        assumeFalse(frequency < 0, "#frequency must be positive");
+        assumeFalse(docLength < 1, "#docLength must be greater than or equal to 1");
+        assumeFalse(averageDocLength <= 0.0, "#averageDocLength must be positive");
+        assumeFalse(numDocs < 1, "#numDocs must be greater than or equal to 1");
+        assumeFalse(numDocsWithTerm < 1, "#numDocsWithTerm must be greater than or equal to 1");
 
-        if (docLength < 1) {
-            throw new UDFArgumentException("#docLength must be greater than or equal to 1");
-        }
-
-        if (averageDocLength < 0.0) {
-            throw new UDFArgumentException("#averageDocLength must be positive");
-        }
-
-        if (Math.abs(averageDocLength) < EPSILON) {
-            throw new UDFArgumentException("#averageDocLength cannot be 0");
-        }
-
-        if (numDocs < 1) {
-            throw new UDFArgumentException("#numDocs must be greater than or equal to 1");
-        }
-
-        if (numDocsWithTerm < 1) {
-            throw new UDFArgumentException("#numDocsWithTerm must be greater than or equal to 1");
-        }
-
-
-        double result =
-                calculateBM25(frequency, docLength, averageDocLength, numDocs, numDocsWithTerm);
-
-        return new DoubleWritable(result);
+        double v = bm25(frequency, docLength, averageDocLength, numDocs, numDocsWithTerm);
+        result.set(v);
+        return result;
     }
 
-    private double calculateBM25(int frequency, int docLength, double averageDocLength, int numDocs,
-            int numDocsWithTerm) {
-        double numerator = frequency * (k1 + 1);
-        double denominator = frequency + k1 * (1 - b + b * docLength / averageDocLength);
-        double idf = calculateIDF(numDocs, numDocsWithTerm);
-        return idf * numerator / denominator;
+    private double bm25(final int tf, final int docLength, final double averageDocLength,
+            final int numDocs, final int numDocsWithTerm) {
+        double numerator = tf * (k1 + 1);
+        double denominator = tf + k1 * (1 - b + b * docLength / averageDocLength);
+        double idf = Math.max(minIDF, idf(numDocs, numDocsWithTerm));
+        return idf * (numerator / denominator + delta);
     }
 
-    private static double calculateIDF(int numDocs, int numDocsWithTerm) {
-        return Math.log10(1.0 + (numDocs - numDocsWithTerm + 0.5) / (numDocsWithTerm + 0.5));
+    private static double idf(final int numDocs, final int numDocsWithTerm) {
+        return Math.log10(1.0d + (numDocs - numDocsWithTerm + 0.5d) / (numDocsWithTerm + 0.5d));
     }
 
     @Override
     public String getDisplayString(String[] children) {
-        return "okapi_bm25(" + Arrays.toString(children) + ")";
+        return "bm25(" + StringUtils.join(children, ',') + ")";
     }
+
 }
