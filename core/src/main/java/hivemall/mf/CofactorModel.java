@@ -132,9 +132,9 @@ public class CofactorModel {
 
     }
 
-    private void initFactorVector(final String key, final Map<String, double[]> weights) {
+    private void initFactorVector(final String key, final Map<String, double[]> weights) throws HiveException {
         if (weights.containsKey(key)) {
-            return;
+            throw new HiveException(String.format("two items or two users cannot have same `context` in training set: found duplicate context `%s`", key));
         }
         final double[] v = new double[factor];
         switch (initScheme) {
@@ -173,7 +173,7 @@ public class CofactorModel {
         biases.put(key, value);
     }
 
-    public void recordContext(String context, Boolean isItem) {
+    public void recordContext(String context, Boolean isItem) throws HiveException {
         if (isItem) {
             initFactorVector(context, beta);
             initFactorVector(context, gamma);
