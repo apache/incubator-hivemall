@@ -71,9 +71,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     // The number of latent factors
     private int factor;
     // The scaling hyperparameter for zero entries in the rank matrix
-    private float scale_zero;
+    private float c0;
     // The scaling hyperparameter for non-zero entries in the rank matrix
-    private float scale_nonzero;
+    private float c1;
     // The initial mean rating
     private float globalBias;
     // Whether update (and return) the mean rating or not
@@ -243,40 +243,53 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = null;
-        String rankInitOpt = null;
+        String rankInitOpt = "gaussian";
         float maxInitValue = 1.f;
-        double initStdDev = 1.d;
+        double initStdDev = 0.01d;
         boolean conversionCheck = true;
         double convergenceRate = 0.005d;
         String validationMetricOpt = "AUC";
+        this.c0 = 0.1f;
+        this.c1 = 1.0f;
+        this.lambdaTheta = 1e-5f;
+        this.lambdaBeta = 1e-5f;
+        this.lambdaGamma = 1.0f;
+        this.globalBias = 0.f;
+        this.maxIters = 1;
+        this.factor = 10;
 
         if (argOIs.length >= 5) {
             String rawArgs = HiveUtils.getConstString(argOIs[5]);
             cl = parseOptions(rawArgs);
             if (cl.hasOption("factors")) {
-                this.factor = Primitives.parseInt(cl.getOptionValue("factors"), 10);
+                this.factor = Primitives.parseInt(cl.getOptionValue("factors"), factor);
             } else {
-                this.factor = Primitives.parseInt(cl.getOptionValue("factor"), 10);
+                this.factor = Primitives.parseInt(cl.getOptionValue("factor"), factor);
             }
-            this.lambdaTheta = Primitives.parseFloat(cl.getOptionValue("lambda_theta"), 1e-5f);
-            this.lambdaBeta = Primitives.parseFloat(cl.getOptionValue("lambda_beta"), 1e-5f);
-            this.lambdaGamma = Primitives.parseFloat(cl.getOptionValue("lambda_gamma"), 1e+0f);
-            this.scale_zero = Primitives.parseFloat(cl.getOptionValue("scale_zero"), 0.1f);
-            this.scale_nonzero = Primitives.parseFloat(cl.getOptionValue("scale_nonzero"), 1.0f);
-            this.globalBias = Primitives.parseFloat(cl.getOptionValue("gb"), 0.f);
-            this.updateGlobalBias = cl.hasOption("update_gb");
-            rankInitOpt = cl.getOptionValue("rankinit", "gaussian");
-            maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 1.f);
-            initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.01d);
+            this.lambdaTheta = Primitives.parseFloat(cl.getOptionValue("lambda_theta"), lambdaTheta);
+            this.lambdaBeta = Primitives.parseFloat(cl.getOptionValue("lambda_beta"), lambdaBeta);
+            this.lambdaGamma = Primitives.parseFloat(cl.getOptionValue("lambda_gamma"), lambdaGamma);
+
+            this.c0 = Primitives.parseFloat(cl.getOptionValue("c0"), c0);
+            this.c1 = Primitives.parseFloat(cl.getOptionValue("c1"), c1);
+
+            this.globalBias = Primitives.parseFloat(cl.getOptionValue("global_bias"), globalBias);
+            this.updateGlobalBias = cl.hasOption("update_global_bias");
+
+            rankInitOpt = cl.getOptionValue("rankinit", rankInitOpt);
+            maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), maxInitValue);
+            initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), initStdDev);
+
             if (cl.hasOption("iter")) {
-                this.maxIters = Primitives.parseInt(cl.getOptionValue("iter"), 1);
+                this.maxIters = Primitives.parseInt(cl.getOptionValue("iter"), maxIters);
             } else {
-                this.maxIters = Primitives.parseInt(cl.getOptionValue("max_iters"), 1);
+                this.maxIters = Primitives.parseInt(cl.getOptionValue("max_iters"), maxIters);
             }
             if (maxIters < 1) {
                 throw new UDFArgumentException(
                         "'-max_iters' must be greater than or equal to 1: " + maxIters);
             }
+
             conversionCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
             validationMetricOpt = cl.getOptionValue("validation_metric", validationMetricOpt);
@@ -313,7 +326,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         processOptions(argOIs);
 
-        this.model = new CofactorModel(factor, rankInit, scale_zero, scale_nonzero, lambdaTheta, lambdaBeta, lambdaGamma, globalBias);
+        this.model = new CofactorModel(factor, rankInit, c0, c1, lambdaTheta, lambdaBeta, lambdaGamma, globalBias);
 
         List<String> fieldNames = new ArrayList<String>();
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
