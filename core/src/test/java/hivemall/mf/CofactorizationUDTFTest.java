@@ -113,56 +113,19 @@ public class CofactorizationUDTFTest {
 
     @Test
     public void testTrain() throws HiveException, IOException {
-        initialize(true, "-max_iters 1 -factors 2 -c0 0.03 -c1 0.3");
+        initialize(true, "-max_iters 5 -factors 100 -c0 0.03 -c1 0.3");
 
         TrainingSample trainSample = new TrainingSample();
 
-        BufferedReader train = readFile("ml100k-cofactor.train.gz");
+        BufferedReader train = readFile("ml100k-cofactor.trainval.gz");
         String line;
         while ((line = train.readLine()) != null) {
             parseLine(line, trainSample);
             udtf.process(trainSample.toArray());
         }
-        CofactorModel model = udtf.model;
+        Assert.assertEquals(udtf.numTraining, 52287);
+        Assert.assertEquals(udtf.numValidations, 9227);
         udtf.close();
-
-        TestingSample trainTestSample = new TestingSample();
-        BufferedReader trainTest = readFile("ml100k-cofactor.train.repeat.gz");
-        double err = 0.d;
-        int numTrainTest = 0;
-
-        while ((line = trainTest.readLine()) != null) {
-            numTrainTest++;
-            parseLine(line, trainTestSample);
-            Double prediction = model.predict(trainTestSample.user, trainTestSample.item);
-            if (prediction == null) {
-                continue;
-            }
-            err += Math.abs(trainTestSample.rating - prediction);
-            System.out.println(trainTestSample.rating + ", " + prediction);
-//            Assert.assertTrue(err < Double.MAX_VALUE && err > Double.MIN_VALUE);
-            if (numTrainTest == 100) {
-                break;
-            }
-        }
-        System.out.println(err / numTrainTest);
-
-        TestingSample testSample = new TestingSample();
-        BufferedReader test = readFile("ml100k-cofactor.test.gz");
-        err = 0.d;
-        int numTest = 0;
-
-        while ((line = test.readLine()) != null) {
-            numTest++;
-            parseLine(line, testSample);
-            double prediction = model.predict(testSample.user, testSample.item);
-            err += Math.abs(testSample.rating - prediction);
-            System.out.println(testSample.rating + ", " + prediction);
-            if (numTest == 100) {
-                break;
-            }
-        }
-        System.out.println(err / numTest);
     }
 
     @Nonnull
@@ -177,11 +140,12 @@ public class CofactorizationUDTFTest {
     private static void parseLine(@Nonnull String line, @Nonnull TrainingSample sample) {
         String[] cols = StringUtils.split(line, ' ');
         Assert.assertNotNull(cols);
-        Assert.assertTrue(cols.length == 3 || cols.length == 4);
+        Assert.assertTrue(cols.length == 4 || cols.length == 5);
         sample.context = cols[0];
         boolean isItem = Integer.parseInt(cols[1]) == 1;
-        sample.features = parseFeatures(cols[2]);
-        sample.sppmi = cols.length == 4 ? parseFeatures(cols[3]) : null;
+        sample.isValidation = Integer.parseInt(cols[2]) == 1;
+        sample.features = parseFeatures(cols[3]);
+        sample.sppmi = cols.length == 5 ? parseFeatures(cols[4]) : null;
     }
 
     private static void parseLine(@Nonnull String line, @Nonnull TestingSample sample) {
