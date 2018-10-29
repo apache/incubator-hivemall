@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class CofactorModelTest {
     private static final double EPSILON = 1e-3;
@@ -228,7 +229,8 @@ public class CofactorModelTest {
 
     @Test
     public void recordAsParent() throws HiveException {
-        CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f);
+        CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f,
+                1e-5f, 1e-5f, 1.f, 0.f, null, 0);
 
         Assert.assertNull(model.getThetaVector(JACKSON));
         model.recordContext(JACKSON, false);
@@ -320,7 +322,7 @@ public class CofactorModelTest {
         init.setInitStdDev(1.0f);
 
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
-                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f);
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0);
         int iterations = 5;
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
@@ -355,7 +357,7 @@ public class CofactorModelTest {
         init.setInitStdDev(1.0f);
 
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
-                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f);
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0);
         int iterations = 5;
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
@@ -381,6 +383,45 @@ public class CofactorModelTest {
         String predictionString = generatePredictionString(model, users, items);
         System.out.println(predictionString);
 //        Assert.assertEquals(predictionString, expected);
+    }
+
+    @Test
+    public void calculateAUC() throws HiveException {
+        CofactorModel.RankInitScheme init = CofactorModel.RankInitScheme.gaussian;
+        init.setInitStdDev(0.01f);
+        CofactorModel model = new CofactorModel(NUM_FACTORS, init, 0.1f, 1.f, 1e-5f, 1e-5f,
+                1.f, 0.f, CofactorizationUDTF.ValidationMetric.AUC, 3);
+
+        List<CofactorizationUDTF.TrainingSample> users = getUserSamples(false);
+        List<CofactorizationUDTF.TrainingSample> items = getItemSamples(false);
+
+        // record features
+        recordContexts(model, users, false);
+        recordContexts(model, items, true);
+
+        model.finalizeContexts();
+
+        model.validate(items.get(0), 31);
+    }
+
+    @Test
+    public void sampleNegatives() throws HiveException {
+        // first validation example is positive, last two examples are negative
+        final int numVal = 3, numPos = 1, numNeg = numVal - numPos;
+        final int seed = 31;
+        final double DUMMY_VALUE = 0d;
+        final Feature[] validationProbes = new Feature[numVal];
+
+        validationProbes[0] = new StringFeature("positive", DUMMY_VALUE);
+        validationProbes[1] = new StringFeature("placeholder", DUMMY_VALUE);
+        validationProbes[2] = new StringFeature("placeholder", DUMMY_VALUE);
+
+        final String[] items = getTestBeta().getNonnullKeys();
+
+        CofactorModel.sampleNegatives(numPos, numNeg, validationProbes, items, new Random(seed));
+        Assert.assertEquals(validationProbes[0].getFeature(), "positive");
+        Assert.assertEquals(validationProbes[1].getFeature(), TOOTHPASTE);
+        Assert.assertEquals(validationProbes[2].getFeature(), TOOTHBRUSH);
     }
 
     private static String generatePredictionString(CofactorModel model, List<CofactorizationUDTF.TrainingSample> users, List<CofactorizationUDTF.TrainingSample> items) {

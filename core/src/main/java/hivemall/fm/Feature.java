@@ -73,6 +73,10 @@ public abstract class Feature {
         return value;
     }
 
+    public void setValue(final double value) {
+        this.value = value;
+    }
+
     public abstract int bytes();
 
     public abstract void writeTo(@Nonnull ByteBuffer dst);

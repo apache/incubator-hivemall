@@ -100,8 +100,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     protected CofactorModel model;
 
     // Variable managing status of learning
-    private ConversionState cvState;
     private ConversionState validationState;
+    private int numValPerRecord;
 
     // Input OIs and Context
     private StringObjectInspector contextOI;
@@ -229,14 +229,14 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         opts.addOption("iter", true,
                 "The number of iterations [default: 1] Alias for `-iterations`");
         opts.addOption("max_iters", "max_iters", true, "The number of iterations [default: 1]");
-        opts.addOption("disable_cv", "disable_cvtest", false,
-                "Whether to disable convergence check [default: enabled]");
-        opts.addOption("cv_rate", "convergence_rate", true,
-                "Threshold to determine convergence [default: 0.005]");
         opts.addOption("disable_bias", "no_bias", false, "Turn off bias clause");
         // normalization
         opts.addOption("disable_norm", "disable_l2norm", false, "Disable instance-wise L2 normalization");
-        opts.addOption("val_metric", "validation_metric", true, "Metric to use for validation ['AUC', 'OBJECTIVE']");
+        // validation
+        opts.addOption("disable_cv", "disable_cvtest", false, "Whether to disable convergence check [default: enabled]");
+        opts.addOption("cv_rate", "convergence_rate", true, "Threshold to determine convergence [default: 0.005]");
+        opts.addOption("val_metric", "validation_metric", true, "Metric to use for validation ['auc', 'objective']");
+        opts.addOption("num_val", "num_validation_examples_per_record", true, "Number of validation examples to use per record [default: 10]");
         return opts;
     }
 
@@ -246,9 +246,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         String rankInitOpt = "gaussian";
         float maxInitValue = 1.f;
         double initStdDev = 0.01d;
-        boolean conversionCheck = true;
+        boolean convergenceCheck = true;
         double convergenceRate = 0.005d;
-        String validationMetricOpt = "AUC";
+        String validationMetricOpt = "auc";
         this.c0 = 0.1f;
         this.c1 = 1.0f;
         this.lambdaTheta = 1e-5f;
@@ -257,6 +257,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         this.globalBias = 0.f;
         this.maxIters = 1;
         this.factor = 10;
+        this.numValPerRecord = 10;
 
         if (argOIs.length >= 5) {
             String rawArgs = HiveUtils.getConstString(argOIs[5]);
@@ -290,9 +291,10 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                         "'-max_iters' must be greater than or equal to 1: " + maxIters);
             }
 
-            conversionCheck = !cl.hasOption("disable_cvtest");
+            convergenceCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
             validationMetricOpt = cl.getOptionValue("validation_metric", validationMetricOpt);
+            this.numValPerRecord = Primitives.parseInt(cl.getOptionValue("num_validation_examples_per_record"), numValPerRecord);
 
             boolean noBias = cl.hasOption("no_bias");
             this.useBiasClause = !noBias;
@@ -305,7 +307,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         this.rankInit = CofactorModel.RankInitScheme.resolve(rankInitOpt);
         rankInit.setMaxInitValue(maxInitValue);
         rankInit.setInitStdDev(initStdDev);
-        this.cvState = new ConversionState(conversionCheck, convergenceRate);
+        this.validationState = new ConversionState(convergenceCheck, convergenceRate);
         this.validationMetric = ValidationMetric.resolve(validationMetricOpt);
         return cl;
     }
@@ -326,7 +328,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         processOptions(argOIs);
 
-        this.model = new CofactorModel(factor, rankInit, c0, c1, lambdaTheta, lambdaBeta, lambdaGamma, globalBias);
+        this.model = new CofactorModel(factor, rankInit, c0, c1, lambdaTheta, lambdaBeta, lambdaGamma, globalBias, validationMetric, numValPerRecord);
 
         List<String> fieldNames = new ArrayList<String>();
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -500,7 +502,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @Override
     public void close() throws HiveException {
         try {
-            boolean lossIncreasedLastIter = false;
+            model.finalizeContexts();
 
             final Reporter reporter = getReporter();
             final Counters.Counter iterCounter = (reporter == null) ? null
@@ -518,19 +520,23 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
             for (int iteration = 0; iteration < maxIters; iteration++) {
                 // train the model on a full batch (i.e., all the data) using mini-batch updates
-//                validationState.next();
-                cvState.next();
+                validationState.next();
                 reportProgress(reporter);
                 setCounterValue(iterCounter, iteration);
                 runTrainingIteration();
 
-                LOG.info("Performed " + cvState.getCurrentIteration() + " iterations of "
+                System.out.println("Validation loss: " + validationState.getAverageLoss(numValidations));
+
+                LOG.info("Performed " + iteration + " iterations of "
                         + NumberUtils.formatNumber(maxIters));
 //                        + " training examples on a secondary storage (thus "
 //                        + NumberUtils.formatNumber(_t) + " training updates in total), used "
 //                        + _numValidations + " validation examples");
-            }
 
+                if (validationState.isConverged(numTraining)) {
+                    break;
+                }
+            }
             forwardModel();
         } finally {
             // delete the temporary file and release resources
@@ -583,6 +589,10 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
     }
 
+    /**
+     * Writes remaining bytes in buffer to file, clears buffer, and resets file position.
+     * @throws HiveException
+     */
     @VisibleForTesting
     protected void prepareForRead() throws HiveException {
         // write training examples in buffer to a temporary file
@@ -601,18 +611,24 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private void runTrainingIteration() throws HiveException {
         fileIO.resetPosition();
         MiniBatch miniBatch = new MiniBatch();
+        int trainCount = 0, validationCount = 0;
         // read minibatch from disk into memory
         while (readMiniBatchFromFile(miniBatch)) {
+            trainCount += miniBatch.trainingSize();
+            validationCount += miniBatch.validationSize();
             train(miniBatch);
             validate(miniBatch.getValidationSamples());
             miniBatch.clear();
         }
+        if (trainCount != numTraining && validationCount != numValidations) {
+            throw new HiveException("mismatch between input data and actual data");
+        }
     }
 
-    private void validate(List<TrainingSample> samples) {
+    private void validate(List<TrainingSample> samples) throws HiveException {
         for (TrainingSample sample : samples) {
-//            final double loss = model.calculateConvergenceMetric();
-//            validationState.incrLoss(loss);
+            final double loss = model.validate(sample, 31);
+            validationState.incrLoss(loss);
         }
     }
 

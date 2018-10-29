@@ -20,6 +20,7 @@ package hivemall.mf;
 
 import hivemall.annotations.VisibleForTesting;
 import hivemall.fm.Feature;
+import hivemall.fm.StringFeature;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.MathUtils;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
@@ -32,9 +33,8 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 
@@ -68,6 +68,18 @@ public class CofactorModel {
         }
     }
 
+    private static class Prediction implements Comparable<Prediction> {
+
+        private double prediction;
+        private int label;
+        @Override
+        public int compareTo(@Nonnull Prediction other) {
+            // descending order
+            return -Double.compare(prediction, other.prediction);
+        }
+
+    }
+
     @Nonnegative
     private final int factor;
 
@@ -90,6 +102,14 @@ public class CofactorModel {
     private final float c0, c1;
     private final float lambdaTheta, lambdaBeta, lambdaGamma;
 
+    // validation
+    private final CofactorizationUDTF.ValidationMetric validationMetric;
+    private final Feature[] validationProbes;
+    private final Prediction[] predictions;
+    private final int numValPerRecord;
+    private String[] users;
+    private String[] items;
+
     // solve
     private final RealMatrix B;
     private final RealVector A;
@@ -97,16 +117,31 @@ public class CofactorModel {
     // error message strings
     private static final String ARRAY_NOT_SQUARE_ERR = "Array is not square";
     private static final String DIFFERENT_DIMS_ERR = "Matrix, vector or array do not match in size";
-
     protected static class Weights extends Object2ObjectOpenHashMap<String, double[]> {
-        protected String[] getKey() {
+
+        protected Object[] getKey() {
             return key;
+        }
+
+        @Nonnull
+        String[] getNonnullKeys() {
+            final String[] keys = new String[size];
+            final Object[] k = (Object[]) key;
+            final int len = k.length;
+            for (int i = 0, j = 0; i < len; i++) {
+                final Object ki = k[i];
+                if (ki != null) {
+                    keys[j++] = ki.toString();
+                }
+            }
+            return keys;
         }
     }
 
     public CofactorModel(@Nonnegative final int factor, @Nonnull final RankInitScheme initScheme,
                          @Nonnegative final float c0, @Nonnegative final float c1, @Nonnegative final float lambdaTheta,
-                         @Nonnegative final float lambdaBeta, @Nonnegative final float lambdaGamma, final float globalBias) {
+                         @Nonnegative final float lambdaBeta, @Nonnegative final float lambdaGamma, final float globalBias,
+                         @Nullable CofactorizationUDTF.ValidationMetric validationMetric, @Nonnegative final int numValPerRecord) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
@@ -137,6 +172,27 @@ public class CofactorModel {
         this.c0 = c0;
         this.c1 = c1;
 
+        if (validationMetric == null) {
+            this.validationMetric = CofactorizationUDTF.ValidationMetric.AUC;
+        } else {
+            this.validationMetric = validationMetric;
+        }
+
+        this.numValPerRecord = numValPerRecord;
+        this.validationProbes = new Feature[numValPerRecord];
+        this.predictions = new Prediction[numValPerRecord];
+        for (int i = 0; i < validationProbes.length; i++) {
+            validationProbes[i] = new StringFeature("", 0.d);
+            predictions[i] = new Prediction();
+        }
+    }
+
+    /**
+     * Called after UDTF has processed all input records.
+     */
+    public void finalizeContexts() {
+        this.users = theta.getNonnullKeys();
+        this.items = beta.getNonnullKeys();
     }
 
     private void initFactorVector(final String key, final Weights weights) throws HiveException {
@@ -398,8 +454,8 @@ public class CofactorModel {
 
     @Nullable
     protected static Double calculateNewGlobalBias(@Nonnull final List<CofactorizationUDTF.TrainingSample> samples, @Nonnull Weights beta,
-                                                 @Nonnull Weights gamma, @Nonnull final Object2DoubleMap<String> betaBias,
-                                                 @Nonnull final Object2DoubleMap<String> gammaBias) {
+                                                   @Nonnull Weights gamma, @Nonnull final Object2DoubleMap<String> betaBias,
+                                                   @Nonnull final Object2DoubleMap<String> gammaBias) {
         double newGlobalBias = 0.d;
         int numEntriesInSPPMI = 0;
         for (CofactorizationUDTF.TrainingSample sample : samples) {
@@ -639,8 +695,8 @@ public class CofactorModel {
         double mf_loss = calculateMFLoss(users, theta, beta, c0, c1) + calculateMFLoss(items, beta, theta, c0, c1);
         double embed_loss = calculateEmbedLoss(items, beta, gamma, betaBias, gammaBias);
         return mf_loss + embed_loss + sumL2Loss(theta, lambdaTheta) + sumL2Loss(beta, lambdaBeta) + sumL2Loss(gamma, lambdaGamma);
-
     }
+
 
     @VisibleForTesting
     protected static double calculateEmbedLoss(@Nonnull final List<CofactorizationUDTF.TrainingSample> items, @Nonnull final Weights beta,
@@ -712,6 +768,147 @@ public class CofactorModel {
             result += v * v;
         }
         return Math.sqrt(result);
+    }
+
+    /**
+     * Sample positive and negative validation examples and return a performance metric that
+     * should be minimized.
+     *
+     * @param sample A validation sample
+     * @param seed   Integer as seed for random number generator
+     * @return Validation metric
+     * @throws HiveException
+     */
+    public Double validate(@Nonnull final CofactorizationUDTF.TrainingSample sample, final int seed) throws HiveException {
+        if (!isPredictable(sample.context, sample.isItem())) {
+            return null;
+        }
+        // limit numPos and numNeg
+        int numPos = Math.min(sample.features.length, (int) Math.ceil(this.numValPerRecord * 0.5));
+        int numNeg = Math.min(this.numValPerRecord - numPos, sample.isItem() ? users.length : items.length);
+
+        getValidationExamples(numPos, numNeg, sample.features, sample.isItem(), validationProbes, seed);
+        if (validationMetric == CofactorizationUDTF.ValidationMetric.AUC) {
+            return -calculateAUC(validationProbes, predictions, sample, numPos, numNeg);
+        } else {
+            return calculateLoss(validationProbes, sample, numPos, numNeg);
+        }
+    }
+
+    private boolean isPredictable(@Nonnull final String context, final boolean isItem) {
+        if (isItem) {
+            return beta.containsKey(context);
+        } else {
+            return theta.containsKey(context);
+        }
+    }
+
+    /**
+     * TODO: not implemented
+     *
+     * @return
+     */
+    private double calculateLoss(Feature[] validationProbes, CofactorizationUDTF.TrainingSample sample, int numPos, int numNeg) {
+        return 0d;
+    }
+
+    /**
+     * Calculates area under curve for validation metric.
+     */
+    private double calculateAUC(@Nonnull final Feature[] validationProbes, @Nonnull final Prediction[] predictions, CofactorizationUDTF.TrainingSample sample, final int numPos, final int numNeg) {
+        // make predictions for positive and then negative examples
+        int nextIdx = fillPredictions(validationProbes, predictions, sample, 0, numPos, 0, 1);
+        int endIdx = fillPredictions(validationProbes, predictions, sample, nextIdx, numPos + numNeg, nextIdx, 0);
+
+        // sort in descending order for all filled predictions
+        Arrays.sort(predictions, 0, endIdx);
+
+        double area = 0d, scorePrev = Double.MIN_VALUE;
+        int fp = 0, tp = 0;
+        int fpPrev = 0, tpPrev = 0;
+
+        for (int i = 0; i < endIdx; i++) {
+            final Prediction p = predictions[i];
+            if (p.prediction != scorePrev) {
+                area += trapezoid(fp, fpPrev, tp, tpPrev);
+                scorePrev = p.prediction;
+                fpPrev = fp;
+                tpPrev = tp;
+            }
+            if (p.label == 1) {
+                tp += 1;
+            } else {
+                fp += 1;
+            }
+        }
+        area += trapezoid(fp, fpPrev, tp, tpPrev);
+        return area / (tp * fp);
+    }
+
+    /**
+     * Calculates area of a trapezoid.
+     */
+    private static double trapezoid(final int x1, final int x2, final int y1, final int y2) {
+        final int base = Math.abs(x1 - x2);
+        final double height = (y1 + y2) * 0.5;
+        return base * height;
+    }
+
+    /**
+     * Fill an array of predictions.
+     * @return index of the next empty entry in {@code predictions} array
+     */
+    private int fillPredictions(@Nonnull final Feature[] validationProbes, @Nonnull final Prediction[] predictions, @Nonnull final CofactorizationUDTF.TrainingSample sample,
+                                final int lo, final int hi, int fillIdx, final int label) {
+        for (int i = lo; i < hi; i++) {
+            final Feature pos = validationProbes[i];
+            final Double pred;
+            if (sample.isItem()) {
+                pred = predict(pos.getFeature(), sample.context);
+            } else {
+                pred = predict(sample.context, pos.getFeature());
+            }
+            if (pred == null) {
+                continue;
+            }
+            predictions[fillIdx].prediction = pred;
+            predictions[fillIdx].label = label;
+            fillIdx++;
+        }
+        return fillIdx;
+    }
+
+    /**
+     * Sample positive and negative samples.
+     * @return number of negatives that were successfully sampled
+     */
+    private void getValidationExamples(final int numPos, final int numNeg, @Nonnull final Feature[] positives, final boolean isContextAnItem,
+                                       @Nonnull final Feature[] validationProbes, final int seed) {
+        final Random rand = new Random(seed);
+        samplePositives(numPos, positives, validationProbes, rand);
+        final String[] keys = isContextAnItem ? users : items;
+        sampleNegatives(numPos, numNeg, validationProbes, keys, rand);
+    }
+
+    /**
+     * Samples negative examples.
+     */
+    @VisibleForTesting
+    protected static void sampleNegatives(final int numPos, final int numNeg, @Nonnull final Feature[] validationProbes,
+                                          @Nonnull final String[] keys, @Nonnull final Random rand) {
+        // sample numPos positive examples without replacement
+        for (int i = numPos, size = numPos + numNeg; i < size; i++) {
+            final String negKey = keys[rand.nextInt(keys.length)];
+            validationProbes[i].setFeature(negKey);
+            validationProbes[i].setValue(0.d);
+        }
+    }
+
+    private static void samplePositives(final int numPos, @Nonnull final Feature[] positives, @Nonnull final Feature[] validationProbes, @Nonnull final Random rand) {
+        // sample numPos positive examples without replacement
+        for (int i = 0; i < numPos; i++) {
+            validationProbes[i] = positives[rand.nextInt(positives.length)];
+        }
     }
 
     /**
