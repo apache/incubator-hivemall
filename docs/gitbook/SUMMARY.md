@@ -66,6 +66,7 @@
     * [Feature vectorization](ft_engineering/vectorization.md)
     * [Quantify non-number features](ft_engineering/quantify.md)
 * [TF-IDF Calculation](ft_engineering/tfidf.md)
+* [BM25](ft_engineering/bm25.md)
 
 ## Part IV - Evaluation
 
