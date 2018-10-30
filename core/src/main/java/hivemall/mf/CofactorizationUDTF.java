@@ -62,8 +62,8 @@ import static hivemall.utils.lang.Primitives.TRUE_BYTE;
  * Cofactorization for implicit and explicit recommendation
  */
 @Description(name = "train_cofactor",
-        value = "_FUNC_(string context, array<string> features, boolean is_item, array<string> sppmi [, String options])"
-                + " - Returns a relation <string context, array<float> theta, array<float> beta>")
+        value = "_FUNC_(string context, array<string> features, boolean is_validation, boolean is_item, array<string> sppmi [, String options])"
+                + " - Returns a relation <string context, array<float> theta, array<floamft> beta>")
 public class CofactorizationUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(CofactorizationUDTF.class);
 
@@ -345,10 +345,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        if (args.length != 5) {
-            throw new HiveException("should have 5 args, but have " + args.length);
-        }
-
         String context = contextOI.getPrimitiveJavaObject(args[0]);
         final Feature[] features = parseFeatures(args[1], featuresOI, null);
         if (features == null) {
@@ -560,22 +556,22 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         final Text context = new Text();
         final FloatWritable[] theta = HiveUtils.newFloatArray(factor, 0.f);
         final FloatWritable[] beta = HiveUtils.newFloatArray(factor, 0.f);
-        final Object[] forwardObj = new Object[] {context, theta, beta};
+        final Object[] forwardObj = new Object[] {context, theta, null};
 
         int numUsersForwarded = 0, numItemsForwarded = 0;
 
         for (Map.Entry<String, double[]> entry : model.getTheta().entrySet()) {
             context.set(entry.getKey());
             copyTo(entry.getValue(), theta);
-            forwardObj[2] = null;
             forward(forwardObj);
             numUsersForwarded++;
         }
 
+        forwardObj[1] = null;
+        forwardObj[2] = beta;
         for (Map.Entry<String, double[]> entry : model.getBeta().entrySet()) {
             context.set(entry.getKey());
             copyTo(entry.getValue(), beta);
-            forwardObj[1] = null;
             forward(forwardObj);
             numItemsForwarded++;
         }
@@ -627,8 +623,10 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     private void validate(List<TrainingSample> samples) throws HiveException {
         for (TrainingSample sample : samples) {
-            final double loss = model.validate(sample, 31);
-            validationState.incrLoss(loss);
+            final Double loss = model.validate(sample, 31);
+            if (loss != null) {
+                validationState.incrLoss(loss);
+            }
         }
     }
 
