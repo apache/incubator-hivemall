@@ -38,7 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "bm25",
-        value = "_FUNC_(int termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options]) - Return an Okapi BM25 score in double")
+        value = "_FUNC_(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options]) - Return an Okapi BM25 score in double")
 @UDFType(deterministic = true, stateful = false)
 public final class OkapiBM25UDF extends UDFWithOptions {
 
@@ -114,9 +114,9 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             processOptions(opts);
         }
 
-        this.frequencyOI = HiveUtils.asIntegerOI(argOIs[0]);
+        this.frequencyOI = HiveUtils.asDoubleCompatibleOI(argOIs[0]);
         this.docLengthOI = HiveUtils.asIntegerOI(argOIs[1]);
-        this.averageDocLengthOI = HiveUtils.asDoubleOI(argOIs[2]);
+        this.averageDocLengthOI = HiveUtils.asDoubleCompatibleOI(argOIs[2]);
         this.numDocsOI = HiveUtils.asIntegerOI(argOIs[3]);
         this.numDocsWithTermOI = HiveUtils.asIntegerOI(argOIs[4]);
 
@@ -135,7 +135,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             throw new UDFArgumentException("Required arguments cannot be null");
         }
 
-        int frequency = PrimitiveObjectInspectorUtils.getInt(arg0, frequencyOI);
+        double frequency = PrimitiveObjectInspectorUtils.getDouble(arg0, frequencyOI);
         int docLength = PrimitiveObjectInspectorUtils.getInt(arg1, docLengthOI);
         double averageDocLength = PrimitiveObjectInspectorUtils.getDouble(arg2, averageDocLengthOI);
         int numDocs = PrimitiveObjectInspectorUtils.getInt(arg3, numDocsOI);
@@ -152,7 +152,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
         return result;
     }
 
-    private double bm25(final int tf, final int docLength, final double averageDocLength,
+    private double bm25(final double tf, final int docLength, final double averageDocLength,
             final int numDocs, final int numDocsWithTerm) {
         double numerator = tf * (k1 + 1);
         double denominator = tf + k1 * (1 - b + b * docLength / averageDocLength);
