@@ -230,7 +230,7 @@ public class CofactorModelTest {
     @Test
     public void recordAsParent() throws HiveException {
         CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f,
-                1e-5f, 1e-5f, 1.f, 0.f, null, 0);
+                1e-5f, 1e-5f, 1.f, 0.f, null, 0, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
 
         Assert.assertNull(model.getThetaVector(JACKSON));
         model.recordContext(JACKSON, false);
@@ -322,7 +322,7 @@ public class CofactorModelTest {
         init.setInitStdDev(1.0f);
 
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
-                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0);
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
         int iterations = 5;
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
@@ -357,7 +357,7 @@ public class CofactorModelTest {
         init.setInitStdDev(1.0f);
 
         CofactorModel model = new CofactorModel(NUM_FACTORS, init,
-                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0);
+                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
         int iterations = 5;
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
@@ -390,7 +390,7 @@ public class CofactorModelTest {
         CofactorModel.RankInitScheme init = CofactorModel.RankInitScheme.gaussian;
         init.setInitStdDev(0.01f);
         CofactorModel model = new CofactorModel(NUM_FACTORS, init, 0.1f, 1.f, 1e-5f, 1e-5f,
-                1.f, 0.f, CofactorizationUDTF.ValidationMetric.AUC, 3);
+                1.f, 0.f, CofactorizationUDTF.ValidationMetric.AUC, 3, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
 
         List<CofactorizationUDTF.TrainingSample> users = getUserSamples(false);
         List<CofactorizationUDTF.TrainingSample> items = getItemSamples(false);

@@ -30,6 +30,7 @@ import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.SizeOf;
+import hivemall.utils.math.MathUtils;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
@@ -52,6 +53,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -328,7 +330,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         processOptions(argOIs);
 
-        this.model = new CofactorModel(factor, rankInit, c0, c1, lambdaTheta, lambdaBeta, lambdaGamma, globalBias, validationMetric, numValPerRecord);
+        this.model = new CofactorModel(factor, rankInit, c0, c1, lambdaTheta, lambdaBeta, lambdaGamma, globalBias,
+                validationMetric, numValPerRecord, LOG);
 
         List<String> fieldNames = new ArrayList<String>();
         List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
@@ -498,11 +501,38 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     @Override
     public void close() throws HiveException {
         try {
+
+            if (numValidations == 0) {
+                throw new HiveException("no validation examples");
+            }
+
             model.finalizeContexts();
 
             final Reporter reporter = getReporter();
             final Counters.Counter iterCounter = (reporter == null) ? null
                     : reporter.getCounter("hivemall.mf.Cofactor$Counter", "iteration");
+
+            final Counters.Counter userCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "users");
+            final Counters.Counter itemCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "items");
+            final Counters.Counter skippedUserCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "skippedUsers");
+            final Counters.Counter skippedItemCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "skippedItems");
+
+            final Counters.Counter thetaTotalCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "thetaTotalFeaturesCounter");
+            final Counters.Counter thetaTrainableCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "thetaTrainableFeaturesCounter");
+
+            final Counters.Counter betaTotalCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "betaTotalFeaturesCounter");
+            final Counters.Counter betaTrainableCounter = (reporter == null) ? null
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "betaTrainableFeaturesCounter");
+
+            model.registerCounters(userCounter, itemCounter, skippedUserCounter, skippedItemCounter, thetaTrainableCounter,
+                    thetaTotalCounter, betaTrainableCounter, betaTotalCounter);
 
             prepareForRead();
 
@@ -524,7 +554,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 System.out.println("Validation loss: " + validationState.getAverageLoss(numValidations));
 
                 LOG.info("Performed " + iteration + " iterations of "
-                        + NumberUtils.formatNumber(maxIters));
+                        + NumberUtils.formatNumber(maxIters) + " with " + numTraining + " training examples and "
+                        + numValidations + " validation examples.");
 //                        + " training examples on a secondary storage (thus "
 //                        + NumberUtils.formatNumber(_t) + " training updates in total), used "
 //                        + _numValidations + " validation examples");
@@ -625,6 +656,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         for (TrainingSample sample : samples) {
             final Double loss = model.validate(sample, 31);
             if (loss != null) {
+                if (!NumberUtils.isFinite(loss)) {
+                    throw new HiveException("Non-finite validation loss encountered");
+                }
                 validationState.incrLoss(loss);
             }
         }

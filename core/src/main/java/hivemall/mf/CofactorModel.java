@@ -26,8 +26,10 @@ import hivemall.utils.math.MathUtils;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import org.apache.commons.logging.Log;
 import org.apache.commons.math3.linear.*;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.mapred.Counters;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -39,6 +41,19 @@ import java.util.Random;
 
 
 public class CofactorModel {
+
+    public void registerCounters(Counters.Counter userCounter, Counters.Counter itemCounter, Counters.Counter skippedUserCounter,
+                                 Counters.Counter skippedItemCounter, Counters.Counter thetaTrainable, Counters.Counter thetaTotal,
+                                 Counters.Counter betaTrainable, Counters.Counter betaTotal) {
+        this.userCounter = userCounter;
+        this.itemCounter = itemCounter;
+        this.skippedUserCounter = skippedUserCounter;
+        this.skippedItemCounter = skippedItemCounter;
+        this.thetaTotalFeaturesCounter = thetaTotal;
+        this.thetaTrainableFeaturesCounter = thetaTrainable;
+        this.betaTotalFeaturesCounter = betaTotal;
+        this.betaTrainableFeaturesCounter = betaTrainable;
+    }
 
     public enum RankInitScheme {
         random /* default */, gaussian;
@@ -114,6 +129,16 @@ public class CofactorModel {
     private final RealMatrix B;
     private final RealVector A;
 
+    // counters
+    private Counters.Counter userCounter;
+    private Counters.Counter itemCounter;
+    private Counters.Counter skippedUserCounter;
+    private Counters.Counter skippedItemCounter;
+    private Counters.Counter thetaTrainableFeaturesCounter;
+    private Counters.Counter thetaTotalFeaturesCounter;
+    private Counters.Counter betaTrainableFeaturesCounter;
+    private Counters.Counter betaTotalFeaturesCounter;
+
     // error message strings
     private static final String ARRAY_NOT_SQUARE_ERR = "Array is not square";
     private static final String DIFFERENT_DIMS_ERR = "Matrix, vector or array do not match in size";
@@ -141,7 +166,8 @@ public class CofactorModel {
     public CofactorModel(@Nonnegative final int factor, @Nonnull final RankInitScheme initScheme,
                          @Nonnegative final float c0, @Nonnegative final float c1, @Nonnegative final float lambdaTheta,
                          @Nonnegative final float lambdaBeta, @Nonnegative final float lambdaGamma, final float globalBias,
-                         @Nullable CofactorizationUDTF.ValidationMetric validationMetric, @Nonnegative final int numValPerRecord) {
+                         @Nullable CofactorizationUDTF.ValidationMetric validationMetric, @Nonnegative final int numValPerRecord,
+                         @Nonnull final Log log) {
 
         // rank init scheme is gaussian
         // https://github.com/dawenl/cofactor/blob/master/src/cofacto.py#L98
@@ -334,19 +360,24 @@ public class CofactorModel {
             RealVector newThetaVec = calculateNewThetaVector(sample, beta, factor, B, A, BTBpR, c0, c1);
             if (newThetaVec != null) {
                 setFactorVector(sample.context, theta, newThetaVec);
+            } else {
+                skippedUserCounter.increment(1);
             }
+            userCounter.increment(1);
         }
     }
 
     @VisibleForTesting
-    protected static RealVector calculateNewThetaVector(@Nonnull final CofactorizationUDTF.TrainingSample sample, @Nonnull final Weights beta,
+    protected RealVector calculateNewThetaVector(@Nonnull final CofactorizationUDTF.TrainingSample sample, @Nonnull final Weights beta,
                                                         @Nonnegative final int numFactors, @Nonnull final RealMatrix B, @Nonnull final RealVector A,
                                                         @Nonnull final double[][] BTBpR, @Nonnegative final float c0, @Nonnegative final float c1) throws HiveException {
         // filter for trainable items
         List<Feature> trainableItems = filterTrainableFeatures(sample.features, beta);
+        thetaTotalFeaturesCounter.increment(sample.features.length);
         if (trainableItems.isEmpty()) {
             return null;
         }
+        thetaTrainableFeaturesCounter.increment(trainableItems.size());
         final double[] a = calculateA(trainableItems, beta, numFactors, c1);
         final double[][] delta = calculateWTWSubset(trainableItems, beta, numFactors, c1 - c0);
         final double[][] b = addInPlace(delta, BTBpR);
@@ -364,21 +395,28 @@ public class CofactorModel {
             RealVector newBetaVec = calculateNewBetaVector(sample, theta, gamma, gammaBias, betaBias, factor, B, A, TTTpR, c0, c1, globalBias);
             if (newBetaVec != null) {
                 setFactorVector(sample.context, beta, newBetaVec);
+            } else {
+                skippedItemCounter.increment(1);
             }
+            itemCounter.increment(1);
         }
     }
 
     @VisibleForTesting
-    protected static RealVector calculateNewBetaVector(@Nonnull final CofactorizationUDTF.TrainingSample sample, @Nonnull final Weights theta,
+    protected RealVector calculateNewBetaVector(@Nonnull final CofactorizationUDTF.TrainingSample sample, @Nonnull final Weights theta,
                                                        @Nonnull final Weights gamma, @Nonnull final Object2DoubleMap<String> gammaBias,
                                                        @Nonnull final Object2DoubleMap<String> betaBias, final int numFactors, @Nonnull final RealMatrix B,
                                                        @Nonnull final RealVector A, @Nonnull final double[][] TTTpR, @Nonnegative final float c0,
                                                        @Nonnegative final float c1, final double globalBias) throws HiveException {
         // filter for trainable users
         final List<Feature> trainableUsers = filterTrainableFeatures(sample.features, theta);
+        betaTotalFeaturesCounter.increment(sample.features.length);
         if (trainableUsers.isEmpty()) {
             return null;
         }
+
+        betaTrainableFeaturesCounter.increment(trainableUsers.size());
+
         final List<Feature> trainableCooccurringItems = filterTrainableFeatures(sample.sppmi, gamma);
         final double[] RSD = calculateRSD(sample.context, trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma, globalBias);
         final double[] ApRSD = addInPlace(calculateA(trainableUsers, theta, numFactors, c1), RSD, 1.f);
@@ -786,6 +824,12 @@ public class CofactorModel {
         // limit numPos and numNeg
         int numPos = Math.min(sample.features.length, (int) Math.ceil(this.numValPerRecord * 0.5));
         int numNeg = Math.min(this.numValPerRecord - numPos, sample.isItem() ? users.length : items.length);
+//        if (numPos == 0) {
+//            throw new HiveException("numPos is 0: sample.features.length = " + sample.features.length + ", ceil = " + (int) Math.ceil(this.numValPerRecord * 0.5));
+//        }
+//        if (numNeg == 0) {
+//            throw new HiveException("numNeg is 0, users.length = " + users.length + ", items.length = " + items.length);
+//        }
 
         getValidationExamples(numPos, numNeg, sample.features, sample.isItem(), validationProbes, seed);
         if (validationMetric == CofactorizationUDTF.ValidationMetric.AUC) {
@@ -815,9 +859,12 @@ public class CofactorModel {
     /**
      * Calculates area under curve for validation metric.
      */
-    private double calculateAUC(@Nonnull final Feature[] validationProbes, @Nonnull final Prediction[] predictions, CofactorizationUDTF.TrainingSample sample, final int numPos, final int numNeg) {
+    private double calculateAUC(@Nonnull final Feature[] validationProbes, @Nonnull final Prediction[] predictions, CofactorizationUDTF.TrainingSample sample, final int numPos, final int numNeg) throws HiveException {
         // make predictions for positive and then negative examples
         int nextIdx = fillPredictions(validationProbes, predictions, sample, 0, numPos, 0, 1);
+//        if (nextIdx == 0) {
+//            throw new HiveException("nextIdx is 0, no positives in predictions, validation probes = " + Arrays.toString(validationProbes));
+//        }
         int endIdx = fillPredictions(validationProbes, predictions, sample, nextIdx, numPos + numNeg, nextIdx, 0);
 
         // sort in descending order for all filled predictions
@@ -842,6 +889,9 @@ public class CofactorModel {
             }
         }
         area += trapezoid(fp, fpPrev, tp, tpPrev);
+        if (tp * fp == 0) {
+            return 0d;
+        }
         return area / (tp * fp);
     }
 
