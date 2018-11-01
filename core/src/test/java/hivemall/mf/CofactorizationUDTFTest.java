@@ -96,37 +96,22 @@ public class CofactorizationUDTFTest {
         udtf.initialize(argOIs);
     }
 
-    @Test
-    public void testCreateNnzFeatureArray() throws HiveException {
-        Feature item1 = new StringFeature("item1", 0);
-        Feature item2 = new StringFeature("item2", 1);
-        Feature item3 = new StringFeature("item3", 0);
-
-        Feature[] expected = new Feature[]{item2};
-
-        Feature[] actual = CofactorizationUDTF.createNnzFeatureArray(new Feature[]{
-                item1, item2, item3
-        });
-
-        Assert.assertArrayEquals(actual, expected);
-    }
-
-    @Test
-    public void testTrain() throws HiveException, IOException {
-        initialize(true, "-max_iters 5 -factors 100 -c0 0.03 -c1 0.3");
-
-        TrainingSample trainSample = new TrainingSample();
-
-        BufferedReader train = readFile("ml100k-cofactor.trainval.gz");
-        String line;
-        while ((line = train.readLine()) != null) {
-            parseLine(line, trainSample);
-            udtf.process(trainSample.toArray());
-        }
-        Assert.assertEquals(udtf.numTraining, 52287);
-        Assert.assertEquals(udtf.numValidations, 9227);
-        udtf.close();
-    }
+//    @Test
+//    public void testTrain() throws HiveException, IOException {
+//        initialize(true, "-max_iters 5 -factors 100 -c0 0.03 -c1 0.3");
+//
+//        TrainingSample trainSample = new TrainingSample();
+//
+//        BufferedReader train = readFile("ml100k-cofactor.trainval.gz");
+//        String line;
+//        while ((line = train.readLine()) != null) {
+//            parseLine(line, trainSample);
+//            udtf.process(trainSample.toArray());
+//        }
+//        Assert.assertEquals(udtf.numTraining, 52287);
+//        Assert.assertEquals(udtf.numValidations, 9227);
+//        udtf.close();
+//    }
 
     @Nonnull
     private static BufferedReader readFile(@Nonnull String fileName) throws IOException {
@@ -163,114 +148,6 @@ public class CofactorizationUDTFTest {
         List<String> features = new ArrayList<>();
         features.addAll(Arrays.asList(entries));
         return features;
-    }
-
-    @Test
-    public void readMiniBatchFromFile_oneTrainSample_success() throws HiveException {
-        initialize(false, "");
-        Object[] trainSample = getItemTrainSample();
-        udtf.process(trainSample);
-        udtf.prepareForRead();
-
-        CofactorizationUDTF.MiniBatch miniBatch = new CofactorizationUDTF.MiniBatch();
-
-        boolean didRead = udtf.readMiniBatchFromFile(miniBatch);
-        Assert.assertTrue(didRead);
-        Assert.assertEquals(miniBatch.trainingSize(), 1);
-        Assert.assertEquals(miniBatch.getItems().size(), 1);
-
-        CofactorizationUDTF.TrainingSample actualSample = miniBatch.getItems().get(0);
-        assertSamplesAreEqual(trainSample, actualSample);
-    }
-
-    @Test
-    public void readMiniBatchFromFile_oneValidSample_success() throws HiveException {
-        initialize(false, "");
-        Object[] validSample = getItemValidationSample();
-        udtf.process(validSample);
-        udtf.prepareForRead();
-
-        CofactorizationUDTF.MiniBatch miniBatch = new CofactorizationUDTF.MiniBatch();
-
-        boolean didRead = udtf.readMiniBatchFromFile(miniBatch);
-        Assert.assertTrue(didRead);
-        Assert.assertEquals(miniBatch.validationSize(), 1);
-
-        CofactorizationUDTF.TrainingSample actualSample = miniBatch.getValidationSamples().get(0);
-        assertSamplesAreEqual(validSample, actualSample);
-    }
-
-    @Test
-    public void readMiniBatchFromFile_twoTrainingSamples_success() throws HiveException {
-        initialize(false, "");
-
-        Object[] item = getItemTrainSample();
-        Object[] user = getUserSample();
-
-        udtf.process(item);
-        udtf.process(user);
-        udtf.prepareForRead();
-
-        CofactorizationUDTF.MiniBatch miniBatch = new CofactorizationUDTF.MiniBatch();
-
-        boolean didRead = udtf.readMiniBatchFromFile(miniBatch);
-        Assert.assertTrue(didRead);
-        Assert.assertEquals(miniBatch.trainingSize(), 2);
-        Assert.assertEquals(miniBatch.getItems().size(), 1);
-        Assert.assertEquals(miniBatch.getUsers().size(), 1);
-
-        CofactorizationUDTF.TrainingSample actualItem = miniBatch.getItems().get(0);
-        assertSamplesAreEqual(item, actualItem);
-
-        CofactorizationUDTF.TrainingSample actualUser = miniBatch.getUsers().get(0);
-        assertSamplesAreEqual(user, actualUser);
-    }
-
-    @Test
-    public void process_fourArgs_success() throws HiveException {
-        initialize(false, "");
-        udtf.process(new Object[]{"string", getDummyFeatures(), false, true, getDummyFeatures()});
-    }
-
-    @Test(expected = HiveException.class)
-    public void process_threeArgs_throwsException() throws HiveException {
-        initialize(false, "");
-        udtf.process(new Object[]{"string", getDummyFeatures(), false, true});
-    }
-
-    @Test
-    public void process_sampleTypes_success() throws HiveException {
-        initialize(false, "");
-        udtf.process(new Object[]{"train1", getDummyFeatures(), false, false, null});
-        udtf.process(new Object[]{"train2", getDummyFeatures(), false, true, getDummyFeatures()});
-        udtf.process(new Object[]{"valid1", getDummyFeatures(), true, true, getDummyFeatures()});
-        udtf.process(new Object[]{"valid2", getDummyFeatures(), true, false, null});
-        Assert.assertEquals(2, udtf.numTraining);
-        Assert.assertEquals(2, udtf.numValidations);
-    }
-
-    @Test(expected = HiveException.class)
-    public void process_trainingUsersHaveDuplicateContext_throwsException() throws HiveException {
-        initialize(false, "");
-        udtf.process(new Object[]{"train1", getDummyFeatures(), false, false, null});
-        udtf.process(new Object[]{"train1", getDummyFeatures(), false, false, getDummyFeatures()});
-    }
-
-    @Test
-    public void process_trainingAndValidationUsersHaveDuplicateContext_success() throws HiveException {
-        initialize(false, "");
-        udtf.process(new Object[]{"nancy", getDummyFeatures(), false, false, null});
-        udtf.process(new Object[]{"nancy", getDummyFeatures(), true, false, getDummyFeatures()});
-        Assert.assertEquals(1, udtf.numTraining);
-        Assert.assertEquals(1, udtf.numValidations);
-    }
-
-    private void assertSamplesAreEqual(@Nonnull final Object[] expected, @Nonnull final CofactorizationUDTF.TrainingSample actual) throws HiveException {
-        Assert.assertEquals(expected[0], actual.context);
-        Assert.assertTrue(featureArraysAreEqual(CofactorizationUDTF.parseFeatures(expected[1], udtf.featuresOI, null), actual.features));
-        Assert.assertEquals(expected[2], actual.isValidation);
-        Assert.assertEquals(expected[3], actual.isItem());
-        Assert.assertTrue(featureArraysAreEqual(CofactorizationUDTF.parseFeatures(expected[4], udtf.sppmiOI, null), actual.sppmi));
     }
 
     private static boolean featureArraysAreEqual(Feature[] f1, Feature[] f2) {
