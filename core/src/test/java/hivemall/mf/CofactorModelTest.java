@@ -62,19 +62,19 @@ public class CofactorModelTest {
 
     @Test
     public void calculateA() throws HiveException {
-        CofactorModel.Weights weights = getTestBeta();
-        List<String> items = getSubset_stringList();
-        double[] actual = CofactorModel.calculateA(items, weights, NUM_FACTORS, 0.5f);
+        final CofactorModel.Weights itemFactors = getTestBeta();
+        final List<String> ratedItems = getUserToItems().get(MAKOTO);
+        double[] actual = CofactorModel.calculateA(ratedItems, itemFactors, NUM_FACTORS, 0.5f);
         double[] expected = new double[]{-0.85, 0.95};
-        Assert.assertArrayEquals(actual, expected, EPSILON);
+        Assert.assertArrayEquals(expected, actual, EPSILON);
     }
 
     @Test
     public void calculateWTWSubsetFeatures() throws HiveException {
-        CofactorModel.Weights weights = getTestBeta();
-        List<String> items = getSubset_stringList();
+        CofactorModel.Weights itemFactors = getTestBeta();
+        List<String> ratedItems = getUserToItems().get(MAKOTO);
 
-        double[][] actual = CofactorModel.calculateWTWSubsetStrings(items, weights, NUM_FACTORS, 0.9f);
+        double[][] actual = CofactorModel.calculateWTWSubsetStrings(ratedItems, itemFactors, NUM_FACTORS, 0.9f);
         double[][] expected = new double[][]{
                 {4.581, -3.033},
                 {-3.033, 2.385}
@@ -86,16 +86,16 @@ public class CofactorModelTest {
     @Test
     public void calculateNewThetaVector() throws HiveException {
         final float c0 = 0.1f, c1 = 1.f, lambdaTheta = 1e-5f;
-        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights itemFactors = getTestBeta();
 
-        double[][] BTBpR = CofactorModel.calculateWTWpR(beta, NUM_FACTORS, c0, lambdaTheta);
+        double[][] BTBpR = CofactorModel.calculateWTWpR(itemFactors, NUM_FACTORS, c0, lambdaTheta);
         double[][] initialBTBpR = copyArray(BTBpR);
 
         RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
         RealVector A = new ArrayRealVector(NUM_FACTORS);
 
-        Map.Entry<String, List<String>> currentUser = new AbstractMap.SimpleEntry<>(JACKSON, Arrays.asList(TOOTHBRUSH, SHAVER));
-        RealVector actual = CofactorModel.calculateNewThetaVector(currentUser, beta, NUM_FACTORS, B, A, BTBpR, c0, c1);
+        RealVector actual = CofactorModel.calculateNewThetaVector(
+                new AbstractMap.SimpleEntry<>(MAKOTO, getUserToItems().get(MAKOTO)), itemFactors, NUM_FACTORS, B, A, BTBpR, c0, c1);
         Assert.assertNotNull(actual);
 
         // ensure that TTTpR has not been accidentally changed after one update
@@ -109,7 +109,7 @@ public class CofactorModelTest {
     public void calculateRSD() throws HiveException {
         double[] actual = CofactorModel.calculateRSD(
                 TOOTHBRUSH,
-                getToothbrushSPPMIList(),
+                Arrays.asList(getSPPMI().get(TOOTHBRUSH)),
                 NUM_FACTORS,
                 getTestBetaBias(),
                 getTestGammaBias(),
@@ -119,53 +119,66 @@ public class CofactorModelTest {
         Assert.assertArrayEquals(expected, actual, EPSILON);
     }
 
-//    @Test
-//    public void calculateNewBetaVector() throws HiveException {
-//        final float c0 = 0.1f, c1 = 1.f, lambdaBeta = 1e-5f;
-//
-//        Object2DoubleMap<String> betaBias = getTestBetaBias();
-//        Object2DoubleMap<String> gammaBias = getTestGammaBias();
-//        CofactorModel.Weights gamma = getTestGamma();
-//        CofactorModel.Weights theta = getTestTheta();
-//
-//        RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
-//        RealVector A = new ArrayRealVector(NUM_FACTORS);
-//
-//        // solve for new weights for toothbrush
-//        CofactorizationUDTF.TrainingSample toothbrush = getItemSamples(true).get(0);
-//
-//        double[][] TTTpR = CofactorModel.calculateWTWpR(theta, NUM_FACTORS, c0, lambdaBeta);
-//        double[][] initialTTTpR = copyArray(TTTpR);
-//
-//        // zero bias: solve and update factors
-//        RealVector actual = CofactorModel.calculateNewBetaVector(toothbrush, theta, gamma, gammaBias, betaBias, NUM_FACTORS, B, A, TTTpR, c0, c1, 0.d);
-//        Assert.assertNotNull(actual);
-//        // ensure that TTTpR has not been accidentally changed after one update
-//        Assert.assertTrue(matricesAreEqual(initialTTTpR, TTTpR));
-//        double[] expected = new double[]{0.07613607, -2.98883404};
-//        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
-//
-//        // non-zero bias: solve and update factors
-//        actual = CofactorModel.calculateNewBetaVector(toothbrush, theta, gamma, gammaBias, betaBias, NUM_FACTORS, B, A, TTTpR, c0, c1, 2.5d);
-//        Assert.assertNotNull(actual);
-//        // ensure that TTTpR has not been accidentally changed after one update
-//        Assert.assertTrue(matricesAreEqual(initialTTTpR, TTTpR));
-//        expected = new double[]{-0.92773117, -4.03186978};
-//        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
-//    }
-//
-//    @Test
-//    public void calculateNewGlobalBias() {
-//        CofactorModel.Weights beta = getTestBeta();
-//        CofactorModel.Weights gamma = getTestGamma();
-//        Object2DoubleMap<String> betaBias = getTestBetaBias();
-//        Object2DoubleMap<String> gammaBias = getTestGammaBias();
-//
-//        List<CofactorizationUDTF.TrainingSample> items = getItemSamples(false);
-//        Double actual = CofactorModel.calculateNewGlobalBias(items, beta, gamma, betaBias, gammaBias);
-//        Assert.assertNotNull(actual);
-//        Assert.assertEquals(-0.2667, actual, EPSILON);
-//    }
+    @Test
+    public void calculateNewBetaVector() throws HiveException {
+        final float c0 = 0.1f, c1 = 1.f, lambdaBeta = 1e-5f;
+
+        Object2DoubleMap<String> betaBias = getTestBetaBias();
+        Object2DoubleMap<String> gammaBias = getTestGammaBias();
+        CofactorModel.Weights gamma = getTestGamma();
+        CofactorModel.Weights theta = getTestTheta();
+
+        RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
+        RealVector A = new ArrayRealVector(NUM_FACTORS);
+
+        // solve for new weights for toothbrush
+        final Map<String, List<String>> items = getItemToUsers();
+        final Map<String, Feature[]> sppmi = getSPPMI();
+        final Map.Entry<String, List<String>> toothbrush = new AbstractMap.SimpleEntry<>(TOOTHBRUSH, items.get(TOOTHBRUSH));
+
+        double[][] TTTpR = CofactorModel.calculateWTWpR(theta, NUM_FACTORS, c0, lambdaBeta);
+        double[][] initialTTTpR = copyArray(TTTpR);
+
+        // zero bias: solve and update factors
+        RealVector actual = CofactorModel.calculateNewBetaVector(toothbrush, sppmi, theta, gamma, gammaBias, betaBias, NUM_FACTORS, B, A, TTTpR, c0, c1, 0.d);
+        Assert.assertNotNull(actual);
+        // ensure that TTTpR has not been accidentally changed after one update
+        Assert.assertTrue(matricesAreEqual(initialTTTpR, TTTpR));
+        double[] expected = new double[]{0.23246102, -0.147114};
+        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
+
+        // non-zero bias: solve and update factors
+        actual = CofactorModel.calculateNewBetaVector(toothbrush, sppmi, theta, gamma, gammaBias, betaBias, NUM_FACTORS, B, A, TTTpR, c0, c1, 2.5d);
+        Assert.assertNotNull(actual);
+        // ensure that TTTpR has not been accidentally changed after one update
+        Assert.assertTrue(matricesAreEqual(initialTTTpR, TTTpR));
+        expected = new double[]{-0.77140623, -1.19014975};
+        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
+    }
+
+    private static Map<String, Feature[]> getSPPMI() {
+        final Map<String, Feature[]> sppmi = new HashMap<>();
+        Feature f = new StringFeature(TOOTHPASTE, 1.22d);
+        sppmi.put(TOOTHBRUSH, new Feature[]{
+                new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)});
+        sppmi.put(TOOTHPASTE, new Feature[]{
+                new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)});
+        sppmi.put(SHAVER, new Feature[]{
+                new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)});
+        return sppmi;
+    }
+
+    @Test
+    public void calculateNewGlobalBias() throws HiveException {
+        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights gamma = getTestGamma();
+        Object2DoubleMap<String> betaBias = getTestBetaBias();
+        Object2DoubleMap<String> gammaBias = getTestGammaBias();
+
+        Double actual = CofactorModel.calculateNewGlobalBias(getItemToUsers(), getSPPMI(), beta, gamma, betaBias, gammaBias);
+        Assert.assertNotNull(actual);
+        Assert.assertEquals(-0.2667, actual, EPSILON);
+    }
 
     private static double[][] copyArray(double[][] A) {
         double[][] newA = new double[A.length][A[0].length];
@@ -177,66 +190,52 @@ public class CofactorModelTest {
         return newA;
     }
 
-//    @Test
-//    public void calculateNewGammaVector() throws HiveException {
-//        final float lambdaGamma = 1e-5f;
-//
-//        Object2DoubleMap<String> betaBias = getTestBetaBias();
-//        Object2DoubleMap<String> gammaBias = getTestGammaBias();
-//        CofactorModel.Weights beta = getTestBeta();
-//
-//        RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
-//        RealVector A = new ArrayRealVector(NUM_FACTORS);
-//
-//        CofactorizationUDTF.TrainingSample currentItem = getItemSamples(false).get(0);
-//
-//        // zero global bias
-//        RealVector actual = CofactorModel.calculateNewGammaVector(currentItem, beta, gammaBias, betaBias, NUM_FACTORS, B, A, lambdaGamma, 0.d);
-//        Assert.assertNotNull(actual);
-//        double[] expected = new double[]{0.95828914, -1.48234826};
-//        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
-//
-//        // non-zero global bias
-//        actual = CofactorModel.calculateNewGammaVector(currentItem, beta, gammaBias, betaBias, NUM_FACTORS, B, A, lambdaGamma, 2.5d);
-//        Assert.assertNotNull(actual);
-//        expected = new double[]{0.49037982, -3.68822023};
-//        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
-//    }
-//
-//    @Test
-//    public void calculateNewBias_forBetaBias_returnsNonNull() throws HiveException {
-//        Object2DoubleMap<String> gammaBias = getTestGammaBias();
-//        CofactorModel.Weights beta = getTestBeta();
-//        CofactorModel.Weights gamma = getTestGamma();
-//
-//        CofactorizationUDTF.TrainingSample currentItem = getItemSamples(false).get(0);
-//
-//        // zero global bias
-//        Double actual = CofactorModel.calculateNewBias(currentItem, beta, gamma, gammaBias, 0.d);
-//        Assert.assertNotNull(actual);
-//        Assert.assertEquals(-0.235, actual, EPSILON);
-//
-//        // non-zero global bias
-//        actual = CofactorModel.calculateNewBias(currentItem, beta, gamma, gammaBias, 2.5d);
-//        Assert.assertNotNull(actual);
-//        Assert.assertEquals(-2.735, actual, EPSILON);
-//    }
-//
-//    @Test
-//    public void recordAsParent() throws HiveException {
-//        CofactorModel model = new CofactorModel(NUM_FACTORS, CofactorModel.RankInitScheme.gaussian, 0.1f, 1.f,
-//                1e-5f, 1e-5f, 1.f, 0.f, null, 0, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
-//
-//        Assert.assertNull(model.getThetaVector(JACKSON));
-//        model.recordSample(JACKSON, false);
-//        Assert.assertNotNull(model.getThetaVector(JACKSON));
-//
-//        Assert.assertNull(model.getBetaVector(TOOTHBRUSH));
-//        Assert.assertNull(model.getGammaVector(TOOTHBRUSH));
-//        model.recordSample(TOOTHBRUSH, true);
-//        Assert.assertNotNull(model.getBetaVector(TOOTHBRUSH));
-//        Assert.assertNotNull(model.getGammaVector(TOOTHBRUSH));
-//    }
+    @Test
+    public void calculateNewGammaVector() throws HiveException {
+        final float lambdaGamma = 1e-5f;
+
+        final Object2DoubleMap<String> betaBias = getTestBetaBias();
+        final Object2DoubleMap<String> gammaBias = getTestGammaBias();
+        final CofactorModel.Weights beta = getTestBeta();
+
+        final RealMatrix B = new Array2DRowRealMatrix(NUM_FACTORS, NUM_FACTORS);
+        final RealVector A = new ArrayRealVector(NUM_FACTORS);
+
+        final Map.Entry<String, List<String>> currentItem = new AbstractMap.SimpleEntry<>(TOOTHBRUSH, getItemToUsers().get(TOOTHBRUSH));
+        final Map<String, Feature[]> sppmi = getSPPMI();
+
+        // zero global bias
+        RealVector actual = CofactorModel.calculateNewGammaVector(currentItem, sppmi, beta, gammaBias, betaBias, NUM_FACTORS, B, A, lambdaGamma, 0.d);
+        Assert.assertNotNull(actual);
+        double[] expected = new double[]{0.95828914, -1.48234826};
+        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
+
+        // non-zero global bias
+        actual = CofactorModel.calculateNewGammaVector(currentItem, sppmi, beta, gammaBias, betaBias, NUM_FACTORS, B, A, lambdaGamma, 2.5d);
+        Assert.assertNotNull(actual);
+        expected = new double[]{0.49037982, -3.68822023};
+        Assert.assertArrayEquals(expected, actual.toArray(), EPSILON);
+    }
+
+    @Test
+    public void calculateNewBias_forBetaBias_returnsNonNull() throws HiveException {
+        Object2DoubleMap<String> gammaBias = getTestGammaBias();
+        CofactorModel.Weights beta = getTestBeta();
+        CofactorModel.Weights gamma = getTestGamma();
+
+        final Map.Entry<String, List<String>> currentItem = new AbstractMap.SimpleEntry<>(TOOTHBRUSH, getItemToUsers().get(TOOTHBRUSH));
+        final Map<String, Feature[]> sppmi = getSPPMI();
+
+        // zero global bias
+        Double actual = CofactorModel.calculateNewBias(currentItem, sppmi, beta, gamma, gammaBias, 0.d);
+        Assert.assertNotNull(actual);
+        Assert.assertEquals(-0.235, actual, EPSILON);
+
+        // non-zero global bias
+        actual = CofactorModel.calculateNewBias(currentItem, sppmi, beta, gamma, gammaBias, 2.5d);
+        Assert.assertNotNull(actual);
+        Assert.assertEquals(-2.735, actual, EPSILON);
+    }
 
     @Test
     public void L2Distance() throws HiveException {
@@ -246,15 +245,15 @@ public class CofactorModelTest {
         Assert.assertEquals(actual, expected, EPSILON);
     }
 
-    @Test
-    public void calculateMFLoss_allFeaturesAreTrainable() throws HiveException {
-        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
-        CofactorModel.Weights beta = getTestBeta();
-        CofactorModel.Weights theta = getTestTheta();
-        double actual = CofactorModel.calculateMFLoss(samples, beta, theta, 0.1f, 1.f);
-        double expected = 0.7157;
-        Assert.assertEquals(actual, expected, EPSILON);
-    }
+//    @Test
+//    public void calculateMFLoss_allFeaturesAreTrainable() throws HiveException {
+//        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
+//        CofactorModel.Weights beta = getTestBeta();
+//        CofactorModel.Weights theta = getTestTheta();
+//        double actual = CofactorModel.calculateMFLoss(samples, beta, theta, 0.1f, 1.f);
+//        double expected = 0.7157;
+//        Assert.assertEquals(actual, expected, EPSILON);
+//    }
 
     @Test
     public void calculateMFLoss_oneFeatureNotTrainable() throws HiveException {
@@ -268,18 +267,18 @@ public class CofactorModelTest {
         Assert.assertEquals(actual, expected, EPSILON);
     }
 
-    @Test
-    public void calculateEmbedLoss() {
-        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
-        CofactorModel.Weights beta = getTestBeta();
-        CofactorModel.Weights gamma = getTestGamma();
-        Object2DoubleMap<String> betaBias = getTestBetaBias();
-        Object2DoubleMap<String> gammaBias = getTestGammaBias();
-
-        double actual = CofactorModel.calculateEmbedLoss(samples, beta, gamma, betaBias, gammaBias);
-        double expected = 2.756;
-        Assert.assertEquals(expected, actual, EPSILON);
-    }
+//    @Test
+//    public void calculateEmbedLoss() {
+//        List<CofactorizationUDTF.TrainingSample> samples = getSamples_itemAsContext_allUsersInTheta();
+//        CofactorModel.Weights beta = getTestBeta();
+//        CofactorModel.Weights gamma = getTestGamma();
+//        Object2DoubleMap<String> betaBias = getTestBetaBias();
+//        Object2DoubleMap<String> gammaBias = getTestGammaBias();
+//
+//        double actual = CofactorModel.calculateEmbedLoss(samples, beta, gamma, betaBias, gammaBias);
+//        double expected = 2.756;
+//        Assert.assertEquals(expected, actual, EPSILON);
+//    }
 
     @Test
     public void dotProduct() {
@@ -319,8 +318,8 @@ public class CofactorModelTest {
 //        CofactorModel model = new CofactorModel(NUM_FACTORS, init,
 //                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
 //        int iterations = 5;
-//        List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
-//        List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
+//        List<CofactorizationUDTF.TrainingSample> users = getUserToItems(IS_FEEDBACK_EXPLICIT);
+//        List<CofactorizationUDTF.TrainingSample> items = getItemToUsers(IS_FEEDBACK_EXPLICIT);
 //
 //        // record features
 //        recordContexts(model, users, false);
@@ -345,40 +344,6 @@ public class CofactorModelTest {
 ////        Assert.assertEquals(predictionString, expected);
 //    }
 
-//    @Test
-//    public void smallTrainingTest_explicitFeedback() throws HiveException {
-//        final boolean IS_FEEDBACK_EXPLICIT = true;
-//        CofactorModel.RankInitScheme init = CofactorModel.RankInitScheme.gaussian;
-//        init.setInitStdDev(1.0f);
-//
-//        CofactorModel model = new CofactorModel(NUM_FACTORS, init,
-//                0.1f, 1.f, 1e-5f, 1e-5f, 1.f, 0.f, null, 0, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
-//        int iterations = 5;
-//        List<CofactorizationUDTF.TrainingSample> users = getUserSamples(IS_FEEDBACK_EXPLICIT);
-//        List<CofactorizationUDTF.TrainingSample> items = getItemSamples(IS_FEEDBACK_EXPLICIT);
-//
-//        // record features
-//        recordContexts(model, users, false);
-//        recordContexts(model, items, true);
-//
-//        double prevLoss = Double.MAX_VALUE;
-//        for (int i = 0; i < iterations; i++) {
-//            model.updateWithUsers(users);
-//            model.updateWithItems(items);
-//            Double loss = model.calculateLoss(users, items);
-//            Assert.assertNotNull(loss);
-//            Assert.assertTrue(loss < prevLoss);
-//            prevLoss = loss;
-//        }
-//
-//        // assert that the user-item predictions after N iterations is identical to expected predictions
-////        String expected = "makoto -> (toothpaste:3.000), (toothbrush:4.346), (shaver:2.530), \n" +
-////                "takuya -> (toothpaste:4.998), (toothbrush:0.409), (shaver:-0.565), \n" +
-////                "jackson -> (toothpaste:1.001), (toothbrush:2.556), (shaver:1.618), \n";
-//        String predictionString = generatePredictionString(model, users, items);
-//        System.out.println(predictionString);
-////        Assert.assertEquals(predictionString, expected);
-//    }
 
 //    @Test
 //    public void calculateAUC() throws HiveException {
@@ -387,8 +352,8 @@ public class CofactorModelTest {
 //        CofactorModel model = new CofactorModel(NUM_FACTORS, init, 0.1f, 1.f, 1e-5f, 1e-5f,
 //                1.f, 0.f, CofactorizationUDTF.ValidationMetric.AUC, 3, LOG, skippedUserCounter, skippedItemCounter, userCounter, itemCounter);
 //
-//        List<CofactorizationUDTF.TrainingSample> users = getUserSamples(false);
-//        List<CofactorizationUDTF.TrainingSample> items = getItemSamples(false);
+//        List<CofactorizationUDTF.TrainingSample> users = getUserToItems(false);
+//        List<CofactorizationUDTF.TrainingSample> items = getItemToUsers(false);
 //
 //        // record features
 //        recordContexts(model, users, false);
@@ -457,113 +422,22 @@ public class CofactorModelTest {
         return sb.toString();
     }
 
-    private static List<CofactorizationUDTF.TrainingSample> getItemSamples(boolean isExplicit) {
-        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
-        if (isExplicit) {
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            TOOTHBRUSH,
-                            new Feature[]{new StringFeature(MAKOTO, 4.5d)},
-                            false,
-                            new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            TOOTHPASTE,
-                            new Feature[]{new StringFeature(TAKUYA, 5.d), new StringFeature(MAKOTO, 3.d), new StringFeature(JACKSON, 1.d)},
-                            false,
-                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            SHAVER,
-                            new Feature[]{new StringFeature(JACKSON, 2.d), new StringFeature(MAKOTO, 2.3d)},
-                            false,
-                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
-        } else {
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            TOOTHBRUSH,
-                            new Feature[]{new StringFeature(MAKOTO, 1.d)},
-                            false,
-                            new Feature[]{new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)}));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            TOOTHPASTE,
-                            new Feature[]{new StringFeature(TAKUYA, 1.d), new StringFeature(MAKOTO, 1.d), new StringFeature(JACKSON, 1.d)},
-                            false,
-                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(SHAVER, 1.35d)}));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            SHAVER,
-                            new Feature[]{new StringFeature(JACKSON, 1.d), new StringFeature(MAKOTO, 1.d)},
-                            false,
-                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.22d), new StringFeature(TOOTHPASTE, 1.35d)}));
-        }
-        return samples;
+    private static Map<String, List<String>> getItemToUsers() {
+        final Map<String, List<String>> items = new HashMap<>();
+        items.put(TOOTHBRUSH, Collections.singletonList(MAKOTO));
+        items.put(TOOTHPASTE, Arrays.asList(TAKUYA, MAKOTO, JACKSON));
+        items.put(SHAVER, Arrays.asList(JACKSON, MAKOTO));
+        return items;
     }
 
-    private static List<CofactorizationUDTF.TrainingSample> getUserSamples(boolean isExplicit) {
-        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
-        if (isExplicit) {
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            MAKOTO,
-                            new Feature[]{new StringFeature(TOOTHBRUSH, 4.5d), new StringFeature(TOOTHPASTE, 3.d), new StringFeature(SHAVER, 2.3d)},
-                            false,
-                            null));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            TAKUYA,
-                            new Feature[]{new StringFeature(TOOTHPASTE, 5.d)},
-                            false,
-                            null));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            JACKSON,
-                            new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 2.d)},
-                            false,
-                            null));
-        } else {
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            MAKOTO,
-                            new Feature[]{new StringFeature(TOOTHBRUSH, 1.d), new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
-                            false,
-                            null));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            TAKUYA,
-                            new Feature[]{new StringFeature(TOOTHPASTE, 1.d)},
-                            false,
-                            null));
-            samples.add(
-                    new CofactorizationUDTF.TrainingSample(
-                            JACKSON,
-                            new Feature[]{new StringFeature(TOOTHPASTE, 1.d), new StringFeature(SHAVER, 1.d)},
-                            false,
-                            null));
-        }
-        return samples;
+    private static Map<String, List<String>> getUserToItems() {
+        final Map<String, List<String>> users = new HashMap<>();
+        users.put(MAKOTO, Arrays.asList(TOOTHBRUSH, SHAVER));
+        users.put(TAKUYA, Collections.singletonList(TOOTHPASTE));
+        users.put(JACKSON, Arrays.asList(TOOTHPASTE, SHAVER));
+        return users;
     }
 
-    private static List<CofactorizationUDTF.TrainingSample> getSamples_userAsContext_allItemsInBeta() {
-        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
-        samples.add(new CofactorizationUDTF.TrainingSample(
-                TAKUYA,
-                getSubset_itemFeatureVector_implicitFeedback(),
-                false,
-                null));
-        return samples;
-    }
-
-    private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_allUsersInTheta() {
-        List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
-        samples.add(new CofactorizationUDTF.TrainingSample(
-                TOOTHBRUSH,
-                getSubset_userFeatureVector_implicitFeedback(),
-                false,
-                getToothbrushSPPMIVector()));
-        return samples;
-    }
 
     private static List<CofactorizationUDTF.TrainingSample> getSamples_itemAsContext_oneUserNotInTheta() {
         List<CofactorizationUDTF.TrainingSample> samples = new ArrayList<>();
@@ -628,31 +502,6 @@ public class CofactorModelTest {
         weights.put(TOOTHPASTE, -0.5);
         weights.put(SHAVER, 1.1);
         return weights;
-    }
-
-    private static List<String> getSubset_stringList() {
-        return Arrays.asList(TOOTHBRUSH, SHAVER);
-    }
-
-    private static List<Feature> getToothbrushSPPMIList() {
-        List<Feature> sppmi = new ArrayList<>();
-        sppmi.add(new StringFeature(TOOTHPASTE, 1.22));
-        sppmi.add(new StringFeature(SHAVER, 1.22));
-        return sppmi;
-    }
-
-    private static Feature[] getToothbrushSPPMIVector() {
-        Feature[] sppmi = new Feature[2];
-        sppmi[0] = new StringFeature(TOOTHPASTE, 1.22);
-        sppmi[1] = new StringFeature(SHAVER, 1.22);
-        return sppmi;
-    }
-
-    private static Feature[] getSubset_itemFeatureVector_implicitFeedback() {
-        Feature[] items = new Feature[2];
-        items[0] = new StringFeature(TOOTHBRUSH, 1.d);
-        items[1] = new StringFeature(SHAVER, 1.d);
-        return items;
     }
 
     private static Feature[] getSubset_userFeatureVector_implicitFeedback() {

@@ -405,7 +405,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
-    protected RealVector calculateNewBetaVector(@Nonnull final Map.Entry<String, List<String>> sample,
+    protected static RealVector calculateNewBetaVector(@Nonnull final Map.Entry<String, List<String>> sample,
                                                 @Nonnull final Map<String, Feature[]> sppmi,
                                                 @Nonnull final Weights theta,
                                                        @Nonnull final Weights gamma, @Nonnull final Object2DoubleMap<String> gammaBias,
@@ -414,12 +414,12 @@ public class CofactorModel {
                                                        @Nonnegative final float c1, final double globalBias) throws HiveException {
         // filter for trainable users
         final List<String> trainableUsers = filterTrainableFeatures(sample.getValue(), theta);
-        betaTotalFeaturesCounter.increment(sample.getValue().size());
+//        betaTotalFeaturesCounter.increment(sample.getValue().size());
         if (trainableUsers.isEmpty()) {
             return null;
         }
 
-        betaTrainableFeaturesCounter.increment(trainableUsers.size());
+//        betaTrainableFeaturesCounter.increment(trainableUsers.size());
 
         final List<Feature> trainableCooccurringItems = filterTrainableFeatures(sppmi.get(sample.getKey()), gamma);
         final double[] RSD = calculateRSD(sample.getKey(), trainableCooccurringItems, numFactors, betaBias, gammaBias, gamma, globalBias);
