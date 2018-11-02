@@ -532,5 +532,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
   WITH dual AS (SELECT 1) SELECT lr_datagen('-n_examples 1k -n_features 10') FROM dual;
   ```
 
+- `bm25(int termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options])` - Return an Okapi BM25 score in double
+
 - `tf(string text)` - Return a term frequency in &lt;string, float&gt;
 

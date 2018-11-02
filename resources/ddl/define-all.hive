@@ -339,6 +339,9 @@ create temporary function populate_not_in as 'hivemall.ftvec.ranking.PopulateNot
 drop temporary function if exists tf;
 create temporary function tf as 'hivemall.ftvec.text.TermFrequencyUDAF';
 
+drop temporary function if exists bm25;
+create temporary function bm25 as 'hivemall.ftvec.text.OkapiBM25UDF';
+
 --------------------------
 -- Regression functions --
 --------------------------
@@ -881,3 +884,4 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
+

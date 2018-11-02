@@ -343,6 +343,9 @@ CREATE FUNCTION populate_not_in as 'hivemall.ftvec.ranking.PopulateNotInUDTF' US
 DROP FUNCTION IF EXISTS tf;
 CREATE FUNCTION tf as 'hivemall.ftvec.text.TermFrequencyUDAF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS bm25;
+CREATE FUNCTION bm25 as 'hivemall.ftvec.text.OkapiBM25UDF' USING JAR '${hivemall_jar}';
+
 --------------------------
 -- Regression functions --
 --------------------------

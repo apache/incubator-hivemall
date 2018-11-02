@@ -342,6 +342,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION populate_not_in AS 'hivemall.ftvec.ran
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tf")
 sqlContext.sql("CREATE TEMPORARY FUNCTION tf AS 'hivemall.ftvec.text.TermFrequencyUDAF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS bm25")
+sqlContext.sql("CREATE TEMPORARY FUNCTION bm25 AS 'hivemall.ftvec.text.OkapiBM25UDF'")
+
 /**
  * Regression functions
  */
@@ -834,3 +837,4 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION bloom_or AS 'hivemall.sketch.bloom.Blo
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS bloom_contains_any")
 sqlContext.sql("CREATE TEMPORARY FUNCTION bloom_contains_any AS 'hivemall.sketch.bloom.BloomContainsAnyUDF'")
+
