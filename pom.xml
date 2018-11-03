@@ -231,6 +231,17 @@
 				<role>Mentor</role>
 			</roles>
 		</developer>
+		<developer>
+			<id>koji</id>
+			<name>Koji Sekiguchi</name>
+			<email>koji[at]apache.org</email>
+			<url>https://www.linkedin.com/in/koji-sekiguchi-75010350/</url>
+			<organization>RONDHUIT Co, Ltd.</organization>
+			<organizationUrl>https://www.rondhuit.com/</organizationUrl>
+			<roles>
+				<role>Mentor</role>
+			</roles>
+		</developer>
 	</developers>
 
 	<packaging>pom</packaging>
