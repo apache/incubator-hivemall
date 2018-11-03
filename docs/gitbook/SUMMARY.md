@@ -65,8 +65,9 @@
 * [Feature Transformation](ft_engineering/ft_trans.md)
     * [Feature vectorization](ft_engineering/vectorization.md)
     * [Quantify non-number features](ft_engineering/quantify.md)
-* [TF-IDF Calculation](ft_engineering/tfidf.md)
-* [BM25](ft_engineering/bm25.md)
+* [Term Vector Model](ft_engineering/term_vector.md)
+    * [TF-IDF Term Weighting](ft_engineering/tfidf.md)
+    * [Okapi BM25 Term Weighting](ft_engineering/bm25.md)
 
 ## Part IV - Evaluation
 
