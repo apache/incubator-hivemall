@@ -108,7 +108,7 @@ public final class OkapiBM25UDF extends UDFWithOptions {
             throws UDFArgumentException {
         final int numArgOIs = argOIs.length;
         if (numArgOIs < 5) {
-            throw new UDFArgumentException("argOIs.length must be greater than or equal to 5");
+            showHelp("#arguments must be greater than or equal to 5: " + numArgOIs);
         } else if (numArgOIs == 6) {
             String opts = HiveUtils.getConstString(argOIs[5]);
             processOptions(opts);
