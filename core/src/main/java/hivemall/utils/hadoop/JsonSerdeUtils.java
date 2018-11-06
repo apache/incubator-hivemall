@@ -380,7 +380,7 @@ public final class JsonSerdeUtils {
         final Object result;
         try {
             JsonParser p =
-                    new JsonFactory().createJsonParser(new FastByteArrayInputStream(t.getBytes()));
+                    new JsonFactory().createJsonParser(new FastByteArrayInputStream(t.getBytes(), t.getLength()));
             final JsonToken token = p.nextToken();
             if (token == JsonToken.START_OBJECT) {
                 result = parseObject(p, columnNames, columnTypes);
