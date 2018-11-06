@@ -30,6 +30,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.IntWritable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -50,7 +51,7 @@ public class ArrayFlattenUDFTest {
 
         Assert.assertEquals(8, result.size());
         for (int i = 0; i < 8; i++) {
-            Assert.assertEquals(new Integer(i), result.get(i));
+            Assert.assertEquals(new IntWritable(i), result.get(i));
         }
 
         udf.close();
