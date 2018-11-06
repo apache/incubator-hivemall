@@ -33,7 +33,7 @@ import org.junit.Test;
 public class BloomContainsUDFTest {
 
     @Test
-    public void test() throws IOException, HiveException {
+    public void testUDF() throws IOException, HiveException {
         BloomContainsUDF udf = new BloomContainsUDF();
         final long seed = 43L;
         final int size = 100;
@@ -47,7 +47,8 @@ public class BloomContainsUDFTest {
             double d = rnd1.nextGaussian();
             String s = Double.toHexString(d);
             key.set(s);
-            Assert.assertEquals(Boolean.TRUE, udf.evaluate(bfstr, key));
+            Assert.assertEquals("Look up failed for key: " + key, Boolean.TRUE,
+                udf.evaluate(bfstr, key));
         }
     }
 
@@ -61,7 +62,7 @@ public class BloomContainsUDFTest {
             double d = rnd1.nextGaussian();
             String s = Double.toHexString(d);
             Text t = new Text(s);
-            key.set(t.getBytes(), 1.0);
+            key.set(t.copyBytes(), 1.0);
             dbf.add(key);
         }
 
