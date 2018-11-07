@@ -136,7 +136,7 @@ public class GeneralRegressorUDTFTest {
 
     private <T> void testFeature(@Nonnull List<T> x, @Nonnull ObjectInspector featureOI,
             @Nonnull Class<T> featureClass, @Nonnull Class<?> modelFeatureClass) throws Exception {
-        float y = 0.f;
+        float y = 1.f;
 
         GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
         ObjectInspector valueOI = PrimitiveObjectInspectorFactory.javaFloatObjectInspector;
