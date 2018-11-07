@@ -32,6 +32,7 @@
 
 	<properties>
 		<main.basedir>${project.parent.parent.basedir}</main.basedir>
+		<!-- <scala.version>2.11.12</scala.version> -->
 		<spark.version>2.3.0</spark.version>
 		<spark.binary.version>2.3</spark.binary.version>
 		<hadoop.version>2.6.5</hadoop.version>
@@ -39,6 +40,18 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- test dependencies -->
+			<dependency>
+				<groupId>org.scalatest</groupId>
+				<artifactId>scalatest_${scala.binary.version}</artifactId>
+				<version>3.0.3</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 		<!-- compile scope -->
