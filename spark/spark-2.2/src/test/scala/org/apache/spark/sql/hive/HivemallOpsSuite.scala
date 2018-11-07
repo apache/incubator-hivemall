@@ -427,7 +427,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     )
     checkAnswer(
       DummyInputData.select(subarray(typedLit(Seq(1, 2, 3, 4, 5)), lit(2), lit(4))),
-      Row(Seq(3, 4))
+      Row(Seq(3, 4, 5))
     )
     checkAnswer(
       DummyInputData.select(to_string_array(typedLit(Seq(1, 2, 3, 4, 5)))),
