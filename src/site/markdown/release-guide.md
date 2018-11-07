@@ -56,7 +56,7 @@ export JAVA8_HOME=`/usr/libexec/java_home -v 1.8`
 export MAVEN_OPTS=-XX:MaxPermSize=256m
 
 # (Optional) Workaround for SSL error `Received fatal alert: protocol_version`
-export MAVEN_OPTS=-Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2
+export MAVEN_OPTS="$MAVEN_OPTS -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2"
 
 mvn -Papache-release clean install
 ```
