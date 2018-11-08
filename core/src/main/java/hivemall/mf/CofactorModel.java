@@ -56,6 +56,7 @@ public class CofactorModel {
         for (String key : users) {
             initFactorVector(key, theta);
         }
+        this.users = theta.getNonnullKeys();
     }
 
     public void registerItems(Set<String> items) throws HiveException {
@@ -63,6 +64,7 @@ public class CofactorModel {
             initFactorVector(key, beta);
             initFactorVector(key, gamma);
         }
+        this.items = beta.getNonnullKeys();
     }
 
     public enum RankInitScheme {
@@ -221,14 +223,6 @@ public class CofactorModel {
             validationProbes[i] = new StringFeature("", 0.d);
             predictions[i] = new Prediction();
         }
-    }
-
-    /**
-     * Called after UDTF has processed all input records.
-     */
-    public void finalizeContexts() {
-        this.users = theta.getNonnullKeys();
-        this.items = beta.getNonnullKeys();
     }
 
     private void initFactorVector(final String key, final Weights weights) throws HiveException {
@@ -852,18 +846,18 @@ public class CofactorModel {
      * Sample positive and negative validation examples and return a performance metric that
      * should be minimized.
      *
-     * @param sample A validation sample
-     * @param seed   Integer as seed for random number generator
      * @return Validation metric
      * @throws HiveException
      */
-    public Double validate(@Nonnull final CofactorizationUDTF.TrainingSample sample, final int seed) throws HiveException {
-        if (!isPredictable(sample.context, sample.isItem())) {
+    public Double validate(@Nonnull final String user, @Nonnull final String item) throws HiveException {
+        if (!theta.containsKey(user) || !beta.containsKey(item)) {
             return null;
         }
         // limit numPos and numNeg
-        int numPos = Math.min(sample.features.length, (int) Math.ceil(this.numValPerRecord * 0.5));
-        int numNeg = Math.min(this.numValPerRecord - numPos, sample.isItem() ? users.length : items.length);
+//        int numPos = Math.min(sample.features.length, (int) Math.ceil(this.numValPerRecord * 0.5));
+        int numPos = 1;
+//        int numNeg = Math.min(this.numValPerRecord - numPos, sample.isItem() ? users.length : items.length);
+        int numNeg = 2;
 //        if (numPos == 0) {
 //            throw new HiveException("numPos is 0: sample.features.length = " + sample.features.length + ", ceil = " + (int) Math.ceil(this.numValPerRecord * 0.5));
 //        }
@@ -871,12 +865,13 @@ public class CofactorModel {
 //            throw new HiveException("numNeg is 0, users.length = " + users.length + ", items.length = " + items.length);
 //        }
 
-        getValidationExamples(numPos, numNeg, sample.features, sample.isItem(), validationProbes, seed);
-        if (validationMetric == CofactorizationUDTF.ValidationMetric.AUC) {
-            return -calculateAUC(validationProbes, predictions, sample, numPos, numNeg);
-        } else {
-            return calculateLoss(validationProbes, sample, numPos, numNeg);
-        }
+//        getValidationExamples(numPos, numNeg, sample.features, sample.isItem(), validationProbes, seed);
+//        if (validationMetric == CofactorizationUDTF.ValidationMetric.AUC) {
+//            return -calculateAUC(validationProbes, predictions, sample, numPos, numNeg);
+//        } else {
+//            return calculateLoss(validationProbes, sample, numPos, numNeg);
+//        }
+        return null;
     }
 
     private boolean isPredictable(@Nonnull final String context, final boolean isItem) {

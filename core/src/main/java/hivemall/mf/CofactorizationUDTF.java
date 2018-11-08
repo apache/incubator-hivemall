@@ -37,6 +37,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.Text;
@@ -56,7 +57,7 @@ import java.util.*;
  */
 @Description(name = "train_cofactor",
         value = "_FUNC_(string context, array<string> features, boolean is_validation, boolean is_item, array<string> sppmi [, String options])"
-                + " - Returns a relation <string context, array<float> theta, array<floamft> beta>")
+                + " - Returns a relation <string context, array<float> theta, array<float> beta>")
 public class CofactorizationUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(CofactorizationUDTF.class);
 
@@ -97,9 +98,9 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private int numValPerRecord;
 
     // Input OIs and Context
-    private StringObjectInspector userOI;
+    private PrimitiveObjectInspector userOI;
     @VisibleForTesting
-    protected StringObjectInspector itemOI;
+    protected PrimitiveObjectInspector itemOI;
 
     private BooleanObjectInspector isValidationOI;
     @VisibleForTesting
@@ -107,8 +108,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     // Used for iterations
     @VisibleForTesting
-    protected NioStatefulSegment fileIO;
-    private ByteBuffer inputBuf;
     protected long numValidations;
     protected long numTraining;
 
@@ -266,7 +265,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         this.validationRatio = 0.125;
 
         if (argOIs.length >= 3) {
-            String rawArgs = HiveUtils.getConstString(argOIs[2]);
+            String rawArgs = HiveUtils.getConstString(argOIs[3]);
             cl = parseOptions(rawArgs);
             if (cl.hasOption("factors")) {
                 this.factor = Primitives.parseInt(cl.getOptionValue("factors"), factor);
@@ -329,8 +328,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             throw new UDFArgumentException(
                     "_FUNC_ takes 3 arguments: string user, string item, array<string> sppmi [, CONSTANT STRING options]");
         }
-        this.userOI = HiveUtils.asStringOI(argOIs[0]);
-        this.itemOI = HiveUtils.asStringOI(argOIs[1]);
+        this.userOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
+        this.itemOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
         this.sppmiOI = HiveUtils.asListOI(argOIs[2]);
         HiveUtils.validateFeatureOI(sppmiOI.getListElementObjectInspector());
 
@@ -362,13 +361,18 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
     @Override
     public void process(Object[] args) throws HiveException {
-        final String user = userOI.getPrimitiveJavaObject(args[0]);
-        final String item = itemOI.getPrimitiveJavaObject(args[1]);
-        final Feature[] sppmiVec = Feature.parseFeatures(args[2], sppmiOI, null, false);
-        if (sppmiVec == null) {
-            throw new HiveException("sppmi value is null");
+        final String user = PrimitiveObjectInspectorUtils.getString(args[0], userOI);
+        final String item = PrimitiveObjectInspectorUtils.getString(args[1], itemOI);
+        Feature[] sppmiVec = null;
+        if (!sppmi.containsKey(item)) {
+            if (args[2] != null) {
+                sppmiVec = Feature.parseFeatures(args[2], sppmiOI, null, false);
+                sppmi.put(item, sppmiVec);
+            } else {
+                throw new HiveException("null sppmi vector provided when item does not exist in sppmi");
+            }
         }
-        recordSample(user, item, sppmiVec);
+        recordSample(user, item);
     }
 
     private static void addToMap(@Nonnull final Map<String, List<String>> map, @Nonnull final String key, @Nonnull final String value) {
@@ -383,7 +387,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         }
     }
 
-    private void recordSample(@Nonnull final String user, @Nonnull final String item, @Nonnull final Feature[] sppmiVec) {
+    private void recordSample(@Nonnull final String user, @Nonnull final String item) {
         // validation data
         if (rand.nextDouble() < validationRatio) {
             addValidationSample(user, item);
@@ -392,7 +396,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             addToMap(userToItems, user, item);
             addToMap(itemToUsers, item, user);
         }
-        addToSPPMI(item, sppmiVec);
     }
 
     private void addValidationSample(@Nonnull final String user, @Nonnull final String item) {
@@ -439,13 +442,6 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             model.registerCounters(userCounter, itemCounter, skippedUserCounter, skippedItemCounter, thetaTrainableCounter,
                     thetaTotalCounter, betaTrainableCounter, betaTotalCounter);
 
-            if (LOG.isInfoEnabled()) {
-                File tmpFile = fileIO.getFile();
-                LOG.info("Wrote " + numTraining
-                        + " records to a temporary file for iterative training: "
-                        + tmpFile.getAbsolutePath() + " (" + FileUtils.prettyFileSize(tmpFile)
-                        + ")");
-            }
 
             for (int iteration = 0; iteration < maxIters; iteration++) {
                 // train the model on a full batch (i.e., all the data) using mini-batch updates
@@ -478,15 +474,15 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             return;
         }
 
-        final Text context = new Text();
+        final Text id = new Text();
         final FloatWritable[] theta = HiveUtils.newFloatArray(factor, 0.f);
         final FloatWritable[] beta = HiveUtils.newFloatArray(factor, 0.f);
-        final Object[] forwardObj = new Object[] {context, theta, null};
+        final Object[] forwardObj = new Object[] {id, theta, null};
 
         int numUsersForwarded = 0, numItemsForwarded = 0;
 
         for (Map.Entry<String, double[]> entry : model.getTheta().entrySet()) {
-            context.set(entry.getKey());
+            id.set(entry.getKey());
             copyTo(entry.getValue(), theta);
             forward(forwardObj);
             numUsersForwarded++;
@@ -495,7 +491,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         forwardObj[1] = null;
         forwardObj[2] = beta;
         for (Map.Entry<String, double[]> entry : model.getBeta().entrySet()) {
-            context.set(entry.getKey());
+            id.set(entry.getKey());
             copyTo(entry.getValue(), beta);
             forward(forwardObj);
             numItemsForwarded++;
@@ -516,9 +512,12 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 //        model.validate()
     }
 
-    private void validate(List<TrainingSample> samples) throws HiveException {
-        for (TrainingSample sample : samples) {
-            final Double loss = model.validate(sample, 31);
+    private void validate() throws HiveException {
+        if (validationUsers.size() != validationItems.size()) {
+            throw new HiveException("number of validation users and items must be the same");
+        }
+        for (int i = 0, numVal = validationUsers.size(); i < numVal; i++) {
+            final Double loss = model.validate(validationUsers.get(i), validationUsers.get(i));
             if (loss != null) {
                 if (!NumberUtils.isFinite(loss)) {
                     throw new HiveException("Non-finite validation loss encountered");
