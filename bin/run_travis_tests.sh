@@ -38,7 +38,7 @@ export MAVEN_OPTS="-XX:MaxPermSize=256m"
 mvn -q scalastyle:check -pl spark-2.1 -am test
 
 # spark-2.2 runs on Java 8+
-if [[ ! -z "$(java -version 2>&1 | grep 1.8)" ]]; then
+if [ ! -z "$(java -version 2>&1 | grep 1.8)" ]; then
   mvn -q scalastyle:check clean -Djava.source.version=1.8 -Djava.target.version=1.8 \
     -pl spark-2.2,spark-2.3 -am test
 fi
