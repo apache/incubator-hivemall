@@ -88,7 +88,9 @@ import org.apache.hadoop.io.IntWritable;
                 + "    to_ordered_list(value, key, '-k -2 -reverse'), -- [apple, candy] (reverse tail-k = top-k)\n"
                 + "    to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)\n"
                 + "    to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)\n"
-                + "    to_ordered_list(key)                           -- [2, 3, 3, 4, 5] (natural ordered keys)\n"
+                + "    to_ordered_list(key),                          -- [2, 3, 3, 4, 5] (natural ordered keys)\n"
+                + "    to_ordered_list(value, key, '-k -2 -kv_map'),  -- \n"
+                + "    to_ordered_list(value, key, '-k -2 -vk_map')   -- \n"
                 + "FROM\n" + "    t")
 //@formatter:on
 public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
@@ -438,7 +440,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
         static class QueueAggregationBuffer extends AbstractAggregationBuffer {
 
-            private AbstractQueueHandler queueHandler;
+            private transient AbstractQueueHandler queueHandler;
 
             @Nonnegative
             private int size;
