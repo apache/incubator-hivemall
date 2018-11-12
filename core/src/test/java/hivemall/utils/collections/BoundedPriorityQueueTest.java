@@ -111,4 +111,37 @@ public class BoundedPriorityQueueTest {
         Assert.assertNull(queue.poll());
     }
 
+    @Test
+    public void testReverseOrderForTailK() {
+        // Note that queue holds tail-k elements for reverseOrder
+        BoundedPriorityQueue<Integer> queue =
+                new BoundedPriorityQueue<Integer>(2, Collections.<Integer>reverseOrder());
+        queue.offer(3);
+        queue.offer(1);
+        queue.offer(2);
+        queue.offer(4);
+        queue.offer(-1);
+
+        Assert.assertEquals(2, queue.size());
+        // but order by reverse order
+        Assert.assertEquals(1, queue.poll().intValue());
+        Assert.assertEquals(-1, queue.poll().intValue());
+    }
+
+    @Test
+    public void testNaturalOrderForTopK() {
+        // Note that queue holds top-k elements for Natural
+        BoundedPriorityQueue<Integer> queue =
+                new BoundedPriorityQueue<Integer>(2, NaturalComparator.<Integer>getInstance());
+        queue.offer(3);
+        queue.offer(1);
+        queue.offer(2);
+        queue.offer(4);
+        queue.offer(-1);
+
+        Assert.assertEquals(2, queue.size());
+        // but order by natural order
+        Assert.assertEquals(3, queue.poll().intValue());
+        Assert.assertEquals(4, queue.poll().intValue());
+    }
 }
