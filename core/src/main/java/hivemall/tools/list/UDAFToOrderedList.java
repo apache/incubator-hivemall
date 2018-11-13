@@ -89,8 +89,8 @@ import org.apache.hadoop.io.IntWritable;
                 + "    to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)\n"
                 + "    to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)\n"
                 + "    to_ordered_list(key),                          -- [2, 3, 3, 4, 5] (natural ordered keys)\n"
-                + "    to_ordered_list(value, key, '-k -2 -kv_map'),  -- \n"
-                + "    to_ordered_list(value, key, '-k -2 -vk_map')   -- \n"
+                + "    to_ordered_list(value, key, '-k 2 -kv_map'),   -- {4:\"candy\",5:\"apple\"}\n"
+                + "    to_ordered_list(value, key, '-k 2 -vk_map')    -- {\"candy\":4,\"apple\":5}\n"
                 + "FROM\n" + "    t")
 //@formatter:on
 public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
@@ -139,13 +139,13 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         private StructField keyListField;
         private StructField sizeField;
         private StructField reverseOrderField;
+        private StructField outKVField, outVKField;
 
         @Nonnegative
         private int size;
         private boolean reverseOrder;
         private boolean sortByKey;
-        private boolean outKV;
-        private boolean outVK;
+        private boolean outKV, outVK;
 
         protected Options getOptions() {
             Options opts = new Options();
@@ -284,12 +284,24 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
                 this.sizeField = soi.getStructFieldRef("size");
                 this.reverseOrderField = soi.getStructFieldRef("reverseOrder");
+
+                List<? extends StructField> fieldRefs = soi.getAllStructFieldRefs();
+
+
+                this.outKVField = HiveUtils.getStructFieldRef("outKV", fieldRefs);
+                if (outKVField != null) {
+                    this.outKV = true;
+                }
+                this.outVKField = HiveUtils.getStructFieldRef("outVK", fieldRefs);
+                if (outVKField != null) {
+                    this.outVK = true;
+                }
             }
 
             // initialize output
             final ObjectInspector outputOI;
             if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {// terminatePartial
-                outputOI = internalMergeOI(valueOI, keyOI);
+                outputOI = internalMergeOI(valueOI, keyOI, outKV, outVK);
             } else {// terminate
                 if (outKV) {
                     outputOI = ObjectInspectorFactory.getStandardMapObjectInspector(
@@ -309,8 +321,8 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         }
 
         @Nonnull
-        private static StructObjectInspector internalMergeOI(@Nonnull ObjectInspector valueOI,
-                @Nonnull PrimitiveObjectInspector keyOI) {
+        private StructObjectInspector internalMergeOI(@Nonnull ObjectInspector valueOI,
+                @Nonnull PrimitiveObjectInspector keyOI, boolean outKV, boolean outVK) {
             List<String> fieldNames = new ArrayList<String>();
             List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
@@ -324,6 +336,13 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableIntObjectInspector);
             fieldNames.add("reverseOrder");
             fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
+            if (outKV) {
+                fieldNames.add("outKV");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
+            } else if (outVK) {
+                fieldNames.add("outVK");
+                fieldOIs.add(PrimitiveObjectInspectorFactory.writableBooleanObjectInspector);
+            }
 
             return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
         }
@@ -340,7 +359,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
-            myagg.reset(size, reverseOrder);
+            myagg.reset(size, reverseOrder, outKV, outVK);
         }
 
         @Override
@@ -380,11 +399,16 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             List<Object> keyList = tuples.getKey();
             List<Object> valueList = tuples.getValue();
 
-            Object[] partialResult = new Object[4];
+            Object[] partialResult = new Object[outKV || outVK ? 5 : 4];
             partialResult[0] = valueList;
             partialResult[1] = keyList;
             partialResult[2] = new IntWritable(myagg.size);
             partialResult[3] = new BooleanWritable(myagg.reverseOrder);
+            if (myagg.outKV) {
+                partialResult[4] = new BooleanWritable(true);
+            } else if (myagg.outVK) {
+                partialResult[4] = new BooleanWritable(true);
+            }
             return partialResult;
         }
 
@@ -399,17 +423,16 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             final List<?> valueListRaw =
                     valueListOI.getList(HiveUtils.castLazyBinaryObject(valueListObj));
             final List<Object> valueList = new ArrayList<Object>();
-            for (int i = 0, n = valueListRaw.size(); i < n; i++) {
-                valueList.add(
-                    ObjectInspectorUtils.copyToStandardObject(valueListRaw.get(i), valueOI));
+            for (Object v : valueListRaw) {
+                valueList.add(ObjectInspectorUtils.copyToStandardObject(v, valueOI));
             }
 
             Object keyListObj = internalMergeOI.getStructFieldData(partial, keyListField);
             final List<?> keyListRaw =
                     keyListOI.getList(HiveUtils.castLazyBinaryObject(keyListObj));
             final List<Object> keyList = new ArrayList<Object>();
-            for (int i = 0, n = keyListRaw.size(); i < n; i++) {
-                keyList.add(ObjectInspectorUtils.copyToStandardObject(keyListRaw.get(i), keyOI));
+            for (Object k : keyListRaw) {
+                keyList.add(ObjectInspectorUtils.copyToStandardObject(k, keyOI));
             }
 
             Object sizeObj = internalMergeOI.getStructFieldData(partial, sizeField);
@@ -421,7 +444,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                         reverseOrderObj);
 
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
-            myagg.setOptions(size, reverseOrder);
+            myagg.setOptions(size, reverseOrder, outKV, outVK);
             myagg.merge(keyList, valueList);
         }
 
@@ -429,9 +452,9 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         public Object terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
-            if (outKV) {
+            if (myagg.outKV) {
                 return myagg.drainMapKV();
-            } else if (outVK) {
+            } else if (myagg.outVK) {
                 return myagg.drainMapVK();
             } else {
                 return myagg.drainValues();
@@ -445,19 +468,23 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             @Nonnegative
             private int size;
             private boolean reverseOrder;
+            private boolean outKV, outVK;
 
             QueueAggregationBuffer() {
                 super();
             }
 
-            void reset(@Nonnegative int size, boolean reverseOrder) {
-                setOptions(size, reverseOrder);
+            void reset(@Nonnegative int size, boolean reverseOrder, boolean outKV, boolean outVK) {
+                setOptions(size, reverseOrder, outKV, outVK);
                 this.queueHandler = null;
             }
 
-            void setOptions(@Nonnegative int size, boolean reverseOrder) {
+            void setOptions(@Nonnegative int size, boolean reverseOrder, boolean outKV,
+                    boolean outVK) {
                 this.size = size;
                 this.reverseOrder = reverseOrder;
+                this.outKV = outKV;
+                this.outVK = outVK;
             }
 
             void iterate(@Nonnull TupleWithKey tuple) {
@@ -467,12 +494,12 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 queueHandler.offer(tuple);
             }
 
-            void merge(@Nonnull List<Object> o_keyList, @Nonnull List<Object> o_valueList) {
+            void merge(@Nonnull List<Object> keys, @Nonnull List<Object> values) {
                 if (queueHandler == null) {
                     initQueueHandler();
                 }
-                for (int i = 0, n = o_keyList.size(); i < n; i++) {
-                    queueHandler.offer(new TupleWithKey(o_keyList.get(i), o_valueList.get(i)));
+                for (int i = 0, n = keys.size(); i < n; i++) {
+                    queueHandler.offer(new TupleWithKey(keys.get(i), values.get(i)));
                 }
             }
 
