@@ -44,7 +44,7 @@ import org.apache.hadoop.io.Writable;
 @Description(name = "generate_series",
         value = "_FUNC_(const int|bigint start, const int|bigint end) - "
                 + "Generate a series of values, from start to end. " + 
-                "A similar function to PostgreSQL's [generate_serics](http://www.postgresql.org/docs/current/static/functions-srf.html)",
+                "A similar function to PostgreSQL's [generate_serics](https://www.postgresql.org/docs/current/static/functions-srf.html)",
         extended = "SELECT generate_series(2,4);\n" + 
                 "\n" + 
                 " 2\n" + 

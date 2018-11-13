@@ -211,7 +211,9 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
       to_ordered_list(value, key, '-k -2 -reverse'), -- [apple, candy] (reverse tail-k = top-k)
       to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)
       to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)
-      to_ordered_list(key)                           -- [2, 3, 3, 4, 5] (natural ordered keys)
+      to_ordered_list(key),                          -- [2, 3, 3, 4, 5] (natural ordered keys)
+      to_ordered_list(value, key, '-k 2 -kv_map'),   -- {4:"candy",5:"apple"}
+      to_ordered_list(value, key, '-k 2 -vk_map')    -- {"candy":4,"apple":5}
   FROM
       t
   ```
