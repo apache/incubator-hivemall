@@ -680,6 +680,64 @@ public class UDAFToOrderedListTest {
         Assert.assertEquals(0.8d, map.get("banana"));
     }
 
+    @Test
+    public void testVKMapTop2() throws Exception {
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k 2 -vk_map")};
+
+        final int[] keys = new int[] {5, 3, 4, 2, 3};
+        final String[] values = new String[] {"apple", "banana", "candy", "donut", "egg"};
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
+        }
+
+        Object result = evaluator.terminate(agg);
+
+        Assert.assertEquals(HashMap.class, result.getClass());
+        Map<?, ?> map = (Map<?, ?>) result;
+        Assert.assertEquals(2, map.size());
+
+        Assert.assertEquals(5, map.get("apple"));
+        Assert.assertEquals(4, map.get("candy"));
+    }
+
+    @Test
+    public void testKVMapTop2() throws Exception {
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k 2 -kv_map")};
+
+        final int[] keys = new int[] {5, 3, 4, 2, 3};
+        final String[] values = new String[] {"apple", "banana", "candy", "donut", "egg"};
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
+        }
+
+        Object result = evaluator.terminate(agg);
+
+        Assert.assertEquals(HashMap.class, result.getClass());
+        Map<?, ?> map = (Map<?, ?>) result;
+        Assert.assertEquals(2, map.size());
+
+        Assert.assertEquals("apple", map.get(5));
+        Assert.assertEquals("candy", map.get(4));
+    }
+
     @Test(expected = UDFArgumentException.class)
     public void testKVandVKFail() throws Exception {
         ObjectInspector[] inputOIs =
