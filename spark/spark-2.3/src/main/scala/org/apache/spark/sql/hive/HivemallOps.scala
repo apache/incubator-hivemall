@@ -1936,18 +1936,6 @@ object HivemallOps {
   }
 
   /**
-   * @see [[hivemall.tools.array.SubarrayUDF]]
-   * @group tools.array
-   */
-  def subarray(original: Column, fromIndex: Column, toIndex: Column): Column = withExpr {
-    planHiveUDF(
-      "hivemall.tools.array.SubarrayUDF",
-      "subarray",
-      original :: fromIndex :: toIndex :: Nil
-    )
-  }
-
-  /**
    * @see [[hivemall.tools.array.ToStringArrayUDF]]
    * @group tools.array
    */

@@ -34,7 +34,7 @@ import org.apache.hadoop.util.ReflectionUtils
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, UnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
@@ -50,7 +50,8 @@ private[source] final class XGBoostOutputWriter(
   private val hadoopConf = new SerializableConfiguration(new Configuration())
 
   override def write(row: InternalRow): Unit = {
-    val fields = row.toSeq(dataSchema)
+    val projRow = UnsafeProjection.create(XGBoostOutputWriter.modelSchema)(row)
+    val fields = projRow.toSeq(XGBoostOutputWriter.modelSchema)
     val model = fields(1).asInstanceOf[Array[Byte]]
     val filePath = new Path(new URI(s"$path"))
     val fs = filePath.getFileSystem(hadoopConf.value)
@@ -63,6 +64,11 @@ private[source] final class XGBoostOutputWriter(
 }
 
 object XGBoostOutputWriter {
+
+  val modelSchema = StructType(
+    StructField("model_id", StringType, nullable = false) ::
+    StructField("pred_model", BinaryType, nullable = false) ::
+    Nil)
 
   /** Returns the compression codec extension to be used in a file name, e.g. ".gzip"). */
   def getCompressionExtension(context: TaskAttemptContext): String = {
@@ -95,11 +101,7 @@ final class XGBoostFileFormat extends FileFormat with DataSourceRegister {
       sparkSession: SparkSession,
       options: Map[String, String],
       files: Seq[FileStatus]): Option[StructType] = {
-    Some(
-      StructType(
-        StructField("model_id", StringType, nullable = false) ::
-        StructField("pred_model", BinaryType, nullable = false) :: Nil)
-    )
+    Some(XGBoostOutputWriter.modelSchema)
   }
 
   override def prepareWrite(
