@@ -171,6 +171,7 @@ public class CofactorModel {
     private static final String DIFFERENT_DIMS_ERR = "Matrix, vector or array do not match in size";
 
     protected static class Weights extends Object2ObjectOpenHashMap<String, double[]> {
+        private static final long serialVersionUID = -7048382051969687548L;
 
         protected Object[] getKey() {
             return key;

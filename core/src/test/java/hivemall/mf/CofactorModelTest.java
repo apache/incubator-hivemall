@@ -160,7 +160,6 @@ public class CofactorModelTest {
 
     private static Map<String, Feature[]> getSPPMI() {
         final Map<String, Feature[]> sppmi = new HashMap<>();
-        Feature f = new StringFeature(TOOTHPASTE, 1.22d);
         sppmi.put(TOOTHBRUSH,
             new Feature[] {new StringFeature(TOOTHPASTE, 1.22d), new StringFeature(SHAVER, 1.22d)});
         sppmi.put(TOOTHPASTE,
