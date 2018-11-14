@@ -61,7 +61,7 @@ import org.apache.hadoop.mapred.Reporter;
 @Description(name = "train_cofactor",
         value = "_FUNC_(string context, array<string> features, boolean is_validation, boolean is_item, array<string> sppmi [, String options])"
                 + " - Returns a relation <string context, array<float> theta, array<float> beta>")
-public class CofactorizationUDTF extends UDTFWithOptions {
+public final class CofactorizationUDTF extends UDTFWithOptions {
     private static final Log LOG = LogFactory.getLog(CofactorizationUDTF.class);
 
     // Option variables
@@ -126,17 +126,20 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private List<String> validationItems;
 
     static class MiniBatch {
-        private List<TrainingSample> users;
-        private List<TrainingSample> items;
-        private List<TrainingSample> validationSamples;
+        @Nonnull
+        private final List<TrainingSample> users;
+        @Nonnull
+        private final List<TrainingSample> items;
+        @Nonnull
+        private final List<TrainingSample> validationSamples;
 
-        protected MiniBatch() {
-            users = new ArrayList<>();
-            items = new ArrayList<>();
-            validationSamples = new ArrayList<>();
+        MiniBatch() {
+            this.users = new ArrayList<>();
+            this.items = new ArrayList<>();
+            this.validationSamples = new ArrayList<>();
         }
 
-        protected void add(TrainingSample sample) {
+        void add(TrainingSample sample) {
             if (sample.isValidation) {
                 validationSamples.add(sample);
             } else {
@@ -148,48 +151,54 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             }
         }
 
-        protected void clear() {
+        void clear() {
             users.clear();
             items.clear();
             validationSamples.clear();
         }
 
-        protected int trainingSize() {
+        int trainingSize() {
             return items.size() + users.size();
         }
 
-        protected int validationSize() {
+        int validationSize() {
             return validationSamples.size();
         }
 
-        protected List<TrainingSample> getItems() {
+        @Nonnull
+        List<TrainingSample> getItems() {
             return items;
         }
 
-        protected List<TrainingSample> getUsers() {
+        @Nonnull
+        List<TrainingSample> getUsers() {
             return users;
         }
 
-        public List<TrainingSample> getValidationSamples() {
+        @Nonnull
+        List<TrainingSample> getValidationSamples() {
             return validationSamples;
         }
     }
 
-    static class TrainingSample {
-        protected String context;
-        protected Feature[] features;
-        protected Feature[] sppmi;
-        protected boolean isValidation;
+    static final class TrainingSample {
+        @Nonnull
+        final String context;
+        @Nonnull
+        final Feature[] features;
+        @Nonnull
+        final Feature[] sppmi;
+        final boolean isValidation;
 
-        protected TrainingSample(@Nonnull final String context, @Nonnull final Feature[] features,
-                final boolean isValidation, @Nullable final Feature[] sppmi) {
+        TrainingSample(@Nonnull String context, @Nonnull Feature[] features, boolean isValidation,
+                @Nullable Feature[] sppmi) {
             this.context = context;
             this.features = features;
             this.sppmi = sppmi;
             this.isValidation = isValidation;
         }
 
-        protected boolean isItem() {
+        boolean isItem() {
             return sppmi != null;
         }
     }
