@@ -426,6 +426,10 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       Row(Seq(1, 2, 3, 4, 5))
     )
     checkAnswer(
+      DummyInputData.select(subarray(typedLit(Seq(1, 2, 3, 4, 5)), lit(2), lit(4))),
+      Row(Seq(3, 4, 5))
+    )
+    checkAnswer(
       DummyInputData.select(to_string_array(typedLit(Seq(1, 2, 3, 4, 5)))),
       Row(Seq("1", "2", "3", "4", "5"))
     )
@@ -585,8 +589,8 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
       StructField("score", DoubleType, nullable = true),
       StructField("key", StringType, nullable = true),
       StructField("value", StringType, nullable = true),
-      StructField("x", DoubleType, nullable = false),
-      StructField("y", DoubleType, nullable = false),
+      StructField("x", DoubleType, nullable = true),
+      StructField("y", DoubleType, nullable = true),
       StructField("data", ArrayType(IntegerType, containsNull = false), nullable = true)
     ))
     checkAnswer(

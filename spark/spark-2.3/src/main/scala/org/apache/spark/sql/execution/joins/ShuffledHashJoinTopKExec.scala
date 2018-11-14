@@ -173,14 +173,13 @@ case class ShuffledHashJoinTopKExec(
   private def prepareHashedRelation(ctx: CodegenContext): String = {
     // create a name for HashedRelation
     val joinExec = ctx.addReferenceObj("joinExec", this)
-    val relationTerm = ctx.freshName("relation")
     val clsName = HashedRelation.getClass.getName.replace("$", "")
-    ctx.addMutableState(clsName, relationTerm,
+    ctx.addMutableState(clsName, "relation",
       v => s"""
          | $v = ($clsName) $joinExec.buildHashedRelation(inputs[1]);
          | incPeakExecutionMemory($v.estimatedSize());
-       """.stripMargin)
-    relationTerm
+       """.stripMargin,
+      forceInline = true)
   }
 
   /**
@@ -193,13 +192,12 @@ case class ShuffledHashJoinTopKExec(
   private def createLeftVars(ctx: CodegenContext, leftRow: String): Seq[ExprCode] = {
     ctx.INPUT_ROW = leftRow
     left.output.zipWithIndex.map { case (a, i) =>
-      val value = ctx.freshName("value")
       val valueCode = ctx.getValue(leftRow, a.dataType, i.toString)
       // declare it as class member, so we can access the column before or in the loop.
-      ctx.addMutableState(ctx.javaType(a.dataType), value, _ => "")
+      val value = ctx.addMutableState(ctx.javaType(a.dataType), "value", _ => "",
+        forceInline = true)
       if (a.nullable) {
-        val isNull = ctx.freshName("isNull")
-        ctx.addMutableState("boolean", isNull, _ => "")
+        val isNull = ctx.addMutableState("boolean", "isNull", _ => "", forceInline = true)
         val code =
           s"""
              |$isNull = $leftRow.isNullAt($i);
@@ -248,13 +246,12 @@ case class ShuffledHashJoinTopKExec(
   private def createResultVars(ctx: CodegenContext, resultRow: String): Seq[ExprCode] = {
     ctx.INPUT_ROW = resultRow
     output.zipWithIndex.map { case (a, i) =>
-      val value = ctx.freshName("value")
       val valueCode = ctx.getValue(resultRow, a.dataType, i.toString)
       // declare it as class member, so we can access the column before or in the loop.
-      ctx.addMutableState(ctx.javaType(a.dataType), value, _ => "")
+      val value = ctx.addMutableState(ctx.javaType(a.dataType), "value", _ => "",
+        forceInline = true)
       if (a.nullable) {
-        val isNull = ctx.freshName("isNull")
-        ctx.addMutableState("boolean", isNull, _ => "")
+        val isNull = ctx.addMutableState("boolean", "isNull", _ => "", forceInline = true)
         val code =
           s"""
              |$isNull = $resultRow.isNullAt($i);
@@ -296,15 +293,15 @@ case class ShuffledHashJoinTopKExec(
     val topKJoin = ctx.addReferenceObj("topKJoin", this)
 
     // Prepare a priority queue for top-K computing
-    val pQueue = ctx.freshName("queue")
-    ctx.addMutableState(classOf[PriorityQueueShim].getName, pQueue,
-      v => s"$v= $topKJoin.priorityQueue();")
+    val pQueue = ctx.addMutableState(classOf[PriorityQueueShim].getName, "queue",
+      v => s"$v= $topKJoin.priorityQueue();",
+      forceInline = true)
 
     // Prepare variables for a left side
-    val leftIter = ctx.freshName("leftIter")
-    ctx.addMutableState("scala.collection.Iterator", leftIter, v => s"$v = inputs[0];")
-    val leftRow = ctx.freshName("leftRow")
-    ctx.addMutableState("InternalRow", leftRow, v => "")
+    val leftIter = ctx.addMutableState("scala.collection.Iterator",
+      "leftIter", v => s"$v = inputs[0];",
+      forceInline = true)
+    val leftRow = ctx.addMutableState("InternalRow", "leftRow", v => "", forceInline = true)
     val leftVars = createLeftVars(ctx, leftRow)
 
     // Prepare variables for a right side
@@ -318,9 +315,9 @@ case class ShuffledHashJoinTopKExec(
     val (keyEv, anyNull) = genStreamSideJoinKey(ctx, leftRow)
 
     // Prepare variables for joined rows
-    val joinedRow = ctx.freshName("joinedRow")
     val joinedRowCls = classOf[JoinedRow].getName
-    ctx.addMutableState(joinedRowCls, joinedRow, v => s"$v = new $joinedRowCls();")
+    val joinedRow = ctx.addMutableState(joinedRowCls,
+      "joinedRow", v => s"$v = new $joinedRowCls();", forceInline = true)
 
     // Project score values from joined rows
     val scoreVar = createScoreVar(ctx, joinedRow)
