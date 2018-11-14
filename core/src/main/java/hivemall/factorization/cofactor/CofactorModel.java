@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.mf;
+package hivemall.factorization.cofactor;
 
 import hivemall.annotations.VisibleForTesting;
 import hivemall.fm.Feature;
@@ -48,7 +48,6 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.mapred.Counters;
-
 
 public class CofactorModel {
 

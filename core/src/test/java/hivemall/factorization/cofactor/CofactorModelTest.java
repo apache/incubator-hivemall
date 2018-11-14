@@ -16,8 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.mf;
+package hivemall.factorization.cofactor;
 
+import hivemall.factorization.cofactor.CofactorModel;
+import hivemall.factorization.cofactor.CofactorizationUDTF;
 import hivemall.fm.Feature;
 import hivemall.fm.StringFeature;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;

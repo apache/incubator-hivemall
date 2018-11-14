@@ -16,11 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.mf;
+package hivemall.factorization.cofactor;
 
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
+import hivemall.factorization.cofactor.CofactorModel.RankInitScheme;
 import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.NumberUtils;
