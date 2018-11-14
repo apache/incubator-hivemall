@@ -31,7 +31,7 @@ In Statistics, *features* and *label* are called [Explanatory variable and Respo
 # Features format (for classification and regression)
 
 The format of *features* is common between (binary and multi-class) classification and regression.
-Hivemall accepts `ARRAY&lt;INT|BIGINT|TEXT>` for the type of *features* column.
+Hivemall accepts `ARRAY<INT|BIGINT|TEXT>` for the type of *features* column.
 
 Hivemall uses a *sparse* data format (cf. [Compressed Row Storage](https://netlib.org/linalg/html_templates/node91.html)) which is similar to [LIBSVM](https://stackoverflow.com/questions/12112558/read-write-data-in-libsvm-format) and [Vowpal Wabbit](https://github.com/JohnLangford/vowpal_wabbit/wiki/Input-format).
 
