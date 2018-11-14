@@ -23,10 +23,18 @@ import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
 import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.FileUtils;
-import hivemall.utils.io.NioStatefulSegment;
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
@@ -34,22 +42,18 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
 
 
 /**
@@ -178,7 +182,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         protected Feature[] sppmi;
         protected boolean isValidation;
 
-        protected TrainingSample(@Nonnull final String context, @Nonnull final Feature[] features, final boolean isValidation, @Nullable final Feature[] sppmi) {
+        protected TrainingSample(@Nonnull final String context, @Nonnull final Feature[] features,
+                final boolean isValidation, @Nullable final Feature[] sppmi) {
             this.context = context;
             this.features = features;
             this.sppmi = sppmi;
@@ -201,7 +206,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 case "loss":
                     return OBJECTIVE;
                 default:
-                    throw new IllegalArgumentException(opt + " is not a supported Validation Metric.");
+                    throw new IllegalArgumentException(
+                        opt + " is not a supported Validation Metric.");
             }
         }
     }
@@ -212,35 +218,43 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         opts.addOption("k", "factor", true, "The number of latent factor [default: 10] "
                 + " Note this is alias for `factors` option.");
         opts.addOption("f", "factors", true, "The number of latent factor [default: 10]");
-        opts.addOption("lt", "lambda_theta", true, "The theta regularization factor [default: 1e-5]");
+        opts.addOption("lt", "lambda_theta", true,
+            "The theta regularization factor [default: 1e-5]");
         opts.addOption("lb", "lambda_beta", true, "The beta regularization factor [default: 1e-5]");
-        opts.addOption("lg", "lambda_gamma", true, "The gamma regularization factor [default: 1.0]");
+        opts.addOption("lg", "lambda_gamma", true,
+            "The gamma regularization factor [default: 1.0]");
         opts.addOption("c0", "c0", true,
-                "The scaling hyperparameter for zero entries in the rank matrix [default: 0.1]");
+            "The scaling hyperparameter for zero entries in the rank matrix [default: 0.1]");
         opts.addOption("c1", "c1", true,
-                "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
+            "The scaling hyperparameter for non-zero entries in the rank matrix [default: 1.0]");
         opts.addOption("gb", "global_bias", true, "The global bias [default: 0.0]");
         opts.addOption("update_gb", "update_global_bias", true,
-                "Whether update (and return) the global bias or not [default: false]");
+            "Whether update (and return) the global bias or not [default: false]");
         opts.addOption("rankinit", true,
-                "Initialization strategy of rank matrix [random, gaussian] (default: gaussian)");
+            "Initialization strategy of rank matrix [random, gaussian] (default: gaussian)");
         opts.addOption("maxval", "max_init_value", true,
-                "The maximum initial value in the rank matrix [default: 1.0]");
+            "The maximum initial value in the rank matrix [default: 1.0]");
         opts.addOption("min_init_stddev", true,
-                "The minimum standard deviation of initial rank matrix [default: 0.01]");
+            "The minimum standard deviation of initial rank matrix [default: 0.01]");
         opts.addOption("iters", "iterations", true, "The number of iterations [default: 1]");
         opts.addOption("iter", true,
-                "The number of iterations [default: 1] Alias for `-iterations`");
+            "The number of iterations [default: 1] Alias for `-iterations`");
         opts.addOption("max_iters", "max_iters", true, "The number of iterations [default: 1]");
         opts.addOption("disable_bias", "no_bias", false, "Turn off bias clause");
         // normalization
-        opts.addOption("disable_norm", "disable_l2norm", false, "Disable instance-wise L2 normalization");
+        opts.addOption("disable_norm", "disable_l2norm", false,
+            "Disable instance-wise L2 normalization");
         // validation
-        opts.addOption("disable_cv", "disable_cvtest", false, "Whether to disable convergence check [default: enabled]");
-        opts.addOption("cv_rate", "convergence_rate", true, "Threshold to determine convergence [default: 0.005]");
-        opts.addOption("val_metric", "validation_metric", true, "Metric to use for validation ['auc', 'objective']");
-        opts.addOption("val_ratio", "validation_ratio", true, "Proportion of examples to use as validation data [default: 0.125]");
-        opts.addOption("num_val", "num_validation_examples_per_record", true, "Number of validation examples to use per record [default: 10]");
+        opts.addOption("disable_cv", "disable_cvtest", false,
+            "Whether to disable convergence check [default: enabled]");
+        opts.addOption("cv_rate", "convergence_rate", true,
+            "Threshold to determine convergence [default: 0.005]");
+        opts.addOption("val_metric", "validation_metric", true,
+            "Metric to use for validation ['auc', 'objective']");
+        opts.addOption("val_ratio", "validation_ratio", true,
+            "Proportion of examples to use as validation data [default: 0.125]");
+        opts.addOption("num_val", "num_validation_examples_per_record", true,
+            "Number of validation examples to use per record [default: 10]");
         return opts;
     }
 
@@ -272,9 +286,11 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             } else {
                 this.factor = Primitives.parseInt(cl.getOptionValue("factor"), factor);
             }
-            this.lambdaTheta = Primitives.parseFloat(cl.getOptionValue("lambda_theta"), lambdaTheta);
+            this.lambdaTheta =
+                    Primitives.parseFloat(cl.getOptionValue("lambda_theta"), lambdaTheta);
             this.lambdaBeta = Primitives.parseFloat(cl.getOptionValue("lambda_beta"), lambdaBeta);
-            this.lambdaGamma = Primitives.parseFloat(cl.getOptionValue("lambda_gamma"), lambdaGamma);
+            this.lambdaGamma =
+                    Primitives.parseFloat(cl.getOptionValue("lambda_gamma"), lambdaGamma);
 
             this.c0 = Primitives.parseFloat(cl.getOptionValue("c0"), c0);
             this.c1 = Primitives.parseFloat(cl.getOptionValue("c1"), c1);
@@ -293,24 +309,23 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             }
             if (maxIters < 1) {
                 throw new UDFArgumentException(
-                        "'-max_iters' must be greater than or equal to 1: " + maxIters);
+                    "'-max_iters' must be greater than or equal to 1: " + maxIters);
             }
 
             convergenceCheck = !cl.hasOption("disable_cvtest");
             convergenceRate = Primitives.parseDouble(cl.getOptionValue("cv_rate"), convergenceRate);
             validationMetricOpt = cl.getOptionValue("validation_metric", validationMetricOpt);
-            this.numValPerRecord = Primitives.parseInt(cl.getOptionValue("num_validation_examples_per_record"), numValPerRecord);
-            this.validationRatio = Primitives.parseDouble(cl.getOptionValue("validation_ratio"), this.validationRatio);
+            this.numValPerRecord = Primitives.parseInt(
+                cl.getOptionValue("num_validation_examples_per_record"), numValPerRecord);
+            this.validationRatio = Primitives.parseDouble(cl.getOptionValue("validation_ratio"),
+                this.validationRatio);
             if (this.validationRatio > 1 || this.validationRatio < 0) {
-                throw new UDFArgumentException(
-                        "'-validation_ratio' must be between 0.0 and 1.0"
-                );
+                throw new UDFArgumentException("'-validation_ratio' must be between 0.0 and 1.0");
             }
             boolean noBias = cl.hasOption("no_bias");
             this.useBiasClause = !noBias;
             if (noBias && updateGlobalBias) {
-                throw new UDFArgumentException(
-                        "Cannot set both `update_gb` and `no_bias` option");
+                throw new UDFArgumentException("Cannot set both `update_gb` and `no_bias` option");
             }
             this.useL2Norm = !cl.hasOption("disable_l2norm");
         }
@@ -326,7 +341,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
             throw new UDFArgumentException(
-                    "_FUNC_ takes 3 arguments: string user, string item, array<string> sppmi [, CONSTANT STRING options]");
+                "_FUNC_ takes 3 arguments: string user, string item, array<string> sppmi [, CONSTANT STRING options]");
         }
         this.userOI = HiveUtils.asPrimitiveObjectInspector(argOIs[0]);
         this.itemOI = HiveUtils.asPrimitiveObjectInspector(argOIs[1]);
@@ -335,8 +350,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
 
         processOptions(argOIs);
 
-        this.model = new CofactorModel(factor, rankInit, c0, c1, lambdaTheta, lambdaBeta, lambdaGamma, globalBias,
-                validationMetric, numValPerRecord, LOG);
+        this.model = new CofactorModel(factor, rankInit, c0, c1, lambdaTheta, lambdaBeta,
+            lambdaGamma, globalBias, validationMetric, numValPerRecord, LOG);
 
         userToItems = new HashMap<>();
         itemToUsers = new HashMap<>();
@@ -352,10 +367,10 @@ public class CofactorizationUDTF extends UDTFWithOptions {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("theta");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
         fieldNames.add("beta");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
+            PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
@@ -369,13 +384,15 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 sppmiVec = Feature.parseFeatures(args[2], sppmiOI, null, false);
                 sppmi.put(item, sppmiVec);
             } else {
-                throw new HiveException("null sppmi vector provided when item does not exist in sppmi");
+                throw new HiveException(
+                    "null sppmi vector provided when item does not exist in sppmi");
             }
         }
         recordSample(user, item);
     }
 
-    private static void addToMap(@Nonnull final Map<String, List<String>> map, @Nonnull final String key, @Nonnull final String value) {
+    private static void addToMap(@Nonnull final Map<String, List<String>> map,
+            @Nonnull final String key, @Nonnull final String value) {
         List<String> values = map.get(key);
         final boolean isNewKey = values == null;
         if (isNewKey) {
@@ -430,17 +447,21 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                     : reporter.getCounter("hivemall.mf.Cofactor$Counter", "skippedItems");
 
             final Counters.Counter thetaTotalCounter = (reporter == null) ? null
-                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "thetaTotalFeaturesCounter");
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter",
+                        "thetaTotalFeaturesCounter");
             final Counters.Counter thetaTrainableCounter = (reporter == null) ? null
-                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "thetaTrainableFeaturesCounter");
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter",
+                        "thetaTrainableFeaturesCounter");
 
             final Counters.Counter betaTotalCounter = (reporter == null) ? null
-                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "betaTotalFeaturesCounter");
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter",
+                        "betaTotalFeaturesCounter");
             final Counters.Counter betaTrainableCounter = (reporter == null) ? null
-                    : reporter.getCounter("hivemall.mf.Cofactor$Counter", "betaTrainableFeaturesCounter");
+                    : reporter.getCounter("hivemall.mf.Cofactor$Counter",
+                        "betaTrainableFeaturesCounter");
 
-            model.registerCounters(userCounter, itemCounter, skippedUserCounter, skippedItemCounter, thetaTrainableCounter,
-                    thetaTotalCounter, betaTrainableCounter, betaTotalCounter);
+            model.registerCounters(userCounter, itemCounter, skippedUserCounter, skippedItemCounter,
+                thetaTrainableCounter, thetaTotalCounter, betaTrainableCounter, betaTotalCounter);
 
 
             for (int iteration = 0; iteration < maxIters; iteration++) {
@@ -450,14 +471,15 @@ public class CofactorizationUDTF extends UDTFWithOptions {
                 setCounterValue(iterCounter, iteration);
                 runTrainingIteration();
 
-                System.out.println("Validation loss: " + validationState.getAverageLoss(numValidations));
+                System.out.println(
+                    "Validation loss: " + validationState.getAverageLoss(numValidations));
 
                 LOG.info("Performed " + iteration + " iterations of "
-                        + NumberUtils.formatNumber(maxIters) + " with " + numTraining + " training examples and "
-                        + numValidations + " validation examples.");
-//                        + " training examples on a secondary storage (thus "
-//                        + NumberUtils.formatNumber(_t) + " training updates in total), used "
-//                        + _numValidations + " validation examples");
+                        + NumberUtils.formatNumber(maxIters) + " with " + numTraining
+                        + " training examples and " + numValidations + " validation examples.");
+                //                        + " training examples on a secondary storage (thus "
+                //                        + NumberUtils.formatNumber(_t) + " training updates in total), used "
+                //                        + _numValidations + " validation examples");
 
                 if (validationState.isConverged(numTraining)) {
                     break;
@@ -496,7 +518,8 @@ public class CofactorizationUDTF extends UDTFWithOptions {
             forward(forwardObj);
             numItemsForwarded++;
         }
-        LOG.info("Forwarded the prediction model of " + numUsersForwarded + " user rows (theta) and " + numItemsForwarded + " item rows (beta).]");
+        LOG.info("Forwarded the prediction model of " + numUsersForwarded
+                + " user rows (theta) and " + numItemsForwarded + " item rows (beta).]");
 
     }
 
@@ -509,7 +532,7 @@ public class CofactorizationUDTF extends UDTFWithOptions {
     private void runTrainingIteration() throws HiveException {
         model.updateWithUsers(userToItems);
         model.updateWithItems(itemToUsers, sppmi);
-//        model.validate()
+        //        model.validate()
     }
 
     private void validate() throws HiveException {
