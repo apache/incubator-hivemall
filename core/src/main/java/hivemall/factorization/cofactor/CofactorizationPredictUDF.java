@@ -38,7 +38,8 @@ public final class CofactorizationPredictUDF extends UDF {
     private static final double DEFAULT_RESULT = 0.d;
 
     @Nonnull
-    public DoubleWritable evaluate(@Nullable List<FloatWritable> Pu, @Nullable List<FloatWritable> Qi) throws HiveException {
+    public DoubleWritable evaluate(@Nullable List<FloatWritable> Pu,
+            @Nullable List<FloatWritable> Qi) throws HiveException {
         if (Pu == null || Qi == null) {
             return new DoubleWritable(DEFAULT_RESULT);
         }

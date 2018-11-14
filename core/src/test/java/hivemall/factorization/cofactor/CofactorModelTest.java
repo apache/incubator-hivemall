@@ -18,8 +18,6 @@
  */
 package hivemall.factorization.cofactor;
 
-import hivemall.factorization.cofactor.CofactorModel;
-import hivemall.factorization.cofactor.CofactorizationUDTF;
 import hivemall.fm.Feature;
 import hivemall.fm.StringFeature;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;

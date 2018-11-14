@@ -18,7 +18,6 @@
  */
 package hivemall.factorization.cofactor;
 
-import hivemall.factorization.cofactor.CofactorizationUDTF;
 import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.StringUtils;

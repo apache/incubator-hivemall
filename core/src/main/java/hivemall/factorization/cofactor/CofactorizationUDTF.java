@@ -21,7 +21,6 @@ package hivemall.factorization.cofactor;
 import hivemall.UDTFWithOptions;
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
-import hivemall.factorization.cofactor.CofactorModel.RankInitScheme;
 import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.NumberUtils;
@@ -55,7 +54,6 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.Reporter;
-
 
 /**
  * Cofactorization for implicit and explicit recommendation
