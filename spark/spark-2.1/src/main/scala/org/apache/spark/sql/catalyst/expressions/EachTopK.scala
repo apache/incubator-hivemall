@@ -18,6 +18,8 @@
  */
 package org.apache.spark.sql.catalyst.expressions
 
+import scala.collection.mutable
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
 import org.apache.spark.sql.catalyst.expressions.codegen._
@@ -84,21 +86,21 @@ case class EachTopK(
   }
 
   private def topKRowsForGroup(): Seq[InternalRow] = if (queue.size > 0) {
-    val outputRows = queue.iterator.toSeq.reverse
+    val outputRows = queue.iterator.toSeq.sortBy(_._1)(scoreOrdering).reverse
     val (headScore, _) = outputRows.head
-    val rankNum = outputRows.scanLeft((1, headScore)) { case ((rank, prevScore), (score, _)) =>
-      if (prevScore == score) (rank, score) else (rank + 1, score)
+    val rankNum = outputRows.scanLeft((1, headScore)) {
+      case ((rank, prevScore), (score, _)) =>
+        if (prevScore == score) (rank, score) else (rank + 1, score)
+    }.tail
+    val buf = mutable.ArrayBuffer[InternalRow]()
+    var i = 0
+    while (rankNum.length > i) {
+      val rank = rankNum(i)._1
+      val row = new JoinedRow(InternalRow.fromSeq(rank :: Nil), outputRows(i)._2)
+      buf.append(row)
+      i += 1
     }
-    val topKRow = new UnsafeRow(1)
-    val bufferHolder = new BufferHolder(topKRow)
-    val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, 1)
-    outputRows.zip(rankNum.map(_._1)).map { case ((_, row), index) =>
-      // Writes to an UnsafeRow directly
-      bufferHolder.reset()
-      unsafeRowWriter.write(0, index)
-      topKRow.setTotalSize(bufferHolder.totalSize())
-      new JoinedRow(topKRow, row)
-    }
+    buf
   } else {
     Seq.empty
   }

@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.{AnalysisBarrier, Generate, JoinTopK, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Generate, JoinTopK, LogicalPlan}
 import org.apache.spark.sql.execution.UserProvidedPlanner
 import org.apache.spark.sql.execution.datasources.csv.{CsvToStruct, StructToCsv}
 import org.apache.spark.sql.functions._
@@ -986,19 +986,20 @@ final class HivemallOps(df: DataFrame) extends Logging {
       BindReferences.bindReference(e, inputAttrs)
     }
     val rankField = StructField("rank", IntegerType)
+    val outputSchema = rankField +: inputAttrs.map(a => StructField(a.name, a.dataType))
     Generate(
       generator = EachTopK(
         k = kInt,
         scoreExpr = scoreExpr,
         groupExprs = groupExprs,
-        elementSchema = StructType(rankField :: Nil),
+        elementSchema = StructType(outputSchema),
         children = inputAttrs
       ),
-      unrequiredChildIndex = Nil,
+      unrequiredChildIndex = inputAttrs.indices,
       outer = false,
       qualifier = None,
       generatorOutput = Nil,
-      child = AnalysisBarrier(analyzedPlan)
+      child = analyzedPlan
     )
   }
 
@@ -1936,12 +1937,14 @@ object HivemallOps {
   }
 
   /**
-   * @see [[hivemall.tools.array.SubarrayUDF]]
+   * Alias of array_slice for a backward compatibility.
+   *
+   * @see [[hivemall.tools.array.ArraySliceUDF]]
    * @group tools.array
    */
   def subarray(original: Column, fromIndex: Column, toIndex: Column): Column = withExpr {
-    planHiveUDF(
-      "hivemall.tools.array.SubarrayUDF",
+    planHiveGenericUDF(
+      "hivemall.tools.array.ArraySliceUDF",
       "subarray",
       original :: fromIndex :: toIndex :: Nil
     )

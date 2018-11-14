@@ -124,7 +124,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   test("knn.lsh") {
     import hiveContext.implicits._
     checkAnswer(
-      IntList2Data.minhash(lit(1), $"target"),
+      IntList2Data.minhash(lit(1), $"target").select($"clusterid", $"item"),
       Row(1016022700, 1) ::
       Row(1264890450, 1) ::
       Row(1304330069, 1) ::
@@ -289,7 +289,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     // This test is done in a single partition because `HivemallOps#quantify` assigns identifiers
     // for non-numerical values in each partition.
     checkAnswer(
-      testDf.coalesce(1).quantify(lit(true) +: testDf.cols: _*),
+      testDf.coalesce(1).quantify(lit(true) +: testDf.cols: _*).select($"c0", $"c1", $"c2"),
       Row(1, 0, 0) :: Row(2, 1, 1) :: Row(3, 0, 1) :: Nil)
   }
 
@@ -351,12 +351,12 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 
     val df1 = Seq((1, -3, 1), (2, -2, 1)).toDF("a", "b", "c")
     checkAnswer(
-      df1.binarize_label($"a", $"b", $"c"),
+      df1.binarize_label($"a", $"b", $"c").select($"c0", $"c1"),
       Row(1, 1) :: Row(1, 1) :: Row(1, 1) :: Nil
     )
     val df2 = Seq(("xxx", "yyy", 0), ("zzz", "yyy", 1)).toDF("a", "b", "c").coalesce(1)
     checkAnswer(
-      df2.quantified_features(lit(true), df2("a"), df2("b"), df2("c")),
+      df2.quantified_features(lit(true), df2("a"), df2("b"), df2("c")).select($"features"),
       Row(Seq(0.0, 0.0, 0.0)) :: Row(Seq(1.0, 0.0, 1.0)) :: Nil
     )
   }
@@ -366,7 +366,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
 
     val df1 = Seq((1, 0 :: 3 :: 4 :: Nil), (2, 8 :: 9 :: Nil)).toDF("a", "b").coalesce(1)
     checkAnswer(
-      df1.bpr_sampling($"a", $"b"),
+      df1.bpr_sampling($"a", $"b").select($"user", $"pos_item", $"neg_item"),
       Row(1, 0, 7) ::
       Row(1, 3, 6) ::
       Row(2, 8, 0) ::
@@ -376,7 +376,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     )
     val df2 = Seq(1 :: 8 :: 9 :: Nil, 0 :: 3 :: Nil).toDF("a").coalesce(1)
     checkAnswer(
-      df2.item_pairs_sampling($"a", lit(3)),
+      df2.item_pairs_sampling($"a", lit(3)).select($"pos_item_id", $"neg_item_id"),
       Row(0, 1) ::
       Row(1, 0) ::
       Row(3, 2) ::
@@ -384,7 +384,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     )
     val df3 = Seq(3 :: 5 :: Nil, 0 :: Nil).toDF("a").coalesce(1)
     checkAnswer(
-      df3.populate_not_in($"a", lit(1)),
+      df3.populate_not_in($"a", lit(1)).select($"item"),
       Row(0) ::
       Row(1) ::
       Row(1) ::
@@ -427,7 +427,7 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
     )
     checkAnswer(
       DummyInputData.select(subarray(typedLit(Seq(1, 2, 3, 4, 5)), lit(2), lit(4))),
-      Row(Seq(3, 4))
+      Row(Seq(3, 4, 5))
     )
     checkAnswer(
       DummyInputData.select(to_string_array(typedLit(Seq(1, 2, 3, 4, 5)))),
@@ -523,8 +523,9 @@ class HivemallOpsWithFeatureSuite extends HivemallFeatureQueryTest {
   }
 
   test("tools - generated_series") {
+    import hiveContext.implicits._
     checkAnswer(
-      DummyInputData.generate_series(lit(0), lit(3)),
+      DummyInputData.generate_series(lit(0), lit(3)).select($"generate_series"),
       Row(0) :: Row(1) :: Row(2) :: Row(3) :: Nil
     )
   }
