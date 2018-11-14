@@ -51,76 +51,6 @@ import org.apache.hadoop.mapred.Counters;
 
 public class CofactorModel {
 
-    public void registerCounters(Counters.Counter userCounter, Counters.Counter itemCounter,
-            Counters.Counter skippedUserCounter, Counters.Counter skippedItemCounter,
-            Counters.Counter thetaTrainable, Counters.Counter thetaTotal,
-            Counters.Counter betaTrainable, Counters.Counter betaTotal) {
-        this.userCounter = userCounter;
-        this.itemCounter = itemCounter;
-        this.skippedUserCounter = skippedUserCounter;
-        this.skippedItemCounter = skippedItemCounter;
-        this.thetaTotalFeaturesCounter = thetaTotal;
-        this.thetaTrainableFeaturesCounter = thetaTrainable;
-        this.betaTotalFeaturesCounter = betaTotal;
-        this.betaTrainableFeaturesCounter = betaTrainable;
-    }
-
-    public void registerUsers(Set<String> users) throws HiveException {
-        for (String key : users) {
-            initFactorVector(key, theta);
-        }
-        this.users = theta.getNonnullKeys();
-    }
-
-    public void registerItems(Set<String> items) throws HiveException {
-        for (String key : items) {
-            initFactorVector(key, beta);
-            initFactorVector(key, gamma);
-        }
-        this.items = beta.getNonnullKeys();
-    }
-
-    public enum RankInitScheme {
-        random /* default */, gaussian;
-        @Nonnegative
-        private float maxInitValue;
-        @Nonnegative
-        private double initStdDev;
-
-        @Nonnull
-        public static CofactorModel.RankInitScheme resolve(@Nullable String opt) {
-            if (opt == null) {
-                return random;
-            } else if ("gaussian".equalsIgnoreCase(opt)) {
-                return gaussian;
-            } else if ("random".equalsIgnoreCase(opt)) {
-                return random;
-            }
-            return random;
-        }
-
-        public void setMaxInitValue(float maxInitValue) {
-            this.maxInitValue = maxInitValue;
-        }
-
-        public void setInitStdDev(double initStdDev) {
-            this.initStdDev = initStdDev;
-        }
-    }
-
-    private static class Prediction implements Comparable<Prediction> {
-
-        private double prediction;
-        private int label;
-
-        @Override
-        public int compareTo(@Nonnull Prediction other) {
-            // descending order
-            return -Double.compare(prediction, other.prediction);
-        }
-
-    }
-
     @Nonnegative
     private final int factor;
 
@@ -165,10 +95,6 @@ public class CofactorModel {
     private Counters.Counter betaTrainableFeaturesCounter;
     private Counters.Counter betaTotalFeaturesCounter;
 
-    // error message strings
-    private static final String ARRAY_NOT_SQUARE_ERR = "Array is not square";
-    private static final String DIFFERENT_DIMS_ERR = "Matrix, vector or array do not match in size";
-
     protected static class Weights extends Object2ObjectOpenHashMap<String, double[]> {
         private static final long serialVersionUID = -7048382051969687548L;
 
@@ -189,6 +115,47 @@ public class CofactorModel {
             }
             return keys;
         }
+    }
+
+    public enum RankInitScheme {
+        random /* default */, gaussian;
+        @Nonnegative
+        private float maxInitValue;
+        @Nonnegative
+        private double initStdDev;
+
+        @Nonnull
+        public static CofactorModel.RankInitScheme resolve(@Nullable String opt) {
+            if (opt == null) {
+                return random;
+            } else if ("gaussian".equalsIgnoreCase(opt)) {
+                return gaussian;
+            } else if ("random".equalsIgnoreCase(opt)) {
+                return random;
+            }
+            return random;
+        }
+
+        public void setMaxInitValue(float maxInitValue) {
+            this.maxInitValue = maxInitValue;
+        }
+
+        public void setInitStdDev(double initStdDev) {
+            this.initStdDev = initStdDev;
+        }
+    }
+
+    private static class Prediction implements Comparable<Prediction> {
+
+        private double prediction;
+        private int label;
+
+        @Override
+        public int compareTo(@Nonnull Prediction other) {
+            // descending order
+            return -Double.compare(prediction, other.prediction);
+        }
+
     }
 
     public CofactorModel(@Nonnegative final int factor, @Nonnull final RankInitScheme initScheme,
@@ -660,7 +627,7 @@ public class CofactorModel {
     protected static double[][] addInPlace(@Nonnull final double[][] A, @Nonnull final double[][] B)
             throws HiveException {
         checkCondition(A.length == A[0].length && A.length == B.length && B.length == B[0].length,
-            ARRAY_NOT_SQUARE_ERR);
+            "Array is not square");
         for (int i = 0; i < A.length; i++) {
             for (int j = 0; j < A[0].length; j++) {
                 A[i][j] += B[i][j];
@@ -721,7 +688,7 @@ public class CofactorModel {
             throws HiveException {
         checkCondition(
             dst.getRowDimension() == src.length && dst.getColumnDimension() == src[0].length,
-            DIFFERENT_DIMS_ERR);
+            "Matrix do not match in size");
         for (int i = 0, rows = dst.getRowDimension(); i < rows; i++) {
             final double[] src_i = src[i];
             for (int j = 0, cols = dst.getColumnDimension(); j < cols; j++) {
@@ -732,7 +699,7 @@ public class CofactorModel {
 
     private static void copyData(@Nonnull final RealVector dst, @Nonnull final double[] src)
             throws HiveException {
-        checkCondition(dst.getDimension() == src.length, DIFFERENT_DIMS_ERR);
+        checkCondition(dst.getDimension() == src.length, "Vector do not match in size");
         for (int i = 0; i < dst.getDimension(); i++) {
             dst.setEntry(i, src[i]);
         }
@@ -740,7 +707,7 @@ public class CofactorModel {
 
     private static void copyData(@Nonnull final double[] dst, @Nonnull final RealVector src)
             throws HiveException {
-        checkCondition(dst.length == src.getDimension(), DIFFERENT_DIMS_ERR);
+        checkCondition(dst.length == src.getDimension(), "Vector do not match in size");
         for (int i = 0; i < dst.length; i++) {
             dst[i] = src.getEntry(i);
         }
@@ -1104,7 +1071,7 @@ public class CofactorModel {
     protected static double[] addInPlace(@Nonnull final double[] u, @Nullable final double[] v,
             final double scalar) throws HiveException {
         checkCondition(v != null, "null vector is not allowed");
-        checkCondition(u.length == v.length, DIFFERENT_DIMS_ERR);
+        checkCondition(u.length == v.length, "Vector do not match in size");
         for (int i = 0; i < u.length; i++) {
             u[i] += scalar * v[i];
         }
@@ -1139,4 +1106,34 @@ public class CofactorModel {
             a[i] = v;
         }
     }
+
+    public void registerCounters(Counters.Counter userCounter, Counters.Counter itemCounter,
+            Counters.Counter skippedUserCounter, Counters.Counter skippedItemCounter,
+            Counters.Counter thetaTrainable, Counters.Counter thetaTotal,
+            Counters.Counter betaTrainable, Counters.Counter betaTotal) {
+        this.userCounter = userCounter;
+        this.itemCounter = itemCounter;
+        this.skippedUserCounter = skippedUserCounter;
+        this.skippedItemCounter = skippedItemCounter;
+        this.thetaTotalFeaturesCounter = thetaTotal;
+        this.thetaTrainableFeaturesCounter = thetaTrainable;
+        this.betaTotalFeaturesCounter = betaTotal;
+        this.betaTrainableFeaturesCounter = betaTrainable;
+    }
+
+    public void registerUsers(Set<String> users) throws HiveException {
+        for (String key : users) {
+            initFactorVector(key, theta);
+        }
+        this.users = theta.getNonnullKeys();
+    }
+
+    public void registerItems(Set<String> items) throws HiveException {
+        for (String key : items) {
+            initFactorVector(key, beta);
+            initFactorVector(key, gamma);
+        }
+        this.items = beta.getNonnullKeys();
+    }
+
 }

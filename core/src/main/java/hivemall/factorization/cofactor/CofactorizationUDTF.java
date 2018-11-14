@@ -19,8 +19,8 @@
 package hivemall.factorization.cofactor;
 
 import hivemall.UDTFWithOptions;
-import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
+import hivemall.factorization.cofactor.CofactorModel.RankInitScheme;
 import hivemall.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.NumberUtils;
@@ -90,11 +90,10 @@ public final class CofactorizationUDTF extends UDTFWithOptions {
     private ValidationMetric validationMetric;
 
     // Initialization strategy of rank matrix
-    private CofactorModel.RankInitScheme rankInit;
+    private RankInitScheme rankInit;
 
     // Model itself
-    @VisibleForTesting
-    protected CofactorModel model;
+    private CofactorModel model;
 
     // Variable managing status of learning
     private ConversionState validationState;
@@ -102,17 +101,14 @@ public final class CofactorizationUDTF extends UDTFWithOptions {
 
     // Input OIs and Context
     private PrimitiveObjectInspector userOI;
-    @VisibleForTesting
-    protected PrimitiveObjectInspector itemOI;
+    private PrimitiveObjectInspector itemOI;
 
     private BooleanObjectInspector isValidationOI;
-    @VisibleForTesting
-    protected ListObjectInspector sppmiOI;
+    private ListObjectInspector sppmiOI;
 
     // Used for iterations
-    @VisibleForTesting
-    protected long numValidations;
-    protected long numTraining;
+    private long numValidations;
+    private long numTraining;
 
     // training data
     private Map<String, List<String>> userToItems;
@@ -337,7 +333,7 @@ public final class CofactorizationUDTF extends UDTFWithOptions {
             }
             this.useL2Norm = !cl.hasOption("disable_l2norm");
         }
-        this.rankInit = CofactorModel.RankInitScheme.resolve(rankInitOpt);
+        this.rankInit = RankInitScheme.resolve(rankInitOpt);
         rankInit.setMaxInitValue(maxInitValue);
         rankInit.setInitStdDev(initStdDev);
         this.validationState = new ConversionState(convergenceCheck, convergenceRate);
