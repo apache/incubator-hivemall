@@ -35,29 +35,32 @@ import org.apache.hadoop.io.FloatWritable;
 @UDFType(deterministic = true, stateful = false)
 public final class CofactorizationPredictUDF extends UDF {
 
-    private static final double DEFAULT_RESULT = 0.d;
+    private static final DoubleWritable ZERO = new DoubleWritable(0.d);
+
+    // reused result variable
+    private final DoubleWritable result = new DoubleWritable();
 
     @Nonnull
     public DoubleWritable evaluate(@Nullable List<FloatWritable> Pu,
             @Nullable List<FloatWritable> Qi) throws HiveException {
         if (Pu == null || Qi == null) {
-            return new DoubleWritable(DEFAULT_RESULT);
+            return ZERO;
         }
 
         final int PuSize = Pu.size();
         final int QiSize = Qi.size();
         // workaround for TD
         if (PuSize == 0) {
-            return new DoubleWritable(DEFAULT_RESULT);
+            return ZERO;
         } else if (QiSize == 0) {
-            return new DoubleWritable(DEFAULT_RESULT);
+            return ZERO;
         }
 
         if (QiSize != PuSize) {
             throw new HiveException("|Pu| " + PuSize + " was not equal to |Qi| " + QiSize);
         }
 
-        double ret = DEFAULT_RESULT;
+        double ret = 0.d;
         for (int k = 0; k < PuSize; k++) {
             FloatWritable Pu_k = Pu.get(k);
             if (Pu_k == null) {
@@ -69,6 +72,7 @@ public final class CofactorizationPredictUDF extends UDF {
             }
             ret += Pu_k.get() * Qi_k.get();
         }
-        return new DoubleWritable(ret);
+        result.set(ret);
+        return result;
     }
 }
