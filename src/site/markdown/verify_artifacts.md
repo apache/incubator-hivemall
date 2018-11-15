@@ -52,31 +52,20 @@ wget -e robots=off --no-check-certificate \
  https://dist.apache.org/repos/dist/dev/incubator/hivemall/${VERSION}-incubating-rc${RC_NUMBER}/
 ```
 
-# 3. Verify SHA1, MD5, and GPG signatures.
+# 3. Verify SHA512, and GPG signatures.
 
 ```sh
 cd ${VERSION}-incubating-rc${RC_NUMBER}/
 
-for f in `find . -type f -iname '*.sha1'`; do
+for f in `find . -type f -iname '*.sha512'`; do
   echo -n "Verifying ${f%.*} ... "
-  sha1sum ${f%.*} | cut -f1 -d' ' | diff -Bw - ${f}
+  shasum -a 512 ${f%.*} | cut -f1 -d' ' | diff -Bw - ${f}
   if [ $? -eq 0 ]; then
     echo 'Valid'
   else 
-    echo "SHA1 is Invalid: ${f}" >&2
+    echo "SHA512 is Invalid: ${f}" >&2
     exit 1
   fi  
-done
-echo
-for f in `find . -type f -iname '*.md5'`; do
-  echo -n "Verifying ${f%.*} ... "
-  md5sum ${f%.*} | cut -f1 -d' ' | diff -Bw - ${f}
-  if [ $? -eq 0 ]; then
-    echo 'Valid'
-  else
-    echo "MD5 is Invalid: ${f%.*}" >&2
-	exit 1
-  fi
 done
 echo
 for f in `find . -type f -iname '*.asc'`; do
