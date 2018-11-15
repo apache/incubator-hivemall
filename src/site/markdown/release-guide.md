@@ -217,7 +217,7 @@ mvn -Papache-release release:perform \
   - Go to [https://repository.apache.org/](https://repository.apache.org/) and login
   - Under `Build Promotion`, click `Staging Repositories`
   - In the `Staging Repositories` tab there should be a line with profile `org.apache.hivemall`
-  - Navigate through the artifact tree and make sure that all javadoc, sources, tests, and jars have .asc (GPG signature) and .md5 files. Refer [the ASF page](http://www.apache.org/dev/release-signing.html#verifying-signature) for artifacts verification.
+  - Navigate through the artifact tree and make sure that all javadoc, sources, tests, and jars have .asc (GPG signature). Refer [the ASF page](http://www.apache.org/dev/release-signing.html#verifying-signature) for artifacts verification.
 2. Close the nexus staging repo
   - Check the box on in the first column of the row, and press the ‘Close’ button to publish the repository at [https://repository.apache.org/content/repositories/orgapachehivemall-1001/](https://repository.apache.org/content/repositories/orgapachehivemall-1001/) (or a similar URL)
 
@@ -231,8 +231,7 @@ cd target/
 # Sign to the artifacts created by maven-shade-plugin
 for f in `ls hivemall-*-with-dependencies*.jar`; do
   gpg --armor --output ${f}.asc --detach-sig ${f}
-  md5sum ${f} | cut -f1 -d' ' > ${f}.md5
-  sha1sum ${f} | cut -f1 -d' '  > ${f}.sha1
+  shasum -a 512 ${f} | cut -f1 -d' '  > ${f}.sha512
 done
 
 # Verify GPG sign
@@ -306,7 +305,7 @@ Links to various release artifacts are given below. Please review and cast your 
 	- Sources for the release:
 	  https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip
 	  https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip.asc (PGP Signature)
-	  https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip.md5 (MD5 Hash)
+	  https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip.sha512 (SHA512 Hash)
     - Git tag for the release:
       https://git-wip-us.apache.org/repos/asf?p=incubator-hivemall.git;a=shortlog;h=refs/tags/v0.5.0-rc1
     - The Nexus Staging URL:
