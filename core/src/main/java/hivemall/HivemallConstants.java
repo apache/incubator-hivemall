@@ -20,7 +20,7 @@ package hivemall;
 
 public final class HivemallConstants {
 
-    public static final String VERSION = "0.5.2-incubating-SNAPSHOT";
+    public static final String VERSION = "0.5.2-incubating";
 
     public static final String BIAS_CLAUSE = "0";
     public static final int BIAS_CLAUSE_HASHVAL = 0;
