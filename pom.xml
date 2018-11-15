@@ -22,7 +22,7 @@
 
 	<groupId>org.apache.hivemall</groupId>
 	<artifactId>hivemall</artifactId>
-	<version>0.5.1-incubating-SNAPSHOT</version>
+	<version>0.5.2-incubating-SNAPSHOT</version>
 
 	<parent>
 	  <groupId>org.apache</groupId>
