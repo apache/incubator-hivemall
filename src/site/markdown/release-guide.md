@@ -268,6 +268,19 @@ cp ~/Downloads/ChangeLog.html .
 
 # Put Shaded jars
 cp ~/incubator-hivemall/target/hivemall-*-with-dependencies*.jar* .
+
+# Remove deprecated md5 and sha1
+# See https://www.apache.org/dev/release-distribution.html#sigs-and-sums
+
+ls *.md5 *.sha1
+rm *.md5 *.sha1
+
+# Add SHA-512 checksum
+
+for f in hivemall-0.5.2-incubating-site.xml hivemall-0.5.2-incubating-source-release.zip hivemall-0.5.2-incubating.pom; do
+  shasum -a 512 ${f} | cut -f1 -d' '  > ${f}.sha512
+  ls ${f}.sha512
+done
 ```
 
 - Push release arfifacts to ASF svn repository
