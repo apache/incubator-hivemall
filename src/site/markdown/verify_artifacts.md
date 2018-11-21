@@ -98,6 +98,13 @@ export JAVA8_HOME=`/usr/libexec/java_home -v 1.8`
 # Try to create artifacts
 export MAVEN_OPTS=-XX:MaxPermSize=256m
 
+# (Optional) Workaround for SSL error `Received fatal alert: protocol_version`
+export MAVEN_OPTS="$MAVEN_OPTS -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2"
+
+# (Optional) Workaround for Surefire error:
+# Could not find or load main class org.apache.maven.surefire.booter.ForkedBooter
+export _JAVA_OPTIONS="-Djdk.net.URLClassPath.disableClassPathURLCheck=true"
+
 # Try to create artifacts
 # RAT license check and unit tests will be issued
 mvn -Papache-release clean install
