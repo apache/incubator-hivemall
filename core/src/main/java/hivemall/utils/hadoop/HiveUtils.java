@@ -69,6 +69,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardConstantListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BinaryObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
@@ -1227,4 +1228,24 @@ public final class HiveUtils {
             TypeInfoFactory.stringTypeInfo, new Text(str));
     }
 
+    @Nullable
+    public static StructField getStructFieldRef(@Nonnull String fieldName,
+            @Nonnull final List<? extends StructField> fields) {
+        fieldName = fieldName.toLowerCase();
+        for (StructField f : fields) {
+            if (f.getFieldName().equals(fieldName)) {
+                return f;
+            }
+        }
+        // For backward compatibility: fieldNames can also be integer Strings.
+        try {
+            final int i = Integer.parseInt(fieldName);
+            if (i >= 0 && i < fields.size()) {
+                return fields.get(i);
+            }
+        } catch (NumberFormatException e) {
+            // ignore
+        }
+        return null;
+    }
 }
