@@ -356,18 +356,18 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
-    protected static RealVector calculateNewThetaVector(
+    protected RealVector calculateNewThetaVector(
             @Nonnull final Map.Entry<String, List<String>> sample, @Nonnull final Weights beta,
             @Nonnegative final int numFactors, @Nonnull final RealMatrix B,
             @Nonnull final RealVector A, @Nonnull final double[][] BTBpR,
             @Nonnegative final float c0, @Nonnegative final float c1) throws HiveException {
         // filter for trainable items
         List<String> trainableItems = filterTrainableFeatures(sample.getValue(), beta);
-        //        thetaTotalFeaturesCounter.increment(sample.getValue().size());
+        thetaTotalFeaturesCounter.increment(sample.getValue().size());
         if (trainableItems.isEmpty()) {
             return null;
         }
-        //        thetaTrainableFeaturesCounter.increment(trainableItems.size());
+        thetaTrainableFeaturesCounter.increment(trainableItems.size());
         final double[] a = calculateA(trainableItems, beta, numFactors, c1);
         final double[][] delta =
                 calculateWTWSubsetStrings(trainableItems, beta, numFactors, c1 - c0);
@@ -396,7 +396,7 @@ public class CofactorModel {
     }
 
     @VisibleForTesting
-    protected static RealVector calculateNewBetaVector(
+    protected RealVector calculateNewBetaVector(
             @Nonnull final Map.Entry<String, List<String>> sample,
             @Nonnull final Map<String, Feature[]> sppmi, @Nonnull final Weights theta,
             @Nonnull final Weights gamma, @Nonnull final Object2DoubleMap<String> gammaBias,
@@ -406,12 +406,12 @@ public class CofactorModel {
             @Nonnegative final float c1, final double globalBias) throws HiveException {
         // filter for trainable users
         final List<String> trainableUsers = filterTrainableFeatures(sample.getValue(), theta);
-        //        betaTotalFeaturesCounter.increment(sample.getValue().size());
+        betaTotalFeaturesCounter.increment(sample.getValue().size());
         if (trainableUsers.isEmpty()) {
             return null;
         }
 
-        //        betaTrainableFeaturesCounter.increment(trainableUsers.size());
+        betaTrainableFeaturesCounter.increment(trainableUsers.size());
 
         final List<Feature> trainableCooccurringItems =
                 filterTrainableFeatures(sppmi.get(sample.getKey()), gamma);

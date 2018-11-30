@@ -878,3 +878,9 @@ CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.tools.XGBoostPredictUDTF' U
 
 DROP FUNCTION xgboost_multiclass_predict;
 CREATE FUNCTION xgboost_multiclass_predict AS 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS train_cofactor;
+CREATE FUNCTION train_cofactor as 'hivemall.factorization.cofactor.CofactorizationUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS cofactor_predict;
+CREATE FUNCTION cofactor_predict as 'hivemall.factorization.cofactor.CofactorizationPredictUDF' USING JAR '${hivemall_jar}';

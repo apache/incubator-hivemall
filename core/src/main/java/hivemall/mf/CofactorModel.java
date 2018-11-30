@@ -384,7 +384,7 @@ public class CofactorModel {
     /**
      * Update latent factors of the items in the provided mini-batch.
      */
-    private void updateBeta(@Nonnull final Map<String, List<String>> items, Map<String, Feature[]> sppmi) throws HiveException {
+    private void updateBeta(@Nonnull final Map<String, List<String>> items, @Nonnull final Map<String, Feature[]> sppmi) throws HiveException {
         // precomputed matrix
         final double[][] TTTpR = calculateWTWpR(theta, factor, c0, lambdaBeta);
         for (Map.Entry<String, List<String>> sample : items.entrySet()) {

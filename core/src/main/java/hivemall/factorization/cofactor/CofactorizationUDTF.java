@@ -359,6 +359,7 @@ public final class CofactorizationUDTF extends UDTFWithOptions {
 
         userToItems = new HashMap<>();
         itemToUsers = new HashMap<>();
+        sppmi = new HashMap<>();
 
         validationUsers = new ArrayList<>();
         validationItems = new ArrayList<>();
@@ -387,10 +388,11 @@ public final class CofactorizationUDTF extends UDTFWithOptions {
             if (args[2] != null) {
                 sppmiVec = Feature.parseFeatures(args[2], sppmiOI, null, false);
                 sppmi.put(item, sppmiVec);
-            } else {
-                throw new HiveException(
-                    "null sppmi vector provided when item does not exist in sppmi");
             }
+//            } else {
+//                throw new HiveException(
+//                    "null sppmi vector provided when item does not exist in sppmi");
+//            }
         }
         recordSample(user, item);
     }
