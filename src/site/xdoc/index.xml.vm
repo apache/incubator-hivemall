@@ -27,7 +27,7 @@
     </head>
     <body>
         <div class="alert alert-info" role="alert">
-            The first Apache release v0.5.0 has been released on <a href="https://markmail.org/thread/imnf6azzxksrbdg4">Mar 5, 2018</a>. <a href="./download.html"><button type="button" class="btn btn-danger">Download</button></a> <a href="/userguide/index.html"><button class="btn btn-primary" type="button">Learn more</button></a>
+            The 2nd Apache release v0.5.2 has been released on <a href="https://markmail.org/thread/x4f4cufoydzdhx7z">Dec 3, 2018</a>. <a href="./download.html"><button type="button" class="btn btn-danger">Download</button></a> <a href="/userguide/index.html"><button class="btn btn-primary" type="button">Learn more</button></a>
         </div>
         <div id="carousel-main" class="row">
             <div id="screenshots-carousel" class="carousel slide span10">
