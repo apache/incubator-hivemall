@@ -57,6 +57,11 @@ public abstract class EtaEstimator {
             return eta0;
         }
 
+        @Override
+        public String toString() {
+            return "FixedEtaEstimator [ eta0 = " + eta0 + " ]";
+        }
+
     }
 
     public static final class SimpleEtaEstimator extends EtaEstimator {
@@ -78,6 +83,12 @@ public abstract class EtaEstimator {
             return (float) (eta0 / (1.d + (t / total_steps)));
         }
 
+        @Override
+        public String toString() {
+            return "SimpleEtaEstimator [ eta0 = " + eta0 + ", totalSteps = " + total_steps
+                    + ", finalEta = " + finalEta + " ]";
+        }
+
     }
 
     public static final class InvscalingEtaEstimator extends EtaEstimator {
@@ -92,6 +103,11 @@ public abstract class EtaEstimator {
         @Override
         public float eta(final long t) {
             return (float) (eta0 / Math.pow(t, power_t));
+        }
+
+        @Override
+        public String toString() {
+            return "InvscalingEtaEstimator [ eta0 = " + eta0 + ", power_t = " + power_t + " ]";
         }
 
     }
@@ -122,6 +138,11 @@ public abstract class EtaEstimator {
                 return;
             }
             this.eta = Math.min(eta0, newEta); // never be larger than eta0
+        }
+
+        @Override
+        public String toString() {
+            return "AdjustingEtaEstimator [ eta0 = " + eta0 + ", eta = " + eta + " ]";
         }
 
     }

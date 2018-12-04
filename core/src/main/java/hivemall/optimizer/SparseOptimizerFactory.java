@@ -20,6 +20,7 @@ package hivemall.optimizer;
 
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
+import hivemall.optimizer.Optimizer.OptimizerBase;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
@@ -50,7 +51,7 @@ public final class SparseOptimizerFactory {
                         + optimizerName);
         }
 
-        final Optimizer optimizerImpl;
+        final OptimizerBase optimizerImpl;
         if ("sgd".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new Optimizer.SGD(options);
         } else if ("adadelta".equalsIgnoreCase(optimizerName)) {
@@ -72,6 +73,7 @@ public final class SparseOptimizerFactory {
         if (LOG.isInfoEnabled()) {
             LOG.info(
                 "Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: " + options);
+            LOG.info("ETA estimator: " + optimizerImpl._eta);
         }
 
         return optimizerImpl;
