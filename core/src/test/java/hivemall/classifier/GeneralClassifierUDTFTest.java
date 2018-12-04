@@ -23,9 +23,6 @@ import static hivemall.utils.hadoop.HiveUtils.lazyLong;
 import static hivemall.utils.hadoop.HiveUtils.lazyString;
 
 import hivemall.TestUtils;
-import hivemall.model.FeatureValue;
-import hivemall.regression.GeneralRegressorUDTF;
-import hivemall.utils.lang.StringUtils;
 import hivemall.utils.math.MathUtils;
 
 import java.io.BufferedReader;
@@ -35,7 +32,6 @@ import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
@@ -391,14 +387,14 @@ public class GeneralClassifierUDTFTest {
                     PrimitiveObjectInspectorFactory.javaIntObjectInspector},
             new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0}});
     }
-    
-    
-    @Test
-    public void testGradientClippingSGD() throws IOException, HiveException {
-        String filePath = "clipping_data.tsv.gz";
-        String options = "-loss squaredloss -opt SGD -reg no -eta0 0.01 -iter 1";
 
-        GeneralRegressorUDTF udtf = new GeneralRegressorUDTF();
+    @Test
+    public void testAdagradL1() throws IOException, HiveException {
+        String filePath = "adam_adadelta_test.tsv.gz";
+        String options =
+                "-loss logloss -opt adagrad -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
 
         ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector);
@@ -406,48 +402,86 @@ public class GeneralClassifierUDTFTest {
             PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
 
         udtf.initialize(new ObjectInspector[] {stringListOI,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector, params});
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, params});
 
         BufferedReader reader = readFile(filePath);
-        String line = reader.readLine();
-        for (int i = 0; line != null; i++) {
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
             StringTokenizer tokenizer = new StringTokenizer(line, " ");
-            double y = Double.parseDouble(tokenizer.nextToken());
-            List<String> X = new ArrayList<String>();
-            while (tokenizer.hasMoreTokens()) {
-                String f = tokenizer.nextToken();
-                X.add(f);
-            }
-            FeatureValue[] features = udtf.parseFeatures(X);
-            if (DEBUG) {
-                printLine(features, y);
-            }
 
-            float yhat = udtf.predict(features);
-            if (Float.isNaN(yhat)) {
-                Assert.fail("NaN cause in line: " + i);
-            }
+            String featureLine = tokenizer.nextToken();
+            List<String> X = Arrays.asList(featureLine.split(","));
+
+            String labelLine = tokenizer.nextToken();
+            Integer y = Integer.valueOf(labelLine);
 
             udtf.process(new Object[] {X, y});
-
-            line = reader.readLine();
         }
 
         udtf.finalizeTraining();
     }
-    
-    private static void printLine(FeatureValue[] features, final double y) {
-        Arrays.sort(features, new Comparator<FeatureValue>() {
-            @Override
-            public int compare(FeatureValue o1, FeatureValue o2) {
-                int f1 = Integer.parseInt(o1.getFeatureAsString());
-                int f2 = Integer.parseInt(o2.getFeatureAsString());
-                return Integer.compare(f1, f2);
-            }
-        });
-        System.out.print(y);
-        System.out.print(' ');
-        System.out.println(StringUtils.join(features, ' '));
+
+    @Test
+    public void testAdaDeltaL1() throws IOException, HiveException {
+        String filePath = "adam_adadelta_test.tsv.gz";
+        String options =
+                "-loss logloss -opt adadelta -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, params});
+
+        BufferedReader reader = readFile(filePath);
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+
+            String featureLine = tokenizer.nextToken();
+            List<String> X = Arrays.asList(featureLine.split(","));
+
+            String labelLine = tokenizer.nextToken();
+            Integer y = Integer.valueOf(labelLine);
+
+            udtf.process(new Object[] {X, y});
+        }
+
+        udtf.finalizeTraining();
+    }
+
+    @Test
+    public void testAdam() throws IOException, HiveException {
+        String filePath = "adam_adadelta_test.tsv.gz";
+        String options =
+                "-loss logloss -opt Adam -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, params});
+
+        BufferedReader reader = readFile(filePath);
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+
+            String featureLine = tokenizer.nextToken();
+            List<String> X = Arrays.asList(featureLine.split(","));
+
+            String labelLine = tokenizer.nextToken();
+            Integer y = Integer.valueOf(labelLine);
+
+            udtf.process(new Object[] {X, y});
+        }
+
+        udtf.finalizeTraining();
     }
 
     private static void println(String msg) {
