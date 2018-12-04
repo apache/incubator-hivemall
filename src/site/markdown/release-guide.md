@@ -520,32 +520,24 @@ Make an announcement about the release on the `user@hivemall.incubator.apache.or
 ```
 [ANNOUNCE] Apache Hivemall 0.5.0-incubating released
 
-The Apache Hivemall (incubating) Project Team is proud to announce 
-Apache Hivemall 0.5.0-incubating has been released.
-This is the first Apache release as an Apache Incubator project.
+The Apache Hivemall (incubating) project team is proud to announce
+Apache Hivemall 0.5.2-incubating has been released.
+This is the 2nd Apache release as an Apache Incubator project.
 
 Apache Hivemall is a scalable machine learning library implemented as
-Hive UDFs/UDAFs/UDTFs. Hivemall runs on Hadoop-based data processing 
+Hive UDFs/UDAFs/UDTFs. Hivemall runs on Hadoop-based data processing
 frameworks, specifically on Apache Hive, Apache Spark, and Apache Pig.
 
-The release artifacts is available at:
+The release artifacts and ChangeLog can be found at:
 
- http://www.apache.org/dyn/closer.cgi/incubator/hivemall/0.5.0-incubating/
-
-Signatures of the release artifacts can be found at:
-
- http://www.apache.org/dist/incubator/hivemall/0.5.0-incubating/
-
-ChangeLog of this release can be found at:
-
- http://www.apache.org/dist/incubator/hivemall/0.5.0-incubating/ChangeLog.html
+ http://hivemall.incubator.apache.org/download.html
 
 Release artifacts in Maven Central:
 
- https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.apache.hivemall%22%20AND%20v%3A%220.5.0-incubating%22
+ https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.apache.hivemall%22%20AND%20v%3A%220.5.2-incubating%22
 
 Find more about our project at:
- - Project Site: http://hivemall.incubator.apache.org/
+ - Project Site:  http://hivemall.incubator.apache.org/
  - Github mirror: https://github.com/apache/incubator-hivemall
  - Mailing list(s): dev@hivemall.incubator.apache.org
                     user@hivemall.incubator.apache.org
@@ -556,12 +548,12 @@ on behalf of Apache Hivemall PPMC
 
 =====
 *Disclaimer*
-Apache Hivemall (incubating) is an effort undergoing incubation at 
+Apache Hivemall (incubating) is an effort undergoing incubation at
 The Apache Software Foundation (ASF), sponsored by the name of Apache
-Incubator PMC. Incubation is required of all newly accepted projects 
-until a further review indicates that the infrastructure, communications, 
-and decision making process have stabilized in a manner consistent 
-with other successful ASF projects. While incubation status is not 
-necessarily a reflection of the completeness or stability of the code, 
+Incubator PMC. Incubation is required of all newly accepted projects
+until a further review indicates that the infrastructure, communications,
+and decision making process have stabilized in a manner consistent
+with other successful ASF projects. While incubation status is not
+necessarily a reflection of the completeness or stability of the code,
 it does indicate that the project has yet to be fully endorsed by the ASF.
 ```
