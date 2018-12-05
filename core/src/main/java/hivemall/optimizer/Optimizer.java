@@ -195,10 +195,15 @@ public interface Optimizer {
 
         @Override
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
+            // update biased first moment estimate
             float val_m = beta * weight.getM() + (1.f - beta) * gradient;
+            // update biased second raw moment estimate
             float val_v = gamma * weight.getV() + (float) ((1.f - gamma) * Math.pow(gradient, 2.0));
+            // compute bias-corrected first moment estimate
             float val_m_hat = val_m / (float) (1.f - Math.pow(beta, _numStep));
+            // compute bias-corrected second raw moment estimat
             float val_v_hat = val_v / (float) (1.f - Math.pow(gamma, _numStep));
+            // compute delta update
             float delta = val_m_hat / (float) (Math.sqrt(val_v_hat) + eps_hat);
             weight.setM(val_m);
             weight.setV(val_v);
