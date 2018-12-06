@@ -55,8 +55,13 @@ public interface Optimizer {
         protected long _numStep = 1L;
 
         public OptimizerBase(@Nonnull Map<String, String> options) {
-            this._eta = EtaEstimator.get(options);
+            this._eta = getEtaEstimator(options);
             this._reg = Regularization.get(options);
+        }
+
+        @Nonnull
+        protected EtaEstimator getEtaEstimator(@Nonnull Map<String, String> options) {
+            return EtaEstimator.get(options);
         }
 
         @Override
@@ -72,11 +77,19 @@ public interface Optimizer {
         protected float update(@Nonnull final IWeightValue weight, final float gradient) {
             float oldWeight = weight.get();
             float delta = computeDelta(weight, gradient);
-            float eta = _eta.eta(_numStep);
+            float eta = eta(_numStep);
             float reg = _reg.regularize(oldWeight, delta);
             float newWeight = oldWeight - eta * reg;
             weight.set(newWeight);
             return newWeight;
+        }
+
+        /**
+         * @param t timestep
+         * @return learning rate
+         */
+        protected float eta(final long t) {
+            return _eta.eta(_numStep);
         }
 
         /**
@@ -191,6 +204,27 @@ public interface Optimizer {
             this.beta1 = Primitives.parseFloat(options.get("beta1"), 0.9f);
             this.beta2 = Primitives.parseFloat(options.get("beta2"), 0.999f);
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
+        }
+
+        @Override
+        protected final EtaEstimator getEtaEstimator(Map<String, String> options) {
+            // override default learning rate scheme
+            if (!options.containsKey("eta")) {
+                options.put("eta", "fixed");
+            }
+            if (!options.containsKey("eta0")) {
+                options.put("eta0", "0.01");
+            }
+            return super.getEtaEstimator(options);
+        }
+
+        @Override
+        protected final float eta(final long t) {
+            double fix1 = 1.d - Math.pow(beta1, t);
+            double fix2 = 1.d - Math.pow(beta2, t);
+            float eta = _eta.eta(_numStep);
+            double fix = Math.sqrt(fix2) / fix1;
+            return (float) (eta * fix);
         }
 
         @Override
