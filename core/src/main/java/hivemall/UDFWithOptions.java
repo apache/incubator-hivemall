@@ -100,7 +100,7 @@ public abstract class UDFWithOptions extends GenericUDF {
     }
 
     private void showHelp(@Nonnull Options opts) throws UDFArgumentException {
-        showHelp(getOptions(), null);
+        showHelp(opts, null);
     }
 
     private void showHelp(@Nonnull Options opts, @Nullable String errMsg)
