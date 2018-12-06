@@ -20,6 +20,7 @@ package hivemall.optimizer;
 
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
+import hivemall.optimizer.Optimizer.OptimizerBase;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.math.MathUtils;
 
@@ -51,7 +52,7 @@ public final class DenseOptimizerFactory {
                         + optimizerName + "`. Please specify `-regularization l1` and so on.");
         }
 
-        final Optimizer optimizerImpl;
+        final OptimizerBase optimizerImpl;
         if ("sgd".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new Optimizer.SGD(options);
         } else if ("adadelta".equalsIgnoreCase(optimizerName)) {
@@ -73,6 +74,7 @@ public final class DenseOptimizerFactory {
         if (LOG.isInfoEnabled()) {
             LOG.info(
                 "Configured " + optimizerImpl.getOptimizerName() + " as the optimizer: " + options);
+            LOG.info("ETA estimator: " + optimizerImpl._eta);
         }
 
         return optimizerImpl;
