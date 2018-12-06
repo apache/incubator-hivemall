@@ -484,6 +484,38 @@ public class GeneralClassifierUDTFTest {
         udtf.finalizeTraining();
     }
 
+    @Test
+    public void testAdamInvScaleEta() throws IOException, HiveException {
+        String filePath = "adam_adadelta_test.tsv.gz";
+        String options =
+                "-eta inv -eta0 0.1 -loss logloss -opt Adam -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, params});
+
+        BufferedReader reader = readFile(filePath);
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+
+            String featureLine = tokenizer.nextToken();
+            List<String> X = Arrays.asList(featureLine.split(","));
+
+            String labelLine = tokenizer.nextToken();
+            Integer y = Integer.valueOf(labelLine);
+
+            udtf.process(new Object[] {X, y});
+        }
+
+        udtf.finalizeTraining();
+    }
+
     private static void println(String msg) {
         if (DEBUG) {
             System.out.println(msg);
