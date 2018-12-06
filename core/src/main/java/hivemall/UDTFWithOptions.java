@@ -97,27 +97,44 @@ public abstract class UDTFWithOptions extends GenericUDTF {
         CommandLine cl = CommandLineUtils.parseOptions(args, opts);
 
         if (cl.hasOption("help")) {
-            Description funcDesc = getClass().getAnnotation(Description.class);
-            final String cmdLineSyntax;
-            if (funcDesc == null) {
-                cmdLineSyntax = getClass().getSimpleName();
-            } else {
-                String funcName = funcDesc.name();
-                cmdLineSyntax = funcName == null ? getClass().getSimpleName()
-                        : funcDesc.value().replace("_FUNC_", funcDesc.name());
-            }
-            StringWriter sw = new StringWriter();
-            sw.write('\n');
-            PrintWriter pw = new PrintWriter(sw);
-            HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp(pw, HelpFormatter.DEFAULT_WIDTH, cmdLineSyntax, null, opts,
-                HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
-            pw.flush();
-            String helpMsg = sw.toString();
-            throw new UDFArgumentException(helpMsg);
+            showHelp(opts);
         }
 
         return cl;
+    }
+
+    protected void showHelp(@Nullable String errMsg) throws UDFArgumentException {
+        showHelp(getOptions(), errMsg);
+    }
+
+    private void showHelp(@Nonnull Options opts) throws UDFArgumentException {
+        showHelp(opts, null);
+    }
+
+    private void showHelp(@Nonnull Options opts, @Nullable String errMsg)
+            throws UDFArgumentException {
+        Description funcDesc = getClass().getAnnotation(Description.class);
+        final String cmdLineSyntax;
+        if (funcDesc == null) {
+            cmdLineSyntax = getClass().getSimpleName();
+        } else {
+            String funcName = funcDesc.name();
+            cmdLineSyntax = funcName == null ? getClass().getSimpleName()
+                    : funcDesc.value().replace("_FUNC_", funcDesc.name());
+        }
+        StringWriter sw = new StringWriter();
+        sw.write('\n');
+        if (errMsg != null) {
+            sw.write(errMsg);
+            sw.write("\n\n");
+        }
+        PrintWriter pw = new PrintWriter(sw);
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(pw, HelpFormatter.DEFAULT_WIDTH, cmdLineSyntax, null, opts,
+            HelpFormatter.DEFAULT_LEFT_PAD, HelpFormatter.DEFAULT_DESC_PAD, null, true);
+        pw.flush();
+        String helpMsg = sw.toString();
+        throw new UDFArgumentException(helpMsg);
     }
 
     protected abstract CommandLine processOptions(ObjectInspector[] argOIs)
@@ -147,6 +164,30 @@ public abstract class UDTFWithOptions extends GenericUDTF {
             list.add(fv);
         }
         return list;
+    }
+
+    /**
+     * Raise {@link UDFArgumentException} if the given condition is false.
+     *
+     * @throws UDFArgumentException
+     */
+    protected static void assumeTrue(final boolean condition, @Nonnull final String errMsg)
+            throws UDFArgumentException {
+        if (!condition) {
+            throw new UDFArgumentException(errMsg);
+        }
+    }
+
+    /**
+     * Raise {@link UDFArgumentException} if the given condition is true.
+     *
+     * @throws UDFArgumentException
+     */
+    protected static void assumeFalse(final boolean condition, @Nonnull final String errMsg)
+            throws UDFArgumentException {
+        if (condition) {
+            throw new UDFArgumentException(errMsg);
+        }
     }
 
 }
