@@ -21,6 +21,7 @@ package hivemall.optimizer;
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.math.MathUtils;
 
 import java.util.Map;
 
@@ -146,7 +147,7 @@ public interface Optimizer {
         public AdaDelta(@Nonnull Map<String, String> options) {
             super(options);
             this.decay = Primitives.parseFloat(options.get("decay"), 0.95f);
-            this.eps = Primitives.parseFloat(options.get("eps"), 1e-6f);
+            this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
             this.scale = Primitives.parseFloat(options.get("scale"), 100.0f);
         }
 
@@ -182,31 +183,30 @@ public interface Optimizer {
      */
     static abstract class Adam extends OptimizerBase {
 
-        private final float beta;
-        private final float gamma;
-        private final float eps_hat;
+        private final float beta1, beta2;
+        private final float eps;
 
         public Adam(@Nonnull Map<String, String> options) {
             super(options);
-            this.beta = Primitives.parseFloat(options.get("beta"), 0.9f);
-            this.gamma = Primitives.parseFloat(options.get("gamma"), 0.999f);
-            this.eps_hat = Primitives.parseFloat(options.get("eps_hat"), 1e-8f);
+            this.beta1 = Primitives.parseFloat(options.get("beta1"), 0.9f);
+            this.beta2 = Primitives.parseFloat(options.get("beta2"), 0.999f);
+            this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
         }
 
         @Override
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
             // update biased first moment estimate
-            float val_m = beta * weight.getM() + (1.f - beta) * gradient;
+            float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
             // update biased second raw moment estimate
-            float val_v = gamma * weight.getV() + (float) ((1.f - gamma) * Math.pow(gradient, 2.0));
+            float v = beta2 * weight.getV() + (float) ((1.f - beta2) * MathUtils.square(gradient));
             // compute bias-corrected first moment estimate
-            float val_m_hat = val_m / (float) (1.f - Math.pow(beta, _numStep));
+            float m_hat = m / (float) (1.f - Math.pow(beta1, _numStep));
             // compute bias-corrected second raw moment estimat
-            float val_v_hat = val_v / (float) (1.f - Math.pow(gamma, _numStep));
+            float v_hat = v / (float) (1.f - Math.pow(beta2, _numStep));
             // compute delta update
-            float delta = val_m_hat / (float) (Math.sqrt(val_v_hat) + eps_hat);
-            weight.setM(val_m);
-            weight.setV(val_v);
+            float delta = m_hat / (float) (Math.sqrt(v_hat) + eps);
+            weight.setM(m);
+            weight.setV(v);
             return delta;
         }
 

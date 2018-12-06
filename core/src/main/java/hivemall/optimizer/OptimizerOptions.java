@@ -43,7 +43,9 @@ public final class OptimizerOptions {
     public static void setup(@Nonnull Options opts) {
         opts.addOption("opt", "optimizer", true,
             "Optimizer to update weights [default: adagrad, sgd, adadelta, adam]");
-        opts.addOption("eps", true, "Denominator value of AdaDelta/AdaGrad [default 1e-6]");
+        // hyperparameters
+        opts.addOption("eps", true,
+            "Denominator value of AdaDelta/AdaGrad/Adam [default: 1e-8 (AdaDelta/Adam), 1.0 (Adagrad)]");
         opts.addOption("rho", "decay", true, "Decay rate of AdaDelta [default 0.95]");
         // regularization
         opts.addOption("reg", "regularization", true,
@@ -57,6 +59,11 @@ public final class OptimizerOptions {
         opts.addOption("t", "total_steps", true, "a total of n_samples * epochs time steps");
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
+        // ADAM hyperparameters
+        opts.addOption("beta1", true,
+            "Exponential decay rate of the first order moment used in Adam [default: 0.9]");
+        opts.addOption("beta2", true,
+            "Exponential decay rate of the second order moment used in Adam [default: 0.999]");
         // other
         opts.addOption("scale", true, "Scaling factor for cumulative weights [100.0]");
     }
