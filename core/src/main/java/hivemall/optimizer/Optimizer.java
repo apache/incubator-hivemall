@@ -160,8 +160,20 @@ public interface Optimizer {
         public AdaDelta(@Nonnull Map<String, String> options) {
             super(options);
             this.decay = Primitives.parseFloat(options.get("decay"), 0.95f);
-            this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
+            this.eps = Primitives.parseFloat(options.get("eps"), 1e-6f);
             this.scale = Primitives.parseFloat(options.get("scale"), 100.0f);
+        }
+
+        @Override
+        protected final EtaEstimator getEtaEstimator(@Nonnull Map<String, String> options) {
+            // override default learning rate scheme
+            if (!options.containsKey("eta")) {
+                options.put("eta", "fixed");
+            }
+            if (!options.containsKey("eta0")) {
+                options.put("eta0", "0.1");
+            }
+            return super.getEtaEstimator(options);
         }
 
         @Override
