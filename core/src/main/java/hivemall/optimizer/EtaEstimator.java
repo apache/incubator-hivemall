@@ -20,6 +20,7 @@ package hivemall.optimizer;
 
 import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.StringUtils;
 
 import java.util.Map;
 
@@ -205,6 +206,10 @@ public abstract class EtaEstimator {
         } else if ("inv".equalsIgnoreCase(etaScheme) || "inverse".equalsIgnoreCase(etaScheme)) {
             return new InvscalingEtaEstimator(eta0, power_t);
         } else {
+            if (StringUtils.isNumber(etaScheme)) {
+                float eta = Float.parseFloat(etaScheme);
+                return new FixedEtaEstimator(eta);
+            }
             throw new IllegalArgumentException("Unsupported ETA name: " + etaScheme);
         }
     }
