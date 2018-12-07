@@ -418,6 +418,10 @@ public class GeneralClassifierUDTFTest {
         }
 
         udtf.finalizeTraining();
+
+        Assert.assertTrue(
+            "CumulativeLoss is expected to be less than 1400: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 1400);
     }
 
     @Test
@@ -450,6 +454,10 @@ public class GeneralClassifierUDTFTest {
         }
 
         udtf.finalizeTraining();
+
+        Assert.assertTrue(
+            "CumulativeLoss is expected to be less than 1800: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 1800);
     }
 
     @Test
@@ -482,6 +490,10 @@ public class GeneralClassifierUDTFTest {
         }
 
         udtf.finalizeTraining();
+
+        Assert.assertTrue(
+            "CumulativeLoss is expected to be less than 900: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 900);
     }
 
     @Test
@@ -514,6 +526,10 @@ public class GeneralClassifierUDTFTest {
         }
 
         udtf.finalizeTraining();
+
+        Assert.assertTrue(
+            "CumulativeLoss is expected to be less than 900: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 900);
     }
 
     private static void println(String msg) {
