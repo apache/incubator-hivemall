@@ -222,7 +222,7 @@ public interface Optimizer {
 
         public Adam(@Nonnull Map<String, String> options) {
             super(options);
-            this.alpha = Primitives.parseFloat(options.get("alpha"), 0.01f);
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 0.001f);
             this.beta1 = Primitives.parseFloat(options.get("beta1"), 0.9f);
             this.beta2 = Primitives.parseFloat(options.get("beta2"), 0.999f);
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
@@ -237,12 +237,21 @@ public interface Optimizer {
                 options.put("eta", "fixed");
             }
             if (!options.containsKey("eta0")) {
-                options.put("eta0", "1.0");
+                options.put("eta0", "0.01");
             }
             if (!options.containsKey("alpha")) {
-                options.put("alpha", "0.01");
+                options.put("alpha", "1.0");
             }
             return super.getEtaEstimator(options);
+        }
+
+        @Override
+        protected float eta(final long t) {
+            double fix1 = 1.d - Math.pow(beta1, t);
+            double fix2 = 1.d - Math.pow(beta2, t);
+            float eta = _eta.eta(t);
+            double fix = Math.sqrt(fix2) / fix1;
+            return (float) (eta * fix);
         }
 
         private float alpha() {
