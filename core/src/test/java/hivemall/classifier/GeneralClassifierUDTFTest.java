@@ -390,7 +390,7 @@ public class GeneralClassifierUDTFTest {
 
     @Test
     public void testAdagradL1() throws IOException, HiveException {
-        String filePath = "adam_adadelta_test.tsv.gz";
+        String filePath = "adam_test_10000.tsv.gz";
         String options =
                 "-loss logloss -opt adagrad -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
 
@@ -422,7 +422,7 @@ public class GeneralClassifierUDTFTest {
 
     @Test
     public void testAdaDeltaL1() throws IOException, HiveException {
-        String filePath = "adam_adadelta_test.tsv.gz";
+        String filePath = "adam_test_10000.tsv.gz";
         String options =
                 "-loss logloss -opt adadelta -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
 
@@ -454,7 +454,7 @@ public class GeneralClassifierUDTFTest {
 
     @Test
     public void testAdam() throws IOException, HiveException {
-        String filePath = "adam_adadelta_test.tsv.gz";
+        String filePath = "adam_test_10000.tsv.gz";
         String options =
                 "-loss logloss -opt Adam -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
 
@@ -486,7 +486,7 @@ public class GeneralClassifierUDTFTest {
 
     @Test
     public void testAdamInvScaleEta() throws IOException, HiveException {
-        String filePath = "adam_adadelta_test.tsv.gz";
+        String filePath = "adam_test_10000.tsv.gz";
         String options =
                 "-eta inv -eta0 0.1 -loss logloss -opt Adam -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
 
