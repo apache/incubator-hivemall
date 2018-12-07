@@ -203,22 +203,30 @@ public interface Optimizer {
      * Adam, an algorithm for first-order gradient-based optimization of stochastic objective
      * functions, based on adaptive estimates of lower-order moments.
      *
-     * - D. P. Kingma and J. L. Ba: "ADAM: A Method for Stochastic Optimization." arXiv preprint
-     * arXiv:1412.6980v8, 2014.
+     * - D. P. Kingma and J. L. Ba: "ADAM: A Method for Stochastic Optimization."
+     * https://arxiv.org/abs/1412.6980v8
+     *
+     * - "Fixing Weight Decay Regularization in Adam" https://arxiv.org/pdf/1711.05101.pdf
+     *
+     * - "On the Convergence of Adam and Beyond" https://openreview.net/forum?id=ryQu7f-RZ
      */
     static abstract class Adam extends OptimizerBase {
 
+        private final float alpha;
         private final float beta1, beta2;
         private final float eps;
+        private final float decay;
 
         private final boolean amsgrad;
         private float max_vhat = Float.MIN_VALUE;
 
         public Adam(@Nonnull Map<String, String> options) {
             super(options);
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 0.01f);
             this.beta1 = Primitives.parseFloat(options.get("beta1"), 0.9f);
             this.beta2 = Primitives.parseFloat(options.get("beta2"), 0.999f);
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
+            this.decay = Primitives.parseFloat(options.get("decay"), 0.f);
             this.amsgrad = options.containsKey("amsgrad");
         }
 
@@ -229,22 +237,27 @@ public interface Optimizer {
                 options.put("eta", "fixed");
             }
             if (!options.containsKey("eta0")) {
-                options.put("eta0", "0.01");
+                options.put("eta0", "1.0");
+            }
+            if (!options.containsKey("alpha")) {
+                options.put("alpha", "0.01");
             }
             return super.getEtaEstimator(options);
         }
 
-        @Override
-        protected final float eta(final long t) {
-            double fix1 = 1.d - Math.pow(beta1, t);
-            double fix2 = 1.d - Math.pow(beta2, t);
-            float eta = _eta.eta(_numStep);
+        private float alpha() {
+            double fix1 = 1.d - Math.pow(beta1, _numStep);
+            double fix2 = 1.d - Math.pow(beta2, _numStep);
             double fix = Math.sqrt(fix2) / fix1;
-            return (float) (eta * fix);
+            return (float) (alpha * fix);
         }
 
         @Override
-        protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
+        protected float computeDelta(@Nonnull final IWeightValue weight, float gradient) {
+            if (decay != 0.f) {// L2 regularization for weight decay
+                float oldWeight = weight.get();
+                gradient += decay * oldWeight;
+            }
             // update biased first moment estimate
             float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
             // update biased second raw moment estimate
@@ -261,7 +274,13 @@ public interface Optimizer {
                 }
             }
             // compute delta update
-            float delta = m_hat / (float) (Math.sqrt(v_hat) + eps);
+            float alpha_t = alpha();
+            float delta = alpha_t * m_hat / (float) (Math.sqrt(v_hat) + eps);
+            // weight decay
+            if (decay != 0.f) {
+                float oldWeight = weight.get();
+                delta += decay * oldWeight;
+            }
             weight.setM(m);
             weight.setV(v);
             return delta;
