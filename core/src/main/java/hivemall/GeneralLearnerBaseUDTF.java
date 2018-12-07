@@ -141,8 +141,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 2) {
-            throw new UDFArgumentException(
-                "_FUNC_ takes 2 arguments: List<Int|BigInt|Text> features, float target [, constant string options]");
+            showHelp(
+                "_FUNC_ takes two or three arguments: List<Int|BigInt|Text> features, float target [, constant string options]");
         }
         this.featureListOI = HiveUtils.asListOI(argOIs[0]);
         this.featureType = getFeatureType(featureListOI);
