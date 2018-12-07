@@ -171,7 +171,7 @@ public interface Optimizer {
                 options.put("eta", "fixed");
             }
             if (!options.containsKey("eta0")) {
-                options.put("eta0", "0.1");
+                options.put("eta0", "1.0");
             }
             return super.getEtaEstimator(options);
         }

@@ -457,7 +457,7 @@ public class GeneralClassifierUDTFTest {
 
         Assert.assertTrue(
             "CumulativeLoss is expected to be less than 1800: " + udtf.getCumulativeLoss(),
-            udtf.getCumulativeLoss() < 1800);
+            udtf.getCumulativeLoss() < 1500);
     }
 
     @Test
