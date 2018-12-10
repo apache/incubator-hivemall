@@ -60,7 +60,7 @@ public final class OptimizerOptions {
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
         // ADAM hyperparameters
-        opts.addOption("alpha", true, "Coefficient of learning rate in Adam [default: 0.01]");
+        opts.addOption("alpha", true, "Coefficient of learning rate in Adam [default: 1.0]");
         opts.addOption("beta1", true,
             "Exponential decay rate of the first order moment used in Adam [default: 0.9]");
         opts.addOption("beta2", true,

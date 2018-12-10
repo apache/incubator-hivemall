@@ -222,27 +222,13 @@ public interface Optimizer {
 
         public Adam(@Nonnull Map<String, String> options) {
             super(options);
-            this.alpha = Primitives.parseFloat(options.get("alpha"), 0.001f);
+            //this.alpha = Primitives.parseFloat(options.get("alpha"), 0.001f);
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 1.0f);
             this.beta1 = Primitives.parseFloat(options.get("beta1"), 0.9f);
             this.beta2 = Primitives.parseFloat(options.get("beta2"), 0.999f);
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
             this.decay = Primitives.parseFloat(options.get("decay"), 0.f);
             this.amsgrad = options.containsKey("amsgrad");
-        }
-
-        @Override
-        protected final EtaEstimator getEtaEstimator(Map<String, String> options) {
-            // override default learning rate scheme
-            if (!options.containsKey("eta")) {
-                options.put("eta", "fixed");
-            }
-            if (!options.containsKey("eta0")) {
-                options.put("eta0", "0.01");
-            }
-            if (!options.containsKey("alpha")) {
-                options.put("alpha", "1.0");
-            }
-            return super.getEtaEstimator(options);
         }
 
         @Override
