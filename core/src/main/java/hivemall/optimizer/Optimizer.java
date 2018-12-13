@@ -212,13 +212,13 @@ public interface Optimizer {
      */
     static abstract class Adam extends OptimizerBase {
 
-        private final float alpha;
-        private final float beta1, beta2;
-        private final float eps;
-        private final float decay;
+        protected float alpha;
+        protected final float beta1, beta2;
+        protected final float eps;
+        protected final float decay;
 
-        private final boolean amsgrad;
-        private float max_vhat = Float.MIN_VALUE;
+        protected final boolean amsgrad;
+        protected float max_vhat = Float.MIN_VALUE;
 
         public Adam(@Nonnull Map<String, String> options) {
             super(options);
@@ -240,7 +240,7 @@ public interface Optimizer {
             return (float) (eta * fix);
         }
 
-        private float alpha() {
+        protected float alpha() {
             double fix1 = 1.d - Math.pow(beta1, _numStep);
             double fix2 = 1.d - Math.pow(beta2, _numStep);
             double fix = Math.sqrt(fix2) / fix1;
@@ -270,7 +270,8 @@ public interface Optimizer {
             }
             // compute delta update
             float alpha_t = alpha();
-            float delta = alpha_t * m_hat / (float) (Math.sqrt(v_hat) + eps);
+            float deltaU = m_hat / (float) (Math.sqrt(v_hat) + eps);
+            float delta = alpha_t * deltaU;
             // weight decay
             if (decay != 0.f) {
                 float oldWeight = weight.get();
@@ -284,6 +285,85 @@ public interface Optimizer {
         @Override
         public String getOptimizerName() {
             return "adam";
+        }
+
+    }
+
+    /**
+     * Adam optimizer with Hypergradient Descent.
+     *
+     * - Online Learning Rate Adaptation with Hypergradient Descent
+     * https://openreview.net/forum?id=BkrsAzWAb
+     *
+     * - Convergence Analysis of an Adaptive Method of Gradient Descent
+     * https://damaru2.github.io/convergence_analysis_hypergradient_descent/dissertation_hypergradients.pdf
+     */
+    static abstract class AdamHD extends Adam {
+
+        private final float beta;
+        protected float deltaU = 0.f;
+
+        public AdamHD(@Nonnull Map<String, String> options) {
+            super(options);
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 0.01f);
+            this.beta = Primitives.parseFloat(options.get("beta"), 0.0001f);
+        }
+
+        private float alpha(final float gradient) {
+            // multiplicative hypergradient descent
+            float h = gradient * deltaU;
+            // if g_{t-1}u_{t-2} > 0 then 
+            //   alpha_{t} = alpha_{t-1} * (1+beta) -- decrease alpha
+            // else if g_{t-1}u_{t-2} < 0 then 
+            //   alpha_{t} = alpha_{t-1} * (1-beta) -- increase alpha
+            float adjust = 1.f - beta * MathUtils.sign(h);
+            this.alpha = alpha * adjust;
+
+            double fix1 = 1.d - Math.pow(beta1, _numStep);
+            double fix2 = 1.d - Math.pow(beta2, _numStep);
+            double fix = Math.sqrt(fix2) / fix1;
+            return (float) (alpha * fix);
+        }
+
+        @Override
+        protected float computeDelta(@Nonnull final IWeightValue weight, float gradient) {
+            if (decay != 0.f) {// L2 regularization for weight decay
+                float oldWeight = weight.get();
+                gradient += decay * oldWeight;
+            }
+            // update biased first moment estimate
+            float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
+            // update biased second raw moment estimate
+            float v = beta2 * weight.getV() + (float) ((1.f - beta2) * MathUtils.square(gradient));
+            // compute bias-corrected first moment estimate
+            float m_hat = m / (float) (1.f - Math.pow(beta1, _numStep));
+            // compute bias-corrected second raw moment estimat
+            float v_hat = v / (float) (1.f - Math.pow(beta2, _numStep));
+            if (amsgrad) {
+                if (v_hat > max_vhat) {
+                    this.max_vhat = v_hat;
+                } else {// v_hat <= max_vhat
+                    v_hat = max_vhat;
+                }
+            }
+            // compute delta update
+            float alpha_t = alpha(gradient);
+            float deltaU = m_hat / (float) (Math.sqrt(v_hat) + eps);
+            this.deltaU = deltaU;
+            float delta = alpha_t * deltaU;
+            // weight decay
+            if (decay != 0.f) {
+                float oldWeight = weight.get();
+                delta += decay * oldWeight;
+            }
+            weight.setM(m);
+            weight.setV(v);
+            return delta;
+        }
+
+        @Override
+        public String getOptimizerName() {
+            return "adam-hd";
         }
 
     }
