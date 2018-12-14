@@ -344,17 +344,9 @@ public interface Optimizer {
             float m_hat = m / (float) (1.f - Math.pow(beta1, _numStep));
             // compute bias-corrected second raw moment estimate
             float v_hat = v / (float) (1.f - Math.pow(beta2, _numStep));
-            if (amsgrad) {
-                if (v_hat > max_vhat) {
-                    this.max_vhat = v_hat;
-                } else {// v_hat <= max_vhat
-                    v_hat = max_vhat;
-                }
-            }
             // compute delta update
             float alpha_t = alpha(gradient, deltaU);
             float deltaU = m_hat / (float) (Math.sqrt(v_hat) + eps);
-            System.out.println(alpha_t);
             float delta = alpha_t * deltaU;
             this.deltaU = deltaU;
             // weight decay
