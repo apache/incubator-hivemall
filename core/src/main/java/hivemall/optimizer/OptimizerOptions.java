@@ -60,13 +60,16 @@ public final class OptimizerOptions {
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
         // ADAM hyperparameters
-        opts.addOption("alpha", true, "Coefficient of learning rate in Adam [default: 1.0]");
+        opts.addOption("alpha", true,
+            "Coefficient of learning rate in Adam [default: 1.0 (adam), 0.02 (AdamHD)]");
         opts.addOption("beta1", true,
             "Exponential decay rate of the first order moment used in Adam [default: 0.9]");
         opts.addOption("beta2", true,
             "Exponential decay rate of the second order moment used in Adam [default: 0.999]");
         opts.addOption("decay", false, "Weight decay rate [default: 0.0]");
         opts.addOption("amsgrad", false, "Whether to use AMSGrad variant of Adam");
+        // ADAM-HD hyperparameters
+        opts.addOption("beta", true, "Hyperparameter for tuning alpha in Adam-HD [default: 1e-6f]");
         // other
         opts.addOption("scale", true, "Scaling factor for cumulative weights [100.0]");
     }

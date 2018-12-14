@@ -303,8 +303,20 @@ public interface Optimizer {
 
         public AdamHD(@Nonnull Map<String, String> options) {
             super(options);
-            this.alpha = Primitives.parseFloat(options.get("alpha"), 0.01f);
-            this.beta = Primitives.parseFloat(options.get("beta"), 0.0001f);
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 0.02f);
+            this.beta = Primitives.parseFloat(options.get("beta"), 1e-6f);
+        }
+
+        @Override
+        protected final EtaEstimator getEtaEstimator(@Nonnull Map<String, String> options) {
+            // override default learning rate scheme
+            if (!options.containsKey("eta")) {
+                options.put("eta", "fixed");
+            }
+            if (!options.containsKey("eta0")) {
+                options.put("eta0", "1.0");
+            }
+            return super.getEtaEstimator(options);
         }
 
         private float alpha(final float gradient, final float deltaU) {
@@ -328,7 +340,10 @@ public interface Optimizer {
             float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
             // update biased second raw moment estimate
             float v = beta2 * weight.getV() + (float) ((1.f - beta2) * MathUtils.square(gradient));
-            float v_hat = v;
+            // compute bias-corrected first moment estimate
+            float m_hat = m / (float) (1.f - Math.pow(beta1, _numStep));
+            // compute bias-corrected second raw moment estimate
+            float v_hat = v / (float) (1.f - Math.pow(beta2, _numStep));
             if (amsgrad) {
                 if (v_hat > max_vhat) {
                     this.max_vhat = v_hat;
@@ -336,10 +351,10 @@ public interface Optimizer {
                     v_hat = max_vhat;
                 }
             }
-            // bias correlation using m_hat and v_hat
-            float deltaU = m / (float) (Math.sqrt(v_hat) + eps);
             // compute delta update
             float alpha_t = alpha(gradient, deltaU);
+            float deltaU = m_hat / (float) (Math.sqrt(v_hat) + eps);
+            System.out.println(alpha_t);
             float delta = alpha_t * deltaU;
             this.deltaU = deltaU;
             // weight decay

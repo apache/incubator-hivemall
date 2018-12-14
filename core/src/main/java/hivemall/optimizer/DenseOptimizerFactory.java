@@ -67,6 +67,9 @@ public final class DenseOptimizerFactory {
             }
         } else if ("adam".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new Adam(ndims, options);
+        } else if ("adam-hd".equalsIgnoreCase(optimizerName)
+                || "adamhd".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new AdamHD(ndims, options);
         } else {
             throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
         }
@@ -200,6 +203,48 @@ public final class DenseOptimizerFactory {
             }
         }
 
+    }
+
+    @NotThreadSafe
+    static final class AdamHD extends Optimizer.AdamHD {
+
+        @Nonnull
+        private final IWeightValue weightValueReused;
+
+        @Nonnull
+        private float[] val_m;
+        @Nonnull
+        private float[] val_v;
+
+        public AdamHD(int ndims, Map<String, String> options) {
+            super(options);
+            this.weightValueReused = new WeightValue.WeightValueParamsF2(0.f, 0.f, 0.f);
+            this.val_m = new float[ndims];
+            this.val_v = new float[ndims];
+        }
+
+        @Override
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
+            int i = HiveUtils.parseInt(feature);
+            ensureCapacity(i);
+            weightValueReused.set(weight);
+            weightValueReused.setM(val_m[i]);
+            weightValueReused.setV(val_v[i]);
+            update(weightValueReused, gradient);
+            val_m[i] = weightValueReused.getM();
+            val_v[i] = weightValueReused.getV();
+            return weightValueReused.get();
+        }
+
+        private void ensureCapacity(final int index) {
+            if (index >= val_m.length) {
+                int bits = MathUtils.bitsRequired(index);
+                int newSize = (1 << bits) + 1;
+                this.val_m = Arrays.copyOf(val_m, newSize);
+                this.val_v = Arrays.copyOf(val_v, newSize);
+            }
+        }
     }
 
     @NotThreadSafe
