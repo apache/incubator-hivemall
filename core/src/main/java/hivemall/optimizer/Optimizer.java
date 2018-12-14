@@ -257,10 +257,7 @@ public interface Optimizer {
             float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
             // update biased second raw moment estimate
             float v = beta2 * weight.getV() + (float) ((1.f - beta2) * MathUtils.square(gradient));
-            // compute bias-corrected first moment estimate
-            float m_hat = m / (float) (1.f - Math.pow(beta1, _numStep));
-            // compute bias-corrected second raw moment estimat
-            float v_hat = v / (float) (1.f - Math.pow(beta2, _numStep));
+            float v_hat = v;
             if (amsgrad) {
                 if (v_hat > max_vhat) {
                     this.max_vhat = v_hat;
@@ -268,9 +265,10 @@ public interface Optimizer {
                     v_hat = max_vhat;
                 }
             }
+            // bias correlation using v_hat and m_hat
+            float deltaU = m / (float) (Math.sqrt(v_hat) + eps);
             // compute delta update
             float alpha_t = alpha();
-            float deltaU = m_hat / (float) (Math.sqrt(v_hat) + eps);
             float delta = alpha_t * deltaU;
             // weight decay
             if (decay != 0.f) {
@@ -309,20 +307,15 @@ public interface Optimizer {
             this.beta = Primitives.parseFloat(options.get("beta"), 0.0001f);
         }
 
-        private float alpha(final float gradient) {
+        private float alpha(final float gradient, final float deltaU) {
             // multiplicative hypergradient descent
-            float h = gradient * deltaU;
-            // if g_{t-1}u_{t-2} > 0 then 
-            //   alpha_{t} = alpha_{t-1} * (1+beta) -- decrease alpha
-            // else if g_{t-1}u_{t-2} < 0 then 
-            //   alpha_{t} = alpha_{t-1} * (1-beta) -- increase alpha
-            float adjust = 1.f - beta * MathUtils.sign(h);
-            this.alpha = alpha * adjust;
-
-            double fix1 = 1.d - Math.pow(beta1, _numStep);
-            double fix2 = 1.d - Math.pow(beta2, _numStep);
-            double fix = Math.sqrt(fix2) / fix1;
-            return (float) (alpha * fix);
+            final float h = gradient * deltaU;
+            if (h > 0) {// g_{t-1}u_{t-2} > 0
+                this.alpha = alpha * (1.f - beta); // decrease alpha
+            } else if (h < 0) {// g_{t-1}u_{t-2} < 0
+                this.alpha = alpha * (1.f + beta); // increase alpha
+            }
+            return alpha;
         }
 
         @Override
@@ -335,10 +328,7 @@ public interface Optimizer {
             float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
             // update biased second raw moment estimate
             float v = beta2 * weight.getV() + (float) ((1.f - beta2) * MathUtils.square(gradient));
-            // compute bias-corrected first moment estimate
-            float m_hat = m / (float) (1.f - Math.pow(beta1, _numStep));
-            // compute bias-corrected second raw moment estimat
-            float v_hat = v / (float) (1.f - Math.pow(beta2, _numStep));
+            float v_hat = v;
             if (amsgrad) {
                 if (v_hat > max_vhat) {
                     this.max_vhat = v_hat;
@@ -346,11 +336,12 @@ public interface Optimizer {
                     v_hat = max_vhat;
                 }
             }
+            // bias correlation using m_hat and v_hat
+            float deltaU = m / (float) (Math.sqrt(v_hat) + eps);
             // compute delta update
-            float alpha_t = alpha(gradient);
-            float deltaU = m_hat / (float) (Math.sqrt(v_hat) + eps);
-            this.deltaU = deltaU;
+            float alpha_t = alpha(gradient, deltaU);
             float delta = alpha_t * deltaU;
+            this.deltaU = deltaU;
             // weight decay
             if (decay != 0.f) {
                 float oldWeight = weight.get();
