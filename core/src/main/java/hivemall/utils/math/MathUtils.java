@@ -433,4 +433,12 @@ public final class MathUtils {
         return arr;
     }
 
+    public static float clip(final float v, final float min, final float max) {
+        return Math.max(Math.min(v, max), min);
+    }
+
+    public static double clip(final double v, final double min, final double max) {
+        return Math.max(Math.min(v, max), min);
+    }
+
 }
