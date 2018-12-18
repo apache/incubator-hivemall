@@ -66,6 +66,8 @@ public final class SparseOptimizerFactory {
             }
         } else if ("adam".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new Adam(ndims, options);
+        } else if ("eve".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new Eve(ndims, options);
         } else if ("adam-hd".equalsIgnoreCase(optimizerName)
                 || "adamhd".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new AdamHD(ndims, options);
@@ -141,6 +143,32 @@ public final class SparseOptimizerFactory {
         private final Object2ObjectMap<Object, IWeightValue> auxWeights;
 
         public Adam(@Nonnegative int size, @Nonnull Map<String, String> options) {
+            super(options);
+            this.auxWeights = new Object2ObjectOpenHashMap<Object, IWeightValue>(size);
+        }
+
+        @Override
+        public float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
+            IWeightValue auxWeight = auxWeights.get(feature);
+            if (auxWeight == null) {
+                auxWeight = new WeightValue.WeightValueParamsF2(weight, 0.f, 0.f);
+                auxWeights.put(feature, auxWeight);
+            } else {
+                auxWeight.set(weight);
+            }
+            return update(auxWeight, gradient);
+        }
+
+    }
+
+    @NotThreadSafe
+    static final class Eve extends Optimizer.Eve {
+
+        @Nonnull
+        private final Object2ObjectMap<Object, IWeightValue> auxWeights;
+
+        public Eve(@Nonnegative int size, @Nonnull Map<String, String> options) {
             super(options);
             this.auxWeights = new Object2ObjectOpenHashMap<Object, IWeightValue>(size);
         }

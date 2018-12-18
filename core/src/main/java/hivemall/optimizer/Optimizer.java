@@ -37,6 +37,11 @@ public interface Optimizer {
     float update(@Nonnull Object feature, float weight, float gradient);
 
     /**
+     * Update the weights of models
+     */
+    float update(@Nonnull Object feature, float weight, float loss, float gradient);
+
+    /**
      * Count up #step to tune learning rate
      */
     void proceedStep();
@@ -69,6 +74,11 @@ public interface Optimizer {
             _numStep++;
         }
 
+        @Override
+        public float update(@Nonnull Object feature, float weight, float loss, float gradient) {
+            return update(feature, weight, gradient);
+        }
+
         /**
          * Update the given weight by the given gradient.
          * 
@@ -85,7 +95,7 @@ public interface Optimizer {
         }
 
         /**
-         * @param t timestep
+         * @param t time step
          * @return learning rate
          */
         protected float eta(final long t) {
@@ -217,6 +227,7 @@ public interface Optimizer {
         protected final float eps;
         protected final float decay;
 
+        // amsgrad
         protected final boolean amsgrad;
         protected float max_vhat = Float.MIN_VALUE;
 
@@ -229,6 +240,7 @@ public interface Optimizer {
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
             this.decay = Primitives.parseFloat(options.get("decay"), 0.f);
             this.amsgrad = options.containsKey("amsgrad");
+
         }
 
         @Override
@@ -283,6 +295,61 @@ public interface Optimizer {
         @Override
         public String getOptimizerName() {
             return "adam";
+        }
+
+    }
+
+    /**
+     * Eve optimizer.
+     *
+     * - "Eve: A Gradient Based Optimization Method with Locally and Globally Adaptive Learning
+     * Rates" https://openreview.net/forum?id=r1WUqIceg
+     */
+    static abstract class Eve extends Adam {
+
+        protected final float beta3;
+        private float c = 10.f;
+        private float inv_c = 0.1f;
+
+        private float currLoss;
+        private float prevLoss = 0.f;
+        private float prevDt = 1.f;
+
+        public Eve(@Nonnull Map<String, String> options) {
+            super(options);
+            this.beta3 = Primitives.parseFloat(options.get("beta3"), 0.999f);
+            this.c = Primitives.parseFloat(options.get("c"), 10f);
+            this.inv_c = 1f / c;
+        }
+
+        @Override
+        protected float alpha() {
+            double fix1 = 1.d - Math.pow(beta1, _numStep);
+            double fix2 = 1.d - Math.pow(beta2, _numStep);
+            double fix = Math.sqrt(fix2) / fix1;
+            float alpha_t = (float) (alpha * fix);
+            // feedback of Eve
+            if (_numStep > 1 && currLoss != prevLoss) {
+                float d = Math.abs(currLoss - prevLoss) / Math.min(currLoss, prevLoss);
+                d = MathUtils.clip(d, inv_c, c); // [alpha/c, c*alpha]
+                d = (beta3 * prevDt) + (1.f - beta3) * d;
+                this.prevDt = d;
+                alpha_t = alpha_t / d;
+            }
+            return alpha_t;
+        }
+
+        @Override
+        public float update(Object feature, float weight, float loss, float gradient) {
+            this.currLoss = loss;
+            float delta = update(feature, weight, gradient);
+            this.prevLoss = loss;
+            return delta;
+        }
+
+        @Override
+        public String getOptimizerName() {
+            return "eve";
         }
 
     }

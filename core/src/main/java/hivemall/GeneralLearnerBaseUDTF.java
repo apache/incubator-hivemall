@@ -467,24 +467,26 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         }
 
         if (is_mini_batch) {
-            accumulateUpdate(features, dloss);
+            accumulateUpdate(features, loss, dloss);
             if (sampled >= mini_batch_size) {
                 batchUpdate();
             }
         } else {
-            onlineUpdate(features, dloss);
+            onlineUpdate(features, loss, dloss);
         }
         optimizer.proceedStep();
     }
 
-    protected void accumulateUpdate(@Nonnull final FeatureValue[] features, final float dloss) {
+    protected void accumulateUpdate(@Nonnull final FeatureValue[] features, final float loss,
+            final float dloss) {
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
             float weight = model.getWeight(feature);
 
             // compute new weight, but still not set to the model
-            float new_weight = optimizer.update(feature, weight, dloss * xi);
+            float gradient = dloss * xi;
+            float new_weight = optimizer.update(feature, weight, loss, gradient);
 
             // (w_i - eta * delta_1) + (w_i - eta * delta_2) + ... + (w_i - eta * delta_M)
             FloatAccumulator acc = accumulated.get(feature);
@@ -519,12 +521,14 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         this.sampled = 0;
     }
 
-    protected void onlineUpdate(@Nonnull final FeatureValue[] features, final float dloss) {
+    protected void onlineUpdate(@Nonnull final FeatureValue[] features, final float loss,
+            final float dloss) {
         for (FeatureValue f : features) {
             Object feature = f.getFeature();
             float xi = f.getValueAsFloat();
             float weight = model.getWeight(feature);
-            final float new_weight = optimizer.update(feature, weight, dloss * xi);
+            float gradient = dloss * xi;
+            final float new_weight = optimizer.update(feature, weight, loss, gradient);
             if (new_weight == 0.f) {
                 model.delete(feature);
                 continue;

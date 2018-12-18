@@ -42,7 +42,7 @@ public final class OptimizerOptions {
 
     public static void setup(@Nonnull Options opts) {
         opts.addOption("opt", "optimizer", true,
-            "Optimizer to update weights [default: adagrad, sgd, adadelta, adam]");
+            "Optimizer to update weights [default: adagrad, sgd, adadelta, adam, eve, AdamHD]");
         // hyperparameters
         opts.addOption("eps", true,
             "Denominator value of AdaDelta/AdaGrad/Adam [default: 1e-8 (AdaDelta/Adam), 1.0 (Adagrad)]");
@@ -70,6 +70,10 @@ public final class OptimizerOptions {
         opts.addOption("amsgrad", false, "Whether to use AMSGrad variant of Adam");
         // ADAM-HD hyperparameters
         opts.addOption("beta", true, "Hyperparameter for tuning alpha in Adam-HD [default: 1e-6f]");
+        // Eve hyperparameters
+        opts.addOption("beta3", true, "Exponential decay rate of alpha value  [default: 0.999]");
+        opts.addOption("c", true,
+            "Clipping constant of alpha used in Eve optimizer so that clipped [default: 10]");
         // other
         opts.addOption("scale", true, "Scaling factor for cumulative weights [100.0]");
     }
