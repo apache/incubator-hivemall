@@ -180,9 +180,9 @@ public interface Optimizer {
                 //   this.accum = v;
                 //   return -delta;
                 // [Tensorflow]
-                //   float v = momentum * accum + gradient;
+                //   float v = momentum * accum + alpha * gradient;
                 //   this.accum = v;
-                //   return gradient + momentum * v;
+                //   return momentum * v + alpha * gradient;
             } else {
                 this.accum = v;
                 return v; // normal momentum
