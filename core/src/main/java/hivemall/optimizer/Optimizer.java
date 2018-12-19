@@ -144,7 +144,9 @@ public interface Optimizer {
 
         @Nonnull
         private final IWeightValue weightValueReused;
+
         private final boolean nesterov;
+        private final float alpha;
         private final float momentum;
 
         private float accum = 0.f;
@@ -153,6 +155,7 @@ public interface Optimizer {
             super(options);
             this.weightValueReused = new WeightValue(0.f);
             this.nesterov = options.containsKey("nesterov");
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 1.f);
             this.momentum = Primitives.parseFloat(options.get("momentum"), 0.9f);
         }
 
@@ -166,11 +169,22 @@ public interface Optimizer {
 
         @Override
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
-            final float v = momentum * accum + gradient;
-            this.accum = v;
+            final float v = momentum * accum + alpha * gradient;
             if (nesterov) {
-                return gradient + momentum * v;
+                float delta = momentum * momentum * v + (1.f + momentum) * alpha * gradient;
+                this.accum = v;
+                return delta;
+                // [Chainer]
+                //   float v = momentum * accum - alpha * gradient;
+                //   float delta = momentum * momentum * v - (1.f + momentum) * alpha * gradient;
+                //   this.accum = v;
+                //   return -delta;
+                // [Tensorflow]
+                //   float v = momentum * accum + gradient;
+                //   this.accum = v;
+                //   return gradient + momentum * v;
             } else {
+                this.accum = v;
                 return v; // normal momentum
             }
         }
