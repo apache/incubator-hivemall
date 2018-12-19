@@ -18,12 +18,14 @@
  */
 package hivemall.optimizer;
 
-import org.junit.Assert;
-import org.junit.Test;
+import hivemall.optimizer.Optimizer.OptimizerBase;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import org.junit.Assert;
+import org.junit.Test;
 
 public final class OptimizerTest {
 
@@ -122,7 +124,7 @@ public final class OptimizerTest {
         }
     }
 
-    private void testUpdateWeights(Optimizer optimizer, int numUpdates, int initSize) {
+    private void testUpdateWeights(OptimizerBase optimizer, int numUpdates, int initSize) {
         final float[] weights = new float[initSize * 2];
         final Random rnd = new Random();
         try {
@@ -144,8 +146,10 @@ public final class OptimizerTest {
         final String[] regTypes = new String[] {"NO", "L1", "L2", "RDA", "ElasticNet"};
         for (final String regType : regTypes) {
             options.put("regularization", regType);
-            testUpdateWeights(DenseOptimizerFactory.create(1024, testOptions), 65536, 1024);
-            testUpdateWeights(SparseOptimizerFactory.create(1024, testOptions), 65536, 1024);
+            testUpdateWeights((OptimizerBase) DenseOptimizerFactory.create(1024, testOptions),
+                65536, 1024);
+            testUpdateWeights((OptimizerBase) SparseOptimizerFactory.create(1024, testOptions),
+                65536, 1024);
         }
     }
 

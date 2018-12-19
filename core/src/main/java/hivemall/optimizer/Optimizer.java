@@ -34,11 +34,6 @@ public interface Optimizer {
     /**
      * Update the weights of models
      */
-    float update(@Nonnull Object feature, float weight, float gradient);
-
-    /**
-     * Update the weights of models
-     */
     float update(@Nonnull Object feature, float weight, float loss, float gradient);
 
     /**
@@ -78,6 +73,11 @@ public interface Optimizer {
         public float update(@Nonnull Object feature, float weight, float loss, float gradient) {
             return update(feature, weight, gradient);
         }
+
+        /**
+         * Update the weights of models
+         */
+        protected abstract float update(@Nonnull Object feature, float weight, float gradient);
 
         /**
          * Update the given weight by the given gradient.
@@ -121,7 +121,7 @@ public interface Optimizer {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             weightValueReused.set(weight);
             update(weightValueReused, gradient);
@@ -134,6 +134,8 @@ public interface Optimizer {
         }
 
     }
+
+
 
     static abstract class AdaGrad extends OptimizerBase {
 

@@ -104,7 +104,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
@@ -143,7 +143,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
@@ -183,7 +183,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
@@ -226,7 +226,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
@@ -270,7 +270,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);
@@ -310,7 +310,7 @@ public final class DenseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             int i = HiveUtils.parseInt(feature);
             ensureCapacity(i);

@@ -96,7 +96,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
@@ -122,7 +122,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
@@ -148,7 +148,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
@@ -174,7 +174,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
@@ -200,7 +200,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
@@ -227,7 +227,7 @@ public final class SparseOptimizerFactory {
         }
 
         @Override
-        public float update(@Nonnull final Object feature, final float weight,
+        protected float update(@Nonnull final Object feature, final float weight,
                 final float gradient) {
             IWeightValue auxWeight = auxWeights.get(feature);
             if (auxWeight == null) {
