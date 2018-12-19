@@ -54,6 +54,11 @@ public final class SparseOptimizerFactory {
         final OptimizerBase optimizerImpl;
         if ("sgd".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new Optimizer.SGD(options);
+        } else if ("momentum".equalsIgnoreCase(optimizerName)) {
+            optimizerImpl = new Optimizer.Momentum(options);
+        } else if ("nesterov".equalsIgnoreCase(optimizerName)) {
+            options.put("nesterov", "");
+            optimizerImpl = new Optimizer.Momentum(options);
         } else if ("adadelta".equalsIgnoreCase(optimizerName)) {
             optimizerImpl = new AdaDelta(ndims, options);
         } else if ("adagrad".equalsIgnoreCase(optimizerName)) {

@@ -135,7 +135,52 @@ public interface Optimizer {
 
     }
 
+    /**
+     * Momentum and Nesterov's Accelerated Gradient.
+     *
+     * https://arxiv.org/abs/1212.0901
+     */
+    static final class Momentum extends OptimizerBase {
 
+        @Nonnull
+        private final IWeightValue weightValueReused;
+        private final boolean nesterov;
+        private final float momentum;
+
+        private float accum = 0.f;
+
+        public Momentum(@Nonnull Map<String, String> options) {
+            super(options);
+            this.weightValueReused = new WeightValue(0.f);
+            this.nesterov = options.containsKey("nesterov");
+            this.momentum = Primitives.parseFloat(options.get("momentum"), 0.9f);
+        }
+
+        @Override
+        protected float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
+            weightValueReused.set(weight);
+            update(weightValueReused, gradient);
+            return weightValueReused.get();
+        }
+
+        @Override
+        protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
+            final float v = momentum * accum + gradient;
+            this.accum = v;
+            if (nesterov) {
+                return gradient + momentum * v;
+            } else {
+                return v; // normal momentum
+            }
+        }
+
+        @Override
+        public String getOptimizerName() {
+            return nesterov ? "nesterov" : "momentum";
+        }
+
+    }
 
     static abstract class AdaGrad extends OptimizerBase {
 
