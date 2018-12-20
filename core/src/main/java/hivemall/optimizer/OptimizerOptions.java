@@ -41,12 +41,13 @@ public final class OptimizerOptions {
     }
 
     public static void setup(@Nonnull Options opts) {
-        opts.addOption("opt", "optimizer", true,
-            "Optimizer to update weights [default: adagrad, sgd, momentum, nesterov, adadelta, adam, eve, AdamHD]");
+        opts.addOption("opt", "optimizer", true, "Optimizer to update weights "
+                + "[default: adagrad, sgd, momentum, nesterov, rmsprop, rmspropgraves, adadelta, adam, eve, adam_hd]");
         // hyperparameters
         opts.addOption("eps", true,
             "Denominator value of AdaDelta/AdaGrad/Adam [default: 1e-8 (AdaDelta/Adam), 1.0 (Adagrad)]");
-        opts.addOption("rho", "decay", true, "Decay rate of AdaDelta [default 0.95]");
+        opts.addOption("rho", "decay", true,
+            " Exponential decay rate of the first and second order moments [default 0.95 (AdaDelta, rmsprop)]");
         // regularization
         opts.addOption("reg", "regularization", true,
             "Regularization type [default: rda, l1, l2, elasticnet]");
@@ -60,7 +61,7 @@ public final class OptimizerOptions {
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
         opts.addOption("alpha", true,
-            "Coefficient of learning rate [default: 1.0 (adam), 0.02 (AdamHD/Nesterov)]");
+            "Coefficient of learning rate [default: 1.0 (adam/RMSPropGraves), 0.02 (AdamHD/Nesterov)]");
         // ADAM hyperparameters
         opts.addOption("beta1", "momentum", true,
             "Exponential decay rate of the first order moment used in Adam [default: 0.9]");

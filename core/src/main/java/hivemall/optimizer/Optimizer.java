@@ -20,6 +20,9 @@ package hivemall.optimizer;
 
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
+import hivemall.model.WeightValue.WeightValueParamsF1;
+import hivemall.model.WeightValue.WeightValueParamsF2;
+import hivemall.model.WeightValue.WeightValueParamsF3;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.math.MathUtils;
 
@@ -58,6 +61,9 @@ public interface Optimizer {
             this._eta = getEtaEstimator(options);
             this._reg = Regularization.get(options);
         }
+
+        @Nonnull
+        protected abstract IWeightValue newWeightValue(final float weight);
 
         @Nonnull
         protected EtaEstimator getEtaEstimator(@Nonnull Map<String, String> options) {
@@ -117,7 +123,12 @@ public interface Optimizer {
 
         public SGD(@Nonnull Map<String, String> options) {
             super(options);
-            this.weightValueReused = new WeightValue(0.f);
+            this.weightValueReused = newWeightValue(0.f);
+        }
+
+        @Override
+        protected WeightValue newWeightValue(final float weight) {
+            return new WeightValue(weight);
         }
 
         @Override
@@ -140,51 +151,37 @@ public interface Optimizer {
      *
      * https://arxiv.org/abs/1212.0901
      */
-    static final class Momentum extends OptimizerBase {
+    static abstract class Momentum extends OptimizerBase {
 
         @Nonnull
-        private final IWeightValue weightValueReused;
+        private final WeightValueParamsF1 weightValueReused;
 
         private final boolean nesterov;
         private final float alpha;
         private final float momentum;
 
-        private float accum = 0.f;
-
         public Momentum(@Nonnull Map<String, String> options) {
             super(options);
-            this.weightValueReused = new WeightValue(0.f);
+            this.weightValueReused = newWeightValue(0.f);
             this.nesterov = options.containsKey("nesterov");
             this.alpha = Primitives.parseFloat(options.get("alpha"), 1.f);
             this.momentum = Primitives.parseFloat(options.get("momentum"), 0.9f);
         }
 
         @Override
-        protected float update(@Nonnull final Object feature, final float weight,
-                final float gradient) {
-            weightValueReused.set(weight);
-            update(weightValueReused, gradient);
-            return weightValueReused.get();
+        protected WeightValueParamsF1 newWeightValue(final float weight) {
+            return new WeightValueParamsF1(weight, 0.f);
         }
 
         @Override
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
-            final float v = momentum * accum + alpha * gradient;
+            final float oldDelta = weight.getDelta();
+            final float v = momentum * oldDelta + alpha * gradient;
+            weight.setDelta(v);
             if (nesterov) {
-                float delta = momentum * momentum * v + (1.f + momentum) * alpha * gradient;
-                this.accum = v;
-                return delta;
-                // [Chainer]
-                //   float v = momentum * accum - alpha * gradient;
-                //   float delta = momentum * momentum * v - (1.f + momentum) * alpha * gradient;
-                //   this.accum = v;
-                //   return -delta;
-                // [Tensorflow]
-                //   float v = momentum * accum + alpha * gradient;
-                //   this.accum = v;
-                //   return momentum * v + alpha * gradient;
+                //return momentum * momentum * oldDelta + (1.f + momentum) * alpha * gradient;
+                return momentum * momentum * v + (1.f + momentum) * alpha * gradient;
             } else {
-                this.accum = v;
                 return v; // normal momentum
             }
         }
@@ -208,6 +205,11 @@ public interface Optimizer {
         }
 
         @Override
+        protected WeightValueParamsF1 newWeightValue(final float weight) {
+            return new WeightValueParamsF1(weight, 0.f);
+        }
+
+        @Override
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
             float old_scaled_gg = weight.getSumOfSquaredGradients();
             float new_scaled_gg = old_scaled_gg + gradient * (gradient / scale);
@@ -218,6 +220,107 @@ public interface Optimizer {
         @Override
         public String getOptimizerName() {
             return "adagrad";
+        }
+
+    }
+
+
+    /**
+     * RMSprop optimizer introducing weight decay to AdaGrad.
+     *
+     * Geoffrey Hinton, Nitish Srivastava, Kevin Swersky. 2014. "Lecture 6e: Rmsprop: Divide the
+     * gradient by a running average of its recent magnitude"
+     *
+     * @see http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+     */
+    static abstract class RMSprop extends OptimizerBase {
+
+        /** decay rate */
+        private final float decay;
+        /** constant for numerical stability */
+        private final float eps;
+
+        private final float scale; // to hold g*g in float range
+
+        public RMSprop(@Nonnull Map<String, String> options) {
+            super(options);
+            this.decay = Primitives.parseFloat(options.get("decay"), 0.95f);
+            this.eps = Primitives.parseFloat(options.get("eps"), 1.0f);
+            this.scale = Primitives.parseFloat(options.get("scale"), 100.0f);
+        }
+
+        @Override
+        protected WeightValueParamsF1 newWeightValue(final float weight) {
+            return new WeightValueParamsF1(weight, 0.f);
+        }
+
+        @Override
+        protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
+            float old_scaled_gg = weight.getSumOfSquaredGradients();
+            float new_scaled_gg =
+                    decay * old_scaled_gg + (1.f - decay) * gradient * (gradient / scale);
+            weight.setSumOfSquaredGradients(new_scaled_gg);
+            return (float) (gradient / Math.sqrt(eps + ((double) old_scaled_gg) * scale));
+        }
+
+        @Override
+        public String getOptimizerName() {
+            return "rmsprop";
+        }
+
+    }
+
+    /**
+     * Alex Graves's RMSprop introducing weight decay and momentum.
+     *
+     * @see https://arxiv.org/abs/1308.0850
+     */
+    static abstract class RMSpropGraves extends OptimizerBase {
+
+        /** decay rate */
+        private final float decay;
+        private final float alpha;
+        private final float momentum;
+        /** constant for numerical stability */
+        private final float eps;
+
+        private final float scale; // to hold g*g in float range
+
+        public RMSpropGraves(@Nonnull Map<String, String> options) {
+            super(options);
+            this.decay = Primitives.parseFloat(options.get("decay"), 0.95f);
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 1.f);
+            this.momentum = Primitives.parseFloat(options.get("momentum"), 0.9f);
+            this.eps = Primitives.parseFloat(options.get("eps"), 1.0f);
+            this.scale = Primitives.parseFloat(options.get("scale"), 100.0f);
+        }
+
+        @Override
+        protected WeightValueParamsF3 newWeightValue(final float weight) {
+            return new WeightValueParamsF3(weight, 0.f, 0.f, 0.f);
+        }
+
+        @Override
+        protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
+            float old_scaled_n = weight.getSumOfSquaredGradients();
+            float new_scaled_n =
+                    decay * old_scaled_n + (1.f - decay) * gradient * (gradient / scale);
+            weight.setSumOfSquaredGradients(new_scaled_n);
+            float old_scaled_g = weight.getSumOfGradients();
+            float new_scaled_g = decay * old_scaled_g + (1.f - decay) * gradient / scale;
+            weight.setSumOfGradients(new_scaled_g);
+            double n = ((double) old_scaled_n) * scale;
+            double g = ((double) new_scaled_g) * scale;
+            float oldDelta = weight.getDelta();
+            float delta =
+                    momentum * oldDelta + alpha * (float) (gradient / Math.sqrt(n - g * g + eps));
+            weight.setDelta(delta);
+            return delta;
+        }
+
+        @Override
+        public String getOptimizerName() {
+            return "rmsprop_graves";
         }
 
     }
@@ -233,6 +336,11 @@ public interface Optimizer {
             this.decay = Primitives.parseFloat(options.get("decay"), 0.95f);
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-6f);
             this.scale = Primitives.parseFloat(options.get("scale"), 100.0f);
+        }
+
+        @Override
+        protected WeightValueParamsF2 newWeightValue(final float weight) {
+            return new WeightValueParamsF2(weight, 0.f, 0.f);
         }
 
         @Override
@@ -301,7 +409,11 @@ public interface Optimizer {
             this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
             this.decay = Primitives.parseFloat(options.get("decay"), 0.f);
             this.amsgrad = options.containsKey("amsgrad");
+        }
 
+        @Override
+        protected WeightValueParamsF2 newWeightValue(final float weight) {
+            return new WeightValueParamsF2(weight, 0.f, 0.f);
         }
 
         @Override
@@ -355,7 +467,7 @@ public interface Optimizer {
 
         @Override
         public String getOptimizerName() {
-            return "adam";
+            return amsgrad ? "adam-amsgrad" : "adam";
         }
 
     }
@@ -489,7 +601,7 @@ public interface Optimizer {
 
         @Override
         public String getOptimizerName() {
-            return "adam-hd";
+            return "adam_hd";
         }
 
     }
@@ -504,6 +616,11 @@ public interface Optimizer {
             super(options);
             this.optimizerImpl = optimizerImpl;
             this.lambda = Primitives.parseFloat(options.get("lambda"), 1e-6f);
+        }
+
+        @Override
+        protected WeightValueParamsF2 newWeightValue(final float weight) {
+            return new WeightValueParamsF2(weight, 0.f, 0.f);
         }
 
         @Override

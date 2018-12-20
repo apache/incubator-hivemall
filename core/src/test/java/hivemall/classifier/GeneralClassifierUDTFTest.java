@@ -456,8 +456,8 @@ public class GeneralClassifierUDTFTest {
         udtf.finalizeTraining();
 
         Assert.assertTrue(
-            "CumulativeLoss is expected to be less than 1600: " + udtf.getCumulativeLoss(),
-            udtf.getCumulativeLoss() < 1600);
+            "CumulativeLoss is expected to be less than 1200: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 1200);
     }
 
     @Test
@@ -492,8 +492,8 @@ public class GeneralClassifierUDTFTest {
         udtf.finalizeTraining();
 
         Assert.assertTrue(
-            "CumulativeLoss is expected to be less than 1300: " + udtf.getCumulativeLoss(),
-            udtf.getCumulativeLoss() < 1300);
+            "CumulativeLoss is expected to be less than 1100: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 1100);
     }
 
     @Test
@@ -533,6 +533,79 @@ public class GeneralClassifierUDTFTest {
     }
 
     @Test
+    public void testRMSprop() throws IOException, HiveException {
+        String filePath = "adam_test_10000.tsv.gz";
+        String options =
+                "-loss logloss -opt rmsprop -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, params});
+
+        BufferedReader reader = readFile(filePath);
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+
+            String featureLine = tokenizer.nextToken();
+            List<String> X = Arrays.asList(featureLine.split(","));
+
+            String labelLine = tokenizer.nextToken();
+            Integer y = Integer.valueOf(labelLine);
+
+            udtf.process(new Object[] {X, y});
+        }
+
+        udtf.finalizeTraining();
+
+        Assert.assertTrue(
+            "CumulativeLoss is expected to be less than 1300: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 1300);
+    }
+
+    @Test
+    public void testRMSpropGraves() throws IOException, HiveException {
+        String filePath = "adam_test_10000.tsv.gz";
+        String options =
+                "-loss logloss -opt RMSpropGraves -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, params});
+
+        BufferedReader reader = readFile(filePath);
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            StringTokenizer tokenizer = new StringTokenizer(line, " ");
+
+            String featureLine = tokenizer.nextToken();
+            List<String> X = Arrays.asList(featureLine.split(","));
+
+            String labelLine = tokenizer.nextToken();
+            Integer y = Integer.valueOf(labelLine);
+
+            udtf.process(new Object[] {X, y});
+        }
+
+        udtf.finalizeTraining();
+
+        Assert.assertTrue(
+            "CumulativeLoss is expected to be less than 1200: " + udtf.getCumulativeLoss(),
+            udtf.getCumulativeLoss() < 1200);
+    }
+
+
+    @Test
     public void testAdaDeltaL1() throws IOException, HiveException {
         String filePath = "adam_test_10000.tsv.gz";
         String options =
@@ -564,7 +637,7 @@ public class GeneralClassifierUDTFTest {
         udtf.finalizeTraining();
 
         Assert.assertTrue(
-            "CumulativeLoss is expected to be less than 1800: " + udtf.getCumulativeLoss(),
+            "CumulativeLoss is expected to be less than 1500: " + udtf.getCumulativeLoss(),
             udtf.getCumulativeLoss() < 1500);
     }
 

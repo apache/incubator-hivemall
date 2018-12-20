@@ -94,6 +94,16 @@ public class WeightValueWithClock implements IWeightValue {
     }
 
     @Override
+    public float getDelta() {
+        return 0.f;
+    }
+
+    @Override
+    public void setDelta(float value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public float getSumOfGradients() {
         return 0.f;
     }
@@ -211,6 +221,16 @@ public class WeightValueWithClock implements IWeightValue {
 
         @Override
         public void setSumOfSquaredGradients(float value) {
+            this.f1 = value;
+        }
+
+        @Override
+        public float getDelta() {
+            return f1;
+        }
+
+        @Override
+        public void setDelta(float value) {
             this.f1 = value;
         }
 
