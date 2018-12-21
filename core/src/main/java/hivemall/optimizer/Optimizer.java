@@ -18,6 +18,13 @@
  */
 package hivemall.optimizer;
 
+import static hivemall.utils.math.MathUtils.square;
+import static java.lang.Math.abs;
+import static java.lang.Math.floor;
+import static java.lang.Math.min;
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
+
 import hivemall.model.IWeightValue;
 import hivemall.model.WeightValue;
 import hivemall.model.WeightValue.WeightValueParamsF1;
@@ -55,7 +62,7 @@ public interface Optimizer {
         @Nonnull
         protected final Regularization _reg;
         @Nonnegative
-        protected long _numStep = 1L;
+        protected long _numStep = 0L;
 
         public OptimizerBase(@Nonnull Map<String, String> options) {
             this._eta = getEtaEstimator(options);
@@ -214,7 +221,7 @@ public interface Optimizer {
             float old_scaled_gg = weight.getSumOfSquaredGradients();
             float new_scaled_gg = old_scaled_gg + gradient * (gradient / scale);
             weight.setSumOfSquaredGradients(new_scaled_gg);
-            return (float) (gradient / Math.sqrt(eps + ((double) old_scaled_gg) * scale));
+            return (float) (gradient / sqrt(eps + ((double) old_scaled_gg) * scale));
         }
 
         @Override
@@ -260,7 +267,7 @@ public interface Optimizer {
             float new_scaled_gg =
                     decay * old_scaled_gg + (1.f - decay) * gradient * (gradient / scale);
             weight.setSumOfSquaredGradients(new_scaled_gg);
-            return (float) (gradient / Math.sqrt(eps + ((double) old_scaled_gg) * scale));
+            return (float) (gradient / sqrt(eps + ((double) old_scaled_gg) * scale));
         }
 
         @Override
@@ -312,8 +319,7 @@ public interface Optimizer {
             double n = ((double) old_scaled_n) * scale;
             double g = ((double) new_scaled_g) * scale;
             float oldDelta = weight.getDelta();
-            float delta =
-                    momentum * oldDelta + alpha * (float) (gradient / Math.sqrt(n - g * g + eps));
+            float delta = momentum * oldDelta + alpha * (float) (gradient / sqrt(n - g * g + eps));
             weight.setDelta(delta);
             return delta;
         }
@@ -361,7 +367,7 @@ public interface Optimizer {
             float old_sum_squared_delta_x = weight.getSumOfSquaredDeltaX();
             float new_scaled_sum_sqgrad = (decay * old_scaled_sum_sqgrad)
                     + ((1.f - decay) * gradient * (gradient / scale));
-            float delta = (float) Math.sqrt(
+            float delta = (float) sqrt(
                 (old_sum_squared_delta_x + eps) / ((double) new_scaled_sum_sqgrad * scale + eps))
                     * gradient;
             float new_sum_squared_delta_x =
@@ -418,18 +424,18 @@ public interface Optimizer {
 
         @Override
         protected float eta(final long t) {
-            double fix1 = 1.d - Math.pow(beta1, t);
-            double fix2 = 1.d - Math.pow(beta2, t);
+            double fix1 = 1.d - pow(beta1, t);
+            double fix2 = 1.d - pow(beta2, t);
             float eta = _eta.eta(t);
-            double fix = Math.sqrt(fix2) / fix1;
+            double fix = sqrt(fix2) / fix1;
             return (float) (eta * fix);
         }
 
-        protected float alpha() {
-            double fix1 = 1.d - Math.pow(beta1, _numStep);
-            double fix2 = 1.d - Math.pow(beta2, _numStep);
-            double fix = Math.sqrt(fix2) / fix1;
-            return (float) (alpha * fix);
+        protected double alpha() {
+            double fix1 = 1.d - pow(beta1, _numStep);
+            double fix2 = 1.d - pow(beta2, _numStep);
+            double fix = sqrt(fix2) / fix1;
+            return alpha * fix;
         }
 
         @Override
@@ -441,7 +447,7 @@ public interface Optimizer {
             // update biased first moment estimate
             float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
             // update biased second raw moment estimate
-            float v = beta2 * weight.getV() + (float) ((1.f - beta2) * MathUtils.square(gradient));
+            float v = beta2 * weight.getV() + (float) ((1.f - beta2) * square(gradient));
             float v_hat = v;
             if (amsgrad) {
                 if (v_hat > max_vhat) {
@@ -451,10 +457,10 @@ public interface Optimizer {
                 }
             }
             // bias correlation using v_hat and m_hat
-            float deltaU = m / (float) (Math.sqrt(v_hat) + eps);
+            double deltaU = m / (sqrt(v_hat) + eps);
             // compute delta update
-            float alpha_t = alpha();
-            float delta = alpha_t * deltaU;
+            double alpha_t = alpha();
+            float delta = (float) (alpha_t * deltaU);
             // weight decay
             if (decay != 0.f) {
                 float oldWeight = weight.get();
@@ -473,6 +479,109 @@ public interface Optimizer {
     }
 
     /**
+     * Nadam is Adam optimizer with Nesterov momentum.
+     *
+     * @see https://openreview.net/pdf?id=OM0jvwB8jIp57ZJjtNEZ
+     * @see http://cs229.stanford.edu/proj2015/054_report.pdf
+     * @see http://www.cs.toronto.edu/~fritz/absps/momentum.pdf
+     */
+    static abstract class Nadam extends OptimizerBase {
+
+        protected float alpha;
+        protected final float beta1, beta2;
+        protected final float eps;
+        protected final float decay;
+        protected final float scheduleDecay;
+
+        protected double mu_t, mu_t_1;
+        protected double mu_product = 1.d;
+        protected double mu_product_next = 1.d;
+
+        public Nadam(@Nonnull Map<String, String> options) {
+            super(options);
+            //this.alpha = Primitives.parseFloat(options.get("alpha"), 0.001f);
+            this.alpha = Primitives.parseFloat(options.get("alpha"), 1.0f);
+            this.beta1 = Primitives.parseFloat(options.get("beta1"), 0.9f);
+            this.beta2 = Primitives.parseFloat(options.get("beta2"), 0.999f);
+            this.eps = Primitives.parseFloat(options.get("eps"), 1e-8f);
+            this.decay = Primitives.parseFloat(options.get("decay"), 0.f);
+            this.scheduleDecay = Primitives.parseFloat(options.get("scheduleDecay"), 0.004f); // 1/250=0.004
+        }
+
+        @Override
+        protected WeightValueParamsF2 newWeightValue(final float weight) {
+            return new WeightValueParamsF2(weight, 0.f, 0.f);
+        }
+
+        @Override
+        public void proceedStep() {
+            long t = _numStep + 1;
+            this._numStep = t;
+            double mu_product_prev = this.mu_product;
+            // 0.9 * (1 - 0.5 * 0.96^(floor(t/250)+1))
+            double mu_t = beta1 * (1.d - 0.5d * pow(0.96d, floor(t * scheduleDecay) + 1.d));
+            double mu_t_1 =
+                    beta1 * (1.d - 0.5d * pow(0.96d, floor((t + 1.d) * scheduleDecay) + 1.d));
+            this.mu_t = mu_t;
+            this.mu_t_1 = mu_t_1;
+            this.mu_product = mu_product_prev * mu_t;
+            this.mu_product_next = mu_product_prev * mu_t * mu_t_1;
+        }
+
+        @Override
+        protected float eta(final long t) {
+            double fix1 = 1.d - pow(beta1, t);
+            double fix2 = 1.d - pow(beta2, t);
+            float eta = _eta.eta(t);
+            double fix = sqrt(fix2) / fix1;
+            return (float) (eta * fix);
+        }
+
+        protected double alpha() {
+            double fix1 = 1.d - pow(beta1, _numStep);
+            double fix2 = 1.d - pow(beta2, _numStep);
+            double fix = sqrt(fix2) / fix1;
+            return alpha * fix;
+        }
+
+        @Override
+        protected float computeDelta(@Nonnull final IWeightValue weight, float gradient) {
+            if (decay != 0.f) {// L2 regularization for weight decay
+                float oldWeight = weight.get();
+                gradient += decay * oldWeight;
+            }
+            // update biased first moment estimate
+            float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
+            double m_hat = m / (1.d - mu_product_next);
+            // update biased second raw moment estimate
+            float v = beta2 * weight.getV() + (float) ((1.d - beta2) * square(gradient));
+            double v_hat = v / (1.d - pow(beta2, _numStep));
+            // gradient update for the current timestamp
+            double g_hat = gradient / (1.d - mu_product);
+            double m_bar = (1.d - mu_t) * g_hat + mu_t_1 * m_hat;
+            // bias correlation using v_hat and m_hat
+            double deltaU = m_bar / (sqrt(v_hat) + eps);
+            // compute delta update
+            double alpha_t = alpha();
+            float delta = (float) (alpha_t * deltaU);
+            // weight decay
+            if (decay != 0.d) {
+                float oldWeight = weight.get();
+                delta += decay * oldWeight;
+            }
+            weight.setM(m);
+            weight.setV(v);
+            return delta;
+        }
+
+        @Override
+        public String getOptimizerName() {
+            return "nadam";
+        }
+
+    }
+
+    /**
      * Eve optimizer.
      *
      * - "Eve: A Gradient Based Optimization Method with Locally and Globally Adaptive Learning
@@ -486,7 +595,7 @@ public interface Optimizer {
 
         private float currLoss;
         private float prevLoss = 0.f;
-        private float prevDt = 1.f;
+        private double prevDt = 1.d;
 
         public Eve(@Nonnull Map<String, String> options) {
             super(options);
@@ -496,16 +605,16 @@ public interface Optimizer {
         }
 
         @Override
-        protected float alpha() {
-            double fix1 = 1.d - Math.pow(beta1, _numStep);
-            double fix2 = 1.d - Math.pow(beta2, _numStep);
-            double fix = Math.sqrt(fix2) / fix1;
-            float alpha_t = (float) (alpha * fix);
+        protected double alpha() {
+            double fix1 = 1.d - pow(beta1, _numStep);
+            double fix2 = 1.d - pow(beta2, _numStep);
+            double fix = sqrt(fix2) / fix1;
+            double alpha_t = alpha * fix;
             // feedback of Eve
             if (_numStep > 1 && currLoss != prevLoss) {
-                float d = Math.abs(currLoss - prevLoss) / Math.min(currLoss, prevLoss);
+                double d = abs(currLoss - prevLoss) / min(currLoss, prevLoss);
                 d = MathUtils.clip(d, inv_c, c); // [alpha/c, c*alpha]
-                d = (beta3 * prevDt) + (1.f - beta3) * d;
+                d = (beta3 * prevDt) + (1.d - beta3) * d;
                 this.prevDt = d;
                 alpha_t = alpha_t / d;
             }
@@ -539,7 +648,7 @@ public interface Optimizer {
     static abstract class AdamHD extends Adam {
 
         private final float beta;
-        protected float deltaU = 0.f;
+        protected double deltaU = 0.d;
 
         public AdamHD(@Nonnull Map<String, String> options) {
             super(options);
@@ -559,9 +668,9 @@ public interface Optimizer {
             return super.getEtaEstimator(options);
         }
 
-        private float alpha(final float gradient, final float deltaU) {
+        private float alpha(final float gradient, final double deltaU) {
             // multiplicative hypergradient descent
-            final float h = gradient * deltaU;
+            final double h = gradient * deltaU;
             if (h > 0) {// g_{t-1}u_{t-2} > 0
                 this.alpha = alpha * (1.f - beta); // decrease alpha
             } else if (h < 0) {// g_{t-1}u_{t-2} < 0
@@ -579,15 +688,15 @@ public interface Optimizer {
             // update biased first moment estimate
             float m = beta1 * weight.getM() + (1.f - beta1) * gradient;
             // update biased second raw moment estimate
-            float v = beta2 * weight.getV() + (float) ((1.f - beta2) * MathUtils.square(gradient));
+            float v = beta2 * weight.getV() + (float) ((1.f - beta2) * square(gradient));
             // compute bias-corrected first moment estimate
-            float m_hat = m / (float) (1.f - Math.pow(beta1, _numStep));
+            double m_hat = m / (1.d - pow(beta1, _numStep));
             // compute bias-corrected second raw moment estimate
-            float v_hat = v / (float) (1.f - Math.pow(beta2, _numStep));
+            double v_hat = v / (1.d - pow(beta2, _numStep));
             // compute delta update
             float alpha_t = alpha(gradient, deltaU);
-            float deltaU = m_hat / (float) (Math.sqrt(v_hat) + eps);
-            float delta = alpha_t * deltaU;
+            double deltaU = m_hat / (sqrt(v_hat) + eps);
+            float delta = (float) (alpha_t * deltaU);
             this.deltaU = deltaU;
             // weight decay
             if (decay != 0.f) {

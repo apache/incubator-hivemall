@@ -45,23 +45,24 @@ public final class DenseOptimizerFactory {
         if (optimizerName == null) {
             throw new IllegalArgumentException("`optimizer` not defined");
         }
+        final String name = optimizerName.toLowerCase();
 
         if ("rda".equalsIgnoreCase(options.get("regularization"))
-                && "adagrad".equalsIgnoreCase(optimizerName) == false) {
+                && "adagrad".equals(name) == false) {
             throw new IllegalArgumentException(
                 "`-regularization rda` is only supported for AdaGrad but `-optimizer "
                         + optimizerName + "`. Please specify `-regularization l1` and so on.");
         }
 
         final OptimizerBase optimizerImpl;
-        if ("sgd".equalsIgnoreCase(optimizerName)) {
+        if ("sgd".equals(name)) {
             optimizerImpl = new Optimizer.SGD(options);
-        } else if ("momentum".equalsIgnoreCase(optimizerName)) {
+        } else if ("momentum".equals(name)) {
             optimizerImpl = new Momentum(ndims, options);
-        } else if ("nesterov".equalsIgnoreCase(optimizerName)) {
+        } else if ("nesterov".equals(name)) {
             options.put("nesterov", "");
             optimizerImpl = new Momentum(ndims, options);
-        } else if ("adagrad".equalsIgnoreCase(optimizerName)) {
+        } else if ("adagrad".equals(name)) {
             // If a regularization type is "RDA", wrap the optimizer with `Optimizer#RDA`.
             if ("rda".equalsIgnoreCase(options.get("regularization"))) {
                 AdaGrad adagrad = new AdaGrad(ndims, options);
@@ -69,19 +70,19 @@ public final class DenseOptimizerFactory {
             } else {
                 optimizerImpl = new AdaGrad(ndims, options);
             }
-        } else if ("rmsprop".equalsIgnoreCase(optimizerName)) {
+        } else if ("rmsprop".equals(name)) {
             optimizerImpl = new RMSprop(ndims, options);
-        } else if ("rmspropgraves".equalsIgnoreCase(optimizerName)
-                || "rmsprop_graves".equalsIgnoreCase(optimizerName)) {
+        } else if ("rmspropgraves".equals(name) || "rmsprop_graves".equals(name)) {
             optimizerImpl = new RMSpropGraves(ndims, options);
-        } else if ("adadelta".equalsIgnoreCase(optimizerName)) {
+        } else if ("adadelta".equals(name)) {
             optimizerImpl = new AdaDelta(ndims, options);
-        } else if ("adam".equalsIgnoreCase(optimizerName)) {
+        } else if ("adam".equals(name)) {
             optimizerImpl = new Adam(ndims, options);
-        } else if ("eve".equalsIgnoreCase(optimizerName)) {
+        } else if ("nadam".equals(name)) {
+            optimizerImpl = new Nadam(ndims, options);
+        } else if ("eve".equals(name)) {
             optimizerImpl = new Eve(ndims, options);
-        } else if ("adam_hd".equalsIgnoreCase(optimizerName)
-                || "adamhd".equalsIgnoreCase(optimizerName)) {
+        } else if ("adam_hd".equals(name) || "adamhd".equals(name)) {
             optimizerImpl = new AdamHD(ndims, options);
         } else {
             throw new IllegalArgumentException("Unsupported optimizer name: " + optimizerName);
@@ -307,6 +308,49 @@ public final class DenseOptimizerFactory {
         private float[] val_v;
 
         public Adam(int ndims, Map<String, String> options) {
+            super(options);
+            this.weightValueReused = newWeightValue(0.f);
+            this.val_m = new float[ndims];
+            this.val_v = new float[ndims];
+        }
+
+        @Override
+        protected float update(@Nonnull final Object feature, final float weight,
+                final float gradient) {
+            int i = HiveUtils.parseInt(feature);
+            ensureCapacity(i);
+            weightValueReused.set(weight);
+            weightValueReused.setM(val_m[i]);
+            weightValueReused.setV(val_v[i]);
+            update(weightValueReused, gradient);
+            val_m[i] = weightValueReused.getM();
+            val_v[i] = weightValueReused.getV();
+            return weightValueReused.get();
+        }
+
+        private void ensureCapacity(final int index) {
+            if (index >= val_m.length) {
+                int bits = MathUtils.bitsRequired(index);
+                int newSize = (1 << bits) + 1;
+                this.val_m = Arrays.copyOf(val_m, newSize);
+                this.val_v = Arrays.copyOf(val_v, newSize);
+            }
+        }
+
+    }
+
+    @NotThreadSafe
+    static final class Nadam extends Optimizer.Nadam {
+
+        @Nonnull
+        private final WeightValueParamsF2 weightValueReused;
+
+        @Nonnull
+        private float[] val_m;
+        @Nonnull
+        private float[] val_v;
+
+        public Nadam(int ndims, Map<String, String> options) {
             super(options);
             this.weightValueReused = newWeightValue(0.f);
             this.val_m = new float[ndims];
