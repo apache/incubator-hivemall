@@ -452,12 +452,13 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
 
     protected void update(@Nonnull final FeatureValue[] features, final float target,
             final float predicted) {
+        optimizer.proceedStep();
+
         float loss = lossFunction.loss(predicted, target);
         cvState.incrLoss(loss); // retain cumulative loss to check convergence
 
         float dloss = lossFunction.dloss(predicted, target);
         if (dloss == 0.f) {
-            optimizer.proceedStep();
             return;
         }
         if (dloss < MIN_DLOSS) {
@@ -474,7 +475,6 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         } else {
             onlineUpdate(features, loss, dloss);
         }
-        optimizer.proceedStep();
     }
 
     protected void accumulateUpdate(@Nonnull final FeatureValue[] features, final float loss,
