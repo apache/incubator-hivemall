@@ -85,3 +85,24 @@ from
 ```
 
 > 0.8462625145875561
+
+The following table shows accuracy for changing optimizer by `-loss logistic -opt XXXXXX -reg l1 -iter 30` option:
+
+| Optimizer | Accuracy |
+|:--:|:--:|
+| Default (Adagrad+RDA) | 0.8462625145875561 |
+| SGD | 0.8462010932989374 |
+| Momentum | 0.8254406977458387 |
+| Nesterov | 0.8286346047540077 |
+| AdaGrad | 0.850991953811191 |
+| RMSprop | 0.8463239358761747 |
+| RMSpropGraves | 0.825563540323076 |
+| AdaDelta | 0.8492721577298692 |
+| Adam | 0.8341625207296849 |
+| Nadam | 0.8349609974817271 |
+| Eve | 0.8348381549044899 |
+| AdamHD | 0.8447269823720902 |
+
+> #### Note
+> Optimizers using momentum need to tune decay rate well.
+> Default (Adagrad+RDA), Adam, and AdamHD is worth trying in my experience.
