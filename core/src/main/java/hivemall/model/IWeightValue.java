@@ -50,6 +50,10 @@ public interface IWeightValue extends Copyable<IWeightValue> {
 
     void setSumOfSquaredDeltaX(float value);
 
+    float getDelta();
+
+    void setDelta(float value);
+
     float getSumOfGradients();
 
     void setSumOfGradients(float value);

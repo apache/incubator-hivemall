@@ -41,10 +41,13 @@ public final class OptimizerOptions {
     }
 
     public static void setup(@Nonnull Options opts) {
-        opts.addOption("opt", "optimizer", true,
-            "Optimizer to update weights [default: adagrad, sgd, adadelta, adam]");
-        opts.addOption("eps", true, "Denominator value of AdaDelta/AdaGrad [default 1e-6]");
-        opts.addOption("rho", "decay", true, "Decay rate of AdaDelta [default 0.95]");
+        opts.addOption("opt", "optimizer", true, "Optimizer to update weights "
+                + "[default: adagrad, sgd, momentum, nesterov, rmsprop, rmspropgraves, adadelta, adam, eve, adam_hd]");
+        // hyperparameters
+        opts.addOption("eps", true,
+            "Denominator value of AdaDelta/AdaGrad/Adam [default: 1e-8 (AdaDelta/Adam), 1.0 (Adagrad)]");
+        opts.addOption("rho", "decay", true,
+            " Exponential decay rate of the first and second order moments [default 0.95 (AdaDelta, rmsprop)]");
         // regularization
         opts.addOption("reg", "regularization", true,
             "Regularization type [default: rda, l1, l2, elasticnet]");
@@ -57,6 +60,21 @@ public final class OptimizerOptions {
         opts.addOption("t", "total_steps", true, "a total of n_samples * epochs time steps");
         opts.addOption("power_t", true,
             "The exponent for inverse scaling learning rate [default 0.1]");
+        opts.addOption("alpha", true,
+            "Coefficient of learning rate [default: 1.0 (adam/RMSPropGraves), 0.02 (AdamHD/Nesterov)]");
+        // ADAM hyperparameters
+        opts.addOption("beta1", "momentum", true,
+            "Exponential decay rate of the first order moment used in Adam [default: 0.9]");
+        opts.addOption("beta2", true,
+            "Exponential decay rate of the second order moment used in Adam [default: 0.999]");
+        opts.addOption("decay", false, "Weight decay rate [default: 0.0]");
+        opts.addOption("amsgrad", false, "Whether to use AMSGrad variant of Adam");
+        // ADAM-HD hyperparameters
+        opts.addOption("beta", true, "Hyperparameter for tuning alpha in Adam-HD [default: 1e-6f]");
+        // Eve hyperparameters
+        opts.addOption("beta3", true, "Exponential decay rate of alpha value  [default: 0.999]");
+        opts.addOption("c", true,
+            "Clipping constant of alpha used in Eve optimizer so that clipped [default: 10]");
         // other
         opts.addOption("scale", true, "Scaling factor for cumulative weights [100.0]");
     }

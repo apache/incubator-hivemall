@@ -92,6 +92,16 @@ public class WeightValue implements IWeightValue {
     }
 
     @Override
+    public float getDelta() {
+        return 0.f;
+    }
+
+    @Override
+    public void setDelta(float value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public float getSumOfGradients() {
         return 0.f;
     }
@@ -199,6 +209,16 @@ public class WeightValue implements IWeightValue {
 
         @Override
         public void setSumOfSquaredGradients(float value) {
+            this.f1 = value;
+        }
+
+        @Override
+        public float getDelta() {
+            return f1;
+        }
+
+        @Override
+        public void setDelta(float value) {
             this.f1 = value;
         }
 
@@ -314,7 +334,7 @@ public class WeightValue implements IWeightValue {
         }
 
         @Override
-        public final float getSumOfSquaredGradients() {
+        public float getSumOfSquaredGradients() {
             return f1;
         }
 
@@ -324,12 +344,22 @@ public class WeightValue implements IWeightValue {
         }
 
         @Override
-        public final float getSumOfSquaredDeltaX() {
+        public float getSumOfSquaredDeltaX() {
             return f2;
         }
 
         @Override
         public void setSumOfSquaredDeltaX(float value) {
+            this.f2 = value;
+        }
+
+        @Override
+        public float getDelta() {
+            return f2;
+        }
+
+        @Override
+        public void setDelta(float value) {
             this.f2 = value;
         }
 

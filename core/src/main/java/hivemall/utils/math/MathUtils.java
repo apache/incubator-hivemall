@@ -229,6 +229,10 @@ public final class MathUtils {
         return v < 0.f ? -1 : 1;
     }
 
+    public static double square(final double d) {
+        return d * d;
+    }
+
     public static double log(final double n, final int base) {
         return Math.log(n) / Math.log(base);
     }
@@ -427,6 +431,14 @@ public final class MathUtils {
             arr[i] *= multiplier;
         }
         return arr;
+    }
+
+    public static float clip(final float v, final float min, final float max) {
+        return Math.max(Math.min(v, max), min);
+    }
+
+    public static double clip(final double v, final double min, final double max) {
+        return Math.max(Math.min(v, max), min);
     }
 
 }
