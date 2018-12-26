@@ -19,25 +19,21 @@
 
 <!-- toc -->
 
-> #### Note
-> This feature is supported since Hivemall `v0.3-beta2` or later.
+> #### Caution
+>
+> `train_adagrad()` became deprecated since v0.5.0 release. Use smarter [general classifier](./a9a_generic.md) instead.
 
-## UDF preparation
-
-```
-add jar ./tmp/hivemall-with-dependencies.jar;
-source ./tmp/define-all.hive;
-
-use news20;
-```
-
-#[AdaGradRDA]
+# AdaGradRDA
 
 > #### Note
+>
 > The current AdaGradRDA implmenetation can only be applied to classification, not to regression, because it uses hinge loss for the loss function.
 
 ## model building
+
 ```sql
+use news20;
+
 drop table news20b_adagrad_rda_model1;
 create table news20b_adagrad_rda_model1 as
 select 
@@ -45,7 +41,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     train_adagrad_rda(addBias(features),label) as (feature,weight)
+     train_adagrad_rda(add_bias(features),label) as (feature,weight)
   from 
      news20b_train_x3
  ) t 
@@ -53,6 +49,7 @@ group by feature;
 ```
 
 ## prediction
+
 ```sql
 create or replace view news20b_adagrad_rda_predict1 
 as
@@ -68,6 +65,7 @@ group by
 ```
 
 ## evaluation
+
 ```sql
 create or replace view news20b_adagrad_rda_submit1 as
 select 
@@ -82,15 +80,19 @@ from
 select count(1)/4996 from news20b_adagrad_rda_submit1 
 where actual == predicted;
 ```
+
 > SCW1 0.9661729383506805 
 
 > ADAGRAD+RDA 0.9677742193755005
 
-#[AdaGrad]
+# AdaGrad
 
-_Note that AdaGrad is better suited for a regression problem because the current implementation only support logistic loss._
+> #### Note
+>
+> AdaGrad is better suited for a binary classification problem because the current implementation only support logistic loss.
 
 ## model building
+
 ```sql
 drop table news20b_adagrad_model1;
 create table news20b_adagrad_model1 as
@@ -99,7 +101,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     adagrad(addBias(features),convert_label(label)) as (feature,weight)
+     train_adagrad_regr(add_bias(features),convert_label(label)) as (feature,weight)
   from 
      news20b_train_x3
  ) t 
@@ -110,6 +112,7 @@ group by feature;
 > `adagrad` takes 0/1 for a label value and `convert_label(label)` converts a label value from -1/+1 to 0/1.
 
 ## prediction
+
 ```sql
 create or replace view news20b_adagrad_predict1 
 as
@@ -124,6 +127,7 @@ group by
 ```
 
 ## evaluation
+
 ```sql
 create or replace view news20b_adagrad_submit1 as
 select 
@@ -138,14 +142,16 @@ from
 select count(1)/4996 from news20b_adagrad_submit1 
 where actual == predicted;
 ```
+
 > 0.9549639711769415 (adagrad)
 
-#[AdaDelta]
+# AdaDelta
 
 > #### Caution
 > AdaDelta can only be applied for regression problem because the current implementation only support logistic loss.
 
 ## model building
+
 ```sql
 drop table news20b_adadelta_model1;
 create table news20b_adadelta_model1 as
@@ -154,7 +160,7 @@ select
  voted_avg(weight) as weight
 from 
  (select 
-     adadelta(addBias(features),convert_label(label)) as (feature,weight)
+     adadelta(add_bias(features),convert_label(label)) as (feature,weight)
   from 
      news20b_train_x3
  ) t 
@@ -162,6 +168,7 @@ group by feature;
 ```
 
 ## prediction
+
 ```sql
 create or replace view news20b_adadelta_predict1 
 as
@@ -176,6 +183,7 @@ group by
 ```
 
 ## evaluation
+
 ```sql
 create or replace view news20b_adadelta_submit1 as
 select 
@@ -185,7 +193,6 @@ from
   news20b_test t JOIN news20b_adadelta_predict1 p
     on (t.rowid = p.rowid);
 ```
-
 
 
 ```sql

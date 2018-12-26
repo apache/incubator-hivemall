@@ -121,7 +121,7 @@ Below we list possible options for `train_regressor` and `train_classifier`, and
 		  - SquaredLoss (synonym: squared)
 		  - QuantileLoss (synonym: quantile)
 		  - EpsilonInsensitiveLoss (synonym: epsilon_insensitive)
-		  - SquaredEpsilonInsensitiveLoss (synonym: squared_epsilon_insensitive)
+		  - SquaredEpsilonInsensitiveLoss (synonym: squared\_epsilon_insensitive)
 		  - HuberLoss (synonym: huber)
 
 - Regularization function: `-reg`, `-regularization`
@@ -134,9 +134,74 @@ Additionally, there are several variants of the SGD technique, and it is also co
 
 - Optimizer: `-opt`, `-optimizer`
 	- SGD
-	- AdaGrad
+	- Momentum
+		- Hyperparameters
+			- `-alpha 1.0` Learning rate.
+			- `-momentum 0.9` Exponential decay rate of the first order moment.
+	- Nesterov
+		- See: [https://arxiv.org/abs/1212.0901](https://arxiv.org/abs/1212.0901)
+		- Hyperparameters
+			- same as Momentum
+	- AdaGrad (default)
+		- See: [http://jmlr.org/papers/v12/duchi11a.html](http://jmlr.org/papers/v12/duchi11a.html)
+		- Hyperparameters
+			- `-eps 1.0` Constant for the numerical stability.
+	- RMSprop
+		- Description: RMSprop optimizer introducing weight decay to AdaGrad.
+		- See: [http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf](http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf)
+		- Hyperparameters
+			- `-decay 0.95` Weight decay rate
+			- `-eps 1.0` Constant for numerical stability
+	- RMSpropGraves
+		- Description: Alex Graves's RMSprop introducing weight decay and momentum.
+		- See: [https://arxiv.org/abs/1308.0850](https://arxiv.org/abs/1308.0850)
+		- Hyperparameters
+			- `-alpha 1.0` Learning rate.
+			- `-decay 0.95` Weight decay rate
+			- `-momentum 0.9` Exponential decay rate of the first order moment.
+			- `-eps 1.0` Constant for numerical stability
 	- AdaDelta
+		- See: [https://arxiv.org/abs/1212.5701](https://arxiv.org/abs/1212.5701)
+		- Hyperparameters
+			- `-decay 0.95` Weight decay rate
+			- `-eps 1e-6f` Constant for numerical stability
 	- Adam
+		- See:
+			- [Adam: A Method for Stochastic Optimization](https://arxiv.org/abs/1412.6980v8)
+			- [Fixing Weight Decay Regularization in Adam](https://openreview.net/forum?id=rk6qdGgCZ)
+			- [On the Convergence of Adam and Beyond](https://openreview.net/forum?id=ryQu7f-RZ)
+		- Hyperparameters
+			- `-alpha 1.0` Learning rate.
+			- `-beta1 0.9` Exponential decay rate of the first order moment.
+			- `-beta2 0.999` Exponential decay rate of the second order moment.
+			- `-eps 1e-8f` Constant for numerical stability
+			- `-decay 0.0` Weight decay rate
+	- Nadam
+		- Description: Nadam is Adam optimizer with Nesterov momentum.
+		- See:
+			- [Incorporating Nesterov Momentum into Adam](https://openreview.net/pdf?id=OM0jvwB8jIp57ZJjtNEZ)
+			- [Adam report](http://cs229.stanford.edu/proj2015/054_report.pdf)
+			- [On the importance of initialization and momentum in deep learning](http://www.cs.toronto.edu/~fritz/absps/momentum.pdf)
+		- Hyperparameters
+			- same as Adam except ...
+			- `-scheduleDecay 0.004` Scheduled decay rate (for each 250 steps by the default; 1/250=0.004)
+	- Eve
+		- See: [https://openreview.net/forum?id=r1WUqIceg](https://openreview.net/forum?id=r1WUqIceg)
+		- Hyperparameters
+			- same as Adam except ...
+			- `-beta3 0.999` Decay rate for Eve coefficient.
+			- `-c 10` Constant used for gradient clipping `clip(val, 1/c, c)`
+	- AdamHD
+		- Description: Adam optimizer with Hypergradient Descent. Learning rate `-alpha` is automatically tuned.
+		- See:
+			- [Online Learning Rate Adaptation with Hypergradient Descent](https://openreview.net/forum?id=BkrsAzWAb)
+			- [Convergence Analysis of an Adaptive Method of Gradient Descent](https://damaru2.github.io/convergence_analysis_hypergradient_descent/dissertation_hypergradients.pdf)
+		-  Hyperparameters
+			- same as Adam except ...
+			- `-alpha 0.02` Learning rate.
+			- `-beta -1e-6` Constant used for tuning learning rate.
+
+Default (Adagrad+RDA), AdaDelta, Adam, and AdamHD is worth trying in my experience.
 
 > #### Note
 >
@@ -156,8 +221,13 @@ Furthermore, optimizer offers to set auxiliary options such as:
 For details of available options, following queries might be helpful to list all of them:
 
 ```sql
-select train_regressor(array(), 0, '-help');
-select train_classifier(array(), 0, '-help');
+select train_regressor('-help');
+-- v0.5.0 or before
+-- select train_regressor(array(), 0, '-help');
+
+select train_classifier('-help');
+-- v0.5.0 or before
+-- select train_classifier(array(), 0, '-help');
 ```
 
 In practice, you can try different combinations of the options in order to achieve higher prediction accuracy.

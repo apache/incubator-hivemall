@@ -59,11 +59,6 @@ hadoop fs -copyFromLocal news20.test.t /dataset/news20-binary/test
 create database news20;
 use news20;
 
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-
-source /home/myui/tmp/define-all.hive;
-
 Create external table news20b_train (
   rowid int,
   label int,
@@ -82,10 +77,10 @@ as
 select 
   * 
 from (
-select
-   amplify(3, *) as (rowid, label, features)
-from  
-   news20b_train 
+  select
+    amplify(3, *) as (rowid, label, features)
+  from
+    news20b_train
 ) t
 CLUSTER BY rand(${seed});
 
@@ -93,11 +88,8 @@ create table news20b_test_exploded as
 select 
   rowid,
   label,
-  cast(split(feature,":")[0] as int) as feature,
-  cast(split(feature,":")[1] as float) as value
-  -- hivemall v0.3.1 or later
-  -- extract_feature(feature) as feature,
-  -- extract_weight(feature) as value
+  extract_feature(feature) as feature,
+  extract_weight(feature) as value
 from 
   news20b_test LATERAL VIEW explode(add_bias(features)) t AS feature;
 ```

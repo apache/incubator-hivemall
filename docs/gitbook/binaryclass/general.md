@@ -17,7 +17,7 @@
   under the License.
 -->
 
-Hivemall has a generic function for classification: `train_classifier`. Compared to the other functions we will see in the later chapters, `train_classifier` provides simpler and configureable generic interface which can be utilized to build binary classification models in a variety of settings.
+Hivemall has a generic function for classification: `train_classifier`. Compared to the other functions we will see in the later chapters, `train_classifier` provides simpler and configurable generic interface which can be utilized to build binary classification models in a variety of settings.
 
 Here, we briefly introduce usage of the function. Before trying sample queries, you first need to prepare [a9a data](https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#a9a). See [our a9a tutorial page](a9a_dataset.md) for further instructions.
 
@@ -25,19 +25,6 @@ Here, we briefly introduce usage of the function. Before trying sample queries, 
 
 > #### Note
 > This feature is supported from Hivemall v0.5-rc.1 or later.
-
-# Preparation
-
-- Set `total_steps` ideally be `count(1) / {# of map tasks}`:
-	```
-	hive> select count(1) from a9a_train; 
-	hive> set hivevar:total_steps=32561;
-	```
-- Set `n_samples` to compute accuracy of prediction:
-	```
-	hive> select count(1) from a9a_test;
-	hive> set hivevar:n_samples=16281;
-	```
 
 # Training
 
@@ -49,16 +36,12 @@ select
 from
  (
   select
-    train_classifier(add_bias(features), label, '-loss logloss -opt SGD -reg no -eta simple -total_steps ${total_steps}') as (feature, weight)
+    train_classifier(add_bias(features), label, '-loss logloss -opt SGD -reg no') as (feature, weight)
   from
      a9a_train
  ) t
 group by feature;
 ```
-
-> #### Note
->
-> `-total_steps` option is an optional parameter and training works without it.
 
 # Prediction & evaluation
 
@@ -78,23 +61,31 @@ predict as (
     sigmoid(sum(m.weight * t.value)) as prob,
     (case when sigmoid(sum(m.weight * t.value)) >= 0.5 then 1.0 else 0.0 end)as label
   from
-    test_exploded t LEFT OUTER JOIN
-    classification_model m ON (t.feature = m.feature)
+    test_exploded t
+    LEFT OUTER JOIN classification_model m 
+      ON (t.feature = m.feature)
   group by
     t.rowid
 ),
 submit as (
   select
     t.label as actual,
-    pd.label as predicted,
-    pd.prob as probability
+    p.label as predicted,
+    p.prob as probability
   from
-    a9a_test t JOIN predict pd
-      on (t.rowid = pd.rowid)
+    a9a_test t
+    JOIN predict p
+      on (t.rowid = p.rowid)
 )
-select count(1) / ${n_samples} from submit
-where actual = predicted;
+select 
+  sum(if(actual = predicted, 1, 0)) / count(1) as accuracy
+from
+  submit;
 ```
+
+|accuracy|
+|:-:|
+| 0.8461396720103188 |
 
 # Comparison with the other binary classifiers
 
@@ -115,20 +106,20 @@ All of them actually have the same interface, but mathematical formulation and i
 
 In particular, the above sample queries are almost same as [a9a tutorial using Logistic Regression](a9a_lr.md). The difference is only in a choice of training function: `logress()` vs. `train_classifier()`.
 
-However, at the same time, the options `-loss logloss -opt SGD -reg no -eta simple -total_steps ${total_steps}` for `train_classifier` indicates that Hivemall uses the generic classifier as Logistic Regressor (`logress`). Hence, the accuracy of prediction based on either `logress` and `train_classifier` should be same under the configuration.
+However, at the same time, the options `-loss logloss -opt SGD -reg no` for `train_classifier` indicates that Hivemall uses the generic classifier as `logress`. Hence, the accuracy of prediction based on either `logress` and `train_classifier` would be (almost) same under the configuration.
 
 In addition, `train_classifier` supports the `-mini_batch` option in a similar manner to [what `logress` does](a9a_minibatch.md). Thus, following two training queries show the same results:
 
 ```sql
 select
-	logress(add_bias(features), label, '-total_steps ${total_steps} -mini_batch 10') as (feature, weight)
+	logress(add_bias(features), label, '-mini_batch 10') as (feature, weight)
 from
 	a9a_train
 ```
 
 ```sql
 select
-	train_classifier(add_bias(features), label, '-loss logloss -opt SGD -reg no -eta simple -total_steps ${total_steps} -mini_batch 10') as (feature, weight)
+	train_classifier(add_bias(features), label, '-loss logloss -opt SGD -reg no -mini_batch 10') as (feature, weight)
 from
 	a9a_train
 ```
