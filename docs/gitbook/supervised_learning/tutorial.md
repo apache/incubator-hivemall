@@ -37,15 +37,6 @@ FROM
 ;
 ```
 
-
-Hivemall function [`hivemall_version()`](../misc/funcs.html#others) shows current Hivemall version, for example:
-
-```sql
-select hivemall_version();
-```
-
-> "0.5.1-incubating-SNAPSHOT"
-
 Below we list ML and relevant problems that Hivemall can solve:
 
 - [Binary and multi-class classification](../binaryclass/general.html)
@@ -199,7 +190,9 @@ Notice that weight is learned for each possible value in a categorical feature, 
 Of course, you can optimize hyper-parameters to build more accurate prediction model. Check the output of the following query to see all available options, including learning rate, number of iterations and regularization parameters, and their default values:
 
 ```sql
-select train_classifier(array(), 0, '-help');
+select train_classifier('-help');
+-- Hivemall 0.5.2 and before
+-- select train_classifier(array(), 0, '-help');
 ```
 
 ### Step 3. Prediction
@@ -230,14 +223,17 @@ with features_exploded as (
     -- to join with a model table
     extract_feature(fv) as feature,
     extract_weight(fv) as value
-  from unforeseen_samples t1 LATERAL VIEW explode(features) t2 as fv
+  from
+    unforeseen_samples t1
+    LATERAL VIEW explode(features) t2 as fv
 )
 select
   t1.id,
   sigmoid( sum(p1.weight * t1.value) ) as probability
 from
   features_exploded t1
-  LEFT OUTER JOIN classifier p1 ON (t1.feature = p1.feature)
+  LEFT OUTER JOIN classifier p1 
+    ON (t1.feature = p1.feature)
 group by
   t1.id
 ;
@@ -265,7 +261,9 @@ with features_exploded as (
     id,
     extract_feature(fv) as feature,
     extract_weight(fv) as value
-  from training t1 LATERAL VIEW explode(features) t2 as fv
+  from
+    training t1 
+    LATERAL VIEW explode(features) t2 as fv
 ),
 predictions as (
   select
@@ -273,7 +271,8 @@ predictions as (
     sigmoid( sum(p1.weight * t1.value) ) as probability
   from
     features_exploded t1
-    LEFT OUTER JOIN classifier p1 ON (t1.feature = p1.feature)
+    LEFT OUTER JOIN classifier p1 
+      ON (t1.feature = p1.feature)
   group by
     t1.id
 )
@@ -281,10 +280,13 @@ select
   auc(probability, label) as auc,
   logloss(probability, label) as logloss
 from (
-  select t1.probability, t2.label
-  from predictions t1
-  join training t2 on (t1.id = t2.id)
-  ORDER BY probability DESC
+  select 
+    t1.probability, t2.label
+  from 
+    predictions t1
+    join training t2 on (t1.id = t2.id)
+  ORDER BY 
+    probability DESC
 ) t
 ;
 ```
@@ -371,7 +373,9 @@ from
 Run the function with `-help` option to list available options:
 
 ```sql
-select train_regressor(array(), 0, '-help');
+select train_regressor('-help');
+-- Hivemall 0.5.2 and before
+-- select train_regressor(array(), 0, '-help');
 ```
 
 ### Step 3. Prediction
@@ -411,7 +415,7 @@ group by
 
 Output is like:
 
-|id| predicted_num_purchases|
+|id| predicted\_num_purchases|
 |---:|---:|
 | 1| 3.645142912864685|
 
@@ -425,7 +429,9 @@ with features_exploded as (
     id,
     extract_feature(fv) as feature,
     extract_weight(fv) as value
-  from training t1 LATERAL VIEW explode(features) t2 as fv
+  from
+    training t1 
+    LATERAL VIEW explode(features) t2 as fv
 ),
 predictions as (
   select

@@ -16,15 +16,15 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
-https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression.html#E2006-tfidf
 
----
-#[PA1a]
+<!-- toc -->
 
-##Training
+# PA1a
+
+## Training
 ```sql
 set mapred.reduce.tasks=64;
+
 drop table e2006tfidf_pa1a_model ;
 create table e2006tfidf_pa1a_model as
 select 
@@ -37,9 +37,13 @@ from
      e2006tfidf_train_x3
  ) t 
 group by feature;
+
+-- reset to the default setting
 set mapred.reduce.tasks=-1;
 ```
-_Caution: Do not use voted_avg() for regression. voted_avg() is for classification._
+
+> #### Caution
+> Do not use `voted_avg()` for regression. `voted_avg()` is for classification.
 
 ## prediction
 ```sql
@@ -57,36 +61,31 @@ group by
 
 ## evaluation
 ```sql
-drop table e2006tfidf_pa1a_submit;
-create table e2006tfidf_pa1a_submit as
+WITH submit as (
+  select 
+    t.target as actual, 
+    p.predicted as predicted
+  from 
+    e2006tfidf_test t
+    JOIN e2006tfidf_pa1a_predict p 
+      on (t.rowid = p.rowid)
+)
 select 
-  t.target as actual, 
-  p.predicted as predicted
+   rmse(predicted, actual) as RMSE,
+   mse(predicted, actual) as MSE, 
+   mae(predicted, actual) as MAE,
+   r2(predicted, actual) as R2
 from 
-  e2006tfidf_test t JOIN e2006tfidf_pa1a_predict p 
-    on (t.rowid = p.rowid);
-
-select avg(actual), avg(predicted) from e2006tfidf_pa1a_submit;
+   submit;
 ```
-> -3.8200363760415414     -3.8869923258589476
 
-```sql
-set hivevar:mean_actual=-3.8200363760415414;
+| rmse | mse | mae | r2 |
+|:-:|:-:|:-:|:-:|
+| 0.3797959864675519 | 0.14424499133686086 | 0.23846059576113587 |0.5010367946980386 |
 
-select 
-   sqrt(sum(pow(predicted - actual,2.0))/count(1)) as RMSE, 
-   sum(pow(predicted - actual,2.0))/count(1) as MSE, 
-   sum(abs(predicted - actual))/count(1) as MAE,
-   1 - sum(pow(actual - predicted,2.0)) / sum(pow(actual - ${mean_actual},2.0)) as R2
-from 
-   e2006tfidf_pa1a_submit;
-```
-> 0.3797959864675519      0.14424499133686086     0.23846059576113587     0.5010367946980386
+# PA2a
 
----
-#[PA2a]
-
-##Training
+## Training
 ```sql
 set mapred.reduce.tasks=64;
 drop table e2006tfidf_pa2a_model;
@@ -120,36 +119,31 @@ group by
 
 ## evaluation
 ```sql
-drop table e2006tfidf_pa2a_submit;
-create table e2006tfidf_pa2a_submit as
+WITH submit as (
+  select 
+    t.target as actual, 
+    p.predicted as predicted
+  from 
+    e2006tfidf_test t
+    JOIN e2006tfidf_pa2a_predict p 
+      on (t.rowid = p.rowid)
+)
 select 
-  t.target as actual, 
-  pd.predicted as predicted
+   rmse(predicted, actual) as RMSE,
+   mse(predicted, actual) as MSE, 
+   mae(predicted, actual) as MAE,
+   r2(predicted, actual) as R2
 from 
-  e2006tfidf_test t JOIN e2006tfidf_pa2a_predict pd 
-    on (t.rowid = pd.rowid);
-
-select avg(actual), avg(predicted) from e2006tfidf_pa2a_submit;
+   submit;
 ```
-> -3.8200363760415414     -3.9124877451612488
 
-```sql
-set hivevar:mean_actual=-3.8200363760415414;
+| rmse | mse | mae | r2 |
+|:-:|:-:|:-:|:-:|
+| 0.38538660838804495 | 0.14852283792484033 | 0.2466732002711477 |0.48623913673053565 |
 
-select 
-   sqrt(sum(pow(predicted - actual,2.0))/count(1)) as RMSE, 
-   sum(pow(predicted - actual,2.0))/count(1) as MSE, 
-   sum(abs(predicted - actual))/count(1) as MAE,
-   1 - sum(pow(actual - predicted,2.0)) / sum(pow(actual - ${mean_actual},2.0)) as R2
-from 
-   e2006tfidf_pa2a_submit;
-```
-> 0.38538660838804495     0.14852283792484033     0.2466732002711477      0.48623913673053565
+# AROW
 
----
-#[AROW]
-
-##Training
+## Training
 ```sql
 set mapred.reduce.tasks=64;
 drop table e2006tfidf_arow_model ;
@@ -185,37 +179,32 @@ group by
 
 ## evaluation
 ```sql
-drop table e2006tfidf_arow_submit;
-create table e2006tfidf_arow_submit as
+WITH submit as (
+  select 
+    t.target as actual, 
+    p.predicted as predicted
+  from 
+    e2006tfidf_test t
+    JOIN e2006tfidf_arow_predict p 
+      on (t.rowid = p.rowid)
+)
 select 
-  t.target as actual, 
-  p.predicted as predicted
+   rmse(predicted, actual) as RMSE,
+   mse(predicted, actual) as MSE, 
+   mae(predicted, actual) as MAE,
+   r2(predicted, actual) as R2
 from 
-  e2006tfidf_test t JOIN e2006tfidf_arow_predict p
-    on (t.rowid = p.rowid);
-
-select avg(actual), avg(predicted) from e2006tfidf_arow_submit;
+   submit;
 ```
-> -3.8200363760415414     -3.8692518911517433
 
-```sql
-set hivevar:mean_actual=-3.8200363760415414;
+| rmse | mse | mae | r2 |
+|:-:|:-:|:-:|:-:|
+| 0.37862513029019407 | 0.14335698928726642 | 0.2368787001269389 | 0.5041085155590119 |
 
-select 
-   sqrt(sum(pow(predicted - actual,2.0))/count(1)) as RMSE, 
-   sum(pow(predicted - actual,2.0))/count(1) as MSE, 
-   sum(abs(predicted - actual))/count(1) as MAE,
-   1 - sum(pow(actual - predicted,2.0)) / sum(pow(actual - ${mean_actual},2.0)) as R2
-from 
-   e2006tfidf_arow_submit;
-```
-> 0.37862513029019407     0.14335698928726642     0.2368787001269389      0.5041085155590119
-
---- 
-#[AROWe]
+# AROWe
 AROWe is a modified version of AROW that uses Hinge loss (epsilion = 0.1)
 
-##Training
+## Training
 ```sql
 set mapred.reduce.tasks=64;
 drop table e2006tfidf_arowe_model ;
@@ -251,28 +240,24 @@ group by
 
 ## evaluation
 ```sql
-drop table e2006tfidf_arowe_submit;
-create table e2006tfidf_arowe_submit as
+WITH submit as (
+  select 
+    t.target as actual, 
+    p.predicted as predicted
+  from 
+    e2006tfidf_test t
+    JOIN e2006tfidf_arowe_predict p 
+      on (t.rowid = p.rowid)
+)
 select 
-  t.target as actual, 
-  p.predicted as predicted
+   rmse(predicted, actual) as RMSE,
+   mse(predicted, actual) as MSE, 
+   mae(predicted, actual) as MAE,
+   r2(predicted, actual) as R2
 from 
-  e2006tfidf_test t JOIN e2006tfidf_arowe_predict p
-    on (t.rowid = p.rowid);
-
-select avg(actual), avg(predicted) from e2006tfidf_arowe_submit;
+   submit;
 ```
-> -3.8200363760415414     -3.86494905688414
 
-```sql
-set hivevar:mean_actual=-3.8200363760415414;
-
-select 
-   sqrt(sum(pow(predicted - actual,2.0))/count(1)) as RMSE, 
-   sum(pow(predicted - actual,2.0))/count(1) as MSE, 
-   sum(abs(predicted - actual))/count(1) as MAE,
-   1 - sum(pow(actual - predicted,2.0)) / sum(pow(actual - ${mean_actual},2.0)) as R2
-from 
-   e2006tfidf_arowe_submit;
-```
-> 0.37789148212861856     0.14280197226536404     0.2357339155291536      0.5060283955470721
+| rmse | mse | mae | r2 |
+|:-:|:-:|:-:|:-:|
+| 0.37789148212861856 | 0.14280197226536404 | 0.2357339155291536 |0.5060283955470721 |

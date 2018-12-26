@@ -98,6 +98,7 @@
     * [Data Preparation](binaryclass/news20_dataset.md)
     * [Perceptron, Passive Aggressive](binaryclass/news20_pa.md)
     * [CW, AROW, SCW](binaryclass/news20_scw.md)
+    * [General Binary Classifier](binaryclass/news20_generic.md)
     * [AdaGradRDA, AdaGrad, AdaDelta](binaryclass/news20_adagrad.md)
     * [Random Forest](binaryclass/news20_rf.md)
 
@@ -140,6 +141,7 @@
 
 * [E2006-tfidf Regression Tutorial](regression/e2006.md)
     * [Data Preparation](regression/e2006_dataset.md)
+    * [General Regessor](regression/e2006_generic.md)
     * [Passive Aggressive, AROW](regression/e2006_arow.md)
 
 * [KDDCup 2012 Track 2 CTR Prediction Tutorial](regression/kddcup12tr2.md)

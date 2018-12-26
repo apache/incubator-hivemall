@@ -17,16 +17,6 @@
   under the License.
 -->
 
-## UDF preparation
-```
-use news20;
-
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-source /home/myui/tmp/define-all.hive;
-```
-
----
 # Confidece Weighted (CW)
 
 ## training
@@ -64,32 +54,21 @@ group by
 
 ## evaluation
 ```sql
-create or replace view news20b_cw_submit1 
-as
+WITH submit as (
 select 
   t.rowid,
   t.label as actual, 
-  pd.label as predicted
+  p.label as predicted
 from 
-  news20b_test t JOIN news20b_cw_predict1 pd 
-    on (t.rowid = pd.rowid);
-```
-
-```sql
-select count(1)/4996 from news20b_cw_submit1 
-where actual = predicted;
+  news20b_test t 
+  JOIN news20b_cw_predict1 p
+    on (t.rowid = p.rowid)
+)
+select sum(if(actual = predicted, 1, 0)) / count(1) as accuracy
+from submit;
 ```
 > 0.9655724579663731
 
-## Cleaning
-
-```sql
-drop table news20b_cw_model1;
-drop view news20b_cw_predict1;
-drop view news20b_cw_submit1;
-```
-
----
 # Adaptive Regularization of Weight Vectors (AROW)
 
 ## training
@@ -127,31 +106,21 @@ group by
 
 ## evaluation
 ```sql
-create or replace view news20b_arow_submit1 as
-select 
+WITH submit as (
+select
   t.rowid, 
   t.label as actual, 
-  pd.label as predicted
+  p.label as predicted
 from 
-  news20b_test t JOIN news20b_arow_predict1 pd 
-    on (t.rowid = pd.rowid);
-```
-
-```sql
-select count(1)/4996 from news20b_arow_submit1 
-where actual = predicted;
+  news20b_test t
+  JOIN news20b_arow_predict1 p
+    on (t.rowid = p.rowid)
+)
+select sum(if(actual = predicted, 1, 0)) / count(1) as accuracy
+from submit;
 ```
 > 0.9659727782225781
 
-## Cleaning
-
-```sql
-drop table news20b_arow_model1;
-drop view news20b_arow_predict1;
-drop view news20b_arow_submit1;
-```
-
----
 # Soft Confidence-Weighted (SCW1)
 
 ## training
@@ -189,31 +158,20 @@ group by
 
 ## evaluation
 ```sql
-create or replace view news20b_scw_submit1 as
-select 
-  t.rowid, 
-  t.label as actual, 
-  pd.label as predicted
-from 
-  news20b_test t JOIN news20b_scw_predict1 pd 
-    on (t.rowid = pd.rowid);
-```
-
-```sql
-select count(1)/4996 from news20b_scw_submit1 
-where actual = predicted;
+WITH submit as (
+  select 
+    t.rowid, 
+    t.label as actual, 
+    p.label as predicted
+  from 
+    news20b_test t JOIN news20b_scw_predict1 p
+      on (t.rowid = p.rowid)
+)
+select sum(if(actual = predicted, 1, 0)) / count(1) as accuracy
+from submit
 ```
 > 0.9661729383506805
 
-## Cleaning
-
-```sql
-drop table news20b_scw_model1;
-drop view news20b_scw_predict1;
-drop view news20b_scw_submit1;
-```
-
----
 # Soft Confidence-Weighted (SCW2)
 
 ## training
@@ -251,29 +209,20 @@ group by
 
 ## evaluation
 ```sql
-create or replace view news20b_scw2_submit1 as
+WITH submit as (
 select 
   t.rowid, 
   t.label as actual, 
   pd.label as predicted
 from 
-  news20b_test t JOIN news20b_scw2_predict1 pd 
-    on (t.rowid = pd.rowid);
-```
-
-```sql
-select count(1)/4996 from news20b_scw2_submit1 
-where actual = predicted;
+  news20b_test t
+  JOIN news20b_scw2_predict1 pd 
+    on (t.rowid = pd.rowid)
+)
+select sum(if(actual = predicted, 1, 0)) / count(1) as accuracy
+from submit;
 ```
 > 0.9579663730984788
-
-## Cleaning
-
-```sql
-drop table news20b_scw2_model1;
-drop view news20b_scw2_predict1;
-drop view news20b_scw2_submit1;
-```
 
 --
 

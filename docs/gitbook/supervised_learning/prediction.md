@@ -201,6 +201,8 @@ Additionally, there are several variants of the SGD technique, and it is also co
 			- `-alpha 0.02` Learning rate.
 			- `-beta -1e-6` Constant used for tuning learning rate.
 
+Default (Adagrad+RDA), AdaDelta, Adam, and AdamHD is worth trying in my experience.
+
 > #### Note
 >
 > Option values are case insensitive and you can use `sgd` or `rda`, or `huberloss` in lower-case letters.

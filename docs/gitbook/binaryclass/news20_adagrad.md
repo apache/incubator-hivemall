@@ -19,6 +19,10 @@
 
 <!-- toc -->
 
+> #### Caution
+>
+> `train_adagrad()` became deprecated since v0.5.0 release. Use smarter [general classifier](./a9a_generic.md) instead.
+
 # AdaGradRDA
 
 > #### Note

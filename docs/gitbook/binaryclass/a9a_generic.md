@@ -36,7 +36,7 @@ from (
        "-loss logistic -iter 30"
      ) as (feature,weight)
   from 
-     a9atrain
+     a9a_train
  ) t 
 group by feature;
 ```
@@ -53,7 +53,7 @@ select
   extract_feature(feature) as feature,
   extract_weight(feature) as value
 from 
-  a9atest LATERAL VIEW explode(add_bias(features)) t AS feature
+  a9a_test LATERAL VIEW explode(add_bias(features)) t AS feature
 )
 select
   t.rowid, 
@@ -75,11 +75,11 @@ select
   p.label as predicted, 
   p.prob as probability
 from 
-  a9atest t 
+  a9a_test t 
   JOIN predict p on (t.rowid = p.rowid);
 
 select 
-  sum(if(actual == predicted, 1, 0)) / count(1)
+  sum(if(actual == predicted, 1, 0)) / count(1) as accuracy
 from
   submit;
 ```
@@ -105,4 +105,5 @@ The following table shows accuracy for changing optimizer by `-loss logistic -op
 
 > #### Note
 > Optimizers using momentum need to tune decay rate well.
-> Default (Adagrad+RDA), Adam, and AdamHD is worth trying in my experience.
+> Default (Adagrad+RDA), AdaDelta, Adam, and AdamHD is worth trying in my experience.
+
