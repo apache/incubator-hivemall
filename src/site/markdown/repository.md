@@ -19,10 +19,10 @@
 
 # Source
 
-* Git: https://git-wip-us.apache.org/repos/asf/incubator-hivemall.git
+* Git: https://gitbox.apache.org/repos/asf/incubator-hivemall.git
 * Git (Mirror): https://github.com/apache/incubator-hivemall
 
 # Site
 
-* Git: https://git-wip-us.apache.org/repos/asf/incubator-hivemall-site.git
+* Git: hhttps://gitbox.apache.org/repos/asf/incubator-hivemall-site.git
 * Git (Mirror): https://github.com/apache/incubator-hivemall-site

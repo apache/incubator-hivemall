@@ -46,7 +46,7 @@ PROJECT_NAME = 'hivemall'
 PROJECT_NAME_CAPITALIZED = PROJECT_NAME.upper()
 INCUBATOR = True
 
-# git remote add apache https://git-wip-us.apache.org/repos/asf/incubator-hivemall.git
+# git remote add apache https://gitbox.apache.org/repos/asf/incubator-hivemall.git
 # git remote add apache-github https://github.com/apache/incubator-hivemall.git
 
 # Location of your project's git development area

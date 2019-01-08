@@ -320,7 +320,7 @@ Links to various release artifacts are given below. Please review and cast your 
 	  https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip.asc (PGP Signature)
 	  https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc1/hivemall-0.5.0-incubating-rc1-source-release.zip.sha512 (SHA512 Hash)
     - Git tag for the release:
-      https://git-wip-us.apache.org/repos/asf?p=incubator-hivemall.git;a=shortlog;h=refs/tags/v0.5.0-rc1
+      https://gitbox.apache.org/repos/asf?p=incubator-hivemall.git;a=shortlog;h=refs/tags/v0.5.0-rc1
     - The Nexus Staging URL:
       https://repository.apache.org/content/repositories/orgapachehivemall-1001/
     - KEYS file for verification:
@@ -410,7 +410,7 @@ Links to various release artifacts are given below.
     - Sources for the release:
       https://dist.apache.org/repos/dist/dev/incubator/hivemall/0.5.0-incubating-rc2/hivemall-0.5.0-incubating-rc2-source-release.zip
     - Git tag for the release:
-      https://git-wip-us.apache.org/repos/asf?p=incubator-hivemall.git;a=shortlog;h=refs/tags/v0.5.0-rc2
+      https://gitbox.apache.org/repos/asf?p=incubator-hivemall.git;a=shortlog;h=refs/tags/v0.5.0-rc2
     - The Nexus Staging URL:
       https://repository.apache.org/content/repositories/orgapachehivemall-1002/
     - KEYS file for verification:
