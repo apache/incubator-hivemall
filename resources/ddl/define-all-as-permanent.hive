@@ -416,9 +416,8 @@ CREATE FUNCTION array_concat as 'hivemall.tools.array.ArrayConcatUDF' USING JAR 
 DROP FUNCTION IF EXISTS concat_array;
 CREATE FUNCTION concat_array as 'hivemall.tools.array.ArrayConcatUDF' USING JAR '${hivemall_jar}';
 
--- alias for backward compatibility
 DROP FUNCTION IF EXISTS subarray;
-CREATE FUNCTION subarray as 'hivemall.tools.array.ArraySliceUDF' USING JAR '${hivemall_jar}';
+CREATE FUNCTION subarray as 'hivemall.tools.array.SubarrayUDF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS array_slice;
 CREATE FUNCTION array_slice as 'hivemall.tools.array.ArraySliceUDF' USING JAR '${hivemall_jar}';

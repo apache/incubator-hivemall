@@ -408,9 +408,8 @@ create temporary function array_concat as 'hivemall.tools.array.ArrayConcatUDF';
 drop temporary function if exists concat_array;
 create temporary function concat_array as 'hivemall.tools.array.ArrayConcatUDF';
 
--- alias for backward compatibility
 drop temporary function if exists subarray;
-create temporary function subarray as 'hivemall.tools.array.ArraySliceUDF';
+create temporary function subarray as 'hivemall.tools.array.SubarrayUDF';
 
 drop temporary function if exists array_slice;
 create temporary function array_slice as 'hivemall.tools.array.ArraySliceUDF';

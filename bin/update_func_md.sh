@@ -34,14 +34,14 @@ HIVEMALL_HOME=`pwd`
 
 # Deploy to local Maven repos
 
-export MAVEN_OPTS=-XX:MaxPermSize=256m
+export MAVEN_OPTS="-XX:MaxPermSize=256m -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2"
 mvn clean install -DskipTests=true -Dmaven.test.skip=true -pl '.,core,nlp,xgboost,tools/hivemall-docs'
 
 # Generate docs
 
 mvn org.apache.hivemall:hivemall-docs:generate-funcs-list -pl '.,core,nlp,xgboost,tools/hivemall-docs' -X
 
-# Run HTTP server on localhost:040
+# Run HTTP server on localhost:4000
 
 cd ${HIVEMALL_HOME}/docs/gitbook
 gitbook install && gitbook serve

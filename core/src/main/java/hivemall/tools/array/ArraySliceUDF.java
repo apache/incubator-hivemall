@@ -43,7 +43,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(name = "array_slice",
         value = "_FUNC_(array<ANY> values, int offset [, int length]) - Slices the given array by the given offset and length parameters.",
         extended = "SELECT \n" + 
-                "  array_slice(array(1,2,3,4,5,6), 2,4),\n" + 
+                "  array_slice(array(1,2,3,4,5,6),2,4),\n" + 
                 "  array_slice(\n" + 
                 "   array(\"zero\", \"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\", \"ten\"),\n" + 
                 "   0, -- offset\n" + 
