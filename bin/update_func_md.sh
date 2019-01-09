@@ -32,6 +32,8 @@ fi
 cd $HIVEMALL_HOME
 HIVEMALL_HOME=`pwd`
 
+VERSION=`cat VERSION`
+
 # Deploy to local Maven repos
 
 export MAVEN_OPTS="-XX:MaxPermSize=256m -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2"
@@ -39,7 +41,7 @@ mvn clean install -DskipTests=true -Dmaven.test.skip=true -pl '.,core,nlp,xgboos
 
 # Generate docs
 
-mvn org.apache.hivemall:hivemall-docs:generate-funcs-list -pl '.,core,nlp,xgboost,tools/hivemall-docs' -X
+mvn org.apache.hivemall:hivemall-docs:${VERSION}:generate-funcs-list -pl '.,core,nlp,xgboost,tools/hivemall-docs' -X
 
 # Run HTTP server on localhost:4000
 

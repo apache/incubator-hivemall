@@ -64,7 +64,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 - `array_slice(array<ANY> values, int offset [, int length])` - Slices the given array by the given offset and length parameters.
   ```sql
   SELECT 
-    array_slice(array(1,2,3,4,5,6), 2,4),
+    array_slice(array(1,2,3,4,5,6),2,4),
     array_slice(
      array("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"),
      0, -- offset
@@ -171,6 +171,36 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```sql
   SELECT sort_and_uniq_array(array(3,1,1,-2,10));
    [-2,1,3,10]
+  ```
+
+- `subarray(array<ANY> values, int fromIndex [, int toIndex])`- Returns a slice of the original array between the inclusive fromIndex and the exclusive toIndex.
+  ```sql
+  SELECT 
+    subarray(array(0,1,2,3,4,5),4),
+    subarray(array(0,1,2,3,4,5),3,4),
+    subarray(array(0,1,2,3,4,5),3,3),
+    subarray(array(0,1,2,3,4,5),3,2),
+    subarray(array(0,1,2,3,4,5),0,2),
+    subarray(array(0,1,2,3,4,5),-1,2),
+    subarray(array(1,2,3,4,5,6),4),
+    subarray(array(1,2,3,4,5,6),4,6),
+    subarray(array(1,2,3,4,5,6),2,4),
+    subarray(array(1,2,3,4,5,6),0,2),
+    subarray(array(1,2,3,4,5,6),4,6),
+    subarray(array(1,2,3,4,5,6),4,7);
+
+   [4,5]
+   [3]
+   []
+   []
+   [0,1]
+   [0,1]
+   [5,6]
+   [5,6]
+   [3,4]
+   [1,2]
+   [5,6]
+   [5,6]
   ```
 
 - `subarray_endwith(array<int|text> original, int|text key)` - Returns an array that ends with the specified key
