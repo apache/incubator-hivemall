@@ -93,7 +93,7 @@ FROM (
 
 > #### Note
 >
-> `CLUSTER BY x` is a synonym of `DISTRIBUTE BY x CLASS SORT BY x` and required when using `each_top_k`.
+> `CLUSTER BY x` is a synonym of `DISTRIBUTE BY x SORT BY x` and required when using `each_top_k`.
 
 The function signature of `each_top_k` is `each_top_k(int k, ANY group, double value, arg1, arg2, ..., argN)` and it returns a relation `(int rank, double value, arg1, arg2, .., argN)`.
 
