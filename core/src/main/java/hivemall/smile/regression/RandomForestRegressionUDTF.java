@@ -74,7 +74,7 @@ import org.apache.hadoop.mapred.Reporter;
 @Description(name = "train_randomforest_regressor",
         value = "_FUNC_(array<double|string> features, double target [, string options]) - "
                 + "Returns a relation consists of "
-                + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests>")
+                + "<int model_id, int model_type, string model, array<double> var_importance, double oob_errors, int oob_tests>")
 public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(RandomForestRegressionUDTF.class);
 
@@ -213,7 +213,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("model_err");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-        fieldNames.add("pred_model");
+        fieldNames.add("model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("var_importance");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
