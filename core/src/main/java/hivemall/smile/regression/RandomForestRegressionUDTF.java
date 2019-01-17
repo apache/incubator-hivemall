@@ -27,6 +27,7 @@ import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
@@ -40,7 +41,9 @@ import hivemall.utils.lang.RandomUtils;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -216,8 +219,14 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         fieldNames.add("model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         fieldNames.add("var_importance");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        if (denseInput) {
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        } else {
+            fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        }
         fieldNames.add("oob_errors");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("oob_tests");
@@ -359,7 +368,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
      * @param error
      */
     synchronized void forward(final int taskId, @Nonnull final Text model,
-            @Nonnull final double[] importance, @Nonnegative final double error, final double[] y,
+            @Nonnull final Vector importance, @Nonnegative final double error, final double[] y,
             final double[] prediction, final int[] oob, final boolean lastTask)
             throws HiveException {
         double oobErrors = 0.d;
@@ -379,7 +388,18 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         forwardObjs[0] = new Text(modelId);
         forwardObjs[1] = new DoubleWritable(error);
         forwardObjs[2] = model;
-        forwardObjs[3] = WritableUtils.toWritableList(importance);
+        if (denseInput) {
+            forwardObjs[3] = WritableUtils.toWritableList(importance.toArray());
+        } else {
+            final Map<IntWritable, DoubleWritable> map =
+                    new HashMap<IntWritable, DoubleWritable>(importance.size());
+            importance.each(new VectorProcedure() {
+                public void apply(int i, double value) {
+                    map.put(new IntWritable(i), new DoubleWritable(value));
+                }
+            });
+            forwardObjs[3] = map;
+        }
         forwardObjs[4] = new DoubleWritable(oobErrors);
         forwardObjs[5] = new IntWritable(oobTests);
         forward(forwardObjs);
@@ -476,7 +496,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                 oob++;
                 _x.getRow(i, xProbe);
                 final double pred = tree.predict(xProbe);
-                synchronized (_prediction) {
+                synchronized (_udtf) {
                     _prediction[i] += pred;
                     _oob[i]++;
                 }
@@ -488,7 +508,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
             stopwatch.reset().start();
             Text model = getModel(tree);
-            double[] importance = tree.importance();
+            Vector importance = tree.importance();
             tree = null; // help GC
             int remain = _remainingTasks.decrementAndGet();
             boolean lastTask = (remain == 0);

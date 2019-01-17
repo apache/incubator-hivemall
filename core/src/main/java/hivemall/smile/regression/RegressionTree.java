@@ -25,6 +25,7 @@ import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
+import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.data.Attribute;
@@ -106,7 +107,7 @@ public final class RegressionTree implements Regression<Vector> {
      * for the two descendant nodes is less than the parent node. Adding up the decreases for each
      * individual variable over the tree gives a simple measure of variable importance.
      */
-    private final double[] _importance;
+    private final Vector _importance;
     /**
      * The root of the regression tree
      */
@@ -782,7 +783,7 @@ public final class RegressionTree implements Regression<Vector> {
                 }
             }
 
-            _importance[node.splitFeature] += node.splitScore;
+            _importance.incr(node.splitFeature, node.splitScore);
 
             return true;
         }
@@ -876,7 +877,7 @@ public final class RegressionTree implements Regression<Vector> {
         this._minSplit = minSplits;
         this._minLeafSize = minLeafSize;
         this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
-        this._importance = new double[_attributes.length];
+        this._importance = x.isSparse() ? new SparseVector() : new DenseVector(_attributes.length);
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
         this._nodeOutput = output;
 
@@ -963,7 +964,7 @@ public final class RegressionTree implements Regression<Vector> {
      *
      * @return the variable importance
      */
-    public double[] importance() {
+    public Vector importance() {
         return _importance;
     }
 
