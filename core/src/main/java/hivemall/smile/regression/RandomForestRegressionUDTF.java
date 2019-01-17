@@ -403,7 +403,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
          */
         private final Matrix _x;
         /**
-         * Training sample labels.
+         * Training sample target values.
          */
         private final double[] _y;
         /**
