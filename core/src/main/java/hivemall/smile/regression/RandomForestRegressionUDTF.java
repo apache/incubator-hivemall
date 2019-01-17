@@ -206,8 +206,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         this.targets = new DoubleArrayList(1024);
 
-        ArrayList<String> fieldNames = new ArrayList<String>(5);
-        ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(5);
+        final ArrayList<String> fieldNames = new ArrayList<String>(6);
+        final ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>(6);
 
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
