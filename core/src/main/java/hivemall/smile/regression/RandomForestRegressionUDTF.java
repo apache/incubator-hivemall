@@ -71,7 +71,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
 
-@Description(name = "train_randomforest_regression",
+@Description(name = "train_randomforest_regressor",
         value = "_FUNC_(array<double|string> features, double target [, string options]) - "
                 + "Returns a relation consists of "
                 + "<int model_id, int model_type, string pred_model, array<double> var_importance, int oob_errors, int oob_tests>")
