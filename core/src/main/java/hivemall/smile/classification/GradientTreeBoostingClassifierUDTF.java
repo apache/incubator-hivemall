@@ -26,7 +26,10 @@ import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
 import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
+import hivemall.math.vector.DenseVector;
+import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
+import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.data.Attribute;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
@@ -40,6 +43,8 @@ import hivemall.utils.math.MathUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Map;
+import java.util.HashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -555,11 +560,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             final float oobErrorRate, @Nonnull final RegressionTree... trees) throws HiveException {
         Text[] models = getModel(trees);
 
-        double[] importance = new double[_attributes.length];
+        Vector importance = denseInput ? new DenseVector(_attributes.length) : new SparseVector();
         for (RegressionTree tree : trees) {
-            double[] imp = tree.importance();
-            for (int i = 0; i < imp.length; i++) {
-                importance[i] += imp[i];
+            Vector imp = tree.importance();
+            for (int i = 0, size = imp.size(); i < size; i++) {
+                importance.incr(i, imp.get(i));
             }
         }
 
@@ -568,7 +573,18 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         forwardObjs[1] = models;
         forwardObjs[2] = new DoubleWritable(intercept);
         forwardObjs[3] = new DoubleWritable(shrinkage);
-        forwardObjs[4] = WritableUtils.toWritableList(importance);
+        if (denseInput) {
+            forwardObjs[4] = WritableUtils.toWritableList(importance.toArray());
+        } else {
+            final Map<IntWritable, DoubleWritable> map =
+                    new HashMap<IntWritable, DoubleWritable>(importance.size());
+            importance.each(new VectorProcedure() {
+                public void apply(int i, double value) {
+                    map.put(new IntWritable(i), new DoubleWritable(value));
+                }
+            });
+            forwardObjs[4] = map;
+        }
         forwardObjs[5] = new FloatWritable(oobErrorRate);
 
         forward(forwardObjs);
