@@ -56,10 +56,11 @@ public final class OptimizerOptions {
         opts.addOption("lambda", true, "Regularization term [default 0.0001]");
         // learning rates
         opts.addOption("eta", true, "Learning rate scheme [default: inverse/inv, fixed, simple]");
-        opts.addOption("eta0", true, "The initial learning rate [default 0.1]");
+        opts.addOption("eta0", true,
+            "The initial learning rate [default: " + EtaEstimator.DEFAULT_ETA0 + "]");
         opts.addOption("t", "total_steps", true, "a total of n_samples * epochs time steps");
-        opts.addOption("power_t", true,
-            "The exponent for inverse scaling learning rate [default 0.1]");
+        opts.addOption("power_t", true, "The exponent for inverse scaling learning rate [default: "
+                + EtaEstimator.DEFAULT_POWER_T + "]");
         opts.addOption("alpha", true,
             "Coefficient of learning rate [default: 1.0 (adam/RMSPropGraves), 0.02 (AdamHD/Nesterov)]");
         // ADAM hyperparameters
