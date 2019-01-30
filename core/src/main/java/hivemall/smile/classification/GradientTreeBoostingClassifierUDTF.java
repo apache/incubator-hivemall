@@ -232,8 +232,14 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         fieldNames.add("shrinkage");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
         fieldNames.add("var_importance");
-        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
-            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        if (denseInput) {
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        } else {
+            fieldOIs.add(ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.writableIntObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        }
         fieldNames.add("oob_error_rate");
         fieldOIs.add(PrimitiveObjectInspectorFactory.writableFloatObjectInspector);
 
