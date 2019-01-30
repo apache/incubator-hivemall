@@ -55,11 +55,11 @@ public final class LogressUDTF extends RegressionBaseUDTF {
     @Override
     protected Options getOptions() {
         Options opts = super.getOptions();
-        opts.addOption("t", "total_steps", true,
-            "a total of n_samples * epochs time steps [default: 10000]");
-        opts.addOption("power_t", true,
-            "The exponent for inverse scaling learning rate [default 0.1]");
-        opts.addOption("eta0", true, "The initial learning rate [default 0.1]");
+        opts.addOption("t", "total_steps", true, "a total of n_samples * epochs time steps");
+        opts.addOption("power_t", true, "The exponent for inverse scaling learning rate [default: "
+                + EtaEstimator.DEFAULT_POWER_T + "]");
+        opts.addOption("eta0", true,
+            "The initial learning rate [default: " + EtaEstimator.DEFAULT_ETA0 + "]");
         return opts;
     }
 

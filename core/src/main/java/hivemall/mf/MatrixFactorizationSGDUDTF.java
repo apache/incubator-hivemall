@@ -40,11 +40,13 @@ public final class MatrixFactorizationSGDUDTF extends OnlineMatrixFactorizationU
     @Override
     protected Options getOptions() {
         Options opts = super.getOptions();
-        opts.addOption("eta", true, "The initial learning rate [default: 0.001]");
-        opts.addOption("eta0", true, "The initial learning rate [default 0.2]");
+        opts.addOption("eta", true,
+            "The initial learning rate [default: " + EtaEstimator.DEFAULT_ETA + "]");
+        opts.addOption("eta0", true,
+            "The initial learning rate [default: " + EtaEstimator.DEFAULT_ETA0 + "]");
         opts.addOption("t", "total_steps", true, "The total number of training examples");
-        opts.addOption("power_t", true,
-            "The exponent for inverse scaling learning rate [default 0.1]");
+        opts.addOption("power_t", true, "The exponent for inverse scaling learning rate [default: "
+                + EtaEstimator.DEFAULT_POWER_T + "]");
         return opts;
     }
 

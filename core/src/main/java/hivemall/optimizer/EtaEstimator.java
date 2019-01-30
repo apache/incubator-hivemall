@@ -33,6 +33,10 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 
 public abstract class EtaEstimator {
 
+    public static final float DEFAULT_ETA0 = 0.1f;
+    public static final float DEFAULT_ETA = 0.3f;
+    public static final double DEFAULT_POWER_T = 0.1d;
+
     protected final float eta0;
 
     public EtaEstimator(float eta0) {
@@ -150,18 +154,18 @@ public abstract class EtaEstimator {
 
     @Nonnull
     public static EtaEstimator get(@Nullable CommandLine cl) throws UDFArgumentException {
-        return get(cl, 0.1f);
+        return get(cl, DEFAULT_ETA0);
     }
 
     @Nonnull
     public static EtaEstimator get(@Nullable CommandLine cl, float defaultEta0)
             throws UDFArgumentException {
         if (cl == null) {
-            return new InvscalingEtaEstimator(defaultEta0, 0.1d);
+            return new InvscalingEtaEstimator(defaultEta0, DEFAULT_POWER_T);
         }
 
         if (cl.hasOption("boldDriver")) {
-            float eta = Primitives.parseFloat(cl.getOptionValue("eta"), 0.3f);
+            float eta = Primitives.parseFloat(cl.getOptionValue("eta"), DEFAULT_ETA);
             return new AdjustingEtaEstimator(eta);
         }
 
@@ -177,15 +181,15 @@ public abstract class EtaEstimator {
             return new SimpleEtaEstimator(eta0, t);
         }
 
-        double power_t = Primitives.parseDouble(cl.getOptionValue("power_t"), 0.1d);
+        double power_t = Primitives.parseDouble(cl.getOptionValue("power_t"), DEFAULT_POWER_T);
         return new InvscalingEtaEstimator(eta0, power_t);
     }
 
     @Nonnull
     public static EtaEstimator get(@Nonnull final Map<String, String> options)
             throws IllegalArgumentException {
-        final float eta0 = Primitives.parseFloat(options.get("eta0"), 0.1f);
-        final double power_t = Primitives.parseDouble(options.get("power_t"), 0.1d);
+        final float eta0 = Primitives.parseFloat(options.get("eta0"), DEFAULT_ETA0);
+        final double power_t = Primitives.parseDouble(options.get("power_t"), DEFAULT_POWER_T);
 
         final String etaScheme = options.get("eta");
         if (etaScheme == null) {

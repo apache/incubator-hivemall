@@ -165,11 +165,13 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
             "The regularization factor for bias clause [default: 0.01]");
         opts.addOption("disable_bias", "no_bias", false, "Turn off bias clause");
         // learning rates
-        opts.addOption("eta", true, "The initial learning rate [default: 0.001]");
-        opts.addOption("eta0", true, "The initial learning rate [default 0.3]");
+        opts.addOption("eta", true,
+            "The initial learning rate [default: " + EtaEstimator.DEFAULT_ETA + "]");
+        opts.addOption("eta0", true,
+            "The initial learning rate [default: " + EtaEstimator.DEFAULT_ETA0 + "]");
         opts.addOption("t", "total_steps", true, "The total number of training examples");
-        opts.addOption("power_t", true,
-            "The exponent for inverse scaling learning rate [default 0.1]");
+        opts.addOption("power_t", true, "The exponent for inverse scaling learning rate [default: "
+                + EtaEstimator.DEFAULT_POWER_T + "]");
         opts.addOption("boldDriver", "bold_driver", false,
             "Whether to use Bold Driver for learning rate [default: false]");
         // conversion check
