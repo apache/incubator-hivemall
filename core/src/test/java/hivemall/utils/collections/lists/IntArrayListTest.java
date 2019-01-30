@@ -21,27 +21,11 @@ package hivemall.utils.collections.lists;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class LongArrayListTest {
-
-    @Test
-    public void testRemoveIndex() {
-        LongArrayList list = new LongArrayList();
-        list.add(0).add(1).add(2).add(3);
-        Assert.assertEquals(1, list.remove(1));
-        Assert.assertEquals(3, list.size());
-        Assert.assertArrayEquals(new long[] {0, 2, 3}, list.toArray());
-        Assert.assertEquals(3, list.remove(2));
-        Assert.assertArrayEquals(new long[] {0, 2}, list.toArray());
-        Assert.assertEquals(0, list.remove(0));
-        Assert.assertArrayEquals(new long[] {2}, list.toArray());
-        list.add(0).add(1);
-        Assert.assertEquals(3, list.size());
-        Assert.assertArrayEquals(new long[] {2, 0, 1}, list.toArray());
-    }
+public class IntArrayListTest {
 
     @Test
     public void testExpandZeroSizedList() {
-        LongArrayList list = new LongArrayList(0);
+        IntArrayList list = new IntArrayList(0);
         list.add(100);
         Assert.assertEquals(1, list.size());
         Assert.assertEquals(100, list.get(0));

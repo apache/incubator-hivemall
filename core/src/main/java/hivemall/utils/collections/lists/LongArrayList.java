@@ -19,7 +19,10 @@
 package hivemall.utils.collections.lists;
 
 import java.io.Serializable;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
 public final class LongArrayList implements Serializable {
@@ -28,6 +31,7 @@ public final class LongArrayList implements Serializable {
     public static final int DEFAULT_CAPACITY = 12;
 
     /** array entity */
+    @Nonnull
     private long[] data;
     private int used;
 
@@ -40,8 +44,8 @@ public final class LongArrayList implements Serializable {
         this.used = 0;
     }
 
-    public LongArrayList(@Nonnull long[] initValues) {
-        this.data = initValues;
+    public LongArrayList(@CheckForNull long[] initValues) {
+        this.data = Objects.requireNonNull(initValues);
         this.used = initValues.length;
     }
 
@@ -68,16 +72,20 @@ public final class LongArrayList implements Serializable {
     /**
      * dynamic expansion.
      */
-    private void expand(final int max) {
-        while (data.length < max) {
-            final int len = data.length;
-            long[] newArray = new long[len * 2];
-            System.arraycopy(data, 0, newArray, 0, len);
+    private void expand(final int minimumCapacity) {
+        while (data.length < minimumCapacity) {
+            int oldLen = data.length;
+            int newLen = (int) Math.max(minimumCapacity, Math.min(oldLen * 2L, Integer.MAX_VALUE));
+            long[] newArray = new long[newLen];
+            System.arraycopy(data, 0, newArray, 0, oldLen);
             this.data = newArray;
         }
     }
 
     public long remove() {
+        if (used == 0) {
+            throw new NoSuchElementException("No elements to remove");
+        }
         return data[--used];
     }
 
