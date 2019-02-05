@@ -91,4 +91,13 @@ public class FromJsonUDFTest {
             new Object[] {"[0.1,1.1,2.2]"});
     }
 
+    @Test
+    public void testSerializationThreeArgs() throws HiveException, IOException {
+        TestUtils.testGenericUDFSerialization(FromJsonUDF.class,
+            new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    HiveUtils.getConstStringObjectInspector("struct<name:string,age:int>"),
+                    HiveUtils.getConstStringObjectInspector("person")},
+            new Object[] {"{ \"person\" : { \"name\" : \"makoto\" , \"age\" : 37 } }"});
+    }
+
 }

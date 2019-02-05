@@ -20,10 +20,10 @@ package hivemall.tools.json;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.JsonSerdeUtils;
+import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.ExceptionUtils;
 import hivemall.utils.lang.StringUtils;
 
-import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -133,9 +133,10 @@ public final class ToJsonUDF extends GenericUDF {
             final ObjectInspector argOI1 = argOIs[1];
             if (HiveUtils.isConstString(argOI1)) {
                 String names = HiveUtils.getConstString(argOI1);
-                this.columnNames = Arrays.asList(names.split(","));
+                this.columnNames = ArrayUtils.asKryoSerializableList(names.split(","));
             } else if (HiveUtils.isConstStringListOI(argOI1)) {
-                this.columnNames = Arrays.asList(HiveUtils.getConstStringArray(argOI1));
+                this.columnNames =
+                        ArrayUtils.asKryoSerializableList(HiveUtils.getConstStringArray(argOI1));
             } else {
                 throw new UDFArgumentException("Expected `const array<string>` or `const string`"
                         + " but got an unexpected OI type for the third argument: " + argOI1);
