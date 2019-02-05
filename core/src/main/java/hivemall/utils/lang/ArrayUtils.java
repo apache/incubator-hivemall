@@ -21,6 +21,7 @@ package hivemall.utils.lang;
 import hivemall.math.random.PRNG;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -748,6 +749,18 @@ public final class ArrayUtils {
             ret[i] = (float) rnd.nextDouble();
         }
         return ret;
+    }
+
+    /**
+     * Workaround for org.apache.hive.com.esotericsoftware.kryo.KryoException
+     */
+    @Nonnull
+    public static List<String> asKryoSerializableList(@Nonnull final String[] array) {
+        final List<String> list = new ArrayList<>(array.length);
+        for (String e : array) {
+            list.add(e);
+        }
+        return list;
     }
 
 }
