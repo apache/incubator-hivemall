@@ -22,6 +22,7 @@ import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_ARRAY_META;
 import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_REF;
 import static org.apache.hadoop.hive.ql.util.JavaDataModel.PRIMITIVES1;
 import static org.apache.hadoop.hive.ql.util.JavaDataModel.PRIMITIVES2;
+
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
@@ -57,8 +58,22 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 
+// @formatter:off
 @Description(name = "array_avg", value = "_FUNC_(array<number>) - Returns an array<double>"
-        + " in which each element is the mean of a set of numbers")
+        + " in which each element is the mean of a set of numbers",
+        extended = "WITH input as (\n" + 
+                "  select array(1.0, 2.0, 3.0) as nums\n" + 
+                "  UNION ALL\n" + 
+                "  select array(2.0, 3.0, 4.0) as nums\n" + 
+                ")\n" + 
+                "select\n" + 
+                "  array_avg(nums)\n" + 
+                "from\n" + 
+                "  input;\n" + 
+                "\n" + 
+                "[\"1.5\",\"2.5\",\"3.5\"]"
+        )
+// @formatter:on
 public final class ArrayAvgGenericUDAF extends AbstractGenericUDAFResolver {
 
     @Override

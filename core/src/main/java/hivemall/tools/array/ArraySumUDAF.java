@@ -31,9 +31,23 @@ import org.apache.hadoop.hive.ql.exec.UDAFEvaluator;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
+//@formatter:off
 @SuppressWarnings("deprecation")
 @Description(name = "array_sum", value = "_FUNC_(array<number>) - Returns an array<double>"
-        + " in which each element is summed up")
+        + " in which each element is summed up", 
+        extended = "WITH input as (\n" +
+                "  select array(1.0, 2.0, 3.0) as nums\n" + 
+                "  UNION ALL\n" + 
+                "  select array(2.0, 3.0, 4.0) as nums\n" + 
+                ")\n" + 
+                "select\n" + 
+                "  array_sum(nums)\n" + 
+                "from\n" + 
+                "  input;\n" + 
+                "\n" + 
+                "[\"3.0\",\"5.0\",\"7.0\"]"
+        )
+// @formatter:on
 public final class ArraySumUDAF extends UDAF {
 
     public ArraySumUDAF() {}
