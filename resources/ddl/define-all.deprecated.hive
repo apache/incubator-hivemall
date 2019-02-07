@@ -75,3 +75,6 @@ create temporary function addBias as 'hivemall.ftvec.AddBiasUDF';
 
 drop temporary function if exists sha1;
 create temporary function sha1 as 'hivemall.ftvec.hashing.Sha1UDF';
+
+drop temporary function if exists map_index;
+create temporary function map_index as 'hivemall.tools.map.MapGetUDF';

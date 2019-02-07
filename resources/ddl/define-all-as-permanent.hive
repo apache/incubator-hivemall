@@ -509,8 +509,8 @@ CREATE FUNCTION map_include_keys as 'hivemall.tools.map.MapIncludeKeysUDF' USING
 DROP FUNCTION IF EXISTS map_exclude_keys;
 CREATE FUNCTION map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION IF EXISTS map_index;
-CREATE FUNCTION map_index as 'hivemall.tools.map.MapIndexUDF' USING JAR '${hivemall_jar}';
+DROP FUNCTION IF EXISTS map_get;
+CREATE FUNCTION map_get as 'hivemall.tools.map.MapGetUDF' USING JAR '${hivemall_jar}';
 
 DROP FUNCTION IF EXISTS map_key_values;
 CREATE FUNCTION map_key_values as 'hivemall.tools.map.MapKeyValuesUDF' USING JAR '${hivemall_jar}';

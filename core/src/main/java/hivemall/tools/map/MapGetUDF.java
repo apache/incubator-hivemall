@@ -18,6 +18,8 @@
  */
 package hivemall.tools.map;
 
+import hivemall.utils.lang.StringUtils;
+
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
@@ -32,20 +34,20 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.C
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 
 //@formatter:off
-@Description(name = "map_index",
-        value = "_FUNC_(a, n) - Returns the n-th element of the given array", 
-        extended = "WITH tmp as (\n" + 
-                "  SELECT \"one\" as key\n" + 
-                "  UNION ALL\n" + 
-                "  SELECT \"two\" as key\n" + 
-                ")\n" + 
-                "SELECT map_index(map(\"one\",1,\"two\",2),key)\n" + 
+@Description(name = "map_get",
+        value = "_FUNC_(MAP<K> a, K n) - Returns the value corresponding to the key in the map",
+        extended = "WITH tmp as (\n" +
+                "  SELECT \"one\" as key\n" +
+                "  UNION ALL\n" +
+                "  SELECT \"two\" as key\n" +
+                ")\n" +
+                "SELECT map_get(map(\"one\",1,\"two\",2),key)\n" +
                 "FROM tmp;\n\n" +
-                "1\n" + 
-                "2")
+                "> 1\n" +
+                "> 2")
 //@formatter:on
 @UDFType(deterministic = true, stateful = false)
-public final class MapIndexUDF extends GenericUDF {
+public final class MapGetUDF extends GenericUDF {
 
     private transient MapObjectInspector mapOI;
     private transient Converter converter;
@@ -53,14 +55,15 @@ public final class MapIndexUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length != 2) {
-            throw new UDFArgumentLengthException("The function INDEX accepts exactly 2 arguments.");
+            throw new UDFArgumentLengthException("map_get accepts exactly 2 arguments.");
         }
 
         if (arguments[0] instanceof MapObjectInspector) {
             this.mapOI = (MapObjectInspector) arguments[0];
         } else {
-            throw new UDFArgumentTypeException(0, "\"map\" is expected at function INDEX, but \""
-                    + arguments[0].getTypeName() + "\" is found");
+            throw new UDFArgumentTypeException(0,
+                "\"map\" is expected for the first argument, but \"" + arguments[0].getTypeName()
+                        + "\" is found");
         }
 
         // index has to be a primitive
@@ -97,8 +100,7 @@ public final class MapIndexUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        assert (children.length == 2);
-        return children[0] + "[" + children[1] + "]";
+        return "map_get(" + StringUtils.join(children, ',') + ')';
     }
 
 }

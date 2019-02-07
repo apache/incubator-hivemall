@@ -500,8 +500,8 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION map_include_keys AS 'hivemall.tools.ma
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_exclude_keys")
 sqlContext.sql("CREATE TEMPORARY FUNCTION map_exclude_keys AS 'hivemall.tools.map.MapExcludeKeysUDF'")
 
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_index")
-sqlContext.sql("CREATE TEMPORARY FUNCTION map_index AS 'hivemall.tools.map.MapIndexUDF'")
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_get")
+sqlContext.sql("CREATE TEMPORARY FUNCTION map_get AS 'hivemall.tools.map.MapGetUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_key_values")
 sqlContext.sql("CREATE TEMPORARY FUNCTION map_key_values AS 'hivemall.tools.map.MapKeyValuesUDF'")

@@ -434,7 +434,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   {2:"two",3:"three"}
   ```
 
-- `map_index(a, n)` - Returns the n-th element of the given array
+- `map_get(Map<K> a, K n)` - Returns the value corresponding to the key in the map
   ```sql
   WITH tmp as (
     SELECT "one" as key

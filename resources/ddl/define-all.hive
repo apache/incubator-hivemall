@@ -501,8 +501,8 @@ create temporary function map_include_keys as 'hivemall.tools.map.MapIncludeKeys
 drop temporary function if exists map_exclude_keys;
 create temporary function map_exclude_keys as 'hivemall.tools.map.MapExcludeKeysUDF';
 
-drop temporary function if exists map_index;
-create temporary function map_index as 'hivemall.tools.map.MapIndexUDF';
+drop temporary function if exists map_get;
+create temporary function map_get as 'hivemall.tools.map.MapGetUDF';
 
 drop temporary function if exists map_key_values;
 create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
