@@ -35,8 +35,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 
 //@formatter:off
 @Description(name = "map_get",
-        value = "_FUNC_(MAP<K> a, K n) - Returns the value corresponding to the key in the map",
-        extended = "WITH tmp as (\n" +
+        value = "_FUNC_(MAP<K> a, K n) - Returns the value corresponding to the key in the map.",
+        extended = "Note this is a workaround for a Hive issue that non-constant expression for map indexes not supported.\n" +
+                "See https://issues.apache.org/jira/browse/HIVE-1955\n\n" +
+                "WITH tmp as (\n" +
                 "  SELECT \"one\" as key\n" +
                 "  UNION ALL\n" +
                 "  SELECT \"two\" as key\n" +

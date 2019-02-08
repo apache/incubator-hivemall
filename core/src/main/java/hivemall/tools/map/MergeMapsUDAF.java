@@ -41,7 +41,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
 //@formatter:off
 @Description(name = "merge_maps",
-        value = "_FUNC_(x) - Returns a map which contains the union of an aggregation of maps."
+        value = "_FUNC_(Map x) - Returns a map which contains the union of an aggregation of maps."
                 + " Note that an existing value of a key can be replaced with the other duplicate key entry.",
         extended = "SELECT \n" + 
                 "  merge_maps(m) \n" + 

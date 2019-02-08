@@ -21,7 +21,8 @@ package hivemall.tools.math;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 
-@Description(name = "is_finite", value = "_FUNC_(x) - Determine if x is infinite.")
+@Description(name = "is_finite", value = "_FUNC_(x) - Determine if x is finite.",
+        extended = "SELECT is_finite(333), is_finite(infinity());\n" + "> true false")
 public final class IsFiniteUDF extends UDF {
     public Boolean evaluate(Double num) {
         if (num == null) {

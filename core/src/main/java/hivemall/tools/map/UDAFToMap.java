@@ -44,8 +44,19 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
  * 
  * @see https://cwiki.apache.org/Hive/genericudafcasestudy.html
  */
+// @formatter:off
 @Description(name = "to_map",
-        value = "_FUNC_(key, value) - Convert two aggregated columns into a key-value map")
+        value = "_FUNC_(key, value) - Convert two aggregated columns into a key-value map",
+        extended = "WITH input as (\n" + 
+                "  select 'aaa' as key, 111 as value\n" + 
+                "  UNION all\n" + 
+                "  select 'bbb' as key, 222 as value\n" + 
+                ")\n" + 
+                "select to_map(key, value)\n" + 
+                "from input;\n" + 
+                "\n" + 
+                "> {\"bbb\":222,\"aaa\":111}")
+// @formatter:on
 public class UDAFToMap extends AbstractGenericUDAFResolver {
 
     @Override

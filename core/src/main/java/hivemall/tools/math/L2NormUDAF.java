@@ -24,9 +24,17 @@ import org.apache.hadoop.hive.ql.exec.UDAFEvaluator;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
+// @formatter:off
 @SuppressWarnings("deprecation")
 @Description(name = "l2_norm",
-        value = "_FUNC_(double xi) - Return L2 norm of a vector which has the given values in each dimension")
+        value = "_FUNC_(double x) - Return a L2 norm of the given input x.",
+        extended = "WITH input as (\n" + 
+                "  select generate_series(1,3) as v\n" + 
+                ")\n" + 
+                "select l2_norm(v) as l2norm\n" + 
+                "from input;\n" + 
+                "> 3.7416573867739413 = sqrt(1^2+2^2+3^2))")
+// @formatter:on
 public final class L2NormUDAF extends UDAF {
 
     public static class Evaluator implements UDAFEvaluator {

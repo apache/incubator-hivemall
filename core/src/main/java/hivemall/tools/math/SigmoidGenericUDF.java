@@ -37,7 +37,21 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.FloatWritable;
 
-@Description(name = "sigmoid", value = "_FUNC_(x) - Returns 1.0 / (1.0 + exp(-x))")
+// @formatter:off
+@Description(name = "sigmoid", value = "_FUNC_(x) - Returns 1.0 / (1.0 + exp(-x))", 
+            extended = "WITH input as (\n" + 
+                    "  SELECT 3.0 as x\n" + 
+                    "  UNION ALL\n" + 
+                    "  SELECT -3.0 as x\n" + 
+                    ")\n" + 
+                    "select \n" + 
+                    "  1.0 / (1.0 + exp(-x)),\n" + 
+                    "  sigmoid(x)\n" + 
+                    "from\n" + 
+                    "  input;\n" + 
+                    "> 0.04742587317756678   0.04742587357759476\n" + 
+                    "> 0.9525741268224334    0.9525741338729858")
+// @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class SigmoidGenericUDF extends GenericUDF {
 
