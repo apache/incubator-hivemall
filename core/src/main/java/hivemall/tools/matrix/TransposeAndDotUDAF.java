@@ -44,9 +44,23 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+// @formatter:off
 @Description(name = "transpose_and_dot",
-        value = "_FUNC_(array<number> matrix0_row, array<number> matrix1_row)"
-                + " - Returns dot(matrix0.T, matrix1) as array<array<double>>, shape = (matrix0.#cols, matrix1.#cols)")
+        value = "_FUNC_(array<number> X, array<number> Y)"
+                + " - Returns dot(X.T, Y) as array<array<double>>, shape = (X.#cols, Y.#cols)",
+        extended = "WITH input as (\n" + 
+                "  select array(1.0, 2.0, 3.0, 4.0) as x, array(1, 2) as y\n" + 
+                "  UNION ALL\n" + 
+                "  select array(2.0, 3.0, 4.0, 5.0) as x, array(1, 2) as y\n" + 
+                ")\n" + 
+                "select\n" + 
+                "  transpose_and_dot(x, y) as xy,\n" + 
+                "  transpose_and_dot(y, x) as yx\n" + 
+                "from \n" + 
+                "  input;\n\n" + 
+                "> [[\"3.0\",\"6.0\"],[\"5.0\",\"10.0\"],[\"7.0\",\"14.0\"],[\"9.0\",\"18.0\"]]" + 
+                "   [[\"3.0\",\"5.0\",\"7.0\",\"9.0\"],[\"6.0\",\"10.0\",\"14.0\",\"18.0\"]]\n")
+// @formatter:on
 public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
 
     @Override
@@ -75,18 +89,18 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
 
     static final class TransposeAndDotUDAFEvaluator extends GenericUDAFEvaluator {
         // PARTIAL1 and COMPLETE
-        private ListObjectInspector matrix0RowOI;
-        private PrimitiveObjectInspector matrix0ElOI;
-        private ListObjectInspector matrix1RowOI;
-        private PrimitiveObjectInspector matrix1ElOI;
+        private ListObjectInspector xRowOI;
+        private PrimitiveObjectInspector xElemOI;
+        private ListObjectInspector yRowOI;
+        private PrimitiveObjectInspector yElemOI;
 
         // PARTIAL2 and FINAL
         private ListObjectInspector aggMatrixOI;
         private ListObjectInspector aggMatrixRowOI;
-        private DoubleObjectInspector aggMatrixElOI;
+        private DoubleObjectInspector aggMatrixElemOI;
 
-        private double[] matrix0Row;
-        private double[] matrix1Row;
+        private double[] xRow;
+        private double[] yRow;
 
         @AggregationType(estimable = true)
         static class TransposeAndDotAggregationBuffer extends AbstractAggregationBuffer {
@@ -116,17 +130,17 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
             super.init(mode, OIs);
 
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
-                this.matrix0RowOI = HiveUtils.asListOI(OIs[0]);
-                this.matrix0ElOI = HiveUtils.asDoubleCompatibleOI(
-                    matrix0RowOI.getListElementObjectInspector());
-                this.matrix1RowOI = HiveUtils.asListOI(OIs[1]);
-                this.matrix1ElOI = HiveUtils.asDoubleCompatibleOI(
-                    matrix1RowOI.getListElementObjectInspector());
+                this.xRowOI = HiveUtils.asListOI(OIs[0]);
+                this.xElemOI = HiveUtils.asDoubleCompatibleOI(
+                    xRowOI.getListElementObjectInspector());
+                this.yRowOI = HiveUtils.asListOI(OIs[1]);
+                this.yElemOI = HiveUtils.asDoubleCompatibleOI(
+                    yRowOI.getListElementObjectInspector());
             } else {
                 this.aggMatrixOI = HiveUtils.asListOI(OIs[0]);
                 this.aggMatrixRowOI =
                         HiveUtils.asListOI(aggMatrixOI.getListElementObjectInspector());
-                this.aggMatrixElOI =
+                this.aggMatrixElemOI =
                         HiveUtils.asDoubleOI(aggMatrixRowOI.getListElementObjectInspector());
             }
 
@@ -160,23 +174,23 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
 
             final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
 
-            if (matrix0Row == null) {
-                matrix0Row = new double[matrix0RowOI.getListLength(matrix0RowObj)];
+            if (xRow == null) {
+                xRow = new double[xRowOI.getListLength(matrix0RowObj)];
             }
-            if (matrix1Row == null) {
-                matrix1Row = new double[matrix1RowOI.getListLength(matrix1RowObj)];
+            if (yRow == null) {
+                yRow = new double[yRowOI.getListLength(matrix1RowObj)];
             }
 
-            HiveUtils.toDoubleArray(matrix0RowObj, matrix0RowOI, matrix0ElOI, matrix0Row, false);
-            HiveUtils.toDoubleArray(matrix1RowObj, matrix1RowOI, matrix1ElOI, matrix1Row, false);
+            HiveUtils.toDoubleArray(matrix0RowObj, xRowOI, xElemOI, xRow, false);
+            HiveUtils.toDoubleArray(matrix1RowObj, yRowOI, yElemOI, yRow, false);
 
             if (myAgg.aggMatrix == null) {
-                myAgg.init(matrix0Row.length, matrix1Row.length);
+                myAgg.init(xRow.length, yRow.length);
             }
 
-            for (int i = 0; i < matrix0Row.length; i++) {
-                for (int j = 0; j < matrix1Row.length; j++) {
-                    myAgg.aggMatrix[i][j] += matrix0Row[i] * matrix1Row[j];
+            for (int i = 0; i < xRow.length; i++) {
+                for (int j = 0; j < yRow.length; j++) {
+                    myAgg.aggMatrix[i][j] += xRow[i] * yRow[j];
                 }
             }
         }
@@ -194,7 +208,7 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
             final int n = matrix.size();
             final double[] row = new double[aggMatrixRowOI.getListLength(matrix.get(0))];
             for (int i = 0; i < n; i++) {
-                HiveUtils.toDoubleArray(matrix.get(i), aggMatrixRowOI, aggMatrixElOI, row, false);
+                HiveUtils.toDoubleArray(matrix.get(i), aggMatrixRowOI, aggMatrixElemOI, row, false);
 
                 if (myAgg.aggMatrix == null) {
                     myAgg.init(n, row.length);
