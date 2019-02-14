@@ -18,38 +18,56 @@
  */
 package hivemall.tools.array;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ToStringArrayUDFTest {
 
     @Test
-    public void testTextArrayInput() {
-        List<Text> input = new ArrayList<Text>(2);
-        input.add(new Text("1"));
-        input.add(new Text("2"));
+    public void testTextArrayInput() throws HiveException, IOException {
+        List<String> input = new ArrayList<String>(2);
+        input.add("1");
+        input.add("2");
 
         ToStringArrayUDF udf = new ToStringArrayUDF();
-        List<Text> output = udf.evaluate(input);
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector)});
 
-        Assert.assertSame(input, output);
+        DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(input)};
+        List<String> output = udf.evaluate(args);
+
+        Assert.assertEquals(input, output);
+
+        udf.close();
     }
 
     @Test
-    public void testTextArrayInputWithNullValue() {
-        List<Text> input = new ArrayList<Text>(2);
-        input.add(new Text("1"));
+    public void testTextArrayInputWithNullValue() throws HiveException, IOException {
+        List<String> input = new ArrayList<String>(2);
+        input.add("1");
         input.add(null);
-        input.add(new Text("2"));
+        input.add("2");
 
         ToStringArrayUDF udf = new ToStringArrayUDF();
-        List<Text> output = udf.evaluate(input);
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector)});
 
-        Assert.assertSame(input, output);
+        DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(input)};
+        List<String> output = udf.evaluate(args);
+
+        Assert.assertEquals(input, output);
+
+        udf.close();
     }
 
 }
