@@ -24,6 +24,8 @@ import static hivemall.docs.utils.MarkdownUtils.asListElement;
 import static hivemall.docs.utils.MarkdownUtils.indent;
 import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
+import hivemall.annotations.Cite;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -207,6 +209,21 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
                 } else {
                     sb.append(indent(asCodeBlock(extended)));
                 }
+            }
+
+            Cite cite = annotatedClass.getAnnotation(Cite.class);
+            if (cite != null) {
+                sb.append("Reference: ");
+                String desc = cite.description();
+                String url = cite.url();
+                if (url == null) {
+                    sb.append(desc);
+                } else {
+                    sb.append("<a href=\"").append(url).append("\" target=\"_blank\">");
+                    sb.append(desc);
+                    sb.append("</a>");
+                }
+                sb.append("<br/>");
             }
 
             String packageName = annotatedClass.getPackage().getName();

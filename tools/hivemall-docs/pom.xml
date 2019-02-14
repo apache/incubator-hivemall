@@ -74,7 +74,7 @@
 			<groupId>org.apache.hivemall</groupId>
 			<artifactId>hivemall-core</artifactId>
 			<version>${project.version}</version>
-			<scope>runtime</scope>
+			<scope>provided</scope> <!-- for Cite annotation -->
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hivemall</groupId>
