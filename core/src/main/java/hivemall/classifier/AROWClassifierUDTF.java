@@ -18,6 +18,7 @@
  */
 package hivemall.classifier;
 
+import hivemall.annotations.Cite;
 import hivemall.model.FeatureValue;
 import hivemall.model.IWeightValue;
 import hivemall.model.PredictionResult;
@@ -45,6 +46,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
         value = "_FUNC_(list<string|int|bigint> features, int label [, const string options])"
                 + " - Returns a relation consists of <string|int|bigint feature, float weight, float covar>",
         extended = "Build a prediction model by Adaptive Regularization of Weight Vectors (AROW) binary classifier")
+@Cite(description = "K. Crammer, A. Kulesza, and M. Dredze, \"Adaptive Regularization of Weight Vectors\", In Proc. NIPS, 2009.",
+        url = "https://papers.nips.cc/paper/3848-adaptive-regularization-of-weight-vectors.pdf")
 public class AROWClassifierUDTF extends BinaryOnlineClassifierUDTF {
 
     /** Regularization parameter r */

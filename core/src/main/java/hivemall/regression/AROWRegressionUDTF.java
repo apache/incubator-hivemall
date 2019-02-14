@@ -18,6 +18,7 @@
  */
 package hivemall.regression;
 
+import hivemall.annotations.Cite;
 import hivemall.model.FeatureValue;
 import hivemall.model.IWeightValue;
 import hivemall.model.PredictionResult;
@@ -38,8 +39,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 @Description(name = "train_arow_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
                 + " - a standard AROW (Adaptive Reguralization of Weight Vectors) regressor "
-                + "that uses `y - w^Tx` for the loss function.\n"
-                + "Find algorithm detail in https://papers.nips.cc/paper/3848-adaptive-regularization-of-weight-vectors.pdf",
+                + "that uses `y - w^Tx` for the loss function.",
         extended = "SELECT \n" + 
                 "  feature,\n" + 
                 "  argmin_kld(weight, covar) as weight\n" + 
@@ -51,6 +51,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
                 " ) t \n" + 
                 "GROUP BY feature")
 // @formatter:on
+@Cite(description = "K. Crammer, A. Kulesza, and M. Dredze, \"Adaptive Regularization of Weight Vectors\", In Proc. NIPS, 2009.",
+        url = "https://papers.nips.cc/paper/3848-adaptive-regularization-of-weight-vectors.pdf")
 public class AROWRegressionUDTF extends RegressionBaseUDTF {
 
     /** Regularization parameter r */
