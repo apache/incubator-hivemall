@@ -34,7 +34,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
 @Description(name = "train_pa1_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                + " - PA-1 regressor that returns a relation consists of `<int|bigint|string> feature, float weight`.\n"
+                + "Find PA-1 algorithm detail in http://jmlr.csail.mit.edu/papers/volume7/crammer06a/crammer06a.pdf",
+        extended = "")
 public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     /** Aggressiveness parameter */
@@ -133,7 +135,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     @Description(name = "train_pa1a_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                    + " - Returns a relation consists of `<int|bigint|string> feature, float weight`.")
     public static final class PA1a extends PassiveAggressiveRegressionUDTF {
 
         private OnlineVariance targetStdDev;
@@ -161,7 +163,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     @Description(name = "train_pa2_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                    + " - Returns a relation consists of `<int|bigint|string> feature, float weight`.")
     public static class PA2 extends PassiveAggressiveRegressionUDTF {
 
         @Override
@@ -180,7 +182,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     @Description(name = "train_pa2a_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                    + " - Returns a relation consists of `<int|bigint|string> feature, float weight`.")
     public static final class PA2a extends PA2 {
 
         private OnlineVariance targetStdDev;

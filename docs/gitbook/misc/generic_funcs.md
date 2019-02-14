@@ -33,6 +33,19 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```
 
 - `array_avg(array<number>)` - Returns an array&lt;double&gt; in which each element is the mean of a set of numbers
+  ```sql
+  WITH input as (
+    select array(1.0, 2.0, 3.0) as nums
+    UNION ALL
+    select array(2.0, 3.0, 4.0) as nums
+  )
+  select
+    array_avg(nums)
+  from
+    input;
+
+  ["1.5","2.5","3.5"]
+  ```
 
 - `array_concat(array<ANY> x1, array<ANY> x2, ..)` - Returns a concatenated array
   ```sql
@@ -104,6 +117,19 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```
 
 - `array_sum(array<number>)` - Returns an array&lt;double&gt; in which each element is summed up
+  ```sql
+  WITH input as (
+    select array(1.0, 2.0, 3.0) as nums
+    UNION ALL
+    select array(2.0, 3.0, 4.0) as nums
+  )
+  select
+    array_sum(nums)
+  from
+    input;
+
+  ["3.0","5.0","7.0"]
+  ```
 
 - `array_to_str(array arr [, string sep=','])` - Convert array to string using a sperator
   ```sql
@@ -216,6 +242,11 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```
 
 - `to_string_array(array<ANY>)` - Returns an array of strings
+  ```sql
+  select to_string_array(array(1.0,2.0,3.0));
+
+  ["1.0","2.0","3.0"]
+  ```
 
 - `to_ordered_list(PRIMITIVE value [, PRIMITIVE key, const string options])` - Return list of values sorted by value itself or specific key
   ```sql
@@ -426,6 +457,23 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   {1:"one"}
   ```
 
+- `map_get(MAP<K> a, K n)` - Returns the value corresponding to the key in the map.
+  ```sql
+  Note this is a workaround for a Hive issue that non-constant expression for map indexes not supported.
+  See https://issues.apache.org/jira/browse/HIVE-1955
+
+  WITH tmp as (
+    SELECT "one" as key
+    UNION ALL
+    SELECT "two" as key
+  )
+  SELECT map_get(map("one",1,"two",2),key)
+  FROM tmp;
+
+  > 1
+  > 2
+  ```
+
 - `map_get_sum(map<int,float> src, array<int> keys)` - Returns sum of values that are retrieved by keys
 
 - `map_include_keys(Map<K,V> map, array<K> filteringKeys)` - Returns the filtered entries of a map having specified keys
@@ -434,30 +482,16 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   {2:"two",3:"three"}
   ```
 
-- `map_get(Map<K> a, K n)` - Returns the value corresponding to the key in the map
-  ```sql
-  WITH tmp as (
-    SELECT "one" as key
-    UNION ALL
-    SELECT "two" as key
-  )
-  SELECT map_index(map("one",1,"two",2),key)
-  FROM tmp;
-
-  1
-  2
-  ```
-
-- `map_key_values(map)` - Returns a array of key-value pairs.
+- `map_key_values(MAP<K, V> map)` - Returns a array of key-value pairs in array&lt;named_struct&lt;key,value&gt;&gt;
   ```sql
   SELECT map_key_values(map("one",1,"two",2));
 
-  [{"key":"one","value":1},{"key":"two","value":2}]
+  > [{"key":"one","value":1},{"key":"two","value":2}]
   ```
 
 - `map_tail_n(map SRC, int N)` - Returns the last N elements from a sorted array of SRC
 
-- `merge_maps(x)` - Returns a map which contains the union of an aggregation of maps. Note that an existing value of a key can be replaced with the other duplicate key entry.
+- `merge_maps(Map x)` - Returns a map which contains the union of an aggregation of maps. Note that an existing value of a key can be replaced with the other duplicate key entry.
   ```sql
   SELECT 
     merge_maps(m) 
@@ -469,6 +503,17 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```
 
 - `to_map(key, value)` - Convert two aggregated columns into a key-value map
+  ```sql
+  WITH input as (
+    select 'aaa' as key, 111 as value
+    UNION all
+    select 'bbb' as key, 222 as value
+  )
+  select to_map(key, value)
+  from input;
+
+  > {"bbb":222,"aaa":111}
+  ```
 
 - `to_ordered_map(key, value [, const int k|const boolean reverseOrder=false])` - Convert two aggregated columns into an ordered key-value map
   ```sql
@@ -514,21 +559,81 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 - `infinity()` - Returns the constant representing positive infinity.
 
-- `is_finite(x)` - Determine if x is infinite.
+- `is_finite(x)` - Determine if x is finite.
+  ```sql
+  SELECT is_finite(333), is_finite(infinity());
+  > true false
+  ```
 
 - `is_infinite(x)` - Determine if x is infinite.
 
 - `is_nan(x)` - Determine if x is not-a-number.
 
-- `l2_norm(double xi)` - Return L2 norm of a vector which has the given values in each dimension
+- `l2_norm(double x)` - Return a L2 norm of the given input x.
+  ```sql
+  WITH input as (
+    select generate_series(1,3) as v
+  )
+  select l2_norm(v) as l2norm
+  from input;
+  > 3.7416573867739413 = sqrt(1^2+2^2+3^2))
+  ```
 
 - `nan()` - Returns the constant representing not-a-number.
+  ```sql
+  SELECT nan(), is_nan(nan());
+  > NaN true
+  ```
 
 - `sigmoid(x)` - Returns 1.0 / (1.0 + exp(-x))
+  ```sql
+  WITH input as (
+    SELECT 3.0 as x
+    UNION ALL
+    SELECT -3.0 as x
+  )
+  select 
+    1.0 / (1.0 + exp(-x)),
+    sigmoid(x)
+  from
+    input;
+  > 0.04742587317756678   0.04742587357759476
+  > 0.9525741268224334    0.9525741338729858
+  ```
 
-# Matrix
+# Vector/Matrix
 
-- `transpose_and_dot(array<number> matrix0_row, array<number> matrix1_row)` - Returns dot(matrix0.T, matrix1) as array&lt;array&lt;double&gt;&gt;, shape = (matrix0.#cols, matrix1.#cols)
+- `transpose_and_dot(array<number> X, array<number> Y)` - Returns dot(X.T, Y) as array&lt;array&lt;double&gt;&gt;, shape = (X.#cols, Y.#cols)
+  ```sql
+  WITH input as (
+    select array(1.0, 2.0, 3.0, 4.0) as x, array(1, 2) as y
+    UNION ALL
+    select array(2.0, 3.0, 4.0, 5.0) as x, array(1, 2) as y
+  )
+  select
+    transpose_and_dot(x, y) as xy,
+    transpose_and_dot(y, x) as yx
+  from 
+    input;
+
+  > [["3.0","6.0"],["5.0","10.0"],["7.0","14.0"],["9.0","18.0"]]   [["3.0","5.0","7.0","9.0"],["6.0","10.0","14.0","18.0"]]
+
+  ```
+
+- `vector_add(array<NUMBER> x, array<NUMBER> y)` - Perform vector ADD operation.
+  ```sql
+  SELECT vector_add(array(1.0,2.0,3.0), array(2, 3, 4));
+  [3.0,5.0,7.0]
+  ```
+
+- `vector_dot(array<NUMBER> x, array<NUMBER> y)` - Performs vector dot product.
+  ```sql
+  SELECT vector_dot(array(1.0,2.0,3.0),array(2.0,3.0,4.0));
+  20
+
+  SELECT vector_dot(array(1.0,2.0,3.0),2);
+  [2.0,4.0,6.0]
+  ```
 
 # Sanity Checks
 
@@ -598,23 +703,6 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
    4.0
    5.0
    6.0
-  ```
-
-# Vector
-
-- `vector_add(array<NUMBER> x, array<NUMBER> y)` - Perform vector ADD operation.
-  ```sql
-  SELECT vector_add(array(1.0,2.0,3.0), array(2, 3, 4));
-  [3.0,5.0,7.0]
-  ```
-
-- `vector_dot(array<NUMBER> x, array<NUMBER> y)` - Performs vector dot product.
-  ```sql
-  SELECT vector_dot(array(1.0,2.0,3.0),array(2.0,3.0,4.0));
-  20
-
-  SELECT vector_dot(array(1.0,2.0,3.0),2);
-  [2.0,4.0,6.0]
   ```
 
 # Others

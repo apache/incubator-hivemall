@@ -38,7 +38,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "bm25",
-        value = "_FUNC_(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options]) - Return an Okapi BM25 score in double")
+        value = "_FUNC_(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options]) "
+                + "- Return an Okapi BM25 score in double. "
+                + "Refer http://hivemall.incubator.apache.org/userguide/ft_engineering/bm25.html for usage")
 @UDFType(deterministic = true, stateful = false)
 public final class OkapiBM25UDF extends UDFWithOptions {
 

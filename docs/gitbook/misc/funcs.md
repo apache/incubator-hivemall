@@ -23,13 +23,50 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 # Regression
 
-- `train_arow_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight, float covar&gt;
+- `train_arow_regr(array<int|bigint|string> features, float target [, constant string options])` - a standard AROW (Adaptive Reguralization of Weight Vectors) regressor that uses `y - w^Tx` for the loss function.Find algorithm detail in https://papers.nips.cc/paper/3848-adaptive-regularization-of-weight-vectors.pdf
+  ```sql
+  SELECT 
+    feature,
+    argmin_kld(weight, covar) as weight
+  FROM (
+    SELECT 
+       train_arow_regr(features,label) as (feature,weight,covar)
+    FROM 
+       training_data
+   ) t 
+  GROUP BY feature
+  ```
 
-- `train_arowe2_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight, float covar&gt;
+- `train_arowe2_regr(array<int|bigint|string> features, float target [, constant string options])` - a refined version of AROW (Adaptive Reguralization of Weight Vectors) regressor that usages adaptive epsilon-insensitive hinge loss `|w^t - y| - epsilon*stddev` for the loss function
+  ```sql
+  SELECT 
+    feature,
+    argmin_kld(weight, covar) as weight
+  FROM (
+    SELECT 
+       train_arowe2_regr(features,label) as (feature,weight,covar)
+    FROM 
+       training_data
+   ) t 
+  GROUP BY feature
+  ```
 
-- `train_arowe_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight, float covar&gt;
+- `train_arowe_regr(array<int|bigint|string> features, float target [, constant string options])` - a refined version of AROW (Adaptive Reguralization of Weight Vectors) regressor that usages epsilon-insensitive hinge loss `|w^t - y| - epsilon` for the loss function
+  ```sql
+  SELECT 
+    feature,
+    argmin_kld(weight, covar) as weight
+  FROM (
+    SELECT 
+       train_arowe_regr(features,label) as (feature,weight,covar)
+    FROM 
+       training_data
+   ) t 
+  GROUP BY feature
+  ```
 
-- `train_pa1_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight&gt;
+- `train_pa1_regr(array<int|bigint|string> features, float target [, constant string options])` - PA-1 regressor that returns a relation consists of &lt;{int|bigint|string} feature, float weight&gt;
+Find PA-1 algorithm detail in http://jmlr.csail.mit.edu/papers/volume7/crammer06a/crammer06a.pdf
 
 - `train_pa1a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight&gt;
 
@@ -308,7 +345,8 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
   Google Maps: https://www.google.com/maps/@${lat},${lon},${zoom}z
   ```
 
-- `tile(double lat, double lon, int zoom)`::bigint - Returns a tile number 2^2n where n is zoom level. _FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom
+- `tile(double lat, double lon, int zoom)`::bigint - Returns a tile number 2^2n where n is zoom level.
+_FUNC_(lat,lon,zoom) = xtile(lon,zoom) + ytile(lat,zoom) * 2^zoom
   ```
   refer https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for detail
   ```
@@ -494,7 +532,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `train_randomforest_classifier(array<double|string> features, int label [, const string options, const array<double> classWeights])`- Returns a relation consists of &lt;string model_id, double model_weight, string model, array&lt;double&gt; var_importance, int oob_errors, int oob_tests&gt;
 
-- `train_randomforest_regression(array<double|string> features, double target [, string options])` - Returns a relation consists of &lt;int model_id, int model_type, string pred_model, array&lt;double&gt; var_importance, int oob_errors, int oob_tests&gt;
+- `train_randomforest_regressor(array<double|string> features, double target [, string options])` - Returns a relation consists of &lt;int model_id, int model_type, string model, array&lt;double&gt; var_importance, double oob_errors, int oob_tests&gt;
 
 - `guess_attribute_types(ANY, ...)` - Returns attribute types
   ```sql
