@@ -88,7 +88,8 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
         genericFuncsHeaders.put("# Map", Collections.singletonList("hivemall.tools.map"));
         genericFuncsHeaders.put("# MapReduce", Collections.singletonList("hivemall.tools.mapred"));
         genericFuncsHeaders.put("# Math", Collections.singletonList("hivemall.tools.math"));
-        genericFuncsHeaders.put("# Vector/Matrix", Arrays.asList("hivemall.tools.matrix", "hivemall.tools.vector"));
+        genericFuncsHeaders.put("# Vector/Matrix",
+            Arrays.asList("hivemall.tools.matrix", "hivemall.tools.vector"));
         genericFuncsHeaders.put("# Sanity Checks",
             Collections.singletonList("hivemall.tools.sanity"));
         genericFuncsHeaders.put("# Text processing",
@@ -141,6 +142,7 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
             "hivemall.smile.classification", "hivemall.smile.regression", "hivemall.smile.tools"));
         funcsHeaders.put("# XGBoost", Arrays.asList("hivemall.xgboost.classification",
             "hivemall.xgboost.regression", "hivemall.xgboost.tools"));
+        funcsHeaders.put("# Term Vector Model", Collections.singletonList("hivemall.ftvec.text"));
         funcsHeaders.put("# Others",
             Arrays.asList("hivemall", "hivemall.dataset", "hivemall.ftvec.text"));
     }
