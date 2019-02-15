@@ -1965,7 +1965,7 @@ object HivemallOps {
    * @group tools.array
    */
   def to_string_array(ar: Column): Column = withExpr {
-    planHiveUDF(
+    planHiveGenericUDF(
       "hivemall.tools.array.ToStringArrayUDF",
       "to_string_array",
       ar :: Nil
