@@ -367,10 +367,18 @@ public final class JsonSerdeUtils {
     /**
      * Deserialize Json array or Json primitives.
      */
+    @SuppressWarnings("unchecked")
     @Nonnull
-    public static <T> T deserialize(@Nonnull final Text t, @Nonnull TypeInfo columnTypes)
+    public static <T> T deserialize(@Nonnull final Text t, @Nonnull TypeInfo columnType)
             throws SerDeException {
-        return deserialize(t, null, Arrays.asList(columnTypes));
+        final HiveJsonStructReader reader = new HiveJsonStructReader(columnType);
+        final Object result;
+        try {
+            result = reader.parseStruct(new FastByteArrayInputStream(t.getBytes(), t.getLength()));
+        } catch (IOException e) {
+            throw new SerDeException(e);
+        }
+        return (T) result;
     }
 
     @SuppressWarnings("unchecked")

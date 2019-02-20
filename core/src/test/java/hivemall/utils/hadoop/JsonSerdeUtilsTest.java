@@ -307,6 +307,30 @@ public class JsonSerdeUtilsTest {
         Text serialized1 = JsonSerdeUtils.serialize(deserialized1,
             HCatRecordObjectInspectorFactory.getStandardObjectInspectorFromTypeInfo(type1));
         Assert.assertEquals(json1, serialized1);
+
+        List<Map<String, Integer>> expected2 = Arrays.<Map<String, Integer>>asList(
+            ImmutableMap.of("one", 1, "two", 2), ImmutableMap.of("three", 3));
+        Text json2 = new Text("[{\"one\":1,\"two\":2},{\"three\":3}]");
+        TypeInfo type2 = TypeInfoUtils.getTypeInfoFromTypeString("array<map<string,int>>");
+
+        List<Object> deserialized2 = JsonSerdeUtils.deserialize(json2, type2);
+        assertRecordEquals(expected2, deserialized2);
+        Text serialized2 = JsonSerdeUtils.serialize(deserialized2,
+            HCatRecordObjectInspectorFactory.getStandardObjectInspectorFromTypeInfo(type2));
+        Assert.assertEquals(json2, serialized2);
+    }
+
+    @Test
+    public void testTopLevelMap() throws Exception {
+        Map<String, Integer> expected1 = ImmutableMap.of("one", 1, "two", 2);
+        Text json1 = new Text("{\"one\":1,\"two\":2}");
+        TypeInfo type1 = TypeInfoUtils.getTypeInfoFromTypeString("map<string,int>");
+
+        Map<String, Integer> deserialized1 = JsonSerdeUtils.deserialize(json1, type1);
+        Assert.assertEquals(expected1, deserialized1);
+        Text serialized1 = JsonSerdeUtils.serialize(deserialized1,
+            HCatRecordObjectInspectorFactory.getStandardObjectInspectorFromTypeInfo(type1));
+        Assert.assertEquals(json1, serialized1);
     }
 
     @Test
@@ -330,7 +354,6 @@ public class JsonSerdeUtilsTest {
             PrimitiveObjectInspectorFactory.javaBooleanObjectInspector);
         Assert.assertEquals(json2, serialized2);
     }
-
 
     private static void assertRecordEquals(@Nonnull final List<?> first,
             @Nonnull final List<?> second) {
