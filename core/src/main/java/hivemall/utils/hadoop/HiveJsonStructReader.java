@@ -31,8 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 
@@ -64,32 +62,35 @@ import org.slf4j.LoggerFactory;
 public final class HiveJsonStructReader {
     private static final Logger LOG = LoggerFactory.getLogger(HiveJsonStructReader.class);
 
-    private ObjectInspector oi;
-    private JsonFactory factory;
+    @Nonnull
+    private final ObjectInspector oi;
+    @Nonnull
+    private final JsonFactory factory;
 
+    @Nonnull
     private final Set<String> reportedUnknownFieldNames = new HashSet<>();
 
     private boolean ignoreUnknownFields;
-    private boolean hiveColIndexParsing;
     private boolean writeablePrimitives;
 
-    public HiveJsonStructReader(TypeInfo t) {
-        oi = TypeInfoUtils.getStandardWritableObjectInspectorFromTypeInfo(t);
-        factory = new JsonFactory();
+    public HiveJsonStructReader(@Nonnull TypeInfo t) {
+        this.oi = TypeInfoUtils.getStandardWritableObjectInspectorFromTypeInfo(t);
+        this.factory = new JsonFactory();
     }
 
-    public Object parseStruct(String text) throws JsonParseException, IOException, SerDeException {
+    public Object parseStruct(@Nonnull String text)
+            throws JsonParseException, IOException, SerDeException {
         JsonParser parser = factory.createJsonParser(text);
         return parseInternal(parser);
     }
 
-    public Object parseStruct(InputStream is)
+    public Object parseStruct(@Nonnull InputStream is)
             throws JsonParseException, IOException, SerDeException {
         JsonParser parser = factory.createJsonParser(is);
         return parseInternal(parser);
     }
 
-    private Object parseInternal(JsonParser parser) throws SerDeException {
+    private Object parseInternal(@Nonnull JsonParser parser) throws SerDeException {
         try {
             parser.nextToken();
             Object res = parseDispatcher(parser, oi);
@@ -103,7 +104,6 @@ public final class HiveJsonStructReader {
 
     private Object parseDispatcher(JsonParser parser, ObjectInspector oi)
             throws JsonParseException, IOException, SerDeException {
-
         switch (oi.getCategory()) {
             case PRIMITIVE:
                 return parsePrimitive(parser, (PrimitiveObjectInspector) oi);
@@ -120,7 +120,6 @@ public final class HiveJsonStructReader {
 
     private Object parseMap(JsonParser parser, MapObjectInspector oi)
             throws IOException, SerDeException {
-
         if (parser.getCurrentToken() == JsonToken.VALUE_NULL) {
             parser.nextToken();
             return null;
@@ -155,12 +154,10 @@ public final class HiveJsonStructReader {
             parser.nextToken();
         }
         return ret;
-
     }
 
     private Object parseStruct(JsonParser parser, StructObjectInspector oi)
             throws JsonParseException, IOException, SerDeException {
-
         Object[] ret = new Object[oi.getAllStructFieldRefs().size()];
 
         if (parser.getCurrentToken() == JsonToken.VALUE_NULL) {
@@ -172,7 +169,6 @@ public final class HiveJsonStructReader {
         }
         JsonToken currentToken = parser.nextToken();
         while (currentToken != null && currentToken != JsonToken.END_OBJECT) {
-
             switch (currentToken) {
                 case FIELD_NAME:
                     String name = parser.getCurrentName();
@@ -225,32 +221,10 @@ public final class HiveJsonStructReader {
     }
 
     private StructField getStructField(StructObjectInspector oi, String name) {
-        if (hiveColIndexParsing) {
-            int colIndex = getColIndex(name);
-            if (colIndex >= 0) {
-                return oi.getAllStructFieldRefs().get(colIndex);
-            }
-        }
-        // FIXME: linear scan inside the below method...get a map here or something..
         return oi.getStructFieldRef(name);
     }
 
-    Pattern internalPattern = Pattern.compile("^_col([0-9]+)$");
-
-    private int getColIndex(String internalName) {
-        // The above line should have been all the implementation that
-        // we need, but due to a bug in that impl which recognizes
-        // only single-digit columns, we need another impl here.
-        Matcher m = internalPattern.matcher(internalName);
-        if (!m.matches()) {
-            return -1;
-        } else {
-            return Integer.parseInt(m.group(1));
-        }
-    }
-
     private static void skipValue(JsonParser parser) throws JsonParseException, IOException {
-
         int array = 0;
         int object = 0;
         do {
@@ -271,7 +245,6 @@ public final class HiveJsonStructReader {
             parser.nextToken();
 
         } while (array > 0 || object > 0);
-
     }
 
     private Object parseList(JsonParser parser, ListObjectInspector oi)
@@ -323,7 +296,6 @@ public final class HiveJsonStructReader {
             }
         } finally {
             parser.nextToken();
-
         }
     }
 
@@ -371,9 +343,10 @@ public final class HiveJsonStructReader {
                 return new HiveVarchar(s, ((BaseCharTypeInfo) typeInfo).getLength());
             case CHAR:
                 return new HiveChar(s, ((BaseCharTypeInfo) typeInfo).getLength());
+            default:
+                throw new IOException(
+                    "Could not convert from string to " + typeInfo.getPrimitiveCategory());
         }
-        throw new IOException(
-            "Could not convert from string to map type " + typeInfo.getTypeName());
     }
 
     private Object parseMapKey(JsonParser parser, PrimitiveObjectInspector oi)
@@ -393,20 +366,15 @@ public final class HiveJsonStructReader {
             }
         } finally {
             parser.nextToken();
-
         }
     }
 
     public void setIgnoreUnknownFields(boolean b) {
-        ignoreUnknownFields = b;
-    }
-
-    public void enableHiveColIndexParsing(boolean b) {
-        hiveColIndexParsing = b;
+        this.ignoreUnknownFields = b;
     }
 
     public void setWritablesUsage(boolean b) {
-        writeablePrimitives = b;
+        this.writeablePrimitives = b;
     }
 
     public ObjectInspector getObjectInspector() {
