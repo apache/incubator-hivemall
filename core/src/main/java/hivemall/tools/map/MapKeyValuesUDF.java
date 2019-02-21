@@ -38,7 +38,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 
 @Description(name = "map_key_values",
-        value = "_FUNC_(MAP<K, V> map) - " + "Returns a array of key-value pairs in array<named_struct<key,value>>",
+        value = "_FUNC_(MAP<K, V> map) - "
+                + "Returns a array of key-value pairs in array<named_struct<key,value>>",
         extended = "SELECT map_key_values(map(\"one\",1,\"two\",2));\n\n"
                 + "> [{\"key\":\"one\",\"value\":1},{\"key\":\"two\",\"value\":2}]")
 @UDFType(deterministic = true, stateful = false)

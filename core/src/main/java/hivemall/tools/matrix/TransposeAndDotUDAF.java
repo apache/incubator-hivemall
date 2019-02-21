@@ -131,11 +131,11 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
 
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
                 this.xRowOI = HiveUtils.asListOI(OIs[0]);
-                this.xElemOI = HiveUtils.asDoubleCompatibleOI(
-                    xRowOI.getListElementObjectInspector());
+                this.xElemOI =
+                        HiveUtils.asDoubleCompatibleOI(xRowOI.getListElementObjectInspector());
                 this.yRowOI = HiveUtils.asListOI(OIs[1]);
-                this.yElemOI = HiveUtils.asDoubleCompatibleOI(
-                    yRowOI.getListElementObjectInspector());
+                this.yElemOI =
+                        HiveUtils.asDoubleCompatibleOI(yRowOI.getListElementObjectInspector());
             } else {
                 this.aggMatrixOI = HiveUtils.asListOI(OIs[0]);
                 this.aggMatrixRowOI =

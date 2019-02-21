@@ -88,7 +88,8 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
         genericFuncsHeaders.put("# Map", Collections.singletonList("hivemall.tools.map"));
         genericFuncsHeaders.put("# MapReduce", Collections.singletonList("hivemall.tools.mapred"));
         genericFuncsHeaders.put("# Math", Collections.singletonList("hivemall.tools.math"));
-        genericFuncsHeaders.put("# Vector/Matrix", Arrays.asList("hivemall.tools.matrix", "hivemall.tools.vector"));
+        genericFuncsHeaders.put("# Vector/Matrix",
+            Arrays.asList("hivemall.tools.matrix", "hivemall.tools.vector"));
         genericFuncsHeaders.put("# Sanity Checks",
             Collections.singletonList("hivemall.tools.sanity"));
         genericFuncsHeaders.put("# Text processing",

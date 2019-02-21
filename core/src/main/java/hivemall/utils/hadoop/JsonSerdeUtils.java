@@ -388,8 +388,8 @@ public final class JsonSerdeUtils {
             @Nullable final List<TypeInfo> columnTypes) throws SerDeException {
         final Object result;
         try {
-            JsonParser p =
-                    new JsonFactory().createJsonParser(new FastByteArrayInputStream(t.getBytes(), t.getLength()));
+            JsonParser p = new JsonFactory().createJsonParser(
+                new FastByteArrayInputStream(t.getBytes(), t.getLength()));
             final JsonToken token = p.nextToken();
             if (token == JsonToken.START_OBJECT) {
                 result = parseObject(p, columnNames, columnTypes);
