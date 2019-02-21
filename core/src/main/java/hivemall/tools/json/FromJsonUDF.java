@@ -171,7 +171,11 @@ public final class FromJsonUDF extends GenericUDF {
 
         final Object result;
         try {
-            result = JsonSerdeUtils.deserialize(jsonString, columnNames, columnTypes);
+            if (columnNames == null && columnTypes != null && columnTypes.size() == 1) {
+                result = JsonSerdeUtils.deserialize(jsonString, columnTypes.get(0));
+            } else {
+                result = JsonSerdeUtils.deserialize(jsonString, columnNames, columnTypes);
+            }
         } catch (Throwable e) {
             throw new HiveException("Failed to deserialize Json: \n" + jsonString.toString() + '\n'
                     + ExceptionUtils.prettyPrintStackTrace(e),
