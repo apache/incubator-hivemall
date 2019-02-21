@@ -372,6 +372,7 @@ public final class JsonSerdeUtils {
     public static <T> T deserialize(@Nonnull final Text t, @Nonnull TypeInfo columnType)
             throws SerDeException {
         final HiveJsonStructReader reader = new HiveJsonStructReader(columnType);
+        reader.setIgnoreUnknownFields(true);
         final Object result;
         try {
             result = reader.parseStruct(new FastByteArrayInputStream(t.getBytes(), t.getLength()));

@@ -61,17 +61,16 @@ import org.codehaus.jackson.JsonToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HiveJsonStructReader {
-
+public final class HiveJsonStructReader {
     private static final Logger LOG = LoggerFactory.getLogger(HiveJsonStructReader.class);
 
     private ObjectInspector oi;
     private JsonFactory factory;
 
-    Set<String> reportedUnknownFieldNames = new HashSet<>();
+    private final Set<String> reportedUnknownFieldNames = new HashSet<>();
 
-    private static boolean ignoreUnknownFields;
-    private static boolean hiveColIndexParsing;
+    private boolean ignoreUnknownFields;
+    private boolean hiveColIndexParsing;
     private boolean writeablePrimitives;
 
     public HiveJsonStructReader(TypeInfo t) {
