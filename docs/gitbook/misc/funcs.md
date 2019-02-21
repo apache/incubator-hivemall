@@ -494,7 +494,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `train_randomforest_classifier(array<double|string> features, int label [, const string options, const array<double> classWeights])`- Returns a relation consists of &lt;string model_id, double model_weight, string model, array&lt;double&gt; var_importance, int oob_errors, int oob_tests&gt;
 
-- `train_randomforest_regression(array<double|string> features, double target [, string options])` - Returns a relation consists of &lt;int model_id, int model_type, string pred_model, array&lt;double&gt; var_importance, int oob_errors, int oob_tests&gt;
+- `train_randomforest_regressor(array<double|string> features, double target [, string options])` - Returns a relation consists of &lt;int model_id, int model_type, string model, array&lt;double&gt; var_importance, double oob_errors, int oob_tests&gt;
 
 - `guess_attribute_types(ANY, ...)` - Returns attribute types
   ```sql
