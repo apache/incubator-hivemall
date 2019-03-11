@@ -38,6 +38,9 @@ import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.math.MathUtils;
+import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap.Entry;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import smile.math.Math;
 import smile.regression.GradientTreeBoost;
 import smile.regression.RandomForest;
@@ -620,9 +623,11 @@ public final class RegressionTree implements Regression<Vector> {
                 @Nullable final int[] samples) {
             final Node split = new Node(0.d);
             if (_attributes[j].type == AttributeType.NOMINAL) {
-                final int m = _attributes[j].getSize();
-                final double[] trueSum = new double[m];
-                final int[] trueCount = new int[m];
+                //final int m = _attributes[j].getSize();
+                //final double[] trueSum = new double[m];
+                //final int[] trueCount = new int[m];
+                final Int2DoubleOpenHashMap trueSum = new Int2DoubleOpenHashMap();
+                final Int2IntOpenHashMap trueCount = new Int2IntOpenHashMap();
 
                 for (int b = 0, size = bags.length; b < size; b++) {
                     int i = bags[b];
@@ -634,12 +639,15 @@ public final class RegressionTree implements Regression<Vector> {
                         continue;
                     }
                     int index = (int) v;
-                    trueSum[index] += y[i];
-                    ++trueCount[index];
+
+                    trueSum.addTo(index, y[i]);
+                    trueCount.addTo(index, 1);
                 }
 
-                for (int k = 0; k < m; k++) {
-                    final double tc = (double) trueCount[k];
+                for (Entry e : trueCount.int2IntEntrySet()) {
+                    final int k = e.getIntKey();
+                    final double tc = e.getIntValue();
+
                     final double fc = n - tc;
 
                     // skip splitting
@@ -648,8 +656,9 @@ public final class RegressionTree implements Regression<Vector> {
                     }
 
                     // compute penalized means
-                    final double trueMean = trueSum[k] / tc;
-                    final double falseMean = (sum - trueSum[k]) / fc;
+                    double trueSum_k = trueSum.get(k);
+                    final double trueMean = trueSum_k / tc;
+                    final double falseMean = (sum - trueSum_k) / fc;
 
                     final double gain = (tc * trueMean * trueMean + fc * falseMean * falseMean)
                             - n * split.output * split.output;

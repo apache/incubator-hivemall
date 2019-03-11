@@ -37,6 +37,8 @@ import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.sampling.IntReservoirSampler;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import smile.classification.Classifier;
 import smile.math.Math;
 
@@ -687,8 +689,7 @@ public final class DecisionTree implements Classifier<Vector> {
             final Node splitNode = new Node();
 
             if (_attributes[j].type == AttributeType.NOMINAL) {
-                final int m = _attributes[j].getSize();
-                final int[][] trueCount = new int[m][_k];
+                final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
 
                 for (int i = 0, size = bags.length; i < size; i++) {
                     int index = bags[i];
@@ -697,11 +698,18 @@ public final class DecisionTree implements Classifier<Vector> {
                         continue;
                     }
                     int x_ij = (int) v;
-                    trueCount[x_ij][y[index]]++;
+                    int[] tc_x = trueCount.get(x_ij);
+                    if (tc_x == null) {
+                        tc_x = new int[_k];
+                    }
+                    tc_x[y[index]]++;
                 }
 
-                for (int l = 0; l < m; l++) {
-                    final int tc = Math.sum(trueCount[l]);
+                for (Int2ObjectMap.Entry<int[]> e : trueCount.int2ObjectEntrySet()) {
+                    final int l = e.getIntKey();
+                    final int[] trueCount_l = e.getValue();
+
+                    final int tc = Math.sum(trueCount_l);
                     final int fc = n - tc;
 
                     // skip splitting this feature.
@@ -710,11 +718,11 @@ public final class DecisionTree implements Classifier<Vector> {
                     }
 
                     for (int q = 0; q < _k; q++) {
-                        falseCount[q] = count[q] - trueCount[l][q];
+                        falseCount[q] = count[q] - trueCount_l[q];
                     }
 
                     final double gain =
-                            impurity - (double) tc / n * impurity(trueCount[l], tc, _rule)
+                            impurity - (double) tc / n * impurity(trueCount_l, tc, _rule)
                                     - (double) fc / n * impurity(falseCount, fc, _rule);
 
                     if (gain > splitNode.splitScore) {
@@ -723,7 +731,7 @@ public final class DecisionTree implements Classifier<Vector> {
                         splitNode.splitFeatureType = AttributeType.NOMINAL;
                         splitNode.splitValue = l;
                         splitNode.splitScore = gain;
-                        splitNode.trueChildOutput = Math.whichMax(trueCount[l]);
+                        splitNode.trueChildOutput = Math.whichMax(trueCount_l);
                         splitNode.falseChildOutput = Math.whichMax(falseCount);
                     }
                 }
