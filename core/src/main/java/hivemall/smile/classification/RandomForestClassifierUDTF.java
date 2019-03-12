@@ -32,7 +32,7 @@ import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
-import hivemall.smile.data.Attribute;
+import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.codec.Base91;
@@ -114,7 +114,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private Attribute[] _attributes;
+    private AttributeType[] _attributes;
     private SplitRule _splitRule;
     private boolean _stratifiedSampling;
     private double _subsample;
@@ -159,7 +159,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         int trees = 50, maxDepth = Integer.MAX_VALUE;
         int numLeafs = Integer.MAX_VALUE, minSplits = 2, minSamplesLeaf = 1;
         float numVars = -1.f;
-        Attribute[] attrs = null;
+        AttributeType[] attrs = null;
         long seed = -1L;
         SplitRule splitRule = SplitRule.GINI;
         double[] classWeight = null;
@@ -367,7 +367,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         x = SmileExtUtils.shuffle(x, y, _seed);
 
         int[] labels = SmileExtUtils.classLabels(y);
-        Attribute[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
+        AttributeType[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
         int numInputVars = SmileExtUtils.computeNumInputVars(_numVars, x);
 
         if (logger.isInfoEnabled()) {
@@ -455,7 +455,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * Attribute properties.
          */
         @Nonnull
-        private final Attribute[] _attributes;
+        private final AttributeType[] _attributes;
         /**
          * Training instances.
          */
@@ -491,9 +491,9 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
-                @Nonnull Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
-                @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction, long seed,
-                @Nonnull AtomicInteger remainingTasks) {
+                @Nonnull AttributeType[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
+                int numVars, @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction,
+                long seed, @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;

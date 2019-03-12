@@ -18,6 +18,7 @@
  */
 package hivemall.smile.utils;
 
+import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.ColumnMajorMatrix;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.MatrixUtils;
@@ -27,15 +28,14 @@ import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
-import hivemall.smile.data.Attribute;
-import hivemall.smile.data.Attribute.AttributeType;
-import hivemall.smile.data.Attribute.NominalAttribute;
-import hivemall.smile.data.Attribute.NumericAttribute;
+import hivemall.smile.data.AttributeType;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.Preconditions;
-import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.math.MathUtils;
+import smile.data.NominalAttribute;
+import smile.data.NumericAttribute;
+import smile.sort.QuickSort;
 
 import java.util.Arrays;
 
@@ -46,8 +46,6 @@ import javax.annotation.Nullable;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 
-import smile.sort.QuickSort;
-
 public final class SmileExtUtils {
 
     private SmileExtUtils() {}
@@ -56,21 +54,20 @@ public final class SmileExtUtils {
      * Q for {@link NumericAttribute}, C for {@link NominalAttribute}.
      */
     @Nullable
-    public static Attribute[] resolveAttributes(@Nullable final String opt)
+    public static AttributeType[] resolveAttributes(@Nullable final String opt)
             throws UDFArgumentException {
         if (opt == null) {
             return null;
         }
         final String[] opts = opt.split(",");
         final int size = opts.length;
-        final NumericAttribute immutableNumAttr = new NumericAttribute();
-        final Attribute[] attr = new Attribute[size];
+        final AttributeType[] attr = new AttributeType[size];
         for (int i = 0; i < size; i++) {
             final String type = opts[i];
             if ("Q".equals(type)) {
-                attr[i] = immutableNumAttr;
+                attr[i] = AttributeType.NUMERIC;
             } else if ("C".equals(type)) {
-                attr[i] = new NominalAttribute();
+                attr[i] = AttributeType.NOMINAL;
             } else {
                 throw new UDFArgumentException("Unexpected type: " + type);
             }
@@ -79,97 +76,32 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static Attribute[] attributeTypes(@Nullable final Attribute[] attributes,
+    public static AttributeType[] attributeTypes(@Nullable final AttributeType[] attributes,
             @Nonnull final Matrix x) {
         if (attributes == null) {
             int p = x.numColumns();
-            Attribute[] newAttributes = new Attribute[p];
-            Arrays.fill(newAttributes, new NumericAttribute());
+            AttributeType[] newAttributes = new AttributeType[p];
+            Arrays.fill(newAttributes, AttributeType.NUMERIC);
             return newAttributes;
-        }
-
-        if (x.isRowMajorMatrix()) {
-            final VectorProcedure proc = new VectorProcedure() {
-                @Override
-                public void apply(final int j, final double value) {
-                    final Attribute attr = attributes[j];
-                    if (attr.type == AttributeType.NOMINAL) {
-                        final int x_ij = ((int) value) + 1;
-                        final int prevSize = attr.getSize();
-                        if (x_ij > prevSize) {
-                            attr.setSize(x_ij);
-                        }
-                    }
-                }
-            };
-            for (int i = 0, rows = x.numRows(); i < rows; i++) {
-                x.eachNonNullInRow(i, proc);
-            }
-        } else if (x.isColumnMajorMatrix()) {
-            final MutableInt max_x = new MutableInt(0);
-            final VectorProcedure proc = new VectorProcedure() {
-                @Override
-                public void apply(final int i, final double value) {
-                    final int x_ij = (int) value;
-                    if (x_ij > max_x.getValue()) {
-                        max_x.setValue(x_ij);
-                    }
-                }
-            };
-
-            final int size = attributes.length;
-            for (int j = 0; j < size; j++) {
-                final Attribute attr = attributes[j];
-                if (attr.type == AttributeType.NOMINAL) {
-                    if (attr.getSize() != -1) {
-                        continue;
-                    }
-                    max_x.setValue(0);
-                    x.eachNonNullInColumn(j, proc);
-                    attr.setSize(max_x.getValue() + 1);
-                }
-            }
-        } else {
-            int size = attributes.length;
-            for (int j = 0; j < size; j++) {
-                Attribute attr = attributes[j];
-                if (attr.type == AttributeType.NOMINAL) {
-                    if (attr.getSize() != -1) {
-                        continue;
-                    }
-                    int max_x = 0;
-                    for (int i = 0, rows = x.numRows(); i < rows; i++) {
-                        final double v = x.get(i, j, Double.NaN);
-                        if (Double.isNaN(v)) {
-                            continue;
-                        }
-                        int x_ij = (int) v;
-                        if (x_ij > max_x) {
-                            max_x = x_ij;
-                        }
-                    }
-                    attr.setSize(max_x + 1);
-                }
-            }
         }
         return attributes;
     }
 
+    @VisibleForTesting
     @Nonnull
-    public static Attribute[] convertAttributeTypes(
+    public static AttributeType[] convertAttributeTypes(
             @Nonnull final smile.data.Attribute[] original) {
         final int size = original.length;
-        final NumericAttribute immutableNumAttr = new NumericAttribute();
-        final Attribute[] dst = new Attribute[size];
+        final AttributeType[] dst = new AttributeType[size];
         for (int i = 0; i < size; i++) {
             smile.data.Attribute o = original[i];
             switch (o.type) {
                 case NOMINAL: {
-                    dst[i] = new NominalAttribute();
+                    dst[i] = AttributeType.NOMINAL;
                     break;
                 }
                 case NUMERIC: {
-                    dst[i] = immutableNumAttr;
+                    dst[i] = AttributeType.NUMERIC;
                     break;
                 }
                 default:
@@ -180,7 +112,7 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static ColumnMajorIntMatrix sort(@Nonnull final Attribute[] attributes,
+    public static ColumnMajorIntMatrix sort(@Nonnull final AttributeType[] attributes,
             @Nonnull final Matrix x) {
         final int n = x.numRows();
         final int p = x.numColumns();
@@ -200,7 +132,7 @@ public final class SmileExtUtils {
 
             final ColumnMajorMatrix x2 = x.toColumnMajorMatrix();
             for (int j = 0; j < p; j++) {
-                if (attributes[j].type != AttributeType.NUMERIC) {
+                if (attributes[j] != AttributeType.NUMERIC) {
                     continue;
                 }
                 x2.eachNonNullInColumn(j, proc);
@@ -216,7 +148,7 @@ public final class SmileExtUtils {
         } else {
             final double[] a = new double[n];
             for (int j = 0; j < p; j++) {
-                if (attributes[j].type == AttributeType.NUMERIC) {
+                if (attributes[j] == AttributeType.NUMERIC) {
                     for (int i = 0; i < n; i++) {
                         a[i] = x.get(i, j);
                     }
@@ -388,9 +320,9 @@ public final class SmileExtUtils {
         return samples;
     }
 
-    public static boolean containsNumericType(@Nonnull final Attribute[] attributes) {
-        for (Attribute attr : attributes) {
-            if (attr.type == AttributeType.NUMERIC) {
+    public static boolean containsNumericType(@Nonnull final AttributeType[] attributes) {
+        for (AttributeType attr : attributes) {
+            if (attr == AttributeType.NUMERIC) {
                 return true;
             }
         }

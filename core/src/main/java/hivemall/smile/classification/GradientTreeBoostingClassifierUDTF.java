@@ -30,7 +30,7 @@ import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.Attribute;
+import hivemall.smile.data.AttributeType;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
@@ -43,8 +43,8 @@ import hivemall.utils.math.MathUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -112,7 +112,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private Attribute[] _attributes;
+    private AttributeType[] _attributes;
 
     @Nullable
     private Reporter _progressReporter;
@@ -151,7 +151,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         int maxLeafs = Integer.MAX_VALUE, minSplit = 5, minSamplesLeaf = 1;
         float numVars = -1.f;
         double eta = 0.05d, subsample = 0.7d;
-        Attribute[] attrs = null;
+        AttributeType[] attrs = null;
         long seed = -1L;
 
         CommandLine cl = null;

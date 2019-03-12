@@ -20,7 +20,7 @@ package hivemall.smile.tools;
 
 import hivemall.annotations.Since;
 import hivemall.annotations.VisibleForTesting;
-import hivemall.smile.data.Attribute.AttributeType;
+import hivemall.smile.data.AttributeType;
 import hivemall.smile.vm.StackMachine;
 import hivemall.smile.vm.VMRuntimeException;
 import hivemall.utils.codec.Base91;

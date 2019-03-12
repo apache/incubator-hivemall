@@ -28,7 +28,7 @@ import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.Attribute;
+import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.codec.Base91;
@@ -107,7 +107,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private Attribute[] _attributes;
+    private AttributeType[] _attributes;
 
     @Nullable
     private Reporter _progressReporter;
@@ -145,7 +145,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         int trees = 50, maxDepth = Integer.MAX_VALUE;
         int maxLeafs = Integer.MAX_VALUE, minSplit = 5, minSamplesLeaf = 1;
         float numVars = -1.f;
-        Attribute[] attrs = null;
+        AttributeType[] attrs = null;
         long seed = -1L;
 
         CommandLine cl = null;
@@ -330,7 +330,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         // Shuffle training samples
         x = SmileExtUtils.shuffle(x, y, _seed);
 
-        Attribute[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
+        AttributeType[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
         int numInputVars = SmileExtUtils.computeNumInputVars(_numVars, x);
 
         if (logger.isInfoEnabled()) {
@@ -417,7 +417,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         /**
          * Attribute properties.
          */
-        private final Attribute[] _attributes;
+        private final AttributeType[] _attributes;
         /**
          * Training instances.
          */
@@ -449,9 +449,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final long _seed;
         private final AtomicInteger _remainingTasks;
 
-        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, Attribute[] attributes, Matrix x,
-                double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction, int[] oob,
-                long seed, AtomicInteger remainingTasks) {
+        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, AttributeType[] attributes,
+                Matrix x, double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction,
+                int[] oob, long seed, AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;

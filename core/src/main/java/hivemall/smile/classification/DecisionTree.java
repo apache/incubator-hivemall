@@ -29,8 +29,7 @@ import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.Attribute;
-import hivemall.smile.data.Attribute.AttributeType;
+import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.ObjectUtils;
@@ -116,7 +115,7 @@ public final class DecisionTree implements Classifier<Vector> {
      * The attributes of independent variable.
      */
     @Nonnull
-    private final Attribute[] _attributes;
+    private final AttributeType[] _attributes;
     private final boolean _hasNumericType;
     /**
      * Variable importance. Every time a split of a node is made on variable the (GINI, information
@@ -688,7 +687,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 final double impurity, final int j, @Nullable final int[] samples) {
             final Node splitNode = new Node();
 
-            if (_attributes[j].type == AttributeType.NOMINAL) {
+            if (_attributes[j] == AttributeType.NOMINAL) {
                 final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
 
                 for (int i = 0, size = bags.length; i < size; i++) {
@@ -735,7 +734,7 @@ public final class DecisionTree implements Classifier<Vector> {
                         splitNode.falseChildOutput = Math.whichMax(falseCount);
                     }
                 }
-            } else if (_attributes[j].type == AttributeType.NUMERIC) {
+            } else if (_attributes[j] == AttributeType.NUMERIC) {
                 final int[] trueCount = new int[_k];
 
                 _order.eachNonNullInColumn(j, new VectorProcedure() {
@@ -796,8 +795,7 @@ public final class DecisionTree implements Classifier<Vector> {
                     }//apply()
                 });
             } else {
-                throw new IllegalStateException(
-                    "Unsupported attribute type: " + _attributes[j].type);
+                throw new IllegalStateException("Unsupported attribute type: " + _attributes[j]);
             }
 
             return splitNode;
@@ -961,12 +959,12 @@ public final class DecisionTree implements Classifier<Vector> {
         return impurity;
     }
 
-    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
+    public DecisionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numLeafs) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
     }
 
-    public DecisionTree(@Nullable Attribute[] attributes, @Nullable Matrix x, @Nullable int[] y,
+    public DecisionTree(@Nullable AttributeType[] attributes, @Nullable Matrix x, @Nullable int[] y,
             int numLeafs, @Nullable PRNG rand) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
     }
@@ -988,7 +986,7 @@ public final class DecisionTree implements Classifier<Vector> {
      * @param rule the splitting rule.
      * @param seed
      */
-    public DecisionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
+    public DecisionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
             @Nullable int[] bags, @Nullable ColumnMajorIntMatrix order, @Nonnull SplitRule rule,
             @Nullable PRNG rand) {
