@@ -552,6 +552,8 @@
 								<!-- workaround for Java 8 -->
 								<!-- see http://stackoverflow.com/questions/15886209/maven-is-not-working-in-java-8-when-javadoc-tags-are-incomplete -->
 								<additionalparam>${javadoc.opts}</additionalparam>
+								<!-- see https://stackoverflow.com/a/16743137 -->
+								<doclint>none</doclint>
 							</configuration>
 						</execution>
 					</executions>
