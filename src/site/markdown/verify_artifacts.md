@@ -23,7 +23,7 @@
 
 ## Install required softwares 
 
-GPG and Maven, JDK 7 is mandatory for verification.
+GPG and Maven, JDK 8 is mandatory for verification.
 
 ```sh
 brew install gpg gpg-agent pinentry-mac
@@ -89,11 +89,8 @@ cd hivemall-${VERSION}-incubating
 # workaround for Maven sign-release-artifacts plugin
 export GPG_TTY=$(tty)
 
-# JDK 7 is required for packaging
-export JAVA_HOME=`/usr/libexec/java_home -v 1.7`
-
-# Java 8 is required for building Spark 2.2 module
-export JAVA8_HOME=`/usr/libexec/java_home -v 1.8`
+# JDK 8 is required for packaging
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
 
 # Try to create artifacts
 export MAVEN_OPTS=-XX:MaxPermSize=256m

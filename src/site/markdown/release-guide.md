@@ -43,14 +43,11 @@ If it is your first time doing an Apache release, then there is some initial set
 
 Try installing locally artifacts with activation apache-release profile. The following command will build artifacts, sources and sign. 
 
-**Note:** _Apache Hivemall keeps compatibility to Java 7._
+**Note:** _Apache Hivemall keeps class file compatibility to Java 7 but requires Java 8 for packaging._
 
 ```sh
-# JDK 7 is required for packaging
-export JAVA_HOME=`/usr/libexec/java_home -v 1.7`
-
-# Java 8 is required for building Spark 2.2 module
-export JAVA8_HOME=`/usr/libexec/java_home -v 1.8`
+# JDK 8 is required for packaging
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
 
 # Try to create artifacts
 export MAVEN_OPTS=-XX:MaxPermSize=256m

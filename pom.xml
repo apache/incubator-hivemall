@@ -623,17 +623,19 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>enforce-JAVA8_HOME-is-set</id>
+						<id>enforce-java-8</id>
 						<goals>
 							<goal>enforce</goal>
 						</goals>
 						<configuration>
 							<rules>
-								<requireEnvironmentVariable>
-									<variableName>JAVA8_HOME</variableName>
-								</requireEnvironmentVariable>
+								<requireJavaVersion>
+									<version>[1.8,)</version>
+									<message>
+										Hivemall requires JDK version 1.8 or higher.
+									</message>
+								</requireJavaVersion>
 							</rules>
-							<fail>true</fail>
 						</configuration>
 					</execution>
 					<execution>
