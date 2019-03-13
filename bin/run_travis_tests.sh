@@ -33,7 +33,7 @@ set -ev
 
 cd $HIVEMALL_HOME/spark
 
-export MAVEN_OPTS="-XX:MaxPermSize=256m"
+export MAVEN_OPTS="-XX:MaxMetaspaceSize=256m"
 
 mvn -q scalastyle:check -pl spark-2.1 -am test
 
