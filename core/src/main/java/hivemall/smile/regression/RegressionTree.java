@@ -28,8 +28,7 @@ import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.Attribute;
-import hivemall.smile.data.Attribute.AttributeType;
+import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.collections.sets.IntArraySet;
@@ -38,6 +37,9 @@ import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.math.MathUtils;
+import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap.Entry;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import smile.math.Math;
 import smile.regression.GradientTreeBoost;
 import smile.regression.RandomForest;
@@ -100,7 +102,7 @@ public final class RegressionTree implements Regression<Vector> {
     /**
      * The attributes of independent variable.
      */
-    private final Attribute[] _attributes;
+    private final AttributeType[] _attributes;
     private final boolean _hasNumericType;
     /**
      * Variable importance. Every time a split of a node is made on variable the impurity criterion
@@ -619,10 +621,12 @@ public final class RegressionTree implements Regression<Vector> {
         private Node findBestSplit(final int n, final double sum, final int j,
                 @Nullable final int[] samples) {
             final Node split = new Node(0.d);
-            if (_attributes[j].type == AttributeType.NOMINAL) {
-                final int m = _attributes[j].getSize();
-                final double[] trueSum = new double[m];
-                final int[] trueCount = new int[m];
+            if (_attributes[j] == AttributeType.NOMINAL) {
+                //final int m = _attributes[j].getSize();
+                //final double[] trueSum = new double[m];
+                //final int[] trueCount = new int[m];
+                final Int2DoubleOpenHashMap trueSum = new Int2DoubleOpenHashMap();
+                final Int2IntOpenHashMap trueCount = new Int2IntOpenHashMap();
 
                 for (int b = 0, size = bags.length; b < size; b++) {
                     int i = bags[b];
@@ -634,12 +638,15 @@ public final class RegressionTree implements Regression<Vector> {
                         continue;
                     }
                     int index = (int) v;
-                    trueSum[index] += y[i];
-                    ++trueCount[index];
+
+                    trueSum.addTo(index, y[i]);
+                    trueCount.addTo(index, 1);
                 }
 
-                for (int k = 0; k < m; k++) {
-                    final double tc = (double) trueCount[k];
+                for (Entry e : trueCount.int2IntEntrySet()) {
+                    final int k = e.getIntKey();
+                    final double tc = e.getIntValue();
+
                     final double fc = n - tc;
 
                     // skip splitting
@@ -648,8 +655,9 @@ public final class RegressionTree implements Regression<Vector> {
                     }
 
                     // compute penalized means
-                    final double trueMean = trueSum[k] / tc;
-                    final double falseMean = (sum - trueSum[k]) / fc;
+                    double trueSum_k = trueSum.get(k);
+                    final double trueMean = trueSum_k / tc;
+                    final double falseMean = (sum - trueSum_k) / fc;
 
                     final double gain = (tc * trueMean * trueMean + fc * falseMean * falseMean)
                             - n * split.output * split.output;
@@ -663,7 +671,7 @@ public final class RegressionTree implements Regression<Vector> {
                         split.falseChildOutput = falseMean;
                     }
                 }
-            } else if (_attributes[j].type == AttributeType.NUMERIC) {
+            } else if (_attributes[j] == AttributeType.NUMERIC) {
 
                 _order.eachNonNullInColumn(j, new VectorProcedure() {
                     double trueSum = 0.0;
@@ -725,8 +733,7 @@ public final class RegressionTree implements Regression<Vector> {
                 });
 
             } else {
-                throw new IllegalStateException(
-                    "Unsupported attribute type: " + _attributes[j].type);
+                throw new IllegalStateException("Unsupported attribute type: " + _attributes[j]);
             }
 
             return split;
@@ -827,19 +834,20 @@ public final class RegressionTree implements Regression<Vector> {
 
     }
 
-    public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
-            int maxLeafs) {
+    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+            @Nonnull double[] y, int maxLeafs) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, null);
     }
 
-    public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
-            int maxLeafs, @Nullable PRNG rand) {
+    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+            @Nonnull double[] y, int maxLeafs, @Nullable PRNG rand) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, rand);
     }
 
-    public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
-            int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags, @Nullable PRNG rand) {
+    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+            @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
+            int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
+            @Nullable PRNG rand) {
         this(attributes, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
     }
 
@@ -859,10 +867,10 @@ public final class RegressionTree implements Regression<Vector> {
      * @param bags the sample set of instances for stochastic learning.
      * @param output An interface to calculate node output.
      */
-    public RegressionTree(@Nullable Attribute[] attributes, @Nonnull Matrix x, @Nonnull double[] y,
-            int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags, @Nullable NodeOutput output,
-            @Nullable PRNG rand) {
+    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+            @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
+            int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
+            @Nullable NodeOutput output, @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
         this._attributes = SmileExtUtils.attributeTypes(attributes, x);

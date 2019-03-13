@@ -85,9 +85,10 @@ WITH submit as (
     test t 
     JOIN rf_predicted p on (t.rowid = p.rowid)
 )
-select count(1) / 4996.0
-from submit 
-where actual = predicted;
+select
+  sum(if(actual = predicted, 1, 0)) / count(1) as accuracy
+from
+  submit;
 ```
 
 > 0.8112489991993594
