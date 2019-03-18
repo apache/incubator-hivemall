@@ -653,6 +653,7 @@
 							</rules>
 						</configuration>
 					</execution>
+					<!-- Check Java class file compatibility to Java 7/8 -->
 					<execution>
 						<id>enforce-bytecode-version</id>
 						<goals>
@@ -678,6 +679,31 @@
 						<version>1.0-beta-9</version>
 					</dependency>
 				</dependencies>
+			</plugin>
+			<!-- check Java API compatibility to Java 7 -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<version>1.14</version>
+				<configuration>
+					<signature>
+						<groupId>org.codehaus.mojo.signature</groupId>
+						<artifactId>java17</artifactId>
+						<version>1.0</version>
+					</signature>
+					<ignores>
+						<ignore>sun.misc.Unsafe</ignore>
+					</ignores>
+				</configuration>
+				<executions>
+					<execution>
+						<id>ensure-java-1.7-class-library</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<!-- mvn spotless:apply -->
 			<plugin>
