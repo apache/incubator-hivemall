@@ -18,7 +18,7 @@ env:
 
 language: java
 jdk:
-  - openjdk7
+# - openjdk7
 # - oraclejdk7
   - oraclejdk8
 # - oraclejdk9
@@ -27,9 +27,6 @@ branches:
   only:
     - master
     - develop
-
-before_install:
-  - export JAVA8_HOME=$(jdk_switcher home oraclejdk8)
 
 notifications:
   email: false

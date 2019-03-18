@@ -36,7 +36,7 @@ VERSION=`cat VERSION`
 
 # Deploy to local Maven repos
 
-export MAVEN_OPTS="-XX:MaxPermSize=256m -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2"
+export MAVEN_OPTS="-XX:MaxMetaspaceSize=256m -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2"
 mvn clean install -DskipTests=true -Dmaven.test.skip=true -pl '.,core,nlp,xgboost,tools/hivemall-docs'
 
 # Generate docs

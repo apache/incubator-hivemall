@@ -35,7 +35,6 @@ ENV HADOOP_OPTS=' \
       -Dderby.stream.error.file=/root/derby.log'
 ENV PATH="${HADOOP_HOME}/bin:${HIVE_HOME}/bin:${PATH}"
 ENV JAVA_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-ENV JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
 
 COPY . ${HIVEMALL_PATH}/
 
