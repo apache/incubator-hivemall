@@ -75,7 +75,7 @@
 		<menu name="Project">
 			<item name="Home" href="/index.html" />
 			<item name="Download" href="/download.html" />
-			<item name="Licenses" href="/license.html" />
+			<item name="Licenses" href="/licenses.html" />
 			<item name="Team" href="/team-list.html" />
 			<item name="Powered By" href="/poweredby.html" />
 			<item name="Incubation Status" href="http://incubator.apache.org/projects/hivemall.html" />
