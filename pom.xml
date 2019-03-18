@@ -664,6 +664,7 @@
 								<enforceBytecodeVersion>
 									<maxJdkVersion>${maven.compiler.target}</maxJdkVersion>
 									<excludes>
+										<exclude>jdk.tools:jdk.tools</exclude>
 										<exclude>org.mindrot:jbcrypt</exclude>
 									</excludes>
 								</enforceBytecodeVersion>
