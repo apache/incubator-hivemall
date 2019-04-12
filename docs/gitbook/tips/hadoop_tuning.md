@@ -83,6 +83,10 @@ feature_dimensions (assume here 2^25) * 2 bytes (short) * 2 (iff covariance is c
 
 Note: Hivemall uses a [sparse representation](https://github.com/apache/incubator-hivemall/blob/master/core/src/main/java/hivemall/model/SparseModel.java) of prediction model (using a hash table) by the default. Use "[-densemodel](https://github.com/apache/incubator-hivemall/blob/master/core/src/main/java/hivemall/LearnerBaseUDTF.java#L87)" option to use a dense model.
 
+# Enable CTE materialization
+
+[Hive 2.1.0 or later](https://issues.apache.org/jira/browse/HIVE-11752) support CTE materialization through `hive.optimize.cte.materialize.threshold` option and it's recommended to `set hive.optimize.cte.materialize.threshold=2` when using Hivemall.
+
 # Execution Engine of Hive
 
 We recommend to use Apache Tez for execute engine of Hive for Hivemall queries.
