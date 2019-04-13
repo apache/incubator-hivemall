@@ -230,7 +230,7 @@ public class FeatureUDFTest {
         Assert.assertNull(ret);
     }
 
-    @Test(expected = HiveException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testInvalidFeatureName() throws Exception {
         ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         ObjectInspector weightOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;

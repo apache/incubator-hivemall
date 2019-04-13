@@ -102,7 +102,7 @@ public final class FeatureUDF extends GenericUDF {
         // Then, toString() works fine
         String featureStr = arg0.toString();
         if (featureStr.indexOf(':') >= 0) {
-            throw new HiveException("feature name SHOULD NOT contain colon: " + featureStr);
+            throw new UDFArgumentException("feature name SHOULD NOT contain colon: " + featureStr);
         }
         String valueStr = arg1.toString();
         String fv = featureStr + ':' + valueStr;
