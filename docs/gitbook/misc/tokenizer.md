@@ -63,6 +63,30 @@ select tokenize_ja("kuromojiを使った分かち書きのテストです。", "
 
 > ["を","使う","た","の","テスト","です"]
 
+```sql
+select tokenize_ja("kuromojiを使った分かち書きのテストです。", "normal", array("kuromoji"), stoptags_exclude(array("名詞")));
+```
+> ["分かち書き","テスト"]
+
+`stoptags_exclude(array<string> tags, [, const string lang='ja'])` is a useful UDF for getting [stoptags](https://github.com/apache/lucene-solr/blob/master/lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis/ja/stoptags.txt) excluding given part-of-speech tags as seen below:
+
+
+```sql
+select stoptags_exclude(array("名詞-固有名詞"));
+```
+> ["その他","その他-間投","フィラー","副詞","副詞-一般","副詞-助詞類接続","助動詞","助詞","助詞-並立助詞"
+,"助詞-係助詞","助詞-副助詞","助詞-副助詞／並立助詞／終助詞","助詞-副詞化","助詞-接続助詞","助詞-格助詞
+","助詞-格助詞-一般","助詞-格助詞-引用","助詞-格助詞-連語","助詞-特殊","助詞-終助詞","助詞-連体化","助
+詞-間投助詞","動詞","動詞-接尾","動詞-自立","動詞-非自立","名詞","名詞-サ変接続","名詞-ナイ形容詞語幹",
+"名詞-一般","名詞-代名詞","名詞-代名詞-一般","名詞-代名詞-縮約","名詞-副詞可能","名詞-動詞非自立的","名
+詞-引用文字列","名詞-形容動詞語幹","名詞-接尾","名詞-接尾-サ変接続","名詞-接尾-一般","名詞-接尾-人名","
+名詞-接尾-副詞可能","名詞-接尾-助動詞語幹","名詞-接尾-助数詞","名詞-接尾-地域","名詞-接尾-形容動詞語幹"
+,"名詞-接尾-特殊","名詞-接続詞的","名詞-数","名詞-特殊","名詞-特殊-助動詞語幹","名詞-非自立","名詞-非自
+立-一般","名詞-非自立-副詞可能","名詞-非自立-助動詞語幹","名詞-非自立-形容動詞語幹","形容詞","形容詞-接
+尾","形容詞-自立","形容詞-非自立","感動詞","接続詞","接頭詞","接頭詞-動詞接続","接頭詞-名詞接続","接頭
+詞-形容詞接続","接頭詞-数接","未知語","記号","記号-アルファベット","記号-一般","記号-句点","記号-括弧閉
+","記号-括弧開","記号-空白","記号-読点","語断片","連体詞","非言語音"]
+
 Moreover, the fifth argument `userDict` enables you to register a user-defined custom dictionary in [Kuromoji official format](https://github.com/atilika/kuromoji/blob/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt):
 
 ```sql

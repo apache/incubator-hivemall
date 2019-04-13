@@ -20,10 +20,13 @@ package hivemall.utils;
 
 import hivemall.utils.lang.ArrayUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
-import org.junit.Test;
 import org.junit.Assert;
+import org.junit.Test;
 
 public class ArrayUtilsTest {
 
@@ -37,6 +40,16 @@ public class ArrayUtilsTest {
         for (int i = 0; i < shuffled.length; i++) {
             Assert.assertEquals(outcome[i], shuffled[i]);
         }
+    }
+
+    @Test
+    public void asKryoSerializableListTest() {
+        String[] array = new String[] {"1, 2, 3", "4, 5, 6", "7, 8, 9", "10, 11, 12"};
+        List<String> actual = ArrayUtils.asKryoSerializableList(array);
+
+        Assert.assertEquals(Arrays.asList(array), actual);
+
+        Assert.assertEquals(ArrayList.class, actual.getClass());
     }
 
 }
