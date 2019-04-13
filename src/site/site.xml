@@ -75,8 +75,8 @@
 		<menu name="Project">
 			<item name="Home" href="/index.html" />
 			<item name="Download" href="/download.html" />
-			<item name="Licenses" href="/license.html" />
-			<item name="Team" href="/team-list.html" />
+			<item name="Licenses" href="/licenses.html" />
+			<item name="Team" href="/team.html" />
 			<item name="Powered By" href="/poweredby.html" />
 			<item name="Incubation Status" href="http://incubator.apache.org/projects/hivemall.html" />
 		</menu>
@@ -89,7 +89,7 @@
 		</menu>
 
 		<menu name="Get Involved">
-            <item name="Mailing Lists" href="/mail-lists.html" />
+            <item name="Mailing Lists" href="/mailing-lists.html" />
 			<item name="Issues (Jira)" href="https://issues.apache.org/jira/browse/HIVEMALL" target="_blank" />		
             <item name="Source (Git)" href="/repository.html" />
             <item name="Travis CI" href="https://travis-ci.org/apache/incubator-hivemall" target="_blank" />

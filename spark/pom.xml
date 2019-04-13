@@ -32,7 +32,6 @@
 
 	<modules>
 		<module>common</module>
-		<module>spark-2.1</module>
 		<module>spark-2.2</module>
 		<module>spark-2.3</module>
 	</modules>
@@ -41,7 +40,7 @@
 		<main.basedir>${project.parent.basedir}</main.basedir>
 		<scala.version>2.11.8</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>
-		<scalatest.jvm.opts>-ea -Xms768m -Xmx1024m -XX:PermSize=128m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=512m</scalatest.jvm.opts>
+		<scalatest.jvm.opts>-ea -Xms768m -Xmx1024m -XX:PermSize=128m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=512m</scalatest.jvm.opts>
 	</properties>
 
 	<dependencyManagement>
@@ -235,6 +234,14 @@
 		</pluginManagement>
 
 		<plugins>
+			<!-- disable Java API compatibility checks for Spark modules -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.scalastyle</groupId>
 				<artifactId>scalastyle-maven-plugin</artifactId>
@@ -293,7 +300,7 @@
 						<jvmArg>-Xms768m</jvmArg>
 						<jvmArg>-Xmx1024m</jvmArg>
 						<jvmArg>-XX:PermSize=128m</jvmArg>
-						<jvmArg>-XX:MaxPermSize=512m</jvmArg>
+						<jvmArg>-XX:MaxMetaspaceSize=512m</jvmArg>
 						<jvmArg>-XX:ReservedCodeCacheSize=512m</jvmArg>
 					</jvmArgs>
 				</configuration>

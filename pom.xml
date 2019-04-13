@@ -50,7 +50,7 @@
 		<url>https://gitbox.apache.org/repos/asf/incubator-hivemall.git</url>
 		<connection>scm:git:https://gitbox.apache.org/repos/asf/incubator-hivemall.git</connection>
 		<developerConnection>scm:git:https://gitbox.apache.org/repos/asf/incubator-hivemall.git</developerConnection>
-		<tag>v0.5.0-rc1</tag>
+		<tag>v0.5.2</tag>
 	</scm>
 
 	<mailingLists>
@@ -436,6 +436,37 @@
 		</dependencies>
 	</dependencyManagement>
 
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>ci-management</report>
+							<!-- <report>dependencies</report> -->
+							<report>dependency-convergence</report>
+							<report>dependency-info</report>
+							<!-- <report>dependency-management</report> -->
+							<report>distribution-management</report>
+							<report>index</report>
+							<report>issue-management</report>
+							<report>licenses</report>
+							<report>mailing-lists</report>
+							<report>modules</report>
+							<!-- <report>plugin-management</report> -->
+							<report>plugins</report>
+							<report>scm</report>
+							<report>summary</report>
+							<report>team</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
+
 	<build>
 		<directory>target</directory>
 		<outputDirectory>target/classes</outputDirectory>
@@ -552,6 +583,8 @@
 								<!-- workaround for Java 8 -->
 								<!-- see http://stackoverflow.com/questions/15886209/maven-is-not-working-in-java-8-when-javadoc-tags-are-incomplete -->
 								<additionalparam>${javadoc.opts}</additionalparam>
+								<!-- see https://stackoverflow.com/a/16743137 -->
+								<doclint>none</doclint>
 							</configuration>
 						</execution>
 					</executions>
@@ -623,17 +656,19 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>enforce-JAVA8_HOME-is-set</id>
+						<id>enforce-java-8</id>
 						<goals>
 							<goal>enforce</goal>
 						</goals>
 						<configuration>
 							<rules>
-								<requireEnvironmentVariable>
-									<variableName>JAVA8_HOME</variableName>
-								</requireEnvironmentVariable>
+								<requireJavaVersion>
+									<version>[1.8,)</version>
+									<message>
+										Hivemall requires JDK version 1.8 or higher.
+									</message>
+								</requireJavaVersion>
 							</rules>
-							<fail>true</fail>
 						</configuration>
 					</execution>
 					<execution>
@@ -648,6 +683,57 @@
 								</requireMavenVersion>
 							</rules>
 						</configuration>
+					</execution>
+					<!-- Check Java class file compatibility to Java 7/8 -->
+					<execution>
+						<id>enforce-bytecode-version</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<enforceBytecodeVersion>
+									<maxJdkVersion>${maven.compiler.target}</maxJdkVersion>
+									<excludes>
+										<exclude>jdk.tools:jdk.tools</exclude>
+										<exclude>org.mindrot:jbcrypt</exclude>
+									</excludes>
+								</enforceBytecodeVersion>
+							</rules>
+							<fail>true</fail>
+						</configuration>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>extra-enforcer-rules</artifactId>
+						<version>1.0-beta-9</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<!-- check Java API compatibility to Java 7 -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<version>1.14</version>
+				<configuration>
+					<signature>
+						<groupId>org.codehaus.mojo.signature</groupId>
+						<artifactId>java17</artifactId>
+						<version>1.0</version>
+					</signature>
+					<ignores>
+						<ignore>sun.misc.Unsafe</ignore>
+					</ignores>
+				</configuration>
+				<executions>
+					<execution>
+						<id>ensure-java-1.7-class-library</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>

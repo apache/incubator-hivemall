@@ -184,12 +184,6 @@
 						</goals>
 					</execution>
 				</executions>
-				<configuration>
-					<environmentVariables>
-						<JAVA_HOME>${env.JAVA8_HOME}</JAVA_HOME>
-						<PATH>${env.JAVA8_HOME}/bin:${env.PATH}</PATH>
-					</environmentVariables>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

@@ -12,6 +12,9 @@ create temporary function tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF';
 drop temporary function if exists tokenize_cn;
 create temporary function tokenize_cn as 'hivemall.nlp.tokenizer.SmartcnUDF';
 
+drop temporary function if exists stoptags_exclude;
+create temporary function stoptags_exclude as 'hivemall.nlp.tokenizer.StoptagsExcludeUDF';
+
 ------------------------------
 -- XGBoost related features --
 ------------------------------

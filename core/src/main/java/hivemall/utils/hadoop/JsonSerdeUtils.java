@@ -28,7 +28,6 @@ import java.nio.charset.CharacterCodingException;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -367,10 +366,19 @@ public final class JsonSerdeUtils {
     /**
      * Deserialize Json array or Json primitives.
      */
+    @SuppressWarnings("unchecked")
     @Nonnull
-    public static <T> T deserialize(@Nonnull final Text t, @Nonnull TypeInfo columnTypes)
+    public static <T> T deserialize(@Nonnull final Text t, @Nonnull TypeInfo columnType)
             throws SerDeException {
-        return deserialize(t, null, Arrays.asList(columnTypes));
+        final HiveJsonStructReader reader = new HiveJsonStructReader(columnType);
+        reader.setIgnoreUnknownFields(true);
+        final Object result;
+        try {
+            result = reader.parseStruct(new FastByteArrayInputStream(t.getBytes(), t.getLength()));
+        } catch (IOException e) {
+            throw new SerDeException(e);
+        }
+        return (T) result;
     }
 
     @SuppressWarnings("unchecked")
@@ -379,8 +387,8 @@ public final class JsonSerdeUtils {
             @Nullable final List<TypeInfo> columnTypes) throws SerDeException {
         final Object result;
         try {
-            JsonParser p =
-                    new JsonFactory().createJsonParser(new FastByteArrayInputStream(t.getBytes(), t.getLength()));
+            JsonParser p = new JsonFactory().createJsonParser(
+                new FastByteArrayInputStream(t.getBytes(), t.getLength()));
             final JsonToken token = p.nextToken();
             if (token == JsonToken.START_OBJECT) {
                 result = parseObject(p, columnNames, columnTypes);

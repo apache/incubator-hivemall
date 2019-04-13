@@ -334,6 +334,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 - `from_json(string jsonString, const string returnTypes [, const array<string>|const string columnNames])` - Return Hive object.
   ```sql
   SELECT
+    from_json(to_json(map('one',1,'two',2)), 'map<string,int>'),
     from_json(
       '{ "person" : { "name" : "makoto" , "age" : 37 } }',
       'struct<name:string,age:int>', 
@@ -365,6 +366,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   ```
 
   ```
+   {"one":1,"two":2}
    {"name":"makoto","age":37}
    [0.1,1.1,2.2]
    [{"country":"japan","city":"tokyo"},{"country":"japan","city":"osaka"}]

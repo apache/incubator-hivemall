@@ -49,6 +49,7 @@ import org.apache.hive.hcatalog.data.HCatRecordObjectInspectorFactory;
         value = "_FUNC_(string jsonString, const string returnTypes [, const array<string>|const string columnNames])"
                 + " - Return Hive object.",
         extended = "SELECT\n" + 
+                "  from_json(to_json(map('one',1,'two',2)), 'map<string,int>'),\n" +
                 "  from_json(\n" + 
                 "    '{ \"person\" : { \"name\" : \"makoto\" , \"age\" : 37 } }',\n" + 
                 "    'struct<name:string,age:int>', \n" + 
@@ -79,6 +80,7 @@ import org.apache.hive.hcatalog.data.HCatRecordObjectInspectorFactory;
                 "  ),'array<struct<city:string>>');\n"
                 + "```\n\n" +
                 "```\n" +
+                " {\"one\":1,\"two\":2}\n" +
                 " {\"name\":\"makoto\",\"age\":37}\n" + 
                 " [0.1,1.1,2.2]\n" + 
                 " [{\"country\":\"japan\",\"city\":\"tokyo\"},{\"country\":\"japan\",\"city\":\"osaka\"}]\n" + 
@@ -171,7 +173,11 @@ public final class FromJsonUDF extends GenericUDF {
 
         final Object result;
         try {
-            result = JsonSerdeUtils.deserialize(jsonString, columnNames, columnTypes);
+            if (columnNames == null && columnTypes != null && columnTypes.size() == 1) {
+                result = JsonSerdeUtils.deserialize(jsonString, columnTypes.get(0));
+            } else {
+                result = JsonSerdeUtils.deserialize(jsonString, columnNames, columnTypes);
+            }
         } catch (Throwable e) {
             throw new HiveException("Failed to deserialize Json: \n" + jsonString.toString() + '\n'
                     + ExceptionUtils.prettyPrintStackTrace(e),
