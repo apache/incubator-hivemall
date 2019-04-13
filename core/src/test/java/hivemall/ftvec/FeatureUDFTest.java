@@ -19,6 +19,9 @@
 package hivemall.ftvec;
 
 import hivemall.TestUtils;
+
+import java.io.IOException;
+
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
@@ -30,8 +33,6 @@ import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class FeatureUDFTest {
     FeatureUDF udf = null;
@@ -227,7 +228,18 @@ public class FeatureUDFTest {
                 new DeferredJavaObject(null)});
 
         Assert.assertNull(ret);
+    }
 
+    @Test(expected = UDFArgumentException.class)
+    public void testInvalidFeatureName() throws Exception {
+        ObjectInspector featureOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ObjectInspector weightOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+        udf.initialize(new ObjectInspector[] {featureOI, weightOI});
+
+        udf.evaluate(new GenericUDF.DeferredObject[] {new DeferredJavaObject(new Text("f:1")),
+                new DeferredJavaObject(new DoubleWritable(2.5d))});
+
+        Assert.fail();
     }
 
     @Test

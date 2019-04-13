@@ -101,6 +101,9 @@ public final class FeatureUDF extends GenericUDF {
         // arg0|arg1 is Primitive Java object or Writable
         // Then, toString() works fine
         String featureStr = arg0.toString();
+        if (featureStr.indexOf(':') >= 0) {
+            throw new UDFArgumentException("feature name SHOULD NOT contain colon: " + featureStr);
+        }
         String valueStr = arg1.toString();
         String fv = featureStr + ':' + valueStr;
 
