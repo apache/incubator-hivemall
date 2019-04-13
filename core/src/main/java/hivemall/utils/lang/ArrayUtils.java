@@ -756,11 +756,7 @@ public final class ArrayUtils {
      */
     @Nonnull
     public static List<String> asKryoSerializableList(@Nonnull final String[] array) {
-        final List<String> list = new ArrayList<>(array.length);
-        for (String e : array) {
-            list.add(e);
-        }
-        return list;
+        return new ArrayList<>(Arrays.asList(array));
     }
 
 }
