@@ -23,19 +23,55 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 # Regression
 
-- `train_arow_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight, float covar&gt;
+- `train_arow_regr(array<int|bigint|string> features, float target [, constant string options])` - a standard AROW (Adaptive Reguralization of Weight Vectors) regressor that uses `y - w^Tx` for the loss function.
+  ```sql
+  SELECT 
+    feature,
+    argmin_kld(weight, covar) as weight
+  FROM (
+    SELECT 
+       train_arow_regr(features,label) as (feature,weight,covar)
+    FROM 
+       training_data
+   ) t 
+  GROUP BY feature
+  ```
+Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of-weight-vectors.pdf" target="_blank">K. Crammer, A. Kulesza, and M. Dredze, "Adaptive Regularization of Weight Vectors", In Proc. NIPS, 2009.</a><br/>
+- `train_arowe2_regr(array<int|bigint|string> features, float target [, constant string options])` - a refined version of AROW (Adaptive Reguralization of Weight Vectors) regressor that usages adaptive epsilon-insensitive hinge loss `|w^t - y| - epsilon * stddev` for the loss function
+  ```sql
+  SELECT 
+    feature,
+    argmin_kld(weight, covar) as weight
+  FROM (
+    SELECT 
+       train_arowe2_regr(features,label) as (feature,weight,covar)
+    FROM 
+       training_data
+   ) t 
+  GROUP BY feature
+  ```
 
-- `train_arowe2_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight, float covar&gt;
+- `train_arowe_regr(array<int|bigint|string> features, float target [, constant string options])` - a refined version of AROW (Adaptive Reguralization of Weight Vectors) regressor that usages epsilon-insensitive hinge loss `|w^t - y| - epsilon` for the loss function
+  ```sql
+  SELECT 
+    feature,
+    argmin_kld(weight, covar) as weight
+  FROM (
+    SELECT 
+       train_arowe_regr(features,label) as (feature,weight,covar)
+    FROM 
+       training_data
+   ) t 
+  GROUP BY feature
+  ```
 
-- `train_arowe_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight, float covar&gt;
+- `train_pa1_regr(array<int|bigint|string> features, float target [, constant string options])` - PA-1 regressor that returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`. Find PA-1 algorithm detail in http://jmlr.csail.mit.edu/papers/volume7/crammer06a/crammer06a.pdf
 
-- `train_pa1_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight&gt;
+- `train_pa1a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`.
 
-- `train_pa1a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight&gt;
+- `train_pa2_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`.
 
-- `train_pa2_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight&gt;
-
-- `train_pa2a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of &lt;{int|bigint|string} feature, float weight&gt;
+- `train_pa2a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`.
 
 - `train_regressor(list<string|int|bigint> features, double label [, const string options])` - Returns a relation consists of &lt;string|int|bigint feature, float weight&gt;
   ```
@@ -52,7 +88,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
   ```
   Build a prediction model by Adaptive Regularization of Weight Vectors (AROW) binary classifier
   ```
-
+Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of-weight-vectors.pdf" target="_blank">K. Crammer, A. Kulesza, and M. Dredze, "Adaptive Regularization of Weight Vectors", In Proc. NIPS, 2009.</a><br/>
 - `train_arowh(list<string|int|bigint> features, int label [, const string options])` - Returns a relation consists of &lt;string|int|bigint feature, float weight, float covar&gt;
   ```
   Build a prediction model by AROW binary classifier using hinge loss
@@ -520,6 +556,12 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
 
 - `xgboost_predict(string rowid, string[] features, string model_id, array<byte> pred_model [, string options])` - Returns a prediction result as (string rowid, float predicted)
 
+# Term Vector Model
+
+- `bm25(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options])` - Return an Okapi BM25 score in double. Refer http://hivemall.incubator.apache.org/userguide/ft_engineering/bm25.html for usage
+
+- `tf(string text)` - Return a term frequency in &lt;string, float&gt;
+
 # Others
 
 - `hivemall_version()` - Returns the version of Hivemall
@@ -532,7 +574,7 @@ This page describes a list of Hivemall functions. See also a [list of generic Hi
   WITH dual AS (SELECT 1) SELECT lr_datagen('-n_examples 1k -n_features 10') FROM dual;
   ```
 
-- `bm25(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options])` - Return an Okapi BM25 score in double
+- `bm25(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options])` - Return an Okapi BM25 score in double. Refer http://hivemall.incubator.apache.org/userguide/ft_engineering/bm25.html for usage
 
 - `tf(string text)` - Return a term frequency in &lt;string, float&gt;
 

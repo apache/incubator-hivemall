@@ -18,6 +18,7 @@
  */
 package hivemall.regression;
 
+import hivemall.annotations.Cite;
 import hivemall.model.FeatureValue;
 import hivemall.model.IWeightValue;
 import hivemall.model.PredictionResult;
@@ -34,9 +35,24 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
+// @formatter:off
 @Description(name = "train_arow_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                + " - Returns a relation consists of <{int|bigint|string} feature, float weight, float covar>")
+                + " - a standard AROW (Adaptive Reguralization of Weight Vectors) regressor "
+                + "that uses `y - w^Tx` for the loss function.",
+        extended = "SELECT \n" + 
+                "  feature,\n" + 
+                "  argmin_kld(weight, covar) as weight\n" + 
+                "FROM (\n" + 
+                "  SELECT \n" + 
+                "     train_arow_regr(features,label) as (feature,weight,covar)\n" + 
+                "  FROM \n" + 
+                "     training_data\n" + 
+                " ) t \n" + 
+                "GROUP BY feature")
+// @formatter:on
+@Cite(description = "K. Crammer, A. Kulesza, and M. Dredze, \"Adaptive Regularization of Weight Vectors\", In Proc. NIPS, 2009.",
+        url = "https://papers.nips.cc/paper/3848-adaptive-regularization-of-weight-vectors.pdf")
 public class AROWRegressionUDTF extends RegressionBaseUDTF {
 
     /** Regularization parameter r */
@@ -103,7 +119,7 @@ public class AROWRegressionUDTF extends RegressionBaseUDTF {
      * @return target - predicted
      */
     protected float loss(float target, float predicted) {
-        return target - predicted; // y - m^Tx
+        return target - predicted; // y - w^Tx
     }
 
     @Override
@@ -141,9 +157,22 @@ public class AROWRegressionUDTF extends RegressionBaseUDTF {
         return new WeightValueWithCovar(new_w, new_cov);
     }
 
+    // @formatter:off
     @Description(name = "train_arowe_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight, float covar>")
+                    + " - a refined version of AROW (Adaptive Reguralization of Weight Vectors) regressor "
+                    + "that usages epsilon-insensitive hinge loss `|w^t - y| - epsilon` for the loss function",
+            extended = "SELECT \n" + 
+                    "  feature,\n" + 
+                    "  argmin_kld(weight, covar) as weight\n" + 
+                    "FROM (\n" + 
+                    "  SELECT \n" + 
+                    "     train_arowe_regr(features,label) as (feature,weight,covar)\n" + 
+                    "  FROM \n" + 
+                    "     training_data\n" + 
+                    " ) t \n" + 
+                    "GROUP BY feature")
+    // @formatter:on
     public static class AROWe extends AROWRegressionUDTF {
 
         /** Sensitivity to prediction mistakes */
@@ -199,9 +228,22 @@ public class AROWRegressionUDTF extends RegressionBaseUDTF {
         }
     }
 
+    // @formatter:off
     @Description(name = "train_arowe2_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight, float covar>")
+                    + " - a refined version of AROW (Adaptive Reguralization of Weight Vectors) regressor "
+                    + "that usages adaptive epsilon-insensitive hinge loss `|w^t - y| - epsilon * stddev` for the loss function",
+            extended = "SELECT \n" + 
+                    "  feature,\n" + 
+                    "  argmin_kld(weight, covar) as weight\n" + 
+                    "FROM (\n" + 
+                    "  SELECT \n" + 
+                    "     train_arowe2_regr(features,label) as (feature,weight,covar)\n" + 
+                    "  FROM \n" + 
+                    "     training_data\n" + 
+                    " ) t \n" + 
+                    "GROUP BY feature")
+    // @formatter:on
     public static class AROWe2 extends AROWe {
 
         private OnlineVariance targetStdDev;

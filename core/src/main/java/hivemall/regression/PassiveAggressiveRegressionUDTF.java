@@ -18,6 +18,7 @@
  */
 package hivemall.regression;
 
+import hivemall.annotations.Cite;
 import hivemall.model.FeatureValue;
 import hivemall.model.PredictionResult;
 import hivemall.optimizer.LossFunctions;
@@ -32,9 +33,23 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
+// @formatter:off
 @Description(name = "train_pa1_regr",
         value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                + " - PA-1 regressor that returns a relation consists of `(int|bigint|string) feature, float weight`.",
+        extended = "SELECT \n" + 
+                " feature,\n" + 
+                " avg(weight) as weight\n" + 
+                "FROM \n" + 
+                " (SELECT \n" + 
+                "     train_pa1_regr(features,label) as (feature,weight)\n" + 
+                "  FROM \n" + 
+                "     training_data\n" + 
+                " ) t \n" + 
+                "GROUP BY feature")
+// @formatter:on
+@Cite(description = "Koby Crammer et.al., Online Passive-Aggressive Algorithms. Journal of Machine Learning Research, 2006.",
+        url = "http://jmlr.csail.mit.edu/papers/volume7/crammer06a/crammer06a.pdf")
 public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     /** Aggressiveness parameter */
@@ -133,7 +148,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     @Description(name = "train_pa1a_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                    + " - Returns a relation consists of `(int|bigint|string) feature, float weight`.")
     public static final class PA1a extends PassiveAggressiveRegressionUDTF {
 
         private OnlineVariance targetStdDev;
@@ -161,7 +176,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     @Description(name = "train_pa2_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                    + " - Returns a relation consists of `(int|bigint|string) feature, float weight`.")
     public static class PA2 extends PassiveAggressiveRegressionUDTF {
 
         @Override
@@ -180,7 +195,7 @@ public class PassiveAggressiveRegressionUDTF extends RegressionBaseUDTF {
 
     @Description(name = "train_pa2a_regr",
             value = "_FUNC_(array<int|bigint|string> features, float target [, constant string options])"
-                    + " - Returns a relation consists of <{int|bigint|string} feature, float weight>")
+                    + " - Returns a relation consists of `(int|bigint|string) feature, float weight`.")
     public static final class PA2a extends PA2 {
 
         private OnlineVariance targetStdDev;
