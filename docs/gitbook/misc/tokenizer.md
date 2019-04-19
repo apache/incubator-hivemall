@@ -118,7 +118,7 @@ For detailed APIs, please refer Javadoc of [JapaneseAnalyzer](https://lucene.apa
 
 ## Part-of-speech
 
-The second argument can also accept the following option format:
+From Hivemall v0.6.0, the second argument can also accept the following option format:
 
 ```
  -mode <arg>   The tokenization mode. One of ['normal', 'search',
