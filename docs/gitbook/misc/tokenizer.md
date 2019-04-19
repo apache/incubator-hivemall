@@ -86,7 +86,43 @@ select tokenize_ja("日本経済新聞＆関西国際空港", "normal", null, nu
 
 > ["日本","経済","新聞","関西","国際","空港"]
 
+Dictionary SHOULD be accessible through http/https protocol. And, it SHOULD be compressed using gzip with `.gz` suffix because the maximum dictionary size is limited to 32MB and read timeout is set to 60 sec. Also, connection must be established in 10 sec.
+
+If you want to use HTTP Basic Authentication, please use the following form: `https://user:password@www.sitreurl.com/my_dict.txt.gz` (see Sec 3.1 of [rfc1738](https://www.ietf.org/rfc/rfc1738.txt))
+
 For detailed APIs, please refer Javadoc of [JapaneseAnalyzer](https://lucene.apache.org/core/5_3_1/analyzers-kuromoji/org/apache/lucene/analysis/ja/JapaneseAnalyzer.html) as well.
+
+## Part-of-speech
+
+The second argument can also accept the following option format:
+
+```
+ -mode <arg>   The tokenization mode. One of ['normal', 'search',
+               'extended', 'default' (normal)]
+ -pos          Return part-of-speech information
+```
+
+Then, you can get part-of-speech information as follows:
+
+```sql
+WITH tmp as (
+  select
+    tokenize_ja('kuromojiを使った分かち書きのテストです。','-mode search -pos') as r
+)
+select
+  r.tokens,
+  r.pos,
+  r.tokens[0] as token0,
+  r.pos[0] as pos0
+from
+  tmp;
+```
+
+| tokens |pos | token0 | pos0 |
+|:-:|:-:|:-:|:-:|
+| ["kuromoji","使う","分かち書き","テスト"] | ["名詞-一般","動詞-自立","名詞-一般","名詞-サ変接続"] | kuromoji | 名詞-一般 |
+
+Note that when `-pos` option is specified, `tokenize_ja` returns a struct record containing `array<string> tokens` and `array<string> pos` as the elements.
 
 ## Chinese Tokenizer
 
