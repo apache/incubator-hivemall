@@ -86,13 +86,23 @@ public abstract class UDFWithOptions extends GenericUDF {
         String[] args = optionValue.split("\\s+");
         Options opts = getOptions();
         opts.addOption("help", false, "Show function help");
-        CommandLine cl = CommandLineUtils.parseOptions(args, opts);
+
+        final CommandLine cl;
+        try {
+            cl = CommandLineUtils.parseOptions(args, opts);
+        } catch (IllegalArgumentException e) {
+            throw new UDFArgumentException(e);
+        }
 
         if (cl.hasOption("help")) {
             showHelp(opts);
         }
 
         return cl;
+    }
+
+    protected void showHelp() throws UDFArgumentException {
+        showHelp(getOptions(), null);
     }
 
     protected void showHelp(@Nullable String errMsg) throws UDFArgumentException {

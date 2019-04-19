@@ -88,7 +88,13 @@ public abstract class UDAFEvaluatorWithOptions extends GenericUDAFEvaluator {
         String[] args = optionValue.split("\\s+");
         Options opts = getOptions();
         opts.addOption("help", false, "Show function help");
-        CommandLine cl = CommandLineUtils.parseOptions(args, opts);
+
+        final CommandLine cl;
+        try {
+            cl = CommandLineUtils.parseOptions(args, opts);
+        } catch (IllegalArgumentException e) {
+            throw new UDFArgumentException(e);
+        }
 
         if (cl.hasOption("help")) {
             Description funcDesc = getClass().getAnnotation(Description.class);

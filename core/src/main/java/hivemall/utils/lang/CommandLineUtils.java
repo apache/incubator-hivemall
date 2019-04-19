@@ -18,6 +18,8 @@
  */
 package hivemall.utils.lang;
 
+import javax.annotation.Nonnull;
+
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -27,6 +29,7 @@ public final class CommandLineUtils {
 
     private CommandLineUtils() {}
 
+    @Nonnull
     public static CommandLine parseOptions(final String[] args, final Options opts) {
         final BasicParser parser = new BasicParser();
         final CommandLine cl;

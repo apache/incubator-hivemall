@@ -94,8 +94,13 @@ public abstract class UDTFWithOptions extends GenericUDTF {
         String[] args = optionValue.split("\\s+");
         Options opts = getOptions();
         opts.addOption("help", false, "Show function help");
-        CommandLine cl = CommandLineUtils.parseOptions(args, opts);
 
+        final CommandLine cl;
+        try {
+            cl = CommandLineUtils.parseOptions(args, opts);
+        } catch (IllegalArgumentException e) {
+            throw new UDFArgumentException(e);
+        }
         if (cl.hasOption("help")) {
             showHelp(opts);
         }
