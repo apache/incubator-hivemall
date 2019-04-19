@@ -18,6 +18,7 @@
  */
 package hivemall.nlp.tokenizer;
 
+import hivemall.UDFWithOptions;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.HttpUtils;
 import hivemall.utils.io.IOUtils;
@@ -37,16 +38,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
@@ -56,8 +59,11 @@ import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
+import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+
+import com.clearspring.analytics.util.Preconditions;
 
 @Description(name = "tokenize_ja",
         value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
@@ -66,12 +72,14 @@ import org.apache.lucene.analysis.util.CharArraySet;
                 + "\n"
                 + "> [\"kuromoji\",\"使う\",\"分かち書き\",\"テスト\",\"第\",\"二\",\"引数\",\"normal\",\"search\",\"extended\",\"指定\",\"デフォルト\",\"normal\",\" モード\"]\n")
 @UDFType(deterministic = true, stateful = false)
-public final class KuromojiUDF extends GenericUDF {
+public final class KuromojiUDF extends UDFWithOptions {
     private static final int CONNECT_TIMEOUT_MS = 10000; // 10 sec
     private static final int READ_TIMEOUT_MS = 60000; // 60 sec
     private static final long MAX_INPUT_STREAM_SIZE = 32L * 1024L * 1024L; // ~32MB
 
     private Mode _mode;
+    private boolean _returnPos;
+    private transient Object[] _result;
     @Nullable
     private String[] _stopWordsArray;
     private Set<String> _stopTags;
@@ -82,14 +90,43 @@ public final class KuromojiUDF extends GenericUDF {
     private transient JapaneseAnalyzer _analyzer;
 
     @Override
+    protected Options getOptions() {
+        Options opts = new Options();
+        opts.addOption("mode", true,
+            "The tokenization mode. One of ['normal', 'search', 'extended', 'default' (normal)]");
+        opts.addOption("pos", false, "Return part-of-speech information");
+        return opts;
+    }
+
+    @Override
+    protected CommandLine processOptions(String optionValue) throws UDFArgumentException {
+        CommandLine cl = parseOptions(optionValue);
+        if (cl.hasOption("mode")) {
+            String modeStr = cl.getOptionValue("mode");
+            this._mode = tokenizationMode(modeStr);
+        }
+        this._returnPos = cl.hasOption("pos");
+        return cl;
+    }
+
+    @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         final int arglen = arguments.length;
         if (arglen < 1 || arglen > 5) {
-            throw new UDFArgumentException(
-                "Invalid number of arguments for `tokenize_ja`: " + arglen);
+            showHelp("Invalid number of arguments for `tokenize_ja`: " + arglen);
         }
 
-        this._mode = (arglen >= 2) ? tokenizationMode(arguments[1]) : Mode.NORMAL;
+        this._mode = Mode.NORMAL;
+        if (arglen >= 2) {
+            String arg1 = HiveUtils.getConstString(arguments[1]);
+            if (arg1 != null) {
+                if (arg1.startsWith("-")) {
+                    processOptions(arg1);
+                } else {
+                    this._mode = tokenizationMode(arg1);
+                }
+            }
+        }
 
         if (arglen >= 3 && !HiveUtils.isVoidOI(arguments[2])) {
             this._stopWordsArray = HiveUtils.getConstStringArray(arguments[2]);
@@ -111,12 +148,25 @@ public final class KuromojiUDF extends GenericUDF {
 
         this._analyzer = null;
 
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        if (_returnPos) {
+            this._result = new Object[2];
+            ArrayList<String> fieldNames = new ArrayList<String>();
+            ArrayList<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
+            fieldNames.add("tokens");
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableStringObjectInspector));
+            fieldNames.add("pos");
+            fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableStringObjectInspector));
+            return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
+        } else {
+            return ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+        }
     }
 
     @Override
-    public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
+    public Object evaluate(DeferredObject[] arguments) throws HiveException {
         if (_analyzer == null) {
             CharArraySet stopWords = stopWords(_stopWordsArray);
 
@@ -136,20 +186,55 @@ public final class KuromojiUDF extends GenericUDF {
         }
         String line = arg0.toString();
 
-        final List<Text> results = new ArrayList<Text>(32);
+        if (_returnPos) {
+            return parseLine(_analyzer, line, _result);
+        } else {
+            return parseLine(_analyzer, line);
+        }
+    }
+
+    @Nonnull
+    private static Object[] parseLine(@Nonnull JapaneseAnalyzer analyzer, @Nonnull String line,
+            @Nonnull Object[] result) throws HiveException {
+        Objects.requireNonNull(result);
+        Preconditions.checkArgument(result.length == 2);
+
+        final List<Text> tokens = new ArrayList<Text>(32);
+        final List<Text> pos = new ArrayList<Text>(32);
         TokenStream stream = null;
         try {
-            stream = _analyzer.tokenStream("", line);
+            stream = analyzer.tokenStream("", line);
             if (stream != null) {
-                analyzeTokens(stream, results);
+                analyzeTokens(stream, tokens, pos);
             }
         } catch (IOException e) {
-            IOUtils.closeQuietly(_analyzer);
+            IOUtils.closeQuietly(analyzer);
             throw new HiveException(e);
         } finally {
             IOUtils.closeQuietly(stream);
         }
-        return results;
+        result[0] = tokens;
+        result[1] = pos;
+        return result;
+    }
+
+    @Nonnull
+    private static List<Text> parseLine(@Nonnull JapaneseAnalyzer analyzer, @Nonnull String line)
+            throws HiveException {
+        final List<Text> tokens = new ArrayList<Text>(32);
+        TokenStream stream = null;
+        try {
+            stream = analyzer.tokenStream("", line);
+            if (stream != null) {
+                analyzeTokens(stream, tokens);
+            }
+        } catch (IOException e) {
+            IOUtils.closeQuietly(analyzer);
+            throw new HiveException(e);
+        } finally {
+            IOUtils.closeQuietly(stream);
+        }
+        return tokens;
     }
 
     @Override
@@ -158,12 +243,7 @@ public final class KuromojiUDF extends GenericUDF {
     }
 
     @Nonnull
-    private static Mode tokenizationMode(@Nonnull final ObjectInspector oi)
-            throws UDFArgumentException {
-        String arg = HiveUtils.getConstString(oi);
-        if (arg == null) {
-            return Mode.NORMAL;
-        }
+    private static Mode tokenizationMode(@Nonnull final String arg) throws UDFArgumentException {
         final Mode mode;
         if ("NORMAL".equalsIgnoreCase(arg)) {
             mode = Mode.NORMAL;
@@ -292,15 +372,31 @@ public final class KuromojiUDF extends GenericUDF {
         }
     }
 
-    private static void analyzeTokens(@Nonnull TokenStream stream, @Nonnull List<Text> results)
-            throws IOException {
+    private static void analyzeTokens(@Nonnull final TokenStream stream,
+            @Nonnull final List<Text> tokens) throws IOException {
         // instantiate an attribute placeholder once
         CharTermAttribute termAttr = stream.getAttribute(CharTermAttribute.class);
         stream.reset();
 
         while (stream.incrementToken()) {
             String term = termAttr.toString();
-            results.add(new Text(term));
+            tokens.add(new Text(term));
+        }
+    }
+
+    private static void analyzeTokens(@Nonnull final TokenStream stream,
+            @Nonnull final List<Text> tokenResult, @Nonnull final List<Text> posResult)
+            throws IOException {
+        // instantiate an attribute placeholder once
+        CharTermAttribute termAttr = stream.getAttribute(CharTermAttribute.class);
+        PartOfSpeechAttribute posAttr = stream.addAttribute(PartOfSpeechAttribute.class);
+        stream.reset();
+
+        while (stream.incrementToken()) {
+            String term = termAttr.toString();
+            tokenResult.add(new Text(term));
+            String pos = posAttr.getPartOfSpeech();
+            posResult.add(new Text(pos));
         }
     }
 
