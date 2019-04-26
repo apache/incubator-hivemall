@@ -4,10 +4,11 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.io.WritableComparable;
 
 import java.util.*;
 
-@Description(name = "find_max_prob", value = "_FUNC_(map<K, double> map)"
+@Description(name = "map_find_max_prob", value = "_FUNC_(Map<K, double> map)"
         + " - Returns the key K which determine to its value , the bigger value is ,the more probability K will return , " +
         "double can store a probability value or a positive number")
 @UDFType(deterministic = false) // it is false because it return value base on probability
@@ -19,21 +20,21 @@ public class MapFindMaxProbUDF extends UDF {
      * @param m A map contains a lot of value as key, with their weight as value
      * @return The key that computer selected by key's weight
      */
-    public Object evaluate(Map<Object, DoubleWritable> m){
+    public WritableComparable evaluate(Map<WritableComparable, DoubleWritable> m){
         // normalize the weight
         double sum = 0;
-        for (Map.Entry<Object, DoubleWritable> entry: m.entrySet()) {
+        for (Map.Entry<WritableComparable, DoubleWritable> entry: m.entrySet()) {
             sum += entry.getValue().get();
         }
-        for (Map.Entry<Object, DoubleWritable> entry: m.entrySet()){
+        for (Map.Entry<WritableComparable, DoubleWritable> entry: m.entrySet()){
             entry.getValue().set(entry.getValue().get() / sum);
         }
 
         // sort and generate a number axis
-        List<Map.Entry<Object, DoubleWritable>> entryList = new ArrayList<Map.Entry<Object, DoubleWritable>>(m.entrySet());
+        List<Map.Entry<WritableComparable, DoubleWritable>> entryList = new ArrayList<>(m.entrySet());
         Collections.sort(entryList, new MapFindMaxProbUDF.KvComparator());
         double tmp = 0;
-        for (Map.Entry<Object, DoubleWritable> entry: entryList) {
+        for (Map.Entry<WritableComparable, DoubleWritable> entry: entryList) {
             tmp += entry.getValue().get();
             entry.getValue().set(tmp);
         }
@@ -45,17 +46,17 @@ public class MapFindMaxProbUDF extends UDF {
 
         // pick a Object base on its weight
         double cursor = Math.random();
-        for (Map.Entry<Object, DoubleWritable> entry: entryList) {
+        for (Map.Entry<WritableComparable, DoubleWritable> entry: entryList) {
             if(cursor < entry.getValue().get()){
                 return entry.getKey();
             }
         }
         return null;
     }
-    private class KvComparator implements Comparator<Map.Entry<Object, DoubleWritable>> {
+    private class KvComparator implements Comparator<Map.Entry<WritableComparable, DoubleWritable>> {
 
         @Override
-        public int compare(Map.Entry<Object, DoubleWritable> o1, Map.Entry<Object, DoubleWritable> o2) {
+        public int compare(Map.Entry<WritableComparable, DoubleWritable> o1, Map.Entry<WritableComparable, DoubleWritable> o2) {
             return o1.getValue().compareTo(o2.getValue());
         }
     }
