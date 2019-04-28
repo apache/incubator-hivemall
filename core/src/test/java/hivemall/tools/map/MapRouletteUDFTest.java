@@ -1,16 +1,12 @@
 package hivemall.tools.map;
 
 import hivemall.TestUtils;
-import hivemall.tools.array.ArrayFlattenUDF;
-import hivemall.tools.array.ArraySliceUDF;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.WritableComparable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -91,4 +87,44 @@ public class MapRouletteUDFTest {
         TestUtils.deserializeObjectByKryo(serialized, MapRouletteUDFTest.class);
     }
 
+    @Test
+    public void testEmptyMapAndAllNullMap() throws HiveException {
+        MapRouletteUDF udf = new MapRouletteUDF();
+        Map<Object, Double> m = new HashMap<>();
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)});
+        GenericUDF.DeferredObject[] arguments =
+                new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
+        Assert.assertNull(udf.evaluate(arguments));
+        m.put(null, null);
+        arguments = new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
+        Assert.assertNull(udf.evaluate(arguments));
+    }
+
+    @Test
+    public void testOnlyOne() throws HiveException {
+        MapRouletteUDF udf = new MapRouletteUDF();
+        Map<Object, Double> m = new HashMap<>();
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)});
+        m.put("One", 324.6);
+        GenericUDF.DeferredObject[] arguments =
+                new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
+        Assert.assertEquals(udf.evaluate(arguments), "One");
+    }
+
+    @Test
+    public void testString() throws HiveException {
+        MapRouletteUDF udf = new MapRouletteUDF();
+        Map<Object, String> m = new HashMap<>();
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardMapObjectInspector(
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector)});
+        m.put("One", "0.7");
+        GenericUDF.DeferredObject[] arguments =
+                new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
+        Assert.assertEquals(udf.evaluate(arguments), "One");
+    }
 }

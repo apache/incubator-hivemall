@@ -7,7 +7,6 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
@@ -87,9 +86,12 @@ public class MapRouletteUDF extends GenericUDF {
             case SMALLINT_TYPE_NAME:
             case TINYINT_TYPE_NAME:
             case DECIMAL_TYPE_NAME:
+            case STRING_TYPE_NAME:
+                // An empty map or a map full of {null, null} will get string type
+                // An number in string format like "3.5" also support
                 break;
             default:
-                throw new UDFArgumentLengthException(
+                throw new UDFArgumentException(
                         "Expected a number but get: " + valueOI.getTypeName());
         }
         return keyOI;
@@ -98,13 +100,25 @@ public class MapRouletteUDF extends GenericUDF {
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         Map<Object, Double> input = processObjectDoubleMap(arguments[0]);
+        if(input == null){
+            return null;
+        }
+        // handle empty map
+        if(input.isEmpty()){
+            return null;
+        }
         return algorithm(input);
     }
 
     private Map<Object, Double> processObjectDoubleMap(DeferredObject argument) throws HiveException {
         // get
         Map<?, ?> m = mapOI.getMap(argument.get());
-
+        if(m == null){
+            return null;
+        }
+        if(m.size() == 0){
+            return null;
+        }
         // convert
         Map<Object, Double> input = new HashMap<>();
         Double avg = 0.0;
@@ -134,7 +148,7 @@ public class MapRouletteUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "map_find_max_prob("+ Arrays.toString(children) +")";
+        return "map_roulette("+ Arrays.toString(children) +")";
     }
 
     private class KvComparator implements Comparator<Map.Entry<Object, Double>> {
