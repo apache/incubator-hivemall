@@ -92,24 +92,44 @@ public class MapRouletteUDF extends GenericUDF {
                 throw new UDFArgumentLengthException(
                         "Expected a number but get: " + valueOI.getTypeName());
         }
-        return ObjectInspectorFactory.getStandardMapObjectInspector(keyOI, valueOI);
+        return keyOI;
     }
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
+        Map<Object, Double> input = processObjectDoubleMap(arguments[0]);
+        return algorithm(input);
+    }
+
+    private Map<Object, Double> processObjectDoubleMap(DeferredObject argument) throws HiveException {
         // get
-        Map<?, ?> m = mapOI.getMap(arguments[0].get());
+        Map<?, ?> m = mapOI.getMap(argument.get());
 
         // convert
         Map<Object, Double> input = new HashMap<>();
+        Double avg = 0.0;
         for (Map.Entry<?, ?> entry: m.entrySet()) {
             Object key = entry.getKey();
-            Double value = PrimitiveObjectInspectorUtils.convertPrimitiveToDouble(entry.getValue(), valueOI);
+            Double value = null;
+            if(entry.getValue() != null){
+                value = PrimitiveObjectInspectorUtils.convertPrimitiveToDouble(entry.getValue(), valueOI);
+                if(value < 0){
+                    throw new UDFArgumentException(
+                            entry.getValue() + " < 0"
+                    );
+                }
+                avg += value;
+            }
             input.put(key, value);
         }
-
-        // calc
-        return algorithm(input);
+        avg /= m.size();
+        for(Map.Entry<?, ?> entry: input.entrySet()){
+            if(entry.getValue() == null){
+                Object key = entry.getKey();
+                input.put(key, avg);
+            }
+        }
+        return input;
     }
 
     @Override
