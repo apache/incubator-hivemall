@@ -73,6 +73,10 @@ public abstract class Feature {
         return value;
     }
 
+    public void setValue(final double value) {
+        this.value = value;
+    }
+
     public abstract int bytes();
 
     public abstract void writeTo(@Nonnull ByteBuffer dst);
@@ -171,7 +175,7 @@ public abstract class Feature {
     }
 
     @Nonnull
-    static Feature parseFeature(@Nonnull final String fv, final boolean asIntFeature)
+    public static Feature parseFeature(@Nonnull final String fv, final boolean asIntFeature)
             throws HiveException {
         final int pos1 = fv.indexOf(':');
         if (pos1 == -1) {
@@ -382,5 +386,4 @@ public abstract class Feature {
             f.value *= invNorm;
         }
     }
-
 }

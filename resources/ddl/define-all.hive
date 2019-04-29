@@ -884,3 +884,9 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
 
+
+drop temporary function if exists train_cofactor;
+create temporary function train_cofactor as 'hivemall.factorization.cofactor.CofactorizationUDTF';
+
+drop temporary function if exists cofactor_predict;
+create temporary function cofactor_predict as 'hivemall.factorization.cofactor.CofactorizationPredictUDF';
