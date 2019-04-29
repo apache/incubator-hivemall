@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package hivemall.tools.map;
 
 import hivemall.utils.hadoop.HiveUtils;
@@ -9,22 +27,24 @@ import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-
 import java.util.*;
-
 import static hivemall.HivemallConstants.*;
 
-@Description(name = "map_roulette", value = "_FUNC_(Map<K, double> map)"
-        + " - Returns the key K which determine to its value , the bigger value is ,the more probability K will return , " +
-        "double can store a probability value or a positive number")
+/**
+ * The map_roulette() can be use to do roulette, according to each map.entry 's weight.
+ * @author Wang, Yizheng
+ */
+@Description(name = "map_roulette", value = "_FUNC_(Map<K, number> map)"
+        + " - Returns the key K which determine to its weight , the bigger weight is ,the more probability K will return. " +
+        "Number is a probability value or a positive weight")
 @UDFType(deterministic = false) // it is false because it return value base on probability
 public class MapRouletteUDF extends GenericUDF {
 
     /**
-     * The map passed in saved all the value and its probability or the weight
+     * The map passed in saved all the value and its weight
      *
-     * @param m A map contains a lot of value as key, with their weight as value
-     * @return The key that computer selected by key's weight
+     * @param m A map contains a lot of item as key, with their weight as value
+     * @return The key that computer selected according to key's weight
      */
     private Object algorithm(Map<Object, Double> m){
         // normalize the weight
@@ -87,7 +107,7 @@ public class MapRouletteUDF extends GenericUDF {
             case TINYINT_TYPE_NAME:
             case DECIMAL_TYPE_NAME:
             case STRING_TYPE_NAME:
-                // An empty map or a map full of {null, null} will get string type
+                // Pass an empty map or a map full of {null, null} will get string type
                 // An number in string format like "3.5" also support
                 break;
             default:
@@ -110,6 +130,13 @@ public class MapRouletteUDF extends GenericUDF {
         return algorithm(input);
     }
 
+    /**
+     * Process the data passed by user.
+     * @param argument data passed by user
+     * @return If all the value is ,
+     * @throws HiveException If get the wrong weight value like {key = "Wang", value = "Zhang"}, "Zhang" isn't a number
+     * ,this Method will throw exception when convertPrimitiveToDouble("Zhang", valueOD)
+     */
     private Map<Object, Double> processObjectDoubleMap(DeferredObject argument) throws HiveException {
         // get
         Map<?, ?> m = mapOI.getMap(argument.get());

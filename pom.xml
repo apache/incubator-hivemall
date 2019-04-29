@@ -241,6 +241,18 @@
 				<role>Mentor</role>
 			</roles>
 		</developer>
+		<developer>
+			<id>solodye</id>
+			<name>Wang, YiZheng</name>
+			<email>xiblade[at]163.com</email>
+			<url>https://github.com/Solodye</url>
+			<organization>Hebei University of Technology</organization>
+			<organizationUrl>http://www.hebut.edu.cn/</organizationUrl>
+			<roles>
+				<role>Commitor</role>
+			</roles>
+			<timezone>+8</timezone>
+		</developer>
 	</developers>
 
 	<packaging>pom</packaging>

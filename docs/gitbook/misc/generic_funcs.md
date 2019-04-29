@@ -539,7 +539,43 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
       to_ordered_map(key, value, -100)    -- {3:"banana",4:"candy",10:"apple"} (tail-100)
   from t
   ```
-
+  
+- `map_roulette(Map<key, number> map)` -  Returns the `key` which determine to its `number` weight, the bigger weight is ,the more probability K will return.`Number` is a probability value or a positive weight
+  
+  We can use `map_roulette()` on a `Map<key, number>` that was secured from data.
+  ```sql
+  select map_roulette(to_map(a, b)) -- 25% Tom, 21% Zhang, 54% Wang
+  from(
+      select 'Wang' as a, 54 as b
+      union
+      select 'Zhang' as a, 21 as b
+      union
+      select 'Tom' as a, 25 as b
+  )tmp;
+  ```
+  We can pass an `empty map` or a map full of `null` value. Then we will get `null`.
+  ```sql
+  select map_roulette(map(null, null, null, null)); -- NULL
+  select map_roulette(map()); -- NULL
+  ```
+  An occasional `null` weight will be treated as average weight.
+  ```sql
+  select map_roulette(map(1, 0.5, 'Wang', null)); -- 50% Wang, 50% 1
+  select map_roulette(map(1, 0.5, 'Wang', null, 'Zhang', null)); -- 1/3 Wang, 1/3 1, 1/3 Zhang
+  ```
+  All the weight is zero will return `null`.
+  ```sql
+  select map_roulette(map(1, 0)); -- NULL
+  select map_roulette(map(1, 0, '5', 0)); -- NULL
+  ```
+  This udf isn't support non-numeric weight or negative weight.
+  ```sql
+  select map_roulette(map('Wong', 'A string', 'Zhao', 2)); 
+  --Failed with exception java.io.IOException:org.apache.hadoop.hive.ql.metadata.HiveException: Error evaluating map_roulette([map('Wong':'A string','Zhao':2)])
+  select map_roulette(map('Wong', 3, 'Zhao', -2));
+  -- Failed with exception java.io.IOException:org.apache.hadoop.hive.ql.exec.UDFArgumentException: -2 < 0
+  ```
+   
 # MapReduce
 
 - `distcache_gets(filepath, key, default_value [, parseKey])` - Returns map&lt;key_type, value_type&gt;|value_type
