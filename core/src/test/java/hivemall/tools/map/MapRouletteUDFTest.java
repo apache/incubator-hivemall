@@ -79,7 +79,7 @@ public class MapRouletteUDFTest {
         Assert.assertEquals(secondarySolve.toString(), "Jerry");
     }
 
-    private class KvComparator implements Comparator<Map.Entry<Object, Integer>> {
+    private static class KvComparator implements Comparator<Map.Entry<Object, Integer>> {
 
         @Override
         public int compare(Map.Entry<Object, Integer> o1, Map.Entry<Object, Integer> o2) {

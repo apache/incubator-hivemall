@@ -38,7 +38,7 @@ import static hivemall.HivemallConstants.*;
 @Description(name = "map_roulette", value = "_FUNC_(Map<K, number> map)"
         + " - Returns the key K which determine to its weight , the bigger weight is ,the more probability K will return. "
         + "Number is a probability value or a positive weight")
-@UDFType(deterministic = false) // it is false because it return value base on probability
+@UDFType(deterministic = false, stateful = false) // it is false because it return value base on probability
 public class MapRouletteUDF extends GenericUDF {
 
     /**
@@ -181,7 +181,7 @@ public class MapRouletteUDF extends GenericUDF {
         return "map_roulette(" + Arrays.toString(children) + ")";
     }
 
-    private class KvComparator implements Comparator<Map.Entry<Object, Double>> {
+    private static class KvComparator implements Comparator<Map.Entry<Object, Double>> {
 
         @Override
         public int compare(Map.Entry<Object, Double> o1, Map.Entry<Object, Double> o2) {
