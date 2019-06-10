@@ -31,8 +31,6 @@ import java.util.*;
 
 /**
  * Unit test for {@link hivemall.tools.map.MapRouletteUDF}
- * 
- * @author Wang, Yizheng
  */
 public class MapRouletteUDFTest {
 

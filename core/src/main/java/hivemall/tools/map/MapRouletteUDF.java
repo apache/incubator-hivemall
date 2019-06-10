@@ -32,8 +32,6 @@ import static hivemall.HivemallConstants.*;
 
 /**
  * The map_roulette() can be use to do roulette, according to each map.entry 's weight.
- * 
- * @author Wang, Yizheng
  */
 @Description(name = "map_roulette", value = "_FUNC_(Map<K, number> map)"
         + " - Returns the key K which determine to its weight , the bigger weight is ,the more probability K will return. "
