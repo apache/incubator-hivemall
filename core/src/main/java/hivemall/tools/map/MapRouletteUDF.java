@@ -67,12 +67,11 @@ public final class MapRouletteUDF extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length != 1) {
             throw new UDFArgumentLengthException(
-                "Expected one arguments for map_find_max_prob: " + arguments.length);
+                "Expected exactly one argument for map_roulette: " + arguments.length);
         }
         if (arguments[0].getCategory() != ObjectInspector.Category.MAP) {
             throw new UDFArgumentTypeException(0,
-                "Only map type arguments are accepted for the key but " + arguments[0].getTypeName()
-                        + " was passed as parameter 1.");
+                "Only map type argument is accepted but got " + arguments[0].getTypeName());
         }
         mapOI = HiveUtils.asMapOI(arguments[0]);
         ObjectInspector keyOI = mapOI.getMapKeyObjectInspector();
