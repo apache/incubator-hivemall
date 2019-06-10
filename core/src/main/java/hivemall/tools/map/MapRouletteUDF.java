@@ -50,11 +50,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 /**
- * The map_roulette() can be use to do roulette, according to each map.entry 's weight.
+ * The map_roulette returns a map key based on weighted random sampling of map values.
  */
 @Description(name = "map_roulette", value = "_FUNC_(Map<K, number> map)"
-        + " - Returns the key K which determine to its weight , the bigger weight is ,the more probability K will return. "
-        + "Number is a probability value or a positive weight")
+        + " - Returns a map key based on weighted random sampling of map values")
 @UDFType(deterministic = false, stateful = false) // it is false because it return value base on probability
 public class MapRouletteUDF extends GenericUDF {
 
