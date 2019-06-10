@@ -65,9 +65,10 @@ public final class MapRouletteUDF extends GenericUDF {
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-        if (arguments.length != 1)
+        if (arguments.length != 1) {
             throw new UDFArgumentLengthException(
                 "Expected one arguments for map_find_max_prob: " + arguments.length);
+        }
         if (arguments[0].getCategory() != ObjectInspector.Category.MAP) {
             throw new UDFArgumentTypeException(0,
                 "Only map type arguments are accepted for the key but " + arguments[0].getTypeName()
