@@ -60,51 +60,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @UDFType(deterministic = false, stateful = false) // it is false because it return value base on probability
 public final class MapRouletteUDF extends GenericUDF {
 
-    /**
-     * The map passed in saved all the value and its weight
-     *
-     * @param m A map contains a lot of item as key, with their weight as value
-     * @return The key that computer selected according to key's weight
-     */
-    @Nullable
-    private static Object algorithm(@Nonnull final Map<Object, Double> m) {
-        if (m.isEmpty()) {
-            return null;
-        }
-
-        // normalize the weight
-        double sum = 0;
-        for (Map.Entry<Object, Double> entry : m.entrySet()) {
-            sum += entry.getValue();
-        }
-        for (Map.Entry<Object, Double> entry : m.entrySet()) {
-            entry.setValue(entry.getValue() / sum);
-        }
-
-        // sort and generate a number axis
-        List<Map.Entry<Object, Double>> entryList = new ArrayList<>(m.entrySet());
-        Collections.sort(entryList, new KvComparator());
-        double tmp = 0;
-        for (Map.Entry<Object, Double> entry : entryList) {
-            tmp += entry.getValue();
-            entry.setValue(tmp);
-        }
-
-        // judge last value
-        if (entryList.get(entryList.size() - 1).getValue() > 1.0) {
-            entryList.get(entryList.size() - 1).setValue(1.0);
-        }
-
-        // pick a Object base on its weight
-        double cursor = Math.random();
-        for (Map.Entry<Object, Double> entry : entryList) {
-            if (cursor < entry.getValue()) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
     private transient MapObjectInspector mapOI;
     private transient PrimitiveObjectInspector valueOI;
 
@@ -149,6 +104,11 @@ public final class MapRouletteUDF extends GenericUDF {
             return null;
         }
         return algorithm(input);
+    }
+
+    @Override
+    public String getDisplayString(String[] children) {
+        return "map_roulette(" + StringUtils.join(children, ',') + ")";
     }
 
     /**
@@ -196,9 +156,49 @@ public final class MapRouletteUDF extends GenericUDF {
         return input;
     }
 
-    @Override
-    public String getDisplayString(String[] children) {
-        return "map_roulette(" + StringUtils.join(children, ',') + ")";
+    /**
+     * The map passed in saved all the value and its weight
+     *
+     * @param m A map contains a lot of item as key, with their weight as value
+     * @return The key that computer selected according to key's weight
+     */
+    @Nullable
+    private static Object algorithm(@Nonnull final Map<Object, Double> m) {
+        if (m.isEmpty()) {
+            return null;
+        }
+
+        // normalize the weight
+        double sum = 0;
+        for (Map.Entry<Object, Double> entry : m.entrySet()) {
+            sum += entry.getValue();
+        }
+        for (Map.Entry<Object, Double> entry : m.entrySet()) {
+            entry.setValue(entry.getValue() / sum);
+        }
+
+        // sort and generate a number axis
+        List<Map.Entry<Object, Double>> entryList = new ArrayList<>(m.entrySet());
+        Collections.sort(entryList, new KvComparator());
+        double tmp = 0;
+        for (Map.Entry<Object, Double> entry : entryList) {
+            tmp += entry.getValue();
+            entry.setValue(tmp);
+        }
+
+        // judge last value
+        if (entryList.get(entryList.size() - 1).getValue() > 1.0) {
+            entryList.get(entryList.size() - 1).setValue(1.0);
+        }
+
+        // pick a Object base on its weight
+        double cursor = Math.random();
+        for (Map.Entry<Object, Double> entry : entryList) {
+            if (cursor < entry.getValue()) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     private static class KvComparator implements Comparator<Map.Entry<Object, Double>> {
