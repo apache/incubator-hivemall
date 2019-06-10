@@ -28,14 +28,17 @@ import static hivemall.HivemallConstants.STRING_TYPE_NAME;
 import static hivemall.HivemallConstants.TINYINT_TYPE_NAME;
 
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -55,7 +58,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(name = "map_roulette", value = "_FUNC_(Map<K, number> map)"
         + " - Returns a map key based on weighted random sampling of map values")
 @UDFType(deterministic = false, stateful = false) // it is false because it return value base on probability
-public class MapRouletteUDF extends GenericUDF {
+public final class MapRouletteUDF extends GenericUDF {
 
     /**
      * The map passed in saved all the value and its weight
@@ -63,7 +66,12 @@ public class MapRouletteUDF extends GenericUDF {
      * @param m A map contains a lot of item as key, with their weight as value
      * @return The key that computer selected according to key's weight
      */
-    private static Object algorithm(Map<Object, Double> m) {
+    @Nullable
+    private static Object algorithm(@Nonnull final Map<Object, Double> m) {
+        if (m.isEmpty()) {
+            return null;
+        }
+
         // normalize the weight
         double sum = 0;
         for (Map.Entry<Object, Double> entry : m.entrySet()) {
@@ -75,7 +83,7 @@ public class MapRouletteUDF extends GenericUDF {
 
         // sort and generate a number axis
         List<Map.Entry<Object, Double>> entryList = new ArrayList<>(m.entrySet());
-        Collections.sort(entryList, new MapRouletteUDF.KvComparator());
+        Collections.sort(entryList, new KvComparator());
         double tmp = 0;
         for (Map.Entry<Object, Double> entry : entryList) {
             tmp += entry.getValue();
@@ -140,10 +148,6 @@ public class MapRouletteUDF extends GenericUDF {
         if (input == null) {
             return null;
         }
-        // handle empty map
-        if (input.isEmpty()) {
-            return null;
-        }
         return algorithm(input);
     }
 
@@ -194,7 +198,7 @@ public class MapRouletteUDF extends GenericUDF {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "map_roulette(" + Arrays.toString(children) + ")";
+        return "map_roulette(" + StringUtils.join(children, ',') + ")";
     }
 
     private static class KvComparator implements Comparator<Map.Entry<Object, Double>> {
