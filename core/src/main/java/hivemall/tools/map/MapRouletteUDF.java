@@ -64,7 +64,7 @@ public class MapRouletteUDF extends GenericUDF {
      * @param m A map contains a lot of item as key, with their weight as value
      * @return The key that computer selected according to key's weight
      */
-    private Object algorithm(Map<Object, Double> m) {
+    private static Object algorithm(Map<Object, Double> m) {
         // normalize the weight
         double sum = 0;
         for (Map.Entry<Object, Double> entry : m.entrySet()) {
