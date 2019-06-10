@@ -482,6 +482,13 @@ public final class HiveUtils {
         return PrimitiveObjectInspectorUtils.getInt(o, oi);
     }
 
+    public static long getLong(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
+        if (o == null) {
+            return 0L;
+        }
+        return PrimitiveObjectInspectorUtils.getLong(o, oi);
+    }
+
     @SuppressWarnings("unchecked")
     @Nullable
     public static <T extends Writable> T getConstValue(@Nonnull final ObjectInspector oi)

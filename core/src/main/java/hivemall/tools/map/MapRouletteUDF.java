@@ -18,24 +18,14 @@
  */
 package hivemall.tools.map;
 
-import static hivemall.HivemallConstants.BIGINT_TYPE_NAME;
-import static hivemall.HivemallConstants.DECIMAL_TYPE_NAME;
-import static hivemall.HivemallConstants.DOUBLE_TYPE_NAME;
-import static hivemall.HivemallConstants.FLOAT_TYPE_NAME;
-import static hivemall.HivemallConstants.INT_TYPE_NAME;
-import static hivemall.HivemallConstants.SMALLINT_TYPE_NAME;
-import static hivemall.HivemallConstants.STRING_TYPE_NAME;
-import static hivemall.HivemallConstants.TINYINT_TYPE_NAME;
+import static hivemall.utils.lang.StringUtils.join;
 
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.lang.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -49,164 +39,171 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+
+import com.clearspring.analytics.util.Preconditions;
 
 /**
  * The map_roulette returns a map key based on weighted random sampling of map values.
  */
-@Description(name = "map_roulette", value = "_FUNC_(Map<K, number> map)"
-        + " - Returns a map key based on weighted random sampling of map values")
+@Description(name = "map_roulette",
+        value = "_FUNC_(Map<K, number> map [, (const) int/bigint seed])"
+                + " - Returns a map key based on weighted random sampling of map values."
+                + " Average of values is used for null values")
 @UDFType(deterministic = false, stateful = false) // it is false because it return value base on probability
 public final class MapRouletteUDF extends GenericUDF {
 
     private transient MapObjectInspector mapOI;
     private transient PrimitiveObjectInspector valueOI;
+    @Nullable
+    private transient PrimitiveObjectInspector seedOI;
+
+    @Nullable
+    private transient Random _rand;
 
     @Override
-    public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-        if (arguments.length != 1) {
+    public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
+        if (argOIs.length != 1 && argOIs.length != 2) {
             throw new UDFArgumentLengthException(
-                "Expected exactly one argument for map_roulette: " + arguments.length);
+                "Expected exactly one argument for map_roulette: " + argOIs.length);
         }
-        if (arguments[0].getCategory() != ObjectInspector.Category.MAP) {
+        if (argOIs[0].getCategory() != ObjectInspector.Category.MAP) {
             throw new UDFArgumentTypeException(0,
-                "Only map type argument is accepted but got " + arguments[0].getTypeName());
+                "Only map type argument is accepted but got " + argOIs[0].getTypeName());
         }
-        mapOI = HiveUtils.asMapOI(arguments[0]);
-        ObjectInspector keyOI = mapOI.getMapKeyObjectInspector();
 
-        //judge valueOI is a number
-        valueOI = (PrimitiveObjectInspector) mapOI.getMapValueObjectInspector();
-        switch (valueOI.getTypeName()) {
-            case INT_TYPE_NAME:
-            case DOUBLE_TYPE_NAME:
-            case BIGINT_TYPE_NAME:
-            case FLOAT_TYPE_NAME:
-            case SMALLINT_TYPE_NAME:
-            case TINYINT_TYPE_NAME:
-            case DECIMAL_TYPE_NAME:
-            case STRING_TYPE_NAME:
-                // Pass an empty map or a map full of {null, null} will get string type
-                // An number in string format like "3.5" also support
-                break;
-            default:
+        this.mapOI = HiveUtils.asMapOI(argOIs[0]);
+        this.valueOI = HiveUtils.asNumberOI(mapOI.getMapValueObjectInspector());
+
+        if (argOIs.length == 2) {
+            ObjectInspector argOI1 = argOIs[1];
+            if (HiveUtils.isIntegerOI(argOI1) == false) {
                 throw new UDFArgumentException(
-                    "Expected a number but get: " + valueOI.getTypeName());
+                    "The second argument of map_roulette must be integer type: "
+                            + argOI1.getTypeName());
+            }
+            if (ObjectInspectorUtils.isConstantObjectInspector(argOI1)) {
+                long seed = HiveUtils.getAsConstLong(argOI1);
+                this._rand = new Random(seed); // fixed seed
+            } else {
+                this.seedOI = HiveUtils.asLongCompatibleOI(argOI1);
+            }
+        } else {
+            this._rand = new Random(); // random seed
         }
-        return keyOI;
+
+        return mapOI.getMapKeyObjectInspector();
     }
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
-        Map<Object, Double> input = processObjectDoubleMap(arguments[0]);
+        Random rand = _rand;
+        if (rand == null) {
+            Object arg1 = arguments[1].get();
+            if (arg1 == null) {
+                rand = new Random();
+            } else {
+                long seed = HiveUtils.getLong(arg1, seedOI);
+                rand = new Random(seed);
+            }
+        }
+
+        Map<Object, Double> input = getObjectDoubleMap(arguments[0], mapOI, valueOI);
         if (input == null) {
             return null;
         }
-        return algorithm(input);
+
+        return rouletteWheelSelection(input, rand);
+    }
+
+    @Nullable
+    private static Map<Object, Double> getObjectDoubleMap(@Nonnull final DeferredObject argument,
+            @Nonnull final MapObjectInspector mapOI,
+            @Nonnull final PrimitiveObjectInspector valueOI) throws HiveException {
+        final Map<?, ?> m = mapOI.getMap(argument.get());
+        if (m == null) {
+            return null;
+        }
+        final int size = m.size();
+        if (size == 0) {
+            return null;
+        }
+
+        final Map<Object, Double> result = new HashMap<>(size);
+        double sum = 0.d;
+        int cnt = 0;
+        for (Map.Entry<?, ?> entry : m.entrySet()) {
+            Object value = entry.getValue();
+            if (value == null) {
+                continue;
+            }
+            final double v = PrimitiveObjectInspectorUtils.convertPrimitiveToDouble(value, valueOI);
+            if (v < 0) {
+                throw new UDFArgumentException(
+                    "Map value must be greather than or equals to zero: " + entry.getValue());
+            }
+
+            Object key = entry.getKey();
+            result.put(key, Double.valueOf(v));
+
+            sum += v;
+            cnt++;
+        }
+
+        if (result.size() < m.size()) {
+            // fillna with the avg value
+            final Double avg = Double.valueOf(sum / cnt);
+            for (Map.Entry<?, ?> entry : m.entrySet()) {
+                if (entry.getValue() == null) {
+                    Object key = entry.getKey();
+                    result.put(key, avg);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Roulette Wheel Selection.
+     * 
+     * See https://www.obitko.com/tutorials/genetic-algorithms/selection.php
+     */
+    @Nonnull
+    private static Object rouletteWheelSelection(@Nonnull final Map<Object, Double> m,
+            @Nonnull final Random rnd) {
+        Preconditions.checkArgument(m.isEmpty() == false);
+
+        // 1. calculate sum
+        double sum = 0.d;
+        for (Double v : m.values()) {
+            sum += v.doubleValue();
+        }
+
+        // 2. Generate random number from interval r=[0,sum)
+        double r = rnd.nextDouble() * sum;
+
+        // 3. Go through the population and sum weight from 0 - sum s.
+        //    When the sum s is greater then r, stop and return the element.
+        Object k = null;
+        double s = 0.d;
+        for (Map.Entry<Object, Double> e : m.entrySet()) {
+            k = e.getKey();
+            double v = e.getValue().doubleValue();
+            s += v;
+            if (s > r) {
+                break;
+            }
+        }
+
+        return Objects.requireNonNull(k);
     }
 
     @Override
     public String getDisplayString(String[] children) {
-        return "map_roulette(" + StringUtils.join(children, ',') + ")";
-    }
-
-    /**
-     * Process the data passed by user.
-     * 
-     * @param argument data passed by user
-     * @return If all the value is ,
-     * @throws HiveException If get the wrong weight value like {key = "Wang", value = "Zhang"},
-     *         "Zhang" isn't a number ,this Method will throw exception when
-     *         convertPrimitiveToDouble("Zhang", valueOD)
-     */
-    private Map<Object, Double> processObjectDoubleMap(DeferredObject argument)
-            throws HiveException {
-        // get
-        Map<?, ?> m = mapOI.getMap(argument.get());
-        if (m == null) {
-            return null;
-        }
-        if (m.size() == 0) {
-            return null;
-        }
-        // convert
-        Map<Object, Double> input = new HashMap<>();
-        Double avg = 0.0;
-        for (Map.Entry<?, ?> entry : m.entrySet()) {
-            Object key = entry.getKey();
-            Double value = null;
-            if (entry.getValue() != null) {
-                value = PrimitiveObjectInspectorUtils.convertPrimitiveToDouble(entry.getValue(),
-                    valueOI);
-                if (value < 0) {
-                    throw new UDFArgumentException(entry.getValue() + " < 0");
-                }
-                avg += value;
-            }
-            input.put(key, value);
-        }
-        avg /= m.size();
-        for (Map.Entry<?, ?> entry : input.entrySet()) {
-            if (entry.getValue() == null) {
-                Object key = entry.getKey();
-                input.put(key, avg);
-            }
-        }
-        return input;
-    }
-
-    /**
-     * The map passed in saved all the value and its weight
-     *
-     * @param m A map contains a lot of item as key, with their weight as value
-     * @return The key that computer selected according to key's weight
-     */
-    @Nullable
-    private static Object algorithm(@Nonnull final Map<Object, Double> m) {
-        if (m.isEmpty()) {
-            return null;
-        }
-
-        // normalize the weight
-        double sum = 0;
-        for (Map.Entry<Object, Double> entry : m.entrySet()) {
-            sum += entry.getValue();
-        }
-        for (Map.Entry<Object, Double> entry : m.entrySet()) {
-            entry.setValue(entry.getValue() / sum);
-        }
-
-        // sort and generate a number axis
-        List<Map.Entry<Object, Double>> entryList = new ArrayList<>(m.entrySet());
-        Collections.sort(entryList, new KvComparator());
-        double tmp = 0;
-        for (Map.Entry<Object, Double> entry : entryList) {
-            tmp += entry.getValue();
-            entry.setValue(tmp);
-        }
-
-        // judge last value
-        if (entryList.get(entryList.size() - 1).getValue() > 1.0) {
-            entryList.get(entryList.size() - 1).setValue(1.0);
-        }
-
-        // pick a Object base on its weight
-        double cursor = Math.random();
-        for (Map.Entry<Object, Double> entry : entryList) {
-            if (cursor < entry.getValue()) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    private static class KvComparator implements Comparator<Map.Entry<Object, Double>> {
-
-        @Override
-        public int compare(Map.Entry<Object, Double> o1, Map.Entry<Object, Double> o2) {
-            return o1.getValue().compareTo(o2.getValue());
-        }
+        return "map_roulette(" + join(children, ',') + ")";
     }
 
 }
