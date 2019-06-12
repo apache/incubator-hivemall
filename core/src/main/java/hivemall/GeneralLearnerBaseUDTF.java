@@ -327,7 +327,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             } catch (Throwable e) {
                 throw new UDFArgumentException(e);
             }
-            this.inputBuf = buf = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB
+            this.inputBuf = buf = ByteBuffer.allocateDirect(2 * 1024 * 1024); // 2 MB
             this.fileIO = dst = new NioStatefulSegment(file, false);
         }
 
@@ -355,6 +355,10 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         int remain = buf.remaining();
         if (remain < requiredBytes) {
             writeBuffer(buf, dst);
+        }
+        if (requiredBytes > buf.remaining()) {
+            throw new HiveException("Buffer size (2MB) for writing training example is not enough: "
+                    + NumberUtils.prettySize(requiredBytes));
         }
 
         buf.putInt(recordBytes);
