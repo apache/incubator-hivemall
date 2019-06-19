@@ -36,11 +36,22 @@ select l2_normalize(array('apple:1.0', 'banana:0.5'))
 > ["apple:0.8944272","banana:0.4472136"]
 
 # Min-Max Normalization
-https://en.wikipedia.org/wiki/Feature_scaling#Rescaling
+
+[Min-max normalization](https://en.wikipedia.org/wiki/Feature_scaling#Rescaling) converts values to range `[0.0,1.0]`.
+
+```sql
+select 
+  rescale(target, min(target) over (), max(target) over ()) as target
+from
+  e2006tfidf_train
+```
+
+It can also expressed without Windowing function as follows:
+
 ```sql
 select min(target), max(target)
 from (
-select target from e2006tfidf_train 
+  select target from e2006tfidf_train 
 -- union all
 -- select target from e2006tfidf_test 
 ) t;
@@ -63,28 +74,12 @@ from
 ```
 
 # Feature scaling by zscore
-https://en.wikipedia.org/wiki/Standard_score
+
+Refer [this article](https://en.wikipedia.org/wiki/Standard_score) to get details about Zscore.
 
 ```sql
-select avg(target), stddev_pop(target)
-from (
-select target from e2006tfidf_train 
--- union all
--- select target from e2006tfidf_test 
-) t;
-```
-> -3.566241460963296      0.6278076335455348
-
-```sql
-set hivevar:mean_target=-3.566241460963296;
-set hivevar:stddev_target=0.6278076335455348;
-
-create or replace view e2006tfidf_train_scaled 
-as
 select 
-  rowid,
-  zscore(target, ${mean_target}, ${stddev_target}) as target, 
-  features
+  zscore(target, avg(target) over (), stddev_pop(target) over ()) as target
 from 
   e2006tfidf_train;
 ```
@@ -108,49 +103,29 @@ We can create a normalized table as follows:
 ```sql
 create table train_normalized
 as
-WITH fv as (
-select 
-  rowid, 
-  extract_feature(feature) as feature,
-  extract_weight(feature) as value
-from 
-  train 
-  LATERAL VIEW explode(features) exploded AS feature
+WITH exploded as (
+  select 
+    rowid, 
+    extract_feature(feature) as feature,
+    extract_weight(feature) as value
+  from 
+    train 
+    LATERAL VIEW explode(features) exploded AS feature
 ), 
-stats as (
-select
-  feature,
-  -- avg(value) as mean, stddev_pop(value) as stddev
-  min(value) as min, max(value) as max
-from
-  fv
-group by
-  feature
-), 
-norm as (
-select 
-  rowid, 
-  t1.feature, 
-  -- zscore(t1.value, t2.mean, t2.stddev) as zscore
-  rescale(t1.value, t2.min, t2.max) as minmax
-from 
-  fv t1 JOIN
-  stats t2 ON (t1.feature = t2.feature) 
-),
-norm_fv as (
-select
-  rowid, 
-  -- concat(feature, ":", zscore) as feature
-  -- concat(feature, ":", minmax) as feature  -- Before Hivemall v0.3.2-1
-  feature(feature, minmax) as feature         -- Hivemall v0.3.2-1 or later
-from
-  norm
+scaled as (
+  select 
+    rowid, 
+    feature, 
+    rescale(value, min(value) over (), max(value) over ()) as minmax,
+    zscore(value, avg(value) over (), stddev_pop(value) over ()) as zscore
+  from 
+    exploded
 )
-select 
-  rowid, 
-  collect_list(feature) as features
+select
+  rowid,
+  collect_list(feature(feature, minmax)) as features
 from
-  norm_fv
+  scaled
 group by
   rowid
 ;
