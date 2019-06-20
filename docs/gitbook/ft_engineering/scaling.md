@@ -89,7 +89,17 @@ from
 Apply normalization to the following data.
 
 ```sql
-select rowid, features from train limit 3;
+create table train as 
+select 
+  1 as rowid, array("weight:69.613","specific_heat:129.07","reflectance:52.111") as features
+UNION ALL
+select 
+  2 as rowid, array("weight:70.67","specific_heat:128.161","reflectance:52.446") as features
+UNION ALL
+select 
+  3 as rowid, array("weight:72.303","specific_heat:128.45","reflectance:52.853") as features
+
+select rowid, features from train;
 ```
 
 ```
@@ -114,10 +124,10 @@ WITH exploded as (
 ), 
 scaled as (
   select 
-    rowid, 
-    feature, 
-    rescale(value, min(value) over (), max(value) over ()) as minmax,
-    zscore(value, avg(value) over (), stddev_pop(value) over ()) as zscore
+    rowid,
+    feature,
+    rescale(value, min(value) over (partition by feature), max(value) over (partition by feature)) as minmax,
+    zscore(value, avg(value) over (partition by feature), stddev_pop(value) over (partition by feature)) as zscore
   from 
     exploded
 )
@@ -127,59 +137,12 @@ select
 from
   scaled
 group by
-  rowid
-;
+  rowid;
 ```
 
 ```
-1       ["reflectance:0.5252967","specific_heat:0.19863537","weight:0.0"]
-2       ["reflectance:0.5950446","specific_heat:0.09166764","weight:0.052084323"]
-3       ["reflectance:0.6797837","specific_heat:0.12567581","weight:0.13255163"]
-...
-```
-
-# Tips for using both min-max and zscore normalization
-
-```sql
-WITH quantative as (
-  select id, true as minmax, "age" as feature, age as value from train
-  union all
-  select id, false as minmax, "balance" as feature, balance as value from train
-  union all
-  select id, true as minmax, "day" as feature, day as value from train
-  union all
-  select id, false as minmax, "duration" as feature, duration as value from train
-  union all
-  select id, false as minmax, "campaign" as feature, campaign as value from train
-  union all
-  select id, false as minmax, "pdays" as feature, if(pdays = -1, 0, pdays) as value from train
-  union all
-  select id, false as minmax,  "previous" as feature, previous as value from train  
-),
-quantative_stats as (
-select
-  feature,
-  avg(value) as mean, stddev_pop(value) as stddev,
-  min(value) as min, max(value) as max
-from
-  quantative
-group by
-  feature
-), 
-quantative_norm as (
-select 
-  t1.id,
-  collect_list(
-   feature(
-      t1.feature, 
-      if(t1.minmax,rescale(t1.value, t2.min, t2.max),zscore(t1.value, t2.mean, t2.stddev))
-    )
-  ) as features
-from 
-  quantative t1
-  JOIN quantative_stats t2 ON (t1.feature = t2.feature)   
-group by
-  t1.id
-)
+1       ["reflectance:0.0","specific_heat:1.0","weight:0.0"]
+2       ["reflectance:0.4514809","specific_heat:0.0","weight:0.39293614"]
+3       ["reflectance:1.0","specific_heat:0.31792927","weight:1.0"]
 ...
 ```
