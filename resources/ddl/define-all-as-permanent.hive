@@ -288,6 +288,9 @@ CREATE FUNCTION build_bins as 'hivemall.ftvec.binning.BuildBinsUDAF' USING JAR '
 DROP FUNCTION IF EXISTS feature_binning;
 CREATE FUNCTION feature_binning as 'hivemall.ftvec.binning.FeatureBinningUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS to_libsvm_format;
+CREATE FUNCTION to_libsvm_format as 'hivemall.ftvec.conv.ToLibSVMFormatUDF' USING JAR '${hivemall_jar}';
+
 --------------------------
 -- feature transformers --
 --------------------------

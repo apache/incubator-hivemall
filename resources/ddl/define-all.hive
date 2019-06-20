@@ -284,6 +284,9 @@ create temporary function build_bins as 'hivemall.ftvec.binning.BuildBinsUDAF';
 drop temporary function if exists feature_binning;
 create temporary function feature_binning as 'hivemall.ftvec.binning.FeatureBinningUDF';
 
+drop temporary function if exists to_libsvm_format;
+create temporary function to_libsvm_format as 'hivemall.ftvec.conv.ToLibSVMFormatUDF';
+
 --------------------------
 -- feature transformers --
 --------------------------
@@ -883,4 +886,3 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
-
