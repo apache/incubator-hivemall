@@ -287,6 +287,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION build_bins AS 'hivemall.ftvec.binning.
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS feature_binning")
 sqlContext.sql("CREATE TEMPORARY FUNCTION feature_binning AS 'hivemall.ftvec.binning.FeatureBinningUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_libsvm_format")
+sqlContext.sql("CREATE TEMPORARY FUNCTION to_libsvm_format AS 'hivemall.ftvec.conv.ToLibSVMFormatUDF'")
+
 /**
  * feature transformers
  */
