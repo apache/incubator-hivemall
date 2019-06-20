@@ -46,9 +46,18 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+// @formatter:off
 @Description(name = "to_libsvm_format",
         value = "_FUNC_(array<string> feautres [, double/integer target, const string options])"
-                + " - Returns a string representation of libsvm")
+                + " - Returns a string representation of libsvm",
+                extended = "Usage:\n" + 
+                        " select to_libsvm_format(array('apple:3.4','orange:2.1'))\n" + 
+                        " > 6284535:3.4 8104713:2.1\n" + 
+                        " select to_libsvm_format(array('apple:3.4','orange:2.1'), '-features 10')\n" + 
+                        " > 3:2.1 7:3.4\n" + 
+                        " select to_libsvm_format(array('7:3.4','3:2.1'), 5.0)\n" + 
+                        " > 5.0 3:2.1 7:3.4")
+// @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ToLibSVMFormatUDF extends UDFWithOptions {
 
@@ -69,7 +78,9 @@ public final class ToLibSVMFormatUDF extends UDFWithOptions {
     @Override
     protected CommandLine processOptions(@Nonnull String optionValue) throws UDFArgumentException {
         CommandLine cl = parseOptions(optionValue);
-        this._numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), _numFeatures);
+        this._numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"),
+            MurmurHash3.DEFAULT_NUM_FEATURES);
+        assumeTrue(_numFeatures > 0, "num_features must be greater than 0: " + _numFeatures);
         return cl;
     }
 
