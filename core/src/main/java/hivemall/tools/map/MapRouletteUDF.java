@@ -24,7 +24,6 @@ import hivemall.utils.hadoop.HiveUtils;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
@@ -48,10 +47,48 @@ import com.clearspring.analytics.util.Preconditions;
 /**
  * The map_roulette returns a map key based on weighted random sampling of map values.
  */
+// @formatter:off
 @Description(name = "map_roulette",
         value = "_FUNC_(Map<K, number> map [, (const) int/bigint seed])"
                 + " - Returns a map key based on weighted random sampling of map values."
-                + " Average of values is used for null values")
+                + " Average of values is used for null values",
+        extended = "-- `map_roulette(map<key, number> [, integer seed])` returns key by weighted random selection\n" + 
+                "SELECT \n" + 
+                "  map_roulette(to_map(a, b)) -- 25% Tom, 21% Zhang, 54% Wang\n" + 
+                "FROM (\n" + 
+                "  select 'Wang' as a, 54 as b\n" + 
+                "  union\n" + 
+                "  select 'Zhang' as a, 21 as b\n" + 
+                "  union\n" + 
+                "  select 'Tom' as a, 25 as b\n" + 
+                ") tmp;\n" + 
+                "> Wang\n" + 
+                "\n" + 
+                "-- Weight random selection with using filling nulls with the average value\n" + 
+                "SELECT\n" + 
+                "  map_roulette(map(1, 0.5, 'Wang', null)), -- 50% Wang, 50% 1\n" + 
+                "  map_roulette(map(1, 0.5, 'Wang', null, 'Zhang', null)) -- 1/3 Wang, 1/3 1, 1/3 Zhang\n" + 
+                ";\n" + 
+                "\n" + 
+                "-- NULL will be returned if every key is null\n" + 
+                "SELECT \n" + 
+                "  map_roulette(map()),\n" + 
+                "  map_roulette(map(null, null, null, null));\n" + 
+                "> NULL    NULL\n" + 
+                "\n" + 
+                "-- Return NULL if all weights are zero\n" + 
+                "SELECT\n" + 
+                "  map_roulette(map(1, 0)),\n" + 
+                "  map_roulette(map(1, 0, '5', 0))\n" + 
+                ";\n" + 
+                "> NULL    NULL\n" + 
+                "\n" + 
+                "-- map_roulette does not support non-numeric weights or negative weights.\n" + 
+                "SELECT map_roulette(map('Wong', 'A string', 'Zhao', 2));\n" + 
+                "> HiveException: Error evaluating map_roulette(map('Wong':'A string','Zhao':2))\n" + 
+                "SELECT map_roulette(map('Wong', 'A string', 'Zhao', 2));\n" + 
+                "> UDFArgumentException: Map value must be greather than or equals to zero: -2")
+// @formatter:on
 @UDFType(deterministic = false, stateful = false) // it is false because it return value base on probability
 public final class MapRouletteUDF extends GenericUDF {
 
@@ -145,7 +182,7 @@ public final class MapRouletteUDF extends GenericUDF {
                 continue;
             }
             final double v = PrimitiveObjectInspectorUtils.convertPrimitiveToDouble(value, valueOI);
-            if (v < 0) {
+            if (v < 0.d) {
                 throw new UDFArgumentException(
                     "Map value must be greather than or equals to zero: " + entry.getValue());
             }
@@ -197,18 +234,17 @@ public final class MapRouletteUDF extends GenericUDF {
 
         // 3. Go through the population and sum weight from 0 - sum s.
         //    When the sum s is greater then r, stop and return the element.
-        Object k = null;
         double s = 0.d;
         for (Map.Entry<Object, Double> e : m.entrySet()) {
-            k = e.getKey();
+            Object k = e.getKey();
             double v = e.getValue().doubleValue();
             s += v;
             if (s > r) {
-                break;
+                return k;
             }
         }
 
-        return Objects.requireNonNull(k);
+        return null;
     }
 
     @Override

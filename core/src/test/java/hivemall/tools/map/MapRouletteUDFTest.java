@@ -195,4 +195,20 @@ public class MapRouletteUDFTest {
 
         udf.close();
     }
+
+    @Test
+    public void testZeroValues() throws HiveException, IOException {
+        MapRouletteUDF udf = new MapRouletteUDF();
+        Map<String, Double> m = new HashMap<>();
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)});
+        m.put("One", 0.d);
+        m.put("Two", 0.d);
+        GenericUDF.DeferredObject[] arguments =
+                new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
+        Assert.assertNull(udf.evaluate(arguments));
+
+        udf.close();
+    }
 }
