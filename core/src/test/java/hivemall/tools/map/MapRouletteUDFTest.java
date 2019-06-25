@@ -32,6 +32,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,14 +44,9 @@ public class MapRouletteUDFTest {
 
     /**
      * Tom, Jerry, Amy, Wong, Zhao joined a roulette. Jerry has 0.2 weight to win. Zhao's weight is
-     * highest, he has more chance to win. During data processing ,Tom 's weight was Lost. Algorithm
-     * treat Tom 's weight as average. After 1000000 times of roulette, Zhao wins the most. Jerry
+     * highest, he has more chance to win. During data processing, Tom's weight was lost. Algorithm
+     * treat Tom's weight as average. After 1000000 times of roulette, Zhao wins the most. Jerry
      * wins less than Zhao but more than the other.
-     *
-     * @throws HiveException fmp.initialize may throws UDFArgumentException when checking parameter,
-     *         org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector#getMap(java.lang.Object)
-     *         may throw Hive Exception
-     * @throws IOException
      */
     @Test
     public void testRoulette() throws HiveException, IOException {
@@ -66,7 +62,7 @@ public class MapRouletteUDFTest {
         solve.put("Zhao", 0);
         int T = 1000000;
         while (T-- > 0) {
-            Map<Object, Double> m = new HashMap<>();
+            Map<String, Double> m = new HashMap<>();
             m.put("Tom", null);
             m.put("Jerry", 0.2);
             m.put("Amy", 0.1);
@@ -80,9 +76,9 @@ public class MapRouletteUDFTest {
         List<Map.Entry<Object, Integer>> solveList = new ArrayList<>(solve.entrySet());
         Collections.sort(solveList, new KvComparator());
         Object highestSolve = solveList.get(solveList.size() - 1).getKey();
-        Assert.assertEquals(highestSolve.toString(), "Zhao");
+        Assert.assertEquals("Zhao", highestSolve.toString());
         Object secondarySolve = solveList.get(solveList.size() - 2).getKey();
-        Assert.assertEquals(secondarySolve.toString(), "Jerry");
+        Assert.assertEquals("Jerry", secondarySolve.toString());
 
         udf.close();
     }
@@ -97,7 +93,7 @@ public class MapRouletteUDFTest {
 
     @Test
     public void testSerialization() throws HiveException, IOException {
-        Map<Object, Double> m = new HashMap<>();
+        Map<String, Double> m = new HashMap<>();
         m.put("Tom", 0.1);
         m.put("Jerry", 0.2);
         m.put("Amy", 0.1);
@@ -133,29 +129,32 @@ public class MapRouletteUDFTest {
     @Test
     public void testOnlyOne() throws HiveException, IOException {
         MapRouletteUDF udf = new MapRouletteUDF();
-        Map<Object, Double> m = new HashMap<>();
+        Map<String, Double> m = new HashMap<>();
         udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardMapObjectInspector(
             PrimitiveObjectInspectorFactory.javaStringObjectInspector,
             PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)});
         m.put("One", 324.6);
         GenericUDF.DeferredObject[] arguments =
                 new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
-        Assert.assertEquals(udf.evaluate(arguments), "One");
+        Assert.assertEquals("One", udf.evaluate(arguments));
 
         udf.close();
     }
 
     @Test
-    public void testString() throws HiveException, IOException {
+    public void testSeed() throws HiveException, IOException {
         MapRouletteUDF udf = new MapRouletteUDF();
-        Map<Object, String> m = new HashMap<>();
-        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardMapObjectInspector(
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-            PrimitiveObjectInspectorFactory.javaStringObjectInspector)});
-        m.put("One", "0.7");
+        Map<String, Double> m = new HashMap<>();
+        udf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardMapObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaLongObjectInspector, 43L)});
+        m.put("One", 0.7);
         GenericUDF.DeferredObject[] arguments =
                 new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
-        Assert.assertEquals(udf.evaluate(arguments), "One");
+        Assert.assertEquals("One", udf.evaluate(arguments));
 
         udf.close();
     }
