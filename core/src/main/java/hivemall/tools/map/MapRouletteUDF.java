@@ -75,7 +75,7 @@ public final class MapRouletteUDF extends GenericUDF {
         }
 
         this.mapOI = HiveUtils.asMapOI(argOIs[0]);
-        this.valueOI = HiveUtils.asNumberOI(mapOI.getMapValueObjectInspector());
+        this.valueOI = HiveUtils.asDoubleCompatibleOI(mapOI.getMapValueObjectInspector());
 
         if (argOIs.length == 2) {
             ObjectInspector argOI1 = argOIs[1];
