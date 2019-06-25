@@ -63,7 +63,44 @@ public class MapRouletteUDFTest {
         int T = 1000000;
         while (T-- > 0) {
             Map<String, Double> m = new HashMap<>();
-            m.put("Tom", null);
+            m.put("Tom", 0.18); // 3rd
+            m.put("Jerry", 0.2); // 2nd
+            m.put("Amy", 0.01); // 5th
+            m.put("Wong", 0.1); // 4th
+            m.put("Zhao", 0.5); // 1st
+            GenericUDF.DeferredObject[] arguments =
+                    new GenericUDF.DeferredObject[] {new GenericUDF.DeferredJavaObject(m)};
+            Object key = udf.evaluate(arguments);
+            solve.put(key, solve.get(key) + 1);
+        }
+        List<Map.Entry<Object, Integer>> solveList = new ArrayList<>(solve.entrySet());
+        Collections.sort(solveList, new KvComparator());
+        Object highestSolve = solveList.get(solveList.size() - 1).getKey();
+        Assert.assertEquals("Zhao", highestSolve.toString());
+        Object secondarySolve = solveList.get(solveList.size() - 2).getKey();
+        Assert.assertEquals("Jerry", secondarySolve.toString());
+        Object worseSolve = solveList.get(0).getKey();
+        Assert.assertEquals("Amy", worseSolve.toString());
+
+        udf.close();
+    }
+
+    @Test
+    public void testRouletteFillNA() throws HiveException, IOException {
+        MapRouletteUDF udf = new MapRouletteUDF();
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardMapObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            PrimitiveObjectInspectorFactory.javaDoubleObjectInspector)});
+        Map<Object, Integer> solve = new HashMap<>();
+        solve.put("Tom", 0);
+        solve.put("Jerry", 0);
+        solve.put("Amy", 0);
+        solve.put("Wong", 0);
+        solve.put("Zhao", 0);
+        int T = 1000000;
+        while (T-- > 0) {
+            Map<String, Double> m = new HashMap<>();
+            m.put("Tom", null); // (0.2+0.1+0.1+0.5)/4=0.225
             m.put("Jerry", 0.2);
             m.put("Amy", 0.1);
             m.put("Wong", 0.1);
@@ -78,7 +115,7 @@ public class MapRouletteUDFTest {
         Object highestSolve = solveList.get(solveList.size() - 1).getKey();
         Assert.assertEquals("Zhao", highestSolve.toString());
         Object secondarySolve = solveList.get(solveList.size() - 2).getKey();
-        Assert.assertEquals("Jerry", secondarySolve.toString());
+        Assert.assertEquals("Tom", secondarySolve.toString());
 
         udf.close();
     }
