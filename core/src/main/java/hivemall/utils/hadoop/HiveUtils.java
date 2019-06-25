@@ -482,6 +482,13 @@ public final class HiveUtils {
         return PrimitiveObjectInspectorUtils.getInt(o, oi);
     }
 
+    public static long getLong(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
+        if (o == null) {
+            return 0L;
+        }
+        return PrimitiveObjectInspectorUtils.getLong(o, oi);
+    }
+
     @SuppressWarnings("unchecked")
     @Nullable
     public static <T extends Writable> T getConstValue(@Nonnull final ObjectInspector oi)
@@ -1054,9 +1061,8 @@ public final class HiveUtils {
             case DECIMAL:
                 break;
             default:
-                throw new UDFArgumentTypeException(0,
-                    "Only numeric or string type arguments are accepted but " + argOI.getTypeName()
-                            + " is passed.");
+                throw new UDFArgumentTypeException(0, "Only floating point number is accepted but "
+                        + argOI.getTypeName() + " is passed.");
         }
         return oi;
     }
@@ -1080,8 +1086,7 @@ public final class HiveUtils {
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
-                    "Only numeric or string type arguments are accepted but " + argOI.getTypeName()
-                            + " is passed.");
+                    "Only numeric argument is accepted but " + argOI.getTypeName() + " is passed.");
         }
         return oi;
     }

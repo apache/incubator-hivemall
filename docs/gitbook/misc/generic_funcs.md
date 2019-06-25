@@ -491,6 +491,46 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   > [{"key":"one","value":1},{"key":"two","value":2}]
   ```
 
+- `map_roulette(Map<K, number> map [, (const)` int/bigint seed]) - Returns a map key based on weighted random sampling of map values. Average of values is used for null values
+  ```sql
+  -- `map_roulette(map<key, number> [, integer seed])` returns key by weighted random selection
+  SELECT 
+    map_roulette(to_map(a, b)) -- 25% Tom, 21% Zhang, 54% Wang
+  FROM ( -- see https://issues.apache.org/jira/browse/HIVE-17406
+    select 'Wang' as a, 54 as b
+    union all
+    select 'Zhang' as a, 21 as b
+    union all
+    select 'Tom' as a, 25 as b
+  ) tmp;
+  > Wang
+
+  -- Weight random selection with using filling nulls with the average value
+  SELECT
+    map_roulette(map(1, 0.5, 'Wang', null)), -- 50% Wang, 50% 1
+    map_roulette(map(1, 0.5, 'Wang', null, 'Zhang', null)) -- 1/3 Wang, 1/3 1, 1/3 Zhang
+  ;
+
+  -- NULL will be returned if every key is null
+  SELECT 
+    map_roulette(map()),
+    map_roulette(map(null, null, null, null));
+  > NULL    NULL
+
+  -- Return NULL if all weights are zero
+  SELECT
+    map_roulette(map(1, 0)),
+    map_roulette(map(1, 0, '5', 0))
+  ;
+  > NULL    NULL
+
+  -- map_roulette does not support non-numeric weights or negative weights.
+  SELECT map_roulette(map('Wong', 'A string', 'Zhao', 2));
+  > HiveException: Error evaluating map_roulette(map('Wong':'A string','Zhao':2))
+  SELECT map_roulette(map('Wong', 'A string', 'Zhao', 2));
+  > UDFArgumentException: Map value must be greather than or equals to zero: -2
+  ```
+
 - `map_tail_n(map SRC, int N)` - Returns the last N elements from a sorted array of SRC
 
 - `merge_maps(Map x)` - Returns a map which contains the union of an aggregation of maps. Note that an existing value of a key can be replaced with the other duplicate key entry.

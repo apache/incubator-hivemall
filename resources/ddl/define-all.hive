@@ -510,6 +510,9 @@ create temporary function map_get as 'hivemall.tools.map.MapGetUDF';
 drop temporary function if exists map_key_values;
 create temporary function map_key_values as 'hivemall.tools.map.MapKeyValuesUDF';
 
+drop temporary function if exists map_roulette;
+create temporary function map_roulette as 'hivemall.tools.map.MapRouletteUDF';
+
 ---------------------
 -- list functions --
 ---------------------

@@ -518,6 +518,9 @@ CREATE FUNCTION map_get as 'hivemall.tools.map.MapGetUDF' USING JAR '${hivemall_
 DROP FUNCTION IF EXISTS map_key_values;
 CREATE FUNCTION map_key_values as 'hivemall.tools.map.MapKeyValuesUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS map_roulette;
+CREATE FUNCTION map_roulette as 'hivemall.tools.map.MapRouletteUDF' USING JAR '${hivemall_jar}';
+
 ---------------------
 -- list functions --
 ---------------------
@@ -880,3 +883,4 @@ CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.tools.XGBoostPredictUDTF' U
 
 DROP FUNCTION xgboost_multiclass_predict;
 CREATE FUNCTION xgboost_multiclass_predict AS 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF' USING JAR '${hivemall_jar}';
+

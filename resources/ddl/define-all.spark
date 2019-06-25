@@ -509,6 +509,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION map_get AS 'hivemall.tools.map.MapGetU
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_key_values")
 sqlContext.sql("CREATE TEMPORARY FUNCTION map_key_values AS 'hivemall.tools.map.MapKeyValuesUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS map_roulette")
+sqlContext.sql("CREATE TEMPORARY FUNCTION map_roulette AS 'hivemall.tools.map.MapRouletteUDF'")
+
 /**
  * List functions
  */
