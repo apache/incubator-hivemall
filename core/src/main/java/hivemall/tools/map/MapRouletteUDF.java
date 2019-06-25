@@ -97,6 +97,7 @@ public final class MapRouletteUDF extends GenericUDF {
         return mapOI.getMapKeyObjectInspector();
     }
 
+    @Nullable
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         Random rand = _rand;
@@ -135,6 +136,10 @@ public final class MapRouletteUDF extends GenericUDF {
         double sum = 0.d;
         int cnt = 0;
         for (Map.Entry<?, ?> entry : m.entrySet()) {
+            Object key = entry.getKey();
+            if (key == null) {
+                continue;
+            }
             Object value = entry.getValue();
             if (value == null) {
                 continue;
@@ -145,19 +150,24 @@ public final class MapRouletteUDF extends GenericUDF {
                     "Map value must be greather than or equals to zero: " + entry.getValue());
             }
 
-            Object key = entry.getKey();
             result.put(key, Double.valueOf(v));
-
             sum += v;
             cnt++;
+        }
+
+        if (result.isEmpty()) {
+            return null;
         }
 
         if (result.size() < m.size()) {
             // fillna with the avg value
             final Double avg = Double.valueOf(sum / cnt);
             for (Map.Entry<?, ?> entry : m.entrySet()) {
+                Object key = entry.getKey();
+                if (key == null) {
+                    continue;
+                }
                 if (entry.getValue() == null) {
-                    Object key = entry.getKey();
                     result.put(key, avg);
                 }
             }
@@ -171,7 +181,7 @@ public final class MapRouletteUDF extends GenericUDF {
      * 
      * See https://www.obitko.com/tutorials/genetic-algorithms/selection.php
      */
-    @Nonnull
+    @Nullable
     private static Object rouletteWheelSelection(@Nonnull final Map<Object, Double> m,
             @Nonnull final Random rnd) {
         Preconditions.checkArgument(m.isEmpty() == false);
