@@ -1061,9 +1061,8 @@ public final class HiveUtils {
             case DECIMAL:
                 break;
             default:
-                throw new UDFArgumentTypeException(0,
-                    "Only numeric or string type arguments are accepted but " + argOI.getTypeName()
-                            + " is passed.");
+                throw new UDFArgumentTypeException(0, "Only floating point number is accepted but "
+                        + argOI.getTypeName() + " is passed.");
         }
         return oi;
     }
@@ -1087,8 +1086,7 @@ public final class HiveUtils {
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
-                    "Only numeric or string type arguments are accepted but " + argOI.getTypeName()
-                            + " is passed.");
+                    "Only numeric argument is accepted but " + argOI.getTypeName() + " is passed.");
         }
         return oi;
     }
