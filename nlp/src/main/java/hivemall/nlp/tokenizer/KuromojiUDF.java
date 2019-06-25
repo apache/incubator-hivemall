@@ -23,6 +23,7 @@ import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.io.HttpUtils;
 import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.ExceptionUtils;
+import hivemall.utils.lang.Preconditions;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,8 +63,6 @@ import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-
-import com.clearspring.analytics.util.Preconditions;
 
 @Description(name = "tokenize_ja",
         value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"

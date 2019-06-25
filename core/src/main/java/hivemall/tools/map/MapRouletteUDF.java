@@ -21,6 +21,7 @@ package hivemall.tools.map;
 import static hivemall.utils.lang.StringUtils.join;
 
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.Preconditions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,8 +42,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
-
-import com.clearspring.analytics.util.Preconditions;
 
 /**
  * The map_roulette returns a map key based on weighted random sampling of map values.
