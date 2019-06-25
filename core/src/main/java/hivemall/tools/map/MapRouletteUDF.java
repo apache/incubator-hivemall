@@ -55,11 +55,11 @@ import com.clearspring.analytics.util.Preconditions;
         extended = "-- `map_roulette(map<key, number> [, integer seed])` returns key by weighted random selection\n" + 
                 "SELECT \n" + 
                 "  map_roulette(to_map(a, b)) -- 25% Tom, 21% Zhang, 54% Wang\n" + 
-                "FROM (\n" + 
+                "FROM ( -- see https://issues.apache.org/jira/browse/HIVE-17406\n" + 
                 "  select 'Wang' as a, 54 as b\n" + 
-                "  union\n" + 
+                "  union all\n" + 
                 "  select 'Zhang' as a, 21 as b\n" + 
-                "  union\n" + 
+                "  union all\n" + 
                 "  select 'Tom' as a, 25 as b\n" + 
                 ") tmp;\n" + 
                 "> Wang\n" + 

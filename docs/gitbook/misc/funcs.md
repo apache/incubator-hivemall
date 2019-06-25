@@ -65,13 +65,25 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
   GROUP BY feature
   ```
 
-- `train_pa1_regr(array<int|bigint|string> features, float target [, constant string options])` - PA-1 regressor that returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`. Find PA-1 algorithm detail in http://jmlr.csail.mit.edu/papers/volume7/crammer06a/crammer06a.pdf
+- `train_pa1_regr(array<int|bigint|string> features, float target [, constant string options])` - PA-1 regressor that returns a relation consists of `(int|bigint|string) feature, float weight`.
+  ```sql
+  SELECT 
+   feature,
+   avg(weight) as weight
+  FROM 
+   (SELECT 
+       train_pa1_regr(features,label) as (feature,weight)
+    FROM 
+       training_data
+   ) t 
+  GROUP BY feature
+  ```
+Reference: <a href="http://jmlr.csail.mit.edu/papers/volume7/crammer06a/crammer06a.pdf" target="_blank">Koby Crammer et.al., Online Passive-Aggressive Algorithms. Journal of Machine Learning Research, 2006.</a><br/>
+- `train_pa1a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `(int|bigint|string) feature, float weight`.
 
-- `train_pa1a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`.
+- `train_pa2_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `(int|bigint|string) feature, float weight`.
 
-- `train_pa2_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`.
-
-- `train_pa2a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `&lt;int|bigint|string&gt; feature, float weight`.
+- `train_pa2a_regr(array<int|bigint|string> features, float target [, constant string options])` - Returns a relation consists of `(int|bigint|string) feature, float weight`.
 
 - `train_regressor(list<string|int|bigint> features, double label [, const string options])` - Returns a relation consists of &lt;string|int|bigint feature, float weight&gt;
   ```
