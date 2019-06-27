@@ -18,6 +18,7 @@
  */
 package hivemall.ftvec.binning;
 
+import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.StringUtils;
 
@@ -52,8 +53,7 @@ import org.apache.hadoop.io.Text;
         value = "_FUNC_(array<features::string> features, map<string, array<number>> quantiles_map)"
                 + " - returns a binned feature vector as an array<features::string>\n"
                 + "_FUNC_(number weight, array<number> quantiles) - returns bin ID as int",
-                extended = "Usage: \n" + 
-                        "WITH extracted as (\n" + 
+                extended = "WITH extracted as (\n" + 
                         "  select \n" + 
                         "    extract_feature(feature) as index,\n" + 
                         "    extract_weight(feature) as value\n" + 
@@ -214,8 +214,8 @@ public final class FeatureBinningUDF extends GenericUDF {
         }
     }
 
-    private static int findBin(@Nonnull final double[] quantiles, final double value)
-            throws HiveException {
+    @VisibleForTesting
+    static int findBin(@Nonnull final double[] quantiles, final double value) throws HiveException {
         if (quantiles.length < 3) {
             throw new HiveException(
                 "Length of `quantiles` should be greater than or equal to three but "
