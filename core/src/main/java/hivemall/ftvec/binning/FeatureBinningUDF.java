@@ -47,10 +47,42 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspe
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
+// @formatter:off
 @Description(name = "feature_binning",
         value = "_FUNC_(array<features::string> features, map<string, array<number>> quantiles_map)"
                 + " - returns a binned feature vector as an array<features::string>\n"
-                + "_FUNC_(number weight, array<number> quantiles) - returns bin ID as int")
+                + "_FUNC_(number weight, array<number> quantiles) - returns bin ID as int",
+                extended = "Usage: \n" + 
+                        "WITH extracted as (\n" + 
+                        "  select \n" + 
+                        "    extract_feature(feature) as index,\n" + 
+                        "    extract_weight(feature) as value\n" + 
+                        "  from\n" + 
+                        "    input l\n" + 
+                        "    LATERAL VIEW explode(features) r as feature\n" + 
+                        "),\n" + 
+                        "mapping as (\n" + 
+                        "  select\n" + 
+                        "    index, \n" + 
+                        "    build_bins(value, 5, true) as quantiles -- 5 bins with auto bin shrinking\n" + 
+                        "  from\n" + 
+                        "    extracted\n" + 
+                        "  group by\n" + 
+                        "    index\n" + 
+                        "),\n" + 
+                        "bins as (\n" + 
+                        "   select \n" + 
+                        "    to_map(index, quantiles) as quantiles \n" + 
+                        "   from\n" + 
+                        "    mapping\n" + 
+                        ")\n" + 
+                        "select\n" + 
+                        "  l.features as original,\n" + 
+                        "  feature_binning(l.features, r.quantiles) as features\n" + 
+                        "from\n" + 
+                        "  input l\n" + 
+                        "  cross join bins r")
+// @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class FeatureBinningUDF extends GenericUDF {
     private boolean multiple = true;
@@ -145,7 +177,7 @@ public final class FeatureBinningUDF extends GenericUDF {
                 final Map<?, ?> map = quantilesMapOI.getMap(arg1);
                 quantilesMap = new HashMap<String, double[]>(map.size() * 2);
                 for (Map.Entry<?, ?> e : map.entrySet()) {
-                    String k = keyOI.getPrimitiveJavaObject(e.getValue());
+                    String k = keyOI.getPrimitiveJavaObject(e.getKey());
                     double[] v = HiveUtils.asDoubleArray(e.getValue(), quantilesOI, quantileOI);
                     quantilesMap.put(k, v);
                 }
