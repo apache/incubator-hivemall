@@ -263,7 +263,41 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `build_bins(number weight, const int num_of_bins[, const boolean auto_shrink = false])` - Return quantiles representing bins: array&lt;double&gt;
 
-- `feature_binning(array<features::string> features, const map<string, array<number>> quantiles_map)` / _FUNC_(number weight, const array&lt;number&gt; quantiles) - Returns binned features as an array&lt;features::string&gt; / bin ID as int
+- `feature_binning(array<features::string> features, map<string, array<number>> quantiles_map)` - returns a binned feature vector as an array&lt;features::string&gt; _FUNC_(number weight, array&lt;number&gt; quantiles) - returns bin ID as int
+  ```sql
+  WITH extracted as (
+    select 
+      extract_feature(feature) as index,
+      extract_weight(feature) as value
+    from
+      input l
+      LATERAL VIEW explode(features) r as feature
+  ),
+  mapping as (
+    select
+      index, 
+      build_bins(value, 5, true) as quantiles -- 5 bins with auto bin shrinking
+    from
+      extracted
+    group by
+      index
+  ),
+  bins as (
+     select 
+      to_map(index, quantiles) as quantiles 
+     from
+      mapping
+  )
+  select
+    l.features as original,
+    feature_binning(l.features, r.quantiles) as features
+  from
+    input l
+    cross join bins r
+
+  > ["name#Jacob","gender#Male","age:20.0"] ["name#Jacob","gender#Male","age:2"]
+  > ["name#Isabella","gender#Female","age:20.0"]    ["name#Isabella","gender#Female","age:2"]
+  ```
 
 ## Feature format conversion
 
