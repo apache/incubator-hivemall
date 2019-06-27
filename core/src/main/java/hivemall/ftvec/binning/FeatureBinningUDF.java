@@ -81,7 +81,9 @@ import org.apache.hadoop.io.Text;
                         "  feature_binning(l.features, r.quantiles) as features\n" + 
                         "from\n" + 
                         "  input l\n" + 
-                        "  cross join bins r")
+                        "  cross join bins r\n\n" +
+                        "> [\"name#Jacob\",\"gender#Male\",\"age:20.0\"] [\"name#Jacob\",\"gender#Male\",\"age:2\"]\n" +
+                        "> [\"name#Isabella\",\"gender#Female\",\"age:20.0\"]    [\"name#Isabella\",\"gender#Female\",\"age:2\"]")
 // @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class FeatureBinningUDF extends GenericUDF {
