@@ -21,8 +21,6 @@ Feature binning is a method of dividing quantitative variables into categorical 
 
 If the number of bins is set to 3, the bin ranges become something like `[-Inf, 1], (1, 10], (10, Inf]`.
 
-*Note: This feature is supported from Hivemall v0.5-rc.1 or later.*
-
 <!-- toc -->
 
 # Usage
@@ -205,23 +203,23 @@ FROM
 
 # Function Signatures
 
-### UDAF `build_bins(weight, num_of_bins[, auto_shrink])`
+### UDAF `build_bins(weight num_of_bins [, auto_shrink=false])`
 
 #### Input
 
 | weight: int&#124;bigint&#124;float&#124;double | num\_of\_bins: `int` | [auto\_shrink: `boolean` = false] |
 | :-: | :-: | :-: |
-| weight | 2 <= | behavior when separations are repeated: T=\>skip, F=\>exception |
+| weight | greather than or equals to 2 | behavior when separations are repeated: T=\>skip, F=\>exception |
 
 #### Output
 
 | quantiles: `array<double>` |
 | :-: |
-| array of separation value |
+| thresholds of bins based on quantiles |
 
 > #### Note
 > There is the possibility quantiles are repeated because of too many `num_of_bins` or too few data.
-> If `auto_shrink` is true, skip duplicated quantiles. If not, throw an exception.
+> If `auto_shrink` is set to true, skip duplicated quantiles. If not, throw an exception.
 
 ### UDF `feature_binning(features, quantiles_map)`
 
@@ -229,15 +227,15 @@ FROM
 
 | features: `array<features::string>` | quantiles\_map: `map<string, array<double>>` |
 | :-: | :-: |
-| serialized feature | entry:: key: col name, val: quantiles |
+| feature vector | a map where key=column name and value=quantiles |
 
 #### Output
 
 | features: `array<feature::string>` |
 | :-: |
-| serialized and binned features |
+| binned features |
 
-### UDF `feature_binning((weight, quantiles)`
+### UDF `feature_binning(weight, quantiles)`
 
 #### Input
 
