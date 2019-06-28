@@ -134,9 +134,9 @@ FROM
 | ["name#Ethan","gender#Male","age:2"] |
 | ... |
 
-## More practical Example
+## Practical Example
 
-Hivemall's 
+Here, we show a more practical usage of `feature_binning` UDF that applied feature binning for given feature vectors.
 
 ```sql
 WITH extracted as (
@@ -146,6 +146,8 @@ WITH extracted as (
   from
     input l
     LATERAL VIEW explode(features) r as feature
+  where
+    instr(feature, ':') > 0 -- filter out categorical features
 ),
 mapping as (
   select
