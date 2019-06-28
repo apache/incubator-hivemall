@@ -23,7 +23,7 @@ If the number of bins is set to 3, the bin ranges become something like `[-Inf, 
 
 <!-- toc -->
 
-# Usage
+# Data Preparation
 
 Prepare sample data (*users* table) first as follows:
 
@@ -65,9 +65,37 @@ select * from input limit 2;
 |1 | ["name#Jacob","gender#Male","age:20.0"] |
 |2 | ["name#Mason","gender#Male","age:22.0"] |
 
-## Feature Vector trasformation by applying Feature Binning
+## Custom rule for binning
 
-Now, converting `age` values into 3 bins.
+You can provide a custom rule for binning as follows:
+
+```sql
+select 
+  features as original,
+  feature_binning(
+    features,
+    -- [-INF-10.0], (10.0-20.0], (20.0-30.0], (30.0-40.0], (40.0-INF]
+    map('age', array(-infinity(), 10.0, 20.0, 30.0, 40.0, infinity()))
+  ) as binned
+from
+  input;
+```
+
+| original | binned |
+|:--|:--|
+| ["name#Jacob","gender#Male","age:20.0"] | ["name#Jacob","gender#Male","age:1"] |
+| ["name#Mason","gender#Male","age:22.0"] | ["name#Mason","gender#Male","age:2"] |
+| ["name#Sophia","gender#Female","age:35.0"] | ["name#Sophia","gender#Female","age:3"] |
+| ["name#Ethan","gender#Male","age:55.0"] | ["name#Ethan","gender#Male","age:4"] |
+| ["name#Emma","gender#Female","age:15.0"] | ["name#Emma","gender#Female","age:1"] |
+| ["name#Noah","gender#Male","age:46.0"] | ["name#Noah","gender#Male","age:4"] |
+| ["name#Isabella","gender#Female","age:20.0"] | ["name#Isabella","gender#Female","age:1"] |
+
+## Binning based on Quantiles
+
+You can apply feature binning based on [quantiles](https://en.wikipedia.org/wiki/Quantile). 
+
+Suppose converting `age` values into 3 bins:
 
 ```sql
 SELECT
@@ -78,7 +106,7 @@ FROM
 
 > {"age":[-Infinity,18.333333333333332,30.666666666666657,Infinity]}
 
-In the above query result, you can find 4 values for age in `quantiles_map`. It's a threshold of 3 bins. 
+In the above query result, you can find 4 values for age in `quantiles_map`. It's a threshold for 3 bins.
 
 ```sql
 WITH bins as (
@@ -134,7 +162,7 @@ FROM
 | ["name#Ethan","gender#Male","age:2"] |
 | ... |
 
-## Practical Example
+## Concrete Example
 
 Here, we show a more practical usage of `feature_binning` UDF that applied feature binning for given feature vectors.
 
@@ -180,7 +208,7 @@ from
 | ... | ... |
 
 
-## Get a mapping table by Feature Binning
+## Create a mapping table by Feature Binning
 
 ```sql
 WITH bins AS (
