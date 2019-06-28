@@ -65,6 +65,8 @@ select * from input limit 2;
 |1 | ["name#Jacob","gender#Male","age:20.0"] |
 |2 | ["name#Mason","gender#Male","age:22.0"] |
 
+# Usage
+
 ## Custom rule for binning
 
 You can provide a custom rule for binning as follows:
