@@ -51,6 +51,9 @@ public final class ColumnMajorDenseMatrixBuilder extends MatrixBuilder {
     @Override
     public ColumnMajorDenseMatrixBuilder nextColumn(@Nonnegative final int col,
             final double value) {
+        checkColIndex(col);
+
+        this.maxNumColumns = Math.max(col + 1, maxNumColumns);
         if (value == 0.d) {
             return this;
         }
@@ -61,7 +64,6 @@ public final class ColumnMajorDenseMatrixBuilder extends MatrixBuilder {
             col2rows.put(col, rows);
         }
         rows.put(row, value);
-        this.maxNumColumns = Math.max(col + 1, maxNumColumns);
         nnz++;
         return this;
     }

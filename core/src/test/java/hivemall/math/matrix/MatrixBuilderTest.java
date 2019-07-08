@@ -18,8 +18,6 @@
  */
 package hivemall.math.matrix;
 
-import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.RowMajorMatrix;
 import hivemall.math.matrix.builders.CSCMatrixBuilder;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.ColumnMajorDenseMatrixBuilder;
@@ -159,6 +157,8 @@ public class MatrixBuilderTest {
     public void testCSC2CSR() {
         CSCMatrix csc = cscMatrixFromLibSVM();
         RowMajorMatrix csr = csc.toRowMajorMatrix();
+        Assert.assertEquals(csc.toString(), csr.toString());
+
         Assert.assertTrue(csr instanceof CSRMatrix);
         Assert.assertEquals(6, csr.numRows());
         Assert.assertEquals(6, csr.numColumns());
@@ -295,14 +295,15 @@ public class MatrixBuilderTest {
     @Test
     public void testReadOnlyDenseMatrix2dSparseInput() {
         Matrix matrix = denseMatrixSparseInput();
-        Assert.assertEquals(6, matrix.numRows());
-        Assert.assertEquals(6, matrix.numColumns());
+        Assert.assertEquals(7, matrix.numRows());
+        Assert.assertEquals(7, matrix.numColumns());
         Assert.assertEquals(4, matrix.numColumns(0));
         Assert.assertEquals(3, matrix.numColumns(1));
         Assert.assertEquals(6, matrix.numColumns(2));
         Assert.assertEquals(5, matrix.numColumns(3));
         Assert.assertEquals(6, matrix.numColumns(4));
         Assert.assertEquals(6, matrix.numColumns(5));
+        Assert.assertEquals(2, matrix.numColumns(6));
 
         Assert.assertEquals(11d, matrix.get(0, 0), 0.d);
         Assert.assertEquals(12d, matrix.get(0, 1), 0.d);
@@ -318,12 +319,29 @@ public class MatrixBuilderTest {
         Assert.assertEquals(45d, matrix.get(3, 4), 0.d);
         Assert.assertEquals(56d, matrix.get(4, 5), 0.d);
         Assert.assertEquals(66d, matrix.get(5, 5), 0.d);
+        Assert.assertEquals(77d, matrix.get(6, 1), 0.d);
 
         Assert.assertEquals(0.d, matrix.get(5, 4), 0.d);
-
         Assert.assertEquals(0.d, matrix.get(1, 0), 0.d);
         Assert.assertEquals(0.d, matrix.get(1, 3), 0.d);
         Assert.assertEquals(0.d, matrix.get(1, 0), 0.d);
+        Assert.assertEquals(0.d, matrix.get(6, 6), 0.d);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadOnlyDenseMatrix2dSparseColOutOfBounds() {
+        Matrix matrix = denseMatrixSparseInput();
+        Assert.assertEquals(7, matrix.numRows());
+        Assert.assertEquals(7, matrix.numColumns());
+        matrix.get(6, 7);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadOnlyDenseMatrix2dSparseRowOutOfBounds() {
+        Matrix matrix = denseMatrixSparseInput();
+        Assert.assertEquals(7, matrix.numRows());
+        Assert.assertEquals(7, matrix.numColumns());
+        matrix.get(7, 6);
     }
 
     @Test
@@ -418,6 +436,7 @@ public class MatrixBuilderTest {
     public void testDenseMatrixColumnMajor2RowMajor() {
         ColumnMajorDenseMatrix2d colMatrix = columnMajorDenseMatrix();
         RowMajorDenseMatrix2d rowMatrix = colMatrix.toRowMajorMatrix();
+        Assert.assertEquals(colMatrix.toString(), rowMatrix.toString());
 
         Assert.assertEquals(6, rowMatrix.numRows());
         Assert.assertEquals(6, rowMatrix.numColumns());
@@ -612,12 +631,13 @@ public class MatrixBuilderTest {
 
     private static RowMajorDenseMatrix2d denseMatrixSparseInput() {
         /*
-        11  12  13  14  0   0
-        0   22  23  0   0   0
-        0   0   33  34  35  36
-        0   0   0   44  45  0
-        0   0   0   0   0   56
-        0   0   0   0   0   66
+        11  12  13  14  0   0   0
+        0   22  23  0   0   0   0
+        0   0   33  34  35  36  0
+        0   0   0   44  45  0   0
+        0   0   0   0   0   56  0
+        0   0   0   0   0   66  0
+        0   77  0   0   0   0   0
         */
         RowMajorDenseMatrixBuilder builder = new RowMajorDenseMatrixBuilder(1024);
         builder.nextColumn(0, 11).nextColumn(1, 12).nextColumn(2, 13).nextColumn(3, 14).nextRow();
@@ -626,6 +646,7 @@ public class MatrixBuilderTest {
         builder.nextColumn(3, 44).nextColumn(4, 45).nextRow();
         builder.nextColumn(5, 56).nextRow();
         builder.nextColumn(5, 66).nextRow();
+        builder.nextColumn(1, 77).nextColumn(6, 0).nextRow();
         return builder.buildMatrix();
     }
 

@@ -27,6 +27,12 @@ public abstract class MatrixBuilder {
 
     public MatrixBuilder() {}
 
+    protected static final void checkColIndex(final int col) {
+        if (col < 0) {
+            throw new IllegalArgumentException("Found negative column index: " + col);
+        }
+    }
+
     public void nextRow(@Nonnull final double[] row) {
         for (int col = 0; col < row.length; col++) {
             nextColumn(col, row[col]);
