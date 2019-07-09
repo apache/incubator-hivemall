@@ -192,6 +192,9 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
     public void set(@Nonnegative final int row, @Nonnegative final int col, final float value) {
         checkIndex(row, col);
 
+        this.numRows = Math.max(numRows, row + 1);
+        this.numColumns = Math.max(numColumns, col + 1);
+
         final long index = index(row, col);
         if (value == 0.f && elements.containsKey(index) == false) {
             return;
@@ -199,8 +202,6 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
 
         if (elements.put(index, value, 0.f) == 0.f) {
             nnz++;
-            this.numRows = Math.max(numRows, row + 1);
-            this.numColumns = Math.max(numColumns, col + 1);
         }
     }
 
@@ -208,6 +209,9 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
     public float getAndSet(@Nonnegative final int row, @Nonnegative final int col,
             final float value) {
         checkIndex(row, col);
+
+        this.numRows = Math.max(numRows, row + 1);
+        this.numColumns = Math.max(numColumns, col + 1);
 
         final long index = index(row, col);
         if (value == 0.f && elements.containsKey(index) == false) {
@@ -217,8 +221,6 @@ public final class DoKFloatMatrix extends AbstractMatrix implements FloatMatrix 
         final float old = elements.put(index, value, 0.f);
         if (old == 0.f) {
             nnz++;
-            this.numRows = Math.max(numRows, row + 1);
-            this.numColumns = Math.max(numColumns, col + 1);
         }
         return old;
     }

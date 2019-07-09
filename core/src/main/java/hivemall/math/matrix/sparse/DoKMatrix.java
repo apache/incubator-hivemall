@@ -35,7 +35,7 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
- * Dictionary Of Keys based sparse matrix.
+ * Dictionary of Keys based sparse matrix.
  *
  * This is an efficient structure for constructing a sparse matrix incrementally.
  */
@@ -179,15 +179,16 @@ public final class DoKMatrix extends AbstractMatrix {
     public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         checkIndex(row, col);
 
+        this.numRows = Math.max(numRows, row + 1);
+        this.numColumns = Math.max(numColumns, col + 1);
+
         final long index = index(row, col);
         if (value == 0.d && elements.containsKey(index) == false) {
-            return;
+            return; // no need to add zero value
         }
 
         if (elements.put(index, value, 0.d) == 0.d) {
             nnz++;
-            this.numRows = Math.max(numRows, row + 1);
-            this.numColumns = Math.max(numColumns, col + 1);
         }
     }
 
@@ -196,16 +197,17 @@ public final class DoKMatrix extends AbstractMatrix {
             final double value) {
         checkIndex(row, col);
 
+        this.numRows = Math.max(numRows, row + 1);
+        this.numColumns = Math.max(numColumns, col + 1);
+
         final long index = index(row, col);
         if (value == 0.d && elements.containsKey(index) == false) {
-            return 0.d;
+            return 0.d; // no need to add zero value
         }
 
         final double old = elements.put(index, value, 0.d);
         if (old == 0.d) {
             nnz++;
-            this.numRows = Math.max(numRows, row + 1);
-            this.numColumns = Math.max(numColumns, col + 1);
         }
         return old;
     }
