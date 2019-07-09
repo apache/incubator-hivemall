@@ -63,7 +63,7 @@ public final class RowMajorDenseMatrixBuilder extends MatrixBuilder {
         double[] row = rowProbe.toArray();
         rowProbe.clear();
         rows.add(row);
-        this.maxNumColumns = Math.max(row.length, maxNumColumns);
+        //this.maxNumColumns = Math.max(row.length, maxNumColumns);
         return this;
     }
 

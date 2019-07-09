@@ -158,7 +158,7 @@ public final class CSCMatrix extends ColumnMajorMatrix {
     public double get(final int row, final int col, final double defaultValue) {
         checkIndex(row, col, numRows, numColumns);
 
-        int index = getIndex(row, col);
+        final int index = getIndex(row, col);
         if (index < 0) {
             return defaultValue;
         }
