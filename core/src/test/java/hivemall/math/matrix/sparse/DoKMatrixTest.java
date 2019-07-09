@@ -18,6 +18,10 @@
  */
 package hivemall.math.matrix.sparse;
 
+import hivemall.math.vector.VectorProcedure;
+import hivemall.utils.lang.Primitives;
+
+import java.util.HashSet;
 import java.util.Random;
 
 import org.junit.Assert;
@@ -37,7 +41,43 @@ public class DoKMatrixTest {
             matrix.set(row, col, v);
             Assert.assertEquals(v, matrix.get(row, col), 0.00001d);
         }
+    }
 
+    @Test
+    public void testNumRowsNumCols() {
+        DoKMatrix matrix = new DoKMatrix();
+        Random rnd = new Random(43);
+        HashSet<Long> bitset = new HashSet<>(100000);
+
+        int numRows = -1, numCols = -1;
+        for (int i = 0; i < 100000; i++) {
+            int row = Math.abs(rnd.nextInt());
+            int col = Math.abs(rnd.nextInt());
+            numRows = Math.max(row + 1, numRows);
+            numCols = Math.max(col + 1, numCols);
+            double v = rnd.nextDouble();
+            if (v >= 0.8) {
+                v = 0.d;
+            }
+            matrix.getAndSet(row, col, v);
+            bitset.add(Primitives.toLong(row, col));
+            Assert.assertEquals(v, matrix.get(row, col), 0.00001d);
+        }
+
+        Assert.assertEquals(numRows, matrix.numRows());
+        Assert.assertEquals(numCols, matrix.numColumns());
+        Assert.assertEquals(bitset.size(), matrix.nnz());
+    }
+
+    @Test
+    public void testEmpty() {
+        DoKMatrix matrix = new DoKMatrix();
+        matrix.eachNonZeroCell(new VectorProcedure() {
+            @Override
+            public void apply(int i, int j, double value) {
+                Assert.fail("should not be called");
+            }
+        });
     }
 
 }
