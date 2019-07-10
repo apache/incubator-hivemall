@@ -56,9 +56,11 @@ public final class CSCMatrixBuilder extends MatrixBuilder {
 
     @Override
     public CSCMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+        checkColIndex(col);
+
         rows.add(row);
         cols.add(col);
-        values.add((float) value);
+        values.add(value);
         this.maxNumColumns = Math.max(col + 1, maxNumColumns);
         return this;
     }

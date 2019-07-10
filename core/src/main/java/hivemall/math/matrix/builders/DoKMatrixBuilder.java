@@ -44,6 +44,8 @@ public final class DoKMatrixBuilder extends MatrixBuilder {
 
     @Override
     public DoKMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+        checkColIndex(col);
+
         matrix.set(row, col, value);
         return this;
     }

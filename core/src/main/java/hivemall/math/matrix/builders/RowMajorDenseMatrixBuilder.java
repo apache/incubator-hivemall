@@ -47,6 +47,9 @@ public final class RowMajorDenseMatrixBuilder extends MatrixBuilder {
 
     @Override
     public RowMajorDenseMatrixBuilder nextColumn(@Nonnegative final int col, final double value) {
+        checkColIndex(col);
+
+        this.maxNumColumns = Math.max(col + 1, maxNumColumns);
         if (value == 0.d) {
             return this;
         }
@@ -59,12 +62,18 @@ public final class RowMajorDenseMatrixBuilder extends MatrixBuilder {
     public RowMajorDenseMatrixBuilder nextRow() {
         double[] row = rowProbe.toArray();
         rowProbe.clear();
-        nextRow(row);
+        rows.add(row);
+        //this.maxNumColumns = Math.max(row.length, maxNumColumns);
         return this;
     }
 
     @Override
     public void nextRow(@Nonnull double[] row) {
+        for (double v : row) {
+            if (v != 0.d) {
+                nnz++;
+            }
+        }
         rows.add(row);
         this.maxNumColumns = Math.max(row.length, maxNumColumns);
     }

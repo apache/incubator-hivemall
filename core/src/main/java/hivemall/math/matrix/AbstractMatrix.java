@@ -109,4 +109,28 @@ public abstract class AbstractMatrix implements Matrix {
         throw new UnsupportedOperationException("Not yet supported");
     }
 
+    @Override
+    public String toString() {
+        final int printSize = 7;
+        final StringBuilder buf = new StringBuilder();
+
+        final int rows = numRows();
+        final int cols = numColumns();
+
+        final String newline = cols > printSize ? "...\n" : "\n";
+
+        for (int i = 0, maxRows = Math.min(printSize, rows); i < maxRows; i++) {
+            for (int j = 0, maxCols = Math.min(printSize, cols); j < maxCols; j++) {
+                buf.append(String.format("%8.4f  ", get(i, j)));
+            }
+            buf.append(newline);
+        }
+
+        if (rows > printSize) {
+            buf.append("  ...\n");
+        }
+
+        return buf.toString();
+    }
+
 }

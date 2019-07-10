@@ -35,7 +35,7 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
- * Dictionary Of Keys based sparse matrix.
+ * Dictionary of Keys based sparse matrix.
  *
  * This is an efficient structure for constructing a sparse matrix incrementally.
  */
@@ -48,8 +48,6 @@ public final class DoKMatrix extends AbstractMatrix {
     private int numRows;
     @Nonnegative
     private int numColumns;
-    @Nonnegative
-    private int nnz;
 
     public DoKMatrix() {
         this(0, 0);
@@ -69,7 +67,6 @@ public final class DoKMatrix extends AbstractMatrix {
         elements.defaultReturnValue(0.d);
         this.numRows = numRows;
         this.numColumns = numCols;
-        this.nnz = 0;
     }
 
     public DoKMatrix(@Nonnegative int initSize) {
@@ -79,7 +76,6 @@ public final class DoKMatrix extends AbstractMatrix {
         elements.defaultReturnValue(0.d);
         this.numRows = 0;
         this.numColumns = 0;
-        this.nnz = 0;
     }
 
     @Override
@@ -109,7 +105,7 @@ public final class DoKMatrix extends AbstractMatrix {
 
     @Override
     public int nnz() {
-        return nnz;
+        return elements.size();
     }
 
     @Override
@@ -179,16 +175,10 @@ public final class DoKMatrix extends AbstractMatrix {
     public void set(@Nonnegative final int row, @Nonnegative final int col, final double value) {
         checkIndex(row, col);
 
-        final long index = index(row, col);
-        if (value == 0.d && elements.containsKey(index) == false) {
-            return;
-        }
-
-        if (elements.put(index, value, 0.d) == 0.d) {
-            nnz++;
-            this.numRows = Math.max(numRows, row + 1);
-            this.numColumns = Math.max(numColumns, col + 1);
-        }
+        long index = index(row, col);
+        elements.put(index, value);
+        this.numRows = Math.max(numRows, row + 1);
+        this.numColumns = Math.max(numColumns, col + 1);
     }
 
     @Override
@@ -196,17 +186,10 @@ public final class DoKMatrix extends AbstractMatrix {
             final double value) {
         checkIndex(row, col);
 
-        final long index = index(row, col);
-        if (value == 0.d && elements.containsKey(index) == false) {
-            return 0.d;
-        }
-
-        final double old = elements.put(index, value, 0.d);
-        if (old == 0.d) {
-            nnz++;
-            this.numRows = Math.max(numRows, row + 1);
-            this.numColumns = Math.max(numColumns, col + 1);
-        }
+        long index = index(row, col);
+        double old = elements.put(index, value);
+        this.numRows = Math.max(numRows, row + 1);
+        this.numColumns = Math.max(numColumns, col + 1);
         return old;
     }
 
@@ -320,7 +303,7 @@ public final class DoKMatrix extends AbstractMatrix {
     }
 
     public void eachNonZeroCell(@Nonnull final VectorProcedure procedure) {
-        if (nnz == 0) {
+        if (elements.size() == 0) {
             return;
         }
         final IMapIterator itor = elements.entries();

@@ -57,13 +57,15 @@ public final class CSRMatrixBuilder extends MatrixBuilder {
 
     @Override
     public CSRMatrixBuilder nextColumn(@Nonnegative int col, double value) {
+        checkColIndex(col);
+
+        this.maxNumColumns = Math.max(col + 1, maxNumColumns);
         if (value == 0.d) {
             return this;
         }
 
         columnIndices.add(col);
         values.add(value);
-        this.maxNumColumns = Math.max(col + 1, maxNumColumns);
         return this;
     }
 
