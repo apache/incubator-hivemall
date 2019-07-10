@@ -327,6 +327,16 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             int[] y = labels.toArray();
             this.labels = null;
 
+            // sanity checks
+            if (x.numColumns() == 0) {
+                throw new HiveException(
+                    "No non-null features in the training examples. Revise training data");
+            }
+            if (x.numRows() != y.length) {
+                throw new HiveException("Illegal condition was met. y.length=" + y.length
+                        + ", X.length=" + x.numRows());
+            }
+
             // run training
             train(x, y);
         }

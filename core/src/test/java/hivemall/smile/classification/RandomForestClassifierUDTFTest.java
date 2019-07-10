@@ -22,6 +22,8 @@ import hivemall.TestUtils;
 import hivemall.classifier.KernelExpansionPassiveAggressiveUDTF;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.lang.mutable.MutableInt;
+import smile.data.AttributeDataset;
+import smile.data.parser.ArffParser;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -32,6 +34,7 @@ import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
@@ -47,9 +50,6 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
-
-import smile.data.AttributeDataset;
-import smile.data.parser.ArffParser;
 
 public class RandomForestClassifierUDTFTest {
 
@@ -95,6 +95,101 @@ public class RandomForestClassifierUDTFTest {
         udtf.close();
 
         Assert.assertEquals(49, count.getValue());
+    }
+
+    @Test
+    public void testIrisDenseSomeNullFeaturesTest()
+            throws IOException, ParseException, HiveException {
+        URL url = new URL(
+            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(4);
+
+        AttributeDataset iris = arffParser.parse(is);
+        int size = iris.size();
+        double[][] x = iris.toArray(new double[size][]);
+        int[] y = iris.toArray(new int[size]);
+
+        RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
+        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 49");
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
+
+        final Random rand = new Random(43);
+        final List<Double> xi = new ArrayList<Double>(x[0].length);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < x[i].length; j++) {
+                if (rand.nextDouble() >= 0.7) {
+                    xi.add(j, null);
+                } else {
+                    xi.add(j, x[i][j]);
+                }
+            }
+            udtf.process(new Object[] {xi, y[i]});
+            xi.clear();
+        }
+
+        final MutableInt count = new MutableInt(0);
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                count.addValue(1);
+            }
+        };
+
+        udtf.setCollector(collector);
+        udtf.close();
+
+        Assert.assertEquals(49, count.getValue());
+    }
+
+    @Test(expected = HiveException.class)
+    public void testIrisDenseAllNullFeaturesTest()
+            throws IOException, ParseException, HiveException {
+        URL url = new URL(
+            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff");
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(4);
+
+        AttributeDataset iris = arffParser.parse(is);
+        int size = iris.size();
+        double[][] x = iris.toArray(new double[size][]);
+        int[] y = iris.toArray(new int[size]);
+
+        RandomForestClassifierUDTF udtf = new RandomForestClassifierUDTF();
+        ObjectInspector param = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-trees 49");
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector),
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, param});
+
+        final List<Double> xi = new ArrayList<Double>(x[0].length);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < x[i].length; j++) {
+                xi.add(j, null);
+            }
+            udtf.process(new Object[] {xi, y[i]});
+            xi.clear();
+        }
+
+        final MutableInt count = new MutableInt(0);
+        Collector collector = new Collector() {
+            public void collect(Object input) throws HiveException {
+                count.addValue(1);
+            }
+        };
+
+        udtf.setCollector(collector);
+        udtf.close();
+
+        Assert.fail("should not be called");
     }
 
     @Test
