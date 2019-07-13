@@ -83,7 +83,7 @@ An alternative and efficient way to compute top-k items using `each_top_k` is as
 SELECT 
   each_top_k(
     2, class, score,
-    class, student -- output columns other in addition to rank and score
+    class, student -- output other columns in addition to rank and score
   ) as (rank, score, class, student)
 FROM (
   SELECT * FROM table
