@@ -20,10 +20,13 @@ package hivemall.utils.lang;
 
 import static hivemall.utils.lang.ArrayUtils.argmax;
 import static hivemall.utils.lang.ArrayUtils.argmin;
+import static hivemall.utils.lang.ArrayUtils.argrank;
 import static hivemall.utils.lang.ArrayUtils.argsort;
 import static hivemall.utils.lang.ArrayUtils.newInstance;
 import static hivemall.utils.lang.ArrayUtils.slice;
-import static org.junit.Assert.fail;
+import static java.lang.Math.abs;
+
+import java.util.Comparator;
 
 import org.apache.commons.collections.ComparatorUtils;
 import org.junit.Assert;
@@ -56,22 +59,56 @@ public class ArrayUtilsTest {
         Assert.assertArrayEquals(new int[] {3, 2, 0, 1}, argsort(argsort(a)));
     }
 
+    @Test
     public void testArgsortTArrayComparatorOfQsuperT() {
-        fail("Not yet implemented");
+        Double[] a = new Double[] {5d, -2d, 0d, -1d};
+        Comparator<Double> cmp = new Comparator<Double>() {
+            @Override
+            public int compare(Double l, Double r) {
+                return Double.compare(abs(l.doubleValue()), abs(r.doubleValue()));
+            }
+        };
+        Assert.assertArrayEquals(new int[] {2, 3, 1, 0}, argsort(a, cmp));
+        Assert.assertArrayEquals(new Double[] {0d, -1d, -2d, 5d}, slice(a, argsort(a, cmp)));
     }
 
+    @Test
+    public void testArgrankIntArray() {
+        int[] a = new int[] {5, 2, 0, 1};
+        Assert.assertArrayEquals(new int[] {3, 2, 0, 1}, argrank(a));
+    }
+
+    @Test
+    public void testArgrankDoubleArray() {
+        double[] a = new double[] {5.1d, 2.1d, 0.1d, 1.1d};
+        Assert.assertArrayEquals(new int[] {3, 2, 0, 1}, argrank(a));
+    }
+
+    @Test
     public void testArgminDoubleArray() {
-        fail("Not yet implemented");
+        double[] a = new double[] {5d, 2d, 0.1d, 1d};
+        Assert.assertEquals(2, argmin(a));
+        Assert.assertArrayEquals(new double[] {0.1d}, slice(a, argmin(a)), 1e-8);
     }
 
-    public void testArgminTArrayComparatorOfQsuperT() {
-        fail("Not yet implemented");
-    }
-
+    @Test
     public void testArgminTArray() {
         Double[] a = new Double[] {5d, 2d, 0.1d, 1d};
         Assert.assertEquals(2, argmin(a));
         Assert.assertArrayEquals(new Double[] {0.1d}, slice(a, argmin(a)));
+    }
+
+    @Test
+    public void testArgminTArrayComparatorOfQsuperT() {
+        Double[] a = new Double[] {5d, -2d, 0.1d, -1d};
+        Comparator<Double> cmp = new Comparator<Double>() {
+            @Override
+            public int compare(Double l, Double r) {
+                return Double.compare(abs(l.doubleValue()), abs(r.doubleValue()));
+            }
+        };
+        Assert.assertEquals(2, argmin(a, cmp));
+        Assert.assertArrayEquals(new Double[] {0.1d}, slice(a, argmin(a, cmp)));
     }
 
     @Test

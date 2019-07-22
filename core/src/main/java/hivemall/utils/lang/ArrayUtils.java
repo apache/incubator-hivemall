@@ -67,6 +67,11 @@ public final class ArrayUtils {
     }
 
     @Nonnull
+    public static double get(final double[] a, final int index) {
+        return a[checkElementIndex(index, a.length)];
+    }
+
+    @Nonnull
     public static <T> T get(final T[] a, final int index) {
         return a[checkElementIndex(index, a.length)];
     }
@@ -163,6 +168,15 @@ public final class ArrayUtils {
     public static int[] slice(@Nonnull final int[] a, @Nonnull final int... indexes) {
         final int size = indexes.length;
         final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = get(a, indexes[i]);
+        }
+        return ret;
+    }
+
+    public static double[] slice(@Nonnull final double[] a, @Nonnull final int... indexes) {
+        final int size = indexes.length;
+        final double[] ret = new double[size];
         for (int i = 0; i < size; i++) {
             ret[i] = get(a, indexes[i]);
         }
@@ -782,6 +796,27 @@ public final class ArrayUtils {
     }
 
     @Nonnull
+    public static int[] argsort(@Nonnull final double[] a) {
+        final int size = a.length;
+        final Integer[] indexes = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            indexes[i] = i;
+        }
+        Arrays.sort(indexes, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer i, Integer j) {
+                return Double.compare(a[i], a[j]);
+            }
+        });
+
+        final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = indexes[i].intValue();
+        }
+        return ret;
+    }
+
+    @Nonnull
     public static <T extends Comparable<T>> int[] argsort(@Nonnull final T[] a) {
         final int size = a.length;
         final Integer[] indexes = new Integer[size];
@@ -823,6 +858,19 @@ public final class ArrayUtils {
             ret[i] = indexes[i].intValue();
         }
         return ret;
+    }
+
+    public static int[] argrank(@Nonnull final int[] a) {
+        return argsort(argsort(a));
+    }
+
+    public static int[] argrank(@Nonnull final double[] a) {
+        return argsort(argsort(a));
+    }
+
+    @Nonnull
+    public static <T> int[] argrank(@Nonnull final T[] a, @Nonnull final Comparator<? super T> c) {
+        return argsort(argsort(a, c));
     }
 
     public static int argmin(@Nonnull final double[] a) {
