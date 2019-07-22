@@ -18,6 +18,8 @@
  */
 package hivemall.utils.math;
 
+import static java.lang.Math.abs;
+
 import java.util.Random;
 
 import javax.annotation.Nonnegative;
@@ -36,6 +38,15 @@ public final class MathUtils {
      */
     public static double sec(final double d) {
         return 1.d / Math.cos(d);
+    }
+
+    public static int divideAndRoundUp(final int num, final int divisor) {
+        if (divisor == 0) {
+            throw new ArithmeticException("/ by zero");
+        }
+        final int sign = (num > 0 ? 1 : -1) * (divisor > 0 ? 1 : -1);
+        final int div = abs(divisor);
+        return sign * (abs(num) + div - 1) / div;
     }
 
     /**
