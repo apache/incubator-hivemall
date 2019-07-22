@@ -23,6 +23,7 @@ import static hivemall.utils.lang.ArrayUtils.argmin;
 import static hivemall.utils.lang.ArrayUtils.argrank;
 import static hivemall.utils.lang.ArrayUtils.argsort;
 import static hivemall.utils.lang.ArrayUtils.newInstance;
+import static hivemall.utils.lang.ArrayUtils.range;
 import static hivemall.utils.lang.ArrayUtils.slice;
 import static java.lang.Math.abs;
 
@@ -196,6 +197,15 @@ public class ArrayUtilsTest {
             argmax(a, ComparatorUtils.nullLowComparator(ComparatorUtils.naturalComparator())));
         Assert.assertEquals(3,
             argmax(a, ComparatorUtils.nullHighComparator(ComparatorUtils.naturalComparator())));
+    }
+
+    @Test
+    public void testRange() {
+        Assert.assertArrayEquals(new int[] {0, 1, 2, 3, 4}, range(5));
+        Assert.assertArrayEquals(new int[] {1, 2, 3, 4}, range(1, 5));
+        Assert.assertArrayEquals(new int[] {0, -1, -2}, range(-3));
+        Assert.assertArrayEquals(new int[] {5, 4, 3, 2}, range(5, 1));
+        Assert.assertArrayEquals(new int[] {3, 2, 1, 0, -1}, range(3, -2));
     }
 
 }

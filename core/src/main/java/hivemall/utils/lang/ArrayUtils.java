@@ -1101,6 +1101,33 @@ public final class ArrayUtils {
         return maxIdx;
     }
 
+    public static int[] range(final int stop) {
+        return range(0, stop);
+    }
+
+    /**
+     * Return evenly spaced values within a given interval.
+     *
+     * @param start inclusive index of the start
+     * @param stop exclusive index of the end
+     */
+    public static int[] range(final int start, final int stop) {
+        final int count = stop - start;
+        final int[] ret;
+        if (count < 0) {
+            ret = new int[-count];
+            for (int i = 0, size = ret.length; i < size; i++) {
+                ret[i] = start - i;
+            }
+        } else {
+            ret = new int[count];
+            for (int i = 0; i < count; i++) {
+                ret[i] = start + i;
+            }
+        }
+        return ret;
+    }
+
     public static int count(@Nonnull final int[] values, final int valueToFind) {
         int cnt = 0;
         for (int i = 0; i < values.length; i++) {
