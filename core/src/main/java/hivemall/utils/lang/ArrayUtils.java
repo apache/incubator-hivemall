@@ -1105,27 +1105,56 @@ public final class ArrayUtils {
         return range(0, stop);
     }
 
+    public static int[] range(final int start, final int stop) {
+        final int count = stop - start;
+        final int[] r;
+        if (count < 0) {
+            r = new int[-count];
+            for (int i = 0; i < r.length; i++) {
+                r[i] = start - i;
+            }
+        } else {
+            r = new int[count];
+            for (int i = 0; i < r.length; i++) {
+                r[i] = start + i;
+            }
+        }
+        return r;
+    }
+
     /**
      * Return evenly spaced values within a given interval.
      *
      * @param start inclusive index of the start
      * @param stop exclusive index of the end
+     * @param step positive interval value
      */
-    public static int[] range(final int start, final int stop) {
-        final int count = stop - start;
-        final int[] ret;
-        if (count < 0) {
-            ret = new int[-count];
-            for (int i = 0, size = ret.length; i < size; i++) {
-                ret[i] = start - i;
+    public static int[] range(final int start, final int stop, @Nonnegative final int step) {
+        if (step <= 0) {
+            throw new IllegalArgumentException("Invalid step value: " + step);
+        }
+
+        final int[] r;
+        final int diff = stop - start;
+        if (diff < 0) {
+            final int count = divideAndRoundUp(-diff, step);
+            r = new int[count];
+            for (int i = 0, value = start; i < r.length; i++, value -= step) {
+                r[i] = value;
             }
         } else {
-            ret = new int[count];
-            for (int i = 0; i < count; i++) {
-                ret[i] = start + i;
+            final int count = divideAndRoundUp(diff, step);
+            r = new int[count];
+            for (int i = 0, value = start; i < r.length; i++, value += step) {
+                r[i] = value;
             }
         }
-        return ret;
+        return r;
+    }
+
+    private static int divideAndRoundUp(@Nonnegative final int num,
+            @Nonnegative final int divisor) {
+        return (num + divisor - 1) / divisor;
     }
 
     public static int count(@Nonnull final int[] values, final int valueToFind) {

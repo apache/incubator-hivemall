@@ -206,6 +206,17 @@ public class ArrayUtilsTest {
         Assert.assertArrayEquals(new int[] {0, -1, -2}, range(-3));
         Assert.assertArrayEquals(new int[] {5, 4, 3, 2}, range(5, 1));
         Assert.assertArrayEquals(new int[] {3, 2, 1, 0, -1}, range(3, -2));
+
+        Assert.assertArrayEquals(new int[] {0, 1, 2, 3, 4}, range(0, 5, 1));
+        Assert.assertArrayEquals(new int[] {1, 2, 3, 4}, range(1, 5, 1));
+        Assert.assertArrayEquals(new int[] {0, -1, -2}, range(0, -3, 1));
+        Assert.assertArrayEquals(new int[] {5, 4, 3, 2}, range(5, 1, 1));
+        Assert.assertArrayEquals(new int[] {3, 2, 1, 0, -1}, range(3, -2, 1));
+
+        Assert.assertArrayEquals(new int[] {1, 3}, range(1, 5, 2));
+        Assert.assertArrayEquals(new int[] {1, 3, 5}, range(1, 6, 2));
+        Assert.assertArrayEquals(new int[] {6, 4, 2}, range(6, 1, 2));
+        Assert.assertArrayEquals(new int[] {-1, -3, -5}, range(-1, -6, 2));
     }
 
 }
