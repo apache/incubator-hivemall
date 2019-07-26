@@ -43,7 +43,7 @@ select
    -- sum(abs(predicted - actual))/count(1) as MAE,
 -- coefficient of determination (R^2)
    -- 1 - sum(pow(actual - predicted,2.0)) / sum(pow(actual - ${mean_actual},2.0)) as R2
-   r2(actual, predicted) as R2 -- supported since Hivemall v0.4.1-alpha.5
+   r2(predicted, actual) as R2
 from
    e2006tfidf_pa2a_submit;
 ```
