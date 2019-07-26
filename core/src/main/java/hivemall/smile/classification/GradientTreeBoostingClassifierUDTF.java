@@ -30,7 +30,6 @@ import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
@@ -69,6 +68,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
+import org.roaringbitmap.RoaringBitmap;
 
 @Description(name = "train_gradient_tree_boosting_classifier",
         value = "_FUNC_(array<double|string> features, int label [, string options]) - "
@@ -112,7 +112,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private AttributeType[] _attributes;
+    private RoaringBitmap _nominalAttrs;
 
     @Nullable
     private Reporter _progressReporter;
@@ -151,7 +151,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         int maxLeafs = Integer.MAX_VALUE, minSplit = 5, minSamplesLeaf = 1;
         float numVars = -1.f;
         double eta = 0.05d, subsample = 0.7d;
-        AttributeType[] attrs = null;
+        RoaringBitmap attrs = new RoaringBitmap();
         long seed = -1L;
 
         CommandLine cl = null;
@@ -184,7 +184,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this._minSamplesSplit = minSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this._attributes = attrs;
+        this._nominalAttrs = attrs;
 
         return cl;
     }
@@ -303,7 +303,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this.featureListOI = null;
         this.featureElemOI = null;
         this.labelOI = null;
-        this._attributes = null;
     }
 
     private void checkOptions() throws HiveException {
@@ -332,7 +331,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 String.format("The sizes of X and Y don't match: %d != %d", numRows, y.length));
         }
         checkOptions();
-        this._attributes = SmileExtUtils.attributeTypes(_attributes, x);
 
         // Shuffle training samples
         x = SmileExtUtils.shuffle(x, y, _seed);
@@ -378,7 +376,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             h[i] = intercept;
         }
 
-        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
+        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_nominalAttrs, x);
         final RegressionTree.NodeOutput output = new L2NodeOutput(response);
 
         final BitSet sampled = new BitSet(numInstances);
@@ -408,7 +406,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 response[i] = 2.0d * y[i] / (1.d + Math.exp(2.d * y[i] * h[i]));
             }
 
-            RegressionTree tree = new RegressionTree(_attributes, x, response, numVars, _maxDepth,
+            RegressionTree tree = new RegressionTree(_nominalAttrs, x, response, numVars, _maxDepth,
                 _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag, output, rnd2);
 
             for (int i = 0; i < numInstances; i++) {
@@ -431,7 +429,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 oobErrorRate = ((float) oobErrors) / oobTests;
             }
 
-            forward(m + 1, intercept, _eta, oobErrorRate, tree);
+            forward(m + 1, intercept, _eta, oobErrorRate, x.numColumns(), tree);
             sampled.clear();
         }
     }
@@ -455,7 +453,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final double[][] p = new double[k][numInstances]; // a posteriori probabilities.
         final double[][] response = new double[k][numInstances]; // pseudo response.
 
-        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
+        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_nominalAttrs, x);
         final RegressionTree.NodeOutput[] output = new LKNodeOutput[k];
         for (int i = 0; i < k; i++) {
             output[i] = new LKNodeOutput(response[i], k);
@@ -522,7 +520,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     sampled.set(i);
                 }
 
-                RegressionTree tree = new RegressionTree(_attributes, x, response[j], numVars,
+                RegressionTree tree = new RegressionTree(_nominalAttrs, x, response[j], numVars,
                     _maxDepth, _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag,
                     output[j], rnd2);
                 trees[j] = tree;
@@ -554,7 +552,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             }
 
             // forward a row
-            forward(m + 1, 0.d, _eta, oobErrorRate, trees);
+            forward(m + 1, 0.d, _eta, oobErrorRate, x.numColumns(), trees);
 
         } // for each m
     }
@@ -563,10 +561,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
      * @param m m-th boosting iteration
      */
     private void forward(final int m, final double intercept, final double shrinkage,
-            final float oobErrorRate, @Nonnull final RegressionTree... trees) throws HiveException {
+            final float oobErrorRate, final int numColumns, @Nonnull final RegressionTree... trees)
+            throws HiveException {
         Text[] models = getModel(trees);
 
-        Vector importance = denseInput ? new DenseVector(_attributes.length) : new SparseVector();
+        Vector importance = denseInput ? new DenseVector(numColumns) : new SparseVector();
         for (RegressionTree tree : trees) {
             Vector imp = tree.importance();
             for (int i = 0, size = imp.size(); i < size; i++) {

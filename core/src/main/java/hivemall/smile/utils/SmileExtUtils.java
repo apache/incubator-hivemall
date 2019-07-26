@@ -28,9 +28,9 @@ import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
-import hivemall.smile.data.AttributeType;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.MathUtils;
 import smile.data.NominalAttribute;
@@ -45,74 +45,74 @@ import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.roaringbitmap.RoaringBitmap;
 
 public final class SmileExtUtils {
+    public static final byte NUMERIC = (byte) 1;
+    public static final byte NOMINAL = (byte) 2;
 
     private SmileExtUtils() {}
 
     /**
      * Q for {@link NumericAttribute}, C for {@link NominalAttribute}.
      */
-    @Nullable
-    public static AttributeType[] resolveAttributes(@Nullable final String opt)
+    @Nonnull
+    public static RoaringBitmap resolveAttributes(@Nullable final String opt)
             throws UDFArgumentException {
+        final RoaringBitmap attr = new RoaringBitmap();
         if (opt == null) {
-            return null;
+            return attr;
         }
         final String[] opts = opt.split(",");
         final int size = opts.length;
-        final AttributeType[] attr = new AttributeType[size];
+        int numCount = 0, qcCount = 0;
         for (int i = 0; i < size; i++) {
             final String type = opts[i];
             if ("Q".equals(type)) {
-                attr[i] = AttributeType.NUMERIC;
+                qcCount++;
+                continue;
             } else if ("C".equals(type)) {
-                attr[i] = AttributeType.NOMINAL;
+                qcCount++;
+                attr.add(i);
+            } else if (NumberUtils.isDigits(type)) {
+                numCount++;
+                int index = NumberUtils.parseInt(type);
+                attr.add(index);
             } else {
-                throw new UDFArgumentException("Unexpected type: " + type);
+                throw new UDFArgumentException("Unsupported attribute type: " + type);
             }
+        }
+        if (qcCount != size && numCount != size) {
+            throw new UDFArgumentException("Invalid attribute expression: " + opt);
         }
         return attr;
     }
 
-    @Nonnull
-    public static AttributeType[] attributeTypes(@Nullable final AttributeType[] attributes,
-            @Nonnull final Matrix x) {
-        if (attributes == null) {
-            int p = x.numColumns();
-            AttributeType[] newAttributes = new AttributeType[p];
-            Arrays.fill(newAttributes, AttributeType.NUMERIC);
-            return newAttributes;
-        }
-        return attributes;
-    }
-
     @VisibleForTesting
     @Nonnull
-    public static AttributeType[] convertAttributeTypes(
+    public static RoaringBitmap convertAttributeTypes(
             @Nonnull final smile.data.Attribute[] original) {
         final int size = original.length;
-        final AttributeType[] dst = new AttributeType[size];
+        final RoaringBitmap nominalAttrs = new RoaringBitmap();
         for (int i = 0; i < size; i++) {
             smile.data.Attribute o = original[i];
             switch (o.type) {
                 case NOMINAL: {
-                    dst[i] = AttributeType.NOMINAL;
+                    nominalAttrs.add(i);
                     break;
                 }
                 case NUMERIC: {
-                    dst[i] = AttributeType.NUMERIC;
                     break;
                 }
                 default:
                     throw new UnsupportedOperationException("Unsupported type: " + o.type);
             }
         }
-        return dst;
+        return nominalAttrs;
     }
 
     @Nonnull
-    public static ColumnMajorIntMatrix sort(@Nonnull final AttributeType[] attributes,
+    public static ColumnMajorIntMatrix sort(@Nonnull final RoaringBitmap attributes,
             @Nonnull final Matrix x) {
         final int n = x.numRows();
         final int p = x.numColumns();
@@ -132,9 +132,10 @@ public final class SmileExtUtils {
 
             final ColumnMajorMatrix x2 = x.toColumnMajorMatrix();
             for (int j = 0; j < p; j++) {
-                if (attributes[j] != AttributeType.NUMERIC) {
-                    continue;
+                if (attributes.contains(j)) {
+                    continue; // nop for categorical columns
                 }
+                // sort only numerical columns
                 x2.eachNonNullInColumn(j, proc);
                 if (ilist.isEmpty()) {
                     continue;
@@ -148,12 +149,14 @@ public final class SmileExtUtils {
         } else {
             final double[] a = new double[n];
             for (int j = 0; j < p; j++) {
-                if (attributes[j] == AttributeType.NUMERIC) {
-                    for (int i = 0; i < n; i++) {
-                        a[i] = x.get(i, j);
-                    }
-                    index[j] = QuickSort.sort(a);
+                if (attributes.contains(j)) {
+                    continue; // nop for categorical columns
                 }
+                // sort only numerical columns
+                for (int i = 0; i < n; i++) {
+                    a[i] = x.get(i, j);
+                }
+                index[j] = QuickSort.sort(a);
             }
         }
 
@@ -320,13 +323,11 @@ public final class SmileExtUtils {
         return samples;
     }
 
-    public static boolean containsNumericType(@Nonnull final AttributeType[] attributes) {
-        for (AttributeType attr : attributes) {
-            if (attr == AttributeType.NUMERIC) {
-                return true;
-            }
-        }
-        return false;
+    public static boolean containsNumericType(@Nonnull final Matrix x,
+            final RoaringBitmap attributes) {
+        int numColumns = x.numColumns();
+        int numCategoricalCols = attributes.getCardinality();
+        return numColumns != numCategoricalCols; // contains at least one numerical column
     }
 
     @Nonnull

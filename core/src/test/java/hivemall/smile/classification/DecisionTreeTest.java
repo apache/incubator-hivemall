@@ -25,7 +25,6 @@ import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.smile.classification.DecisionTree.Node;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.smile.utils.SmileExtUtils;
@@ -47,6 +46,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
+import org.roaringbitmap.RoaringBitmap;
 
 public class DecisionTreeTest {
     private static final boolean DEBUG = false;
@@ -165,7 +165,7 @@ public class DecisionTreeTest {
         double[][] x = ds.toArray(new double[ds.size()][]);
         int[] y = ds.toArray(new int[ds.size()]);
 
-        AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
+        RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
         DecisionTree tree = new DecisionTree(attrs, matrix(x, dense), y, numLeafs,
             RandomNumberGeneratorFactory.createPRNG(31));
 
@@ -196,7 +196,7 @@ public class DecisionTreeTest {
             double[][] trainx = Math.slice(x, loocv.train[i]);
             int[] trainy = Math.slice(y, loocv.train[i]);
 
-            AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
+            RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
             DecisionTree tree = new DecisionTree(attrs, matrix(trainx, dense), trainy, numLeafs,
                 RandomNumberGeneratorFactory.createPRNG(i));
             if (y[loocv.test[i]] != tree.predict(x[loocv.test[i]])) {
@@ -226,7 +226,7 @@ public class DecisionTreeTest {
             double[][] trainx = Math.slice(x, loocv.train[i]);
             int[] trainy = Math.slice(y, loocv.train[i]);
 
-            AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
+            RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(ds.attributes());
             DecisionTree dtree = new DecisionTree(attrs, matrix(trainx, true), trainy, numLeafs,
                 RandomNumberGeneratorFactory.createPRNG(i));
             DecisionTree stree = new DecisionTree(attrs, matrix(trainx, false), trainy, numLeafs,
@@ -253,7 +253,7 @@ public class DecisionTreeTest {
             double[][] trainx = Math.slice(x, loocv.train[i]);
             int[] trainy = Math.slice(y, loocv.train[i]);
 
-            AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
+            RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
             DecisionTree tree = new DecisionTree(attrs, matrix(trainx, true), trainy, 4);
 
             byte[] b = tree.serialize(false);
@@ -280,7 +280,7 @@ public class DecisionTreeTest {
             double[][] trainx = Math.slice(x, loocv.train[i]);
             int[] trainy = Math.slice(y, loocv.train[i]);
 
-            AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
+            RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
             DecisionTree tree = new DecisionTree(attrs, matrix(trainx, true), trainy, 4);
 
             byte[] b1 = tree.serialize(true);

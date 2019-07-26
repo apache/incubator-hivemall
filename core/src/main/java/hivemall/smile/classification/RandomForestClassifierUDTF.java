@@ -32,7 +32,6 @@ import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.codec.Base91;
@@ -79,6 +78,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
+import org.roaringbitmap.RoaringBitmap;
 
 @Description(name = "train_randomforest_classifier",
         value = "_FUNC_(array<double|string> features, int label [, const string options, const array<double> classWeights])"
@@ -114,7 +114,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private AttributeType[] _attributes;
+    private RoaringBitmap nominalAttrs;
     private SplitRule _splitRule;
     private boolean _stratifiedSampling;
     private double _subsample;
@@ -159,7 +159,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         int trees = 50, maxDepth = Integer.MAX_VALUE;
         int numLeafs = Integer.MAX_VALUE, minSplits = 2, minSamplesLeaf = 1;
         float numVars = -1.f;
-        AttributeType[] attrs = null;
+        RoaringBitmap attrs = null;
         long seed = -1L;
         SplitRule splitRule = SplitRule.GINI;
         double[] classWeight = null;
@@ -213,7 +213,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._minSamplesSplit = minSplits;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this._attributes = attrs;
+        this.nominalAttrs = attrs;
         this._splitRule = splitRule;
         this._stratifiedSampling = stratifiedSampling;
         this._subsample = subsample;
@@ -345,7 +345,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this.featureListOI = null;
         this.featureElemOI = null;
         this.labelOI = null;
-        this._attributes = null;
+        this.nominalAttrs = null;
     }
 
     private void checkOptions() throws HiveException {
@@ -377,7 +377,6 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         x = SmileExtUtils.shuffle(x, y, _seed);
 
         int[] labels = SmileExtUtils.classLabels(y);
-        AttributeType[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
         int numInputVars = SmileExtUtils.computeNumInputVars(_numVars, x);
 
         if (logger.isInfoEnabled()) {
@@ -387,12 +386,12 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
 
         IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
-        ColumnMajorIntMatrix order = SmileExtUtils.sort(attributes, x);
+        ColumnMajorIntMatrix order = SmileExtUtils.sort(nominalAttrs, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
-            tasks.add(new TrainingTask(this, i, attributes, x, y, numInputVars, order, prediction,
+            tasks.add(new TrainingTask(this, i, nominalAttrs, x, y, numInputVars, order, prediction,
                 s, remainingTasks));
         }
 
@@ -465,7 +464,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * Attribute properties.
          */
         @Nonnull
-        private final AttributeType[] _attributes;
+        private final RoaringBitmap _attributes;
         /**
          * Training instances.
          */
@@ -501,9 +500,9 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
-                @Nonnull AttributeType[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
-                int numVars, @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction,
-                long seed, @Nonnull AtomicInteger remainingTasks) {
+                @Nonnull RoaringBitmap attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
+                @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction, long seed,
+                @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._attributes = attributes;

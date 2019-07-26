@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import hivemall.TestUtils;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.classification.DecisionTree;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.tools.TreePredictUDFv1.DtNodeV1;
 import hivemall.smile.tools.TreePredictUDFv1.JavaSerializationEvaluator;
@@ -58,6 +57,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.IntWritable;
 import org.junit.Assert;
 import org.junit.Test;
+import org.roaringbitmap.RoaringBitmap;
 
 @SuppressWarnings("deprecation")
 public class TreePredictUDFv1Test {
@@ -97,7 +97,7 @@ public class TreePredictUDFv1Test {
             double[][] trainx = Math.slice(x, loocv.train[i]);
             int[] trainy = Math.slice(y, loocv.train[i]);
 
-            AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
+            RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(iris.attributes());
             DecisionTree tree = new DecisionTree(attrs,
                 new RowMajorDenseMatrix2d(trainx, x[0].length), trainy, 4);
             assertEquals(tree.predict(x[loocv.test[i]]), evalPredict(tree, x[loocv.test[i]]));
@@ -125,7 +125,7 @@ public class TreePredictUDFv1Test {
             double[] trainy = Math.slice(datay, cv.train[i]);
             double[][] testx = Math.slice(datax, cv.test[i]);
 
-            AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
+            RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
             RegressionTree tree = new RegressionTree(attrs,
                 new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
 
@@ -165,7 +165,7 @@ public class TreePredictUDFv1Test {
             testy[i - m] = datay[index[i]];
         }
 
-        AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
+        RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
         RegressionTree tree = new RegressionTree(attrs,
             new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
         debugPrint(String.format("RMSE = %.4f\n", rmse(tree, testx, testy)));
@@ -260,7 +260,7 @@ public class TreePredictUDFv1Test {
             testy[i - m] = datay[index[i]];
         }
 
-        AttributeType[] attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
+        RoaringBitmap attrs = SmileExtUtils.convertAttributeTypes(data.attributes());
         RegressionTree tree = new RegressionTree(attrs,
             new RowMajorDenseMatrix2d(trainx, trainx[0].length), trainy, 20);
         String opScript = tree.predictOpCodegen(StackMachine.SEP);

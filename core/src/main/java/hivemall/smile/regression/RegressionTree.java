@@ -17,6 +17,8 @@
 // https://github.com/haifengl/smile/blob/master/core/src/main/java/smile/regression/RegressionTree.java
 package hivemall.smile.regression;
 
+import static hivemall.smile.utils.SmileExtUtils.NOMINAL;
+import static hivemall.smile.utils.SmileExtUtils.NUMERIC;
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
 
 import hivemall.annotations.VisibleForTesting;
@@ -28,7 +30,6 @@ import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.collections.sets.IntArraySet;
@@ -58,6 +59,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.roaringbitmap.RoaringBitmap;
 
 /**
  * Decision tree for regression. A decision tree can be learned by splitting the training set into
@@ -102,7 +104,7 @@ public final class RegressionTree implements Regression<Vector> {
     /**
      * The attributes of independent variable.
      */
-    private final AttributeType[] _attributes;
+    private final RoaringBitmap _attributes;
     private final boolean _hasNumericType;
     /**
      * Variable importance. Every time a split of a node is made on variable the impurity criterion
@@ -172,7 +174,7 @@ public final class RegressionTree implements Regression<Vector> {
         /**
          * The type of split feature
          */
-        AttributeType splitFeatureType = null;
+        boolean quantitativeFeature = true;
         /**
          * The split value.
          */
@@ -220,21 +222,18 @@ public final class RegressionTree implements Regression<Vector> {
             if (trueChild == null && falseChild == null) {
                 return output;
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    if (x.get(splitFeature, Double.NaN) == splitValue) {
-                        return trueChild.predict(x);
-                    } else {
-                        return falseChild.predict(x);
-                    }
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     if (x.get(splitFeature, Double.NaN) <= splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
                 }
             }
         }
@@ -258,28 +257,7 @@ public final class RegressionTree implements Regression<Vector> {
                 indent(builder, depth);
                 builder.append(output).append(";\n");
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    indent(builder, depth);
-                    if (featureNames == null) {
-                        builder.append("if( x[")
-                               .append(splitFeature)
-                               .append("] == ")
-                               .append(splitValue)
-                               .append(") {\n");
-                    } else {
-                        builder.append("if( ")
-                               .append(resolveFeatureName(splitFeature, featureNames))
-                               .append(" == ")
-                               .append(splitValue)
-                               .append(") {\n");
-                    }
-                    trueChild.exportJavascript(builder, featureNames, depth + 1);
-                    indent(builder, depth);
-                    builder.append("} else {\n");
-                    falseChild.exportJavascript(builder, featureNames, depth + 1);
-                    indent(builder, depth);
-                    builder.append("}\n");
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     indent(builder, depth);
                     if (featureNames == null) {
                         builder.append("if( x[")
@@ -301,8 +279,26 @@ public final class RegressionTree implements Regression<Vector> {
                     indent(builder, depth);
                     builder.append("}\n");
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    indent(builder, depth);
+                    if (featureNames == null) {
+                        builder.append("if( x[")
+                               .append(splitFeature)
+                               .append("] == ")
+                               .append(splitValue)
+                               .append(") {\n");
+                    } else {
+                        builder.append("if( ")
+                               .append(resolveFeatureName(splitFeature, featureNames))
+                               .append(" == ")
+                               .append(splitValue)
+                               .append(") {\n");
+                    }
+                    trueChild.exportJavascript(builder, featureNames, depth + 1);
+                    indent(builder, depth);
+                    builder.append("} else {\n");
+                    falseChild.exportJavascript(builder, featureNames, depth + 1);
+                    indent(builder, depth);
+                    builder.append("}\n");
                 }
             }
         }
@@ -331,19 +327,16 @@ public final class RegressionTree implements Regression<Vector> {
                     builder.append(";\n");
                 }
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    builder.append(
-                        String.format(" %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
-                            resolveFeatureName(splitFeature, featureNames),
-                            Double.toString(splitValue)));
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     builder.append(
                         String.format(" %d [label=<%s &le; %s>, fillcolor=\"#00000000\"];\n",
                             myNodeId, resolveFeatureName(splitFeature, featureNames),
                             Double.toString(splitValue)));
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    builder.append(
+                        String.format(" %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
+                            resolveFeatureName(splitFeature, featureNames),
+                            Double.toString(splitValue)));
                 }
 
                 if (myNodeId != parentNodeId) {
@@ -381,23 +374,7 @@ public final class RegressionTree implements Regression<Vector> {
                 scripts.add(buf.toString());
                 selfDepth += 2;
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    buf.append("push ").append("x[").append(splitFeature).append("]");
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("push ").append(splitValue);
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("ifeq ");
-                    scripts.add(buf.toString());
-                    depth += 3;
-                    selfDepth += 3;
-                    int trueDepth = trueChild.opCodegen(scripts, depth);
-                    selfDepth += trueDepth;
-                    scripts.set(depth - 1, "ifeq " + String.valueOf(depth + trueDepth));
-                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
-                    selfDepth += falseDepth;
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     buf.append("push ").append("x[").append(splitFeature).append("]");
                     scripts.add(buf.toString());
                     buf.setLength(0);
@@ -414,8 +391,21 @@ public final class RegressionTree implements Regression<Vector> {
                     int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
                     selfDepth += falseDepth;
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    buf.append("push ").append("x[").append(splitFeature).append("]");
+                    scripts.add(buf.toString());
+                    buf.setLength(0);
+                    buf.append("push ").append(splitValue);
+                    scripts.add(buf.toString());
+                    buf.setLength(0);
+                    buf.append("ifeq ");
+                    scripts.add(buf.toString());
+                    depth += 3;
+                    selfDepth += 3;
+                    int trueDepth = trueChild.opCodegen(scripts, depth);
+                    selfDepth += trueDepth;
+                    scripts.set(depth - 1, "ifeq " + String.valueOf(depth + trueDepth));
+                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
+                    selfDepth += falseDepth;
                 }
             }
             return selfDepth;
@@ -424,11 +414,7 @@ public final class RegressionTree implements Regression<Vector> {
         @Override
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(splitFeature);
-            if (splitFeatureType == null) {
-                out.writeByte(-1);
-            } else {
-                out.writeByte(splitFeatureType.getTypeId());
-            }
+            out.writeByte(quantitativeFeature ? NUMERIC : NOMINAL);
             out.writeDouble(splitValue);
 
             if (isLeaf()) {
@@ -455,11 +441,7 @@ public final class RegressionTree implements Regression<Vector> {
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.splitFeature = in.readInt();
             byte typeId = in.readByte();
-            if (typeId == -1) {
-                this.splitFeatureType = null;
-            } else {
-                this.splitFeatureType = AttributeType.resolve(typeId);
-            }
+            this.quantitativeFeature = (typeId == NUMERIC);
             this.splitValue = in.readDouble();
 
             if (in.readBoolean()) {// isLeaf()
@@ -574,7 +556,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final Node split = findBestSplit(numSamples, sum, varJ, samples);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
-                    node.splitFeatureType = split.splitFeatureType;
+                    node.quantitativeFeature = split.quantitativeFeature;
                     node.splitValue = split.splitValue;
                     node.splitScore = split.splitScore;
                     node.trueChildOutput = split.trueChildOutput;
@@ -599,7 +581,7 @@ public final class RegressionTree implements Regression<Vector> {
                 }
                 variableIndex = cols.toArray(false);
             } else {
-                variableIndex = MathUtils.permutation(_attributes.length);
+                variableIndex = MathUtils.permutation(x.numColumns());
             }
 
             if (_numVars < variableIndex.length) {
@@ -621,10 +603,8 @@ public final class RegressionTree implements Regression<Vector> {
         private Node findBestSplit(final int n, final double sum, final int j,
                 @Nullable final int[] samples) {
             final Node split = new Node(0.d);
-            if (_attributes[j] == AttributeType.NOMINAL) {
-                //final int m = _attributes[j].getSize();
-                //final double[] trueSum = new double[m];
-                //final int[] trueCount = new int[m];
+
+            if (_attributes.contains(j)) {// nominal
                 final Int2DoubleOpenHashMap trueSum = new Int2DoubleOpenHashMap();
                 final Int2IntOpenHashMap trueCount = new Int2IntOpenHashMap();
 
@@ -664,15 +644,14 @@ public final class RegressionTree implements Regression<Vector> {
                     if (gain > split.splitScore) {
                         // new best split
                         split.splitFeature = j;
-                        split.splitFeatureType = AttributeType.NOMINAL;
+                        split.quantitativeFeature = false;
                         split.splitValue = k;
                         split.splitScore = gain;
                         split.trueChildOutput = trueMean;
                         split.falseChildOutput = falseMean;
                     }
                 }
-            } else if (_attributes[j] == AttributeType.NUMERIC) {
-
+            } else {
                 _order.eachNonNullInColumn(j, new VectorProcedure() {
                     double trueSum = 0.0;
                     int trueCount = 0;
@@ -719,7 +698,7 @@ public final class RegressionTree implements Regression<Vector> {
                         if (gain > split.splitScore) {
                             // new best split
                             split.splitFeature = j;
-                            split.splitFeatureType = AttributeType.NUMERIC;
+                            split.quantitativeFeature = true;
                             split.splitValue = (x_ij + prevx) / 2;
                             split.splitScore = gain;
                             split.trueChildOutput = trueMean;
@@ -731,9 +710,6 @@ public final class RegressionTree implements Regression<Vector> {
                         trueCount += sample;
                     }//apply
                 });
-
-            } else {
-                throw new IllegalStateException("Unsupported attribute type: " + _attributes[j]);
             }
 
             return split;
@@ -757,7 +733,6 @@ public final class RegressionTree implements Regression<Vector> {
             if (tc < _minLeafSize || fc < _minLeafSize) {
                 // set as a leaf node
                 node.splitFeature = -1;
-                node.splitFeatureType = null;
                 node.splitValue = Double.NaN;
                 node.splitScore = 0.0;
                 if (_nodeOutput == null) {
@@ -801,19 +776,7 @@ public final class RegressionTree implements Regression<Vector> {
         private int splitSamples(@Nonnull final IntArrayList trueBags,
                 @Nonnull final IntArrayList falseBags) {
             int tc = 0;
-            if (node.splitFeatureType == AttributeType.NOMINAL) {
-                final int splitFeature = node.splitFeature;
-                final double splitValue = node.splitValue;
-                for (int i = 0, size = bags.length; i < size; i++) {
-                    final int index = bags[i];
-                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
-                        trueBags.add(index);
-                        tc++;
-                    } else {
-                        falseBags.add(index);
-                    }
-                }
-            } else if (node.splitFeatureType == AttributeType.NUMERIC) {
+            if (node.quantitativeFeature) {
                 final int splitFeature = node.splitFeature;
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
@@ -826,25 +789,34 @@ public final class RegressionTree implements Regression<Vector> {
                     }
                 }
             } else {
-                throw new IllegalStateException(
-                    "Unsupported attribute type: " + node.splitFeatureType);
+                final int splitFeature = node.splitFeature;
+                final double splitValue = node.splitValue;
+                for (int i = 0, size = bags.length; i < size; i++) {
+                    final int index = bags[i];
+                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
+                        trueBags.add(index);
+                        tc++;
+                    } else {
+                        falseBags.add(index);
+                    }
+                }
             }
             return tc;
         }
 
     }
 
-    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
             @Nonnull double[] y, int maxLeafs) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, null);
     }
 
-    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
             @Nonnull double[] y, int maxLeafs, @Nullable PRNG rand) {
         this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, rand);
     }
 
-    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
             @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
             int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
             @Nullable PRNG rand) {
@@ -867,25 +839,21 @@ public final class RegressionTree implements Regression<Vector> {
      * @param bags the sample set of instances for stochastic learning.
      * @param output An interface to calculate node output.
      */
-    public RegressionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
             @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
             int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
             @Nullable NodeOutput output, @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
-        this._attributes = SmileExtUtils.attributeTypes(attributes, x);
-        if (_attributes.length != x.numColumns()) {
-            throw new IllegalArgumentException(
-                "-attrs option is invalid: " + Arrays.toString(attributes));
-        }
-        this._hasNumericType = SmileExtUtils.containsNumericType(_attributes);
+        this._attributes = attributes;
+        this._hasNumericType = SmileExtUtils.containsNumericType(x, attributes);
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
         this._minSplit = minSplits;
         this._minLeafSize = minLeafSize;
         this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
-        this._importance = x.isSparse() ? new SparseVector() : new DenseVector(_attributes.length);
+        this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
         this._nodeOutput = output;
 
