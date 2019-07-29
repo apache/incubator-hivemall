@@ -159,7 +159,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         int trees = 50, maxDepth = Integer.MAX_VALUE;
         int numLeafs = Integer.MAX_VALUE, minSplits = 2, minSamplesLeaf = 1;
         float numVars = -1.f;
-        RoaringBitmap attrs = null;
+        RoaringBitmap attrs = new RoaringBitmap();
         long seed = -1L;
         SplitRule splitRule = SplitRule.GINI;
         double[] classWeight = null;

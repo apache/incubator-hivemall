@@ -968,6 +968,9 @@ public final class DecisionTree implements Classifier<Vector> {
             throw new IllegalArgumentException("Only one class or negative class labels.");
         }
 
+        if (attributes == null) {
+            attributes = new RoaringBitmap();
+        }
         this._attributes = attributes;
         this._hasNumericType = SmileExtUtils.containsNumericType(x, attributes);
 

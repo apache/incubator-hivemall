@@ -104,6 +104,7 @@ public final class RegressionTree implements Regression<Vector> {
     /**
      * The attributes of independent variable.
      */
+    @Nonnull
     private final RoaringBitmap _attributes;
     private final boolean _hasNumericType;
     /**
@@ -845,6 +846,9 @@ public final class RegressionTree implements Regression<Vector> {
             @Nullable NodeOutput output, @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
+        if (attributes == null) {
+            attributes = new RoaringBitmap();
+        }
         this._attributes = attributes;
         this._hasNumericType = SmileExtUtils.containsNumericType(x, attributes);
 
