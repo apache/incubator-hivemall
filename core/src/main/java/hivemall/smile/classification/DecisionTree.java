@@ -777,6 +777,8 @@ public final class DecisionTree implements Classifier<Vector> {
 
         /**
          * Split the node into two children nodes. Returns true if split success.
+         *
+         * @return true if split occurred. false if the node is set to leaf.
          */
         public boolean split(@Nullable final PriorityQueue<TrainNode> nextSplits) {
             if (node.splitFeature < 0) {
@@ -796,7 +798,6 @@ public final class DecisionTree implements Classifier<Vector> {
             if (tc < _minLeafSize || fc < _minLeafSize) {
                 // set the node as leaf
                 node.splitFeature = -1;
-                // node.quantitativeFeature = true;  // REVIEWME leaf type is undefined
                 node.splitValue = Double.NaN;
                 node.splitScore = 0.0;
                 return false;
@@ -807,6 +808,8 @@ public final class DecisionTree implements Classifier<Vector> {
                 falseChildPosteriori[i] /= fc;
             }
 
+            int leaves = 0;
+
             node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
             TrainNode trueChild =
                     new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
@@ -815,7 +818,9 @@ public final class DecisionTree implements Classifier<Vector> {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
                 } else {
-                    trueChild.split(null);
+                    if (trueChild.split(null) == false) {
+                        leaves++;
+                    }
                 }
             }
 
@@ -827,7 +832,20 @@ public final class DecisionTree implements Classifier<Vector> {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
                 } else {
-                    falseChild.split(null);
+                    if (falseChild.split(null) == false) {
+                        leaves++;
+                    }
+                }
+            }
+
+            // Prune meaningless branches
+            if (leaves == 2) {// both left and right child is leaf node
+                if (node.trueChild.output == node.falseChild.output) {// found meaningless branch
+                    // set this node as leaf
+                    node.splitFeature = -1;
+                    node.splitValue = Double.NaN;
+                    node.splitScore = 0.0;
+                    return false;
                 }
             }
 
