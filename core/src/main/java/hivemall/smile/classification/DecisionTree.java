@@ -110,7 +110,7 @@ import org.roaringbitmap.RoaringBitmap;
  * Some techniques such as bagging, boosting, and random forest use more than one decision tree for
  * their analysis.
  */
-public final class DecisionTree implements Classifier<Vector> {
+public class DecisionTree implements Classifier<Vector> {
     /**
      * The attributes of independent variable.
      */

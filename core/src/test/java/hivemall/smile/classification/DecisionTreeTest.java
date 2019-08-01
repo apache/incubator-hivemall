@@ -23,14 +23,19 @@ import static org.junit.Assert.assertEquals;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
+import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
+import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.smile.classification.DecisionTree.Node;
+import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
 import smile.data.AttributeDataset;
+import smile.data.NominalAttribute;
 import smile.data.parser.ArffParser;
+import smile.data.parser.DelimitedTextParser;
 import smile.math.Math;
 import smile.validation.LOOCV;
 
@@ -290,6 +295,57 @@ public class DecisionTreeTest {
             Node node = DecisionTree.deserialize(b1, b1.length, true);
             assertEquals(tree.predict(x[loocv.test[i]]), node.predict(x[loocv.test[i]]));
         }
+    }
+
+    @Test
+    public void testTitanicPruning() throws IOException, ParseException {
+        String datasetUrl =
+                "https://gist.githubusercontent.com/myui/7cd82c443db84ba7e7add1523d0247a9/raw/f2d3e3051b0292577e8c01a1759edabaa95c5781/titanic_train.tsv";
+
+        URL url = new URL(datasetUrl);
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        DelimitedTextParser parser = new DelimitedTextParser();
+        parser.setColumnNames(true);
+        parser.setDelimiter(",");
+        parser.setResponseIndex(new NominalAttribute("survived"), 0);
+
+        AttributeDataset train = parser.parse("titanic train", is);
+        double[][] x_ = train.toArray(new double[train.size()][]);
+        int[] y = train.toArray(new int[train.size()]);
+
+        // pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked
+        // C,C,C,Q,Q,Q,C,Q,C,C
+        RoaringBitmap nominalAttrs = new RoaringBitmap();
+        nominalAttrs.add(0);
+        nominalAttrs.add(1);
+        nominalAttrs.add(2);
+        nominalAttrs.add(6);
+        nominalAttrs.add(8);
+        nominalAttrs.add(9);
+
+        int columns = x_[0].length;
+        Matrix x = new RowMajorDenseMatrix2d(x_, columns);
+        int numVars = (int) Math.ceil(Math.sqrt(columns));
+        int maxDepth = Integer.MAX_VALUE;
+        int maxLeafs = Integer.MAX_VALUE;
+        int minSplits = 2;
+        int minLeafSize = 1;
+        int[] bags = Math.permutate(y.length);
+        ColumnMajorIntMatrix order = SmileExtUtils.sort(nominalAttrs, x);
+        PRNG rand = RandomNumberGeneratorFactory.createPRNG();
+
+        final String[] featureNames = new String[] {"pclass", "name", "sex", "age", "sibsp",
+                "parch", "ticket", "fare", "cabin", "embarked"};
+        final String[] classNames = new String[] {"yes", "no"};
+        DecisionTree tree = new DecisionTree(nominalAttrs, x, y, numVars, maxDepth, maxLeafs,
+            minSplits, minLeafSize, bags, order, SplitRule.GINI, rand) {
+            @Override
+            public String toString() {
+                return predictJsCodegen(featureNames, classNames);
+            }
+        };
+        tree.toString();
     }
 
     @Nonnull
