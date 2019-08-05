@@ -246,6 +246,14 @@ public class DecisionTree implements Classifier<Vector> {
             return posteriori != null;
         }
 
+        private void markAsLeaf() {
+            this.splitFeature = -1;
+            this.splitValue = Double.NaN;
+            this.splitScore = 0.0;
+            this.trueChild = null;
+            this.falseChild = null;
+        }
+
         @VisibleForTesting
         public int predict(@Nonnull final double[] x) {
             return predict(new DenseVector(x));
@@ -796,10 +804,7 @@ public class DecisionTree implements Classifier<Vector> {
             this.bags = null; // help GC for recursive call
 
             if (tc < _minLeafSize || fc < _minLeafSize) {
-                // set the node as leaf
-                node.splitFeature = -1;
-                node.splitValue = Double.NaN;
-                node.splitScore = 0.0;
+                node.markAsLeaf();
                 return false;
             }
 
@@ -822,6 +827,8 @@ public class DecisionTree implements Classifier<Vector> {
                         leaves++;
                     }
                 }
+            } else {
+                leaves++;
             }
 
             node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
@@ -836,15 +843,14 @@ public class DecisionTree implements Classifier<Vector> {
                         leaves++;
                     }
                 }
+            } else {
+                leaves++;
             }
 
             // Prune meaningless branches
             if (leaves == 2) {// both left and right child is leaf node
                 if (node.trueChild.output == node.falseChild.output) {// found meaningless branch
-                    // set this node as leaf
-                    node.splitFeature = -1;
-                    node.splitValue = Double.NaN;
-                    node.splitScore = 0.0;
+                    node.markAsLeaf();
                     return false;
                 }
             }

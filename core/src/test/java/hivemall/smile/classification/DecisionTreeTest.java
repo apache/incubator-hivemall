@@ -333,7 +333,7 @@ public class DecisionTreeTest {
         int minLeafSize = 1;
         int[] bags = Math.permutate(y.length);
         ColumnMajorIntMatrix order = SmileExtUtils.sort(nominalAttrs, x);
-        PRNG rand = RandomNumberGeneratorFactory.createPRNG();
+        PRNG rand = RandomNumberGeneratorFactory.createPRNG(43L);
 
         final String[] featureNames = new String[] {"pclass", "name", "sex", "age", "sibsp",
                 "parch", "ticket", "fare", "cabin", "embarked"};
