@@ -211,6 +211,14 @@ public final class RegressionTree implements Regression<Vector> {
             return trueChild == null && falseChild == null;
         }
 
+        private void markAsLeaf() {
+            this.splitFeature = -1;
+            this.splitValue = Double.NaN;
+            this.splitScore = 0.0;
+            this.trueChild = null;
+            this.falseChild = null;
+        }
+
         @VisibleForTesting
         public double predict(@Nonnull final double[] x) {
             return predict(new DenseVector(x));
@@ -732,10 +740,7 @@ public final class RegressionTree implements Regression<Vector> {
             int fc = bags.length - tc;
 
             if (tc < _minLeafSize || fc < _minLeafSize) {
-                // set as a leaf node
-                node.splitFeature = -1;
-                node.splitValue = Double.NaN;
-                node.splitScore = 0.0;
+                node.markAsLeaf();
                 if (_nodeOutput == null) {
                     this.bags = null;
                 }
@@ -743,6 +748,7 @@ public final class RegressionTree implements Regression<Vector> {
             }
 
             this.bags = null; // help GC for recursive call
+            int leaves = 0;
 
             node.trueChild = new Node(node.trueChildOutput);
             this.trueChild = new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
@@ -751,8 +757,12 @@ public final class RegressionTree implements Regression<Vector> {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
                 } else {
-                    trueChild.split(null);
+                    if (trueChild.split(null) == false) {
+                        leaves++;
+                    }
                 }
+            } else {
+                leaves++;
             }
 
             node.falseChild = new Node(node.falseChildOutput);
@@ -762,7 +772,22 @@ public final class RegressionTree implements Regression<Vector> {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
                 } else {
-                    falseChild.split(null);
+                    if (falseChild.split(null) == false) {
+                        leaves++;
+                    }
+                }
+            } else {
+                leaves++;
+            }
+
+            // Prune meaningless branches
+            if (leaves == 2) {// both left and right child is leaf node
+                if (node.trueChild.output == node.falseChild.output) {// found meaningless branch
+                    node.markAsLeaf();
+                    if (_nodeOutput == null) {
+                        this.bags = null;
+                    }
+                    return false;
                 }
             }
 
