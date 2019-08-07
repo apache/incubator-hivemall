@@ -684,6 +684,7 @@ public class DecisionTree implements Classifier<Vector> {
                     int[] tc_x = trueCount.get(x_ij);
                     if (tc_x == null) {
                         tc_x = new int[_k];
+                        trueCount.put(x_ij, tc_x);
                     }
                     tc_x[y[index]]++;
                 }
