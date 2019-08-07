@@ -849,8 +849,8 @@ public class DecisionTree implements Classifier<Vector> {
             }
 
             // Prune meaningless branches
-            if (leaves == 2) {// both left and right child is leaf node
-                if (node.trueChild.output == node.falseChild.output) {// found meaningless branch
+            if (leaves == 2) {// both left and right child are leaf node
+                if (node.trueChild.output == node.falseChild.output) {// found a meaningless branch
                     node.markAsLeaf();
                     return false;
                 }
