@@ -105,7 +105,7 @@ public final class RegressionTree implements Regression<Vector> {
      * The attributes of independent variable.
      */
     @Nonnull
-    private final RoaringBitmap _attributes;
+    private final RoaringBitmap _nominalAttrs;
     private final boolean _hasNumericType;
     /**
      * Variable importance. Every time a split of a node is made on variable the impurity criterion
@@ -613,7 +613,7 @@ public final class RegressionTree implements Regression<Vector> {
                 @Nullable final int[] samples) {
             final Node split = new Node(0.d);
 
-            if (_attributes.contains(j)) {// nominal
+            if (_nominalAttrs.contains(j)) {// nominal
                 final Int2DoubleOpenHashMap trueSum = new Int2DoubleOpenHashMap();
                 final Int2IntOpenHashMap trueCount = new Int2IntOpenHashMap();
 
@@ -874,14 +874,14 @@ public final class RegressionTree implements Regression<Vector> {
         if (attributes == null) {
             attributes = new RoaringBitmap();
         }
-        this._attributes = attributes;
+        this._nominalAttrs = attributes;
         this._hasNumericType = SmileExtUtils.containsNumericType(x, attributes);
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
         this._minSplit = minSplits;
         this._minLeafSize = minLeafSize;
-        this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
+        this._order = (order == null) ? SmileExtUtils.sort(_nominalAttrs, x) : order;
         this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
         this._nodeOutput = output;

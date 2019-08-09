@@ -464,7 +464,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * Attribute properties.
          */
         @Nonnull
-        private final RoaringBitmap _attributes;
+        private final RoaringBitmap _nominalAttrs;
         /**
          * Training instances.
          */
@@ -500,12 +500,12 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
-                @Nonnull RoaringBitmap attributes, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
+                @Nonnull RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
                 @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction, long seed,
                 @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
-            this._attributes = attributes;
+            this._nominalAttrs = nominalAttrs;
             this._x = x;
             this._y = y;
             this._order = order;
@@ -527,7 +527,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             final BitSet sampled = new BitSet(N);
             final int[] bags = sampling(sampled, N, rnd1);
 
-            DecisionTree tree = new DecisionTree(_attributes, _x, _y, _numVars, _udtf._maxDepth,
+            DecisionTree tree = new DecisionTree(_nominalAttrs, _x, _y, _numVars, _udtf._maxDepth,
                 _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf, bags, _order,
                 _udtf._splitRule, rnd2);
 
