@@ -832,27 +832,27 @@ public final class RegressionTree implements Regression<Vector> {
 
     }
 
-    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int maxLeafs) {
-        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, null);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, null);
     }
 
-    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int maxLeafs, @Nullable PRNG rand) {
-        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, rand);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, rand);
     }
 
-    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
             int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
             @Nullable PRNG rand) {
-        this(attributes, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
+        this(nominalAttrs, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
     }
 
     /**
      * Constructor. Learns a regression tree for gradient tree boosting.
      *
-     * @param attributes the attribute properties.
+     * @param nominalAttrs the attribute properties.
      * @param x the training instances.
      * @param y the response variable.
      * @param numVars the number of input variables to pick to split on at each node. It seems that
@@ -865,17 +865,17 @@ public final class RegressionTree implements Regression<Vector> {
      * @param bags the sample set of instances for stochastic learning.
      * @param output An interface to calculate node output.
      */
-    public RegressionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x,
+    public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
             int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
             @Nullable NodeOutput output, @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
-        if (attributes == null) {
-            attributes = new RoaringBitmap();
+        if (nominalAttrs == null) {
+            nominalAttrs = new RoaringBitmap();
         }
-        this._nominalAttrs = attributes;
-        this._hasNumericType = SmileExtUtils.containsNumericType(x, attributes);
+        this._nominalAttrs = nominalAttrs;
+        this._hasNumericType = SmileExtUtils.containsNumericType(x, nominalAttrs);
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;

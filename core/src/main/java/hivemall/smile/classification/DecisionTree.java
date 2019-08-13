@@ -115,7 +115,7 @@ public class DecisionTree implements Classifier<Vector> {
      * The attributes of independent variable.
      */
     @Nonnull
-    private final RoaringBitmap _attributes;
+    private final RoaringBitmap _nominalAttrs;
     private final boolean _hasNumericType;
     /**
      * Variable importance. Every time a split of a node is made on variable the (GINI, information
@@ -671,7 +671,7 @@ public class DecisionTree implements Classifier<Vector> {
                 final double impurity, final int j, @Nullable final int[] samples) {
             final Node splitNode = new Node();
 
-            if (_attributes.contains(j)) {
+            if (_nominalAttrs.contains(j)) {
                 final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
 
                 for (int i = 0, size = bags.length; i < size; i++) {
@@ -955,20 +955,20 @@ public class DecisionTree implements Classifier<Vector> {
         return impurity;
     }
 
-    public DecisionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x, @Nonnull int[] y,
+    public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
             int numLeafs) {
-        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
     }
 
-    public DecisionTree(@Nullable RoaringBitmap attributes, @Nullable Matrix x, @Nullable int[] y,
+    public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nullable Matrix x, @Nullable int[] y,
             int numLeafs, @Nullable PRNG rand) {
-        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
     }
 
     /**
      * Constructor. Learns a classification tree for random forest.
      *
-     * @param attributes the attribute properties.
+     * @param nominalAttrs the attribute properties.
      * @param x the training instances.
      * @param y the response variable.
      * @param numVars the number of input variables to pick to split on at each node. It seems that
@@ -982,7 +982,7 @@ public class DecisionTree implements Classifier<Vector> {
      * @param rule the splitting rule.
      * @param seed
      */
-    public DecisionTree(@Nullable RoaringBitmap attributes, @Nonnull Matrix x, @Nonnull int[] y,
+    public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
             @Nullable int[] bags, @Nullable ColumnMajorIntMatrix order, @Nonnull SplitRule rule,
             @Nullable PRNG rand) {
@@ -993,18 +993,18 @@ public class DecisionTree implements Classifier<Vector> {
             throw new IllegalArgumentException("Only one class or negative class labels.");
         }
 
-        if (attributes == null) {
-            attributes = new RoaringBitmap();
+        if (nominalAttrs == null) {
+            nominalAttrs = new RoaringBitmap();
         }
-        this._attributes = attributes;
-        this._hasNumericType = SmileExtUtils.containsNumericType(x, attributes);
+        this._nominalAttrs = nominalAttrs;
+        this._hasNumericType = SmileExtUtils.containsNumericType(x, nominalAttrs);
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
         this._minSplit = minSplits;
         this._minLeafSize = minLeafSize;
         this._rule = rule;
-        this._order = (order == null) ? SmileExtUtils.sort(attributes, x) : order;
+        this._order = (order == null) ? SmileExtUtils.sort(nominalAttrs, x) : order;
         this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
 
