@@ -111,6 +111,16 @@ import org.roaringbitmap.RoaringBitmap;
  * their analysis.
  */
 public class DecisionTree implements Classifier<Vector> {
+
+    /**
+     * Training dataset.
+     */
+    private final Matrix _X;
+    /**
+     * class labels.
+     */
+    private final int[] _y;
+
     /**
      * The attributes of independent variable.
      */
@@ -540,14 +550,6 @@ public class DecisionTree implements Classifier<Vector> {
          * The associated regression tree node.
          */
         final Node node;
-        /**
-         * Training dataset.
-         */
-        final Matrix x;
-        /**
-         * class labels.
-         */
-        final int[] y;
 
         int[] bags;
 
@@ -556,10 +558,8 @@ public class DecisionTree implements Classifier<Vector> {
         /**
          * Constructor.
          */
-        public TrainNode(Node node, Matrix x, int[] y, int[] bags, int depth) {
+        public TrainNode(Node node, int[] bags, int depth) {
             this.node = node;
-            this.x = x;
-            this.y = y;
             this.bags = bags;
             this.depth = depth;
         }
@@ -597,9 +597,9 @@ public class DecisionTree implements Classifier<Vector> {
             final double impurity = impurity(count, numSamples, _rule);
 
             final int[] samples =
-                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows()) : null;
+                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, _X.numRows()) : null;
             final int[] falseCount = new int[_k];
-            for (int varJ : variableIndex(x, bags)) {
+            for (int varJ : variableIndex(_X, bags)) {
                 final Node split =
                         findBestSplit(numSamples, count, falseCount, impurity, varJ, samples);
                 if (split.splitScore > node.splitScore) {
@@ -646,7 +646,7 @@ public class DecisionTree implements Classifier<Vector> {
             boolean pure = true;
             for (int i = 0; i < bags.length; i++) {
                 int index = bags[i];
-                int y_i = y[index];
+                int y_i = _y[index];
                 count[y_i]++;
 
                 if (label == -1) {
@@ -676,7 +676,7 @@ public class DecisionTree implements Classifier<Vector> {
 
                 for (int i = 0, size = bags.length; i < size; i++) {
                     int index = bags[i];
-                    final double v = x.get(index, j, Double.NaN);
+                    final double v = _X.get(index, j, Double.NaN);
                     if (Double.isNaN(v)) {
                         continue;
                     }
@@ -686,7 +686,7 @@ public class DecisionTree implements Classifier<Vector> {
                         tc_x = new int[_k];
                         trueCount.put(x_ij, tc_x);
                     }
-                    tc_x[y[index]]++;
+                    tc_x[_y[index]]++;
                 }
 
                 for (Int2ObjectMap.Entry<int[]> e : trueCount.int2ObjectEntrySet()) {
@@ -732,11 +732,11 @@ public class DecisionTree implements Classifier<Vector> {
                             return;
                         }
 
-                        final double x_ij = x.get(i, j, Double.NaN);
+                        final double x_ij = _X.get(i, j, Double.NaN);
                         if (Double.isNaN(x_ij)) {
                             return;
                         }
-                        final int y_i = y[i];
+                        final int y_i = _y[i];
 
                         if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
                             prevx = x_ij;
@@ -817,8 +817,7 @@ public class DecisionTree implements Classifier<Vector> {
             int leaves = 0;
 
             node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
-            TrainNode trueChild =
-                    new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
+            TrainNode trueChild = new TrainNode(node.trueChild, trueBags.toArray(), depth + 1);
             trueBags = null; // help GC for recursive call
             if (tc >= _minSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
@@ -833,8 +832,7 @@ public class DecisionTree implements Classifier<Vector> {
             }
 
             node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
-            TrainNode falseChild =
-                    new TrainNode(node.falseChild, x, y, falseBags.toArray(), depth + 1);
+            TrainNode falseChild = new TrainNode(node.falseChild, falseBags.toArray(), depth + 1);
             falseBags = null; // help GC for recursive call
             if (fc >= _minSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
@@ -876,13 +874,13 @@ public class DecisionTree implements Classifier<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature, Double.NaN) <= splitValue) {
+                    if (_X.get(index, splitFeature, Double.NaN) <= splitValue) {
                         trueBags.add(index);
-                        trueChildPosteriori[y[index]]++;
+                        trueChildPosteriori[_y[index]]++;
                         tc++;
                     } else {
                         falseBags.add(index);
-                        falseChildPosteriori[y[index]]++;
+                        falseChildPosteriori[_y[index]]++;
                     }
                 }
             } else {
@@ -890,13 +888,13 @@ public class DecisionTree implements Classifier<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
+                    if (_X.get(index, splitFeature, Double.NaN) == splitValue) {
                         trueBags.add(index);
-                        trueChildPosteriori[y[index]]++;
+                        trueChildPosteriori[_y[index]]++;
                         tc++;
                     } else {
                         falseBags.add(index);
-                        falseChildPosteriori[y[index]]++;
+                        falseChildPosteriori[_y[index]]++;
                     }
                 }
             }
@@ -988,6 +986,9 @@ public class DecisionTree implements Classifier<Vector> {
             @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
+        this._X = x;
+        this._y = y;
+
         this._k = Math.max(y) + 1;
         if (_k < 2) {
             throw new IllegalArgumentException("Only one class or negative class labels.");
@@ -1029,7 +1030,7 @@ public class DecisionTree implements Classifier<Vector> {
         }
         this._root = new Node(Math.whichMax(count), posteriori);
 
-        final TrainNode trainRoot = new TrainNode(_root, x, y, bags, 1);
+        final TrainNode trainRoot = new TrainNode(_root, bags, 1);
         if (maxLeafs == Integer.MAX_VALUE) {
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);

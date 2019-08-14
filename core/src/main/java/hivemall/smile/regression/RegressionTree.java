@@ -102,6 +102,15 @@ import org.roaringbitmap.RoaringBitmap;
  */
 public final class RegressionTree implements Regression<Vector> {
     /**
+     * Training dataset.
+     */
+    private final Matrix _X;
+    /**
+     * Training data response value.
+     */
+    private final double[] _y;
+
+    /**
      * The attributes of independent variable.
      */
     @Nonnull
@@ -491,14 +500,6 @@ public final class RegressionTree implements Regression<Vector> {
          * Child node that fails the test.
          */
         TrainNode falseChild;
-        /**
-         * Training dataset.
-         */
-        final Matrix x;
-        /**
-         * Training data response value.
-         */
-        final double[] y;
 
         int[] bags;
 
@@ -507,10 +508,8 @@ public final class RegressionTree implements Regression<Vector> {
         /**
          * Constructor.
          */
-        public TrainNode(Node node, Matrix x, double[] y, int[] bags, int depth) {
+        public TrainNode(Node node, int[] bags, int depth) {
             this.node = node;
-            this.x = x;
-            this.y = y;
             this.bags = bags;
             this.depth = depth;
         }
@@ -560,8 +559,8 @@ public final class RegressionTree implements Regression<Vector> {
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
             final int[] samples =
-                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows()) : null;
-            for (int varJ : variableIndex(x, bags)) {
+                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, _X.numRows()) : null;
+            for (int varJ : variableIndex(_X, bags)) {
                 final Node split = findBestSplit(numSamples, sum, varJ, samples);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
@@ -622,13 +621,13 @@ public final class RegressionTree implements Regression<Vector> {
                     // For each true feature of this datum increment the
                     // sufficient statistics for the "true" branch to evaluate
                     // splitting on this feature.
-                    final double v = x.get(i, j, Double.NaN);
+                    final double v = _X.get(i, j, Double.NaN);
                     if (Double.isNaN(v)) {
                         continue;
                     }
                     int index = (int) v;
 
-                    trueSum.addTo(index, y[i]);
+                    trueSum.addTo(index, _y[i]);
                     trueCount.addTo(index, 1);
                 }
 
@@ -671,11 +670,11 @@ public final class RegressionTree implements Regression<Vector> {
                         if (sample == 0) {
                             return;
                         }
-                        final double x_ij = x.get(i, j, Double.NaN);
+                        final double x_ij = _X.get(i, j, Double.NaN);
                         if (Double.isNaN(x_ij)) {
                             return;
                         }
-                        final double y_i = y[i];
+                        final double y_i = _y[i];
 
                         if (Double.isNaN(prevx) || x_ij == prevx) {
                             prevx = x_ij;
@@ -751,7 +750,7 @@ public final class RegressionTree implements Regression<Vector> {
             int leaves = 0;
 
             node.trueChild = new Node(node.trueChildOutput);
-            this.trueChild = new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
+            this.trueChild = new TrainNode(node.trueChild, trueBags.toArray(), depth + 1);
             trueBags = null; // help GC for recursive call
             if (tc >= _minSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
@@ -766,7 +765,7 @@ public final class RegressionTree implements Regression<Vector> {
             }
 
             node.falseChild = new Node(node.falseChildOutput);
-            this.falseChild = new TrainNode(node.falseChild, x, y, falseBags.toArray(), depth + 1);
+            this.falseChild = new TrainNode(node.falseChild, falseBags.toArray(), depth + 1);
             falseBags = null; // help GC for recursive call
             if (fc >= _minSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
@@ -807,7 +806,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature, Double.NaN) <= splitValue) {
+                    if (_X.get(index, splitFeature, Double.NaN) <= splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
@@ -819,7 +818,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final double splitValue = node.splitValue;
                 for (int i = 0, size = bags.length; i < size; i++) {
                     final int index = bags[i];
-                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
+                    if (_X.get(index, splitFeature, Double.NaN) == splitValue) {
                         trueBags.add(index);
                         tc++;
                     } else {
@@ -871,6 +870,9 @@ public final class RegressionTree implements Regression<Vector> {
             @Nullable NodeOutput output, @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
 
+        this._X = x;
+        this._y = y;
+
         if (nominalAttrs == null) {
             nominalAttrs = new RoaringBitmap();
         }
@@ -905,7 +907,7 @@ public final class RegressionTree implements Regression<Vector> {
 
         this._root = new Node(sum / n);
 
-        TrainNode trainRoot = new TrainNode(_root, x, y, bags, 1);
+        TrainNode trainRoot = new TrainNode(_root, bags, 1);
         if (maxLeafs == Integer.MAX_VALUE) {
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);
