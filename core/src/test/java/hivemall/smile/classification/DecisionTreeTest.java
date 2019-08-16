@@ -237,6 +237,7 @@ public class DecisionTreeTest {
             DecisionTree stree = new DecisionTree(attrs, matrix(trainx, false), trainy, numLeafs,
                 RandomNumberGeneratorFactory.createPRNG(i));
             Assert.assertEquals(dtree.predict(x[loocv.test[i]]), stree.predict(x[loocv.test[i]]));
+            Assert.assertEquals(dtree.toString(), stree.toString());
         }
     }
 
@@ -331,15 +332,15 @@ public class DecisionTreeTest {
         int maxLeafs = Integer.MAX_VALUE;
         int minSplits = 2;
         int minLeafSize = 1;
-        int[] bags = Math.permutate(y.length);
-        ColumnMajorIntMatrix order = SmileExtUtils.sort(nominalAttrs, x);
+        int[] samples = null;
+        ColumnMajorIntMatrix order = null;
         PRNG rand = RandomNumberGeneratorFactory.createPRNG(43L);
 
         final String[] featureNames = new String[] {"pclass", "name", "sex", "age", "sibsp",
                 "parch", "ticket", "fare", "cabin", "embarked"};
         final String[] classNames = new String[] {"yes", "no"};
         DecisionTree tree = new DecisionTree(nominalAttrs, x, y, numVars, maxDepth, maxLeafs,
-            minSplits, minLeafSize, bags, order, SplitRule.GINI, rand) {
+            minSplits, minLeafSize, samples, order, SplitRule.GINI, rand) {
             @Override
             public String toString() {
                 return predictJsCodegen(featureNames, classNames);

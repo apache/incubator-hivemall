@@ -113,7 +113,7 @@ public final class SmileExtUtils {
 
     @Nonnull
     public static ColumnMajorIntMatrix sort(@Nonnull final RoaringBitmap attributes,
-            @Nonnull final Matrix x) {
+            @Nonnull final Matrix x, @Nonnull final int[] samples) {
         final int n = x.numRows();
         final int p = x.numColumns();
 
@@ -125,6 +125,9 @@ public final class SmileExtUtils {
             final VectorProcedure proc = new VectorProcedure() {
                 @Override
                 public void apply(final int i, final double v) {
+                    if (samples[i] == 0) {
+                        return;
+                    }
                     dlist.add(v);
                     ilist.add(i);
                 }
@@ -147,16 +150,29 @@ public final class SmileExtUtils {
                 ilist.clear();
             }
         } else {
-            final double[] a = new double[n];
+            final DoubleArrayList dlist = new DoubleArrayList(n);
+            final IntArrayList ilist = new IntArrayList(n);
             for (int j = 0; j < p; j++) {
                 if (attributes.contains(j)) {
                     continue; // nop for categorical columns
                 }
                 // sort only numerical columns
                 for (int i = 0; i < n; i++) {
-                    a[i] = x.get(i, j);
+                    if (samples[i] == 0) {
+                        continue;
+                    }
+                    double x_ij = x.get(i, j);
+                    dlist.add(x_ij);
+                    ilist.add(i);
                 }
-                index[j] = QuickSort.sort(a);
+                if (ilist.isEmpty()) {
+                    continue;
+                }
+                int[] indexJ = ilist.toArray();
+                QuickSort.sort(dlist.array(), indexJ, indexJ.length);
+                index[j] = indexJ;
+                dlist.clear();
+                ilist.clear();
             }
         }
 
