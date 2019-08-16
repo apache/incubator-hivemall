@@ -981,7 +981,7 @@ public class DecisionTree implements Classifier<Vector> {
             final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
         int j = low;
         int k = 0;
-        for (int i = low; i < high; i++) {
+        for (int i = low, end = Math.min(high, a.length); i < end; i++) {
             if (goesLeft.test(a[i])) {
                 a[j++] = a[i];
             } else {
