@@ -46,6 +46,10 @@ public final class MutableInt extends Number
         value += o;
     }
 
+    public int get() {
+        return value;
+    }
+
     public int getValue() {
         return value;
     }
