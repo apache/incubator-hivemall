@@ -700,29 +700,35 @@ public class DecisionTree implements Classifier<Vector> {
          */
         private Node findBestSplit(final int n, final int[] count, final int[] falseCount,
                 final double impurity, final int j) {
+            final int[] samples = _samples;
+            final int[] sampleIndex = _sampleIndex;
+            final Matrix X = _X;
+            final int[] y = _y;
+            final int classes = _k;
+
             final Node splitNode = new Node();
 
             if (_nominalAttrs.contains(j)) {
                 final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
 
-                for (int k = low; k < high; k++) {
-                    final int index = _sampleIndex[k];
-                    final int numSamples = _samples[index];
+                for (int i = low; i < high; i++) {
+                    final int index = sampleIndex[i];
+                    final int numSamples = samples[index];
                     if (numSamples == 0) {
                         continue;
                     }
 
-                    final double v = _X.get(index, j, Double.NaN);
+                    final double v = X.get(index, j, Double.NaN);
                     if (Double.isNaN(v)) {
                         continue;
                     }
                     int x_ij = (int) v;
                     int[] tc_x = trueCount.get(x_ij);
                     if (tc_x == null) {
-                        tc_x = new int[_k];
+                        tc_x = new int[classes];
                         trueCount.put(x_ij, tc_x);
                     }
-                    tc_x[_y[index]] += numSamples;
+                    tc_x[y[index]] += numSamples;
                 }
 
                 for (Int2ObjectMap.Entry<int[]> e : trueCount.int2ObjectEntrySet()) {
@@ -737,8 +743,8 @@ public class DecisionTree implements Classifier<Vector> {
                         continue;
                     }
 
-                    for (int q = 0; q < _k; q++) {
-                        falseCount[q] = count[q] - trueCount_l[q];
+                    for (int k = 0; k < classes; k++) {
+                        falseCount[k] = count[k] - trueCount_l[k];
                     }
 
                     final double gain =
@@ -756,20 +762,20 @@ public class DecisionTree implements Classifier<Vector> {
                     }
                 }
             } else {
-                final int[] trueCount = new int[_k];
+                final int[] trueCount = new int[classes];
 
                 _order.eachNonNullInColumn(j, low, high, new VectorProcedure() {
                     double prevx = Double.NaN;
                     int prevy = -1;
 
                     public void apply(final int row, final int i) {
-                        final int numSamples = _samples[i];
+                        final int numSamples = samples[i];
 
-                        final double x_ij = _X.get(i, j, Double.NaN);
+                        final double x_ij = X.get(i, j, Double.NaN);
                         if (Double.isNaN(x_ij)) {
                             return;
                         }
-                        final int y_i = _y[i];
+                        final int y_i = y[i];
 
                         if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
                             prevx = x_ij;
@@ -789,7 +795,7 @@ public class DecisionTree implements Classifier<Vector> {
                             return;
                         }
 
-                        for (int l = 0; l < _k; l++) {
+                        for (int l = 0; l < classes; l++) {
                             falseCount[l] = count[l] - trueCount[l];
                         }
 
