@@ -19,6 +19,7 @@
 package hivemall.math.vector;
 
 import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
 
 public abstract class VectorProcedure {
 
@@ -39,5 +40,7 @@ public abstract class VectorProcedure {
     public void apply(@Nonnegative int i, int value) {}
 
     public void apply(@Nonnegative int i) {}
+
+    public void apply(@Nonnegative int i, @Nonnull int[] values) {}
 
 }

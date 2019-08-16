@@ -20,6 +20,8 @@ package hivemall.math.matrix.ints;
 
 import hivemall.math.vector.VectorProcedure;
 
+import javax.annotation.Nonnull;
+
 public abstract class ColumnMajorIntMatrix extends AbstractIntMatrix {
 
     public ColumnMajorIntMatrix() {
@@ -35,5 +37,10 @@ public abstract class ColumnMajorIntMatrix extends AbstractIntMatrix {
     public void eachNonZeroInRow(int row, VectorProcedure procedure) {
         throw new UnsupportedOperationException();
     }
+
+    public abstract void eachNonNullInColumn(final int col, final int startRow, final int endRow,
+            @Nonnull final VectorProcedure procedure);
+
+    public abstract void eachRow(@Nonnull final VectorProcedure procedure);
 
 }

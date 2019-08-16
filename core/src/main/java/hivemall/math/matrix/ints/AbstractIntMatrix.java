@@ -91,6 +91,19 @@ public abstract class AbstractIntMatrix implements IntMatrix {
         }
     }
 
+    protected static void rangeCheck(final int length, final int fromIndex, final int toIndex) {
+        if (fromIndex > toIndex) {
+            throw new IllegalArgumentException(
+                "fromIndex(" + fromIndex + ") > toIndex(" + toIndex + ")");
+        }
+        if (fromIndex < 0) {
+            throw new ArrayIndexOutOfBoundsException(fromIndex);
+        }
+        if (toIndex > length) {
+            throw new ArrayIndexOutOfBoundsException(toIndex);
+        }
+    }
+
     @Override
     public void eachInRow(final int row, @Nonnull final VectorProcedure procedure) {
         eachInRow(row, procedure, true);
