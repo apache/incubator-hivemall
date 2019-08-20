@@ -185,7 +185,9 @@ public class DecisionTree implements Classifier<Vector> {
      * The minimum number of samples in a leaf node
      */
     private final int _minLeafSize;
-
+    /**
+     * The random number generator.
+     */
     @Nonnull
     private final PRNG _rnd;
 
@@ -259,7 +261,8 @@ public class DecisionTree implements Classifier<Vector> {
          */
         int falseChildOutput = -1;
 
-        public Node() {}// for Externalizable
+        public Node() {
+        }// for Externalizable
 
         public Node(int output, @Nonnull double[] posteriori) {
             this.output = output;
@@ -692,11 +695,11 @@ public class DecisionTree implements Classifier<Vector> {
         /**
          * Finds the best split cutoff for attribute j at the current node.
          *
-         * @param n the number instances in this node.
-         * @param count the sample count in each class.
+         * @param n          the number instances in this node.
+         * @param count      the sample count in each class.
          * @param falseCount an array to store sample count in each class for false child node.
-         * @param impurity the impurity of this node.
-         * @param j the attribute index to split on.
+         * @param impurity   the impurity of this node.
+         * @param j          the attribute index to split on.
          */
         private Node findBestSplit(final int n, final int[] count, final int[] falseCount,
                 final double impurity, final int j) {
@@ -909,12 +912,14 @@ public class DecisionTree implements Classifier<Vector> {
          * before all elements for which it is false, but element ordering is otherwise preserved.
          * The number of true elements in left must equal split-low.
          * 
-         * @param low the low bound of the segment of the order arrays which will be partitioned.
-         * @param pivot where the partition's split point will end up.
-         * @param high the high bound of the segment of the order arrays which will be partitioned.
+         * @param low      the low bound of the segment of the order arrays which will be
+         *                 partitioned.
+         * @param pivot    where the partition's split point will end up.
+         * @param high     the high bound of the segment of the order arrays which will be
+         *                 partitioned.
          * @param goesLeft whether an element goes to the left side or the right side of the
-         *        partition.
-         * @param buffer scratch space large enough to hold all elements for which left is false.
+         *                 partition.
+         * @param buffer   scratch space large enough to hold all elements for which left is false.
          */
         private void partitionOrder(final int low, final int pivot, final int high,
                 @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
@@ -1005,8 +1010,8 @@ public class DecisionTree implements Classifier<Vector> {
      * Returns the impurity of a node.
      *
      * @param count the sample count in each class.
-     * @param n the number of samples in the node.
-     * @param rule the rule for splitting a node.
+     * @param n     the number of samples in the node.
+     * @param rule  the rule for splitting a node.
      * @return the impurity of a node
      */
     private static double impurity(@Nonnull final int[] count, final int n,
@@ -1065,19 +1070,20 @@ public class DecisionTree implements Classifier<Vector> {
      * Constructor. Learns a classification tree for random forest.
      *
      * @param nominalAttrs the attribute properties.
-     * @param x the training instances.
-     * @param y the response variable.
-     * @param numVars the number of input variables to pick to split on at each node. It seems that
-     *        dim/3 give generally good performance, where dim is the number of variables.
-     * @param maxLeafs the maximum number of leaf nodes in the tree.
-     * @param minSplits the number of minimum elements in a node to split
-     * @param minLeafSize the minimum size of leaf nodes.
-     * @param order the index of training values in ascending order. Note that only numeric
-     *        attributes need be sorted.
-     * @param samples the sample set of instances for stochastic learning. samples[i] is the number
-     *        of sampling for instance i.
-     * @param rule the splitting rule.
-     * @param rand random number generator
+     * @param x            the training instances.
+     * @param y            the response variable.
+     * @param numVars      the number of input variables to pick to split on at each node. It seems
+     *                     that dim/3 give generally good performance, where dim is the number of
+     *                     variables.
+     * @param maxLeafs     the maximum number of leaf nodes in the tree.
+     * @param minSplits    the number of minimum elements in a node to split
+     * @param minLeafSize  the minimum size of leaf nodes.
+     * @param order        the index of training values in ascending order. Note that only numeric
+     *                     attributes need be sorted.
+     * @param samples      the sample set of instances for stochastic learning. samples[i] is the
+     *                     number of sampling for instance i.
+     * @param rule         the splitting rule.
+     * @param rand         random number generator
      */
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
@@ -1173,6 +1179,9 @@ public class DecisionTree implements Classifier<Vector> {
         if (x.numRows() != y.length) {
             throw new IllegalArgumentException(
                 String.format("The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
+        }
+        if (y.length == 0) {
+            throw new IllegalArgumentException("No training example given");
         }
         if (numVars <= 0 || numVars > x.numColumns()) {
             throw new IllegalArgumentException(
