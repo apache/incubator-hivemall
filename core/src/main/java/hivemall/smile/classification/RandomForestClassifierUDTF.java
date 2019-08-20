@@ -24,7 +24,6 @@ import hivemall.math.matrix.MatrixUtils;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.MatrixBuilder;
 import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.matrix.ints.DoKIntMatrix;
 import hivemall.math.matrix.ints.IntMatrix;
 import hivemall.math.random.PRNG;
@@ -44,7 +43,6 @@ import hivemall.utils.lang.RandomUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -386,13 +384,12 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
 
         IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
-        ColumnMajorIntMatrix order = SmileExtUtils.sort(nominalAttrs, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
-            tasks.add(new TrainingTask(this, i, nominalAttrs, x, y, numInputVars, order, prediction,
-                s, remainingTasks));
+            tasks.add(new TrainingTask(this, i, nominalAttrs, x, y, numInputVars, prediction, s,
+                remainingTasks));
         }
 
         MapredContext mapredContext = MapredContextAccessor.get();
@@ -476,12 +473,6 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         @Nonnull
         private final int[] _y;
         /**
-         * The index of training values in ascending order. Note that only numeric attributes will
-         * be sorted.
-         */
-        @Nonnull
-        private final ColumnMajorIntMatrix _order;
-        /**
          * The number of variables to pick up in each node.
          */
         private final int _numVars;
@@ -500,15 +491,14 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(@Nonnull RandomForestClassifierUDTF udtf, int taskId,
-                @Nonnull RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y, int numVars,
-                @Nonnull ColumnMajorIntMatrix order, @Nonnull IntMatrix prediction, long seed,
+                @Nonnull RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
+                int numVars, @Nonnull IntMatrix prediction, long seed,
                 @Nonnull AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._nominalAttrs = nominalAttrs;
             this._x = x;
             this._y = y;
-            this._order = order;
             this._numVars = numVars;
             this._prediction = prediction;
             this._seed = seed;
@@ -524,18 +514,20 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             final int N = _x.numRows();
 
             // Training samples draw with replacement.
-            final BitSet sampled = new BitSet(N);
-            final int[] bags = sampling(sampled, N, rnd1);
+            final int[] samples = sampling(N, rnd1);
 
             DecisionTree tree = new DecisionTree(_nominalAttrs, _x, _y, _numVars, _udtf._maxDepth,
-                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf, bags, _order,
+                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf, samples,
                 _udtf._splitRule, rnd2);
 
             // out-of-bag prediction
             int oob = 0;
             int correct = 0;
             final Vector xProbe = _x.rowVector();
-            for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
+            for (int i = 0; i < samples.length; i++) {
+                if (samples[i] != 0) {
+                    continue;
+                }
                 oob++;
                 _x.getRow(i, xProbe);
                 final int p = tree.predict(xProbe);
@@ -558,22 +550,20 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
 
         @Nonnull
-        private int[] sampling(@Nonnull final BitSet sampled, final int N, @Nonnull PRNG rnd) {
-            return _udtf._stratifiedSampling ? stratifiedSampling(sampled, N, _udtf._subsample, rnd)
-                    : uniformSampling(sampled, N, _udtf._subsample, rnd);
+        private int[] sampling(final int N, @Nonnull PRNG rnd) {
+            return _udtf._stratifiedSampling ? stratifiedSampling(N, _udtf._subsample, rnd)
+                    : uniformSampling(N, _udtf._subsample, rnd);
         }
 
         @Nonnull
-        private static int[] uniformSampling(@Nonnull final BitSet sampled, final int N,
-                final double subsample, final PRNG rnd) {
+        private static int[] uniformSampling(final int N, final double subsample, final PRNG rnd) {
             final int size = (int) Math.round(N * subsample);
-            final int[] bags = new int[N];
+            final int[] samples = new int[N];
             for (int i = 0; i < size; i++) {
                 int index = rnd.nextInt(N);
-                bags[i] = index;
-                sampled.set(index);
+                samples[index] += 1;
             }
-            return bags;
+            return samples;
         }
 
         /**
@@ -582,9 +572,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
          * @link https://en.wikipedia.org/wiki/Stratified_sampling
          */
         @Nonnull
-        private int[] stratifiedSampling(@Nonnull final BitSet sampled, final int N,
-                final double subsample, final PRNG rnd) {
-            final IntArrayList bagsList = new IntArrayList(N);
+        private int[] stratifiedSampling(final int N, final double subsample, final PRNG rnd) {
+            final int[] samples = new int[N];
             final int k = smile.math.Math.max(_y) + 1;
             final IntArrayList cj = new IntArrayList(N / k);
             for (int l = 0; l < k; l++) {
@@ -603,14 +592,12 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                 for (int j = 0; j < size; j++) {
                     int xi = rnd.nextInt(nj);
                     int index = cj.get(xi);
-                    bagsList.add(index);
-                    sampled.set(index);
+                    samples[index] += 1;
                 }
                 cj.clear();
             }
-            int[] bags = bagsList.toArray(true);
-            SmileExtUtils.shuffle(bags, rnd);
-            return bags;
+            // SmileExtUtils.shuffle(samples, rnd); // not needed in DecisionTrees
+            return samples;
         }
 
         @Nonnull

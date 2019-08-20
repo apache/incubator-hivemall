@@ -1060,12 +1060,12 @@ public class DecisionTree implements Classifier<Vector> {
 
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
             int numLeafs) {
-        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, SplitRule.GINI, null);
     }
 
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nullable Matrix x, @Nullable int[] y,
             int numLeafs, @Nullable PRNG rand) {
-        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, SplitRule.GINI, rand);
     }
 
     /**
@@ -1079,8 +1079,6 @@ public class DecisionTree implements Classifier<Vector> {
      * @param maxLeafs the maximum number of leaf nodes in the tree.
      * @param minSplits the number of minimum elements in a node to split
      * @param minSamplesLeaf The minimum number of samples in a leaf node
-     * @param order the index of training values in ascending order. Note that only numeric
-     *        attributes need be sorted.
      * @param samples the sample set of instances for stochastic learning. samples[i] is the number
      *        of sampling for instance i.
      * @param rule the splitting rule.
@@ -1088,8 +1086,7 @@ public class DecisionTree implements Classifier<Vector> {
      */
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
             int numVars, int maxDepth, int maxLeafs, int minSplits, int minSamplesLeaf,
-            @Nullable int[] samples, @Nullable ColumnMajorIntMatrix order, @Nonnull SplitRule rule,
-            @Nullable PRNG rand) {
+            @Nullable int[] samples, @Nonnull SplitRule rule, @Nullable PRNG rand) {
         checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minSamplesLeaf);
 
         this._X = x;
@@ -1139,7 +1136,7 @@ public class DecisionTree implements Classifier<Vector> {
             posIndex = positions.toArray(true);
         }
         this._samples = samples;
-        this._order = (order == null) ? SmileExtUtils.sort(nominalAttrs, x, samples) : order;
+        this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
         this._sampleIndex = posIndex;
 
         final double[] posteriori = new double[_k];
