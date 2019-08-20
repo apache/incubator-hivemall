@@ -32,12 +32,11 @@ import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.collections.lists.IntArrayList;
-import hivemall.utils.collections.sets.IntArraySet;
-import hivemall.utils.collections.sets.IntSet;
+import hivemall.utils.function.IntPredicate;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
-import hivemall.utils.math.MathUtils;
+import hivemall.utils.sampling.IntReservoirSampler;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap.Entry;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
@@ -51,7 +50,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -59,6 +57,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.roaringbitmap.IntConsumer;
 import org.roaringbitmap.RoaringBitmap;
 
 /**
@@ -109,13 +108,30 @@ public final class RegressionTree implements Regression<Vector> {
      * Training data response value.
      */
     private final double[] _y;
-
+    /**
+     * The samples for training this node. Note that samples[i] is the number of sampling of
+     * dataset[i]. 0 means that the datum is not included and values of greater than 1 are possible
+     * because of sampling with replacement.
+     */
+    @Nonnull
+    private final int[] _samples;
+    /**
+     * The index of training values in ascending order. Note that only numeric attributes will be
+     * sorted.
+     */
+    @Nonnull
+    private final ColumnMajorIntMatrix _order;
+    /**
+     * An index that maps their current position in the {@link #_order} to their original locations
+     * in {@link #_samples}.
+     */
+    @Nonnull
+    private final int[] _sampleIndex;
     /**
      * The attributes of independent variable.
      */
     @Nonnull
     private final RoaringBitmap _nominalAttrs;
-    private final boolean _hasNumericType;
     /**
      * Variable importance. Every time a split of a node is made on variable the impurity criterion
      * for the two descendant nodes is less than the parent node. Adding up the decreases for each
@@ -138,20 +154,15 @@ public final class RegressionTree implements Regression<Vector> {
     /**
      * The minimum number of samples in a leaf node
      */
-    private final int _minLeafSize;
+    private final int _minSamplesLeaf;
     /**
      * The number of input variables to be used to determine the decision at a node of the tree.
      */
     private final int _numVars;
     /**
-     * The index of training values in ascending order. Note that only numeric attributes will be
-     * sorted.
+     * The random number generator.
      */
-    private final ColumnMajorIntMatrix _order;
-
     private final PRNG _rnd;
-
-    private final NodeOutput _nodeOutput;
 
     /**
      * An interface to calculate node output. Note that samples[i] is the number of sampling of
@@ -165,7 +176,7 @@ public final class RegressionTree implements Regression<Vector> {
          * @param samples the samples in the node.
          * @return the node output
          */
-        public double calculate(int[] samples);
+        double calculate(int[] samples);
     }
 
     /**
@@ -491,27 +502,45 @@ public final class RegressionTree implements Regression<Vector> {
         /**
          * The associated regression tree node.
          */
+        @Nonnull
         final Node node;
+        /**
+         * Depth of the node in the tree
+         */
+        final int depth;
+        /**
+         * The lower bound (inclusive) in the order array of the samples belonging to this node.
+         */
+        final int low;
+        /**
+         * The upper bound (exclusive) in the order array of the samples belonging to this node.
+         */
+        final int high;
+        /**
+         * The number of samples
+         */
+        final int samples;
         /**
          * Child node that passes the test.
          */
+        @Nullable
         TrainNode trueChild;
         /**
          * Child node that fails the test.
          */
+        @Nullable
         TrainNode falseChild;
 
-        int[] bags;
-
-        final int depth;
-
-        /**
-         * Constructor.
-         */
-        public TrainNode(Node node, int[] bags, int depth) {
+        public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples) {
+            if (low >= high) {
+                throw new IllegalArgumentException(
+                    "Unexpected condition was met. low=" + low + ", high=" + high);
+            }
             this.node = node;
-            this.bags = bags;
             this.depth = depth;
+            this.low = low;
+            this.high = high;
+            this.samples = samples;
         }
 
         @Override
@@ -526,7 +555,7 @@ public final class RegressionTree implements Regression<Vector> {
          */
         public void calculateOutput(final NodeOutput output) {
             if (node.trueChild == null && node.falseChild == null) {
-                int[] samples = SmileExtUtils.bagsToSamples(bags);
+                int[] samples = getSamples();
                 node.output = output.calculate(samples);
             } else {
                 if (trueChild != null) {
@@ -536,6 +565,24 @@ public final class RegressionTree implements Regression<Vector> {
                     falseChild.calculateOutput(output);
                 }
             }
+        }
+
+        @Nonnull
+        private int[] getSamples() {
+            int size = high - low;
+            final IntArrayList result = new IntArrayList(size);
+
+            final int[] sampleIndex = _sampleIndex;
+            final int[] samples = _samples;
+            for (int i = low; i < high; i++) {
+                int index = sampleIndex[i];
+                int sample = samples[index];
+                if (sample > 0) {
+                    result.add(index);
+                }
+            }
+
+            return result.toArray(true);
         }
 
         /**
@@ -548,20 +595,16 @@ public final class RegressionTree implements Regression<Vector> {
                 return false;
             }
             // avoid split if the number of samples is less than threshold
-            final int numSamples = bags.length;
-            if (numSamples <= _minSplit) {
+            if (samples <= _minSplit) {
                 return false;
             }
 
-            final double sum = node.output * numSamples;
-
+            final double sum = node.output * samples;
 
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
-            final int[] samples =
-                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, _X.numRows()) : null;
-            for (int varJ : variableIndex(_X, bags)) {
-                final Node split = findBestSplit(numSamples, sum, varJ, samples);
+            for (int varJ : variableIndex()) {
+                final Node split = findBestSplit(samples, sum, varJ);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
                     node.quantitativeFeature = split.quantitativeFeature;
@@ -575,29 +618,35 @@ public final class RegressionTree implements Regression<Vector> {
             return node.splitFeature != -1;
         }
 
-        private int[] variableIndex(@Nonnull final Matrix x, @Nonnull final int[] bags) {
-            final int[] variableIndex;
-            if (x.isSparse()) {
-                final IntSet cols = new IntArraySet(_numVars);
+        @Nonnull
+        private int[] variableIndex() {
+            final Matrix X = _X;
+            final IntReservoirSampler sampler = new IntReservoirSampler(_numVars, _rnd.nextLong());
+            if (X.isSparse()) {
+                // sample columns from sampled examples
+                final RoaringBitmap cols = new RoaringBitmap();
                 final VectorProcedure proc = new VectorProcedure() {
-                    public void apply(int col, double value) {
+                    public void apply(final int col) {
                         cols.add(col);
                     }
                 };
-                for (final int row : bags) {
-                    x.eachNonNullInRow(row, proc);
+                final int[] sampleIndex = _sampleIndex;
+                for (int i = low; i < high; i++) {
+                    int row = sampleIndex[i];
+                    X.eachColumnIndexInRow(row, proc);
                 }
-                variableIndex = cols.toArray(false);
+                cols.forEach(new IntConsumer() {
+                    public void accept(final int k) {
+                        sampler.add(k);
+                    }
+                });
             } else {
-                variableIndex = MathUtils.permutation(x.numColumns());
+                final int ncols = X.numColumns();
+                for (int i = 0; i < ncols; i++) {
+                    sampler.add(i);
+                }
             }
-
-            if (_numVars < variableIndex.length) {
-                SmileExtUtils.shuffle(variableIndex, _rnd);
-                return Arrays.copyOf(variableIndex, _numVars);
-
-            }
-            return variableIndex;
+            return sampler.getSample();
         }
 
         /**
@@ -608,27 +657,36 @@ public final class RegressionTree implements Regression<Vector> {
          * @param impurity the impurity of this node.
          * @param j the attribute to split on.
          */
-        private Node findBestSplit(final int n, final double sum, final int j,
-                @Nullable final int[] samples) {
+        private Node findBestSplit(final int n, final double sum, final int j) {
+            final int[] samples = _samples;
+            final int[] sampleIndex = _sampleIndex;
+            final Matrix X = _X;
+            final double[] y = _y;
+
             final Node split = new Node(0.d);
 
             if (_nominalAttrs.contains(j)) {// nominal
                 final Int2DoubleOpenHashMap trueSum = new Int2DoubleOpenHashMap();
                 final Int2IntOpenHashMap trueCount = new Int2IntOpenHashMap();
 
-                for (int b = 0, size = bags.length; b < size; b++) {
-                    int i = bags[b];
+                for (int i = low; i < high; i++) {
+                    final int index = sampleIndex[i];
+                    final int numSamples = samples[index];
+                    if (numSamples == 0) {
+                        continue;
+                    }
+
                     // For each true feature of this datum increment the
                     // sufficient statistics for the "true" branch to evaluate
                     // splitting on this feature.
-                    final double v = _X.get(i, j, Double.NaN);
+                    final double v = X.get(i, j, Double.NaN);
                     if (Double.isNaN(v)) {
                         continue;
                     }
-                    int index = (int) v;
+                    int x_ij = (int) v;
 
-                    trueSum.addTo(index, _y[i]);
-                    trueCount.addTo(index, 1);
+                    trueSum.addTo(x_ij, y[i]);
+                    trueCount.addTo(x_ij, 1);
                 }
 
                 for (Entry e : trueCount.int2IntEntrySet()) {
@@ -660,16 +718,17 @@ public final class RegressionTree implements Regression<Vector> {
                     }
                 }
             } else {
-                _order.eachNonNullInColumn(j, new VectorProcedure() {
+                _order.eachNonNullInColumn(j, low, high, new VectorProcedure() {
                     double trueSum = 0.0;
                     int trueCount = 0;
                     double prevx = Double.NaN;
 
                     public void apply(final int row, final int i) {
-                        final int sample = samples[i];
-                        if (sample == 0) {
+                        final int numSamples = samples[i];
+                        if (numSamples == 0) {
                             return;
                         }
+
                         final double x_ij = _X.get(i, j, Double.NaN);
                         if (Double.isNaN(x_ij)) {
                             return;
@@ -678,8 +737,8 @@ public final class RegressionTree implements Regression<Vector> {
 
                         if (Double.isNaN(prevx) || x_ij == prevx) {
                             prevx = x_ij;
-                            trueSum += sample * y_i;
-                            trueCount += sample;
+                            trueSum += numSamples * y_i;
+                            trueCount += numSamples;
                             return;
                         }
 
@@ -688,8 +747,8 @@ public final class RegressionTree implements Regression<Vector> {
                         // If either side is empty, skip this feature.
                         if (trueCount < _minSplit || falseCount < _minSplit) {
                             prevx = x_ij;
-                            trueSum += sample * y_i;
-                            trueCount += sample;
+                            trueSum += numSamples * y_i;
+                            trueCount += numSamples;
                             return;
                         }
 
@@ -714,8 +773,8 @@ public final class RegressionTree implements Regression<Vector> {
                         }
 
                         prevx = x_ij;
-                        trueSum += sample * y_i;
-                        trueCount += sample;
+                        trueSum += numSamples * y_i;
+                        trueCount += numSamples;
                     }//apply
                 });
             }
@@ -726,32 +785,34 @@ public final class RegressionTree implements Regression<Vector> {
         /**
          * Split the node into two children nodes. Returns true if split success.
          */
-        public boolean split(final PriorityQueue<TrainNode> nextSplits) {
+        public boolean split(@Nullable final PriorityQueue<TrainNode> nextSplits) {
             if (node.splitFeature < 0) {
                 throw new IllegalStateException("Split a node with invalid feature.");
             }
 
-            // split sample bags
-            int childBagSize = (int) (bags.length * 0.4);
-            IntArrayList trueBags = new IntArrayList(childBagSize);
-            IntArrayList falseBags = new IntArrayList(childBagSize);
-            int tc = splitSamples(trueBags, falseBags);
-            int fc = bags.length - tc;
+            final IntPredicate goesLeft = getPredicate();
 
-            if (tc < _minLeafSize || fc < _minLeafSize) {
+            // split samples
+            final int tc, fc, pivot;
+            {
+                MutableInt tc_ = new MutableInt(0);
+                MutableInt fc_ = new MutableInt(0);
+                pivot = splitSamples(tc_, fc_, goesLeft);
+                tc = tc_.get();
+                fc = fc_.get();
+            }
+
+            if (tc < _minSamplesLeaf || fc < _minSamplesLeaf) {
                 node.markAsLeaf();
-                if (_nodeOutput == null) {
-                    this.bags = null;
-                }
                 return false;
             }
 
-            this.bags = null; // help GC for recursive call
+            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot]);
+
             int leaves = 0;
 
             node.trueChild = new Node(node.trueChildOutput);
-            this.trueChild = new TrainNode(node.trueChild, trueBags.toArray(), depth + 1);
-            trueBags = null; // help GC for recursive call
+            this.trueChild = new TrainNode(node.trueChild, depth + 1, low, pivot, tc);
             if (tc >= _minSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
@@ -765,8 +826,7 @@ public final class RegressionTree implements Regression<Vector> {
             }
 
             node.falseChild = new Node(node.falseChildOutput);
-            this.falseChild = new TrainNode(node.falseChild, falseBags.toArray(), depth + 1);
-            falseBags = null; // help GC for recursive call
+            this.falseChild = new TrainNode(node.falseChild, depth + 1, pivot, high, fc);
             if (fc >= _minSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
@@ -783,9 +843,6 @@ public final class RegressionTree implements Regression<Vector> {
             if (leaves == 2) {// both left and right child is leaf node
                 if (node.trueChild.output == node.falseChild.output) {// found meaningless branch
                     node.markAsLeaf();
-                    if (_nodeOutput == null) {
-                        this.bags = null;
-                    }
                     return false;
                 }
             }
@@ -796,56 +853,111 @@ public final class RegressionTree implements Regression<Vector> {
         }
 
         /**
-         * @return the number of true samples
+         * @return Pivot to split samples
          */
-        private int splitSamples(@Nonnull final IntArrayList trueBags,
-                @Nonnull final IntArrayList falseBags) {
-            int tc = 0;
-            if (node.quantitativeFeature) {
-                final int splitFeature = node.splitFeature;
-                final double splitValue = node.splitValue;
-                for (int i = 0, size = bags.length; i < size; i++) {
-                    final int index = bags[i];
-                    if (_X.get(index, splitFeature, Double.NaN) <= splitValue) {
-                        trueBags.add(index);
-                        tc++;
-                    } else {
-                        falseBags.add(index);
-                    }
-                }
-            } else {
-                final int splitFeature = node.splitFeature;
-                final double splitValue = node.splitValue;
-                for (int i = 0, size = bags.length; i < size; i++) {
-                    final int index = bags[i];
-                    if (_X.get(index, splitFeature, Double.NaN) == splitValue) {
-                        trueBags.add(index);
-                        tc++;
-                    } else {
-                        falseBags.add(index);
-                    }
+        private int splitSamples(@Nonnull final MutableInt tc, @Nonnull final MutableInt fc,
+                @Nonnull final IntPredicate goesLeft) {
+            final int[] sampleIndex = _sampleIndex;
+            final int[] samples = _samples;
+
+            int pivot = low;
+            for (int k = low; k < high; k++) {
+                final int i = sampleIndex[k];
+                final int numSamples = samples[i];
+                if (goesLeft.test(i)) {
+                    tc.addValue(numSamples);
+                    pivot++;
+                } else {
+                    fc.addValue(numSamples);
                 }
             }
-            return tc;
+            return pivot;
+        }
+
+        /**
+         * Modifies {@link #order} and {@link #originalOrder} by partitioning the range from low
+         * (inclusive) to high (exclusive) so that all elements o for which goesLeft(o) is true come
+         * before all elements for which it is false, but element ordering is otherwise preserved.
+         * The number of true elements in left must equal split-low.
+         * 
+         * @param low the low bound of the segment of the order arrays which will be partitioned.
+         * @param pivot where the partition's split point will end up.
+         * @param high the high bound of the segment of the order arrays which will be partitioned.
+         * @param goesLeft whether an element goes to the left side or the right side of the
+         *        partition.
+         * @param buffer scratch space large enough to hold all elements for which left is false.
+         */
+        private void partitionOrder(final int low, final int pivot, final int high,
+                @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
+            _order.eachRow(new VectorProcedure() {
+                @Override
+                public void apply(int col, @Nonnull final int[] row) {
+                    partitionArray(row, low, pivot, high, goesLeft, buffer);
+                }
+            });
+            partitionArray(_sampleIndex, low, pivot, high, goesLeft, buffer);
+        }
+
+        @Nonnull
+        private IntPredicate getPredicate() {
+            if (node.quantitativeFeature) {
+                return new IntPredicate() {
+                    @Override
+                    public boolean test(int i) {
+                        return _X.get(i, node.splitFeature, Double.NaN) <= node.splitValue;
+                    }
+                };
+            } else {
+                return new IntPredicate() {
+                    @Override
+                    public boolean test(int i) {
+                        return _X.get(i, node.splitFeature, Double.NaN) == node.splitValue;
+                    }
+                };
+            }
         }
 
     }
 
+    /**
+     * Modifies an array in-place by partitioning the range from low (inclusive) to high (exclusive)
+     * so that all elements i for which left[i - low] is true come before all elements for which it
+     * is false, but element ordering is otherwise preserved. The number of true elements in left
+     * must equal split-low. buffer is scratch space large enough to hold all elements for which
+     * left is false.
+     */
+    private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
+            final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
+        int j = low;
+        int k = 0;
+        for (int i = low, end = Math.min(high, a.length); i < end; i++) {
+            if (goesLeft.test(a[i])) {
+                a[j++] = a[i];
+            } else {
+                buffer[k++] = a[i];
+            }
+        }
+        if (k != high - pivot || j != pivot) {
+            throw new IllegalStateException("Messed up partition.. low=" + low + ", pivot=" + pivot
+                    + ", high=" + high + " ended up splitting at " + j);
+        }
+        System.arraycopy(buffer, 0, a, pivot, k);
+    }
+
     public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int maxLeafs) {
-        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, null);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null);
     }
 
     public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int maxLeafs, @Nullable PRNG rand) {
-        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null, rand);
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, rand);
     }
 
     public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
-            int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
-            @Nullable PRNG rand) {
-        this(nominalAttrs, x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize, order, bags, null, rand);
+            int minSamplesLeaf, @Nullable int[] samples, @Nullable PRNG rand) {
+        this(nominalAttrs, x, y, numVars, maxDepth, maxLeafs, minSplits, minSamplesLeaf, samples, null, rand);
     }
 
     /**
@@ -857,18 +969,16 @@ public final class RegressionTree implements Regression<Vector> {
      * @param numVars the number of input variables to pick to split on at each node. It seems that
      *        dim/3 give generally good performance, where dim is the number of variables.
      * @param maxLeafs the maximum number of leaf nodes in the tree.
-     * @param minSplits number of instances in a node below which the tree will not split, setting S
-     *        = 5 generally gives good results.
-     * @param order the index of training values in ascending order. Note that only numeric
-     *        attributes need be sorted.
-     * @param bags the sample set of instances for stochastic learning.
+     * @param minSamplesLeaf number of instances in a node below which the tree will not split,
+     *        setting 5 generally gives good results.
+     * @param samples the sample set of instances for stochastic learning.
      * @param output An interface to calculate node output.
      */
     public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
-            int minLeafSize, @Nullable ColumnMajorIntMatrix order, @Nullable int[] bags,
-            @Nullable NodeOutput output, @Nullable PRNG rand) {
-        checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
+            int minSamplesLeaf, @Nullable int[] samples, @Nullable NodeOutput output,
+            @Nullable PRNG rand) {
+        checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minSamplesLeaf);
 
         this._X = x;
         this._y = y;
@@ -877,37 +987,45 @@ public final class RegressionTree implements Regression<Vector> {
             nominalAttrs = new RoaringBitmap();
         }
         this._nominalAttrs = nominalAttrs;
-        this._hasNumericType = SmileExtUtils.containsNumericType(x, nominalAttrs);
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
         this._minSplit = minSplits;
-        this._minLeafSize = minLeafSize;
-        this._order = (order == null) ? SmileExtUtils.sort(_nominalAttrs, x) : order;
+        this._minSamplesLeaf = minSamplesLeaf;
         this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
-        this._nodeOutput = output;
 
         int n = 0;
         double sum = 0.0;
-        if (bags == null) {
+        final int[] posIndex;
+        if (samples == null) {
             n = y.length;
-            bags = new int[n];
+            samples = new int[n];
+            posIndex = new int[n];
             for (int i = 0; i < n; i++) {
-                bags[i] = i;
+                samples[i] = 1;
                 sum += y[i];
+                posIndex[i] = i;
             }
         } else {
-            n = bags.length;
-            for (int i = 0; i < n; i++) {
-                int index = bags[i];
-                sum += y[index];
+            final IntArrayList positions = new IntArrayList(n);
+            for (int i = 0; i < y.length; i++) {
+                final int sample = samples[i];
+                if (sample != 0) {
+                    n += sample;
+                    sum += sample * y[i];
+                    positions.add(i);
+                }
             }
+            posIndex = positions.toArray(true);
         }
+        this._samples = samples;
+        this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
+        this._sampleIndex = posIndex;
 
         this._root = new Node(sum / n);
 
-        TrainNode trainRoot = new TrainNode(_root, bags, 1);
+        TrainNode trainRoot = new TrainNode(_root, 1, 0, _sampleIndex.length, n);
         if (maxLeafs == Integer.MAX_VALUE) {
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);
@@ -941,6 +1059,9 @@ public final class RegressionTree implements Regression<Vector> {
         if (x.numRows() != y.length) {
             throw new IllegalArgumentException(
                 String.format("The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
+        }
+        if (y.length == 0) {
+            throw new IllegalArgumentException("No training example given");
         }
         if (numVars <= 0 || numVars > x.numColumns()) {
             throw new IllegalArgumentException(

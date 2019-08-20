@@ -23,7 +23,6 @@ import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.MatrixBuilder;
 import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
@@ -39,7 +38,6 @@ import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -341,13 +339,12 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
 
         double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
         int[] oob = new int[numExamples];
-        ColumnMajorIntMatrix order = SmileExtUtils.sort(_nominalAttrs, x);
         AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
-            tasks.add(new TrainingTask(this, i, _nominalAttrs, x, y, numInputVars, order,
-                prediction, oob, s, remainingTasks));
+            tasks.add(new TrainingTask(this, i, _nominalAttrs, x, y, numInputVars, prediction, oob,
+                s, remainingTasks));
         }
 
         MapredContext mapredContext = MapredContextAccessor.get();
@@ -426,11 +423,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
          */
         private final double[] _y;
         /**
-         * The index of training values in ascending order. Note that only numeric attributes will
-         * be sorted.
-         */
-        private final ColumnMajorIntMatrix _order;
-        /**
          * The number of variables to pick up in each node.
          */
         private final int _numVars;
@@ -449,14 +441,13 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final AtomicInteger _remainingTasks;
 
         TrainingTask(RandomForestRegressionUDTF udtf, int taskId, RoaringBitmap nominalAttrs,
-                Matrix x, double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction,
-                int[] oob, long seed, AtomicInteger remainingTasks) {
+                Matrix x, double[] y, int numVars, double[] prediction, int[] oob, long seed,
+                AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
             this._nominalAttrs = nominalAttrs;
             this._x = x;
             this._y = y;
-            this._order = order;
             this._numVars = numVars;
             this._prediction = prediction;
             this._oob = oob;
@@ -473,25 +464,26 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             final int N = _x.numRows();
 
             // Training samples draw with replacement.
-            final int[] bags = new int[N];
-            final BitSet sampled = new BitSet(N);
+            final int[] samples = new int[N];
             for (int i = 0; i < N; i++) {
                 int index = rnd1.nextInt(N);
-                bags[i] = index;
-                sampled.set(index);
+                samples[index] += 1;
             }
 
             StopWatch stopwatch = new StopWatch();
             RegressionTree tree = new RegressionTree(_nominalAttrs, _x, _y, _numVars,
                 _udtf._maxDepth, _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf,
-                _order, bags, rnd2);
+                samples, rnd2);
             incrCounter(_udtf._treeConstructionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             // out-of-bag prediction
             int oob = 0;
             double error = 0.d;
             final Vector xProbe = _x.rowVector();
-            for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
+            for (int i = 0; i < samples.length; i++) {
+                if (samples[i] != 0) {
+                    continue;
+                }
                 oob++;
                 _x.getRow(i, xProbe);
                 final double pred = tree.predict(xProbe);
