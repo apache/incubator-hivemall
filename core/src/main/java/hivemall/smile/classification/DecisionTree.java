@@ -36,6 +36,7 @@ import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.function.IntPredicate;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
+import hivemall.utils.lang.mutable.MutableBoolean;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.sampling.IntReservoirSampler;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -584,7 +585,15 @@ public class DecisionTree implements Classifier<Vector> {
          */
         final int samples;
 
+        @Nullable
+        RoaringBitmap constFeatures;
+
         public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples) {
+            this(node, depth, low, high, samples, new RoaringBitmap());
+        }
+
+        public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples,
+                @Nonnull RoaringBitmap constFeatures) {
             if (low >= high) {
                 throw new IllegalArgumentException(
                     "Unexpected condition was met. low=" + low + ", high=" + high);
@@ -594,6 +603,7 @@ public class DecisionTree implements Classifier<Vector> {
             this.low = low;
             this.high = high;
             this.samples = samples;
+            this.constFeatures = constFeatures;
         }
 
         @Override
@@ -627,6 +637,9 @@ public class DecisionTree implements Classifier<Vector> {
 
             final int[] falseCount = new int[_k];
             for (int varJ : variableIndex()) {
+                if (constFeatures.contains(varJ)) {
+                    continue; // skip constant features
+                }
                 final Node split = findBestSplit(samples, count, falseCount, impurity, varJ);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
@@ -727,12 +740,17 @@ public class DecisionTree implements Classifier<Vector> {
                         continue;
                     }
                     int x_ij = (int) v;
+
                     int[] tc_x = trueCount.get(x_ij);
                     if (tc_x == null) {
                         tc_x = new int[classes];
                         trueCount.put(x_ij, tc_x);
                     }
-                    tc_x[y[index]] += numSamples;
+                    int y_i = y[index];
+                    tc_x[y_i] += numSamples;
+                }
+                if (trueCount.size() <= 1) {
+                    constFeatures.add(j); // mark as a constant feature
                 }
 
                 for (Int2ObjectMap.Entry<int[]> e : trueCount.int2ObjectEntrySet()) {
@@ -767,9 +785,10 @@ public class DecisionTree implements Classifier<Vector> {
                 }
             } else {
                 final int[] trueCount = new int[classes];
+                final MutableBoolean constantJ = new MutableBoolean(true);
 
                 _order.eachNonNullInColumn(j, low, high, new VectorProcedure() {
-                    double prevx = Double.NaN;
+                    double prevx = Double.NaN, lastx = Double.NaN;
                     int prevy = -1;
 
                     public void apply(final int row, final int i) {
@@ -782,6 +801,13 @@ public class DecisionTree implements Classifier<Vector> {
                         if (Double.isNaN(x_ij)) {
                             return;
                         }
+                        if (lastx != x_ij) {
+                            if (Double.isNaN(lastx) == false) {
+                                constantJ.setFalse();
+                            }
+                            this.lastx = x_ij;
+                        }
+
                         final int y_i = y[i];
 
                         if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
@@ -825,6 +851,10 @@ public class DecisionTree implements Classifier<Vector> {
                         trueCount[y_i] += numSamples;
                     }//apply()
                 });
+
+                if (constantJ.booleanValue()) {
+                    constFeatures.add(j); // mark as a constant feature
+                }
             }
 
             return splitNode;
@@ -869,7 +899,13 @@ public class DecisionTree implements Classifier<Vector> {
             int leaves = 0;
 
             node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
-            TrainNode trueChild = new TrainNode(node.trueChild, depth + 1, low, pivot, tc);
+            TrainNode trueChild =
+                    new TrainNode(node.trueChild, depth + 1, low, pivot, tc, constFeatures.clone());
+            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
+            TrainNode falseChild =
+                    new TrainNode(node.falseChild, depth + 1, pivot, high, fc, constFeatures);
+            this.constFeatures = null;
+
             if (tc >= _minSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
@@ -882,8 +918,6 @@ public class DecisionTree implements Classifier<Vector> {
                 leaves++;
             }
 
-            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
-            TrainNode falseChild = new TrainNode(node.falseChild, depth + 1, pivot, high, fc);
             if (fc >= _minSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
