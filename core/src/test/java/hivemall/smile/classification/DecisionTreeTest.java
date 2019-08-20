@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.smile.classification.DecisionTree.Node;
@@ -333,14 +332,13 @@ public class DecisionTreeTest {
         int minSplits = 2;
         int minLeafSize = 1;
         int[] samples = null;
-        ColumnMajorIntMatrix order = null;
         PRNG rand = RandomNumberGeneratorFactory.createPRNG(43L);
 
         final String[] featureNames = new String[] {"pclass", "name", "sex", "age", "sibsp",
                 "parch", "ticket", "fare", "cabin", "embarked"};
         final String[] classNames = new String[] {"yes", "no"};
         DecisionTree tree = new DecisionTree(nominalAttrs, x, y, numVars, maxDepth, maxLeafs,
-            minSplits, minLeafSize, samples, order, SplitRule.GINI, rand) {
+            minSplits, minLeafSize, samples, SplitRule.GINI, rand) {
             @Override
             public String toString() {
                 return predictJsCodegen(featureNames, classNames);

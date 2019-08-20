@@ -23,7 +23,6 @@ import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.MatrixBuilder;
 import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
@@ -376,7 +375,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             h[i] = intercept;
         }
 
-        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_nominalAttrs, x);
         final RegressionTree.NodeOutput output = new L2NodeOutput(response);
 
         final BitSet sampled = new BitSet(numInstances);
@@ -407,7 +405,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             }
 
             RegressionTree tree = new RegressionTree(_nominalAttrs, x, response, numVars, _maxDepth,
-                _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag, output, rnd2);
+                _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, bag, output, rnd2);
 
             for (int i = 0; i < numInstances; i++) {
                 x.getRow(i, xProbe);
@@ -453,7 +451,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final double[][] p = new double[k][numInstances]; // a posteriori probabilities.
         final double[][] response = new double[k][numInstances]; // pseudo response.
 
-        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_nominalAttrs, x);
         final RegressionTree.NodeOutput[] output = new LKNodeOutput[k];
         for (int i = 0; i < k; i++) {
             output[i] = new LKNodeOutput(response[i], k);
@@ -520,9 +517,9 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     sampled.set(i);
                 }
 
-                RegressionTree tree = new RegressionTree(_nominalAttrs, x, response[j], numVars,
-                    _maxDepth, _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag,
-                    output[j], rnd2);
+                RegressionTree tree =
+                        new RegressionTree(_nominalAttrs, x, response[j], numVars, _maxDepth,
+                            _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, bag, output[j], rnd2);
                 trees[j] = tree;
 
                 for (int i = 0; i < numInstances; i++) {
