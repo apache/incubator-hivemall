@@ -806,12 +806,11 @@ public class DecisionTree implements Classifier<Vector> {
                             return;
                         }
                         if (lastx != x_ij) {
-                            this.lastx = x_ij;
+                            lastx = x_ij;
                             replaceCount.incr();
                         }
 
                         final int y_i = y[i];
-
                         if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
                             prevx = x_ij;
                             prevy = y_i;

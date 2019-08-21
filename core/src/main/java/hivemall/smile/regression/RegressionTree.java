@@ -531,7 +531,15 @@ public final class RegressionTree implements Regression<Vector> {
         @Nullable
         TrainNode falseChild;
 
+        @Nullable
+        RoaringBitmap constFeatures;
+
         public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples) {
+            this(node, depth, low, high, samples, new RoaringBitmap());
+        }
+
+        public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples,
+                @Nonnull RoaringBitmap constFeatures) {
             if (low >= high) {
                 throw new IllegalArgumentException(
                     "Unexpected condition was met. low=" + low + ", high=" + high);
@@ -541,6 +549,7 @@ public final class RegressionTree implements Regression<Vector> {
             this.low = low;
             this.high = high;
             this.samples = samples;
+            this.constFeatures = constFeatures;
         }
 
         @Override
@@ -604,6 +613,9 @@ public final class RegressionTree implements Regression<Vector> {
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
             for (int varJ : variableIndex()) {
+                if (constFeatures.contains(varJ)) {
+                    continue;
+                }
                 final Node split = findBestSplit(samples, sum, varJ);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
@@ -669,6 +681,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final Int2DoubleOpenHashMap trueSum = new Int2DoubleOpenHashMap();
                 final Int2IntOpenHashMap trueCount = new Int2IntOpenHashMap();
 
+                int countNaN = 0;
                 for (int i = low; i < high; i++) {
                     final int index = sampleIndex[i];
                     final int numSamples = samples[index];
@@ -681,12 +694,17 @@ public final class RegressionTree implements Regression<Vector> {
                     // splitting on this feature.
                     final double v = X.get(i, j, Double.NaN);
                     if (Double.isNaN(v)) {
+                        countNaN++;
                         continue;
                     }
                     int x_ij = (int) v;
 
                     trueSum.addTo(x_ij, y[i]);
                     trueCount.addTo(x_ij, 1);
+                }
+                final int countDistinctX = trueCount.size() + (countNaN == 0 ? 0 : 1);
+                if (countDistinctX <= 1) {
+                    constFeatures.add(j); // mark as a constant feature
                 }
 
                 for (Entry e : trueCount.int2IntEntrySet()) {
@@ -718,10 +736,13 @@ public final class RegressionTree implements Regression<Vector> {
                     }
                 }
             } else {
+                final MutableInt countNaN = new MutableInt(0);
+                final MutableInt replaceCount = new MutableInt(0);
+
                 _order.eachNonNullInColumn(j, low, high, new VectorProcedure() {
                     double trueSum = 0.0;
                     int trueCount = 0;
-                    double prevx = Double.NaN;
+                    double prevx = Double.NaN, lastx = Double.NaN;
 
                     public void apply(final int row, final int i) {
                         final int numSamples = samples[i];
@@ -731,10 +752,15 @@ public final class RegressionTree implements Regression<Vector> {
 
                         final double x_ij = _X.get(i, j, Double.NaN);
                         if (Double.isNaN(x_ij)) {
+                            countNaN.incr();
                             return;
                         }
-                        final double y_i = _y[i];
+                        if (lastx != x_ij) {
+                            lastx = x_ij;
+                            replaceCount.incr();
+                        }
 
+                        final double y_i = _y[i];
                         if (Double.isNaN(prevx) || x_ij == prevx) {
                             prevx = x_ij;
                             trueSum += numSamples * y_i;
@@ -777,6 +803,11 @@ public final class RegressionTree implements Regression<Vector> {
                         trueCount += numSamples;
                     }//apply
                 });
+
+                final int countDistinctX = replaceCount.get() + (countNaN.get() == 0 ? 0 : 1);
+                if (countDistinctX <= 1) {
+                    constFeatures.add(j); // mark as a constant feature
+                }
             }
 
             return split;
@@ -812,7 +843,13 @@ public final class RegressionTree implements Regression<Vector> {
             int leaves = 0;
 
             node.trueChild = new Node(node.trueChildOutput);
-            this.trueChild = new TrainNode(node.trueChild, depth + 1, low, pivot, tc);
+            this.trueChild =
+                    new TrainNode(node.trueChild, depth + 1, low, pivot, tc, constFeatures.clone());
+            node.falseChild = new Node(node.falseChildOutput);
+            this.falseChild =
+                    new TrainNode(node.falseChild, depth + 1, pivot, high, fc, constFeatures);
+            this.constFeatures = null;
+
             if (tc >= _minSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
@@ -825,8 +862,6 @@ public final class RegressionTree implements Regression<Vector> {
                 leaves++;
             }
 
-            node.falseChild = new Node(node.falseChildOutput);
-            this.falseChild = new TrainNode(node.falseChild, depth + 1, pivot, high, fc);
             if (fc >= _minSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
