@@ -56,6 +56,8 @@ import java.util.PriorityQueue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.roaringbitmap.IntConsumer;
 import org.roaringbitmap.RoaringBitmap;
@@ -100,6 +102,8 @@ import org.roaringbitmap.RoaringBitmap;
  * @see RandomForest
  */
 public final class RegressionTree implements Regression<Vector> {
+    private static final Log logger = LogFactory.getLog(RegressionTree.class);
+
     /**
      * Training dataset.
      */
@@ -1025,6 +1029,16 @@ public final class RegressionTree implements Regression<Vector> {
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
+        // min_sample_leaf >= 2 is satisfied iff min_sample_split >= 4
+        // So, split only happens when samples in intermediate nodes has >= 2 * min_sample_leaf nodes.
+        if (minSamplesSplit < minSamplesLeaf * 2) {
+            if (logger.isInfoEnabled()) {
+                logger.info(String.format(
+                    "min_sample_leaf = %d replaces min_sample_split = %d with min_sample_split = %d",
+                    minSamplesLeaf, minSamplesSplit, minSamplesLeaf * 2));
+            }
+            minSamplesSplit = minSamplesLeaf * 2;
+        }
         this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
@@ -1090,7 +1104,7 @@ public final class RegressionTree implements Regression<Vector> {
     }
 
     private static void checkArgument(@Nonnull Matrix x, @Nonnull double[] y, int numVars,
-            int maxDepth, int maxLeafs, int minSplits, int minLeafSize) {
+            int maxDepth, int maxLeafNodes, int minSamplesSplit, int minSamplesLeaf) {
         if (x.numRows() != y.length) {
             throw new IllegalArgumentException(
                 String.format("The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
@@ -1105,17 +1119,17 @@ public final class RegressionTree implements Regression<Vector> {
         if (maxDepth < 2) {
             throw new IllegalArgumentException("maxDepth should be greater than 1: " + maxDepth);
         }
-        if (maxLeafs < 2) {
-            throw new IllegalArgumentException("Invalid maximum leaves: " + maxLeafs);
+        if (maxLeafNodes < 2) {
+            throw new IllegalArgumentException("Invalid maximum leaves: " + maxLeafNodes);
         }
-        if (minSplits < 2) {
+        if (minSamplesSplit < 2) {
             throw new IllegalArgumentException(
                 "Invalid minimum number of samples required to split an internal node: "
-                        + minSplits);
+                        + minSamplesSplit);
         }
-        if (minLeafSize < 1) {
+        if (minSamplesLeaf < 1) {
             throw new IllegalArgumentException(
-                "Invalid minimum size of leaf nodes: " + minLeafSize);
+                "Invalid minimum size of leaf nodes: " + minSamplesLeaf);
         }
     }
 
