@@ -112,7 +112,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private RoaringBitmap nominalAttrs;
+    private RoaringBitmap _nominalAttrs;
     private SplitRule _splitRule;
     private boolean _stratifiedSampling;
     private double _subsample;
@@ -144,6 +144,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
+        opts.addOption("nominal_attr_indicies", "categorical_attr_indicies", true,
+            "Comma seperated indicies of categorical attributes, e.g., [3,5,6]");
         opts.addOption("rule", "split_rule", true,
             "Split algorithm [default: GINI, ENTROPY, CLASSIFICATION_ERROR]");
         opts.addOption("stratified", "stratified_sampling", false,
@@ -178,14 +180,20 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             maxLeafNodes = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafNodes);
             String min_samples_split = cl.getOptionValue("min_samples_split");
             if (min_samples_split == null) {
-                minSamplesSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSamplesSplit);
+                minSamplesSplit =
+                        Primitives.parseInt(cl.getOptionValue("min_split"), minSamplesSplit);
             } else {
                 minSamplesSplit = Integer.parseInt(min_samples_split);
             }
             minSamplesLeaf =
                     Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
-            attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            String nominal_attr_indicies = cl.getOptionValue("nominal_attr_indicies");
+            if (nominal_attr_indicies != null) {
+                attrs = SmileExtUtils.parseNominalAttributeIndicies(nominal_attr_indicies);
+            } else {
+                attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            }
             splitRule = SmileExtUtils.resolveSplitRule(cl.getOptionValue("split_rule", "GINI"));
             stratifiedSampling = cl.hasOption("stratified_sampling");
             subsample = Primitives.parseDouble(cl.getOptionValue("subsample"), 1.0d);
@@ -216,7 +224,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this.nominalAttrs = attrs;
+        this._nominalAttrs = attrs;
         this._splitRule = splitRule;
         this._stratifiedSampling = stratifiedSampling;
         this._subsample = subsample;
@@ -348,7 +356,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this.featureListOI = null;
         this.featureElemOI = null;
         this.labelOI = null;
-        this.nominalAttrs = null;
+        this._nominalAttrs = null;
     }
 
     private void checkOptions() throws HiveException {
@@ -393,7 +401,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
-            tasks.add(new TrainingTask(this, i, nominalAttrs, x, y, numInputVars, prediction, s,
+            tasks.add(new TrainingTask(this, i, _nominalAttrs, x, y, numInputVars, prediction, s,
                 remainingTasks));
         }
 

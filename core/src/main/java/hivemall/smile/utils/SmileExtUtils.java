@@ -65,25 +65,36 @@ public final class SmileExtUtils {
         }
         final String[] opts = opt.split(",");
         final int size = opts.length;
-        int numCount = 0, qcCount = 0;
         for (int i = 0; i < size; i++) {
             final String type = opts[i];
             if ("Q".equals(type)) {
-                qcCount++;
                 continue;
             } else if ("C".equals(type)) {
-                qcCount++;
                 attr.add(i);
-            } else if (NumberUtils.isDigits(type)) {
-                numCount++;
-                int index = NumberUtils.parseInt(type);
-                attr.add(index);
             } else {
                 throw new UDFArgumentException("Unsupported attribute type: " + type);
             }
         }
-        if (qcCount != size && numCount != size) {
-            throw new UDFArgumentException("Invalid attribute expression: " + opt);
+        return attr;
+    }
+
+    /**
+     * Q for {@link NumericAttribute}, C for {@link NominalAttribute}.
+     */
+    @Nonnull
+    public static RoaringBitmap parseNominalAttributeIndicies(@Nullable final String opt)
+            throws UDFArgumentException {
+        final RoaringBitmap attr = new RoaringBitmap();
+        if (opt == null) {
+            return attr;
+        }
+        for (String s : opt.split(",")) {
+            if (NumberUtils.isDigits(s)) {
+                int index = NumberUtils.parseInt(s);
+                attr.add(index);
+            } else {
+                throw new UDFArgumentException("Expected integer but got " + s);
+            }
         }
         return attr;
     }

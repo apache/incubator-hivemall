@@ -29,7 +29,7 @@ public class SmileExtUtilsTest {
         Assert.assertTrue(SmileExtUtils.resolveAttributes("Q,Q,Q").isEmpty());
         Assert.assertEquals(4, SmileExtUtils.resolveAttributes("Q,C,C,Q,C,Q,C").getCardinality());
         Assert.assertEquals(SmileExtUtils.resolveAttributes("Q,C,C,Q,C"),
-            SmileExtUtils.resolveAttributes("1,2,4"));
+            SmileExtUtils.parseNominalAttributeIndicies("1,2,4"));
     }
 
     @Test(expected = UDFArgumentException.class)

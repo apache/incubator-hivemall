@@ -140,6 +140,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
+        opts.addOption("nominal_attr_indicies", "categorical_attr_indicies", true,
+            "Comma seperated indicies of categorical attributes, e.g., [3,5,6]");
         return opts;
     }
 
@@ -176,7 +178,12 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             minSamplesLeaf =
                     Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
-            attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            String nominal_attr_indicies = cl.getOptionValue("nominal_attr_indicies");
+            if (nominal_attr_indicies != null) {
+                attrs = SmileExtUtils.parseNominalAttributeIndicies(nominal_attr_indicies);
+            } else {
+                attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            }
         }
 
         this._numTrees = trees;
