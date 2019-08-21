@@ -34,6 +34,7 @@ import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.SerdeUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.math.MathUtils;
@@ -110,7 +111,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private RoaringBitmap _nominalAttrs;
+    private byte[] _nominalAttrs;
 
     @Nullable
     private transient Reporter _progressReporter;
@@ -195,7 +196,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this._nominalAttrs = attrs;
+        this._nominalAttrs = SerdeUtils.serializeRoaring(attrs);
 
         return cl;
     }
@@ -397,6 +398,9 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
         final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
 
+        final RoaringBitmap nominalAttrs = SerdeUtils.deserializeRoaring(_nominalAttrs);
+        this._nominalAttrs = null;
+
         final Vector xProbe = x.rowVector();
         for (int m = 0; m < _numTrees; m++) {
             reportProgress(_progressReporter);
@@ -412,7 +416,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 response[i] = 2.0d * y[i] / (1.d + Math.exp(2.d * y[i] * h[i]));
             }
 
-            RegressionTree tree = new RegressionTree(_nominalAttrs, x, response, numVars, _maxDepth,
+            RegressionTree tree = new RegressionTree(nominalAttrs, x, response, numVars, _maxDepth,
                 _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, samples, output, rnd2);
 
             for (int i = 0; i < numInstances; i++) {
@@ -473,6 +477,9 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
         final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
 
+        final RoaringBitmap nominalAttrs = SerdeUtils.deserializeRoaring(_nominalAttrs);
+        this._nominalAttrs = null;
+
         // out-of-bag prediction
         final int[] prediction = new int[numInstances];
         final Vector xProbe = x.rowVector();
@@ -525,7 +532,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     samples[index] += 1;
                 }
 
-                RegressionTree tree = new RegressionTree(_nominalAttrs, x, response[j], numVars,
+                RegressionTree tree = new RegressionTree(nominalAttrs, x, response[j], numVars,
                     _maxDepth, _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, samples, output[j],
                     rnd2);
                 trees[j] = tree;

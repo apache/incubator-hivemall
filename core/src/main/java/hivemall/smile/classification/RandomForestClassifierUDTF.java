@@ -36,6 +36,7 @@ import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.SerdeUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
@@ -112,7 +113,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private RoaringBitmap _nominalAttrs;
+    private byte[] _nominalAttrs;
     private SplitRule _splitRule;
     private boolean _stratifiedSampling;
     private double _subsample;
@@ -224,7 +225,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this._nominalAttrs = attrs;
+        this._nominalAttrs = SerdeUtils.serializeRoaring(attrs);
         this._splitRule = splitRule;
         this._stratifiedSampling = stratifiedSampling;
         this._subsample = subsample;
@@ -356,7 +357,6 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this.featureListOI = null;
         this.featureElemOI = null;
         this.labelOI = null;
-        this._nominalAttrs = null;
     }
 
     private void checkOptions() throws HiveException {
@@ -396,12 +396,14 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                     + _maxLeafNodes + ", splitRule: " + _splitRule + ", seed: " + _seed);
         }
 
-        IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
-        AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
-        List<TrainingTask> tasks = new ArrayList<TrainingTask>();
+        final RoaringBitmap nominalAttrs = SerdeUtils.deserializeRoaring(_nominalAttrs);
+        this._nominalAttrs = null;
+        final IntMatrix prediction = new DoKIntMatrix(numExamples, labels.length); // placeholder for out-of-bag prediction
+        final AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
+        final List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
-            tasks.add(new TrainingTask(this, i, _nominalAttrs, x, y, numInputVars, prediction, s,
+            tasks.add(new TrainingTask(this, i, nominalAttrs, x, y, numInputVars, prediction, s,
                 remainingTasks));
         }
 

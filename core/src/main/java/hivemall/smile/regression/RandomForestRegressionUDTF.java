@@ -33,6 +33,7 @@ import hivemall.utils.codec.Base91;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.datetime.StopWatch;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.SerdeUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
@@ -105,7 +106,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private RoaringBitmap _nominalAttrs;
+    private byte[] _nominalAttrs;
 
     @Nullable
     private transient Reporter _progressReporter;
@@ -188,7 +189,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this._nominalAttrs = attrs;
+        this._nominalAttrs = SerdeUtils.serializeRoaring(attrs);
 
         return cl;
     }
@@ -353,13 +354,15 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                     + ", seed: " + _seed);
         }
 
-        double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
-        int[] oob = new int[numExamples];
-        AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
+        final RoaringBitmap nominalAttrs = SerdeUtils.deserializeRoaring(_nominalAttrs);
+        this._nominalAttrs = null;
+        final double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
+        final int[] oob = new int[numExamples];
+        final AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
-            tasks.add(new TrainingTask(this, i, _nominalAttrs, x, y, numInputVars, prediction, oob,
+            tasks.add(new TrainingTask(this, i, nominalAttrs, x, y, numInputVars, prediction, oob,
                 s, remainingTasks));
         }
 
