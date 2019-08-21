@@ -108,13 +108,13 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private RoaringBitmap _nominalAttrs;
 
     @Nullable
-    private Reporter _progressReporter;
+    private transient Reporter _progressReporter;
     @Nullable
-    private Counter _treeBuildTaskCounter;
+    private transient Counter _treeBuildTaskCounter;
     @Nullable
-    private Counter _treeConstructionTimeCounter;
+    private transient Counter _treeConstructionTimeCounter;
     @Nullable
-    private Counter _treeSerializationTimeCounter;
+    private transient Counter _treeSerializationTimeCounter;
 
     @Override
     protected Options getOptions() {

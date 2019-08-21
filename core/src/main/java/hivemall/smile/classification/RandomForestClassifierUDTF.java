@@ -121,9 +121,9 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     private double[] _classWeight;
 
     @Nullable
-    private Reporter _progressReporter;
+    private transient Reporter _progressReporter;
     @Nullable
-    private Counter _treeBuildTaskCounter;
+    private transient Counter _treeBuildTaskCounter;
 
     @Override
     protected Options getOptions() {

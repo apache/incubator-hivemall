@@ -113,9 +113,9 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private RoaringBitmap _nominalAttrs;
 
     @Nullable
-    private Reporter _progressReporter;
+    private transient Reporter _progressReporter;
     @Nullable
-    private Counter _iterationCounter;
+    private transient Counter _iterationCounter;
 
     @Override
     protected Options getOptions() {
