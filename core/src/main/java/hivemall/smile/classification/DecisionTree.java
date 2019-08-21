@@ -978,17 +978,18 @@ public class DecisionTree implements Classifier<Vector> {
         }
 
         /**
-         * Modifies {@link #order} and {@link #originalOrder} by partitioning the range from low
-         * (inclusive) to high (exclusive) so that all elements o for which goesLeft(o) is true come
+         * Modifies {@link #_order} and {@link #_sampleIndex} by partitioning the range from low
+         * (inclusive) to high (exclusive) so that all elements i for which goesLeft(i) is true come
          * before all elements for which it is false, but element ordering is otherwise preserved.
-         * The number of true elements in left must equal split-low.
+         * The number of true values returned by goesLeft must equal split-low.
          * 
          * @param low the low bound of the segment of the order arrays which will be partitioned.
-         * @param pivot where the partition's split point will end up.
+         * @param split where the partition's split point will end up.
          * @param high the high bound of the segment of the order arrays which will be partitioned.
          * @param goesLeft whether an element goes to the left side or the right side of the
          *        partition.
-         * @param buffer scratch space large enough to hold all elements for which left is false.
+         * @param buffer scratch space large enough to hold all elements for which goesLeft is
+         *        false.
          */
         private void partitionOrder(final int low, final int pivot, final int high,
                 @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
@@ -1024,16 +1025,16 @@ public class DecisionTree implements Classifier<Vector> {
 
     /**
      * Modifies an array in-place by partitioning the range from low (inclusive) to high (exclusive)
-     * so that all elements i for which left[i - low] is true come before all elements for which it
-     * is false, but element ordering is otherwise preserved. The number of true elements in left
-     * must equal split-low. buffer is scratch space large enough to hold all elements for which
-     * left is false.
+     * so that all elements i for which goesLeft(i) is true come before all elements for which it is
+     * false, but element ordering is otherwise preserved. The number of true values returned by
+     * goesLeft must equal split-low. buffer is scratch space large enough (i.e., at least
+     * high-split long) to hold all elements for which goesLeft is false.
      */
     private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
             final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
         int j = low;
         int k = 0;
-        for (int i = low, end = Math.min(high, a.length); i < end; i++) {
+        for (int i = low; i < high; i++) {
             if (goesLeft.test(a[i])) {
                 a[j++] = a[i];
             } else {
