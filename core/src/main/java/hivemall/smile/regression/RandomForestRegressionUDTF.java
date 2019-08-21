@@ -128,6 +128,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             "The maximum number of the tree depth [default: Integer.MAX_VALUE]");
         opts.addOption("leafs", "max_leaf_nodes", true,
             "The maximum number of leaf nodes [default: Integer.MAX_VALUE]");
+        opts.addOption("min_samples_split", true,
+            "A node that has greater than or equals to `min_split` examples will split [default: 5]");
+        // synonym of min_samples_split
         opts.addOption("split", "min_split", true,
             "A node that has greater than or equals to `min_split` examples will split [default: 5]");
         opts.addOption("min_samples_leaf", true,
@@ -141,7 +144,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         int trees = 50, maxDepth = Integer.MAX_VALUE;
-        int maxLeafs = Integer.MAX_VALUE, minSplit = 5, minSamplesLeaf = 1;
+        int maxLeafNodes = Integer.MAX_VALUE, minSamplesSplit = 5, minSamplesLeaf = 1;
         float numVars = -1.f;
         RoaringBitmap attrs = new RoaringBitmap();
         long seed = -1L;
@@ -157,8 +160,13 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             }
             numVars = Primitives.parseFloat(cl.getOptionValue("num_variables"), numVars);
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
-            maxLeafs = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafs);
-            minSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSplit);
+            maxLeafNodes = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafNodes);
+            String min_samples_split = cl.getOptionValue("min_samples_split");
+            if (min_samples_split == null) {
+                minSamplesSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSamplesSplit);
+            } else {
+                minSamplesSplit = Integer.parseInt(min_samples_split);
+            }
             minSamplesLeaf =
                     Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
@@ -168,8 +176,8 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         this._numTrees = trees;
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._maxLeafNodes = maxLeafs;
-        this._minSamplesSplit = minSplit;
+        this._maxLeafNodes = maxLeafNodes;
+        this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
         this._nominalAttrs = attrs;

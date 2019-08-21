@@ -146,7 +146,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         int trees = 500, maxDepth = 8;
-        int maxLeafs = Integer.MAX_VALUE, minSplit = 5, minSamplesLeaf = 1;
+        int maxLeafNodes = Integer.MAX_VALUE, minSamplesSplit = 5, minSamplesLeaf = 1;
         float numVars = -1.f;
         double eta = 0.05d, subsample = 0.7d;
         RoaringBitmap attrs = new RoaringBitmap();
@@ -165,8 +165,14 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             subsample = Primitives.parseDouble(cl.getOptionValue("subsample"), subsample);
             numVars = Primitives.parseFloat(cl.getOptionValue("num_variables"), numVars);
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
-            maxLeafs = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafs);
-            minSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSplit);
+            maxLeafNodes = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafNodes);
+            String min_samples_split = cl.getOptionValue("min_samples_split");
+            if (min_samples_split == null) {
+                minSamplesSplit =
+                        Primitives.parseInt(cl.getOptionValue("min_split"), minSamplesSplit);
+            } else {
+                minSamplesSplit = Integer.parseInt(min_samples_split);
+            }
             minSamplesLeaf =
                     Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
@@ -178,8 +184,8 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this._subsample = subsample;
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._maxLeafNodes = maxLeafs;
-        this._minSamplesSplit = minSplit;
+        this._maxLeafNodes = maxLeafNodes;
+        this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
         this._nominalAttrs = attrs;

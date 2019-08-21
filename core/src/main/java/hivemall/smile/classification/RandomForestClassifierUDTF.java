@@ -155,7 +155,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         int trees = 50, maxDepth = Integer.MAX_VALUE;
-        int numLeafs = Integer.MAX_VALUE, minSplits = 2, minSamplesLeaf = 1;
+        int maxLeafNodes = Integer.MAX_VALUE, minSamplesSplit = 2, minSamplesLeaf = 1;
         float numVars = -1.f;
         RoaringBitmap attrs = new RoaringBitmap();
         long seed = -1L;
@@ -175,8 +175,13 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
             }
             numVars = Primitives.parseFloat(cl.getOptionValue("num_variables"), numVars);
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
-            numLeafs = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), numLeafs);
-            minSplits = Primitives.parseInt(cl.getOptionValue("min_split"), minSplits);
+            maxLeafNodes = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafNodes);
+            String min_samples_split = cl.getOptionValue("min_samples_split");
+            if (min_samples_split == null) {
+                minSamplesSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSamplesSplit);
+            } else {
+                minSamplesSplit = Integer.parseInt(min_samples_split);
+            }
             minSamplesLeaf =
                     Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
@@ -207,8 +212,8 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         this._numTrees = trees;
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._maxLeafNodes = numLeafs;
-        this._minSamplesSplit = minSplits;
+        this._maxLeafNodes = maxLeafNodes;
+        this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
         this.nominalAttrs = attrs;
