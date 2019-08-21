@@ -36,7 +36,6 @@ import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.function.IntPredicate;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
-import hivemall.utils.lang.mutable.MutableBoolean;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.sampling.IntReservoirSampler;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -728,6 +727,7 @@ public class DecisionTree implements Classifier<Vector> {
             if (_nominalAttrs.contains(j)) {
                 final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
 
+                int countNaN = 0;
                 for (int i = low; i < high; i++) {
                     final int index = sampleIndex[i];
                     final int numSamples = samples[index];
@@ -737,6 +737,7 @@ public class DecisionTree implements Classifier<Vector> {
 
                     final double v = X.get(index, j, Double.NaN);
                     if (Double.isNaN(v)) {
+                        countNaN++;
                         continue;
                     }
                     int x_ij = (int) v;
@@ -749,7 +750,8 @@ public class DecisionTree implements Classifier<Vector> {
                     int y_i = y[index];
                     tc_x[y_i] += numSamples;
                 }
-                if (trueCount.size() <= 1) {
+                final int countDistinctX = trueCount.size() + (countNaN == 0 ? 0 : 1);
+                if (countDistinctX <= 1) {
                     constFeatures.add(j); // mark as a constant feature
                 }
 
@@ -785,7 +787,8 @@ public class DecisionTree implements Classifier<Vector> {
                 }
             } else {
                 final int[] trueCount = new int[classes];
-                final MutableBoolean constantJ = new MutableBoolean(true);
+                final MutableInt countNaN = new MutableInt(0);
+                final MutableInt replaceCount = new MutableInt(0);
 
                 _order.eachNonNullInColumn(j, low, high, new VectorProcedure() {
                     double prevx = Double.NaN, lastx = Double.NaN;
@@ -799,13 +802,12 @@ public class DecisionTree implements Classifier<Vector> {
 
                         final double x_ij = X.get(i, j, Double.NaN);
                         if (Double.isNaN(x_ij)) {
+                            countNaN.incr();
                             return;
                         }
                         if (lastx != x_ij) {
-                            if (Double.isNaN(lastx) == false) {
-                                constantJ.setFalse();
-                            }
                             this.lastx = x_ij;
+                            replaceCount.incr();
                         }
 
                         final int y_i = y[i];
@@ -852,7 +854,8 @@ public class DecisionTree implements Classifier<Vector> {
                     }//apply()
                 });
 
-                if (constantJ.booleanValue()) {
+                final int countDistinctX = replaceCount.get() + (countNaN.get() == 0 ? 0 : 1);
+                if (countDistinctX <= 1) {
                     constFeatures.add(j); // mark as a constant feature
                 }
             }
