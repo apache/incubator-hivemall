@@ -150,7 +150,7 @@ public final class RegressionTree implements Regression<Vector> {
      * The number of instances in a node below which the tree will not split, setting S = 5
      * generally gives good results.
      */
-    private final int _minSplit;
+    private final int _minSamplesSplit;
     /**
      * The minimum number of samples in a leaf node
      */
@@ -604,7 +604,7 @@ public final class RegressionTree implements Regression<Vector> {
                 return false;
             }
             // avoid split if the number of samples is less than threshold
-            if (samples <= _minSplit) {
+            if (samples <= _minSamplesSplit) {
                 return false;
             }
 
@@ -714,7 +714,7 @@ public final class RegressionTree implements Regression<Vector> {
                     final double fc = n - tc;
 
                     // skip splitting
-                    if (tc < _minSplit || fc < _minSplit) {
+                    if (tc < _minSamplesSplit || fc < _minSamplesSplit) {
                         continue;
                     }
 
@@ -771,7 +771,7 @@ public final class RegressionTree implements Regression<Vector> {
                         final double falseCount = n - trueCount;
 
                         // If either side is empty, skip this feature.
-                        if (trueCount < _minSplit || falseCount < _minSplit) {
+                        if (trueCount < _minSamplesSplit || falseCount < _minSamplesSplit) {
                             prevx = x_ij;
                             trueSum += numSamples * y_i;
                             trueCount += numSamples;
@@ -850,7 +850,7 @@ public final class RegressionTree implements Regression<Vector> {
                     new TrainNode(node.falseChild, depth + 1, pivot, high, fc, constFeatures);
             this.constFeatures = null;
 
-            if (tc >= _minSplit && trueChild.findBestSplit()) {
+            if (tc >= _minSamplesSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
                 } else {
@@ -862,7 +862,7 @@ public final class RegressionTree implements Regression<Vector> {
                 leaves++;
             }
 
-            if (fc >= _minSplit && falseChild.findBestSplit()) {
+            if (fc >= _minSamplesSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
                 } else {
@@ -990,9 +990,9 @@ public final class RegressionTree implements Regression<Vector> {
     }
 
     public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
-            @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
+            @Nonnull double[] y, int numVars, int maxDepth, int maxLeafNodes, int minSamplesSplit,
             int minSamplesLeaf, @Nullable int[] samples, @Nullable PRNG rand) {
-        this(nominalAttrs, x, y, numVars, maxDepth, maxLeafs, minSplits, minSamplesLeaf, samples, null, rand);
+        this(nominalAttrs, x, y, numVars, maxDepth, maxLeafNodes, minSamplesSplit, minSamplesLeaf, samples, null, rand);
     }
 
     /**
@@ -1003,17 +1003,17 @@ public final class RegressionTree implements Regression<Vector> {
      * @param y the response variable.
      * @param numVars the number of input variables to pick to split on at each node. It seems that
      *        dim/3 give generally good performance, where dim is the number of variables.
-     * @param maxLeafs the maximum number of leaf nodes in the tree.
+     * @param maxLeafNodes the maximum number of leaf nodes in the tree.
      * @param minSamplesLeaf number of instances in a node below which the tree will not split,
      *        setting 5 generally gives good results.
      * @param samples the sample set of instances for stochastic learning.
      * @param output An interface to calculate node output.
      */
     public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
-            @Nonnull double[] y, int numVars, int maxDepth, int maxLeafs, int minSplits,
+            @Nonnull double[] y, int numVars, int maxDepth, int maxLeafNodes, int minSamplesSplit,
             int minSamplesLeaf, @Nullable int[] samples, @Nullable NodeOutput output,
             @Nullable PRNG rand) {
-        checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minSamplesLeaf);
+        checkArgument(x, y, numVars, maxDepth, maxLeafNodes, minSamplesSplit, minSamplesLeaf);
 
         this._X = x;
         this._y = y;
@@ -1025,7 +1025,7 @@ public final class RegressionTree implements Regression<Vector> {
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._minSplit = minSplits;
+        this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
@@ -1061,7 +1061,7 @@ public final class RegressionTree implements Regression<Vector> {
         this._root = new Node(sum / n);
 
         TrainNode trainRoot = new TrainNode(_root, 1, 0, _sampleIndex.length, n);
-        if (maxLeafs == Integer.MAX_VALUE) {
+        if (maxLeafNodes == Integer.MAX_VALUE) {
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);
             }
@@ -1074,7 +1074,7 @@ public final class RegressionTree implements Regression<Vector> {
             }
             // Pop best leaf from priority queue, split it, and push
             // children nodes into the queue if possible.
-            for (int leaves = 1; leaves < maxLeafs; leaves++) {
+            for (int leaves = 1; leaves < maxLeafNodes; leaves++) {
                 // parent is the leaf to split
                 TrainNode node = nextSplits.poll();
                 if (node == null) {

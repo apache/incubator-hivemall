@@ -180,7 +180,7 @@ public class DecisionTree implements Classifier<Vector> {
     /**
      * The number of instances in a node below which the tree will not split.
      */
-    private final int _minSplit;
+    private final int _minSamplesSplit;
     /**
      * The minimum number of samples in a leaf node.
      */
@@ -621,7 +621,7 @@ public class DecisionTree implements Classifier<Vector> {
                 return false;
             }
             // avoid split if the number of samples is less than threshold
-            if (samples <= _minSplit) {
+            if (samples <= _minSamplesSplit) {
                 return false;
             }
 
@@ -763,7 +763,7 @@ public class DecisionTree implements Classifier<Vector> {
                     final int fc = n - tc;
 
                     // skip splitting this feature.
-                    if (tc < _minSplit || fc < _minSplit) {
+                    if (tc < _minSamplesSplit || fc < _minSamplesSplit) {
                         continue;
                     }
 
@@ -822,7 +822,7 @@ public class DecisionTree implements Classifier<Vector> {
                         final int fc = n - tc;
 
                         // skip splitting this feature.
-                        if (tc < _minSplit || fc < _minSplit) {
+                        if (tc < _minSamplesSplit || fc < _minSamplesSplit) {
                             prevx = x_ij;
                             prevy = y_i;
                             trueCount[y_i] += numSamples;
@@ -908,7 +908,7 @@ public class DecisionTree implements Classifier<Vector> {
                     new TrainNode(node.falseChild, depth + 1, pivot, high, fc, constFeatures);
             this.constFeatures = null;
 
-            if (tc >= _minSplit && trueChild.findBestSplit()) {
+            if (tc >= _minSamplesSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
                 } else {
@@ -920,7 +920,7 @@ public class DecisionTree implements Classifier<Vector> {
                 leaves++;
             }
 
-            if (fc >= _minSplit && falseChild.findBestSplit()) {
+            if (fc >= _minSamplesSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
                 } else {
@@ -1112,8 +1112,8 @@ public class DecisionTree implements Classifier<Vector> {
      * @param y the response variable.
      * @param numVars the number of input variables to pick to split on at each node. It seems that
      *        dim/3 give generally good performance, where dim is the number of variables.
-     * @param maxLeafs the maximum number of leaf nodes in the tree.
-     * @param minSplits the number of minimum elements in a node to split
+     * @param maxLeafNodes the maximum number of leaf nodes in the tree.
+     * @param minSamplesSplit the number of minimum elements in a node to split
      * @param minSamplesLeaf The minimum number of samples in a leaf node
      * @param samples the sample set of instances for stochastic learning. samples[i] is the number
      *        of sampling for instance i.
@@ -1121,9 +1121,9 @@ public class DecisionTree implements Classifier<Vector> {
      * @param rand random number generator
      */
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
-            int numVars, int maxDepth, int maxLeafs, int minSplits, int minSamplesLeaf,
+            int numVars, int maxDepth, int maxLeafNodes, int minSamplesSplit, int minSamplesLeaf,
             @Nullable int[] samples, @Nonnull SplitRule rule, @Nullable PRNG rand) {
-        checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minSamplesLeaf);
+        checkArgument(x, y, numVars, maxDepth, maxLeafNodes, minSamplesSplit, minSamplesLeaf);
 
         this._X = x;
         this._y = y;
@@ -1140,7 +1140,7 @@ public class DecisionTree implements Classifier<Vector> {
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._minSplit = minSplits;
+        this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._rule = rule;
         this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
@@ -1183,7 +1183,7 @@ public class DecisionTree implements Classifier<Vector> {
 
         final TrainNode trainRoot =
                 new TrainNode(_root, 1, 0, _sampleIndex.length, totalNumSamples);
-        if (maxLeafs == Integer.MAX_VALUE) {
+        if (maxLeafNodes == Integer.MAX_VALUE) {
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);
             }
@@ -1196,7 +1196,7 @@ public class DecisionTree implements Classifier<Vector> {
             }
             // Pop best leaf from priority queue, split it, and push
             // children nodes into the queue if possible.
-            for (int leaves = 1; leaves < maxLeafs; leaves++) {
+            for (int leaves = 1; leaves < maxLeafNodes; leaves++) {
                 // parent is the leaf to split
                 TrainNode parent = nextSplits.poll();
                 if (parent == null) {
