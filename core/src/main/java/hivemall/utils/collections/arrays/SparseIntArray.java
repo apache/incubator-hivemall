@@ -219,15 +219,15 @@ public final class SparseIntArray implements IntArray {
         }
 
         final int lastKey = mKeys[mSize - 1];
-        final int end = offset + length;
-        for (int i = offset; i < end; i++) {
+        for (int i = 0; i < length; i++) {
+            final int valuePos = offset + i;
             final int key = dstPos + i;
             if (key <= lastKey) {
-                put(key, values[i]);
+                put(key, values[valuePos]);
             } else {// append
                 int size = length - i;
                 this.mKeys = ArrayUtils.concat(mKeys, MathUtils.permutation(key, size));
-                this.mValues = ArrayUtils.concat(mValues, values, i, size);
+                this.mValues = ArrayUtils.concat(mValues, values, valuePos, size);
                 this.mSize += size;
                 break;
             }
@@ -244,9 +244,13 @@ public final class SparseIntArray implements IntArray {
         if (endPos < 0) {
             endPos = ~endPos;
         }
+        // mKeys, mValues may be replaced by in-place update
+        final int[] keys = mKeys.clone();
+        final int[] values = mValues.clone();
         for (int i = startPos; i < endPos; i++) {
-            int v = mValues[i];
-            consumer.accept(i, v);
+            int k = keys[i];
+            int v = values[i];
+            consumer.accept(k, v);
         }
     }
 
