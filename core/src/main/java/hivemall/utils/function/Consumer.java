@@ -27,8 +27,16 @@ public abstract class Consumer {
 
     public Consumer() {}
 
-    public void accept(int i, int value) {}
+    public void accept(int value) {
+        throw new UnsupportedOperationException();
+    }
 
-    public void accept(@Nonnegative int i, @Nonnull SparseIntArray values) {}
+    public void accept(int i, int value) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void accept(@Nonnegative int i, @Nonnull SparseIntArray values) {
+        throw new UnsupportedOperationException();
+    }
 
 }
