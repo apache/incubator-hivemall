@@ -22,8 +22,6 @@ import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.ColumnMajorMatrix;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.MatrixUtils;
-import hivemall.math.matrix.ints.ColumnMajorDenseIntMatrix2d;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.VectorProcedure;
@@ -124,8 +122,8 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static SampleOrder sort(@Nonnull final RoaringBitmap attributes,
-            @Nonnull final Matrix x, @Nonnull final int[] samples) {
+    public static SampleOrder sort(@Nonnull final RoaringBitmap attributes, @Nonnull final Matrix x,
+            @Nonnull final int[] samples) {
         final int n = x.numRows();
         final int p = x.numColumns();
 
