@@ -28,6 +28,7 @@ import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
+import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.lang.NumberUtils;
@@ -123,12 +124,12 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static ColumnMajorIntMatrix sort(@Nonnull final RoaringBitmap attributes,
+    public static SampleOrder sort(@Nonnull final RoaringBitmap attributes,
             @Nonnull final Matrix x, @Nonnull final int[] samples) {
         final int n = x.numRows();
         final int p = x.numColumns();
 
-        final int[][] index = new int[p][];
+        final SparseIntArray[] index = new SparseIntArray[p];
         if (x.isSparse()) {
             int initSize = n / 10;
             final DoubleArrayList dlist = new DoubleArrayList(initSize);
@@ -156,7 +157,7 @@ public final class SmileExtUtils {
                 }
                 int[] indexJ = ilist.toArray();
                 QuickSort.sort(dlist.array(), indexJ, indexJ.length);
-                index[j] = indexJ;
+                index[j] = new SparseIntArray(indexJ);
                 dlist.clear();
                 ilist.clear();
             }
@@ -181,13 +182,13 @@ public final class SmileExtUtils {
                 }
                 int[] indexJ = ilist.toArray();
                 QuickSort.sort(dlist.array(), indexJ, indexJ.length);
-                index[j] = indexJ;
+                index[j] = new SparseIntArray(indexJ);
                 dlist.clear();
                 ilist.clear();
             }
         }
 
-        return new ColumnMajorDenseIntMatrix2d(index, n);
+        return new SampleOrder(index);
     }
 
     @Nonnull

@@ -24,15 +24,17 @@ import static hivemall.smile.utils.SmileExtUtils.resolveName;
 
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
+import hivemall.smile.utils.SampleOrder;
 import hivemall.smile.utils.SmileExtUtils;
+import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.function.Consumer;
 import hivemall.utils.function.IntPredicate;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
@@ -48,6 +50,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -138,7 +141,7 @@ public class DecisionTree implements Classifier<Vector> {
      * sorted.
      */
     @Nonnull
-    private final ColumnMajorIntMatrix _order;
+    private final SampleOrder _order;
     /**
      * An index that maps their current position in the {@link #_order} to their original locations
      * in {@link #_samples}.
@@ -793,11 +796,12 @@ public class DecisionTree implements Classifier<Vector> {
                 final MutableInt countNaN = new MutableInt(0);
                 final MutableInt replaceCount = new MutableInt(0);
 
-                _order.eachNonNullInColumn(j, low, high, new VectorProcedure() {
+                _order.eachNonNullInColumn(j, low, high, new Consumer() {
                     double prevx = Double.NaN, lastx = Double.NaN;
                     int prevy = -1;
 
-                    public void apply(final int row, final int i) {
+                    @Override
+                    public void accept(final int pos, final int i) {
                         final int numSamples = samples[i];
                         if (numSamples == 0) {
                             return;
@@ -899,7 +903,7 @@ public class DecisionTree implements Classifier<Vector> {
                 falseChildPosteriori[i] /= fc;
             }
 
-            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot]);
+            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot + 1]);
 
             int leaves = 0;
 
@@ -993,9 +997,9 @@ public class DecisionTree implements Classifier<Vector> {
          */
         private void partitionOrder(final int low, final int pivot, final int high,
                 @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
-            _order.eachRow(new VectorProcedure() {
+            _order.eachRow(new Consumer() {
                 @Override
-                public void apply(int col, @Nonnull final int[] row) {
+                public void accept(int col, @Nonnull final SparseIntArray row) {
                     partitionArray(row, low, pivot, high, goesLeft, buffer);
                 }
             });
@@ -1027,25 +1031,60 @@ public class DecisionTree implements Classifier<Vector> {
      * Modifies an array in-place by partitioning the range from low (inclusive) to high (exclusive)
      * so that all elements i for which goesLeft(i) is true come before all elements for which it is
      * false, but element ordering is otherwise preserved. The number of true values returned by
-     * goesLeft must equal split-low. buffer is scratch space large enough (i.e., at least
-     * high-split long) to hold all elements for which goesLeft is false.
+     * goesLeft must equal split-low. buf is scratch space large enough (i.e., at least high-split
+     * long) to hold all elements for which goesLeft is false.
      */
     private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
-            final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
+            final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buf) {
+        if (low >= a.length) {
+            return; // no need to reorder the range (low,high]
+        }
+
         int j = low;
         int k = 0;
-        for (int i = low; i < high; i++) {
-            if (goesLeft.test(a[i])) {
-                a[j++] = a[i];
+        for (int i = low, end = Math.min(high, a.length); i < end; i++) {
+            final int a_i = a[i];
+            if (goesLeft.test(a_i)) {
+                a[j++] = a_i;
             } else {
-                buffer[k++] = a[i];
+                if (k >= buf.length) {
+                    throw new IndexOutOfBoundsException(String.format(
+                        "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, j=%d, k=%d", low,
+                        pivot, high, a.length, buf.length, j, k));
+                }
+                buf[k++] = a_i;
             }
         }
-        if (k != high - pivot || j != pivot) {
-            throw new IllegalStateException("Messed up partition.. low=" + low + ", pivot=" + pivot
-                    + ", high=" + high + " ended up splitting at " + j);
+        System.arraycopy(buf, 0, a, pivot, k);
+    }
+
+    private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
+            final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
+            @Nonnull final int[] buf) {
+        final MutableInt k_ = new MutableInt(0);
+        a.consume(low, high, new Consumer() {
+            int j = low;
+
+            @Override
+            public void accept(int i, final int a_i) {
+                if (goesLeft.test(a_i)) {
+                    a.put(j, a_i);
+                    j++;
+                } else {
+                    final int k = k_.getAndIncrement();
+                    if (k >= buf.length) {
+                        throw new IndexOutOfBoundsException(String.format(
+                            "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, j=%d, k=%d",
+                            low, pivot, high, a.size(), buf.length, j, k));
+                    }
+                    buf[k] = a_i;
+                }
+            }
+        });
+        final int k = k_.get();
+        if (k > 0) {
+            a.append(pivot, Arrays.copyOf(buf, k));
         }
-        System.arraycopy(buffer, 0, a, pivot, k);
     }
 
     /**
