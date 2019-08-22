@@ -219,7 +219,8 @@ public final class SparseIntArray implements IntArray {
         }
 
         final int lastKey = mKeys[mSize - 1];
-        for (int i = offset; i < length; i++) {
+        final int end = offset + length;
+        for (int i = offset; i < end; i++) {
             final int key = dstPos + i;
             if (key <= lastKey) {
                 put(key, values[i]);
@@ -244,9 +245,8 @@ public final class SparseIntArray implements IntArray {
             endPos = ~endPos;
         }
         for (int i = startPos; i < endPos; i++) {
-            int k = mKeys[i];
             int v = mValues[i];
-            consumer.accept(k, v);
+            consumer.accept(i, v);
         }
     }
 

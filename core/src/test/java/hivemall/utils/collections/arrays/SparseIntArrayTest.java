@@ -76,4 +76,22 @@ public class SparseIntArrayTest {
         array.append(a1.length - 9, a2);
         Assert.assertEquals(a1.length + a2.length - 9, array.size());
     }
+
+    @Test
+    public void testAppend2() {
+        int[] a1 = new int[500];
+        for (int i = 0; i < a1.length; i++) {
+            a1[i] = i;
+        }
+        SparseIntArray array = new SparseIntArray(a1);
+        for (int i = 0; i < a1.length; i++) {
+            Assert.assertEquals(a1[i], array.get(i));
+        }
+        int[] a2 = new int[100];
+        for (int i = 0; i < 100; i++) {
+            a2[i] = a1[a1.length - 1] + i;
+        }
+        array.append(a1.length - 9, a2, 0, a2.length);
+        Assert.assertEquals(a1.length + a2.length - 9, array.size());
+    }
 }
