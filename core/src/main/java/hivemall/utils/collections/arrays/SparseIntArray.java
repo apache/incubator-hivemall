@@ -55,11 +55,19 @@ public final class SparseIntArray implements IntArray {
         this.mSize = mSize;
     }
 
-    public void init(@Nonnull int[] mKeys, @Nonnull int[] mValues) {
-        Preconditions.checkArgument(mKeys.length == mValues.length);
-        this.mKeys = mKeys;
-        this.mValues = mValues;
-        this.mSize = mKeys.length;
+    public void init(@Nonnull int[] keys, @Nonnull int[] values) {
+        init(keys, values, keys.length);
+    }
+
+    public void init(@Nonnull int[] keys, @Nonnull int[] values, final int size) {
+        if (size > keys.length || size > values.length) {
+            throw new IllegalArgumentException(String.format(
+                "Illegal size was specified... size = %d, keys.length = %d, values.length", size,
+                keys.length, values.length));
+        }
+        this.mKeys = keys;
+        this.mValues = values;
+        this.mSize = size;
     }
 
     public IntArray deepCopy() {
