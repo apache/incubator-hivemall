@@ -42,6 +42,12 @@ public final class MutableInt extends Number
         this.value = value.intValue();
     }
 
+    public int getAndIncrement() {
+        int ret = value;
+        this.value += 1;
+        return ret;
+    }
+
     public void incr() {
         this.value += 1;
     }
