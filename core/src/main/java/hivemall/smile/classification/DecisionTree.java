@@ -1026,37 +1026,6 @@ public class DecisionTree implements Classifier<Vector> {
 
     }
 
-    /**
-     * Modifies an array in-place by partitioning the range from low (inclusive) to high (exclusive)
-     * so that all elements i for which goesLeft(i) is true come before all elements for which it is
-     * false, but element ordering is otherwise preserved. The number of true values returned by
-     * goesLeft must equal split-low. buf is scratch space large enough (i.e., at least high-split
-     * long) to hold all elements for which goesLeft is false.
-     */
-    private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
-            final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buf) {
-        if (low >= a.length) {
-            return; // no need to reorder the range (low,high]
-        }
-
-        int j = low;
-        int k = 0;
-        for (int i = low, end = Math.min(high, a.length); i < end; i++) {
-            final int a_i = a[i];
-            if (goesLeft.test(a_i)) {
-                a[j++] = a_i;
-            } else {
-                if (k >= buf.length) {
-                    throw new IndexOutOfBoundsException(String.format(
-                        "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, j=%d, k=%d", low,
-                        pivot, high, a.length, buf.length, j, k));
-                }
-                buf[k++] = a_i;
-            }
-        }
-        System.arraycopy(buf, 0, a, pivot, k);
-    }
-
     private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
             final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
             @Nonnull final int[] buf) {
@@ -1067,7 +1036,9 @@ public class DecisionTree implements Classifier<Vector> {
             @Override
             public void accept(int i, final int a_i) {
                 if (goesLeft.test(a_i)) {
-                    a.put(j, a_i);
+                    if (i != j) {
+                        a.put(j, a_i);
+                    }
                     j++;
                 } else {
                     final int k = k_.getAndIncrement();
@@ -1084,6 +1055,42 @@ public class DecisionTree implements Classifier<Vector> {
         if (k > 0) {
             a.append(pivot, buf, 0, k);
         }
+    }
+
+    /**
+     * Modifies an array in-place by partitioning the range from low (inclusive) to high (exclusive)
+     * so that all elements i for which goesLeft(i) is true come before all elements for which it is
+     * false, but element ordering is otherwise preserved. The number of true values returned by
+     * goesLeft must equal split-low. buf is scratch space large enough (i.e., at least high-split
+     * long) to hold all elements for which goesLeft is false.
+     */
+    private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
+            final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buf) {
+        if (low >= a.length) {
+            return; // no need to reorder the range (low,high]
+        }
+
+        int j = low;
+        int k = 0;
+        for (int i = low; i < high; i++) {
+            if (i >= a.length) {
+                throw new IndexOutOfBoundsException(String.format(
+                    "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d", low,
+                    pivot, high, a.length, buf.length, i, j, k));
+            }
+            final int a_i = a[i];
+            if (goesLeft.test(a_i)) {
+                a[j++] = a_i;
+            } else {
+                if (k >= buf.length) {
+                    throw new IndexOutOfBoundsException(String.format(
+                        "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d",
+                        low, pivot, high, a.length, buf.length, i, j, k));
+                }
+                buf[k++] = a_i;
+            }
+        }
+        System.arraycopy(buf, 0, a, pivot, k);
     }
 
     /**
