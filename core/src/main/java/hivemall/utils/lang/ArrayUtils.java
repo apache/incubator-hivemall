@@ -335,6 +335,14 @@ public final class ArrayUtils {
         return joinedArray;
     }
 
+    public static int[] concat(@Nonnegative final int[] array1, @Nonnegative final int[] array2,
+            final int offset, final int length) {
+        final int[] joinedArray = new int[array1.length + length];
+        System.arraycopy(array1, 0, joinedArray, 0, array1.length);
+        System.arraycopy(array2, offset, joinedArray, array1.length, length);
+        return joinedArray;
+    }
+
     @Nonnull
     public static int[] insert(@Nonnull final int[] array, final int currentSize, final int index,
             final int element) {
