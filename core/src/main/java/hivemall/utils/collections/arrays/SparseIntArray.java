@@ -189,7 +189,7 @@ public final class SparseIntArray implements IntArray {
     public void append(@Nonnegative final int dstPos, @Nonnull final int[] values) {
         if (mSize == 0) {
             this.mKeys = MathUtils.permutation(dstPos, values.length);
-            this.mValues = values;
+            this.mValues = values.clone();
             this.mSize = values.length;
             return;
         }
@@ -199,11 +199,35 @@ public final class SparseIntArray implements IntArray {
             final int key = dstPos + i;
             if (key <= lastKey) {
                 put(key, values[i]);
-            } else {
-                // append
-                this.mKeys = ArrayUtils.concat(mKeys, MathUtils.permutation(key, values.length));
-                this.mValues = ArrayUtils.concat(mValues, values);
-                this.mSize += values.length;
+            } else {// append
+                int length = values.length - i;
+                this.mKeys = ArrayUtils.concat(mKeys, MathUtils.permutation(key, length));
+                this.mValues = ArrayUtils.concat(mValues, values, i, length);
+                this.mSize += length;
+                break;
+            }
+        }
+    }
+
+    public void append(@Nonnegative final int dstPos, @Nonnull final int[] values, final int offset,
+            final int length) {
+        if (mSize == 0) {
+            this.mKeys = MathUtils.permutation(dstPos, length);
+            this.mValues = Arrays.copyOfRange(values, offset, length);
+            this.mSize = length;
+            return;
+        }
+
+        final int lastKey = mKeys[mSize - 1];
+        for (int i = offset; i < length; i++) {
+            final int key = dstPos + i;
+            if (key <= lastKey) {
+                put(key, values[i]);
+            } else {// append
+                int size = length - i;
+                this.mKeys = ArrayUtils.concat(mKeys, MathUtils.permutation(key, size));
+                this.mValues = ArrayUtils.concat(mValues, values, i, size);
+                this.mSize += size;
                 break;
             }
         }

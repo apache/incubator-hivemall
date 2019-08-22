@@ -18,9 +18,6 @@
  */
 package hivemall.utils.collections.arrays;
 
-import hivemall.utils.collections.arrays.IntArray;
-import hivemall.utils.collections.arrays.SparseIntArray;
-
 import java.util.Random;
 
 import org.junit.Assert;
@@ -60,5 +57,23 @@ public class SparseIntArrayTest {
             int key = actual.keyAt(i);
             Assert.assertEquals(expected[key], actual.get(key, 0));
         }
+    }
+
+    @Test
+    public void testAppend() {
+        int[] a1 = new int[500];
+        for (int i = 0; i < a1.length; i++) {
+            a1[i] = i;
+        }
+        SparseIntArray array = new SparseIntArray(a1);
+        for (int i = 0; i < a1.length; i++) {
+            Assert.assertEquals(a1[i], array.get(i));
+        }
+        int[] a2 = new int[100];
+        for (int i = 0; i < 100; i++) {
+            a2[i] = a1[a1.length - 1] + i;
+        }
+        array.append(a1.length - 9, a2);
+        Assert.assertEquals(a1.length + a2.length - 9, array.size());
     }
 }
