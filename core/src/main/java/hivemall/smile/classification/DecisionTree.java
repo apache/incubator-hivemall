@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -801,7 +800,7 @@ public class DecisionTree implements Classifier<Vector> {
                     int prevy = -1;
 
                     @Override
-                    public void accept(final int pos, final int i) {
+                    public void accept(int pos, final int i) {
                         final int numSamples = samples[i];
                         if (numSamples == 0) {
                             return;
@@ -903,7 +902,7 @@ public class DecisionTree implements Classifier<Vector> {
                 falseChildPosteriori[i] /= fc;
             }
 
-            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot + 1]);
+            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot]);
 
             int leaves = 0;
 
@@ -1083,7 +1082,7 @@ public class DecisionTree implements Classifier<Vector> {
         });
         final int k = k_.get();
         if (k > 0) {
-            a.append(pivot, Arrays.copyOf(buf, k));
+            a.append(pivot, buf, 0, k);
         }
     }
 
@@ -1138,13 +1137,13 @@ public class DecisionTree implements Classifier<Vector> {
     }
 
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
-            int numLeafs) {
-        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, SplitRule.GINI, null);
+            int numSamplesLeaf) {
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numSamplesLeaf, 2, 1, null, SplitRule.GINI, null);
     }
 
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nullable Matrix x, @Nullable int[] y,
-            int numLeafs, @Nullable PRNG rand) {
-        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, SplitRule.GINI, rand);
+            int numSamplesLeaf, @Nullable PRNG rand) {
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numSamplesLeaf, 2, 1, null, SplitRule.GINI, rand);
     }
 
     /**
