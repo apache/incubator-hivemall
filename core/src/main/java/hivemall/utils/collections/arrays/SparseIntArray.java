@@ -35,9 +35,7 @@ public final class SparseIntArray implements IntArray {
     private int[] mValues;
     private int mSize;
 
-    public SparseIntArray() {
-        this(10);
-    }
+    public SparseIntArray() {}
 
     public SparseIntArray(@Nonnegative int initialCapacity) {
         this.mKeys = new int[initialCapacity];
@@ -55,6 +53,13 @@ public final class SparseIntArray implements IntArray {
         this.mKeys = mKeys;
         this.mValues = mValues;
         this.mSize = mSize;
+    }
+
+    public void init(@Nonnull int[] mKeys, @Nonnull int[] mValues) {
+        Preconditions.checkArgument(mKeys.length == mValues.length);
+        this.mKeys = mKeys;
+        this.mValues = mValues;
+        this.mSize = mKeys.length;
     }
 
     public IntArray deepCopy() {
@@ -248,6 +253,18 @@ public final class SparseIntArray implements IntArray {
         final int[] keys = mKeys.clone();
         final int[] values = mValues.clone();
         for (int i = startPos; i < endPos; i++) {
+            int k = keys[i];
+            int v = values[i];
+            consumer.accept(k, v);
+        }
+    }
+
+    @Override
+    public void forEach(@Nonnull final Consumer consumer) {
+        final int size = mSize;
+        final int[] keys = mKeys;
+        final int[] values = mValues;
+        for (int i = 0; i < size; i++) {
             int k = keys[i];
             int v = values[i];
             consumer.accept(k, v);

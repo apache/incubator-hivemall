@@ -18,6 +18,8 @@
  */
 package hivemall.utils.collections.arrays;
 
+import hivemall.utils.function.Consumer;
+
 import java.io.Serializable;
 
 import javax.annotation.Nonnull;
@@ -41,5 +43,7 @@ public interface IntArray extends Serializable {
 
     @Nonnull
     public int[] toArray(boolean copy);
+
+    public void forEach(@Nonnull Consumer consumer);
 
 }
