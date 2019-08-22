@@ -1066,10 +1066,6 @@ public class DecisionTree implements Classifier<Vector> {
      */
     private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
             final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buf) {
-        if (low >= a.length) {
-            return; // no need to reorder the range (low,high]
-        }
-
         int j = low;
         int k = 0;
         for (int i = low; i < high; i++) {
@@ -1261,7 +1257,9 @@ public class DecisionTree implements Classifier<Vector> {
                 if (parent == null) {
                     break;
                 }
-                parent.split(nextSplits); // Split the parent node into two children nodes
+                if (!parent.split(nextSplits)) { // Split the parent node into two children nodes
+                    leaves--;
+                }
             }
         }
     }
