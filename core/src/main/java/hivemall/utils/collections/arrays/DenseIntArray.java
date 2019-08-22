@@ -67,7 +67,7 @@ public final class DenseIntArray implements IntArray {
 
     @Override
     public int size() {
-        return array.length;
+        return size;
     }
 
     @Override
