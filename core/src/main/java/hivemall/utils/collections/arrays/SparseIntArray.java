@@ -249,7 +249,7 @@ public final class SparseIntArray implements IntArray {
         }
     }
 
-    public void consume(@Nonnegative final int start, @Nonnegative final int end,
+    public void forEach(@Nonnegative final int start, @Nonnegative final int end,
             @Nonnull final Consumer consumer) {
         int startPos = indexOfKey(start);
         if (startPos < 0) {

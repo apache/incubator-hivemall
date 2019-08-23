@@ -109,7 +109,7 @@ public class SparseIntArrayTest {
         final SparseIntArray actual = new SparseIntArray(keys, values, keys.length);
         Assert.assertEquals(500, actual.size());
 
-        actual.consume(10, 30, new Consumer() {
+        actual.forEach(10, 30, new Consumer() {
             @Override
             public void accept(int i, int value) {
                 actual.put(i, value);

@@ -1030,7 +1030,7 @@ public class DecisionTree implements Classifier<Vector> {
             final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
             @Nonnull final int[] buf) {
         final MutableInt k_ = new MutableInt(0);
-        a.consume(low, high, new Consumer() {
+        a.forEach(low, high, new Consumer() {
             int j = low;
 
             @Override

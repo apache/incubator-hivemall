@@ -48,7 +48,7 @@ public final class VariableOrder {
         if (row == null) {
             return;
         }
-        row.consume(startRow, endRow, consumer);
+        row.forEach(startRow, endRow, consumer);
     }
 
 }
