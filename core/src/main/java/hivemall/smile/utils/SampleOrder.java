@@ -44,13 +44,11 @@ public final class SampleOrder {
 
     public void eachNonNullInColumn(final int col, final int startRow, final int endRow,
             @Nonnull final Consumer consumer) {
-        for (int j = 0; j < cols.length; j++) {
-            final SparseIntArray row = cols[j];
-            if (row == null) {
-                continue;
-            }
-            row.consume(startRow, endRow, consumer);
+        final SparseIntArray row = cols[col];
+        if (row == null) {
+            return;
         }
+        row.consume(startRow, endRow, consumer);
     }
 
 }
