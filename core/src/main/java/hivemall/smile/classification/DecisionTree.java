@@ -24,22 +24,20 @@ import static hivemall.smile.utils.SmileExtUtils.resolveName;
 
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
+import hivemall.smile.utils.SampleOrder;
 import hivemall.smile.utils.SmileExtUtils;
-import hivemall.utils.collections.arrays.DenseIntArray;
-import hivemall.utils.collections.arrays.IntArray;
 import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.function.Consumer;
+import hivemall.utils.function.IntPredicate;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
-import hivemall.utils.lang.mutable.MutableBoolean;
 import hivemall.utils.lang.mutable.MutableInt;
 import hivemall.utils.sampling.IntReservoirSampler;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -131,11 +129,24 @@ public class DecisionTree implements Classifier<Vector> {
     @Nonnull
     private final int[] _y;
     /**
+     * The samples for training this node. Note that samples[i] is the number of sampling of
+     * dataset[i]. 0 means that the datum is not included and values of greater than 1 are possible
+     * because of sampling with replacement.
+     */
+    @Nonnull
+    private final int[] _samples;
+    /**
      * The index of training values in ascending order. Note that only numeric attributes will be
      * sorted.
      */
     @Nonnull
-    private final ColumnMajorIntMatrix _order;
+    private final SampleOrder _order;
+    /**
+     * An index that maps their current position in the {@link #_order} to their original locations
+     * in {@link #_samples}.
+     */
+    @Nonnull
+    private final int[] _sampleIndex;
     /**
      * The attributes of independent variable.
      */
@@ -566,30 +577,36 @@ public class DecisionTree implements Classifier<Vector> {
          */
         final int depth;
         /**
-         * The samples for training this node.
+         * The lower bound (inclusive) in the order array of the samples belonging to this node.
          */
-        @Nullable
-        IntArray samples;
+        final int low;
+        /**
+         * The upper bound (exclusive) in the order array of the samples belonging to this node.
+         */
+        final int high;
         /**
          * The number of samples
          */
-        final int numSamples;
-        /**
-         * Indicator for constant features
-         */
+        final int samples;
+
         @Nullable
         RoaringBitmap constFeatures;
 
-        public TrainNode(@Nonnull Node node, int depth, @Nonnull IntArray samples, int numSamples) {
-            this(node, depth, samples, numSamples, new RoaringBitmap());
+        public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples) {
+            this(node, depth, low, high, samples, new RoaringBitmap());
         }
 
-        public TrainNode(@Nonnull Node node, int depth, @Nonnull IntArray samples, int numSamples,
+        public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples,
                 @Nonnull RoaringBitmap constFeatures) {
+            if (low >= high) {
+                throw new IllegalArgumentException(
+                    "Unexpected condition was met. low=" + low + ", high=" + high);
+            }
             this.node = node;
             this.depth = depth;
+            this.low = low;
+            this.high = high;
             this.samples = samples;
-            this.numSamples = numSamples;
             this.constFeatures = constFeatures;
         }
 
@@ -609,7 +626,7 @@ public class DecisionTree implements Classifier<Vector> {
                 return false;
             }
             // avoid split if the number of samples is less than threshold
-            if (numSamples <= _minSamplesSplit) {
+            if (samples <= _minSamplesSplit) {
                 return false;
             }
 
@@ -620,14 +637,14 @@ public class DecisionTree implements Classifier<Vector> {
                 return false;
             }
 
-            final double impurity = impurity(count, numSamples, _rule);
+            final double impurity = impurity(count, samples, _rule);
 
             final int[] falseCount = new int[_k];
             for (int varJ : variableIndex()) {
                 if (constFeatures.contains(varJ)) {
                     continue; // skip constant features
                 }
-                final Node split = findBestSplit(numSamples, count, falseCount, impurity, varJ);
+                final Node split = findBestSplit(samples, count, falseCount, impurity, varJ);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
                     node.quantitativeFeature = split.quantitativeFeature;
@@ -639,33 +656,6 @@ public class DecisionTree implements Classifier<Vector> {
             }
 
             return node.splitFeature != -1;
-        }
-
-        private boolean countSamples(@Nonnull final int[] count) {
-            final int[] y = _y;
-            final MutableBoolean pure = new MutableBoolean(true);
-
-            samples.forEach(new Consumer() {
-                int label = -1;
-
-                @Override
-                public void accept(final int index, final int sample) {
-                    if (sample == 0) {
-                        return;
-                    }
-                    int y_i = y[index];
-                    count[y_i]++;
-
-                    if (label == -1) {
-                        label = y_i;
-                    } else if (y_i != label) {
-                        pure.setFalse();
-                    }
-                }
-
-            });
-
-            return pure.booleanValue();
         }
 
         @Nonnull
@@ -680,15 +670,11 @@ public class DecisionTree implements Classifier<Vector> {
                         cols.add(col);
                     }
                 };
-                samples.forEach(new Consumer() {
-                    @Override
-                    public void accept(final int row, final int count) {
-                        if (count == 0) {
-                            return;
-                        }
-                        X.eachColumnIndexInRow(row, proc);
-                    }
-                });
+                final int[] sampleIndex = _sampleIndex;
+                for (int i = low; i < high; i++) {
+                    int row = sampleIndex[i];
+                    X.eachColumnIndexInRow(row, proc);
+                }
                 cols.forEach(new IntConsumer() {
                     public void accept(final int k) {
                         sampler.add(k);
@@ -703,6 +689,27 @@ public class DecisionTree implements Classifier<Vector> {
             return sampler.getSample();
         }
 
+        private boolean countSamples(@Nonnull final int[] count) {
+            final int[] sampleIndex = _sampleIndex;
+            final int[] y = _y;
+
+            boolean pure = true;
+
+            for (int i = low, label = -1; i < high; i++) {
+                int index = sampleIndex[i];
+                int y_i = y[index];
+                count[y_i]++;
+
+                if (label == -1) {
+                    label = y_i;
+                } else if (y_i != label) {
+                    pure = false;
+                }
+            }
+
+            return pure;
+        }
+
         /**
          * Finds the best split cutoff for attribute j at the current node.
          *
@@ -714,6 +721,8 @@ public class DecisionTree implements Classifier<Vector> {
          */
         private Node findBestSplit(final int n, final int[] count, final int[] falseCount,
                 final double impurity, final int j) {
+            final int[] samples = _samples;
+            final int[] sampleIndex = _sampleIndex;
             final Matrix X = _X;
             final int[] y = _y;
             final int classes = _k;
@@ -722,33 +731,31 @@ public class DecisionTree implements Classifier<Vector> {
 
             if (_nominalAttrs.contains(j)) {
                 final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
-                final MutableInt countNaN = new MutableInt(0);
 
-                samples.forEach(new Consumer() {
-                    @Override
-                    public void accept(final int index, final int count) {
-                        if (count == 0) {
-                            return;
-                        }
-
-                        final double v = X.get(index, j, Double.NaN);
-                        if (Double.isNaN(v)) {
-                            countNaN.incr();
-                            return;
-                        }
-                        int x_ij = (int) v;
-
-                        int[] tc_x = trueCount.get(x_ij);
-                        if (tc_x == null) {
-                            tc_x = new int[classes];
-                            trueCount.put(x_ij, tc_x);
-                        }
-                        int y_i = y[index];
-                        tc_x[y_i] += count;
+                int countNaN = 0;
+                for (int i = low; i < high; i++) {
+                    final int index = sampleIndex[i];
+                    final int numSamples = samples[index];
+                    if (numSamples == 0) {
+                        continue;
                     }
-                });
 
-                final int countDistinctX = trueCount.size() + (countNaN.get() == 0 ? 0 : 1);
+                    final double v = X.get(index, j, Double.NaN);
+                    if (Double.isNaN(v)) {
+                        countNaN++;
+                        continue;
+                    }
+                    int x_ij = (int) v;
+
+                    int[] tc_x = trueCount.get(x_ij);
+                    if (tc_x == null) {
+                        tc_x = new int[classes];
+                        trueCount.put(x_ij, tc_x);
+                    }
+                    int y_i = y[index];
+                    tc_x[y_i] += numSamples;
+                }
+                final int countDistinctX = trueCount.size() + (countNaN == 0 ? 0 : 1);
                 if (countDistinctX <= 1) {
                     constFeatures.add(j); // mark as a constant feature
                 }
@@ -784,18 +791,17 @@ public class DecisionTree implements Classifier<Vector> {
                     }
                 }
             } else {
-                final IntArray samples_ = samples;
                 final int[] trueCount = new int[classes];
                 final MutableInt countNaN = new MutableInt(0);
                 final MutableInt replaceCount = new MutableInt(0);
 
-                _order.eachNonNullInColumn(j, new VectorProcedure() {
+                _order.eachNonNullInColumn(j, low, high, new Consumer() {
                     double prevx = Double.NaN, lastx = Double.NaN;
                     int prevy = -1;
 
                     @Override
-                    public void apply(final int row, final int i) {
-                        final int numSamples = samples_.get(i);
+                    public void accept(int pos, final int i) {
+                        final int numSamples = samples[i];
                         if (numSamples == 0) {
                             return;
                         }
@@ -872,17 +878,18 @@ public class DecisionTree implements Classifier<Vector> {
                 throw new IllegalStateException("Split a node with invalid feature.");
             }
 
+            final IntPredicate goesLeft = getPredicate();
+
             // split samples
-            final int tc, fc;
-            final SparseIntArray trueSamples = new SparseIntArray();
-            final SparseIntArray falseSamples = new SparseIntArray();
+            final int tc, fc, pivot;
             final double[] trueChildPosteriori = new double[_k],
                     falseChildPosteriori = new double[_k];
             {
-                tc = splitSamples(trueSamples, falseSamples, trueChildPosteriori,
-                    falseChildPosteriori);
-                fc = numSamples - tc;
-                this.samples = null; // help GC
+                MutableInt tc_ = new MutableInt(0);
+                MutableInt fc_ = new MutableInt(0);
+                pivot = splitSamples(tc_, fc_, trueChildPosteriori, falseChildPosteriori, goesLeft);
+                tc = tc_.get();
+                fc = fc_.get();
             }
 
             if (tc < _minSamplesLeaf || fc < _minSamplesLeaf) {
@@ -895,15 +902,17 @@ public class DecisionTree implements Classifier<Vector> {
                 falseChildPosteriori[i] /= fc;
             }
 
-            node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
-            TrainNode trueChild = new TrainNode(node.trueChild, depth + 1, trueSamples, tc,
-                constFeatures.clone());
-            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
-            TrainNode falseChild =
-                    new TrainNode(node.falseChild, depth + 1, falseSamples, fc, constFeatures);
-            this.constFeatures = null; // help GC for recursive call
+            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot]);
 
             int leaves = 0;
+
+            node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
+            TrainNode trueChild =
+                    new TrainNode(node.trueChild, depth + 1, low, pivot, tc, constFeatures.clone());
+            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
+            TrainNode falseChild =
+                    new TrainNode(node.falseChild, depth + 1, pivot, high, fc, constFeatures);
+            this.constFeatures = null;
 
             if (tc >= _minSamplesSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
@@ -944,57 +953,140 @@ public class DecisionTree implements Classifier<Vector> {
         }
 
         /**
-         * @return the number of true samples
+         * @return Pivot to split samples
          */
-        private int splitSamples(@Nonnull final SparseIntArray trueSamples,
-                @Nonnull final SparseIntArray falseSamples,
+        private int splitSamples(@Nonnull final MutableInt tc, @Nonnull final MutableInt fc,
                 @Nonnull final double[] trueChildPosteriori,
-                @Nonnull final double[] falseChildPosteriori) {
+                @Nonnull final double[] falseChildPosteriori,
+                @Nonnull final IntPredicate goesLeft) {
+            final int[] sampleIndex = _sampleIndex;
+            final int[] samples = _samples;
             final int[] y = _y;
 
-            int estimatedSize = (int) (samples.size() * 0.8);
-            final IntArrayList trueIndex = new IntArrayList(estimatedSize);
-            final IntArrayList trueValues = new IntArrayList(estimatedSize);
-            final IntArrayList falseIndex = new IntArrayList(estimatedSize);
-            final IntArrayList falseValues = new IntArrayList(estimatedSize);
+            int pivot = low;
+            for (int k = low; k < high; k++) {
+                final int i = sampleIndex[k];
+                final int numSamples = samples[i];
+                final int yi = y[i];
+                if (goesLeft.test(i)) {
+                    tc.addValue(numSamples);
+                    trueChildPosteriori[yi] += numSamples;
+                    pivot++;
+                } else {
+                    fc.addValue(numSamples);
+                    falseChildPosteriori[yi] += numSamples;
+                }
+            }
+            return pivot;
+        }
 
-            final MutableInt tc = new MutableInt(0);
-
-            samples.forEach(new Consumer() {
+        /**
+         * Modifies {@link #_order} and {@link #_sampleIndex} by partitioning the range from low
+         * (inclusive) to high (exclusive) so that all elements i for which goesLeft(i) is true come
+         * before all elements for which it is false, but element ordering is otherwise preserved.
+         * The number of true values returned by goesLeft must equal split-low.
+         * 
+         * @param low the low bound of the segment of the order arrays which will be partitioned.
+         * @param split where the partition's split point will end up.
+         * @param high the high bound of the segment of the order arrays which will be partitioned.
+         * @param goesLeft whether an element goes to the left side or the right side of the
+         *        partition.
+         * @param buffer scratch space large enough to hold all elements for which goesLeft is
+         *        false.
+         */
+        private void partitionOrder(final int low, final int pivot, final int high,
+                @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
+            _order.eachRow(new Consumer() {
                 @Override
-                public void accept(final int i, final int count) {
-                    if (count == 0) {
-                        return;
-                    }
-                    final int yi = y[i];
-                    if (goesLeft(i)) {
-                        trueIndex.add(i);
-                        trueValues.add(count);
-                        tc.addValue(count);
-                        trueChildPosteriori[yi] += count;
-                    } else {
-                        falseIndex.add(i);
-                        falseValues.add(count);
-                        falseChildPosteriori[yi] += count;
-                    }
+                public void accept(int col, @Nonnull final SparseIntArray row) {
+                    partitionArray(row, low, pivot, high, goesLeft, buffer);
                 }
             });
-
-            trueSamples.init(trueIndex.toArray(true), trueValues.toArray(true));
-            falseSamples.init(falseIndex.toArray(true), falseValues.toArray(true));
-
-            return tc.get();
+            partitionArray(_sampleIndex, low, pivot, high, goesLeft, buffer);
         }
 
         @Nonnull
-        private boolean goesLeft(final int i) {
+        private IntPredicate getPredicate() {
             if (node.quantitativeFeature) {
-                return _X.get(i, node.splitFeature, Double.NaN) <= node.splitValue;
+                return new IntPredicate() {
+                    @Override
+                    public boolean test(int i) {
+                        return _X.get(i, node.splitFeature, Double.NaN) <= node.splitValue;
+                    }
+                };
             } else {
-                return _X.get(i, node.splitFeature, Double.NaN) == node.splitValue;
+                return new IntPredicate() {
+                    @Override
+                    public boolean test(int i) {
+                        return _X.get(i, node.splitFeature, Double.NaN) == node.splitValue;
+                    }
+                };
             }
         }
 
+    }
+
+    private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
+            final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
+            @Nonnull final int[] buf) {
+        final MutableInt k_ = new MutableInt(0);
+        a.consume(low, high, new Consumer() {
+            int j = low;
+
+            @Override
+            public void accept(int i, final int a_i) {
+                if (goesLeft.test(a_i)) {
+                    if (i != j) {
+                        a.put(j, a_i);
+                    }
+                    j++;
+                } else {
+                    final int k = k_.getAndIncrement();
+                    if (k >= buf.length) {
+                        throw new IndexOutOfBoundsException(String.format(
+                            "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, j=%d, k=%d",
+                            low, pivot, high, a.size(), buf.length, j, k));
+                    }
+                    buf[k] = a_i;
+                }
+            }
+        });
+        final int k = k_.get();
+        if (k > 0) {
+            a.append(pivot, buf, 0, k);
+        }
+    }
+
+    /**
+     * Modifies an array in-place by partitioning the range from low (inclusive) to high (exclusive)
+     * so that all elements i for which goesLeft(i) is true come before all elements for which it is
+     * false, but element ordering is otherwise preserved. The number of true values returned by
+     * goesLeft must equal split-low. buf is scratch space large enough (i.e., at least high-split
+     * long) to hold all elements for which goesLeft is false.
+     */
+    private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
+            final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buf) {
+        int j = low;
+        int k = 0;
+        for (int i = low; i < high; i++) {
+            if (i >= a.length) {
+                throw new IndexOutOfBoundsException(String.format(
+                    "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d", low,
+                    pivot, high, a.length, buf.length, i, j, k));
+            }
+            final int a_i = a[i];
+            if (goesLeft.test(a_i)) {
+                a[j++] = a_i;
+            } else {
+                if (k >= buf.length) {
+                    throw new IndexOutOfBoundsException(String.format(
+                        "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d",
+                        low, pivot, high, a.length, buf.length, i, j, k));
+                }
+                buf[k++] = a_i;
+            }
+        }
+        System.arraycopy(buf, 0, a, pivot, k);
     }
 
     /**
@@ -1111,24 +1203,32 @@ public class DecisionTree implements Classifier<Vector> {
 
         final int n = y.length;
         final int[] count = new int[_k];
+        final int[] posIndex;
         int totalNumSamples = 0;
         if (samples == null) {
             samples = new int[n];
+            posIndex = new int[n];
             for (int i = 0; i < n; i++) {
                 samples[i] = 1;
                 count[y[i]]++;
+                posIndex[i] = i;
             }
             totalNumSamples = n;
         } else {
+            final IntArrayList positions = new IntArrayList(n);
             for (int i = 0; i < n; i++) {
                 final int sample = samples[i];
                 if (sample != 0) {
                     count[y[i]] += sample;
+                    positions.add(i);
                     totalNumSamples += sample;
                 }
             }
+            posIndex = positions.toArray(true);
         }
+        this._samples = samples;
         this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
+        this._sampleIndex = posIndex;
 
         final double[] posteriori = new double[_k];
         for (int i = 0; i < _k; i++) {
@@ -1137,7 +1237,7 @@ public class DecisionTree implements Classifier<Vector> {
         this._root = new Node(Math.whichMax(count), posteriori);
 
         final TrainNode trainRoot =
-                new TrainNode(_root, 1, new DenseIntArray(samples), totalNumSamples);
+                new TrainNode(_root, 1, 0, _sampleIndex.length, totalNumSamples);
         if (maxLeafNodes == Integer.MAX_VALUE) {
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);
