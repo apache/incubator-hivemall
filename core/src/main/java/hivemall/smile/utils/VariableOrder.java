@@ -23,12 +23,12 @@ import hivemall.utils.function.Consumer;
 
 import javax.annotation.Nonnull;
 
-public final class SampleOrder {
+public final class VariableOrder {
 
     @Nonnull
     private final SparseIntArray[] cols; // col => row
 
-    public SampleOrder(@Nonnull SparseIntArray[] cols) {
+    public VariableOrder(@Nonnull SparseIntArray[] cols) {
         this.cols = cols;
     }
 

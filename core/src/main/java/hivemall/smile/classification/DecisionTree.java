@@ -30,8 +30,8 @@ import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.utils.SampleOrder;
 import hivemall.smile.utils.SmileExtUtils;
+import hivemall.smile.utils.VariableOrder;
 import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.function.Consumer;
@@ -140,7 +140,7 @@ public class DecisionTree implements Classifier<Vector> {
      * sorted.
      */
     @Nonnull
-    private final SampleOrder _order;
+    private final VariableOrder _order;
     /**
      * An index that maps their current position in the {@link #_order} to their original locations
      * in {@link #_samples}.
@@ -1052,6 +1052,11 @@ public class DecisionTree implements Classifier<Vector> {
             }
         });
         final int k = k_.get();
+        if (k != high - pivot) {
+            throw new IndexOutOfBoundsException(
+                String.format("low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, k=%d", low,
+                    pivot, high, a.size(), buf.length, k));
+        }
         if (k > 0) {
             a.append(pivot, buf, 0, k);
         }
@@ -1085,6 +1090,11 @@ public class DecisionTree implements Classifier<Vector> {
                 }
                 buf[k++] = a_i;
             }
+        }
+        if (k != high - pivot || j != pivot) {
+            throw new IndexOutOfBoundsException(
+                String.format("low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, j=%d, k=%d",
+                    low, pivot, high, a.length, buf.length, j, k));
         }
         System.arraycopy(buf, 0, a, pivot, k);
     }

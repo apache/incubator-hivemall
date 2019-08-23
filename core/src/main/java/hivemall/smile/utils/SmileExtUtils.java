@@ -122,7 +122,7 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static SampleOrder sort(@Nonnull final RoaringBitmap nominalAttrs, @Nonnull final Matrix x,
+    public static VariableOrder sort(@Nonnull final RoaringBitmap nominalAttrs, @Nonnull final Matrix x,
             @Nonnull final int[] samples) {
         final int n = x.numRows();
         final int p = x.numColumns();
@@ -186,7 +186,7 @@ public final class SmileExtUtils {
             }
         }
 
-        return new SampleOrder(index);
+        return new VariableOrder(index);
     }
 
     @Nonnull
