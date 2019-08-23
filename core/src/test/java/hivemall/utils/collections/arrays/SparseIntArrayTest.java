@@ -18,6 +18,8 @@
  */
 package hivemall.utils.collections.arrays;
 
+import hivemall.utils.function.Consumer;
+
 import java.util.Random;
 
 import org.junit.Assert;
@@ -93,5 +95,39 @@ public class SparseIntArrayTest {
         }
         array.append(a1.length - 9, a2, 0, a2.length);
         Assert.assertEquals(a1.length + a2.length - 9, array.size());
+    }
+
+    @Test
+    public void testConsume() {
+        final Random rng = new Random(43L);
+        int[] keys = new int[500];
+        int[] values = new int[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            keys[i] = i * 2;
+            values[i] = rng.nextInt(1000);
+        }
+        final SparseIntArray actual = new SparseIntArray(keys, values, keys.length);
+        Assert.assertEquals(500, actual.size());
+
+        actual.consume(10, 30, new Consumer() {
+            @Override
+            public void accept(int i, int value) {
+                actual.put(i, value);
+                actual.put(i + 1, value);
+            }
+        });
+
+        int lastKey = actual.lastKey();
+        Assert.assertEquals(998, lastKey);
+        actual.append(lastKey, new int[] {-1, -2, -3});
+
+        Assert.assertEquals(512, actual.size());
+        Assert.assertEquals(-1, actual.get(998));
+        Assert.assertEquals(-2, actual.get(999));
+        Assert.assertEquals(-3, actual.get(1000));
+
+        for (int i = 10; i < 30; i += 2) {
+            Assert.assertEquals(actual.get(i), actual.get(i + 1));
+        }
     }
 }

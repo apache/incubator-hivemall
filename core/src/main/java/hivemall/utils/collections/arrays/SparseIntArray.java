@@ -49,7 +49,7 @@ public final class SparseIntArray implements IntArray {
         this.mSize = values.length;
     }
 
-    private SparseIntArray(@Nonnull int[] mKeys, @Nonnull int[] mValues, @Nonnegative int mSize) {
+    public SparseIntArray(@Nonnull int[] mKeys, @Nonnull int[] mValues, @Nonnegative int mSize) {
         this.mKeys = mKeys;
         this.mValues = mValues;
         this.mSize = mSize;
@@ -138,17 +138,17 @@ public final class SparseIntArray implements IntArray {
     }
 
     public int firstKey() {
-        if (mKeys.length == 0) {
+        if (mSize == 0) {
             return -1;
         }
         return mKeys[0];
     }
 
     public int lastKey() {
-        if (mKeys.length == 0) {
+        if (mSize == 0) {
             return -1;
         }
-        return mKeys[mKeys.length - 1];
+        return mKeys[mSize - 1];
     }
 
     @Override
@@ -213,10 +213,11 @@ public final class SparseIntArray implements IntArray {
             if (key <= lastKey) {
                 put(key, values[i]);
             } else {// append
-                int length = values.length - i;
-                this.mKeys = ArrayUtils.concat(mKeys, MathUtils.permutation(key, length));
-                this.mValues = ArrayUtils.concat(mValues, values, i, length);
-                this.mSize += length;
+                int size = values.length - i;
+                int[] appendKeys = MathUtils.permutation(key, size);
+                this.mKeys = ArrayUtils.concat(mKeys, 0, mSize, appendKeys, 0, appendKeys.length);
+                this.mValues = ArrayUtils.concat(mValues, 0, mSize, values, i, size);
+                this.mSize += size;
                 break;
             }
         }
@@ -239,8 +240,9 @@ public final class SparseIntArray implements IntArray {
                 put(key, values[valuePos]);
             } else {// append
                 int size = length - i;
-                this.mKeys = ArrayUtils.concat(mKeys, MathUtils.permutation(key, size));
-                this.mValues = ArrayUtils.concat(mValues, values, valuePos, size);
+                int[] appendKeys = MathUtils.permutation(key, size);
+                this.mKeys = ArrayUtils.concat(mKeys, 0, mSize, appendKeys, 0, appendKeys.length);
+                this.mValues = ArrayUtils.concat(mValues, 0, mSize, values, valuePos, size);
                 this.mSize += size;
                 break;
             }
@@ -322,6 +324,5 @@ public final class SparseIntArray implements IntArray {
         buffer.append('}');
         return buffer.toString();
     }
-
 
 }

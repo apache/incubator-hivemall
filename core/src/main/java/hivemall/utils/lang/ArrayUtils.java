@@ -328,6 +328,7 @@ public final class ArrayUtils {
         return array;
     }
 
+    @Nonnull
     public static int[] concat(@Nonnegative final int[] array1, @Nonnegative final int... array2) {
         final int[] joinedArray = new int[array1.length + array2.length];
         System.arraycopy(array1, 0, joinedArray, 0, array1.length);
@@ -335,11 +336,22 @@ public final class ArrayUtils {
         return joinedArray;
     }
 
+    @Nonnull
     public static int[] concat(@Nonnegative final int[] array1, @Nonnegative final int[] array2,
             final int offset, final int length) {
         final int[] joinedArray = new int[array1.length + length];
         System.arraycopy(array1, 0, joinedArray, 0, array1.length);
         System.arraycopy(array2, offset, joinedArray, array1.length, length);
+        return joinedArray;
+    }
+
+    @Nonnull
+    public static int[] concat(@Nonnegative final int[] array1, final int offset1,
+            final int length1, @Nonnegative final int[] array2, final int offset2,
+            final int length2) {
+        final int[] joinedArray = new int[length1 + length2];
+        System.arraycopy(array1, offset1, joinedArray, 0, length1);
+        System.arraycopy(array2, offset2, joinedArray, length1, length2);
         return joinedArray;
     }
 
