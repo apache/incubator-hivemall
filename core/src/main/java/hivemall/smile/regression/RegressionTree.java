@@ -1145,7 +1145,9 @@ public final class RegressionTree implements Regression<Vector> {
                 if (node == null) {
                     break;
                 }
-                node.split(nextSplits); // Split the parent node into two children nodes
+                if (!node.split(nextSplits)) { // Split the parent node into two children nodes
+                    leaves--;
+                }
             }
         }
 

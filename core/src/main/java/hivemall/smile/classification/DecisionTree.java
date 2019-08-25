@@ -1263,11 +1263,11 @@ public class DecisionTree implements Classifier<Vector> {
             // children nodes into the queue if possible.
             for (int leaves = 1; leaves < maxLeafNodes; leaves++) {
                 // parent is the leaf to split
-                TrainNode parent = nextSplits.poll();
-                if (parent == null) {
+                TrainNode node = nextSplits.poll();
+                if (node == null) {
                     break;
                 }
-                if (!parent.split(nextSplits)) { // Split the parent node into two children nodes
+                if (!node.split(nextSplits)) { // Split the parent node into two children nodes
                     leaves--;
                 }
             }
