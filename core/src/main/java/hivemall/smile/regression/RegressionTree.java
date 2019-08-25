@@ -589,7 +589,7 @@ public final class RegressionTree implements Regression<Vector> {
 
             final int[] sampleIndex = _sampleIndex;
             final int[] samples = _samples;
-            for (int i = low; i < high; i++) {
+            for (int i = low, end = high; i < end; i++) {
                 int index = sampleIndex[i];
                 int sample = samples[index];
                 if (sample > 0) {
@@ -618,8 +618,9 @@ public final class RegressionTree implements Regression<Vector> {
 
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
+            final RoaringBitmap constFeatures_ = this.constFeatures;
             for (int varJ : variableIndex()) {
-                if (constFeatures.contains(varJ)) {
+                if (constFeatures_.contains(varJ)) {
                     continue;
                 }
                 final Node split = findBestSplit(samples, sum, varJ);
@@ -649,7 +650,7 @@ public final class RegressionTree implements Regression<Vector> {
                     }
                 };
                 final int[] sampleIndex = _sampleIndex;
-                for (int i = low; i < high; i++) {
+                for (int i = low, end = high; i < end; i++) {
                     int row = sampleIndex[i];
                     X.eachColumnIndexInRow(row, proc);
                 }
@@ -688,7 +689,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final Int2IntOpenHashMap trueCount = new Int2IntOpenHashMap();
 
                 int countNaN = 0;
-                for (int i = low; i < high; i++) {
+                for (int i = low, end = high; i < end; i++) {
                     final int index = sampleIndex[i];
                     final int numSamples = samples[index];
                     if (numSamples == 0) {
@@ -902,7 +903,7 @@ public final class RegressionTree implements Regression<Vector> {
             final int[] samples = _samples;
 
             int pivot = low;
-            for (int k = low; k < high; k++) {
+            for (int k = low, end = high; k < end; k++) {
                 final int i = sampleIndex[k];
                 final int numSamples = samples[i];
                 if (goesLeft.test(i)) {
@@ -1109,7 +1110,7 @@ public final class RegressionTree implements Regression<Vector> {
             }
         } else {
             final IntArrayList positions = new IntArrayList(n);
-            for (int i = 0; i < y.length; i++) {
+            for (int i = 0, end = y.length; i < end; i++) {
                 final int sample = samples[i];
                 if (sample != 0) {
                     n += sample;

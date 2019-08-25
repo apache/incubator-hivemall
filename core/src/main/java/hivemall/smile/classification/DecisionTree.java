@@ -639,9 +639,10 @@ public class DecisionTree implements Classifier<Vector> {
 
             final double impurity = impurity(count, samples, _rule);
 
+            final RoaringBitmap constFeatures_ = this.constFeatures;
             final int[] falseCount = new int[_k];
             for (int varJ : variableIndex()) {
-                if (constFeatures.contains(varJ)) {
+                if (constFeatures_.contains(varJ)) {
                     continue; // skip constant features
                 }
                 final Node split = findBestSplit(samples, count, falseCount, impurity, varJ);
@@ -671,7 +672,7 @@ public class DecisionTree implements Classifier<Vector> {
                     }
                 };
                 final int[] sampleIndex = _sampleIndex;
-                for (int i = low; i < high; i++) {
+                for (int i = low, end = high; i < end; i++) {
                     int row = sampleIndex[i];
                     X.eachColumnIndexInRow(row, proc);
                 }
@@ -695,7 +696,7 @@ public class DecisionTree implements Classifier<Vector> {
 
             boolean pure = true;
 
-            for (int i = low, label = -1; i < high; i++) {
+            for (int i = low, end = high, label = -1; i < end; i++) {
                 int index = sampleIndex[i];
                 int y_i = y[index];
                 count[y_i]++;
@@ -733,7 +734,7 @@ public class DecisionTree implements Classifier<Vector> {
                 final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
 
                 int countNaN = 0;
-                for (int i = low; i < high; i++) {
+                for (int i = low, end = high; i < end; i++) {
                     final int index = sampleIndex[i];
                     final int numSamples = samples[index];
                     if (numSamples == 0) {
@@ -964,7 +965,7 @@ public class DecisionTree implements Classifier<Vector> {
             final int[] y = _y;
 
             int pivot = low;
-            for (int k = low; k < high; k++) {
+            for (int k = low, end = high; k < end; k++) {
                 final int i = sampleIndex[k];
                 final int numSamples = samples[i];
                 final int yi = y[i];
@@ -1114,8 +1115,7 @@ public class DecisionTree implements Classifier<Vector> {
         switch (rule) {
             case GINI: {
                 impurity = 1.0;
-                for (int i = 0; i < count.length; i++) {
-                    final int count_i = count[i];
+                for (int count_i : count) {
                     if (count_i > 0) {
                         double p = (double) count_i / n;
                         impurity -= p * p;
@@ -1124,8 +1124,7 @@ public class DecisionTree implements Classifier<Vector> {
                 break;
             }
             case ENTROPY: {
-                for (int i = 0; i < count.length; i++) {
-                    final int count_i = count[i];
+                for (int count_i : count) {
                     if (count_i > 0) {
                         double p = (double) count_i / n;
                         impurity -= p * Math.log2(p);
@@ -1135,8 +1134,7 @@ public class DecisionTree implements Classifier<Vector> {
             }
             case CLASSIFICATION_ERROR: {
                 impurity = 0.d;
-                for (int i = 0; i < count.length; i++) {
-                    final int count_i = count[i];
+                for (int count_i : count) {
                     if (count_i > 0) {
                         impurity = Math.max(impurity, (double) count_i / n);
                     }
