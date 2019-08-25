@@ -614,11 +614,12 @@ public final class RegressionTree implements Regression<Vector> {
                 return false;
             }
 
-            final double sum = node.output * samples;
+            final RoaringBitmap constFeatures_ = this.constFeatures;
+            final int numConst = constFeatures_.getCardinality();
 
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
-            final RoaringBitmap constFeatures_ = this.constFeatures;
+            final double sum = node.output * samples;
             for (int varJ : variableIndex()) {
                 if (constFeatures_.contains(varJ)) {
                     continue;
@@ -632,6 +633,9 @@ public final class RegressionTree implements Regression<Vector> {
                     node.trueChildOutput = split.trueChildOutput;
                     node.falseChildOutput = split.falseChildOutput;
                 }
+            }
+            if (constFeatures_.getCardinality() > numConst) {
+                constFeatures.runOptimize();
             }
 
             return node.splitFeature != -1;

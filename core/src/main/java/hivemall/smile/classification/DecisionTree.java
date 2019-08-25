@@ -637,9 +637,10 @@ public class DecisionTree implements Classifier<Vector> {
                 return false;
             }
 
-            final double impurity = impurity(count, samples, _rule);
-
             final RoaringBitmap constFeatures_ = this.constFeatures;
+            final int numConst = constFeatures_.getCardinality();
+
+            final double impurity = impurity(count, samples, _rule);
             final int[] falseCount = new int[_k];
             for (int varJ : variableIndex()) {
                 if (constFeatures_.contains(varJ)) {
@@ -654,6 +655,9 @@ public class DecisionTree implements Classifier<Vector> {
                     node.trueChildOutput = split.trueChildOutput;
                     node.falseChildOutput = split.falseChildOutput;
                 }
+            }
+            if (constFeatures_.getCardinality() > numConst) {
+                constFeatures.runOptimize();
             }
 
             return node.splitFeature != -1;
