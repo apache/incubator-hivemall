@@ -62,6 +62,16 @@ public final class ArrayUtils {
     }
 
     @Nonnull
+    public static int[] sortedArraySet(@Nonnull final int[] sorted, final int element) {
+        final int i = Arrays.binarySearch(sorted, element);
+        if (i >= 0) {// found element
+            return sorted;
+        } else {
+            return insert(sorted, ~i, element);
+        }
+    }
+
+    @Nonnull
     public static float[] toArray(@Nonnull final List<Float> lst) {
         final int ndim = lst.size();
         final float[] ary = new float[ndim];
@@ -294,6 +304,15 @@ public final class ArrayUtils {
     }
 
     @Nonnull
+    public static int[] append(@Nonnull final int[] array, final int element) {
+        int size = array.length;
+        final int[] newArray = new int[size + 1];
+        System.arraycopy(array, 0, newArray, 0, size);
+        newArray[size] = element;
+        return newArray;
+    }
+
+    @Nonnull
     public static int[] append(@Nonnull int[] array, final int currentSize, final int element) {
         if (currentSize + 1 > array.length) {
             int[] newArray = new int[currentSize * 2];
@@ -353,6 +372,23 @@ public final class ArrayUtils {
         System.arraycopy(array1, offset1, joinedArray, 0, length1);
         System.arraycopy(array2, offset2, joinedArray, length1, length2);
         return joinedArray;
+    }
+
+    @Nonnull
+    public static int[] insert(@Nonnull final int[] array, final int index, final int element) {
+        final int size = array.length;
+        if (index > size) {
+            throw new IllegalArgumentException(String.format(
+                "index should be less than or equals to array.length: index=%d, array.length=%d",
+                index, array.length));
+        }
+        final int[] newArray = new int[size + 1];
+        System.arraycopy(array, 0, newArray, 0, Math.min(index, size));
+        newArray[index] = element;
+        if (index != size) {
+            System.arraycopy(array, index, newArray, index + 1, size - index);
+        }
+        return newArray;
     }
 
     @Nonnull
