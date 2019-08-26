@@ -35,6 +35,7 @@ import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.function.Consumer;
 import hivemall.utils.function.IntPredicate;
+import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
@@ -538,14 +539,14 @@ public final class RegressionTree implements Regression<Vector> {
         TrainNode falseChild;
 
         @Nullable
-        RoaringBitmap constFeatures;
+        int[] constFeatures;
 
         public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples) {
-            this(node, depth, low, high, samples, new RoaringBitmap());
+            this(node, depth, low, high, samples, new int[0]);
         }
 
         public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples,
-                @Nonnull RoaringBitmap constFeatures) {
+                @Nonnull int[] constFeatures) {
             if (low >= high) {
                 throw new IllegalArgumentException(
                     "Unexpected condition was met. low=" + low + ", high=" + high);
@@ -614,14 +615,13 @@ public final class RegressionTree implements Regression<Vector> {
                 return false;
             }
 
-            final RoaringBitmap constFeatures_ = this.constFeatures;
-            final int numConst = constFeatures_.getCardinality();
+            final int[] constFeatures_ = this.constFeatures;
 
             // Loop through features and compute the reduction of squared error,
             // which is trueCount * trueMean^2 + falseCount * falseMean^2 - count * parentMean^2
             final double sum = node.output * samples;
             for (int varJ : variableIndex()) {
-                if (constFeatures_.contains(varJ)) {
+                if (ArrayUtils.contains(constFeatures_, varJ)) {
                     continue;
                 }
                 final Node split = findBestSplit(samples, sum, varJ);
@@ -633,9 +633,6 @@ public final class RegressionTree implements Regression<Vector> {
                     node.trueChildOutput = split.trueChildOutput;
                     node.falseChildOutput = split.falseChildOutput;
                 }
-            }
-            if (constFeatures_.getCardinality() > numConst) {
-                constFeatures.runOptimize();
             }
 
             return node.splitFeature != -1;
@@ -714,8 +711,8 @@ public final class RegressionTree implements Regression<Vector> {
                     trueCount.addTo(x_ij, 1);
                 }
                 final int countDistinctX = trueCount.size() + (countNaN == 0 ? 0 : 1);
-                if (countDistinctX <= 1) {
-                    constFeatures.add(j); // mark as a constant feature
+                if (countDistinctX <= 1) { // mark as a constant feature
+                    this.constFeatures = ArrayUtils.sortedArraySet(constFeatures, j);
                 }
 
                 for (Entry e : trueCount.int2IntEntrySet()) {
@@ -816,8 +813,8 @@ public final class RegressionTree implements Regression<Vector> {
                 });
 
                 final int countDistinctX = replaceCount.get() + (countNaN.get() == 0 ? 0 : 1);
-                if (countDistinctX <= 1) {
-                    constFeatures.add(j); // mark as a constant feature
+                if (countDistinctX <= 1) { // mark as a constant feature
+                    this.constFeatures = ArrayUtils.sortedArraySet(constFeatures, j);
                 }
             }
 

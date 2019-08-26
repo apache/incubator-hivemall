@@ -62,13 +62,19 @@ public final class ArrayUtils {
     }
 
     @Nonnull
-    public static int[] sortedArraySet(@Nonnull final int[] sorted, final int element) {
+    public static int[] sortedArraySet(@Nonnull final int[] sorted,
+            @Nonnegative final int element) {
         final int i = Arrays.binarySearch(sorted, element);
         if (i >= 0) {// found element
             return sorted;
         } else {
             return insert(sorted, ~i, element);
         }
+    }
+
+    public static boolean contains(@Nonnull final int[] sorted, @Nonnegative final int element) {
+        int i = Arrays.binarySearch(sorted, element);
+        return i >= 0;
     }
 
     @Nonnull
