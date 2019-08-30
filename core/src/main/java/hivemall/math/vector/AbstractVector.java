@@ -39,6 +39,11 @@ public abstract class AbstractVector implements Vector {
         set(index, (double) value);
     }
 
+    @Override
+    public void decr(int index, double delta) {
+        incr(index, -delta);
+    }
+
     protected static final void checkIndex(final int index) {
         if (index < 0) {
             throw new IndexOutOfBoundsException("Invalid index " + index);

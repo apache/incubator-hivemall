@@ -41,6 +41,8 @@ public interface Vector {
 
     public void incr(@Nonnegative int index, double delta);
 
+    public void decr(@Nonnegative int index, double delta);
+
     public void each(@Nonnull VectorProcedure procedure);
 
     public int size();

@@ -258,16 +258,12 @@ public class DecisionTree implements Classifier<Vector> {
          * Children node.
          */
         Node falseChild = null;
-        /**
-         * Predicted output for children node.
-         */
-        int trueChildOutput = -1;
-        /**
-         * Predicted output for children node.
-         */
-        int falseChildOutput = -1;
 
         public Node() {}// for Externalizable
+
+        public Node(@Nonnull double[] posteriori) {
+            this(Math.whichMax(posteriori), posteriori);
+        }
 
         public Node(int output, @Nonnull double[] posteriori) {
             this.output = output;
@@ -275,7 +271,7 @@ public class DecisionTree implements Classifier<Vector> {
         }
 
         private boolean isLeaf() {
-            return posteriori != null;
+            return trueChild == null && falseChild == null;
         }
 
         private void markAsLeaf() {
@@ -295,7 +291,7 @@ public class DecisionTree implements Classifier<Vector> {
          * Evaluate the regression tree over an instance.
          */
         public int predict(@Nonnull final Vector x) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 return output;
             } else {
                 if (quantitativeFeature) {
@@ -318,7 +314,7 @@ public class DecisionTree implements Classifier<Vector> {
          * Evaluate the regression tree over an instance.
          */
         public void predict(@Nonnull final Vector x, @Nonnull final PredictionHandler handler) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 handler.handle(output, posteriori);
             } else {
                 if (quantitativeFeature) {
@@ -340,7 +336,7 @@ public class DecisionTree implements Classifier<Vector> {
         public void exportJavascript(@Nonnull final StringBuilder builder,
                 @Nullable final String[] featureNames, @Nullable final String[] classNames,
                 final int depth) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 indent(builder, depth);
                 builder.append("").append(resolveName(output, classNames)).append(";\n");
             } else {
@@ -389,7 +385,7 @@ public class DecisionTree implements Classifier<Vector> {
                 @Nonnull final MutableInt nodeIdGenerator, final int parentNodeId) {
             final int myNodeId = nodeIdGenerator.getValue();
 
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 // fillcolor=h,s,v
                 // https://en.wikipedia.org/wiki/HSL_and_HSV
                 // http://www.graphviz.org/doc/info/attrs.html#k:colorList
@@ -451,7 +447,7 @@ public class DecisionTree implements Classifier<Vector> {
         public int opCodegen(@Nonnull final List<String> scripts, int depth) {
             int selfDepth = 0;
             final StringBuilder buf = new StringBuilder();
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 buf.append("push ").append(output);
                 scripts.add(buf.toString());
                 buf.setLength(0);
@@ -651,8 +647,6 @@ public class DecisionTree implements Classifier<Vector> {
                     node.quantitativeFeature = split.quantitativeFeature;
                     node.splitValue = split.splitValue;
                     node.splitScore = split.splitScore;
-                    node.trueChildOutput = split.trueChildOutput;
-                    node.falseChildOutput = split.falseChildOutput;
                 }
             }
 
@@ -787,8 +781,6 @@ public class DecisionTree implements Classifier<Vector> {
                         splitNode.quantitativeFeature = false;
                         splitNode.splitValue = l;
                         splitNode.splitScore = gain;
-                        splitNode.trueChildOutput = Math.whichMax(trueCount_l);
-                        splitNode.falseChildOutput = Math.whichMax(falseCount);
                     }
                 }
             } else {
@@ -850,8 +842,6 @@ public class DecisionTree implements Classifier<Vector> {
                             splitNode.quantitativeFeature = true;
                             splitNode.splitValue = (x_ij + prevx) / 2.d;
                             splitNode.splitScore = gain;
-                            splitNode.trueChildOutput = Math.whichMax(trueCount);
-                            splitNode.falseChildOutput = Math.whichMax(falseCount);
                         }
 
                         prevx = x_ij;
@@ -907,10 +897,10 @@ public class DecisionTree implements Classifier<Vector> {
 
             int leaves = 0;
 
-            node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
+            node.trueChild = new Node(trueChildPosteriori);
             TrainNode trueChild =
                     new TrainNode(node.trueChild, depth + 1, low, pivot, tc, constFeatures.clone());
-            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
+            node.falseChild = new Node(falseChildPosteriori);
             TrainNode falseChild =
                     new TrainNode(node.falseChild, depth + 1, pivot, high, fc, constFeatures);
             this.constFeatures = null;
@@ -948,7 +938,10 @@ public class DecisionTree implements Classifier<Vector> {
             }
 
             _importance.incr(node.splitFeature, node.splitScore);
-            node.posteriori = null; // a posteriori is not needed for non-leaf nodes
+            if (nextSplits == null) {
+                // For depth-first splitting, a posteriori is not needed for non-leaf nodes
+                node.posteriori = null;
+            }
 
             return true;
         }
@@ -1147,6 +1140,31 @@ public class DecisionTree implements Classifier<Vector> {
         return impurity;
     }
 
+    /**
+     * Prunes redundant leaves from the tree. In some cases, a node is split into two leaves that
+     * get assigned the same label, so this recursively combines leaves when it notices this
+     * situation.
+     */
+    private static void pruneRedundantLeaves(@Nonnull final Node node, @Nonnull Vector importance) {
+        if (node.isLeaf()) {
+            return;
+        }
+
+        // The children might not be leaves now, but might collapse into leaves given the chance.
+        pruneRedundantLeaves(node.trueChild, importance);
+        pruneRedundantLeaves(node.falseChild, importance);
+
+        if (node.trueChild.isLeaf() && node.falseChild.isLeaf()
+                && node.trueChild.output == node.falseChild.output) {
+            node.trueChild = null;
+            node.falseChild = null;
+            importance.decr(node.splitFeature, node.splitScore);
+        } else {
+            // a posteriori is not needed for non-leaf nodes
+            node.posteriori = null;
+        }
+    }
+
     public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
             int numSamplesLeaf) {
         this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numSamplesLeaf, 2, 1, null, SplitRule.GINI, null);
@@ -1246,11 +1264,11 @@ public class DecisionTree implements Classifier<Vector> {
 
         final TrainNode trainRoot =
                 new TrainNode(_root, 1, 0, _sampleIndex.length, totalNumSamples);
-        if (maxLeafNodes == Integer.MAX_VALUE) {
+        if (maxLeafNodes == Integer.MAX_VALUE) { // depth-first split
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);
             }
-        } else {
+        } else { // best-first split
             // Priority queue for best-first tree growing.
             final PriorityQueue<TrainNode> nextSplits = new PriorityQueue<TrainNode>();
             // Now add splits to the tree until max tree size is reached
@@ -1269,6 +1287,7 @@ public class DecisionTree implements Classifier<Vector> {
                     leaves--;
                 }
             }
+            pruneRedundantLeaves(_root, _importance);
         }
     }
 
