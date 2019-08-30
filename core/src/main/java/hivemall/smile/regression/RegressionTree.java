@@ -255,7 +255,7 @@ public final class RegressionTree implements Regression<Vector> {
          * Evaluate the regression tree over an instance.
          */
         public double predict(@Nonnull final Vector x) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 return output;
             } else {
                 if (quantitativeFeature) {
@@ -278,7 +278,7 @@ public final class RegressionTree implements Regression<Vector> {
          * Evaluate the regression tree over an instance.
          */
         public double predict(final int[] x) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 return output;
             } else if (x[splitFeature] == (int) splitValue) {
                 return trueChild.predict(x);
@@ -289,7 +289,7 @@ public final class RegressionTree implements Regression<Vector> {
 
         public void exportJavascript(@Nonnull final StringBuilder builder,
                 @Nullable final String[] featureNames, final int depth) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 indent(builder, depth);
                 builder.append(output).append(";\n");
             } else {
@@ -344,7 +344,7 @@ public final class RegressionTree implements Regression<Vector> {
                 final @Nonnull MutableInt nodeIdGenerator, final int parentNodeId) {
             final int myNodeId = nodeIdGenerator.getValue();
 
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 builder.append(String.format(
                     " %d [label=<%s = %s>, fillcolor=\"#00000000\", shape=ellipse];\n", myNodeId,
                     outputName, Double.toString(output)));
@@ -402,7 +402,7 @@ public final class RegressionTree implements Regression<Vector> {
         public int opCodegen(@Nonnull final List<String> scripts, int depth) {
             int selfDepth = 0;
             final StringBuilder buf = new StringBuilder();
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 buf.append("push ").append(output);
                 scripts.add(buf.toString());
                 buf.setLength(0);
