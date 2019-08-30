@@ -1036,6 +1036,29 @@ public final class RegressionTree implements Regression<Vector> {
         System.arraycopy(buf, 0, a, pivot, k);
     }
 
+    /**
+     * Prunes redundant leaves from the tree. In some cases, a node is split into two leaves that
+     * get assigned the same label, so this recursively combines leaves when it notices this
+     * situation.
+     */
+    private static void pruneRedundantLeaves(@Nonnull final Node node, @Nonnull Vector importance) {
+        if (node.isLeaf()) {
+            return;
+        }
+
+        // The children might not be leaves now, but might collapse into leaves given the chance.
+        pruneRedundantLeaves(node.trueChild, importance);
+        pruneRedundantLeaves(node.falseChild, importance);
+
+        if (node.trueChild.isLeaf() && node.falseChild.isLeaf()
+                && node.trueChild.output == node.falseChild.output) {
+            node.trueChild = null;
+            node.falseChild = null;
+            importance.decr(node.splitFeature, node.splitScore);
+        }
+    }
+
+
     public RegressionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x,
             @Nonnull double[] y, int maxLeafs) {
         this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, maxLeafs, 5, 1, null, null);
@@ -1151,6 +1174,7 @@ public final class RegressionTree implements Regression<Vector> {
                     leaves--;
                 }
             }
+            pruneRedundantLeaves(_root, _importance);
         }
 
         if (output != null) {
