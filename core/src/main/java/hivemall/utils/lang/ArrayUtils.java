@@ -442,6 +442,30 @@ public final class ArrayUtils {
         return newArray;
     }
 
+    /**
+     * Removes from {@code array} all of the elements whose index is between {@code fromIndex},
+     * inclusive, and {@code toIndex}, exclusive.
+     *
+     * @param fromIndex index of first element to be removed
+     * @param toIndex index after last element to be removed
+     * @throws IndexOutOfBoundsException if {@code fromIndex} or {@code toIndex} is out of range
+     *         ({@code fromIndex < 0 ||
+     *          fromIndex >= size() ||
+     *          toIndex > size() ||
+     *          toIndex < fromIndex})
+     */
+    public static void clearRange(@Nonnull final int[] array, @Nonnegative final int fromIndex,
+            @Nonnegative final int toIndex, final int fillVal) {
+        final int size = array.length;
+        if (fromIndex < 0 || fromIndex >= size || toIndex > size || toIndex < fromIndex) {
+            throw new IllegalArgumentException(String.format(
+                "fromIndex: %d, toIndex: %d, array.length=%d", fromIndex, toIndex, size));
+        }
+
+        System.arraycopy(array, toIndex, array, fromIndex, array.length - toIndex);
+        Arrays.fill(array, toIndex, array.length, fillVal);
+    }
+
     public static boolean equals(@Nonnull final float[] array, final float value) {
         for (int i = 0, size = array.length; i < size; i++) {
             if (array[i] != value) {

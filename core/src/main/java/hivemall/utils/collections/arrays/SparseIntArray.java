@@ -106,6 +106,28 @@ public final class SparseIntArray implements IntArray {
         mSize--;
     }
 
+    public void removeRange(@Nonnegative final int start, @Nonnegative final int end) {
+        Preconditions.checkArgument(start <= end);
+
+        int startPos = indexOfKey(start);
+        if (startPos < 0) {
+            startPos = ~startPos;
+        }
+        int endPos = indexOfKey(end);
+        if (endPos < 0) {
+            endPos = ~endPos;
+        }
+
+        int sizeToRemove = startPos - endPos;
+        if (sizeToRemove <= 0) {
+            return;
+        }
+
+        ArrayUtils.clearRange(mKeys, startPos, endPos, 0);
+        ArrayUtils.clearRange(mValues, startPos, endPos, 0);
+        this.mSize -= sizeToRemove;
+    }
+
     @Override
     public void put(int key, int value) {
         int i = Arrays.binarySearch(mKeys, 0, mSize, key);

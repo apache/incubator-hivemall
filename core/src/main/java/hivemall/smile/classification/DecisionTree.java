@@ -1023,36 +1023,38 @@ public class DecisionTree implements Classifier<Vector> {
     private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
             final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
             @Nonnull final int[] buf) {
+        final MutableInt j_ = new MutableInt(low);
         final MutableInt k_ = new MutableInt(0);
         a.forEach(low, high, new Consumer() {
-            int j = low;
-
             @Override
             public void accept(int i, final int a_i) {
                 if (goesLeft.test(a_i)) {
+                    final int j = j_.getAndIncrement();
                     if (i != j) {
                         a.put(j, a_i);
                     }
-                    j++;
                 } else {
                     final int k = k_.getAndIncrement();
                     if (k >= buf.length) {
                         throw new IndexOutOfBoundsException(String.format(
                             "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, j=%d, k=%d",
-                            low, pivot, high, a.size(), buf.length, j, k));
+                            low, pivot, high, a.size(), buf.length, j_.get(), k));
                     }
                     buf[k] = a_i;
                 }
             }
         });
+        final int j = j_.get();
         final int k = k_.get();
-        if (k != high - pivot) {
-            throw new IndexOutOfBoundsException(
-                String.format("low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, k=%d", low,
-                    pivot, high, a.size(), buf.length, k));
+        if (j < pivot) {
+            a.removeRange(j, pivot);
         }
         if (k > 0) {
             a.append(pivot, buf, 0, k);
+        }
+        final int pivot_plus_k = pivot + k;
+        if (pivot_plus_k < high) {
+            a.removeRange(pivot_plus_k, high);
         }
     }
 
