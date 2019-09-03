@@ -893,7 +893,7 @@ public class DecisionTree implements Classifier<Vector> {
                 falseChildPosteriori[i] /= fc;
             }
 
-            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot]);
+            partitionOrder(low, pivot, high, goesLeft);
 
             int leaves = 0;
 
@@ -989,14 +989,15 @@ public class DecisionTree implements Classifier<Vector> {
          *        false.
          */
         private void partitionOrder(final int low, final int pivot, final int high,
-                @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
+                @Nonnull final IntPredicate goesLeft) {
+            final IntArrayList buf = new IntArrayList(high - pivot);
             _order.eachRow(new Consumer() {
                 @Override
                 public void accept(int col, @Nonnull final SparseIntArray row) {
-                    partitionArray(row, low, pivot, high, goesLeft, buffer);
+                    partitionArray(row, low, pivot, high, goesLeft, buf);
                 }
             });
-            partitionArray(_sampleIndex, low, pivot, high, goesLeft, buffer);
+            partitionArray(_sampleIndex, low, pivot, high, goesLeft, new int[high - pivot]);
         }
 
         @Nonnull
@@ -1022,9 +1023,8 @@ public class DecisionTree implements Classifier<Vector> {
 
     private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
             final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
-            @Nonnull final int[] buf) {
+            @Nonnull final IntArrayList buf) {
         final MutableInt j_ = new MutableInt(low);
-        final MutableInt k_ = new MutableInt(0);
         a.forEach(low, high, new Consumer() {
             @Override
             public void accept(int i, final int a_i) {
@@ -1034,28 +1034,23 @@ public class DecisionTree implements Classifier<Vector> {
                         a.put(j, a_i);
                     }
                 } else {
-                    final int k = k_.getAndIncrement();
-                    if (k >= buf.length) {
-                        throw new IndexOutOfBoundsException(String.format(
-                            "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, j=%d, k=%d",
-                            low, pivot, high, a.size(), buf.length, j_.get(), k));
-                    }
-                    buf[k] = a_i;
+                    buf.add(a_i);
                 }
             }
         });
         final int j = j_.get();
-        final int k = k_.get();
         if (j < pivot) {
             a.removeRange(j, pivot);
         }
+        final int k = buf.size();
         if (k > 0) {
-            a.append(pivot, buf, 0, k);
+            a.append(pivot, buf.array(), 0, k);
         }
         final int pivot_plus_k = pivot + k;
         if (pivot_plus_k < high) {
             a.removeRange(pivot_plus_k, high);
         }
+        buf.clear();
     }
 
     /**
