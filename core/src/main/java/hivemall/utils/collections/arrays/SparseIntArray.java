@@ -118,7 +118,7 @@ public final class SparseIntArray implements IntArray {
             endPos = ~endPos;
         }
 
-        int sizeToRemove = startPos - endPos;
+        final int sizeToRemove = endPos - startPos;
         if (sizeToRemove <= 0) {
             return;
         }

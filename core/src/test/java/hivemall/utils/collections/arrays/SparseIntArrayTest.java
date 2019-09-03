@@ -19,6 +19,7 @@
 package hivemall.utils.collections.arrays;
 
 import hivemall.utils.function.Consumer;
+import hivemall.utils.lang.mutable.MutableInt;
 
 import java.util.Random;
 
@@ -129,5 +130,44 @@ public class SparseIntArrayTest {
         for (int i = 10; i < 30; i += 2) {
             Assert.assertEquals(actual.get(i), actual.get(i + 1));
         }
+    }
+
+    @Test
+    public void testRemoveRange() {
+        SparseIntArray acutal = new SparseIntArray(2);
+        acutal.append(3, 3);
+        acutal.append(4, 4);
+        acutal.append(6, 6);
+        acutal.append(7, 7);
+        acutal.append(8, 8);
+        acutal.append(9, 9);
+
+        acutal.removeRange(5, 8);
+        Assert.assertEquals(4, acutal.size());
+        Assert.assertEquals(3, acutal.get(3));
+        Assert.assertEquals(4, acutal.get(4));
+        Assert.assertEquals(8, acutal.get(8));
+        Assert.assertEquals(9, acutal.get(9));
+    }
+
+    @Test
+    public void testAppendRange() {
+        SparseIntArray a = new SparseIntArray(2);
+        a.append(3, 3);
+        a.append(4, 4);
+        a.append(6, 6);
+        a.append(a.lastKey() + 1, new int[] {7, 8, 9, 10}, 1, 2);
+
+        Assert.assertEquals(5, a.size());
+
+        final int[] actual = new int[5];
+        final MutableInt index = new MutableInt(0);
+        a.forEach(new Consumer() {
+            @Override
+            public void accept(int i, int value) {
+                actual[index.getAndIncrement()] = value;
+            }
+        });
+        Assert.assertArrayEquals(new int[] {3, 4, 6, 8, 9}, actual);
     }
 }
