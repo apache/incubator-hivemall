@@ -182,6 +182,10 @@ public final class SparseIntArray implements IntArray {
         return mValues[index];
     }
 
+    public void setKeyAt(int index, int key) {
+        this.mKeys[index] = key;
+    }
+
     public void setValueAt(int index, int value) {
         this.mValues[index] = value;
     }
