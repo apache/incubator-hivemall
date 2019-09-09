@@ -70,6 +70,14 @@ public final class SparseIntArray implements IntArray {
         this.mSize = size;
     }
 
+    public int[] keys() {
+        return mKeys;
+    }
+
+    public int[] values() {
+        return mValues;
+    }
+
     public IntArray deepCopy() {
         int[] newKeys = new int[mSize];
         int[] newValues = new int[mSize];
