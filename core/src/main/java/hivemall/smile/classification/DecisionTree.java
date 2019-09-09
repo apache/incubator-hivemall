@@ -990,14 +990,14 @@ public class DecisionTree implements Classifier<Vector> {
          */
         private void partitionOrder(final int low, final int pivot, final int high,
                 @Nonnull final IntPredicate goesLeft) {
-            final IntArrayList buf = new IntArrayList(high - pivot);
+            final int[] buf = new int[high - pivot];
             _order.eachRow(new Consumer() {
                 @Override
                 public void accept(int col, @Nonnull final SparseIntArray row) {
                     partitionArray(row, low, pivot, high, goesLeft, buf);
                 }
             });
-            partitionArray(_sampleIndex, low, pivot, high, goesLeft, new int[high - pivot]);
+            partitionArray(_sampleIndex, low, pivot, high, goesLeft, buf);
         }
 
         @Nonnull
@@ -1023,34 +1023,38 @@ public class DecisionTree implements Classifier<Vector> {
 
     private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
             final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
-            @Nonnull final IntArrayList buf) {
-        final MutableInt j_ = new MutableInt(low);
-        a.forEach(low, high, new Consumer() {
-            @Override
-            public void accept(int i, final int a_i) {
-                if (goesLeft.test(a_i)) {
-                    final int j = j_.getAndIncrement();
-                    if (i != j) {
-                        a.put(j, a_i);
-                    }
-                } else {
-                    buf.add(a_i);
+            @Nonnull final int[] buf) {
+        final int[] keys = a.keys();
+        final int[] values = a.values();
+
+        final int startPos = ArrayUtils.insertionPoint(keys, low);
+        final int endPos = ArrayUtils.insertionPoint(keys, high);
+        int pos = startPos, k = 0;
+        for (int i = startPos, j = 0; i < endPos; i++) {
+            final int a_i = values[i];
+            if (goesLeft.test(a_i)) {
+                keys[pos] = low + j;
+                values[pos] = a_i;
+                pos++;
+                j++;
+            } else {
+                if (k >= buf.length) {
+                    throw new IndexOutOfBoundsException(String.format(
+                        "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, i=%d, j=%d, k=%d",
+                        low, pivot, high, a.size(), buf.length, i, j, k));
                 }
+                buf[k++] = a_i;
             }
-        });
-        final int j = j_.get();
-        if (j < pivot) {
-            a.removeRange(j, pivot);
         }
-        final int k = buf.size();
-        if (k > 0) {
-            a.append(pivot, buf.array(), 0, k);
+        for (int i = 0; i < k; i++) {
+            keys[pos] = pivot + i;
+            values[pos] = buf[i];
+            pos++;
         }
-        final int pivot_plus_k = pivot + k;
-        if (pivot_plus_k < high) {
-            a.removeRange(pivot_plus_k, high);
+        if (pos != endPos) {
+            throw new IllegalStateException(
+                String.format("pos=%d, startPos=%d, endPos=%d, k=%d", pos, startPos, endPos, k));
         }
-        buf.clear();
     }
 
     /**

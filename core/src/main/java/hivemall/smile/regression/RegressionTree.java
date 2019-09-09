@@ -846,7 +846,7 @@ public final class RegressionTree implements Regression<Vector> {
                 return false;
             }
 
-            partitionOrder(low, pivot, high, goesLeft, new int[high - pivot]);
+            partitionOrder(low, pivot, high, goesLeft);
 
             int leaves = 0;
 
@@ -928,18 +928,17 @@ public final class RegressionTree implements Regression<Vector> {
          * @param high the high bound of the segment of the order arrays which will be partitioned.
          * @param goesLeft whether an element goes to the left side or the right side of the
          *        partition.
-         * @param buffer scratch space large enough to hold all elements for which goesLeft is
-         *        false.
          */
         private void partitionOrder(final int low, final int pivot, final int high,
-                @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buffer) {
+                @Nonnull final IntPredicate goesLeft) {
+            final int[] buf = new int[high - pivot];
             _order.eachRow(new Consumer() {
                 @Override
                 public void accept(int col, @Nonnull final SparseIntArray row) {
-                    partitionArray(row, low, pivot, high, goesLeft, buffer);
+                    partitionArray(row, low, pivot, high, goesLeft, buf);
                 }
             });
-            partitionArray(_sampleIndex, low, pivot, high, goesLeft, buffer);
+            partitionArray(_sampleIndex, low, pivot, high, goesLeft, buf);
         }
 
         @Nonnull
@@ -966,36 +965,36 @@ public final class RegressionTree implements Regression<Vector> {
     private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
             final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
             @Nonnull final int[] buf) {
-        final MutableInt k_ = new MutableInt(0);
-        a.forEach(low, high, new Consumer() {
-            int j = low;
+        final int[] keys = a.keys();
+        final int[] values = a.values();
 
-            @Override
-            public void accept(int i, final int a_i) {
-                if (goesLeft.test(a_i)) {
-                    if (i != j) {
-                        a.put(j, a_i);
-                    }
-                    j++;
-                } else {
-                    final int k = k_.getAndIncrement();
-                    if (k >= buf.length) {
-                        throw new IndexOutOfBoundsException(String.format(
-                            "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, j=%d, k=%d",
-                            low, pivot, high, a.size(), buf.length, j, k));
-                    }
-                    buf[k] = a_i;
+        final int startPos = ArrayUtils.insertionPoint(keys, low);
+        final int endPos = ArrayUtils.insertionPoint(keys, high);
+        int pos = startPos, k = 0;
+        for (int i = startPos, j = 0; i < endPos; i++) {
+            final int a_i = values[i];
+            if (goesLeft.test(a_i)) {
+                keys[pos] = low + j;
+                values[pos] = a_i;
+                pos++;
+                j++;
+            } else {
+                if (k >= buf.length) {
+                    throw new IndexOutOfBoundsException(String.format(
+                        "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, i=%d, j=%d, k=%d",
+                        low, pivot, high, a.size(), buf.length, i, j, k));
                 }
+                buf[k++] = a_i;
             }
-        });
-        final int k = k_.get();
-        if (k != high - pivot) {
-            throw new IndexOutOfBoundsException(
-                String.format("low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, k=%d", low,
-                    pivot, high, a.size(), buf.length, k));
         }
-        if (k > 0) {
-            a.append(pivot, buf, 0, k);
+        for (int i = 0; i < k; i++) {
+            keys[pos] = pivot + i;
+            values[pos] = buf[i];
+            pos++;
+        }
+        if (pos != endPos) {
+            throw new IllegalStateException(
+                String.format("pos=%d, startPos=%d, endPos=%d, k=%d", pos, startPos, endPos, k));
         }
     }
 
