@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -1029,19 +1030,19 @@ public class DecisionTree implements Classifier<Vector> {
 
         final int startPos = ArrayUtils.insertionPoint(keys, low);
         final int endPos = ArrayUtils.insertionPoint(keys, high);
-        int pos = startPos, k = 0;
-        for (int i = startPos, j = 0; i < endPos; i++) {
+        int pos = startPos, k = 0, j = low;
+        for (int i = startPos; i < endPos; i++) {
             final int a_i = values[i];
             if (goesLeft.test(a_i)) {
-                keys[pos] = low + j;
+                keys[pos] = j++;
                 values[pos] = a_i;
                 pos++;
-                j++;
             } else {
                 if (k >= buf.length) {
                     throw new IndexOutOfBoundsException(String.format(
-                        "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, i=%d, j=%d, k=%d",
-                        low, pivot, high, a.size(), buf.length, i, j, k));
+                        "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, i=%d, j=%d, k=%d\na=%s\nbuf=%s",
+                        low, pivot, high, a.size(), buf.length, i, j, k, a.toString(),
+                        Arrays.toString(buf)));
                 }
                 buf[k++] = a_i;
             }
@@ -1053,7 +1054,8 @@ public class DecisionTree implements Classifier<Vector> {
         }
         if (pos != endPos) {
             throw new IllegalStateException(
-                String.format("pos=%d, startPos=%d, endPos=%d, k=%d", pos, startPos, endPos, k));
+                String.format("pos=%d, startPos=%d, endPos=%d, k=%d\na=%s", pos, startPos, endPos,
+                    k, a.toString()));
         }
     }
 
