@@ -122,8 +122,8 @@ public final class SmileExtUtils {
     }
 
     @Nonnull
-    public static VariableOrder sort(@Nonnull final RoaringBitmap nominalAttrs, @Nonnull final Matrix x,
-            @Nonnull final int[] samples) {
+    public static VariableOrder sort(@Nonnull final RoaringBitmap nominalAttrs,
+            @Nonnull final Matrix x, @Nonnull final int[] samples, @Nonnull final int[] ptr2idx) {
         final int n = x.numRows();
         final int p = x.numColumns();
 
@@ -153,9 +153,10 @@ public final class SmileExtUtils {
                 if (ilist.isEmpty()) {
                     continue;
                 }
-                int[] indexJ = ilist.toArray();
-                QuickSort.sort(dlist.array(), indexJ, indexJ.length);
-                index[j] = new SparseIntArray(indexJ);
+                int[] rowPtrs = ilist.toArray();
+                int[] rowIndexes = toSampleIndex(rowPtrs, ptr2idx);
+                QuickSort.sort(dlist.array(), rowPtrs, rowPtrs.length);
+                index[j] = new SparseIntArray(rowIndexes, rowPtrs, rowPtrs.length);
                 dlist.clear();
                 ilist.clear();
             }
@@ -178,15 +179,25 @@ public final class SmileExtUtils {
                 if (ilist.isEmpty()) {
                     continue;
                 }
-                int[] indexJ = ilist.toArray();
-                QuickSort.sort(dlist.array(), indexJ, indexJ.length);
-                index[j] = new SparseIntArray(indexJ);
+                int[] rowPtrs = ilist.toArray();
+                int[] rowIndexes = toSampleIndex(rowPtrs, ptr2idx);
+                QuickSort.sort(dlist.array(), rowPtrs, rowPtrs.length);
+                index[j] = new SparseIntArray(rowIndexes, rowPtrs, rowPtrs.length);
                 dlist.clear();
                 ilist.clear();
             }
         }
 
         return new VariableOrder(index);
+    }
+
+    private static int[] toSampleIndex(@Nonnull final int[] ptrs, @Nonnull final int[] ptr2idx) {
+        final int[] indexes = new int[ptrs.length];
+        for (int i = 0; i < ptrs.length; i++) {
+            int ptr = ptrs[i];
+            indexes[i] = ptr2idx[ptr];
+        }
+        return indexes;
     }
 
     @Nonnull

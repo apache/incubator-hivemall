@@ -138,8 +138,11 @@ public class DecisionTree implements Classifier<Vector> {
     @Nonnull
     private final int[] _samples;
     /**
-     * The index of training values in ascending order. Note that only numeric attributes will be
-     * sorted.
+     * An index of training values. Initially, order[j] is a set of indices that iterate through the
+     * training values for attribute j in ascending order. During training, the array is rearranged
+     * so that all values for each leaf node occupy a contiguous range, but within that range they
+     * maintain the original ordering. Note that only numeric attributes will be sorted; non-numeric
+     * attributes will have a null in the corresponding place in the array.
      */
     @Nonnull
     private final VariableOrder _order;
@@ -1025,31 +1028,32 @@ public class DecisionTree implements Classifier<Vector> {
     private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
             final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
             @Nonnull final int[] buf) {
-        final int[] keys = a.keys();
-        final int[] values = a.values();
+        final int[] rowIndexes = a.keys();
+        final int[] rowPtrs = a.values();
 
-        final int startPos = ArrayUtils.insertionPoint(keys, low);
-        final int endPos = ArrayUtils.insertionPoint(keys, high);
+        final int startPos = ArrayUtils.insertionPoint(rowIndexes, low);
+        final int endPos = ArrayUtils.insertionPoint(rowIndexes, high);
         int pos = startPos, k = 0, j = low;
         for (int i = startPos; i < endPos; i++) {
-            final int a_i = values[i];
+            final int a_i = rowPtrs[i];
             if (goesLeft.test(a_i)) {
-                keys[pos] = j++;
-                values[pos] = a_i;
+                rowIndexes[pos] = j;
+                rowPtrs[pos] = a_i;
                 pos++;
+                j++;
             } else {
                 if (k >= buf.length) {
                     throw new IndexOutOfBoundsException(String.format(
-                        "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, i=%d, j=%d, k=%d\na=%s\nbuf=%s",
-                        low, pivot, high, a.size(), buf.length, i, j, k, a.toString(),
-                        Arrays.toString(buf)));
+                        "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, i=%d, j=%d, k=%d, startPos=%d, endPos=%d\na=%s\nbuf=%s",
+                        low, pivot, high, a.size(), buf.length, i, j, k, startPos, endPos,
+                        a.toString(), Arrays.toString(buf)));
                 }
                 buf[k++] = a_i;
             }
         }
         for (int i = 0; i < k; i++) {
-            keys[pos] = pivot + i;
-            values[pos] = buf[i];
+            rowIndexes[pos] = pivot + i;
+            rowPtrs[pos] = buf[i];
             pos++;
         }
         if (pos != endPos) {
@@ -1233,6 +1237,7 @@ public class DecisionTree implements Classifier<Vector> {
         final int n = y.length;
         final int[] count = new int[_k];
         final int[] posIndex;
+        final int[] indexMap;
         int totalNumSamples = 0;
         if (samples == null) {
             samples = new int[n];
@@ -1243,20 +1248,23 @@ public class DecisionTree implements Classifier<Vector> {
                 posIndex[i] = i;
             }
             totalNumSamples = n;
+            indexMap = posIndex;
         } else {
             final IntArrayList positions = new IntArrayList(n);
-            for (int i = 0; i < n; i++) {
+            indexMap = new int[n];
+            for (int i = 0, ii = 0; i < n; i++) {
                 final int sample = samples[i];
                 if (sample != 0) {
                     count[y[i]] += sample;
                     positions.add(i);
                     totalNumSamples += sample;
+                    indexMap[i] = ii++;
                 }
             }
             posIndex = positions.toArray(true);
         }
         this._samples = samples;
-        this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
+        this._order = SmileExtUtils.sort(nominalAttrs, x, samples, indexMap);
         this._sampleIndex = posIndex;
 
         final double[] posteriori = new double[_k];

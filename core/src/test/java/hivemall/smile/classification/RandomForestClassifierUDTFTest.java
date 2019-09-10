@@ -396,7 +396,7 @@ public class RandomForestClassifierUDTFTest {
         final MutableInt oobErrors = new MutableInt(0);
         final MutableInt oobTests = new MutableInt(0);
         Collector collector = new Collector() {
-            public void collect(Object input) throws HiveException {
+            public synchronized void collect(Object input) throws HiveException {
                 Object[] forward = (Object[]) input;
                 oobErrors.addValue(((IntWritable) forward[4]).get());
                 oobTests.addValue(((IntWritable) forward[5]).get());
@@ -448,7 +448,7 @@ public class RandomForestClassifierUDTFTest {
         final MutableInt oobErrors = new MutableInt(0);
         final MutableInt oobTests = new MutableInt(0);
         Collector collector = new Collector() {
-            public void collect(Object input) throws HiveException {
+            public synchronized void collect(Object input) throws HiveException {
                 Object[] forward = (Object[]) input;
                 oobErrors.addValue(((IntWritable) forward[4]).get());
                 oobTests.addValue(((IntWritable) forward[5]).get());
