@@ -123,7 +123,7 @@ public final class SmileExtUtils {
 
     @Nonnull
     public static VariableOrder sort(@Nonnull final RoaringBitmap nominalAttrs,
-            @Nonnull final Matrix x, @Nonnull final int[] samples, @Nonnull final int[] ptr2idx) {
+            @Nonnull final Matrix x, @Nonnull final int[] samples) {
         final int n = x.numRows();
         final int p = x.numColumns();
 
@@ -154,9 +154,8 @@ public final class SmileExtUtils {
                     continue;
                 }
                 int[] rowPtrs = ilist.toArray();
-                int[] rowIndexes = toSampleIndex(rowPtrs, ptr2idx);
                 QuickSort.sort(dlist.array(), rowPtrs, rowPtrs.length);
-                index[j] = new SparseIntArray(rowIndexes, rowPtrs, rowPtrs.length);
+                index[j] = new SparseIntArray(rowPtrs);
                 dlist.clear();
                 ilist.clear();
             }
@@ -180,24 +179,14 @@ public final class SmileExtUtils {
                     continue;
                 }
                 int[] rowPtrs = ilist.toArray();
-                int[] rowIndexes = toSampleIndex(rowPtrs, ptr2idx);
                 QuickSort.sort(dlist.array(), rowPtrs, rowPtrs.length);
-                index[j] = new SparseIntArray(rowIndexes, rowPtrs, rowPtrs.length);
+                index[j] = new SparseIntArray(rowPtrs);
                 dlist.clear();
                 ilist.clear();
             }
         }
 
         return new VariableOrder(index);
-    }
-
-    private static int[] toSampleIndex(@Nonnull final int[] ptrs, @Nonnull final int[] ptr2idx) {
-        final int[] indexes = new int[ptrs.length];
-        for (int i = 0; i < ptrs.length; i++) {
-            int ptr = ptrs[i];
-            indexes[i] = ptr2idx[ptr];
-        }
-        return indexes;
     }
 
     @Nonnull

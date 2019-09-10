@@ -296,6 +296,15 @@ public final class ArrayUtils {
         }
     }
 
+    public static int insertionPoint(@Nullable final int[] a, final int size, final int key) {
+        final int pos = Arrays.binarySearch(a, 0, size, key);
+        if (pos < 0) {
+            return ~pos;
+        } else {
+            return pos;
+        }
+    }
+
     @Nonnull
     public static byte[] copyOf(@Nonnull final byte[] original, final int newLength) {
         final byte[] copy = new byte[newLength];

@@ -967,9 +967,10 @@ public final class RegressionTree implements Regression<Vector> {
             @Nonnull final int[] buf) {
         final int[] keys = a.keys();
         final int[] values = a.values();
+        final int size = a.size();
 
-        final int startPos = ArrayUtils.insertionPoint(keys, low);
-        final int endPos = ArrayUtils.insertionPoint(keys, high);
+        final int startPos = ArrayUtils.insertionPoint(keys, size, low);
+        final int endPos = ArrayUtils.insertionPoint(keys, size, high);
         int pos = startPos, k = 0;
         for (int i = startPos, j = 0; i < endPos; i++) {
             final int a_i = values[i];

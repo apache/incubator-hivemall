@@ -1030,15 +1030,16 @@ public class DecisionTree implements Classifier<Vector> {
             @Nonnull final int[] buf) {
         final int[] rowIndexes = a.keys();
         final int[] rowPtrs = a.values();
+        final int size = a.size();
 
-        final int startPos = ArrayUtils.insertionPoint(rowIndexes, low);
-        final int endPos = ArrayUtils.insertionPoint(rowIndexes, high);
+        final int startPos = ArrayUtils.insertionPoint(rowIndexes, size, low);
+        final int endPos = ArrayUtils.insertionPoint(rowIndexes, size, high);
         int pos = startPos, k = 0, j = low;
         for (int i = startPos; i < endPos; i++) {
-            final int a_i = rowPtrs[i];
-            if (goesLeft.test(a_i)) {
+            final int rowPtr = rowPtrs[i];
+            if (goesLeft.test(rowPtr)) {
                 rowIndexes[pos] = j;
-                rowPtrs[pos] = a_i;
+                rowPtrs[pos] = rowPtr;
                 pos++;
                 j++;
             } else {
@@ -1048,7 +1049,7 @@ public class DecisionTree implements Classifier<Vector> {
                         low, pivot, high, a.size(), buf.length, i, j, k, startPos, endPos,
                         a.toString(), Arrays.toString(buf)));
                 }
-                buf[k++] = a_i;
+                buf[k++] = rowPtr;
             }
         }
         for (int i = 0; i < k; i++) {
@@ -1080,16 +1081,16 @@ public class DecisionTree implements Classifier<Vector> {
                     "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d", low,
                     pivot, high, a.length, buf.length, i, j, k));
             }
-            final int a_i = a[i];
-            if (goesLeft.test(a_i)) {
-                a[j++] = a_i;
+            final int rowPtr = a[i];
+            if (goesLeft.test(rowPtr)) {
+                a[j++] = rowPtr;
             } else {
                 if (k >= buf.length) {
                     throw new IndexOutOfBoundsException(String.format(
                         "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d",
                         low, pivot, high, a.length, buf.length, i, j, k));
                 }
-                buf[k++] = a_i;
+                buf[k++] = rowPtr;
             }
         }
         if (k != high - pivot || j != pivot) {
@@ -1237,7 +1238,6 @@ public class DecisionTree implements Classifier<Vector> {
         final int n = y.length;
         final int[] count = new int[_k];
         final int[] posIndex;
-        final int[] indexMap;
         int totalNumSamples = 0;
         if (samples == null) {
             samples = new int[n];
@@ -1248,23 +1248,20 @@ public class DecisionTree implements Classifier<Vector> {
                 posIndex[i] = i;
             }
             totalNumSamples = n;
-            indexMap = posIndex;
         } else {
             final IntArrayList positions = new IntArrayList(n);
-            indexMap = new int[n];
-            for (int i = 0, ii = 0; i < n; i++) {
+            for (int i = 0; i < n; i++) {
                 final int sample = samples[i];
                 if (sample != 0) {
                     count[y[i]] += sample;
                     positions.add(i);
                     totalNumSamples += sample;
-                    indexMap[i] = ii++;
                 }
             }
             posIndex = positions.toArray(true);
         }
         this._samples = samples;
-        this._order = SmileExtUtils.sort(nominalAttrs, x, samples, indexMap);
+        this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
         this._sampleIndex = posIndex;
 
         final double[] posteriori = new double[_k];

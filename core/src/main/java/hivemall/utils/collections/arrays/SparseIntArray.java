@@ -293,9 +293,8 @@ public final class SparseIntArray implements IntArray {
         if (endPos < 0) {
             endPos = ~endPos;
         }
-        // mKeys, mValues may be replaced by in-place update
-        final int[] keys = mKeys.clone();
-        final int[] values = mValues.clone();
+        final int[] keys = mKeys;
+        final int[] values = mValues;
         for (int i = startPos; i < endPos; i++) {
             int k = keys[i];
             int v = values[i];

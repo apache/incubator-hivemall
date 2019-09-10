@@ -460,8 +460,9 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         }
         forwardObjs[4] = new IntWritable(oobErrors);
         forwardObjs[5] = new IntWritable(oobTests);
-        forward(forwardObjs);
-
+        synchronized (this) {
+            forward(forwardObjs);
+        }
         reportProgress(_progressReporter);
         incrCounter(_treeBuildTaskCounter, 1);
 
