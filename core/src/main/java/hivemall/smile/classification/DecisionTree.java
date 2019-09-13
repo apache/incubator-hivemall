@@ -672,6 +672,7 @@ public class DecisionTree implements Classifier<Vector> {
                 final int[] sampleIndex = _sampleIndex;
                 for (int i = low, end = high; i < end; i++) {
                     int row = sampleIndex[i];
+                    assert (_samples[row] != 0) : row;
                     X.eachColumnIndexInRow(row, proc);
                 }
                 cols.forEach(new IntConsumer() {
@@ -690,6 +691,7 @@ public class DecisionTree implements Classifier<Vector> {
 
         private boolean countSamples(@Nonnull final int[] count) {
             final int[] sampleIndex = _sampleIndex;
+            final int[] samples = _samples;
             final int[] y = _y;
 
             boolean pure = true;
@@ -697,7 +699,7 @@ public class DecisionTree implements Classifier<Vector> {
             for (int i = low, end = high, label = -1; i < end; i++) {
                 int index = sampleIndex[i];
                 int y_i = y[index];
-                count[y_i]++;
+                count[y_i] += samples[index];
 
                 if (label == -1) {
                     label = y_i;
@@ -1237,15 +1239,15 @@ public class DecisionTree implements Classifier<Vector> {
 
         final int n = y.length;
         final int[] count = new int[_k];
-        final int[] posIndex;
+        final int[] sampleIndex;
         int totalNumSamples = 0;
         if (samples == null) {
             samples = new int[n];
-            posIndex = new int[n];
+            sampleIndex = new int[n];
             for (int i = 0; i < n; i++) {
                 samples[i] = 1;
                 count[y[i]]++;
-                posIndex[i] = i;
+                sampleIndex[i] = i;
             }
             totalNumSamples = n;
         } else {
@@ -1258,11 +1260,11 @@ public class DecisionTree implements Classifier<Vector> {
                     totalNumSamples += sample;
                 }
             }
-            posIndex = positions.toArray(true);
+            sampleIndex = positions.toArray(true);
         }
         this._samples = samples;
         this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
-        this._sampleIndex = posIndex;
+        this._sampleIndex = sampleIndex;
 
         final double[] posteriori = new double[_k];
         for (int i = 0; i < _k; i++) {
