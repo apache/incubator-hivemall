@@ -18,11 +18,14 @@
  */
 package hivemall.utils.collections.arrays;
 
+import hivemall.utils.function.Consumer;
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
+import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 public final class SparseIntArray implements IntArray {
@@ -32,20 +35,47 @@ public final class SparseIntArray implements IntArray {
     private int[] mValues;
     private int mSize;
 
-    public SparseIntArray() {
-        this(10);
+    public SparseIntArray() {}
+
+    public SparseIntArray(@Nonnegative int initialCapacity) {
+        this.mKeys = new int[initialCapacity];
+        this.mValues = new int[initialCapacity];
+        this.mSize = 0;
     }
 
-    public SparseIntArray(int initialCapacity) {
-        mKeys = new int[initialCapacity];
-        mValues = new int[initialCapacity];
-        mSize = 0;
+    public SparseIntArray(@Nonnull final int[] values) {
+        this.mKeys = MathUtils.permutation(values.length);
+        this.mValues = values;
+        this.mSize = values.length;
     }
 
-    private SparseIntArray(int[] mKeys, int[] mValues, int mSize) {
+    public SparseIntArray(@Nonnull int[] mKeys, @Nonnull int[] mValues, @Nonnegative int mSize) {
         this.mKeys = mKeys;
         this.mValues = mValues;
         this.mSize = mSize;
+    }
+
+    public void init(@Nonnull int[] keys, @Nonnull int[] values) {
+        init(keys, values, keys.length);
+    }
+
+    public void init(@Nonnull int[] keys, @Nonnull int[] values, final int size) {
+        if (size > keys.length || size > values.length) {
+            throw new IllegalArgumentException(String.format(
+                "Illegal size was specified... size = %d, keys.length = %d, values.length", size,
+                keys.length, values.length));
+        }
+        this.mKeys = keys;
+        this.mValues = values;
+        this.mSize = size;
+    }
+
+    public int[] keys() {
+        return mKeys;
+    }
+
+    public int[] values() {
+        return mValues;
     }
 
     public IntArray deepCopy() {
@@ -84,16 +114,38 @@ public final class SparseIntArray implements IntArray {
         mSize--;
     }
 
+    public void removeRange(@Nonnegative final int start, @Nonnegative final int end) {
+        Preconditions.checkArgument(start <= end);
+
+        int startPos = indexOfKey(start);
+        if (startPos < 0) {
+            startPos = ~startPos;
+        }
+        int endPos = indexOfKey(end);
+        if (endPos < 0) {
+            endPos = ~endPos;
+        }
+
+        final int sizeToRemove = endPos - startPos;
+        if (sizeToRemove <= 0) {
+            return;
+        }
+
+        ArrayUtils.clearRange(mKeys, startPos, endPos, 0);
+        ArrayUtils.clearRange(mValues, startPos, endPos, 0);
+        this.mSize -= sizeToRemove;
+    }
+
     @Override
     public void put(int key, int value) {
         int i = Arrays.binarySearch(mKeys, 0, mSize, key);
         if (i >= 0) {
-            mValues[i] = value;
+            this.mValues[i] = value;
         } else {
             i = ~i;
-            mKeys = ArrayUtils.insert(mKeys, mSize, i, key);
-            mValues = ArrayUtils.insert(mValues, mSize, i, value);
-            mSize++;
+            this.mKeys = ArrayUtils.insert(mKeys, mSize, i, key);
+            this.mValues = ArrayUtils.insert(mValues, mSize, i, value);
+            this.mSize++;
         }
     }
 
@@ -101,18 +153,32 @@ public final class SparseIntArray implements IntArray {
     public void increment(int key, int value) {
         int i = Arrays.binarySearch(mKeys, 0, mSize, key);
         if (i >= 0) {
-            mValues[i] += value;
+            this.mValues[i] += value;
         } else {
             i = ~i;
-            mKeys = ArrayUtils.insert(mKeys, mSize, i, key);
-            mValues = ArrayUtils.insert(mValues, mSize, i, value);
-            mSize++;
+            this.mKeys = ArrayUtils.insert(mKeys, mSize, i, key);
+            this.mValues = ArrayUtils.insert(mValues, mSize, i, value);
+            this.mSize++;
         }
     }
 
     @Override
     public int size() {
         return mSize;
+    }
+
+    public int firstKey() {
+        if (mSize == 0) {
+            return -1;
+        }
+        return mKeys[0];
+    }
+
+    public int lastKey() {
+        if (mSize == 0) {
+            return -1;
+        }
+        return mKeys[mSize - 1];
     }
 
     @Override
@@ -124,8 +190,12 @@ public final class SparseIntArray implements IntArray {
         return mValues[index];
     }
 
+    public void setKeyAt(int index, int key) {
+        this.mKeys[index] = key;
+    }
+
     public void setValueAt(int index, int value) {
-        mValues[index] = value;
+        this.mValues[index] = value;
     }
 
     public int indexOfKey(int key) {
@@ -146,7 +216,7 @@ public final class SparseIntArray implements IntArray {
     }
 
     public void clear(boolean zeroFill) {
-        mSize = 0;
+        this.mSize = 0;
         if (zeroFill) {
             Arrays.fill(mKeys, 0);
             Arrays.fill(mValues, 0);
@@ -158,9 +228,90 @@ public final class SparseIntArray implements IntArray {
             put(key, value);
             return;
         }
-        mKeys = ArrayUtils.append(mKeys, mSize, key);
-        mValues = ArrayUtils.append(mValues, mSize, value);
-        mSize++;
+        this.mKeys = ArrayUtils.append(mKeys, mSize, key);
+        this.mValues = ArrayUtils.append(mValues, mSize, value);
+        this.mSize++;
+    }
+
+    public void append(@Nonnegative final int dstPos, @Nonnull final int[] values) {
+        if (mSize == 0) {
+            this.mKeys = MathUtils.permutation(dstPos, values.length);
+            this.mValues = values.clone();
+            this.mSize = values.length;
+            return;
+        }
+
+        final int lastKey = mKeys[mSize - 1];
+        for (int i = 0; i < values.length; i++) {
+            final int key = dstPos + i;
+            if (key <= lastKey) {
+                put(key, values[i]);
+            } else {// append
+                int size = values.length - i;
+                int[] appendKeys = MathUtils.permutation(key, size);
+                this.mKeys = ArrayUtils.concat(mKeys, 0, mSize, appendKeys, 0, appendKeys.length);
+                this.mValues = ArrayUtils.concat(mValues, 0, mSize, values, i, size);
+                this.mSize += size;
+                break;
+            }
+        }
+    }
+
+    public void append(@Nonnegative final int dstPos, @Nonnull final int[] values, final int offset,
+            final int length) {
+        if (mSize == 0) {
+            this.mKeys = MathUtils.permutation(dstPos, length);
+            this.mValues = Arrays.copyOfRange(values, offset, length);
+            this.mSize = length;
+            return;
+        }
+
+        final int lastKey = mKeys[mSize - 1];
+        for (int i = 0; i < length; i++) {
+            final int valuePos = offset + i;
+            final int key = dstPos + i;
+            if (key <= lastKey) {
+                put(key, values[valuePos]);
+            } else {// append
+                int size = length - i;
+                int[] appendKeys = MathUtils.permutation(key, size);
+                this.mKeys = ArrayUtils.concat(mKeys, 0, mSize, appendKeys, 0, appendKeys.length);
+                this.mValues = ArrayUtils.concat(mValues, 0, mSize, values, valuePos, size);
+                this.mSize += size;
+                break;
+            }
+        }
+    }
+
+    public void forEach(@Nonnegative final int start, @Nonnegative final int end,
+            @Nonnull final Consumer consumer) {
+        int startPos = indexOfKey(start);
+        if (startPos < 0) {
+            startPos = ~startPos;
+        }
+        int endPos = indexOfKey(end);
+        if (endPos < 0) {
+            endPos = ~endPos;
+        }
+        final int[] keys = mKeys;
+        final int[] values = mValues;
+        for (int i = startPos; i < endPos; i++) {
+            int k = keys[i];
+            int v = values[i];
+            consumer.accept(k, v);
+        }
+    }
+
+    @Override
+    public void forEach(@Nonnull final Consumer consumer) {
+        final int size = mSize;
+        final int[] keys = mKeys;
+        final int[] values = mValues;
+        for (int i = 0; i < size; i++) {
+            int k = keys[i];
+            int v = values[i];
+            consumer.accept(k, v);
+        }
     }
 
     @Nonnull
@@ -187,7 +338,7 @@ public final class SparseIntArray implements IntArray {
 
     @Override
     public String toString() {
-        if (size() <= 0) {
+        if (mSize == 0) {
             return "{}";
         }
 
@@ -206,6 +357,5 @@ public final class SparseIntArray implements IntArray {
         buffer.append('}');
         return buffer.toString();
     }
-
 
 }

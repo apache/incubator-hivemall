@@ -16,34 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.utils.collections.arrays;
+package hivemall.utils.function;
 
-import hivemall.utils.function.Consumer;
+import hivemall.utils.collections.arrays.SparseIntArray;
 
-import java.io.Serializable;
-
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-public interface IntArray extends Serializable {
+public abstract class Consumer {
 
-    public int get(int key);
+    public Consumer() {}
 
-    public int get(int key, int valueIfKeyNotFound);
+    public void accept(int value) {
+        throw new UnsupportedOperationException();
+    }
 
-    public void put(int key, int value);
+    public void accept(int i, int value) {
+        throw new UnsupportedOperationException();
+    }
 
-    public void increment(int key, int value);
-
-    public int size();
-
-    public int keyAt(int index);
-
-    @Nonnull
-    public int[] toArray();
-
-    @Nonnull
-    public int[] toArray(boolean copy);
-
-    public void forEach(@Nonnull Consumer consumer);
+    public void accept(@Nonnegative int i, @Nonnull SparseIntArray values) {
+        throw new UnsupportedOperationException();
+    }
 
 }

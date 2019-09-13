@@ -23,24 +23,22 @@ import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.MatrixBuilder;
 import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.collections.lists.DoubleArrayList;
 import hivemall.utils.datetime.StopWatch;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.SerdeUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +71,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
+import org.roaringbitmap.RoaringBitmap;
 
 @Description(name = "train_randomforest_regressor",
         value = "_FUNC_(array<double|string> features, double target [, string options]) - "
@@ -107,16 +106,16 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private AttributeType[] _attributes;
+    private byte[] _nominalAttrs;
 
     @Nullable
-    private Reporter _progressReporter;
+    private transient Reporter _progressReporter;
     @Nullable
-    private Counter _treeBuildTaskCounter;
+    private transient Counter _treeBuildTaskCounter;
     @Nullable
-    private Counter _treeConstructionTimeCounter;
+    private transient Counter _treeConstructionTimeCounter;
     @Nullable
-    private Counter _treeSerializationTimeCounter;
+    private transient Counter _treeSerializationTimeCounter;
 
     @Override
     protected Options getOptions() {
@@ -130,6 +129,9 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             "The maximum number of the tree depth [default: Integer.MAX_VALUE]");
         opts.addOption("leafs", "max_leaf_nodes", true,
             "The maximum number of leaf nodes [default: Integer.MAX_VALUE]");
+        opts.addOption("min_samples_split", true,
+            "A node that has greater than or equals to `min_split` examples will split [default: 5]");
+        // synonym of min_samples_split
         opts.addOption("split", "min_split", true,
             "A node that has greater than or equals to `min_split` examples will split [default: 5]");
         opts.addOption("min_samples_leaf", true,
@@ -137,15 +139,17 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
+        opts.addOption("nominal_attr_indicies", "categorical_attr_indicies", true,
+            "Comma seperated indicies of categorical attributes, e.g., [3,5,6]");
         return opts;
     }
 
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         int trees = 50, maxDepth = Integer.MAX_VALUE;
-        int maxLeafs = Integer.MAX_VALUE, minSplit = 5, minSamplesLeaf = 1;
+        int maxLeafNodes = Integer.MAX_VALUE, minSamplesSplit = 5, minSamplesLeaf = 1;
         float numVars = -1.f;
-        AttributeType[] attrs = null;
+        RoaringBitmap attrs = new RoaringBitmap();
         long seed = -1L;
 
         CommandLine cl = null;
@@ -159,22 +163,33 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             }
             numVars = Primitives.parseFloat(cl.getOptionValue("num_variables"), numVars);
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
-            maxLeafs = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafs);
-            minSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSplit);
+            maxLeafNodes = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafNodes);
+            String min_samples_split = cl.getOptionValue("min_samples_split");
+            if (min_samples_split == null) {
+                minSamplesSplit =
+                        Primitives.parseInt(cl.getOptionValue("min_split"), minSamplesSplit);
+            } else {
+                minSamplesSplit = Integer.parseInt(min_samples_split);
+            }
             minSamplesLeaf =
                     Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
-            attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            String nominal_attr_indicies = cl.getOptionValue("nominal_attr_indicies");
+            if (nominal_attr_indicies != null) {
+                attrs = SmileExtUtils.parseNominalAttributeIndicies(nominal_attr_indicies);
+            } else {
+                attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            }
         }
 
         this._numTrees = trees;
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._maxLeafNodes = maxLeafs;
-        this._minSamplesSplit = minSplit;
+        this._maxLeafNodes = maxLeafNodes;
+        this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this._attributes = attrs;
+        this._nominalAttrs = SerdeUtils.serializeRoaring(attrs);
 
         return cl;
     }
@@ -299,7 +314,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         this.featureListOI = null;
         this.featureElemOI = null;
         this.targetOI = null;
-        this._attributes = null;
+        this._nominalAttrs = null;
     }
 
     private void checkOptions() throws HiveException {
@@ -330,7 +345,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         // Shuffle training samples
         x = SmileExtUtils.shuffle(x, y, _seed);
 
-        AttributeType[] attributes = SmileExtUtils.attributeTypes(_attributes, x);
         int numInputVars = SmileExtUtils.computeNumInputVars(_numVars, x);
 
         if (logger.isInfoEnabled()) {
@@ -340,15 +354,16 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
                     + ", seed: " + _seed);
         }
 
-        double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
-        int[] oob = new int[numExamples];
-        ColumnMajorIntMatrix order = SmileExtUtils.sort(attributes, x);
-        AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
+        final RoaringBitmap nominalAttrs = SerdeUtils.deserializeRoaring(_nominalAttrs);
+        this._nominalAttrs = null;
+        final double[] prediction = new double[numExamples]; // placeholder for out-of-bag prediction
+        final int[] oob = new int[numExamples];
+        final AtomicInteger remainingTasks = new AtomicInteger(_numTrees);
         List<TrainingTask> tasks = new ArrayList<TrainingTask>();
         for (int i = 0; i < _numTrees; i++) {
             long s = (_seed == -1L) ? -1L : _seed + i;
-            tasks.add(new TrainingTask(this, i, attributes, x, y, numInputVars, order, prediction,
-                oob, s, remainingTasks));
+            tasks.add(new TrainingTask(this, i, nominalAttrs, x, y, numInputVars, prediction, oob,
+                s, remainingTasks));
         }
 
         MapredContext mapredContext = MapredContextAccessor.get();
@@ -417,7 +432,7 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         /**
          * Attribute properties.
          */
-        private final AttributeType[] _attributes;
+        private final RoaringBitmap _nominalAttrs;
         /**
          * Training instances.
          */
@@ -426,11 +441,6 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
          * Training sample target values.
          */
         private final double[] _y;
-        /**
-         * The index of training values in ascending order. Note that only numeric attributes will
-         * be sorted.
-         */
-        private final ColumnMajorIntMatrix _order;
         /**
          * The number of variables to pick up in each node.
          */
@@ -449,15 +459,14 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
         private final long _seed;
         private final AtomicInteger _remainingTasks;
 
-        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, AttributeType[] attributes,
-                Matrix x, double[] y, int numVars, ColumnMajorIntMatrix order, double[] prediction,
-                int[] oob, long seed, AtomicInteger remainingTasks) {
+        TrainingTask(RandomForestRegressionUDTF udtf, int taskId, RoaringBitmap nominalAttrs,
+                Matrix x, double[] y, int numVars, double[] prediction, int[] oob, long seed,
+                AtomicInteger remainingTasks) {
             this._udtf = udtf;
             this._taskId = taskId;
-            this._attributes = attributes;
+            this._nominalAttrs = nominalAttrs;
             this._x = x;
             this._y = y;
-            this._order = order;
             this._numVars = numVars;
             this._prediction = prediction;
             this._oob = oob;
@@ -474,25 +483,26 @@ public final class RandomForestRegressionUDTF extends UDTFWithOptions {
             final int N = _x.numRows();
 
             // Training samples draw with replacement.
-            final int[] bags = new int[N];
-            final BitSet sampled = new BitSet(N);
+            final int[] samples = new int[N];
             for (int i = 0; i < N; i++) {
                 int index = rnd1.nextInt(N);
-                bags[i] = index;
-                sampled.set(index);
+                samples[index] += 1;
             }
 
             StopWatch stopwatch = new StopWatch();
-            RegressionTree tree = new RegressionTree(_attributes, _x, _y, _numVars, _udtf._maxDepth,
-                _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf, _order, bags,
-                rnd2);
+            RegressionTree tree = new RegressionTree(_nominalAttrs, _x, _y, _numVars,
+                _udtf._maxDepth, _udtf._maxLeafNodes, _udtf._minSamplesSplit, _udtf._minSamplesLeaf,
+                samples, rnd2);
             incrCounter(_udtf._treeConstructionTimeCounter, stopwatch.elapsed(TimeUnit.SECONDS));
 
             // out-of-bag prediction
             int oob = 0;
             double error = 0.d;
             final Vector xProbe = _x.rowVector();
-            for (int i = sampled.nextClearBit(0); i < N; i = sampled.nextClearBit(i + 1)) {
+            for (int i = 0; i < samples.length; i++) {
+                if (samples[i] != 0) {
+                    continue;
+                }
                 oob++;
                 _x.getRow(i, xProbe);
                 final double pred = tree.predict(xProbe);

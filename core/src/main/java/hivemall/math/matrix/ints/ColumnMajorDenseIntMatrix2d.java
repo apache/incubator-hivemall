@@ -169,4 +169,31 @@ public final class ColumnMajorDenseIntMatrix2d extends ColumnMajorIntMatrix {
         }
     }
 
+    @Override
+    public void eachNonNullInColumn(final int col, final int startRow, final int endRow,
+            @Nonnull final VectorProcedure procedure) {
+        checkColIndex(col, numColumns);
+        rangeCheck(numRows, startRow, endRow);
+
+        final int[] colData = data[col];
+        if (colData == null) {
+            return;
+        }
+
+        for (int row = startRow, end = Math.min(endRow, colData.length); row < end; row++) {
+            procedure.apply(row, colData[row]);
+        }
+    }
+
+    @Override
+    public void eachRow(@Nonnull final VectorProcedure procedure) {
+        for (int col = 0; col < data.length; col++) {
+            final int[] row = data[col];
+            if (row == null) {
+                continue;
+            }
+            procedure.apply(col, row);
+        }
+    }
+
 }

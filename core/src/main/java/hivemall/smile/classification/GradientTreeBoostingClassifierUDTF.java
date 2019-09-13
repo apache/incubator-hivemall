@@ -23,26 +23,24 @@ import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.MatrixBuilder;
 import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
 import hivemall.utils.collections.lists.IntArrayList;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.SerdeUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.math.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,6 +67,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.Reporter;
+import org.roaringbitmap.RoaringBitmap;
 
 @Description(name = "train_gradient_tree_boosting_classifier",
         value = "_FUNC_(array<double|string> features, int label [, string options]) - "
@@ -112,12 +111,12 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
     private int _minSamplesSplit;
     private int _minSamplesLeaf;
     private long _seed;
-    private AttributeType[] _attributes;
+    private byte[] _nominalAttrs;
 
     @Nullable
-    private Reporter _progressReporter;
+    private transient Reporter _progressReporter;
     @Nullable
-    private Counter _iterationCounter;
+    private transient Counter _iterationCounter;
 
     @Override
     protected Options getOptions() {
@@ -142,16 +141,18 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         opts.addOption("seed", true, "seed value in long [default: -1 (random)]");
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
+        opts.addOption("nominal_attr_indicies", "categorical_attr_indicies", true,
+            "Comma seperated indicies of categorical attributes, e.g., [3,5,6]");
         return opts;
     }
 
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         int trees = 500, maxDepth = 8;
-        int maxLeafs = Integer.MAX_VALUE, minSplit = 5, minSamplesLeaf = 1;
+        int maxLeafNodes = Integer.MAX_VALUE, minSamplesSplit = 5, minSamplesLeaf = 1;
         float numVars = -1.f;
         double eta = 0.05d, subsample = 0.7d;
-        AttributeType[] attrs = null;
+        RoaringBitmap attrs = new RoaringBitmap();
         long seed = -1L;
 
         CommandLine cl = null;
@@ -167,12 +168,23 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             subsample = Primitives.parseDouble(cl.getOptionValue("subsample"), subsample);
             numVars = Primitives.parseFloat(cl.getOptionValue("num_variables"), numVars);
             maxDepth = Primitives.parseInt(cl.getOptionValue("max_depth"), maxDepth);
-            maxLeafs = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafs);
-            minSplit = Primitives.parseInt(cl.getOptionValue("min_split"), minSplit);
+            maxLeafNodes = Primitives.parseInt(cl.getOptionValue("max_leaf_nodes"), maxLeafNodes);
+            String min_samples_split = cl.getOptionValue("min_samples_split");
+            if (min_samples_split == null) {
+                minSamplesSplit =
+                        Primitives.parseInt(cl.getOptionValue("min_split"), minSamplesSplit);
+            } else {
+                minSamplesSplit = Integer.parseInt(min_samples_split);
+            }
             minSamplesLeaf =
                     Primitives.parseInt(cl.getOptionValue("min_samples_leaf"), minSamplesLeaf);
             seed = Primitives.parseLong(cl.getOptionValue("seed"), seed);
-            attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            String nominal_attr_indicies = cl.getOptionValue("nominal_attr_indicies");
+            if (nominal_attr_indicies != null) {
+                attrs = SmileExtUtils.parseNominalAttributeIndicies(nominal_attr_indicies);
+            } else {
+                attrs = SmileExtUtils.resolveAttributes(cl.getOptionValue("attribute_types"));
+            }
         }
 
         this._numTrees = trees;
@@ -180,11 +192,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this._subsample = subsample;
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._maxLeafNodes = maxLeafs;
-        this._minSamplesSplit = minSplit;
+        this._maxLeafNodes = maxLeafNodes;
+        this._minSamplesSplit = minSamplesSplit;
         this._minSamplesLeaf = minSamplesLeaf;
         this._seed = seed;
-        this._attributes = attrs;
+        this._nominalAttrs = SerdeUtils.serializeRoaring(attrs);
 
         return cl;
     }
@@ -303,7 +315,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         this.featureListOI = null;
         this.featureElemOI = null;
         this.labelOI = null;
-        this._attributes = null;
     }
 
     private void checkOptions() throws HiveException {
@@ -332,7 +343,6 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 String.format("The sizes of X and Y don't match: %d != %d", numRows, y.length));
         }
         checkOptions();
-        this._attributes = SmileExtUtils.attributeTypes(_attributes, x);
 
         // Shuffle training samples
         x = SmileExtUtils.shuffle(x, y, _seed);
@@ -378,38 +388,36 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             h[i] = intercept;
         }
 
-        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput output = new L2NodeOutput(response);
 
-        final BitSet sampled = new BitSet(numInstances);
-        final int[] bag = new int[numSamples];
-        final int[] perm = new int[numSamples];
-        for (int i = 0; i < numSamples; i++) {
-            perm[i] = i;
-        }
+        final int[] samples = new int[numInstances];
+        final int[] perm = MathUtils.permutation(numInstances);
 
         long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
                 : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
         final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
         final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
 
+        final RoaringBitmap nominalAttrs = SerdeUtils.deserializeRoaring(_nominalAttrs);
+        this._nominalAttrs = null;
+
         final Vector xProbe = x.rowVector();
         for (int m = 0; m < _numTrees; m++) {
             reportProgress(_progressReporter);
 
+            Arrays.fill(samples, 0);
             SmileExtUtils.shuffle(perm, rnd1);
             for (int i = 0; i < numSamples; i++) {
                 int index = perm[i];
-                bag[i] = index;
-                sampled.set(index);
+                samples[index] += 1;
             }
 
             for (int i = 0; i < numInstances; i++) {
                 response[i] = 2.0d * y[i] / (1.d + Math.exp(2.d * y[i] * h[i]));
             }
 
-            RegressionTree tree = new RegressionTree(_attributes, x, response, numVars, _maxDepth,
-                _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag, output, rnd2);
+            RegressionTree tree = new RegressionTree(nominalAttrs, x, response, numVars, _maxDepth,
+                _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, samples, output, rnd2);
 
             for (int i = 0; i < numInstances; i++) {
                 x.getRow(i, xProbe);
@@ -418,8 +426,10 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
 
             // out-of-bag error estimate
             int oobTests = 0, oobErrors = 0;
-            for (int i = sampled.nextClearBit(0); i < numInstances; i =
-                    sampled.nextClearBit(i + 1)) {
+            for (int i = 0; i < samples.length; i++) {
+                if (samples[i] != 0) {
+                    continue;
+                }
                 oobTests++;
                 final int pred = (h[i] > 0.d) ? 1 : 0;
                 if (pred != y[i]) {
@@ -431,8 +441,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 oobErrorRate = ((float) oobErrors) / oobTests;
             }
 
-            forward(m + 1, intercept, _eta, oobErrorRate, tree);
-            sampled.clear();
+            forward(m + 1, intercept, _eta, oobErrorRate, x.numColumns(), tree);
         }
     }
 
@@ -455,20 +464,21 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
         final double[][] p = new double[k][numInstances]; // a posteriori probabilities.
         final double[][] response = new double[k][numInstances]; // pseudo response.
 
-        final ColumnMajorIntMatrix order = SmileExtUtils.sort(_attributes, x);
         final RegressionTree.NodeOutput[] output = new LKNodeOutput[k];
         for (int i = 0; i < k; i++) {
             output[i] = new LKNodeOutput(response[i], k);
         }
 
-        final BitSet sampled = new BitSet(numInstances);
-        final int[] bag = new int[numSamples];
+        final int[] samples = new int[numInstances];
         final int[] perm = MathUtils.permutation(numInstances);
 
         long s = (this._seed == -1L) ? SmileExtUtils.generateSeed()
                 : RandomNumberGeneratorFactory.createPRNG(_seed).nextLong();
         final PRNG rnd1 = RandomNumberGeneratorFactory.createPRNG(s);
         final PRNG rnd2 = RandomNumberGeneratorFactory.createPRNG(rnd1.nextLong());
+
+        final RoaringBitmap nominalAttrs = SerdeUtils.deserializeRoaring(_nominalAttrs);
+        this._nominalAttrs = null;
 
         // out-of-bag prediction
         final int[] prediction = new int[numInstances];
@@ -515,16 +525,16 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     response_j[i] -= p_j[i];
                 }
 
+                Arrays.fill(samples, 0);
                 SmileExtUtils.shuffle(perm, rnd1);
                 for (int i = 0; i < numSamples; i++) {
                     int index = perm[i];
-                    bag[i] = index;
-                    sampled.set(i);
+                    samples[index] += 1;
                 }
 
-                RegressionTree tree = new RegressionTree(_attributes, x, response[j], numVars,
-                    _maxDepth, _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, order, bag,
-                    output[j], rnd2);
+                RegressionTree tree = new RegressionTree(nominalAttrs, x, response[j], numVars,
+                    _maxDepth, _maxLeafNodes, _minSamplesSplit, _minSamplesLeaf, samples, output[j],
+                    rnd2);
                 trees[j] = tree;
 
                 for (int i = 0; i < numInstances; i++) {
@@ -540,21 +550,22 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
             } // for each k
 
             // out-of-bag error estimate
-            for (int i = sampled.nextClearBit(0); i < numInstances; i =
-                    sampled.nextClearBit(i + 1)) {
+            for (int i = 0; i < samples.length; i++) {
+                if (samples[i] != 0) {
+                    continue;
+                }
                 oobTests++;
                 if (prediction[i] != y[i]) {
                     oobErrors++;
                 }
             }
-            sampled.clear();
             float oobErrorRate = 0.f;
             if (oobTests > 0) {
                 oobErrorRate = ((float) oobErrors) / oobTests;
             }
 
             // forward a row
-            forward(m + 1, 0.d, _eta, oobErrorRate, trees);
+            forward(m + 1, 0.d, _eta, oobErrorRate, x.numColumns(), trees);
 
         } // for each m
     }
@@ -563,10 +574,11 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
      * @param m m-th boosting iteration
      */
     private void forward(final int m, final double intercept, final double shrinkage,
-            final float oobErrorRate, @Nonnull final RegressionTree... trees) throws HiveException {
+            final float oobErrorRate, final int numColumns, @Nonnull final RegressionTree... trees)
+            throws HiveException {
         Text[] models = getModel(trees);
 
-        Vector importance = denseInput ? new DenseVector(_attributes.length) : new SparseVector();
+        Vector importance = denseInput ? new DenseVector(numColumns) : new SparseVector();
         for (RegressionTree tree : trees) {
             Vector imp = tree.importance();
             for (int i = 0, size = imp.size(); i < size; i++) {

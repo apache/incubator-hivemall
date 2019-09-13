@@ -16,6 +16,7 @@ env:
 #    build_command:   "mvn -DskipTests=true compile"
 #    branch_pattern: master
 
+dist: trusty
 language: java
 jdk:
 # - openjdk7

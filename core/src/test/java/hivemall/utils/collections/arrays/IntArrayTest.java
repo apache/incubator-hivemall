@@ -64,6 +64,7 @@ public class IntArrayTest {
         for (int i = 0; i < 10; i++) {
             array.put(i, 10 + i);
         }
+        Assert.assertEquals(10, array.size());
         array.clear();
         Assert.assertEquals(0, array.size());
         Assert.assertEquals(0, array.get(0));

@@ -22,7 +22,6 @@ import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.math.random.RandomNumberGeneratorFactory;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.utils.codec.Base91;
@@ -31,7 +30,6 @@ import smile.validation.LOOCV;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Arrays;
 
 import javax.annotation.Nonnull;
 
@@ -39,6 +37,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
+import org.roaringbitmap.RoaringBitmap;
 
 public class RegressionTreeTest {
     private static final boolean DEBUG = false;
@@ -66,8 +65,7 @@ public class RegressionTreeTest {
         double[] y = {83.0, 88.5, 88.2, 89.5, 96.2, 98.1, 99.0, 100.0, 101.2, 104.6, 108.4, 110.8,
                 112.6, 114.2, 115.7, 116.9};
 
-        AttributeType[] attrs = new AttributeType[longley[0].length];
-        Arrays.fill(attrs, AttributeType.NUMERIC);
+        RoaringBitmap attrs = new RoaringBitmap();
 
         int n = longley.length;
         LOOCV loocv = new LOOCV(n);
@@ -109,8 +107,7 @@ public class RegressionTreeTest {
         double[] y = {83.0, 88.5, 88.2, 89.5, 96.2, 98.1, 99.0, 100.0, 101.2, 104.6, 108.4, 110.8,
                 112.6, 114.2, 115.7, 116.9};
 
-        AttributeType[] attrs = new AttributeType[longley[0].length];
-        Arrays.fill(attrs, AttributeType.NUMERIC);
+        RoaringBitmap attrs = new RoaringBitmap();
 
         int n = longley.length;
         LOOCV loocv = new LOOCV(n);
@@ -152,8 +149,7 @@ public class RegressionTreeTest {
         double[] y = {83.0, 88.5, 88.2, 89.5, 96.2, 98.1, 99.0, 100.0, 101.2, 104.6, 108.4, 110.8,
                 112.6, 114.2, 115.7, 116.9};
 
-        AttributeType[] attrs = new AttributeType[longley[0].length];
-        Arrays.fill(attrs, AttributeType.NUMERIC);
+        RoaringBitmap attrs = new RoaringBitmap();
 
         int n = longley.length;
         LOOCV loocv = new LOOCV(n);
@@ -204,8 +200,7 @@ public class RegressionTreeTest {
     private static String graphvizOutput(double[][] x, double[] y, int maxLeafs, boolean dense,
             String[] featureNames, String outputName)
             throws IOException, HiveException, ParseException {
-        AttributeType[] attrs = new AttributeType[x[0].length];
-        Arrays.fill(attrs, AttributeType.NUMERIC);
+        RoaringBitmap attrs = new RoaringBitmap();
         RegressionTree tree = new RegressionTree(attrs, matrix(x, dense), y, maxLeafs);
 
         Text model = new Text(Base91.encode(tree.serialize(true)));

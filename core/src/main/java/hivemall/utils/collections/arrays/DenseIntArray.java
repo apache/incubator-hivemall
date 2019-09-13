@@ -18,6 +18,8 @@
  */
 package hivemall.utils.collections.arrays;
 
+import hivemall.utils.function.Consumer;
+
 import java.util.Arrays;
 
 import javax.annotation.Nonnull;
@@ -67,7 +69,7 @@ public final class DenseIntArray implements IntArray {
 
     @Override
     public int size() {
-        return array.length;
+        return size;
     }
 
     @Override
@@ -86,6 +88,13 @@ public final class DenseIntArray implements IntArray {
             return Arrays.copyOf(array, size);
         } else {
             return array;
+        }
+    }
+
+    @Override
+    public void forEach(@Nonnull final Consumer consumer) {
+        for (int i = 0; i < array.length; i++) {
+            consumer.accept(i, array[i]);
         }
     }
 

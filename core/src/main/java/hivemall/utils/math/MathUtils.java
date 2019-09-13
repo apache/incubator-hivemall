@@ -327,6 +327,15 @@ public final class MathUtils {
         return perm;
     }
 
+    @Nonnull
+    public static int[] permutation(@Nonnegative final int start, @Nonnegative final int size) {
+        final int[] perm = new int[size];
+        for (int i = 0; i < size; i++) {
+            perm[i] = start + i;
+        }
+        return perm;
+    }
+
     public static double sum(@Nullable final float[] arr) {
         if (arr == null) {
             return 0.d;

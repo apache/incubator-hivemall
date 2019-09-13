@@ -16,34 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.utils.collections.arrays;
+package hivemall.utils.function;
 
-import hivemall.utils.function.Consumer;
+public interface IntPredicate {
 
-import java.io.Serializable;
-
-import javax.annotation.Nonnull;
-
-public interface IntArray extends Serializable {
-
-    public int get(int key);
-
-    public int get(int key, int valueIfKeyNotFound);
-
-    public void put(int key, int value);
-
-    public void increment(int key, int value);
-
-    public int size();
-
-    public int keyAt(int index);
-
-    @Nonnull
-    public int[] toArray();
-
-    @Nonnull
-    public int[] toArray(boolean copy);
-
-    public void forEach(@Nonnull Consumer consumer);
+    /**
+     * Evaluates this predicate on the given argument.
+     *
+     * @return true if the input argument matches the predicate, otherwise false
+     */
+    boolean test(int value);
 
 }

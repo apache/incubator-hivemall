@@ -17,21 +17,26 @@
 // https://github.com/haifengl/smile/blob/master/core/src/main/java/smile/classification/DecisionTree.java
 package hivemall.smile.classification;
 
+import static hivemall.smile.utils.SmileExtUtils.NOMINAL;
+import static hivemall.smile.utils.SmileExtUtils.NUMERIC;
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
 import static hivemall.smile.utils.SmileExtUtils.resolveName;
 
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.ints.ColumnMajorIntMatrix;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.utils.SmileExtUtils;
+import hivemall.smile.utils.VariableOrder;
+import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.IntArrayList;
+import hivemall.utils.function.Consumer;
+import hivemall.utils.function.IntPredicate;
+import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
@@ -53,6 +58,8 @@ import java.util.PriorityQueue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.roaringbitmap.IntConsumer;
 import org.roaringbitmap.RoaringBitmap;
@@ -110,13 +117,46 @@ import org.roaringbitmap.RoaringBitmap;
  * Some techniques such as bagging, boosting, and random forest use more than one decision tree for
  * their analysis.
  */
-public final class DecisionTree implements Classifier<Vector> {
+public class DecisionTree implements Classifier<Vector> {
+    private static final Log logger = LogFactory.getLog(DecisionTree.class);
+
+    /**
+     * Training dataset.
+     */
+    @Nonnull
+    private final Matrix _X;
+    /**
+     * class labels.
+     */
+    @Nonnull
+    private final int[] _y;
+    /**
+     * The samples for training this node. Note that samples[i] is the number of sampling of
+     * dataset[i]. 0 means that the datum is not included and values of greater than 1 are possible
+     * because of sampling with replacement.
+     */
+    @Nonnull
+    private final int[] _samples;
+    /**
+     * An index of training values. Initially, order[j] is a set of indices that iterate through the
+     * training values for attribute j in ascending order. During training, the array is rearranged
+     * so that all values for each leaf node occupy a contiguous range, but within that range they
+     * maintain the original ordering. Note that only numeric attributes will be sorted; non-numeric
+     * attributes will have a null in the corresponding place in the array.
+     */
+    @Nonnull
+    private final VariableOrder _order;
+    /**
+     * An index that maps their current position in the {@link #_order} to their original locations
+     * in {@link #_samples}.
+     */
+    @Nonnull
+    private final int[] _sampleIndex;
     /**
      * The attributes of independent variable.
      */
     @Nonnull
-    private final AttributeType[] _attributes;
-    private final boolean _hasNumericType;
+    private final RoaringBitmap _nominalAttrs;
     /**
      * Variable importance. Every time a split of a node is made on variable the (GINI, information
      * gain, etc.) impurity criterion for the two descendant nodes is less than the parent node.
@@ -150,18 +190,14 @@ public final class DecisionTree implements Classifier<Vector> {
     /**
      * The number of instances in a node below which the tree will not split.
      */
-    private final int _minSplit;
+    private final int _minSamplesSplit;
     /**
-     * The minimum number of samples in a leaf node
+     * The minimum number of samples in a leaf node.
      */
-    private final int _minLeafSize;
+    private final int _minSamplesLeaf;
     /**
-     * The index of training values in ascending order. Note that only numeric attributes will be
-     * sorted.
+     * The random number generator.
      */
-    @Nonnull
-    private final ColumnMajorIntMatrix _order;
-
     @Nonnull
     private final PRNG _rnd;
 
@@ -209,7 +245,7 @@ public final class DecisionTree implements Classifier<Vector> {
         /**
          * The type of split feature
          */
-        AttributeType splitFeatureType = null;
+        boolean quantitativeFeature = true;
         /**
          * The split value.
          */
@@ -226,16 +262,12 @@ public final class DecisionTree implements Classifier<Vector> {
          * Children node.
          */
         Node falseChild = null;
-        /**
-         * Predicted output for children node.
-         */
-        int trueChildOutput = -1;
-        /**
-         * Predicted output for children node.
-         */
-        int falseChildOutput = -1;
 
         public Node() {}// for Externalizable
+
+        public Node(@Nonnull double[] posteriori) {
+            this(Math.whichMax(posteriori), posteriori);
+        }
 
         public Node(int output, @Nonnull double[] posteriori) {
             this.output = output;
@@ -243,7 +275,15 @@ public final class DecisionTree implements Classifier<Vector> {
         }
 
         private boolean isLeaf() {
-            return posteriori != null;
+            return trueChild == null && falseChild == null;
+        }
+
+        private void markAsLeaf() {
+            this.splitFeature = -1;
+            this.splitValue = Double.NaN;
+            this.splitScore = 0.0;
+            this.trueChild = null;
+            this.falseChild = null;
         }
 
         @VisibleForTesting
@@ -255,24 +295,21 @@ public final class DecisionTree implements Classifier<Vector> {
          * Evaluate the regression tree over an instance.
          */
         public int predict(@Nonnull final Vector x) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 return output;
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    if (x.get(splitFeature, Double.NaN) == splitValue) {
-                        return trueChild.predict(x);
-                    } else {
-                        return falseChild.predict(x);
-                    }
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     if (x.get(splitFeature, Double.NaN) <= splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
                 }
             }
         }
@@ -281,24 +318,21 @@ public final class DecisionTree implements Classifier<Vector> {
          * Evaluate the regression tree over an instance.
          */
         public void predict(@Nonnull final Vector x, @Nonnull final PredictionHandler handler) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 handler.handle(output, posteriori);
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    if (x.get(splitFeature, Double.NaN) == splitValue) {
-                        trueChild.predict(x, handler);
-                    } else {
-                        falseChild.predict(x, handler);
-                    }
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     if (x.get(splitFeature, Double.NaN) <= splitValue) {
                         trueChild.predict(x, handler);
                     } else {
                         falseChild.predict(x, handler);
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    if (x.get(splitFeature, Double.NaN) == splitValue) {
+                        trueChild.predict(x, handler);
+                    } else {
+                        falseChild.predict(x, handler);
+                    }
                 }
             }
         }
@@ -306,26 +340,12 @@ public final class DecisionTree implements Classifier<Vector> {
         public void exportJavascript(@Nonnull final StringBuilder builder,
                 @Nullable final String[] featureNames, @Nullable final String[] classNames,
                 final int depth) {
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 indent(builder, depth);
                 builder.append("").append(resolveName(output, classNames)).append(";\n");
             } else {
                 indent(builder, depth);
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    if (featureNames == null) {
-                        builder.append("if( x[")
-                               .append(splitFeature)
-                               .append("] == ")
-                               .append(splitValue)
-                               .append(" ) {\n");
-                    } else {
-                        builder.append("if( ")
-                               .append(resolveFeatureName(splitFeature, featureNames))
-                               .append(" == ")
-                               .append(splitValue)
-                               .append(" ) {\n");
-                    }
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     if (featureNames == null) {
                         builder.append("if( x[")
                                .append(splitFeature)
@@ -340,8 +360,19 @@ public final class DecisionTree implements Classifier<Vector> {
                                .append(" ) {\n");
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    if (featureNames == null) {
+                        builder.append("if( x[")
+                               .append(splitFeature)
+                               .append("] == ")
+                               .append(splitValue)
+                               .append(" ) {\n");
+                    } else {
+                        builder.append("if( ")
+                               .append(resolveFeatureName(splitFeature, featureNames))
+                               .append(" == ")
+                               .append(splitValue)
+                               .append(" ) {\n");
+                    }
                 }
                 trueChild.exportJavascript(builder, featureNames, classNames, depth + 1);
                 indent(builder, depth);
@@ -358,7 +389,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 @Nonnull final MutableInt nodeIdGenerator, final int parentNodeId) {
             final int myNodeId = nodeIdGenerator.getValue();
 
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 // fillcolor=h,s,v
                 // https://en.wikipedia.org/wiki/HSL_and_HSV
                 // http://www.graphviz.org/doc/info/attrs.html#k:colorList
@@ -382,21 +413,17 @@ public final class DecisionTree implements Classifier<Vector> {
                     builder.append(";\n");
                 }
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    builder.append(
-                        String.format(" %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
-                            resolveFeatureName(splitFeature, featureNames),
-                            Double.toString(splitValue)));
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     builder.append(
                         String.format(" %d [label=<%s &le; %s>, fillcolor=\"#00000000\"];\n",
                             myNodeId, resolveFeatureName(splitFeature, featureNames),
                             Double.toString(splitValue)));
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    builder.append(
+                        String.format(" %d [label=<%s = %s>, fillcolor=\"#00000000\"];\n", myNodeId,
+                            resolveFeatureName(splitFeature, featureNames),
+                            Double.toString(splitValue)));
                 }
-
                 if (myNodeId != parentNodeId) {
                     builder.append(' ').append(parentNodeId).append(" -> ").append(myNodeId);
                     if (parentNodeId == 0) {//only draw edge label on top
@@ -424,7 +451,7 @@ public final class DecisionTree implements Classifier<Vector> {
         public int opCodegen(@Nonnull final List<String> scripts, int depth) {
             int selfDepth = 0;
             final StringBuilder buf = new StringBuilder();
-            if (trueChild == null && falseChild == null) {
+            if (isLeaf()) {
                 buf.append("push ").append(output);
                 scripts.add(buf.toString());
                 buf.setLength(0);
@@ -432,23 +459,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 scripts.add(buf.toString());
                 selfDepth += 2;
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    buf.append("push ").append("x[").append(splitFeature).append("]");
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("push ").append(splitValue);
-                    scripts.add(buf.toString());
-                    buf.setLength(0);
-                    buf.append("ifeq ");
-                    scripts.add(buf.toString());
-                    depth += 3;
-                    selfDepth += 3;
-                    int trueDepth = trueChild.opCodegen(scripts, depth);
-                    selfDepth += trueDepth;
-                    scripts.set(depth - 1, "ifeq " + String.valueOf(depth + trueDepth));
-                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
-                    selfDepth += falseDepth;
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     buf.append("push ").append("x[").append(splitFeature).append("]");
                     scripts.add(buf.toString());
                     buf.setLength(0);
@@ -465,8 +476,21 @@ public final class DecisionTree implements Classifier<Vector> {
                     int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
                     selfDepth += falseDepth;
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    buf.append("push ").append("x[").append(splitFeature).append("]");
+                    scripts.add(buf.toString());
+                    buf.setLength(0);
+                    buf.append("push ").append(splitValue);
+                    scripts.add(buf.toString());
+                    buf.setLength(0);
+                    buf.append("ifeq ");
+                    scripts.add(buf.toString());
+                    depth += 3;
+                    selfDepth += 3;
+                    int trueDepth = trueChild.opCodegen(scripts, depth);
+                    selfDepth += trueDepth;
+                    scripts.set(depth - 1, "ifeq " + String.valueOf(depth + trueDepth));
+                    int falseDepth = falseChild.opCodegen(scripts, depth + trueDepth);
+                    selfDepth += falseDepth;
                 }
             }
             return selfDepth;
@@ -475,11 +499,7 @@ public final class DecisionTree implements Classifier<Vector> {
         @Override
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(splitFeature);
-            if (splitFeatureType == null) {
-                out.writeByte(-1);
-            } else {
-                out.writeByte(splitFeatureType.getTypeId());
-            }
+            out.writeByte(quantitativeFeature ? NUMERIC : NOMINAL);
             out.writeDouble(splitValue);
 
             if (isLeaf()) {
@@ -511,12 +531,8 @@ public final class DecisionTree implements Classifier<Vector> {
         @Override
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.splitFeature = in.readInt();
-            byte typeId = in.readByte();
-            if (typeId == -1) {
-                this.splitFeatureType = null;
-            } else {
-                this.splitFeatureType = AttributeType.resolve(typeId);
-            }
+            final byte typeId = in.readByte();
+            this.quantitativeFeature = (typeId == NUMERIC);
             this.splitValue = in.readDouble();
 
             if (in.readBoolean()) {//isLeaf
@@ -555,29 +571,44 @@ public final class DecisionTree implements Classifier<Vector> {
         /**
          * The associated regression tree node.
          */
+        @Nonnull
         final Node node;
         /**
-         * Training dataset.
+         * Depth of the node in the tree
          */
-        final Matrix x;
-        /**
-         * class labels.
-         */
-        final int[] y;
-
-        int[] bags;
-
         final int depth;
-
         /**
-         * Constructor.
+         * The lower bound (inclusive) in the order array of the samples belonging to this node.
          */
-        public TrainNode(Node node, Matrix x, int[] y, int[] bags, int depth) {
+        final int low;
+        /**
+         * The upper bound (exclusive) in the order array of the samples belonging to this node.
+         */
+        final int high;
+        /**
+         * The number of samples
+         */
+        final int samples;
+
+        @Nullable
+        int[] constFeatures;
+
+        public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples) {
+            this(node, depth, low, high, samples, new int[0]);
+        }
+
+        public TrainNode(@Nonnull Node node, int depth, int low, int high, int samples,
+                @Nonnull int[] constFeatures) {
+            if (low >= high) {
+                throw new IllegalArgumentException(
+                    "Unexpected condition was met. low=" + low + ", high=" + high);
+            }
             this.node = node;
-            this.x = x;
-            this.y = y;
-            this.bags = bags;
             this.depth = depth;
+            this.low = low;
+            this.high = high;
+            this.samples = samples;
+            this.constFeatures = constFeatures;
         }
 
         @Override
@@ -596,35 +627,30 @@ public final class DecisionTree implements Classifier<Vector> {
                 return false;
             }
             // avoid split if the number of samples is less than threshold
-            final int numSamples = bags.length;
-            if (numSamples <= _minSplit) {
+            if (samples <= _minSamplesSplit) {
                 return false;
             }
 
             // Sample count in each class.
             final int[] count = new int[_k];
-            final boolean pure = sampleCount(count);
-
-            // Since all instances have same label, stop splitting.
-            if (pure) {
+            final boolean pure = countSamples(count);
+            if (pure) {// if all instances have same label, stop splitting.
                 return false;
             }
 
-            final double impurity = impurity(count, numSamples, _rule);
-
-            final int[] samples =
-                    _hasNumericType ? SmileExtUtils.bagsToSamples(bags, x.numRows()) : null;
+            final int[] constFeatures_ = this.constFeatures; // this.constFeatures may be replace in findBestSplit but it's accepted
+            final double impurity = impurity(count, samples, _rule);
             final int[] falseCount = new int[_k];
-            for (int varJ : variableIndex(x, bags)) {
-                final Node split =
-                        findBestSplit(numSamples, count, falseCount, impurity, varJ, samples);
+            for (int varJ : variableIndex()) {
+                if (ArrayUtils.contains(constFeatures_, varJ)) {
+                    continue; // skip constant features
+                }
+                final Node split = findBestSplit(samples, count, falseCount, impurity, varJ);
                 if (split.splitScore > node.splitScore) {
                     node.splitFeature = split.splitFeature;
-                    node.splitFeatureType = split.splitFeatureType;
+                    node.quantitativeFeature = split.quantitativeFeature;
                     node.splitValue = split.splitValue;
                     node.splitScore = split.splitScore;
-                    node.trueChildOutput = split.trueChildOutput;
-                    node.falseChildOutput = split.falseChildOutput;
                 }
             }
 
@@ -632,17 +658,22 @@ public final class DecisionTree implements Classifier<Vector> {
         }
 
         @Nonnull
-        private int[] variableIndex(@Nonnull final Matrix x, @Nonnull final int[] bags) {
+        private int[] variableIndex() {
+            final Matrix X = _X;
             final IntReservoirSampler sampler = new IntReservoirSampler(_numVars, _rnd.nextLong());
-            if (x.isSparse()) {
+            if (X.isSparse()) {
+                // sample columns from sampled examples
                 final RoaringBitmap cols = new RoaringBitmap();
                 final VectorProcedure proc = new VectorProcedure() {
                     public void apply(final int col) {
                         cols.add(col);
                     }
                 };
-                for (final int row : bags) {
-                    x.eachColumnIndexInRow(row, proc);
+                final int[] sampleIndex = _sampleIndex;
+                for (int i = low, end = high; i < end; i++) {
+                    int row = sampleIndex[i];
+                    assert (_samples[row] != 0) : row;
+                    X.eachColumnIndexInRow(row, proc);
                 }
                 cols.forEach(new IntConsumer() {
                     public void accept(final int k) {
@@ -650,20 +681,25 @@ public final class DecisionTree implements Classifier<Vector> {
                     }
                 });
             } else {
-                for (int i = 0, size = _attributes.length; i < size; i++) {
+                final int ncols = X.numColumns();
+                for (int i = 0; i < ncols; i++) {
                     sampler.add(i);
                 }
             }
             return sampler.getSample();
         }
 
-        private boolean sampleCount(@Nonnull final int[] count) {
-            int label = -1;
+        private boolean countSamples(@Nonnull final int[] count) {
+            final int[] sampleIndex = _sampleIndex;
+            final int[] samples = _samples;
+            final int[] y = _y;
+
             boolean pure = true;
-            for (int i = 0; i < bags.length; i++) {
-                int index = bags[i];
+
+            for (int i = low, end = high, label = -1; i < end; i++) {
+                int index = sampleIndex[i];
                 int y_i = y[index];
-                count[y_i]++;
+                count[y_i] += samples[index];
 
                 if (label == -1) {
                     label = y_i;
@@ -671,6 +707,7 @@ public final class DecisionTree implements Classifier<Vector> {
                     pure = false;
                 }
             }
+
             return pure;
         }
 
@@ -684,24 +721,44 @@ public final class DecisionTree implements Classifier<Vector> {
          * @param j the attribute index to split on.
          */
         private Node findBestSplit(final int n, final int[] count, final int[] falseCount,
-                final double impurity, final int j, @Nullable final int[] samples) {
+                final double impurity, final int j) {
+            final int[] samples = _samples;
+            final int[] sampleIndex = _sampleIndex;
+            final Matrix X = _X;
+            final int[] y = _y;
+            final int classes = _k;
+
             final Node splitNode = new Node();
 
-            if (_attributes[j] == AttributeType.NOMINAL) {
+            if (_nominalAttrs.contains(j)) {
                 final Int2ObjectMap<int[]> trueCount = new Int2ObjectOpenHashMap<int[]>();
 
-                for (int i = 0, size = bags.length; i < size; i++) {
-                    int index = bags[i];
-                    final double v = x.get(index, j, Double.NaN);
+                int countNaN = 0;
+                for (int i = low, end = high; i < end; i++) {
+                    final int index = sampleIndex[i];
+                    final int numSamples = samples[index];
+                    if (numSamples == 0) {
+                        continue;
+                    }
+
+                    final double v = X.get(index, j, Double.NaN);
                     if (Double.isNaN(v)) {
+                        countNaN++;
                         continue;
                     }
                     int x_ij = (int) v;
+
                     int[] tc_x = trueCount.get(x_ij);
                     if (tc_x == null) {
-                        tc_x = new int[_k];
+                        tc_x = new int[classes];
+                        trueCount.put(x_ij, tc_x);
                     }
-                    tc_x[y[index]]++;
+                    int y_i = y[index];
+                    tc_x[y_i] += numSamples;
+                }
+                final int countDistinctX = trueCount.size() + (countNaN == 0 ? 0 : 1);
+                if (countDistinctX <= 1) { // mark as a constant feature
+                    this.constFeatures = ArrayUtils.sortedArraySet(constFeatures, j);
                 }
 
                 for (Int2ObjectMap.Entry<int[]> e : trueCount.int2ObjectEntrySet()) {
@@ -712,12 +769,12 @@ public final class DecisionTree implements Classifier<Vector> {
                     final int fc = n - tc;
 
                     // skip splitting this feature.
-                    if (tc < _minSplit || fc < _minSplit) {
+                    if (tc < _minSamplesSplit || fc < _minSamplesSplit) {
                         continue;
                     }
 
-                    for (int q = 0; q < _k; q++) {
-                        falseCount[q] = count[q] - trueCount_l[q];
+                    for (int k = 0; k < classes; k++) {
+                        falseCount[k] = count[k] - trueCount_l[k];
                     }
 
                     final double gain =
@@ -727,36 +784,42 @@ public final class DecisionTree implements Classifier<Vector> {
                     if (gain > splitNode.splitScore) {
                         // new best split
                         splitNode.splitFeature = j;
-                        splitNode.splitFeatureType = AttributeType.NOMINAL;
+                        splitNode.quantitativeFeature = false;
                         splitNode.splitValue = l;
                         splitNode.splitScore = gain;
-                        splitNode.trueChildOutput = Math.whichMax(trueCount_l);
-                        splitNode.falseChildOutput = Math.whichMax(falseCount);
                     }
                 }
-            } else if (_attributes[j] == AttributeType.NUMERIC) {
-                final int[] trueCount = new int[_k];
+            } else {
+                final int[] trueCount = new int[classes];
+                final MutableInt countNaN = new MutableInt(0);
+                final MutableInt replaceCount = new MutableInt(0);
 
-                _order.eachNonNullInColumn(j, new VectorProcedure() {
-                    double prevx = Double.NaN;
+                _order.eachNonNullInColumn(j, low, high, new Consumer() {
+                    double prevx = Double.NaN, lastx = Double.NaN;
                     int prevy = -1;
 
-                    public void apply(final int row, final int i) {
-                        final int sample = samples[i];
-                        if (sample == 0) {
+                    @Override
+                    public void accept(int pos, final int i) {
+                        final int numSamples = samples[i];
+                        if (numSamples == 0) {
                             return;
                         }
 
-                        final double x_ij = x.get(i, j, Double.NaN);
+                        final double x_ij = X.get(i, j, Double.NaN);
                         if (Double.isNaN(x_ij)) {
+                            countNaN.incr();
                             return;
                         }
-                        final int y_i = y[i];
+                        if (lastx != x_ij) {
+                            lastx = x_ij;
+                            replaceCount.incr();
+                        }
 
+                        final int y_i = y[i];
                         if (Double.isNaN(prevx) || x_ij == prevx || y_i == prevy) {
                             prevx = x_ij;
                             prevy = y_i;
-                            trueCount[y_i] += sample;
+                            trueCount[y_i] += numSamples;
                             return;
                         }
 
@@ -764,14 +827,14 @@ public final class DecisionTree implements Classifier<Vector> {
                         final int fc = n - tc;
 
                         // skip splitting this feature.
-                        if (tc < _minSplit || fc < _minSplit) {
+                        if (tc < _minSamplesSplit || fc < _minSamplesSplit) {
                             prevx = x_ij;
                             prevy = y_i;
-                            trueCount[y_i] += sample;
+                            trueCount[y_i] += numSamples;
                             return;
                         }
 
-                        for (int l = 0; l < _k; l++) {
+                        for (int l = 0; l < classes; l++) {
                             falseCount[l] = count[l] - trueCount[l];
                         }
 
@@ -782,20 +845,21 @@ public final class DecisionTree implements Classifier<Vector> {
                         if (gain > splitNode.splitScore) {
                             // new best split
                             splitNode.splitFeature = j;
-                            splitNode.splitFeatureType = AttributeType.NUMERIC;
+                            splitNode.quantitativeFeature = true;
                             splitNode.splitValue = (x_ij + prevx) / 2.d;
                             splitNode.splitScore = gain;
-                            splitNode.trueChildOutput = Math.whichMax(trueCount);
-                            splitNode.falseChildOutput = Math.whichMax(falseCount);
                         }
 
                         prevx = x_ij;
                         prevy = y_i;
-                        trueCount[y_i] += sample;
+                        trueCount[y_i] += numSamples;
                     }//apply()
                 });
-            } else {
-                throw new IllegalStateException("Unsupported attribute type: " + _attributes[j]);
+
+                final int countDistinctX = replaceCount.get() + (countNaN.get() == 0 ? 0 : 1);
+                if (countDistinctX <= 1) { // mark as a constant feature
+                    this.constFeatures = ArrayUtils.sortedArraySet(constFeatures, j);
+                }
             }
 
             return splitNode;
@@ -803,110 +867,240 @@ public final class DecisionTree implements Classifier<Vector> {
 
         /**
          * Split the node into two children nodes. Returns true if split success.
+         *
+         * @return true if split occurred. false if the node is set to leaf.
          */
         public boolean split(@Nullable final PriorityQueue<TrainNode> nextSplits) {
             if (node.splitFeature < 0) {
                 throw new IllegalStateException("Split a node with invalid feature.");
             }
 
-            // split sample bags
-            int childBagSize = (int) (bags.length * 0.4);
-            IntArrayList trueBags = new IntArrayList(childBagSize);
-            IntArrayList falseBags = new IntArrayList(childBagSize);
-            double[] trueChildPosteriori = new double[_k];
-            double[] falseChildPosteriori = new double[_k];
-            int tc = splitSamples(trueBags, falseBags, trueChildPosteriori, falseChildPosteriori);
-            int fc = bags.length - tc;
-            this.bags = null; // help GC for recursive call
+            final IntPredicate goesLeft = getPredicate();
 
-            if (tc < _minLeafSize || fc < _minLeafSize) {
-                // set the node as leaf
-                node.splitFeature = -1;
-                node.splitFeatureType = null;
-                node.splitValue = Double.NaN;
-                node.splitScore = 0.0;
+            // split samples
+            final int tc, fc, pivot;
+            final double[] trueChildPosteriori = new double[_k],
+                    falseChildPosteriori = new double[_k];
+            {
+                MutableInt tc_ = new MutableInt(0);
+                MutableInt fc_ = new MutableInt(0);
+                pivot = splitSamples(tc_, fc_, trueChildPosteriori, falseChildPosteriori, goesLeft);
+                tc = tc_.get();
+                fc = fc_.get();
+            }
+
+            if (tc < _minSamplesLeaf || fc < _minSamplesLeaf) {
+                node.markAsLeaf();
                 return false;
             }
 
             for (int i = 0; i < _k; i++) {
-                trueChildPosteriori[i] /= tc;
+                trueChildPosteriori[i] /= tc; // divide by zero never happens
                 falseChildPosteriori[i] /= fc;
             }
 
-            node.trueChild = new Node(node.trueChildOutput, trueChildPosteriori);
+            partitionOrder(low, pivot, high, goesLeft);
+
+            int leaves = 0;
+
+            node.trueChild = new Node(trueChildPosteriori);
             TrainNode trueChild =
-                    new TrainNode(node.trueChild, x, y, trueBags.toArray(), depth + 1);
-            trueBags = null; // help GC for recursive call
-            if (tc >= _minSplit && trueChild.findBestSplit()) {
+                    new TrainNode(node.trueChild, depth + 1, low, pivot, tc, constFeatures.clone());
+            node.falseChild = new Node(falseChildPosteriori);
+            TrainNode falseChild =
+                    new TrainNode(node.falseChild, depth + 1, pivot, high, fc, constFeatures);
+            this.constFeatures = null;
+
+            if (tc >= _minSamplesSplit && trueChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(trueChild);
                 } else {
-                    trueChild.split(null);
+                    if (trueChild.split(null) == false) {
+                        leaves++;
+                    }
                 }
+            } else {
+                leaves++;
             }
 
-            node.falseChild = new Node(node.falseChildOutput, falseChildPosteriori);
-            TrainNode falseChild =
-                    new TrainNode(node.falseChild, x, y, falseBags.toArray(), depth + 1);
-            falseBags = null; // help GC for recursive call
-            if (fc >= _minSplit && falseChild.findBestSplit()) {
+            if (fc >= _minSamplesSplit && falseChild.findBestSplit()) {
                 if (nextSplits != null) {
                     nextSplits.add(falseChild);
                 } else {
-                    falseChild.split(null);
+                    if (falseChild.split(null) == false) {
+                        leaves++;
+                    }
+                }
+            } else {
+                leaves++;
+            }
+
+            // Prune meaningless branches
+            if (leaves == 2) {// both left and right child are leaf node
+                if (node.trueChild.output == node.falseChild.output) {// found a meaningless branch
+                    node.markAsLeaf();
+                    return false;
                 }
             }
 
             _importance.incr(node.splitFeature, node.splitScore);
-            node.posteriori = null; // a posteriori is not needed for non-leaf nodes
+            if (nextSplits == null) {
+                // For depth-first splitting, a posteriori is not needed for non-leaf nodes
+                node.posteriori = null;
+            }
 
             return true;
         }
 
         /**
-         * @param falseChildPosteriori
-         * @param trueChildPosteriori
-         * @return the number of true samples
+         * @return Pivot to split samples
          */
-        private int splitSamples(@Nonnull final IntArrayList trueBags,
-                @Nonnull final IntArrayList falseBags, @Nonnull final double[] trueChildPosteriori,
-                @Nonnull final double[] falseChildPosteriori) {
-            int tc = 0;
-            if (node.splitFeatureType == AttributeType.NOMINAL) {
-                final int splitFeature = node.splitFeature;
-                final double splitValue = node.splitValue;
-                for (int i = 0, size = bags.length; i < size; i++) {
-                    final int index = bags[i];
-                    if (x.get(index, splitFeature, Double.NaN) == splitValue) {
-                        trueBags.add(index);
-                        trueChildPosteriori[y[index]]++;
-                        tc++;
-                    } else {
-                        falseBags.add(index);
-                        falseChildPosteriori[y[index]]++;
-                    }
+        private int splitSamples(@Nonnull final MutableInt tc, @Nonnull final MutableInt fc,
+                @Nonnull final double[] trueChildPosteriori,
+                @Nonnull final double[] falseChildPosteriori,
+                @Nonnull final IntPredicate goesLeft) {
+            final int[] sampleIndex = _sampleIndex;
+            final int[] samples = _samples;
+            final int[] y = _y;
+
+            int pivot = low;
+            for (int k = low, end = high; k < end; k++) {
+                final int i = sampleIndex[k];
+                final int numSamples = samples[i];
+                final int yi = y[i];
+                if (goesLeft.test(i)) {
+                    tc.addValue(numSamples);
+                    trueChildPosteriori[yi] += numSamples;
+                    pivot++;
+                } else {
+                    fc.addValue(numSamples);
+                    falseChildPosteriori[yi] += numSamples;
                 }
-            } else if (node.splitFeatureType == AttributeType.NUMERIC) {
-                final int splitFeature = node.splitFeature;
-                final double splitValue = node.splitValue;
-                for (int i = 0, size = bags.length; i < size; i++) {
-                    final int index = bags[i];
-                    if (x.get(index, splitFeature, Double.NaN) <= splitValue) {
-                        trueBags.add(index);
-                        trueChildPosteriori[y[index]]++;
-                        tc++;
-                    } else {
-                        falseBags.add(index);
-                        falseChildPosteriori[y[index]]++;
-                    }
-                }
-            } else {
-                throw new IllegalStateException(
-                    "Unsupported attribute type: " + node.splitFeatureType);
             }
-            return tc;
+            return pivot;
         }
 
+        /**
+         * Modifies {@link #_order} and {@link #_sampleIndex} by partitioning the range from low
+         * (inclusive) to high (exclusive) so that all elements i for which goesLeft(i) is true come
+         * before all elements for which it is false, but element ordering is otherwise preserved.
+         * The number of true values returned by goesLeft must equal split-low.
+         * 
+         * @param low the low bound of the segment of the order arrays which will be partitioned.
+         * @param split where the partition's split point will end up.
+         * @param high the high bound of the segment of the order arrays which will be partitioned.
+         * @param goesLeft whether an element goes to the left side or the right side of the
+         *        partition.
+         * @param buffer scratch space large enough to hold all elements for which goesLeft is
+         *        false.
+         */
+        private void partitionOrder(final int low, final int pivot, final int high,
+                @Nonnull final IntPredicate goesLeft) {
+            final int[] buf = new int[high - pivot];
+            _order.eachRow(new Consumer() {
+                @Override
+                public void accept(int col, @Nonnull final SparseIntArray row) {
+                    partitionArray(row, low, pivot, high, goesLeft, buf);
+                }
+            });
+            partitionArray(_sampleIndex, low, pivot, high, goesLeft, buf);
+        }
+
+        @Nonnull
+        private IntPredicate getPredicate() {
+            if (node.quantitativeFeature) {
+                return new IntPredicate() {
+                    @Override
+                    public boolean test(int i) {
+                        return _X.get(i, node.splitFeature, Double.NaN) <= node.splitValue;
+                    }
+                };
+            } else {
+                return new IntPredicate() {
+                    @Override
+                    public boolean test(int i) {
+                        return _X.get(i, node.splitFeature, Double.NaN) == node.splitValue;
+                    }
+                };
+            }
+        }
+
+    }
+
+    private static void partitionArray(@Nonnull final SparseIntArray a, final int low,
+            final int pivot, final int high, @Nonnull final IntPredicate goesLeft,
+            @Nonnull final int[] buf) {
+        final int[] rowIndexes = a.keys();
+        final int[] rowPtrs = a.values();
+        final int size = a.size();
+
+        final int startPos = ArrayUtils.insertionPoint(rowIndexes, size, low);
+        final int endPos = ArrayUtils.insertionPoint(rowIndexes, size, high);
+        int pos = startPos, k = 0, j = low;
+        for (int i = startPos; i < endPos; i++) {
+            final int rowPtr = rowPtrs[i];
+            if (goesLeft.test(rowPtr)) {
+                rowIndexes[pos] = j;
+                rowPtrs[pos] = rowPtr;
+                pos++;
+                j++;
+            } else {
+                if (k >= buf.length) {
+                    throw new IndexOutOfBoundsException(String.format(
+                        "low=%d, pivot=%d, high=%d, a.size()=%d, buf.length=%d, i=%d, j=%d, k=%d, startPos=%d, endPos=%d\na=%s\nbuf=%s",
+                        low, pivot, high, a.size(), buf.length, i, j, k, startPos, endPos,
+                        a.toString(), Arrays.toString(buf)));
+                }
+                buf[k++] = rowPtr;
+            }
+        }
+        for (int i = 0; i < k; i++) {
+            rowIndexes[pos] = pivot + i;
+            rowPtrs[pos] = buf[i];
+            pos++;
+        }
+        if (pos != endPos) {
+            throw new IllegalStateException(
+                String.format("pos=%d, startPos=%d, endPos=%d, k=%d\na=%s", pos, startPos, endPos,
+                    k, a.toString()));
+        }
+    }
+
+    /**
+     * Modifies an array in-place by partitioning the range from low (inclusive) to high (exclusive)
+     * so that all elements i for which goesLeft(i) is true come before all elements for which it is
+     * false, but element ordering is otherwise preserved. The number of true values returned by
+     * goesLeft must equal split-low. buf is scratch space large enough (i.e., at least high-split
+     * long) to hold all elements for which goesLeft is false.
+     */
+    private static void partitionArray(@Nonnull final int[] a, final int low, final int pivot,
+            final int high, @Nonnull final IntPredicate goesLeft, @Nonnull final int[] buf) {
+        int j = low;
+        int k = 0;
+        for (int i = low; i < high; i++) {
+            if (i >= a.length) {
+                throw new IndexOutOfBoundsException(String.format(
+                    "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d", low,
+                    pivot, high, a.length, buf.length, i, j, k));
+            }
+            final int rowPtr = a[i];
+            if (goesLeft.test(rowPtr)) {
+                a[j++] = rowPtr;
+            } else {
+                if (k >= buf.length) {
+                    throw new IndexOutOfBoundsException(String.format(
+                        "low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, i=%d, j=%d, k=%d",
+                        low, pivot, high, a.length, buf.length, i, j, k));
+                }
+                buf[k++] = rowPtr;
+            }
+        }
+        if (k != high - pivot || j != pivot) {
+            throw new IndexOutOfBoundsException(
+                String.format("low=%d, pivot=%d, high=%d, a.length=%d, buf.length=%d, j=%d, k=%d",
+                    low, pivot, high, a.length, buf.length, j, k));
+        }
+        System.arraycopy(buf, 0, a, pivot, k);
     }
 
     /**
@@ -924,8 +1118,7 @@ public final class DecisionTree implements Classifier<Vector> {
         switch (rule) {
             case GINI: {
                 impurity = 1.0;
-                for (int i = 0; i < count.length; i++) {
-                    final int count_i = count[i];
+                for (int count_i : count) {
                     if (count_i > 0) {
                         double p = (double) count_i / n;
                         impurity -= p * p;
@@ -934,8 +1127,7 @@ public final class DecisionTree implements Classifier<Vector> {
                 break;
             }
             case ENTROPY: {
-                for (int i = 0; i < count.length; i++) {
-                    final int count_i = count[i];
+                for (int count_i : count) {
                     if (count_i > 0) {
                         double p = (double) count_i / n;
                         impurity -= p * Math.log2(p);
@@ -945,8 +1137,7 @@ public final class DecisionTree implements Classifier<Vector> {
             }
             case CLASSIFICATION_ERROR: {
                 impurity = 0.d;
-                for (int i = 0; i < count.length; i++) {
-                    final int count_i = count[i];
+                for (int count_i : count) {
                     if (count_i > 0) {
                         impurity = Math.max(impurity, (double) count_i / n);
                     }
@@ -959,74 +1150,121 @@ public final class DecisionTree implements Classifier<Vector> {
         return impurity;
     }
 
-    public DecisionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
-            int numLeafs) {
-        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, null);
+    /**
+     * Prunes redundant leaves from the tree. In some cases, a node is split into two leaves that
+     * get assigned the same label, so this recursively combines leaves when it notices this
+     * situation.
+     */
+    private static void pruneRedundantLeaves(@Nonnull final Node node, @Nonnull Vector importance) {
+        if (node.isLeaf()) {
+            return;
+        }
+
+        // The children might not be leaves now, but might collapse into leaves given the chance.
+        pruneRedundantLeaves(node.trueChild, importance);
+        pruneRedundantLeaves(node.falseChild, importance);
+
+        if (node.trueChild.isLeaf() && node.falseChild.isLeaf()
+                && node.trueChild.output == node.falseChild.output) {
+            node.trueChild = null;
+            node.falseChild = null;
+            importance.decr(node.splitFeature, node.splitScore);
+        } else {
+            // a posteriori is not needed for non-leaf nodes
+            node.posteriori = null;
+        }
     }
 
-    public DecisionTree(@Nullable AttributeType[] attributes, @Nullable Matrix x, @Nullable int[] y,
-            int numLeafs, @Nullable PRNG rand) {
-        this(attributes, x, y, x.numColumns(), Integer.MAX_VALUE, numLeafs, 2, 1, null, null, SplitRule.GINI, rand);
+    public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
+            int numSamplesLeaf) {
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numSamplesLeaf, 2, 1, null, SplitRule.GINI, null);
+    }
+
+    public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nullable Matrix x, @Nullable int[] y,
+            int numSamplesLeaf, @Nullable PRNG rand) {
+        this(nominalAttrs, x, y, x.numColumns(), Integer.MAX_VALUE, numSamplesLeaf, 2, 1, null, SplitRule.GINI, rand);
     }
 
     /**
      * Constructor. Learns a classification tree for random forest.
      *
-     * @param attributes the attribute properties.
+     * @param nominalAttrs the attribute properties.
      * @param x the training instances.
      * @param y the response variable.
      * @param numVars the number of input variables to pick to split on at each node. It seems that
      *        dim/3 give generally good performance, where dim is the number of variables.
-     * @param maxLeafs the maximum number of leaf nodes in the tree.
-     * @param minSplits the number of minimum elements in a node to split
-     * @param minLeafSize the minimum size of leaf nodes.
-     * @param order the index of training values in ascending order. Note that only numeric
-     *        attributes need be sorted.
-     * @param bags the sample set of instances for stochastic learning.
+     * @param maxLeafNodes the maximum number of leaf nodes in the tree.
+     * @param minSamplesSplit the number of minimum elements in a node to split
+     * @param minSamplesLeaf The minimum number of samples in a leaf node
+     * @param samples the sample set of instances for stochastic learning. samples[i] is the number
+     *        of sampling for instance i.
      * @param rule the splitting rule.
-     * @param seed
+     * @param rand random number generator
      */
-    public DecisionTree(@Nullable AttributeType[] attributes, @Nonnull Matrix x, @Nonnull int[] y,
-            int numVars, int maxDepth, int maxLeafs, int minSplits, int minLeafSize,
-            @Nullable int[] bags, @Nullable ColumnMajorIntMatrix order, @Nonnull SplitRule rule,
-            @Nullable PRNG rand) {
-        checkArgument(x, y, numVars, maxDepth, maxLeafs, minSplits, minLeafSize);
+    public DecisionTree(@Nullable RoaringBitmap nominalAttrs, @Nonnull Matrix x, @Nonnull int[] y,
+            int numVars, int maxDepth, int maxLeafNodes, int minSamplesSplit, int minSamplesLeaf,
+            @Nullable int[] samples, @Nonnull SplitRule rule, @Nullable PRNG rand) {
+        checkArgument(x, y, numVars, maxDepth, maxLeafNodes, minSamplesSplit, minSamplesLeaf);
+
+        this._X = x;
+        this._y = y;
 
         this._k = Math.max(y) + 1;
         if (_k < 2) {
             throw new IllegalArgumentException("Only one class or negative class labels.");
         }
 
-        this._attributes = SmileExtUtils.attributeTypes(attributes, x);
-        if (attributes.length != x.numColumns()) {
-            throw new IllegalArgumentException(
-                "-attrs option is invalid: " + Arrays.toString(attributes));
+        if (nominalAttrs == null) {
+            nominalAttrs = new RoaringBitmap();
         }
-        this._hasNumericType = SmileExtUtils.containsNumericType(_attributes);
+        this._nominalAttrs = nominalAttrs;
 
         this._numVars = numVars;
         this._maxDepth = maxDepth;
-        this._minSplit = minSplits;
-        this._minLeafSize = minLeafSize;
+        // min_sample_leaf >= 2 is satisfied iff min_sample_split >= 4
+        // So, split only happens when samples in intermediate nodes has >= 2 * min_sample_leaf nodes.
+        if (minSamplesSplit < minSamplesLeaf * 2) {
+            if (logger.isInfoEnabled()) {
+                logger.info(String.format(
+                    "min_sample_leaf = %d replaces min_sample_split = %d with min_sample_split = %d",
+                    minSamplesLeaf, minSamplesSplit, minSamplesLeaf * 2));
+            }
+            minSamplesSplit = minSamplesLeaf * 2;
+        }
+        this._minSamplesSplit = minSamplesSplit;
+        this._minSamplesLeaf = minSamplesLeaf;
         this._rule = rule;
-        this._order = (order == null) ? SmileExtUtils.sort(_attributes, x) : order;
-        this._importance = x.isSparse() ? new SparseVector() : new DenseVector(_attributes.length);
+        this._importance = x.isSparse() ? new SparseVector() : new DenseVector(x.numColumns());
         this._rnd = (rand == null) ? RandomNumberGeneratorFactory.createPRNG() : rand;
 
         final int n = y.length;
         final int[] count = new int[_k];
-        if (bags == null) {
-            bags = new int[n];
+        final int[] sampleIndex;
+        int totalNumSamples = 0;
+        if (samples == null) {
+            samples = new int[n];
+            sampleIndex = new int[n];
             for (int i = 0; i < n; i++) {
-                bags[i] = i;
+                samples[i] = 1;
                 count[y[i]]++;
+                sampleIndex[i] = i;
             }
+            totalNumSamples = n;
         } else {
-            for (int i = 0, size = bags.length; i < size; i++) {
-                int index = bags[i];
-                count[y[index]]++;
+            final IntArrayList positions = new IntArrayList(n);
+            for (int i = 0; i < n; i++) {
+                final int sample = samples[i];
+                if (sample != 0) {
+                    count[y[i]] += sample;
+                    positions.add(i);
+                    totalNumSamples += sample;
+                }
             }
+            sampleIndex = positions.toArray(true);
         }
+        this._samples = samples;
+        this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
+        this._sampleIndex = sampleIndex;
 
         final double[] posteriori = new double[_k];
         for (int i = 0; i < _k; i++) {
@@ -1034,12 +1272,13 @@ public final class DecisionTree implements Classifier<Vector> {
         }
         this._root = new Node(Math.whichMax(count), posteriori);
 
-        final TrainNode trainRoot = new TrainNode(_root, x, y, bags, 1);
-        if (maxLeafs == Integer.MAX_VALUE) {
+        final TrainNode trainRoot =
+                new TrainNode(_root, 1, 0, _sampleIndex.length, totalNumSamples);
+        if (maxLeafNodes == Integer.MAX_VALUE) { // depth-first split
             if (trainRoot.findBestSplit()) {
                 trainRoot.split(null);
             }
-        } else {
+        } else { // best-first split
             // Priority queue for best-first tree growing.
             final PriorityQueue<TrainNode> nextSplits = new PriorityQueue<TrainNode>();
             // Now add splits to the tree until max tree size is reached
@@ -1048,14 +1287,17 @@ public final class DecisionTree implements Classifier<Vector> {
             }
             // Pop best leaf from priority queue, split it, and push
             // children nodes into the queue if possible.
-            for (int leaves = 1; leaves < maxLeafs; leaves++) {
+            for (int leaves = 1; leaves < maxLeafNodes; leaves++) {
                 // parent is the leaf to split
-                TrainNode parent = nextSplits.poll();
-                if (parent == null) {
+                TrainNode node = nextSplits.poll();
+                if (node == null) {
                     break;
                 }
-                parent.split(nextSplits); // Split the parent node into two children nodes
+                if (!node.split(nextSplits)) { // Split the parent node into two children nodes
+                    leaves--;
+                }
             }
+            pruneRedundantLeaves(_root, _importance);
         }
     }
 
@@ -1065,10 +1307,13 @@ public final class DecisionTree implements Classifier<Vector> {
     }
 
     private static void checkArgument(@Nonnull Matrix x, @Nonnull int[] y, int numVars,
-            int maxDepth, int maxLeafs, int minSplits, int minLeafSize) {
+            int maxDepth, int maxLeafNodes, int minSamplesSplit, int minSamplesLeaf) {
         if (x.numRows() != y.length) {
             throw new IllegalArgumentException(
                 String.format("The sizes of X and Y don't match: %d != %d", x.numRows(), y.length));
+        }
+        if (y.length == 0) {
+            throw new IllegalArgumentException("No training example given");
         }
         if (numVars <= 0 || numVars > x.numColumns()) {
             throw new IllegalArgumentException(
@@ -1077,17 +1322,17 @@ public final class DecisionTree implements Classifier<Vector> {
         if (maxDepth < 2) {
             throw new IllegalArgumentException("maxDepth should be greater than 1: " + maxDepth);
         }
-        if (maxLeafs < 2) {
-            throw new IllegalArgumentException("Invalid maximum leaves: " + maxLeafs);
+        if (maxLeafNodes < 2) {
+            throw new IllegalArgumentException("Invalid maximum leaves: " + maxLeafNodes);
         }
-        if (minSplits < 2) {
+        if (minSamplesSplit < 2) {
             throw new IllegalArgumentException(
                 "Invalid minimum number of samples required to split an internal node: "
-                        + minSplits);
+                        + minSamplesSplit);
         }
-        if (minLeafSize < 1) {
+        if (minSamplesLeaf < 1) {
             throw new IllegalArgumentException(
-                "Invalid minimum size of leaf nodes: " + minLeafSize);
+                "Invalid minimum size of leaf nodes: " + minSamplesLeaf);
         }
     }
 

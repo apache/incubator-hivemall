@@ -16,34 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.utils.collections.arrays;
+package hivemall.smile.utils;
 
-import hivemall.utils.function.Consumer;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.junit.Assert;
+import org.junit.Test;
 
-import java.io.Serializable;
+public class SmileExtUtilsTest {
 
-import javax.annotation.Nonnull;
+    @Test
+    public void testResolveAttributes() throws UDFArgumentException {
+        Assert.assertTrue(SmileExtUtils.resolveAttributes("Q,Q,Q").isEmpty());
+        Assert.assertEquals(4, SmileExtUtils.resolveAttributes("Q,C,C,Q,C,Q,C").getCardinality());
+        Assert.assertEquals(SmileExtUtils.resolveAttributes("Q,C,C,Q,C"),
+            SmileExtUtils.parseNominalAttributeIndicies("1,2,4"));
+    }
 
-public interface IntArray extends Serializable {
-
-    public int get(int key);
-
-    public int get(int key, int valueIfKeyNotFound);
-
-    public void put(int key, int value);
-
-    public void increment(int key, int value);
-
-    public int size();
-
-    public int keyAt(int index);
-
-    @Nonnull
-    public int[] toArray();
-
-    @Nonnull
-    public int[] toArray(boolean copy);
-
-    public void forEach(@Nonnull Consumer consumer);
+    @Test(expected = UDFArgumentException.class)
+    public void testResolveAttributesInvalidFormat() throws UDFArgumentException {
+        Assert.assertTrue(SmileExtUtils.resolveAttributes("Q,Q,3,Q").isEmpty());
+    }
 
 }

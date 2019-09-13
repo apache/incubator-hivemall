@@ -18,9 +18,10 @@
  */
 package hivemall.smile.tools;
 
+import static hivemall.smile.utils.SmileExtUtils.NUMERIC;
+
 import hivemall.annotations.Since;
 import hivemall.annotations.VisibleForTesting;
-import hivemall.smile.data.AttributeType;
 import hivemall.smile.vm.StackMachine;
 import hivemall.smile.vm.VMRuntimeException;
 import hivemall.utils.codec.Base91;
@@ -372,7 +373,7 @@ public final class TreePredictUDFv1 extends GenericUDF {
         /**
          * The type of split feature
          */
-        AttributeType splitFeatureType = null;
+        boolean quantitativeFeature = true;
         /**
          * The split value.
          */
@@ -414,21 +415,18 @@ public final class TreePredictUDFv1 extends GenericUDF {
             if (trueChild == null && falseChild == null) {
                 return output;
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    if (x[splitFeature] == splitValue) {
-                        return trueChild.predict(x);
-                    } else {
-                        return falseChild.predict(x);
-                    }
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     if (x[splitFeature] <= splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    if (x[splitFeature] == splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
                 }
             }
         }
@@ -443,11 +441,8 @@ public final class TreePredictUDFv1 extends GenericUDF {
             this.output = in.readInt();
             this.splitFeature = in.readInt();
             int typeId = in.readInt();
-            if (typeId == -1) {
-                this.splitFeatureType = null;
-            } else {
-                this.splitFeatureType = AttributeType.resolve(typeId);
-            }
+
+            this.quantitativeFeature = (typeId == NUMERIC);
             this.splitValue = in.readDouble();
             if (in.readBoolean()) {
                 this.trueChild = new DtNodeV1();
@@ -477,7 +472,7 @@ public final class TreePredictUDFv1 extends GenericUDF {
         /**
          * The type of split feature
          */
-        AttributeType splitFeatureType = null;
+        boolean quantitativeFeature = true;
         /**
          * The split value.
          */
@@ -516,22 +511,19 @@ public final class TreePredictUDFv1 extends GenericUDF {
             if (trueChild == null && falseChild == null) {
                 return output;
             } else {
-                if (splitFeatureType == AttributeType.NOMINAL) {
-                    // REVIEWME if(Math.equals(x[splitFeature], splitValue)) {
-                    if (x[splitFeature] == splitValue) {
-                        return trueChild.predict(x);
-                    } else {
-                        return falseChild.predict(x);
-                    }
-                } else if (splitFeatureType == AttributeType.NUMERIC) {
+                if (quantitativeFeature) {
                     if (x[splitFeature] <= splitValue) {
                         return trueChild.predict(x);
                     } else {
                         return falseChild.predict(x);
                     }
                 } else {
-                    throw new IllegalStateException(
-                        "Unsupported attribute type: " + splitFeatureType);
+                    // REVIEWME if(Math.equals(x[splitFeature], splitValue)) {
+                    if (x[splitFeature] == splitValue) {
+                        return trueChild.predict(x);
+                    } else {
+                        return falseChild.predict(x);
+                    }
                 }
             }
         }
@@ -546,11 +538,7 @@ public final class TreePredictUDFv1 extends GenericUDF {
             this.output = in.readDouble();
             this.splitFeature = in.readInt();
             int typeId = in.readInt();
-            if (typeId == -1) {
-                this.splitFeatureType = null;
-            } else {
-                this.splitFeatureType = AttributeType.resolve(typeId);
-            }
+            this.quantitativeFeature = (typeId == NUMERIC);
             this.splitValue = in.readDouble();
             if (in.readBoolean()) {
                 this.trueChild = new RtNodeV1();

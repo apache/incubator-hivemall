@@ -62,6 +62,22 @@ public final class ArrayUtils {
     }
 
     @Nonnull
+    public static int[] sortedArraySet(@Nonnull final int[] sorted,
+            @Nonnegative final int element) {
+        final int i = Arrays.binarySearch(sorted, element);
+        if (i >= 0) {// found element
+            return sorted;
+        } else {
+            return insert(sorted, ~i, element);
+        }
+    }
+
+    public static boolean contains(@Nonnull final int[] sorted, @Nonnegative final int element) {
+        int i = Arrays.binarySearch(sorted, element);
+        return i >= 0;
+    }
+
+    @Nonnull
     public static float[] toArray(@Nonnull final List<Float> lst) {
         final int ndim = lst.size();
         final float[] ary = new float[ndim];
@@ -271,6 +287,24 @@ public final class ArrayUtils {
         return INDEX_NOT_FOUND;
     }
 
+    public static int insertionPoint(@Nullable final int[] a, final int key) {
+        final int pos = Arrays.binarySearch(a, key);
+        if (pos < 0) {
+            return ~pos;
+        } else {
+            return pos;
+        }
+    }
+
+    public static int insertionPoint(@Nullable final int[] a, final int size, final int key) {
+        final int pos = Arrays.binarySearch(a, 0, size, key);
+        if (pos < 0) {
+            return ~pos;
+        } else {
+            return pos;
+        }
+    }
+
     @Nonnull
     public static byte[] copyOf(@Nonnull final byte[] original, final int newLength) {
         final byte[] copy = new byte[newLength];
@@ -291,6 +325,15 @@ public final class ArrayUtils {
                 "src.legnth '" + src.length + "' != dest.length '" + dest.length + "'");
         }
         System.arraycopy(src, 0, dest, 0, src.length);
+    }
+
+    @Nonnull
+    public static int[] append(@Nonnull final int[] array, final int element) {
+        int size = array.length;
+        final int[] newArray = new int[size + 1];
+        System.arraycopy(array, 0, newArray, 0, size);
+        newArray[size] = element;
+        return newArray;
     }
 
     @Nonnull
@@ -326,6 +369,50 @@ public final class ArrayUtils {
         }
         array[currentSize] = element;
         return array;
+    }
+
+    @Nonnull
+    public static int[] concat(@Nonnegative final int[] array1, @Nonnegative final int... array2) {
+        final int[] joinedArray = new int[array1.length + array2.length];
+        System.arraycopy(array1, 0, joinedArray, 0, array1.length);
+        System.arraycopy(array2, 0, joinedArray, array1.length, array2.length);
+        return joinedArray;
+    }
+
+    @Nonnull
+    public static int[] concat(@Nonnegative final int[] array1, @Nonnegative final int[] array2,
+            final int offset, final int length) {
+        final int[] joinedArray = new int[array1.length + length];
+        System.arraycopy(array1, 0, joinedArray, 0, array1.length);
+        System.arraycopy(array2, offset, joinedArray, array1.length, length);
+        return joinedArray;
+    }
+
+    @Nonnull
+    public static int[] concat(@Nonnegative final int[] array1, final int offset1,
+            final int length1, @Nonnegative final int[] array2, final int offset2,
+            final int length2) {
+        final int[] joinedArray = new int[length1 + length2];
+        System.arraycopy(array1, offset1, joinedArray, 0, length1);
+        System.arraycopy(array2, offset2, joinedArray, length1, length2);
+        return joinedArray;
+    }
+
+    @Nonnull
+    public static int[] insert(@Nonnull final int[] array, final int index, final int element) {
+        final int size = array.length;
+        if (index > size) {
+            throw new IllegalArgumentException(String.format(
+                "index should be less than or equals to array.length: index=%d, array.length=%d",
+                index, array.length));
+        }
+        final int[] newArray = new int[size + 1];
+        System.arraycopy(array, 0, newArray, 0, Math.min(index, size));
+        newArray[index] = element;
+        if (index != size) {
+            System.arraycopy(array, index, newArray, index + 1, size - index);
+        }
+        return newArray;
     }
 
     @Nonnull
@@ -371,6 +458,30 @@ public final class ArrayUtils {
         newArray[index] = element;
         System.arraycopy(array, index, newArray, index + 1, array.length - index);
         return newArray;
+    }
+
+    /**
+     * Removes from {@code array} all of the elements whose index is between {@code fromIndex},
+     * inclusive, and {@code toIndex}, exclusive.
+     *
+     * @param fromIndex index of first element to be removed
+     * @param toIndex index after last element to be removed
+     * @throws IndexOutOfBoundsException if {@code fromIndex} or {@code toIndex} is out of range
+     *         ({@code fromIndex < 0 ||
+     *          fromIndex >= size() ||
+     *          toIndex > size() ||
+     *          toIndex < fromIndex})
+     */
+    public static void clearRange(@Nonnull final int[] array, @Nonnegative final int fromIndex,
+            @Nonnegative final int toIndex, final int fillVal) {
+        final int size = array.length;
+        if (fromIndex < 0 || fromIndex >= size || toIndex > size || toIndex < fromIndex) {
+            throw new IllegalArgumentException(String.format(
+                "fromIndex: %d, toIndex: %d, array.length=%d", fromIndex, toIndex, size));
+        }
+
+        System.arraycopy(array, toIndex, array, fromIndex, array.length - toIndex);
+        Arrays.fill(array, toIndex, array.length, fillVal);
     }
 
     public static boolean equals(@Nonnull final float[] array, final float value) {

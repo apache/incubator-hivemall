@@ -16,34 +16,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.utils.collections.arrays;
+package hivemall.smile.utils;
 
+import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.function.Consumer;
-
-import java.io.Serializable;
 
 import javax.annotation.Nonnull;
 
-public interface IntArray extends Serializable {
-
-    public int get(int key);
-
-    public int get(int key, int valueIfKeyNotFound);
-
-    public void put(int key, int value);
-
-    public void increment(int key, int value);
-
-    public int size();
-
-    public int keyAt(int index);
+public final class VariableOrder {
 
     @Nonnull
-    public int[] toArray();
+    private final SparseIntArray[] cols; // col => row
 
-    @Nonnull
-    public int[] toArray(boolean copy);
+    public VariableOrder(@Nonnull SparseIntArray[] cols) {
+        this.cols = cols;
+    }
 
-    public void forEach(@Nonnull Consumer consumer);
+    public void eachRow(@Nonnull final Consumer consumer) {
+        for (int j = 0; j < cols.length; j++) {
+            final SparseIntArray row = cols[j];
+            if (row == null) {
+                continue;
+            }
+            consumer.accept(j, row);
+        }
+    }
+
+    public void eachNonNullInColumn(final int col, final int startRow, final int endRow,
+            @Nonnull final Consumer consumer) {
+        final SparseIntArray row = cols[col];
+        if (row == null) {
+            return;
+        }
+        row.forEach(startRow, endRow, consumer);
+    }
 
 }
