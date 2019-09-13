@@ -1122,15 +1122,15 @@ public final class RegressionTree implements Regression<Vector> {
 
         int n = 0;
         double sum = 0.0;
-        final int[] posIndex;
+        final int[] sampleIndex;
         if (samples == null) {
             n = y.length;
             samples = new int[n];
-            posIndex = new int[n];
+            sampleIndex = new int[n];
             for (int i = 0; i < n; i++) {
                 samples[i] = 1;
                 sum += y[i];
-                posIndex[i] = i;
+                sampleIndex[i] = i;
             }
         } else {
             final IntArrayList positions = new IntArrayList(n);
@@ -1142,11 +1142,11 @@ public final class RegressionTree implements Regression<Vector> {
                     positions.add(i);
                 }
             }
-            posIndex = positions.toArray(true);
+            sampleIndex = positions.toArray(true);
         }
         this._samples = samples;
         this._order = SmileExtUtils.sort(nominalAttrs, x, samples);
-        this._sampleIndex = posIndex;
+        this._sampleIndex = sampleIndex;
 
         this._root = new Node(sum / n);
 
