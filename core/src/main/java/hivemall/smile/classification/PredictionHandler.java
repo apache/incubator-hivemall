@@ -20,8 +20,16 @@ package hivemall.smile.classification;
 
 import javax.annotation.Nonnull;
 
-public interface PredictionHandler {
+public abstract class PredictionHandler {
 
-    void handle(int output, @Nonnull double[] posteriori);
+    public enum Operator {
+        /* = */ EQ, /* != */ NE, /* <= */ LE, /* > */ GT;
+    }
 
+    public void visitBranch(@Nonnull Operator op, int splitFeatureIndex, double splitFeature,
+            double splitValue) {}
+
+    public void visitLeaf(double output) {}
+
+    public void visitLeaf(int output, @Nonnull double[] posteriori) {}
 }

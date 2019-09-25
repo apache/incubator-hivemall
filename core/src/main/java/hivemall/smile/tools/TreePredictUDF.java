@@ -284,7 +284,7 @@ public final class TreePredictUDF extends UDFWithOptions {
             Arrays.fill(result, null);
             Preconditions.checkNotNull(cNode);
             cNode.predict(features, new PredictionHandler() {
-                public void handle(int output, double[] posteriori) {
+                public void visitLeaf(int output, double[] posteriori) {
                     result[0] = new IntWritable(output);
                     result[1] = WritableUtils.toWritableList(posteriori);
                 }

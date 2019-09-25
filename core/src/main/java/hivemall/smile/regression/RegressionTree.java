@@ -17,6 +17,10 @@
 // https://github.com/haifengl/smile/blob/master/core/src/main/java/smile/regression/RegressionTree.java
 package hivemall.smile.regression;
 
+import static hivemall.smile.classification.PredictionHandler.Operator.EQ;
+import static hivemall.smile.classification.PredictionHandler.Operator.GT;
+import static hivemall.smile.classification.PredictionHandler.Operator.LE;
+import static hivemall.smile.classification.PredictionHandler.Operator.NE;
 import static hivemall.smile.utils.SmileExtUtils.NOMINAL;
 import static hivemall.smile.utils.SmileExtUtils.NUMERIC;
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
@@ -29,6 +33,7 @@ import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
+import hivemall.smile.classification.PredictionHandler;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.VariableOrder;
 import hivemall.utils.collections.arrays.SparseIntArray;
@@ -268,6 +273,32 @@ public final class RegressionTree implements Regression<Vector> {
                     if (x.get(splitFeature, Double.NaN) == splitValue) {
                         return trueChild.predict(x);
                     } else {
+                        return falseChild.predict(x);
+                    }
+                }
+            }
+        }
+
+        public double predict(@Nonnull final Vector x, @Nonnull final PredictionHandler handler) {
+            if (isLeaf()) {
+                handler.visitLeaf(output);
+                return output;
+            } else {
+                final double feature = x.get(splitFeature, Double.NaN);
+                if (quantitativeFeature) {
+                    if (feature <= splitValue) {
+                        handler.visitBranch(LE, splitFeature, feature, splitValue);
+                        return trueChild.predict(x);
+                    } else {
+                        handler.visitBranch(GT, splitFeature, feature, splitValue);
+                        return falseChild.predict(x);
+                    }
+                } else {
+                    if (feature == splitValue) {
+                        handler.visitBranch(EQ, splitFeature, feature, splitValue);
+                        return trueChild.predict(x);
+                    } else {
+                        handler.visitBranch(NE, splitFeature, feature, splitValue);
                         return falseChild.predict(x);
                     }
                 }

@@ -17,6 +17,10 @@
 // https://github.com/haifengl/smile/blob/master/core/src/main/java/smile/classification/DecisionTree.java
 package hivemall.smile.classification;
 
+import static hivemall.smile.classification.PredictionHandler.Operator.EQ;
+import static hivemall.smile.classification.PredictionHandler.Operator.GT;
+import static hivemall.smile.classification.PredictionHandler.Operator.LE;
+import static hivemall.smile.classification.PredictionHandler.Operator.NE;
 import static hivemall.smile.utils.SmileExtUtils.NOMINAL;
 import static hivemall.smile.utils.SmileExtUtils.NUMERIC;
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
@@ -319,18 +323,23 @@ public class DecisionTree implements Classifier<Vector> {
          */
         public void predict(@Nonnull final Vector x, @Nonnull final PredictionHandler handler) {
             if (isLeaf()) {
-                handler.handle(output, posteriori);
+                handler.visitLeaf(output, posteriori);
             } else {
+                final double feature = x.get(splitFeature, Double.NaN);
                 if (quantitativeFeature) {
-                    if (x.get(splitFeature, Double.NaN) <= splitValue) {
+                    if (feature <= splitValue) {
+                        handler.visitBranch(LE, splitFeature, feature, splitValue);
                         trueChild.predict(x, handler);
                     } else {
+                        handler.visitBranch(GT, splitFeature, feature, splitValue);
                         falseChild.predict(x, handler);
                     }
                 } else {
-                    if (x.get(splitFeature, Double.NaN) == splitValue) {
+                    if (feature == splitValue) {
+                        handler.visitBranch(EQ, splitFeature, feature, splitValue);
                         trueChild.predict(x, handler);
                     } else {
+                        handler.visitBranch(NE, splitFeature, feature, splitValue);
                         falseChild.predict(x, handler);
                     }
                 }
