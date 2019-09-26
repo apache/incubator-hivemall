@@ -148,17 +148,23 @@ public final class ArrayUtils {
         return Arrays.asList(v);
     }
 
-    public static <T> void shuffle(@Nonnull final T[] array) {
+    @Nonnull
+    public static <T> T[] shuffle(@Nonnull final T[] array) {
         shuffle(array, array.length);
+        return array;
     }
 
-    public static <T> void shuffle(@Nonnull final T[] array, final Random rnd) {
+    @Nonnull
+    public static <T> T[] shuffle(@Nonnull final T[] array, final Random rnd) {
         shuffle(array, array.length, rnd);
+        return array;
     }
 
-    public static <T> void shuffle(@Nonnull final T[] array, final int size) {
+    @Nonnull
+    public static <T> T[] shuffle(@Nonnull final T[] array, final int size) {
         Random rnd = new Random();
         shuffle(array, size, rnd);
+        return array;
     }
 
     /**
@@ -166,19 +172,23 @@ public final class ArrayUtils {
      * 
      * @link http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
      */
-    public static <T> void shuffle(@Nonnull final T[] array, final int size,
+    @Nonnull
+    public static <T> T[] shuffle(@Nonnull final T[] array, final int size,
             @Nonnull final Random rnd) {
         for (int i = size; i > 1; i--) {
             int randomPosition = rnd.nextInt(i);
             swap(array, i - 1, randomPosition);
         }
+        return array;
     }
 
-    public static void shuffle(@Nonnull final int[] array, @Nonnull final Random rnd) {
+    @Nonnull
+    public static int[] shuffle(@Nonnull final int[] array, @Nonnull final Random rnd) {
         for (int i = array.length; i > 1; i--) {
             int randomPosition = rnd.nextInt(i);
             swap(array, i - 1, randomPosition);
         }
+        return array;
     }
 
     public static void swap(@Nonnull final Object[] arr, final int i, final int j) {
