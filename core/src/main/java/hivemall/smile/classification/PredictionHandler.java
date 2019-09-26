@@ -24,6 +24,22 @@ public abstract class PredictionHandler {
 
     public enum Operator {
         /* = */ EQ, /* != */ NE, /* <= */ LE, /* > */ GT;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case EQ:
+                    return "=";
+                case NE:
+                    return "!=";
+                case LE:
+                    return "<=";
+                case GT:
+                    return ">";
+                default:
+                    throw new IllegalStateException("Unexpected operator: " + this);
+            }
+        }
     }
 
     public void visitBranch(@Nonnull Operator op, int splitFeatureIndex, double splitFeature,

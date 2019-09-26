@@ -25,12 +25,17 @@ import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.math.random.PRNG;
 import hivemall.math.random.RandomNumberGeneratorFactory;
+import hivemall.math.vector.DenseVector;
 import hivemall.smile.classification.DecisionTree.Node;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;
+import hivemall.utils.lang.ArrayUtils;
+import hivemall.utils.lang.StringUtils;
+import hivemall.utils.math.MathUtils;
+import smile.data.Attribute;
 import smile.data.AttributeDataset;
 import smile.data.NominalAttribute;
 import smile.data.parser.ArffParser;
@@ -43,6 +48,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Random;
 
 import javax.annotation.Nonnull;
 
@@ -94,6 +102,15 @@ public class DecisionTreeTest {
         int responseIndex = 4;
         int numLeafs = Integer.MAX_VALUE;
         runAndCompareSparseAndDense(
+            "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff",
+            responseIndex, numLeafs);
+    }
+
+    @Test
+    public void testIrisTracePredict() throws IOException, ParseException {
+        int responseIndex = 4;
+        int numLeafs = Integer.MAX_VALUE;
+        runTracePredict(
             "https://gist.githubusercontent.com/myui/143fa9d05bd6e7db0114/raw/500f178316b802f1cade6e3bf8dc814a96e84b1e/iris.arff",
             responseIndex, numLeafs);
     }
@@ -238,6 +255,65 @@ public class DecisionTreeTest {
             Assert.assertEquals(dtree.predict(x[loocv.test[i]]), stree.predict(x[loocv.test[i]]));
             Assert.assertEquals(dtree.toString(), stree.toString());
         }
+    }
+
+    private static void runTracePredict(String datasetUrl, int responseIndex, int numLeafs)
+            throws IOException, ParseException {
+        URL url = new URL(datasetUrl);
+        InputStream is = new BufferedInputStream(url.openStream());
+
+        ArffParser arffParser = new ArffParser();
+        arffParser.setResponseIndex(responseIndex);
+
+        AttributeDataset ds = arffParser.parse(is);
+        final Attribute[] attrs = ds.attributes();
+        final Attribute targetAttr = ds.response();
+
+        double[][] x = ds.toArray(new double[ds.size()][]);
+        int[] y = ds.toArray(new int[ds.size()]);
+
+        Random rnd = new Random(43L);
+        int numTrain = (int) (x.length * 0.7);
+        int[] index = ArrayUtils.shuffle(MathUtils.permutation(x.length), rnd);
+        int[] cvTrain = Arrays.copyOf(index, numTrain);
+        int[] cvTest = Arrays.copyOfRange(index, numTrain, index.length);
+
+        double[][] trainx = Math.slice(x, cvTrain);
+        int[] trainy = Math.slice(y, cvTrain);
+        double[][] testx = Math.slice(x, cvTest);
+
+        DecisionTree tree = new DecisionTree(SmileExtUtils.convertAttributeTypes(attrs),
+            matrix(trainx, false), trainy, numLeafs, RandomNumberGeneratorFactory.createPRNG(43L));
+
+        final LinkedHashMap<String, Double> map = new LinkedHashMap<>();
+        final StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < testx.length; i++) {
+            final DenseVector test = new DenseVector(testx[i]);
+            tree.getRootNode().predict(test, new PredictionHandler() {
+
+                @Override
+                public void visitBranch(Operator op, int splitFeatureIndex, double splitFeature,
+                        double splitValue) {
+                    buf.append(attrs[splitFeatureIndex].name);
+                    buf.append(" [" + splitFeature + "] ");
+                    buf.append(op);
+                    buf.append(' ');
+                    buf.append(splitValue);
+                    buf.append('\n');
+
+                    map.put(attrs[splitFeatureIndex].name + " [" + splitFeature + "] " + op,
+                        splitValue);
+                }
+
+                @Override
+                public void visitLeaf(int output, double[] posteriori) {
+                    buf.append(targetAttr.toString(output));
+                }
+            });
+            StringUtils.clear(buf);
+            map.clear();
+        }
+
     }
 
     @Test
