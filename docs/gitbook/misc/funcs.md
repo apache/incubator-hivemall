@@ -589,6 +589,39 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `train_randomforest_regressor(array<double|string> features, double target [, string options])` - Returns a relation consists of &lt;int model_id, int model_type, string model, array&lt;double&gt; var_importance, double oob_errors, int oob_tests&gt;
 
+- `decision_path(string modelId, string model, array<double|string> features [, const string options] [, optional array<string> featureNames=null, optional array<string> classNames=null])` - Returns a decision path for each prediction in array&lt;string&gt;
+  ```sql
+  SELECT
+    t.passengerid,
+    decision_path(m.model_id, m.model, t.features, '-classification')
+  FROM
+    model_rf m
+    LEFT OUTER JOIN
+    test_rf t;
+  > | 892 | ["2 [0.0] = 0.0","0 [3.0] = 3.0","1 [696.0] != 107.0","7 [7.8292] <= 7.9104","1 [696.0] != 828.0","1 [696.0] != 391.0","0 [0.961038961038961, 0.03896103896103896]"] |
+
+  -- Show 100 frequent branches
+  WITH tmp as (
+    SELECT
+      decision_path(m.model_id, m.model, t.features, '-classification -no_verbose -no_leaf', array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked'), array('no','yes')) as path
+    FROM
+      model_rf m
+      LEFT OUTER JOIN -- CROSS JOIN
+      test_rf t
+  )
+  select
+    r.branch,
+    count(1) as cnt
+  from
+    tmp l
+    LATERAL VIEW explode(l.path) r as branch
+  group by
+    r.branch
+  order by
+    cnt desc
+  limit 100;
+  ```
+
 - `guess_attribute_types(ANY, ...)` - Returns attribute types
   ```sql
   select guess_attribute_types(*) from train limit 1;

@@ -55,9 +55,39 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.Text;
 
+// @formatter:off
 @Description(name = "decision_path",
         value = "_FUNC_(string modelId, string model, array<double|string> features [, const string options] [, optional array<string> featureNames=null, optional array<string> classNames=null])"
-                + " - Returns a decision path for each prediction in array<string>")
+                + " - Returns a decision path for each prediction in array<string>",
+        extended = "SELECT\n" + 
+                "  t.passengerid,\n" + 
+                "  decision_path(m.model_id, m.model, t.features, '-classification')\n" + 
+                "FROM\n" + 
+                "  model_rf m\n" + 
+                "  LEFT OUTER JOIN\n" + 
+                "  test_rf t;\n" +
+                "> | 892 | [\"2 [0.0] = 0.0\",\"0 [3.0] = 3.0\",\"1 [696.0] != 107.0\",\"7 [7.8292] <= 7.9104\",\"1 [696.0] != 828.0\",\"1 [696.0] != 391.0\",\"0 [0.961038961038961, 0.03896103896103896]\"] |\n\n" +
+                "-- Show 100 frequent branches\n" +
+                "WITH tmp as (\n" + 
+                "  SELECT\n" + 
+                "    decision_path(m.model_id, m.model, t.features, '-classification -no_verbose -no_leaf', array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked'), array('no','yes')) as path\n" + 
+                "  FROM\n" + 
+                "    model_rf m\n" + 
+                "    LEFT OUTER JOIN -- CROSS JOIN\n" + 
+                "    test_rf t\n" + 
+                ")\n" + 
+                "select\n" + 
+                "  r.branch,\n" + 
+                "  count(1) as cnt\n" + 
+                "from\n" + 
+                "  tmp l\n" + 
+                "  LATERAL VIEW explode(l.path) r as branch\n" + 
+                "group by\n" + 
+                "  r.branch\n" + 
+                "order by\n" + 
+                "  cnt desc\n" + 
+                "limit 100;")
+// @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class DecisionPathUDF extends UDFWithOptions {
 
@@ -112,7 +142,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3 || argOIs.length > 6) {
-            throw new UDFArgumentException("tree_predict takes 3 ~ 6 arguments");
+            showHelp("tree_predict takes 3 ~ 6 arguments");
         }
 
         this.modelOI = HiveUtils.asStringOI(argOIs[1]);
