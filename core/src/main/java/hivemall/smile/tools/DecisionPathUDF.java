@@ -356,12 +356,12 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     @Override
                     public void visitLeaf(int output, double[] posteriori) {
                         for (Map.Entry<String, Double> e : map.entrySet()) {
-                            String key = e.getKey();
-                            if (key.indexOf('=') == -1) {
+                            final String key = e.getKey();
+                            if (key.indexOf('<') == -1 && key.indexOf('>') == -1) {
+                                result.add(key);
+                            } else {
                                 double value = e.getValue().doubleValue();
                                 result.add(key + ' ' + value);
-                            } else {
-                                result.add(key);
                             }
                         }
                         if (udf.noLeaf) {
@@ -515,6 +515,8 @@ public final class DecisionPathUDF extends UDFWithOptions {
                         buf.append(featureName(splitFeatureIndex));
                         if (udf.verbose) {
                             buf.append(" [" + splitFeature + "] ");
+                        } else {
+                            buf.append(' ');
                         }
                         buf.append(op);
                         if (op == Operator.EQ || op == Operator.NE) {
@@ -529,12 +531,12 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     @Override
                     public void visitLeaf(double output) {
                         for (Map.Entry<String, Double> e : map.entrySet()) {
-                            String key = e.getKey();
-                            if (key.indexOf('=') == -1) {
+                            final String key = e.getKey();
+                            if (key.indexOf('<') == -1 && key.indexOf('>') == -1) {
+                                result.add(key);
+                            } else {
                                 double value = e.getValue().doubleValue();
                                 result.add(key + ' ' + value);
-                            } else {
-                                result.add(key);
                             }
                         }
                         if (udf.noLeaf) {
