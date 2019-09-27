@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 public @interface Cite {
     @Nonnull
     String description();
+
     @Nullable
     String url();
 }
