@@ -144,6 +144,10 @@ public final class DecisionPathUDF extends UDFWithOptions {
                         if (argOIs.length >= 6) {
                             ObjectInspector argOI5 = argOIs[5];
                             if (HiveUtils.isConstStringListOI(argOI5)) {
+                                if (!classification) {
+                                    throw new UDFArgumentException(
+                                        "classNames should not be provided for regression");
+                                }
                                 this.classNames = HiveUtils.getConstStringArray(argOI5);
                             } else {
                                 throw new UDFArgumentException(
@@ -162,6 +166,10 @@ public final class DecisionPathUDF extends UDFWithOptions {
                 if (argOIs.length >= 5) {
                     ObjectInspector argOI4 = argOIs[4];
                     if (HiveUtils.isConstStringListOI(argOI4)) {
+                        if (!classification) {
+                            throw new UDFArgumentException(
+                                "classNames should not be provided for regression");
+                        }
                         this.classNames = HiveUtils.getConstStringArray(argOI4);
                     } else {
                         throw new UDFArgumentException(
@@ -337,7 +345,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     @Override
                     public void visitBranch(Operator op, int splitFeatureIndex, double splitFeature,
                             double splitValue) {
-                        buf.append(featureName(splitFeatureIndex));
+                        buf.append(resolveFeatureName(splitFeatureIndex));
                         if (udf.verbose) {
                             buf.append(" [" + splitFeature + "] ");
                         } else {
@@ -369,13 +377,13 @@ public final class DecisionPathUDF extends UDFWithOptions {
                         }
 
                         if (udf.verbose) {
-                            buf.append(output);
+                            buf.append(resolveClassName(output));
                             buf.append(' ');
                             buf.append(Arrays.toString(posteriori));
                             result.add(buf.toString());
                             StringUtils.clear(buf);
                         } else {
-                            result.add(Integer.toString(output));
+                            result.add(resolveClassName(output));
                         }
                     }
 
@@ -397,7 +405,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     @Override
                     public void visitBranch(Operator op, int splitFeatureIndex, double splitFeature,
                             double splitValue) {
-                        buf.append(featureName(splitFeatureIndex));
+                        buf.append(resolveFeatureName(splitFeatureIndex));
                         if (udf.verbose) {
                             buf.append(" [" + splitFeature + "] ");
                         } else {
@@ -417,13 +425,13 @@ public final class DecisionPathUDF extends UDFWithOptions {
                         }
 
                         if (udf.verbose) {
-                            buf.append(output);
+                            buf.append(resolveClassName(output));
                             buf.append(' ');
                             buf.append(Arrays.toString(posteriori));
                             result.add(buf.toString());
                             StringUtils.clear(buf);
                         } else {
-                            result.add(Integer.toString(output));
+                            result.add(resolveClassName(output));
                         }
                     }
 
@@ -438,7 +446,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
         }
 
         @Nonnull
-        private String featureName(final int splitFeatureIndex) {
+        private String resolveFeatureName(final int splitFeatureIndex) {
             if (featureNames == null) {
                 return Integer.toString(splitFeatureIndex);
             } else {
@@ -447,7 +455,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
         }
 
         @Nonnull
-        private String className(final int classLabel) {
+        private String resolveClassName(final int classLabel) {
             if (classNames == null) {
                 return Integer.toString(classLabel);
             } else {
@@ -478,8 +486,6 @@ public final class DecisionPathUDF extends UDFWithOptions {
 
         @Nullable
         private final String[] featureNames;
-        @Nullable
-        private final String[] classNames;
 
         @Nonnull
         private final List<String> result;
@@ -492,7 +498,6 @@ public final class DecisionPathUDF extends UDFWithOptions {
 
         RegressionEvaluator(@Nonnull final DecisionPathUDF udf) {
             this.featureNames = udf.featureNames;
-            this.classNames = udf.classNames;
 
             final StringBuilder buf = new StringBuilder();
             final ArrayList<String> result = new ArrayList<>();
@@ -512,7 +517,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     @Override
                     public void visitBranch(Operator op, int splitFeatureIndex, double splitFeature,
                             double splitValue) {
-                        buf.append(featureName(splitFeatureIndex));
+                        buf.append(resolveFeatureName(splitFeatureIndex));
                         if (udf.verbose) {
                             buf.append(" [" + splitFeature + "] ");
                         } else {
@@ -564,7 +569,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     @Override
                     public void visitBranch(Operator op, int splitFeatureIndex, double splitFeature,
                             double splitValue) {
-                        buf.append(featureName(splitFeatureIndex));
+                        buf.append(resolveFeatureName(splitFeatureIndex));
                         if (udf.verbose) {
                             buf.append(" [" + splitFeature + "] ");
                         }
@@ -595,20 +600,11 @@ public final class DecisionPathUDF extends UDFWithOptions {
         }
 
         @Nonnull
-        private String featureName(final int splitFeatureIndex) {
+        private String resolveFeatureName(final int splitFeatureIndex) {
             if (featureNames == null) {
                 return Integer.toString(splitFeatureIndex);
             } else {
                 return featureNames[splitFeatureIndex];
-            }
-        }
-
-        @Nonnull
-        private String className(final int classLabel) {
-            if (classNames == null) {
-                return Integer.toString(classLabel);
-            } else {
-                return classNames[classLabel];
             }
         }
 
