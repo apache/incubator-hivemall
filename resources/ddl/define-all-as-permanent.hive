@@ -829,6 +829,9 @@ CREATE FUNCTION rf_ensemble as 'hivemall.smile.tools.RandomForestEnsembleUDAF' U
 DROP FUNCTION IF EXISTS guess_attribute_types;
 CREATE FUNCTION guess_attribute_types as 'hivemall.smile.tools.GuessAttributesUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS decision_path;
+CREATE FUNCTION decision_path as 'hivemall.smile.tools.DecisionPathUDF' USING JAR '${hivemall_jar}';
+
 --------------------
 -- Recommendation --
 --------------------

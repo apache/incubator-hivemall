@@ -20,8 +20,39 @@ package hivemall.smile.classification;
 
 import javax.annotation.Nonnull;
 
-public interface PredictionHandler {
+public abstract class PredictionHandler {
 
-    void handle(int output, @Nonnull double[] posteriori);
+    public enum Operator {
+        /* = */ EQ, /* != */ NE, /* <= */ LE, /* > */ GT;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case EQ:
+                    return "=";
+                case NE:
+                    return "!=";
+                case LE:
+                    return "<=";
+                case GT:
+                    return ">";
+                default:
+                    throw new IllegalStateException("Unexpected operator: " + this);
+            }
+        }
+    }
+
+    public void init() {};
+
+    public void visitBranch(@Nonnull Operator op, int splitFeatureIndex, double splitFeature,
+            double splitValue) {}
+
+    public void visitLeaf(double output) {}
+
+    public void visitLeaf(int output, @Nonnull double[] posteriori) {}
+
+    public <T> T getResult() {
+        throw new UnsupportedOperationException();
+    }
 
 }
