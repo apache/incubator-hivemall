@@ -821,6 +821,9 @@ create temporary function rf_ensemble as 'hivemall.smile.tools.RandomForestEnsem
 drop temporary function if exists guess_attribute_types;
 create temporary function guess_attribute_types as 'hivemall.smile.tools.GuessAttributesUDF';
 
+drop temporary function if exists decision_path;
+create temporary function decision_path as 'hivemall.smile.tools.DecisionPathUDF';
+
 --------------------
 -- Recommendation --
 --------------------
@@ -889,3 +892,4 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
+

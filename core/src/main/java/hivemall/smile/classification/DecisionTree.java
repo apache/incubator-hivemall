@@ -1368,6 +1368,10 @@ public class DecisionTree implements Classifier<Vector> {
         return _root.predict(x);
     }
 
+    public void predict(@Nonnull final Vector x, @Nonnull final PredictionHandler handler) {
+        _root.predict(x, handler);
+    }
+
     /**
      * Predicts the class label of an instance and also calculate a posteriori probabilities. Not
      * supported.

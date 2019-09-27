@@ -42,10 +42,17 @@ public abstract class PredictionHandler {
         }
     }
 
+    public void init() {};
+
     public void visitBranch(@Nonnull Operator op, int splitFeatureIndex, double splitFeature,
             double splitValue) {}
 
     public void visitLeaf(double output) {}
 
     public void visitLeaf(int output, @Nonnull double[] posteriori) {}
+
+    public <T> T getResult() {
+        throw new UnsupportedOperationException();
+    }
+
 }

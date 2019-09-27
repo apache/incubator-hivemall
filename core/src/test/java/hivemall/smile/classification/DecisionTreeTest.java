@@ -289,7 +289,7 @@ public class DecisionTreeTest {
         final StringBuilder buf = new StringBuilder();
         for (int i = 0; i < testx.length; i++) {
             final DenseVector test = new DenseVector(testx[i]);
-            tree.getRootNode().predict(test, new PredictionHandler() {
+            tree.predict(test, new PredictionHandler() {
 
                 @Override
                 public void visitBranch(Operator op, int splitFeatureIndex, double splitFeature,
@@ -310,6 +310,10 @@ public class DecisionTreeTest {
                     buf.append(targetAttr.toString(output));
                 }
             });
+
+            Assert.assertTrue(buf.length() > 0);
+            Assert.assertFalse(map.isEmpty());
+
             StringUtils.clear(buf);
             map.clear();
         }
