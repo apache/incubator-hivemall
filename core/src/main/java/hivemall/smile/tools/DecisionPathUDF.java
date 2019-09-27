@@ -340,8 +340,14 @@ public final class DecisionPathUDF extends UDFWithOptions {
                         buf.append(featureName(splitFeatureIndex));
                         if (udf.verbose) {
                             buf.append(" [" + splitFeature + "] ");
+                        } else {
+                            buf.append(' ');
                         }
                         buf.append(op);
+                        if (op == Operator.EQ || op == Operator.NE) {
+                            buf.append(' ');
+                            buf.append(splitValue);
+                        }
                         String key = buf.toString();
                         map.put(key, splitValue);
                         StringUtils.clear(buf);
@@ -351,8 +357,12 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     public void visitLeaf(int output, double[] posteriori) {
                         for (Map.Entry<String, Double> e : map.entrySet()) {
                             String key = e.getKey();
-                            double value = e.getValue().doubleValue();
-                            result.add(key + ' ' + value);
+                            if (key.indexOf('=') == -1) {
+                                double value = e.getValue().doubleValue();
+                                result.add(key + ' ' + value);
+                            } else {
+                                result.add(key);
+                            }
                         }
                         if (udf.noLeaf) {
                             return;
@@ -390,6 +400,8 @@ public final class DecisionPathUDF extends UDFWithOptions {
                         buf.append(featureName(splitFeatureIndex));
                         if (udf.verbose) {
                             buf.append(" [" + splitFeature + "] ");
+                        } else {
+                            buf.append(' ');
                         }
                         buf.append(op);
                         buf.append(' ');
@@ -408,6 +420,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
                             buf.append(output);
                             buf.append(' ');
                             buf.append(Arrays.toString(posteriori));
+                            result.add(buf.toString());
                             StringUtils.clear(buf);
                         } else {
                             result.add(Integer.toString(output));
@@ -504,31 +517,31 @@ public final class DecisionPathUDF extends UDFWithOptions {
                             buf.append(" [" + splitFeature + "] ");
                         }
                         buf.append(op);
+                        if (op == Operator.EQ || op == Operator.NE) {
+                            buf.append(' ');
+                            buf.append(splitValue);
+                        }
                         String key = buf.toString();
                         map.put(key, splitValue);
                         StringUtils.clear(buf);
                     }
 
                     @Override
-                    public void visitLeaf(int output, double[] posteriori) {
+                    public void visitLeaf(double output) {
                         for (Map.Entry<String, Double> e : map.entrySet()) {
                             String key = e.getKey();
-                            double value = e.getValue().doubleValue();
-                            result.add(key + ' ' + value);
+                            if (key.indexOf('=') == -1) {
+                                double value = e.getValue().doubleValue();
+                                result.add(key + ' ' + value);
+                            } else {
+                                result.add(key);
+                            }
                         }
                         if (udf.noLeaf) {
                             return;
                         }
 
-                        if (udf.verbose) {
-                            buf.append(output);
-                            buf.append(' ');
-                            buf.append(Arrays.toString(posteriori));
-                            result.add(buf.toString());
-                            StringUtils.clear(buf);
-                        } else {
-                            result.add(Integer.toString(output));
-                        }
+                        result.add(Double.toString(output));
                     }
 
                     @SuppressWarnings("unchecked")
@@ -561,19 +574,12 @@ public final class DecisionPathUDF extends UDFWithOptions {
                     }
 
                     @Override
-                    public void visitLeaf(int output, double[] posteriori) {
+                    public void visitLeaf(double output) {
                         if (udf.noLeaf) {
                             return;
                         }
 
-                        if (udf.verbose) {
-                            buf.append(output);
-                            buf.append(' ');
-                            buf.append(Arrays.toString(posteriori));
-                            StringUtils.clear(buf);
-                        } else {
-                            result.add(Integer.toString(output));
-                        }
+                        result.add(Double.toString(output));
                     }
 
                     @SuppressWarnings("unchecked")
