@@ -20,6 +20,7 @@ package hivemall.fm;
 
 import hivemall.fm.FactorizationMachineModel.VInitScheme;
 import hivemall.optimizer.EtaEstimator;
+import hivemall.optimizer.EtaEstimator.InvscalingEtaEstimator;
 import hivemall.utils.lang.Primitives;
 
 import javax.annotation.Nonnull;
@@ -46,6 +47,7 @@ class FMHyperParameters {
     // V initialization
     double sigma = 0.1d;
     long seed = -1L;
+    @Nonnull
     VInitScheme vInit;
 
     // regression
@@ -53,6 +55,7 @@ class FMHyperParameters {
     double maxTarget = Double.MAX_VALUE;
 
     // learning rate
+    @Nonnull
     EtaEstimator eta;
 
     // feature hashing
@@ -75,7 +78,10 @@ class FMHyperParameters {
     int validationThreshold = 1000;
     boolean parseFeatureAsInt = false;
 
-    FMHyperParameters() {}
+    FMHyperParameters() {
+        this.vInit = instantiateVInit();
+        this.eta = new InvscalingEtaEstimator(DEFAULT_ETA0, EtaEstimator.DEFAULT_POWER_T);
+    }
 
     @Override
     public String toString() {
@@ -134,13 +140,22 @@ class FMHyperParameters {
     }
 
     @Nonnull
+    private VInitScheme instantiateVInit() {
+        VInitScheme vInit = getDefaultVinitScheme(classification);
+        vInit.setMaxInitValue(0.5f);
+        vInit.setInitStdDev(0.2d);
+        vInit.initRandom(factors, System.nanoTime());
+        return vInit;
+    }
+
+    @Nonnull
     private VInitScheme instantiateVInit(@Nonnull CommandLine cl, int factor, long seed,
             final boolean classification) {
         String vInitOpt = cl.getOptionValue("init_v");
         float maxInitValue = Primitives.parseFloat(cl.getOptionValue("max_init_value"), 0.5f);
         double initStdDev = Primitives.parseDouble(cl.getOptionValue("min_init_stddev"), 0.1d);
 
-        VInitScheme vInit = VInitScheme.resolve(vInitOpt, getDefaultVinitScheme());
+        VInitScheme vInit = VInitScheme.resolve(vInitOpt, getDefaultVinitScheme(classification));
         vInit.setMaxInitValue(maxInitValue);
         initStdDev = Math.max(initStdDev, 1.0d / factor);
         vInit.setInitStdDev(initStdDev);
@@ -149,7 +164,7 @@ class FMHyperParameters {
     }
 
     @Nonnull
-    protected VInitScheme getDefaultVinitScheme() {
+    protected VInitScheme getDefaultVinitScheme(boolean classification) {
         return classification ? VInitScheme.gaussian : VInitScheme.adjustedRandom;
     }
 
@@ -178,7 +193,7 @@ class FMHyperParameters {
         }
 
         @Nonnull
-        protected VInitScheme getDefaultVinitScheme() {
+        protected VInitScheme getDefaultVinitScheme(boolean classification) {
             return VInitScheme.random;
         }
 

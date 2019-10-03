@@ -33,6 +33,7 @@ import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nonnull;
 
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -258,7 +259,7 @@ public class FieldAwareFactorizationMachineUDTFTest {
             cumulativeLoss > udtf._validationState.getCumulativeLoss());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = UDFArgumentException.class)
     public void testUnsupportedAdaptiveRegularizationOption() throws Exception {
         TestUtils.testGenericUDTFSerialization(FieldAwareFactorizationMachineUDTF.class,
             new ObjectInspector[] {

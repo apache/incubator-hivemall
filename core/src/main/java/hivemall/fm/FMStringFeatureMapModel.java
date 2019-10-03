@@ -28,6 +28,7 @@ public final class FMStringFeatureMapModel extends FactorizationMachineModel {
 
     // LEARNING PARAMS
     private float _w0;
+    @Nonnull
     private final Object2ObjectMap<String, Entry> _map;
 
     public FMStringFeatureMapModel(@Nonnull FMHyperParameters params) {
