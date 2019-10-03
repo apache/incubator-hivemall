@@ -31,15 +31,7 @@ fi
 
 set -ev
 
-cd $HIVEMALL_HOME/spark
-
-export MAVEN_OPTS="-XX:MaxMetaspaceSize=256m"
-
-# spark-2.2 runs on Java 8+
-if [ ! -z "$(java -version 2>&1 | grep 1.8)" ]; then
-  mvn -q scalastyle:check clean -Djava.source.version=1.8 -Djava.target.version=1.8 \
-    -pl spark-2.2,spark-2.3 -am test
-fi
+mvn clean test
 
 exit 0
 
