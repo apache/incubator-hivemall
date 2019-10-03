@@ -34,7 +34,9 @@ public final class FMIntFeatureMapModel extends FactorizationMachineModel {
 
     // LEARNING PARAMS
     private float _w0;
+    @Nonnull
     private final Int2FloatMap _w;
+    @Nonnull
     private final Int2ObjectMap<float[]> _V;
 
     private int _minIndex, _maxIndex;

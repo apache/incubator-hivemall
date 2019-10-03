@@ -23,6 +23,7 @@ import hivemall.utils.lang.NumberUtils;
 import hivemall.utils.math.MathUtils;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 import javax.annotation.Nonnegative;
@@ -36,8 +37,11 @@ public abstract class FactorizationMachineModel {
     protected final boolean _classification;
     protected final int _factor;
     protected final double _sigma;
+    @Nonnull
     protected final EtaEstimator _eta;
+    @Nonnull
     protected final VInitScheme _initScheme;
+    @Nonnull
     protected final Random _rnd;
 
     // Hyperparameter for regression
@@ -47,14 +51,15 @@ public abstract class FactorizationMachineModel {
     // Regulation Variables
     protected float _lambdaW0;
     protected float _lambdaW;
+    @Nonnull
     protected final float[] _lambdaV;
 
     public FactorizationMachineModel(@Nonnull FMHyperParameters params) {
         this._classification = params.classification;
         this._factor = params.factors;
         this._sigma = params.sigma;
-        this._eta = params.eta;
-        this._initScheme = params.vInit;
+        this._eta = Objects.requireNonNull(params.eta);
+        this._initScheme = Objects.requireNonNull(params.vInit);
         this._rnd = new Random(params.seed);
 
         this._min_target = params.minTarget;

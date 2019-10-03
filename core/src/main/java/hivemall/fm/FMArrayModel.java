@@ -29,7 +29,9 @@ public final class FMArrayModel extends FactorizationMachineModel {
     private final int _p;
 
     // LEARNING PARAMS
+    @Nonnull
     private final float[] _w;
+    @Nonnull
     private final float[][] _V;
 
     public FMArrayModel(@Nonnull FMHyperParameters params) {
