@@ -34,8 +34,3 @@ HIVEMALL_HOME=`pwd`
 
 mvn license:format
 
-cd $HIVEMALL_HOME/spark/spark-common
-mvn license:format -P spark-2.0
-
-cd $HIVEMALL_HOME/spark/spark-2.0
-mvn license:format -P spark-2.0
