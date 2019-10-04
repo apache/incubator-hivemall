@@ -24,10 +24,6 @@ Prerequisites
 * Java 7 or later
 * `hivemall-spark-xxx-with-dependencies.jar` that can be found in [the ASF distribution mirror](https://www.apache.org/dyn/closer.cgi/incubator/hivemall/).
 * [define-all.spark](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/define-all.spark)
-* [import-packages.spark](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/import-packages.spark)
-
-> #### Caution
-> You need to use a specific `hivemall-spark-xxx-with-dependencies.jar` for each Spark version.
 
 Installation
 ============
@@ -35,8 +31,20 @@ Installation
 First, you download a compiled Spark package from [the Spark official web page](https://spark.apache.org/downloads.html) and invoke spark-shell with a compiled Hivemall binary.
 
 ```
-$ ./bin/spark-shell --jars hivemall-spark-xxx-with-dependencies.jar
+$ spark-shell --jars target/hivemall-all-<version>-incubating-SNAPSHOT.jar
 ```
+
+Installation via [Spark Packages](https://spark-packages.org/package/apache-hivemall/apache-hivemall)
+============
+
+In another way to install Hivemall, you can use a `--packages` option.
+
+```
+$ spark-shell --packages org.apache.hivemall:hivemall-all:<version>
+```
+
+You find available Hivemall versions on [Maven repository](https://mvnrepository.com/artifact/org.apache.hivemall/hivemall-all/0.5.2-incubating).
+
 
 > #### Notice
 > If you would like to try Hivemall functions on the latest release of Spark, you just say `bin/spark-shell` in a Hivemall package.
@@ -46,17 +54,4 @@ Then, you load scripts for Hivemall functions.
 
 ```
 scala> :load resources/ddl/define-all.spark
-scala> :load resources/ddl/import-packages.spark
 ```
-
-Installation via [Spark Packages](https://spark-packages.org/package/apache-hivemall/apache-hivemall)
-============
-
-In another way to install Hivemall, you can use a `--packages` option.
-
-```
-$ ./bin/spark-shell --packages apache-hivemall:apache-hivemall:0.5.1-<spark version>
-```
-
-You need to set your Spark version at `<spark version>`, e.g., `spark2.2` for Spark v2.2.x.
-

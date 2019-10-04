@@ -185,22 +185,16 @@
 
 * [Lat/Lon functions](geospatial/latlon.md)
 
-## Part XIII - Hivemall on Spark
+## Part XIII - Hivemall on SparkSQL
 
 * [Getting Started](spark/getting_started/README.md)
     * [Installation](spark/getting_started/installation.md)
 
 * [Binary Classification](spark/binaryclass/index.md)
-    * [a9a Tutorial for DataFrame](spark/binaryclass/a9a_df.md)
     * [a9a Tutorial for SQL](spark/binaryclass/a9a_sql.md)
 
 * [Regression](spark/binaryclass/index.md)
-    * [E2006-tfidf Regression Tutorial for DataFrame](spark/regression/e2006_df.md)
     * [E2006-tfidf Regression Tutorial for SQL](spark/regression/e2006_sql.md)
-
-* [Generic Features](spark/misc/misc.md)
-    * [Top-k Join Processing](spark/misc/topk_join.md)
-    * [Other Utility Functions](spark/misc/functions.md)
 
 ## Part XIV - Hivemall on Docker
 
