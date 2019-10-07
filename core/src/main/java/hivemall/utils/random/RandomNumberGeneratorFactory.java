@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.random;
+package hivemall.utils.random;
 
 import hivemall.utils.lang.Primitives;
 

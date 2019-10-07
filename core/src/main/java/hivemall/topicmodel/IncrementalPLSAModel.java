@@ -21,9 +21,9 @@ package hivemall.topicmodel;
 import static hivemall.utils.lang.ArrayUtils.newRandomFloatArray;
 import static hivemall.utils.math.MathUtils.l1normalize;
 import hivemall.annotations.VisibleForTesting;
-import hivemall.math.random.PRNG;
-import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.utils.math.MathUtils;
+import hivemall.utils.random.PRNG;
+import hivemall.utils.random.RandomNumberGeneratorFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;

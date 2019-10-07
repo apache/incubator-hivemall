@@ -21,10 +21,10 @@ package hivemall.smile.regression;
 import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
-import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.utils.codec.Base91;
+import hivemall.utils.random.RandomNumberGeneratorFactory;
 import smile.math.Math;
 import smile.validation.LOOCV;
 

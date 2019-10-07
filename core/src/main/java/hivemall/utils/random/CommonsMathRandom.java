@@ -16,32 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.random;
+package hivemall.utils.random;
 
 import javax.annotation.Nonnull;
 
-import smile.math.random.RandomNumberGenerator;
-import smile.math.random.UniversalGenerator;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 
-public final class SmileRandom implements PRNG {
+public final class CommonsMathRandom implements PRNG {
 
     @Nonnull
-    private RandomNumberGenerator rng;
+    private final RandomGenerator rng;
 
-    public SmileRandom() {
-        this.rng = new UniversalGenerator();
+    public CommonsMathRandom() {
+        this.rng = new MersenneTwister();
     }
 
-    public SmileRandom(long seed) {
-        this.rng = new UniversalGenerator(seed);
+    public CommonsMathRandom(long seed) {
+        this.rng = new MersenneTwister(seed);
     }
 
-    public SmileRandom(@Nonnull RandomNumberGenerator rng) {
+    public CommonsMathRandom(@Nonnull RandomGenerator rng) {
         this.rng = rng;
     }
 
     @Override
-    public int nextInt(int n) {
+    public int nextInt(final int n) {
         return rng.nextInt(n);
     }
 

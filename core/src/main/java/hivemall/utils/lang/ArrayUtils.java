@@ -18,7 +18,7 @@
  */
 package hivemall.utils.lang;
 
-import hivemall.math.random.PRNG;
+import hivemall.utils.random.PRNG;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;

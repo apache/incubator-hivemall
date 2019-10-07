@@ -23,8 +23,6 @@ import hivemall.math.matrix.Matrix;
 import hivemall.math.matrix.builders.CSRMatrixBuilder;
 import hivemall.math.matrix.builders.MatrixBuilder;
 import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.random.PRNG;
-import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
@@ -38,6 +36,8 @@ import hivemall.utils.hadoop.SerdeUtils;
 import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.math.MathUtils;
+import hivemall.utils.random.PRNG;
+import hivemall.utils.random.RandomNumberGeneratorFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;

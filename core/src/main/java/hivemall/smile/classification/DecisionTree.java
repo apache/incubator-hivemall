@@ -28,8 +28,6 @@ import static hivemall.smile.utils.SmileExtUtils.resolveName;
 
 import hivemall.annotations.VisibleForTesting;
 import hivemall.math.matrix.Matrix;
-import hivemall.math.random.PRNG;
-import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.DenseVector;
 import hivemall.math.vector.SparseVector;
 import hivemall.math.vector.Vector;
@@ -44,6 +42,8 @@ import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.ObjectUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
+import hivemall.utils.random.PRNG;
+import hivemall.utils.random.RandomNumberGeneratorFactory;
 import hivemall.utils.sampling.IntReservoirSampler;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;

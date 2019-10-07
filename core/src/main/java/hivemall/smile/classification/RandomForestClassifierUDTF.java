@@ -26,8 +26,6 @@ import hivemall.math.matrix.builders.MatrixBuilder;
 import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
 import hivemall.math.matrix.ints.DoKIntMatrix;
 import hivemall.math.matrix.ints.IntMatrix;
-import hivemall.math.random.PRNG;
-import hivemall.math.random.RandomNumberGeneratorFactory;
 import hivemall.math.vector.Vector;
 import hivemall.math.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
@@ -41,6 +39,8 @@ import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
+import hivemall.utils.random.PRNG;
+import hivemall.utils.random.RandomNumberGeneratorFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;

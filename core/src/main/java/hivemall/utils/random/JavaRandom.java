@@ -16,24 +16,46 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.math.random;
+package hivemall.utils.random;
 
-import javax.annotation.Nonnegative;
+import java.util.Random;
 
-/**
- * @link https://en.wikipedia.org/wiki/Pseudorandom_number_generator
- */
-public interface PRNG {
+import javax.annotation.Nonnull;
 
-    /**
-     * Returns a random integer in [0, n).
-     */
-    public int nextInt(@Nonnegative int n);
+public final class JavaRandom implements PRNG {
 
-    public int nextInt();
+    private final Random rand;
 
-    public long nextLong();
+    public JavaRandom() {
+        this.rand = new Random();
+    }
 
-    public double nextDouble();
+    public JavaRandom(long seed) {
+        this.rand = new Random(seed);
+    }
+
+    public JavaRandom(@Nonnull Random rand) {
+        this.rand = rand;
+    }
+
+    @Override
+    public int nextInt(int n) {
+        return rand.nextInt(n);
+    }
+
+    @Override
+    public int nextInt() {
+        return rand.nextInt();
+    }
+
+    @Override
+    public long nextLong() {
+        return rand.nextLong();
+    }
+
+    @Override
+    public double nextDouble() {
+        return rand.nextDouble();
+    }
 
 }
