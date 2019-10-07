@@ -18,6 +18,11 @@
  */
 package hivemall.utils.lang;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,6 +68,28 @@ public class ArrayUtilsTest {
         final int[] original = new int[] {3, 7, 10};
         Assert.assertArrayEquals(new int[] {3, 7, 10, 11},
             ArrayUtils.insert(original, original.length + 1, 11));
+    }
+
+    @Test
+    public void testShuffle() {
+        String[] shuffled = new String[] {"1, 2, 3", "4, 5, 6", "7, 8, 9", "10, 11, 12"};
+        String[] outcome = new String[] {"10, 11, 12", "1, 2, 3", "4, 5, 6", "7, 8, 9"};
+
+        ArrayUtils.shuffle(shuffled, new Random(0L));
+
+        for (int i = 0; i < shuffled.length; i++) {
+            Assert.assertEquals(outcome[i], shuffled[i]);
+        }
+    }
+
+    @Test
+    public void asKryoSerializableListTest() {
+        String[] array = new String[] {"1, 2, 3", "4, 5, 6", "7, 8, 9", "10, 11, 12"};
+        List<String> actual = ArrayUtils.asKryoSerializableList(array);
+
+        Assert.assertEquals(Arrays.asList(array), actual);
+
+        Assert.assertEquals(ArrayList.class, actual.getClass());
     }
 
 }
