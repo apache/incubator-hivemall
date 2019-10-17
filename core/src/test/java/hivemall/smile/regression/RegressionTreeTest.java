@@ -18,9 +18,9 @@
  */
 package hivemall.smile.regression;
 
-import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.builders.CSRMatrixBuilder;
-import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
+import matrix4j.matrix.Matrix;
+import matrix4j.matrix.builders.CSRMatrixBuilder;
+import matrix4j.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;
 import hivemall.smile.tools.TreeExportUDF.OutputType;
 import hivemall.utils.codec.Base91;

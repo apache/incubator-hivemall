@@ -19,7 +19,7 @@
 package hivemall.smile.tools;
 
 import hivemall.TestUtils;
-import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
+import matrix4j.matrix.dense.RowMajorDenseMatrix2d;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;

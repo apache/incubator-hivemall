@@ -20,10 +20,10 @@ package hivemall.smile.classification;
 
 import static org.junit.Assert.assertEquals;
 
-import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.builders.CSRMatrixBuilder;
-import hivemall.math.matrix.dense.RowMajorDenseMatrix2d;
-import hivemall.math.vector.DenseVector;
+import matrix4j.matrix.Matrix;
+import matrix4j.matrix.builders.CSRMatrixBuilder;
+import matrix4j.matrix.dense.RowMajorDenseMatrix2d;
+import matrix4j.vector.DenseVector;
 import hivemall.smile.classification.DecisionTree.Node;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.tools.TreeExportUDF.Evaluator;

@@ -106,6 +106,7 @@
 								<includes>
 									<!-- hivemall-core -->
 									<include>org.apache.hivemall:hivemall-core</include>
+									<include>io.github.myui:matrix4j</include>
 									<include>io.netty:netty-all</include>
 									<include>com.github.haifengl:smile-core</include>
 									<include>com.github.haifengl:smile-math</include>

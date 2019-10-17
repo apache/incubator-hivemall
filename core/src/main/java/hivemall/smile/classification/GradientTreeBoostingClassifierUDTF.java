@@ -19,14 +19,14 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
-import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.builders.CSRMatrixBuilder;
-import hivemall.math.matrix.builders.MatrixBuilder;
-import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.vector.DenseVector;
-import hivemall.math.vector.SparseVector;
-import hivemall.math.vector.Vector;
-import hivemall.math.vector.VectorProcedure;
+import matrix4j.matrix.Matrix;
+import matrix4j.matrix.builders.CSRMatrixBuilder;
+import matrix4j.matrix.builders.MatrixBuilder;
+import matrix4j.matrix.builders.RowMajorDenseMatrixBuilder;
+import matrix4j.vector.DenseVector;
+import matrix4j.vector.SparseVector;
+import matrix4j.vector.Vector;
+import matrix4j.vector.VectorProcedure;
 import hivemall.smile.regression.RegressionTree;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.utils.codec.Base91;

@@ -19,9 +19,9 @@
 package hivemall.smile.tools;
 
 import hivemall.UDFWithOptions;
-import hivemall.math.vector.DenseVector;
-import hivemall.math.vector.SparseVector;
-import hivemall.math.vector.Vector;
+import matrix4j.vector.DenseVector;
+import matrix4j.vector.SparseVector;
+import matrix4j.vector.Vector;
 import hivemall.smile.classification.DecisionTree;
 import hivemall.smile.classification.PredictionHandler;
 import hivemall.smile.regression.RegressionTree;
