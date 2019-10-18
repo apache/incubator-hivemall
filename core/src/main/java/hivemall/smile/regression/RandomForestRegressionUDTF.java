@@ -19,12 +19,12 @@
 package hivemall.smile.regression;
 
 import hivemall.UDTFWithOptions;
-import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.builders.CSRMatrixBuilder;
-import hivemall.math.matrix.builders.MatrixBuilder;
-import hivemall.math.matrix.builders.RowMajorDenseMatrixBuilder;
-import hivemall.math.vector.Vector;
-import hivemall.math.vector.VectorProcedure;
+import matrix4j.matrix.Matrix;
+import matrix4j.matrix.builders.CSRMatrixBuilder;
+import matrix4j.matrix.builders.MatrixBuilder;
+import matrix4j.matrix.builders.RowMajorDenseMatrixBuilder;
+import matrix4j.vector.Vector;
+import matrix4j.vector.VectorProcedure;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
 import hivemall.utils.codec.Base91;

@@ -26,11 +26,11 @@ import static hivemall.smile.utils.SmileExtUtils.NUMERIC;
 import static hivemall.smile.utils.SmileExtUtils.resolveFeatureName;
 
 import hivemall.annotations.VisibleForTesting;
-import hivemall.math.matrix.Matrix;
-import hivemall.math.vector.DenseVector;
-import hivemall.math.vector.SparseVector;
-import hivemall.math.vector.Vector;
-import hivemall.math.vector.VectorProcedure;
+import matrix4j.matrix.Matrix;
+import matrix4j.vector.DenseVector;
+import matrix4j.vector.SparseVector;
+import matrix4j.vector.Vector;
+import matrix4j.vector.VectorProcedure;
 import hivemall.smile.classification.PredictionHandler;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.VariableOrder;

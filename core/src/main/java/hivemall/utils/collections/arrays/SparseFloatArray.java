@@ -18,7 +18,7 @@
  */
 package hivemall.utils.collections.arrays;
 
-import hivemall.math.vector.VectorProcedure;
+import matrix4j.vector.VectorProcedure;
 import hivemall.utils.lang.ArrayUtils;
 import hivemall.utils.lang.Preconditions;
 

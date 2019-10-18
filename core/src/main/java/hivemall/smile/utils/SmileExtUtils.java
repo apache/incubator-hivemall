@@ -19,10 +19,10 @@
 package hivemall.smile.utils;
 
 import hivemall.annotations.VisibleForTesting;
-import hivemall.math.matrix.ColumnMajorMatrix;
-import hivemall.math.matrix.Matrix;
-import hivemall.math.matrix.MatrixUtils;
-import hivemall.math.vector.VectorProcedure;
+import matrix4j.matrix.ColumnMajorMatrix;
+import matrix4j.matrix.Matrix;
+import matrix4j.matrix.MatrixUtils;
+import matrix4j.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.DoubleArrayList;
