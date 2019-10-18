@@ -78,8 +78,8 @@ public abstract class ProbabilisticTopicModelBaseUDTF extends UDTFWithOptions {
     protected ListObjectInspector wordCountsOI;
 
     // for iterations
-    protected NioStatefulSegment fileIO;
-    protected ByteBuffer inputBuf;
+    protected transient NioStatefulSegment fileIO;
+    protected transient ByteBuffer inputBuf;
 
     private float cumPerplexity;
 

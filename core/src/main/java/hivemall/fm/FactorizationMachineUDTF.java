@@ -124,8 +124,8 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     protected long _numValidations;
 
     // file IO
-    private ByteBuffer _inputBuf;
-    private NioStatefulSegment _fileIO;
+    private transient ByteBuffer _inputBuf;
+    private transient NioStatefulSegment _fileIO;
 
     @Override
     protected Options getOptions() {
