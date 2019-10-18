@@ -571,6 +571,7 @@
 						<docencoding>UTF-8</docencoding>
 						<show>protected</show>
 						<linksource>true</linksource>
+						<source>7</source>
 					</configuration>
 					<executions>
 						<execution>
