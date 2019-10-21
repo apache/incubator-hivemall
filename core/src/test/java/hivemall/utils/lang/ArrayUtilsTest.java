@@ -27,10 +27,9 @@ import static hivemall.utils.lang.ArrayUtils.range;
 import static hivemall.utils.lang.ArrayUtils.slice;
 import static java.lang.Math.abs;
 
-import java.util.Comparator;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
