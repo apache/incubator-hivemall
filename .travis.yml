@@ -1,4 +1,6 @@
-sudo: false
+# Container-based infrastructure has been fully deprecated.
+# https://docs.travis-ci.com/user/reference/trusty/#container-based-infrastructure
+# sudo: false
 
 env:
   global:
@@ -7,6 +9,7 @@ env:
    - secure: "gYAzVukFw3ssmQzfovoKTNJnzQbUhF13tksHHhe5dqQWglxdix39wY405nMmzRm/21ZpIq3OFIlI7fnHdZSGkVPS/nPPxbzUkjYUh+zkujYwsqgjZecq9vGaoarnyV9CcI+2D6qUVnArHQ02FKxirtXduGvElZ/eRIa/hBfpgn4="
 
 dist: trusty
+
 language: java
 jdk:
 # - openjdk7
@@ -22,7 +25,7 @@ notifications:
   email: false
 
 script:
-  - ./bin/run_travis_tests.sh
+  - mvn clean test
 
 after_success:
   - mvn clean cobertura:cobertura coveralls:report
