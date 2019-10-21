@@ -455,6 +455,12 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION array_to_str AS 'hivemall.tools.array.
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS conditional_emit")
 sqlContext.sql("CREATE TEMPORARY FUNCTION conditional_emit AS 'hivemall.tools.array.ConditionalEmitUDTF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS argmin")
+sqlContext.sql("CREATE TEMPORARY FUNCTION argmin AS 'hivemall.tools.array.ArgminUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS argmax")
+sqlContext.sql("CREATE TEMPORARY FUNCTION argmax AS 'hivemall.tools.array.ArgmaxUDF'")
+
 /**
  * Bit operation functions
  */

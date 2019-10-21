@@ -456,6 +456,12 @@ create temporary function array_to_str as 'hivemall.tools.array.ArrayToStrUDF';
 drop temporary function if exists conditional_emit;
 create temporary function conditional_emit as 'hivemall.tools.array.ConditionalEmitUDTF';
 
+drop temporary function if exists argmin;
+create temporary function argmin as 'hivemall.tools.array.ArgminUDF';
+
+drop temporary function if exists argmax;
+create temporary function argmax as 'hivemall.tools.array.ArgmaxUDF';
+
 -----------------------------
 -- bit operation functions --
 -----------------------------
@@ -892,4 +898,3 @@ log(10, n_docs / max2(1,df_t)) + 1.0;
 
 create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
 tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
-
