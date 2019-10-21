@@ -20,7 +20,7 @@
 
 set -ev
 
-mvn clean test
+mvn -X clean test
 
 exit 0
 
