@@ -1,6 +1,6 @@
 # Container-based infrastructure has been fully deprecated.
 # https://docs.travis-ci.com/user/reference/trusty/#container-based-infrastructure
-sudo: required
+sudo: false
 
 env:
   global:
@@ -14,8 +14,8 @@ language: java
 jdk:
 # - openjdk7
   - oraclejdk8
-  - oraclejdk9
-  - oraclejdk11
+  - openjdk9
+  - openjdk11
 
 branches:
   only:
