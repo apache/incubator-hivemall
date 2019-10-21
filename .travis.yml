@@ -29,7 +29,6 @@ cache:
   - $HOME/.m2
 
 script:
-  - mvn dependency:tree
   - ./bin/run_travis_tests.sh
 
 after_success:
