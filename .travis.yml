@@ -1,6 +1,6 @@
 # Container-based infrastructure has been fully deprecated.
 # https://docs.travis-ci.com/user/reference/trusty/#container-based-infrastructure
-# sudo: false
+sudo: required
 
 env:
   global:
@@ -8,7 +8,7 @@ env:
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "gYAzVukFw3ssmQzfovoKTNJnzQbUhF13tksHHhe5dqQWglxdix39wY405nMmzRm/21ZpIq3OFIlI7fnHdZSGkVPS/nPPxbzUkjYUh+zkujYwsqgjZecq9vGaoarnyV9CcI+2D6qUVnArHQ02FKxirtXduGvElZ/eRIa/hBfpgn4="
 
-dist: xenial
+dist: trusty
 
 language: java
 jdk:
