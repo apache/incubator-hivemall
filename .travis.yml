@@ -24,8 +24,12 @@ branches:
 notifications:
   email: false
 
+cache:
+  directories:
+  - $HOME/.m2
+
 script:
-  - mvn clean test
+  - ./bin/run_travis_tests.sh
 
 after_success:
   - mvn clean cobertura:cobertura coveralls:report
