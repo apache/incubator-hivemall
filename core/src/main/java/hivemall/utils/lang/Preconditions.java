@@ -132,4 +132,17 @@ public final class Preconditions {
         }
     }
 
+    @Nonnull
+    public static int checkElementIndex(final int index, final int size) {
+        if (index < 0) {
+            throw new IndexOutOfBoundsException("index (" + index + ") must not be negative");
+        } else if (size < 0) {
+            throw new IndexOutOfBoundsException("negative size: " + size);
+        } else if (index >= size) {
+            throw new IndexOutOfBoundsException(
+                "index (" + index + ") must be less than size (" + size + ")");
+        }
+        return index;
+    }
+
 }

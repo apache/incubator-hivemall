@@ -18,11 +18,14 @@
  */
 package hivemall.utils.lang;
 
+import static hivemall.utils.lang.Preconditions.checkElementIndex;
+
 import hivemall.utils.random.PRNG;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -42,6 +45,36 @@ public final class ArrayUtils {
     public static final int INDEX_NOT_FOUND = -1;
 
     private ArrayUtils() {}
+
+    @SuppressWarnings("unchecked")
+    public static <T> T[] newInstance(@Nonnull final T[] a, @Nonnegative final int newLength) {
+        return (T[]) newInstance(a.getClass(), newLength);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T[] newInstance(@Nonnull final Class<? extends T[]> newType,
+            @Nonnegative final int newLength) {
+        if ((Object) newType == (Object) Object[].class) {
+            return (T[]) new Object[newLength];
+        } else {
+            return (T[]) Array.newInstance(newType.getComponentType(), newLength);
+        }
+    }
+
+    @Nonnull
+    public static int get(final int[] a, final int index) {
+        return a[checkElementIndex(index, a.length)];
+    }
+
+    @Nonnull
+    public static double get(final double[] a, final int index) {
+        return a[checkElementIndex(index, a.length)];
+    }
+
+    @Nonnull
+    public static <T> T get(final T[] a, final int index) {
+        return a[checkElementIndex(index, a.length)];
+    }
 
     @Nonnull
     public static double[] set(@Nonnull double[] src, final int index, final double value) {
@@ -146,6 +179,36 @@ public final class ArrayUtils {
     public static List<Double> toList(@Nonnull final double[] array) {
         Double[] v = toObject(array);
         return Arrays.asList(v);
+    }
+
+    @Nonnull
+    public static int[] slice(@Nonnull final int[] a, @Nonnull final int... indexes) {
+        final int size = indexes.length;
+        final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = get(a, indexes[i]);
+        }
+        return ret;
+    }
+
+    @Nonnull
+    public static double[] slice(@Nonnull final double[] a, @Nonnull final int... indexes) {
+        final int size = indexes.length;
+        final double[] ret = new double[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = get(a, indexes[i]);
+        }
+        return ret;
+    }
+
+    @Nonnull
+    public static <T> T[] slice(@Nonnull final T[] a, @Nonnull final int... indexes) {
+        final int size = indexes.length;
+        final T[] ret = newInstance(a, size);
+        for (int i = 0; i < size; i++) {
+            ret[i] = get(a, indexes[i]);
+        }
+        return ret;
     }
 
     @Nonnull
@@ -833,6 +896,265 @@ public final class ArrayUtils {
                 }
             }
         }
+    }
+
+    @Nonnull
+    public static int[] argsort(@Nonnull final int[] a) {
+        final int size = a.length;
+        final Integer[] indexes = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            indexes[i] = i;
+        }
+        Arrays.sort(indexes, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer i, Integer j) {
+                return Integer.compare(a[i], a[j]);
+            }
+        });
+
+        final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = indexes[i].intValue();
+        }
+        return ret;
+    }
+
+    @Nonnull
+    public static int[] argsort(@Nonnull final double[] a) {
+        final int size = a.length;
+        final Integer[] indexes = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            indexes[i] = i;
+        }
+        Arrays.sort(indexes, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer i, Integer j) {
+                return Double.compare(a[i], a[j]);
+            }
+        });
+
+        final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = indexes[i].intValue();
+        }
+        return ret;
+    }
+
+    @Nonnull
+    public static <T extends Comparable<T>> int[] argsort(@Nonnull final T[] a) {
+        final int size = a.length;
+        final Integer[] indexes = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            indexes[i] = i;
+        }
+        Arrays.sort(indexes, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer i, Integer j) {
+                T ai = a[i.intValue()];
+                T aj = a[j.intValue()];
+                return ai.compareTo(aj);
+            }
+        });
+
+        final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = indexes[i].intValue();
+        }
+        return ret;
+    }
+
+    @Nonnull
+    public static <T> int[] argsort(@Nonnull final T[] a, @Nonnull final Comparator<? super T> c) {
+        final int size = a.length;
+        final Integer[] indexes = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            indexes[i] = i;
+        }
+        Arrays.sort(indexes, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer i, Integer j) {
+                return c.compare(a[i.intValue()], a[j.intValue()]);
+            }
+        });
+
+        final int[] ret = new int[size];
+        for (int i = 0; i < size; i++) {
+            ret[i] = indexes[i].intValue();
+        }
+        return ret;
+    }
+
+    public static int[] argrank(@Nonnull final int[] a) {
+        return argsort(argsort(a));
+    }
+
+    public static int[] argrank(@Nonnull final double[] a) {
+        return argsort(argsort(a));
+    }
+
+    @Nonnull
+    public static <T> int[] argrank(@Nonnull final T[] a, @Nonnull final Comparator<? super T> c) {
+        return argsort(argsort(a, c));
+    }
+
+    public static int argmin(@Nonnull final double[] a) {
+        final int size = a.length;
+        if (size == 0) {
+            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+        }
+
+        int minIdx = 0;
+        double minValue = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < size; i++) {
+            final double v = a[i];
+            if (v < minValue) {
+                minIdx = i;
+                minValue = v;
+            }
+        }
+        return minIdx;
+    }
+
+    public static <T extends Comparable<T>> int argmin(@Nonnull final T[] a) {
+        final int size = a.length;
+        if (size == 0) {
+            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+        }
+
+        int minIdx = 0;
+        T minValue = null;
+        for (int i = 0; i < size; i++) {
+            final T v = a[i];
+            if (v == null) {
+                continue;
+            }
+            if (minValue == null || v.compareTo(minValue) < 0) {
+                minIdx = i;
+                minValue = v;
+            }
+        }
+        return minIdx;
+    }
+
+    @Nonnull
+    public static <T> int argmin(@Nonnull final T[] a, @Nonnull final Comparator<? super T> c) {
+        final int size = a.length;
+        if (size == 0) {
+            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+        }
+        if (size == 1) {
+            return 0;
+        }
+
+        int minIdx = 0;
+        T minValue = a[0];
+        for (int i = 1; i < size; i++) {
+            final T v = a[i];
+            if (c.compare(v, minValue) < 0) {
+                minIdx = i;
+                minValue = v;
+            }
+        }
+        return minIdx;
+    }
+
+    public static <T extends Comparable<T>> int argmax(@Nonnull final T[] a) {
+        final int size = a.length;
+        if (size == 0) {
+            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+        }
+
+        int maxIdx = 0;
+        T maxValue = null;
+        for (int i = 0; i < size; i++) {
+            final T v = a[i];
+            if (v == null) {
+                continue;
+            }
+            if (maxValue == null || v.compareTo(maxValue) > 0) {
+                maxIdx = i;
+                maxValue = v;
+            }
+        }
+        return maxIdx;
+    }
+
+    @Nonnull
+    public static <T> int argmax(@Nonnull final T[] a, @Nonnull final Comparator<? super T> c) {
+        final int size = a.length;
+        if (size == 0) {
+            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+        }
+        if (size == 1) {
+            return 0;
+        }
+
+        int maxIdx = 0;
+        T maxValue = a[0]; // consideration for null
+        for (int i = 1; i < size; i++) {
+            final T v = a[i];
+            if (c.compare(v, maxValue) > 0) {
+                maxIdx = i;
+                maxValue = v;
+            }
+        }
+        return maxIdx;
+    }
+
+    public static int[] range(final int stop) {
+        return range(0, stop);
+    }
+
+    public static int[] range(final int start, final int stop) {
+        final int count = stop - start;
+        final int[] r;
+        if (count < 0) {
+            r = new int[-count];
+            for (int i = 0; i < r.length; i++) {
+                r[i] = start - i;
+            }
+        } else {
+            r = new int[count];
+            for (int i = 0; i < r.length; i++) {
+                r[i] = start + i;
+            }
+        }
+        return r;
+    }
+
+    /**
+     * Return evenly spaced values within a given interval.
+     *
+     * @param start inclusive index of the start
+     * @param stop exclusive index of the end
+     * @param step positive interval value
+     */
+    public static int[] range(final int start, final int stop, @Nonnegative final int step) {
+        if (step <= 0) {
+            throw new IllegalArgumentException("Invalid step value: " + step);
+        }
+
+        final int[] r;
+        final int diff = stop - start;
+        if (diff < 0) {
+            final int count = divideAndRoundUp(-diff, step);
+            r = new int[count];
+            for (int i = 0, value = start; i < r.length; i++, value -= step) {
+                r[i] = value;
+            }
+        } else {
+            final int count = divideAndRoundUp(diff, step);
+            r = new int[count];
+            for (int i = 0, value = start; i < r.length; i++, value += step) {
+                r[i] = value;
+            }
+        }
+        return r;
+    }
+
+    public static int divideAndRoundUp(@Nonnegative final int num,
+            @Nonnegative final int divisor) {
+        return (num + divisor - 1) / divisor;
     }
 
     public static int count(@Nonnull final int[] values, final int valueToFind) {

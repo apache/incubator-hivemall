@@ -464,6 +464,21 @@ CREATE FUNCTION array_to_str as 'hivemall.tools.array.ArrayToStrUDF' USING JAR '
 DROP FUNCTION IF EXISTS conditional_emit;
 CREATE FUNCTION conditional_emit as 'hivemall.tools.array.ConditionalEmitUDTF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS argmin;
+CREATE FUNCTION argmin as 'hivemall.tools.array.ArgminUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS argmax;
+CREATE FUNCTION argmax as 'hivemall.tools.array.ArgmaxUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS arange;
+CREATE FUNCTION arange as 'hivemall.tools.array.ArangeUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS argrank;
+CREATE FUNCTION argrank as 'hivemall.tools.array.ArgrankUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS argsort;
+CREATE FUNCTION argsort as 'hivemall.tools.array.ArgsortUDF' USING JAR '${hivemall_jar}';
+
 -----------------------------
 -- bit operation functions --
 -----------------------------
