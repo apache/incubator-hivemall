@@ -473,6 +473,12 @@ CREATE FUNCTION argmax as 'hivemall.tools.array.ArgmaxUDF' USING JAR '${hivemall
 DROP FUNCTION IF EXISTS arange;
 CREATE FUNCTION arange as 'hivemall.tools.array.ArangeUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS argrank;
+CREATE FUNCTION argrank as 'hivemall.tools.array.ArgrankUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS argsort;
+CREATE FUNCTION argsort as 'hivemall.tools.array.ArgsortUDF' USING JAR '${hivemall_jar}';
+
 -----------------------------
 -- bit operation functions --
 -----------------------------

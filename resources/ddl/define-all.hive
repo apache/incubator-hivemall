@@ -465,6 +465,12 @@ create temporary function argmax as 'hivemall.tools.array.ArgmaxUDF';
 drop temporary function if exists arange;
 create temporary function arange as 'hivemall.tools.array.ArangeUDF';
 
+drop temporary function if exists argrank;
+create temporary function argrank as 'hivemall.tools.array.ArgrankUDF';
+
+drop temporary function if exists argsort;
+create temporary function argsort as 'hivemall.tools.array.ArgsortUDF';
+
 -----------------------------
 -- bit operation functions --
 -----------------------------

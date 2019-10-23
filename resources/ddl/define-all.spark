@@ -464,6 +464,12 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION argmax AS 'hivemall.tools.array.Argmax
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS arange")
 sqlContext.sql("CREATE TEMPORARY FUNCTION arange AS 'hivemall.tools.array.ArangeUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS argrank")
+sqlContext.sql("CREATE TEMPORARY FUNCTION argrank AS 'hivemall.tools.array.ArgrankUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS argsort")
+sqlContext.sql("CREATE TEMPORARY FUNCTION argsort AS 'hivemall.tools.array.ArgsortUDF'")
+
 /**
  * Bit operation functions
  */
