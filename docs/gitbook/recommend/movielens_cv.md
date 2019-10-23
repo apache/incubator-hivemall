@@ -33,7 +33,7 @@ drop table ratings_groupded;
 create table ratings_groupded
 as
 select
-  rand_gid2(${kfold}, ${seed}) gid, -- generates group id ranging from 1 to 10
+  floor(rand(${seed})*${kfold}) gid, -- generates group id ranging from 1 to 10
   userid, 
   movieid, 
   rating
