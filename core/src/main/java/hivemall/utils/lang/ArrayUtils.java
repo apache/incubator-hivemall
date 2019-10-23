@@ -1152,7 +1152,7 @@ public final class ArrayUtils {
         return r;
     }
 
-    private static int divideAndRoundUp(@Nonnegative final int num,
+    public static int divideAndRoundUp(@Nonnegative final int num,
             @Nonnegative final int divisor) {
         return (num + divisor - 1) / divisor;
     }

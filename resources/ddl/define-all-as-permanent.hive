@@ -470,6 +470,9 @@ CREATE FUNCTION argmin as 'hivemall.tools.array.ArgminUDF' USING JAR '${hivemall
 DROP FUNCTION IF EXISTS argmax;
 CREATE FUNCTION argmax as 'hivemall.tools.array.ArgmaxUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS arange;
+CREATE FUNCTION arange as 'hivemall.tools.array.ArangeUDF' USING JAR '${hivemall_jar}';
+
 -----------------------------
 -- bit operation functions --
 -----------------------------
