@@ -23,6 +23,45 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 # Array
 
+- `arange([int start=0, ] int stop, [int step=1])` - Return evenly spaced values within a given interval
+  ```sql
+  SELECT arange(5), arange(1, 5), arange(1, 5, 1), arange(0, 5, 1);
+  > [0,1,2,3,4]     [1,2,3,4]       [1,2,3,4]       [0,1,2,3,4]
+
+  SELECT arange(1, 6, 2);
+  > 1, 3, 5
+
+  SELECT arange(-1, -6, 2);
+  > -1, -3, -5
+  ```
+
+- `argmax(array<T> a)` - Returns the first index of the maximum value
+  ```sql
+  SELECT argmax(array(5,2,0,1));
+  > 0
+  ```
+
+- `argmin(array<T> a)` - Returns the first index of the minimum value
+  ```sql
+  SELECT argmin(array(5,2,0,1));
+  > 2
+  ```
+
+- `argrank(array<ANY> a)` - Returns the indices that would sort an array.
+  ```sql
+  SELECT argrank(array(5,2,0,1)), argsort(argsort(array(5,2,0,1)));
+  > [3, 2, 0, 1]     [3, 2, 0, 1]
+  ```
+
+- `argsort(array<ANY> a)` - Returns the indices that would sort an array.
+  ```sql
+  SELECT argsort(array(5,2,0,1));
+  > 2, 3, 1, 0
+
+  SELECT array_slice(array(5,2,0,1), argsort(array(5,2,0,1)));
+  > 0, 1, 2, 5
+  ```
+
 - `array_append(array<T> arr, T elem)` - Append an element to the end of an array
   ```sql
   SELECT array_append(array(1,2),3);
