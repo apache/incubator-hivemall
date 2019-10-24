@@ -271,7 +271,6 @@
 		<dependency.locations.enabled>false</dependency.locations.enabled>
 		<maven-enforcer.requireMavenVersion>[3.3.1,)</maven-enforcer.requireMavenVersion>
 		<surefire.version>2.19.1</surefire.version>
-		<xgboost.version>0.7-rc2</xgboost.version>
 	</properties>
 
 	<distributionManagement>
