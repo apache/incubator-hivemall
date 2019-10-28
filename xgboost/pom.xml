@@ -32,7 +32,7 @@
 
 	<properties>
 		<main.basedir>${project.parent.basedir}</main.basedir>
-		<xgboost.version>0.7-rc4</xgboost.version>
+		<xgboost.version>0.7-rc5</xgboost.version>
 	</properties>
 
 	<dependencies>
