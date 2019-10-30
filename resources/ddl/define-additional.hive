@@ -33,3 +33,6 @@ create temporary function xgboost_predict as 'hivemall.xgboost.tools.XGBoostPred
 
 drop temporary function if exists xgboost_multiclass_predict;
 create temporary function xgboost_multiclass_predict as 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF';
+
+drop temporary function if exists xgboost_version;
+create temporary function xgboost_version as 'hivemall.xgboost.XGBoostVersionUDF';

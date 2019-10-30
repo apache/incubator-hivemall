@@ -157,8 +157,8 @@ public final class ArangeUDF extends GenericUDF {
      * @param stop exclusive index of the end
      * @param step positive interval value
      */
-    private static IntWritable[] range(final int start, final int stop,
-            @Nonnegative final int step) throws UDFArgumentException {
+    private static IntWritable[] range(final int start, final int stop, @Nonnegative final int step)
+            throws UDFArgumentException {
         if (step <= 0) {
             throw new UDFArgumentException("Invalid step value: " + step);
         }
