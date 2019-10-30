@@ -18,10 +18,16 @@
  */
 package hivemall.xgboost;
 
+import ml.dmlc.xgboost4j.LabeledPoint;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import ml.dmlc.xgboost4j.LabeledPoint;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 public final class XGBoostUtils {
 
@@ -52,6 +58,19 @@ public final class XGBoostUtils {
 
 
         return new LabeledPoint((float) target, indices, values);
+    }
+
+    @Nonnull
+    public static String getVersion() throws HiveException {
+        Properties props = new Properties();
+        try (InputStream versionResourceFile =
+                Thread.currentThread().getContextClassLoader().getResourceAsStream(
+                    "xgboost4j-version.properties")) {
+            props.load(versionResourceFile);
+        } catch (IOException e) {
+            throw new HiveException("Failed to load xgboost4j-version.properties", e);
+        }
+        return props.getProperty("version", "<unknown>");
     }
 
 }
