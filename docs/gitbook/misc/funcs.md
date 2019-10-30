@@ -646,6 +646,11 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `xgboost_predict(string rowid, string[] features, string model_id, array<byte> pred_model [, string options])` - Returns a prediction result as (string rowid, float predicted)
 
+- `xgboost_version()` - Returns the version of xgboost
+  ```sql
+  SELECT xgboost_version();
+  ```
+
 # Term Vector Model
 
 - `bm25(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options])` - Return an Okapi BM25 score in double. Refer http://hivemall.incubator.apache.org/userguide/ft_engineering/bm25.html for usage
