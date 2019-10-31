@@ -361,7 +361,7 @@ select
   train_regressor(
     features, -- feature vector
     num_purchases, -- target value
-    '-loss_function squared -optimizer AdaGrad -regularization l2' -- hyper-parameters
+    '-loss_function squared -optimizer AdaGrad' -- hyper-parameters
   ) as (feature, weight)
 from
   training
@@ -455,9 +455,9 @@ join
 
 Output is like:
 
-|rmse|	mae|
+|rmse|mae|
 |---:|---:|
-|10.665060285725504|	8.341085218265652|
+|9.411633136764399|7.124141833186149|
 
 ## Next steps
 
