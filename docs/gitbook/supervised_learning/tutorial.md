@@ -360,7 +360,7 @@ create table if not exists regressor as
 select
   train_regressor(
     features, -- feature vector
-    label, -- target value
+    num_purchases, -- target value
     '-loss_function squared -optimizer AdaGrad -regularization l2' -- hyper-parameters
   ) as (feature, weight)
 from
@@ -444,8 +444,8 @@ predictions as (
     t1.id
 )
 select
-  rmse(t1.predicted_num_purchases, t2.label) as rmse,
-  mae(t1.predicted_num_purchases, t2.label) as mae
+  rmse(t1.predicted_num_purchases, t2.num_purchases) as rmse,
+  mae(t1.predicted_num_purchases, t2.num_purchases) as mae
 from
   predictions t1
 join
