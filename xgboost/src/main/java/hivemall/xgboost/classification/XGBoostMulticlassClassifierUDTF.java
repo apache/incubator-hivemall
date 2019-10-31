@@ -18,7 +18,7 @@
  */
 package hivemall.xgboost.classification;
 
-import hivemall.xgboost.XGBoostUDTF;
+import hivemall.xgboost.XGBoostBaseUDTF;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -33,7 +33,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
  */
 @Description(name = "train_multiclass_xgboost_classifier",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
-public final class XGBoostMulticlassClassifierUDTF extends XGBoostUDTF {
+public final class XGBoostMulticlassClassifierUDTF extends XGBoostBaseUDTF {
 
     public XGBoostMulticlassClassifierUDTF() {
         super();

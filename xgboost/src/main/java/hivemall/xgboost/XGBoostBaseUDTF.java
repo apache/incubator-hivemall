@@ -54,8 +54,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
  * This is a base class to handle the options for XGBoost and provide common functions among various
  * tasks.
  */
-public abstract class XGBoostUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(XGBoostUDTF.class);
+public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
+    private static final Log logger = LogFactory.getLog(XGBoostBaseUDTF.class);
 
     // Settings for the XGBoost native library
     static {
@@ -106,7 +106,7 @@ public abstract class XGBoostUDTF extends UDTFWithOptions {
         params.put("base_score", 0.5);
     }
 
-    public XGBoostUDTF() {
+    public XGBoostBaseUDTF() {
         this.featuresList = new ArrayList<>(1024);
     }
 
