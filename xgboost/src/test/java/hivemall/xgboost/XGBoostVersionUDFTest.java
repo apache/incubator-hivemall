@@ -18,7 +18,6 @@
  */
 package hivemall.xgboost;
 
-
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.junit.Assert;
 import org.junit.Test;

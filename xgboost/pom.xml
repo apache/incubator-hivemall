@@ -100,6 +100,13 @@
 			<version>2.21</version>
 			<scope>compile</scope>
 		</dependency>
+
+		<!-- test scope -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 </project>
