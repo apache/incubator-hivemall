@@ -100,7 +100,7 @@
 		<dependency>
 			<groupId>io.github.myui</groupId>
 			<artifactId>matrix4j</artifactId>
-			<version>0.9.0</version>
+			<version>0.9.1</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
