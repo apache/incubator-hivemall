@@ -70,7 +70,8 @@ public final class XGBoostMulticlassClassifierUDTF extends XGBoostBaseUDTF {
     }
 
     @Override
-    protected void checkTargetValue(final double target) throws HiveException {
+    protected void checkTargetValue(final float target) throws HiveException {
+        // TODO FIXME
         double num_class = ((Integer) params.get("num_class")).doubleValue();
         if (target < 0.0 || target > num_class
                 || Double.compare(target - Math.floor(target), 0.0) != 0) {

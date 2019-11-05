@@ -42,8 +42,8 @@ public final class XGBoostRegressionUDTF extends XGBoostBaseUDTF {
     }
 
     @Override
-    protected void checkTargetValue(final double target) throws HiveException {
-        if (target < 0.0 || target > 1.0) {
+    protected void checkTargetValue(final float target) throws HiveException {
+        if (target < 0.f || target > 1.f) {
             throw new HiveException("target must be in range 0 to 1: " + target);
         }
     }

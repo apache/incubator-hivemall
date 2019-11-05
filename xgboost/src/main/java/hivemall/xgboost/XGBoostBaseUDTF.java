@@ -19,11 +19,15 @@
 package hivemall.xgboost;
 
 import hivemall.UDTFWithOptions;
+import hivemall.utils.collections.lists.FloatArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.xgboost.utils.DMatrixBuilder;
+import hivemall.xgboost.utils.DenseDMatrixBuilder;
+import hivemall.xgboost.utils.SparseDMatrixBuilder;
+import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.DMatrix;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,16 +35,12 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
-import ml.dmlc.xgboost4j.LabeledPoint;
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -62,13 +62,15 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         NativeLibLoader.initXGBoost();
     }
 
-    // For input buffer
-    private final List<LabeledPoint> featuresList;
-
     // For input parameters
     private ListObjectInspector featureListOI;
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector targetOI;
+
+    // For input buffer
+    private boolean denseInput;
+    private DMatrixBuilder matrixBuilder;
+    private FloatArrayList labels;
 
     // For XGBoost options
     @Nonnull
@@ -106,9 +108,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         params.put("base_score", 0.5);
     }
 
-    public XGBoostBaseUDTF() {
-        this.featuresList = new ArrayList<>(1024);
-    }
+    public XGBoostBaseUDTF() {}
 
     @Override
     protected Options getOptions() {
@@ -239,20 +239,35 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
             }
         }
 
-        try {
-            // Try to create a `Booster` instance to check if given XGBoost options
-            // are valid, or not.
-            createXGBooster(params, featuresList);
-        } catch (Exception e) {
-            throw new UDFArgumentException(e);
-        }
-
         return cl;
     }
 
-    /** All the functions return (string model_id, byte[] pred_model) as built models */
-    @Nonnull
-    private static StructObjectInspector getReturnOIs() {
+    @Override
+    public StructObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
+            throws UDFArgumentException {
+        if (argOIs.length != 2 && argOIs.length != 3) {
+            throw new UDFArgumentLengthException("Invalid argment length=" + argOIs.length);
+        }
+        processOptions(argOIs);
+
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
+        ObjectInspector elemOI = listOI.getListElementObjectInspector();
+        this.featureListOI = listOI;
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseInput = true;
+            this.matrixBuilder = new DenseDMatrixBuilder(8192);
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asStringOI(elemOI);
+            this.denseInput = false;
+            this.matrixBuilder = new SparseDMatrixBuilder(8192);
+        } else {
+            throw new UDFArgumentException(
+                "_FUNC_ takes double[] or string[] for the first argument: "
+                        + listOI.getTypeName());
+        }
+        this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
+
         final List<String> fieldNames = new ArrayList<>(2);
         final List<ObjectInspector> fieldOIs = new ArrayList<>(2);
         fieldNames.add("model_id");
@@ -262,76 +277,74 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
-    @Override
-    public StructObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
-            throws UDFArgumentException {
-        processOptions(argOIs);
-        final ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
-        final ObjectInspector elemOI = listOI.getListElementObjectInspector();
-        this.featureListOI = listOI;
-        this.featureElemOI = HiveUtils.asStringOI(elemOI);
-        this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
-        return getReturnOIs();
-    }
-
-    /** It `target` has valid input range, it overrides this */
-    protected void checkTargetValue(double target) throws HiveException {}
+    /** To validate target range, overrides this method */
+    protected void checkTargetValue(float target) throws HiveException {}
 
     @Override
     public void process(@Nonnull Object[] args) throws HiveException {
         if (args[0] == null) {
-            return;
+            throw new HiveException("array<double> features was null");
         }
+        parseFeatures(args[0], matrixBuilder);
 
-        // TODO: Need to support dense inputs
-        final List<?> features = (List<?>) featureListOI.getList(args[0]);
-        final String[] fv = new String[features.size()];
-        for (int i = 0; i < features.size(); i++) {
-            fv[i] = (String) featureElemOI.getPrimitiveJavaObject(features.get(i));
-        }
-        double target = PrimitiveObjectInspectorUtils.getDouble(args[1], this.targetOI);
+        float target = PrimitiveObjectInspectorUtils.getFloat(args[1], targetOI);
         checkTargetValue(target);
-        final LabeledPoint point = XGBoostUtils.parseFeatures(target, fv);
-        if (point != null) {
-            this.featuresList.add(point);
+        labels.add(target);
+    }
+
+    private void parseFeatures(@Nonnull final Object argObj,
+            @Nonnull final DMatrixBuilder builder) {
+        if (denseInput) {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                float v = PrimitiveObjectInspectorUtils.getFloat(o, featureElemOI);
+                builder.nextColumn(i, v);
+            }
+        } else {
+            final int length = featureListOI.getListLength(argObj);
+            for (int i = 0; i < length; i++) {
+                Object o = featureListOI.getListElement(argObj, i);
+                if (o == null) {
+                    continue;
+                }
+                String fv = o.toString();
+                builder.nextColumn(fv);
+            }
+        }
+        builder.nextRow();
+    }
+
+    @Override
+    public void close() throws HiveException {
+        try {
+            DMatrix dtrain = matrixBuilder.buildMatrix(labels.toArray());
+            this.matrixBuilder = null;
+            this.labels = null;
+            Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
+
+            // Kick off training with XGBoost
+            final int round = (Integer) params.get("num_round");
+            for (int i = 0; i < round; i++) {
+                booster.update(dtrain, i);
+            }
+
+            // Output the built model
+            String modelId = generateUniqueModelId();
+            byte[] predModel = booster.toByteArray();
+            logger.info("model_id:" + modelId.toString() + " size:" + predModel.length);
+            forward(new Object[] {modelId, predModel});
+        } catch (Throwable e) {
+            throw new HiveException(e);
         }
     }
 
     @Nonnull
     private static String generateUniqueModelId() {
         return "xgbmodel-" + HadoopUtils.getUniqueTaskIdString();
-    }
-
-    @Nonnull
-    private static Booster createXGBooster(final Map<String, Object> params,
-            final List<LabeledPoint> input) throws NoSuchMethodException, XGBoostError,
-            IllegalAccessException, InvocationTargetException, InstantiationException {
-        Class<?>[] args = {Map.class, DMatrix[].class};
-        Constructor<Booster> ctor = Booster.class.getDeclaredConstructor(args);
-        ctor.setAccessible(true);
-        return ctor.newInstance(
-            new Object[] {params, new DMatrix[] {new DMatrix(input.iterator(), "")}});
-    }
-
-    @Override
-    public void close() throws HiveException {
-        try {
-            // Kick off training with XGBoost
-            final DMatrix trainData = new DMatrix(featuresList.iterator(), "");
-            final Booster booster = createXGBooster(params, featuresList);
-            final int num_round = (Integer) params.get("num_round");
-            for (int i = 0; i < num_round; i++) {
-                booster.update(trainData, i);
-            }
-
-            // Output the built model
-            final String modelId = generateUniqueModelId();
-            final byte[] predModel = booster.toByteArray();
-            logger.info("model_id:" + modelId.toString() + " size:" + predModel.length);
-            forward(new Object[] {modelId, predModel});
-        } catch (Exception e) {
-            throw new HiveException(e);
-        }
     }
 
 }

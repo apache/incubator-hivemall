@@ -19,9 +19,15 @@
 package hivemall.xgboost;
 
 import ml.dmlc.xgboost4j.LabeledPoint;
+import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.annotation.Nonnull;
@@ -64,13 +70,24 @@ public final class XGBoostUtils {
     public static String getVersion() throws HiveException {
         Properties props = new Properties();
         try (InputStream versionResourceFile =
-                Thread.currentThread().getContextClassLoader().getResourceAsStream(
-                    "xgboost4j-version.properties")) {
+                Thread.currentThread()
+                      .getContextClassLoader()
+                      .getResourceAsStream("xgboost4j-version.properties")) {
             props.load(versionResourceFile);
         } catch (IOException e) {
             throw new HiveException("Failed to load xgboost4j-version.properties", e);
         }
         return props.getProperty("version", "<unknown>");
+    }
+
+    @Nonnull
+    public static Booster createXGBooster(@Nonnull DMatrix matrix,
+            @Nonnull Map<String, Object> params) throws NoSuchMethodException, XGBoostError,
+            IllegalAccessException, InvocationTargetException, InstantiationException {
+        Class<?>[] args = {Map.class, DMatrix[].class};
+        Constructor<Booster> ctor = Booster.class.getDeclaredConstructor(args);
+        ctor.setAccessible(true);
+        return ctor.newInstance(new Object[] {params, new DMatrix[] {matrix}});
     }
 
 }
