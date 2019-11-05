@@ -40,6 +40,24 @@ public class DMatrixBuilderTest {
         matrix.dispose();
     }
 
+    @Test
+    public void testCreateFromCSREx() throws XGBoostError {
+        // sparse matrix
+        // 1 0 2 3 0
+        // 4 0 2 3 5
+        // 3 1 2 5 0
+        DenseDMatrixBuilder builder = new DenseDMatrixBuilder(1024);
+        builder.nextRow(new float[] {1, 0, 2, 3, 0});
+        builder.nextRow(new float[] {4, 0, 2, 3, 5});
+        builder.nextRow(new float[] {3, 1, 2, 5, 0});
+        float[] label1 = new float[] {1, 0, 1};
+        DMatrix dmat1 = builder.buildMatrix(label1);
+
+        Assert.assertEquals(3, dmat1.rowNum());
+        float[] label2 = dmat1.getLabel();
+        Assert.assertArrayEquals(label1, label2, 0.f);
+    }
+
     private static DMatrix createDenseDMatrix() throws XGBoostError {
         /*
         11  12  13  14  0   0

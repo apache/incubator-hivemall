@@ -31,6 +31,13 @@ public abstract class DMatrixBuilder {
         }
     }
 
+    public void nextRow(@Nonnull final float[] row) {
+        for (int col = 0; col < row.length; col++) {
+            nextColumn(col, row[col]);
+        }
+        nextRow();
+    }
+
     public void nextRow(@Nonnull final String[] row) {
         for (String col : row) {
             if (col == null) {
