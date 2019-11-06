@@ -25,6 +25,7 @@ import hivemall.utils.hadoop.HiveUtils;
 import hivemall.xgboost.utils.DMatrixBuilder;
 import hivemall.xgboost.utils.DenseDMatrixBuilder;
 import hivemall.xgboost.utils.SparseDMatrixBuilder;
+import matrix4j.utils.lang.Primitives;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 
@@ -40,7 +41,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -67,7 +67,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
     private PrimitiveObjectInspector featureElemOI;
     private PrimitiveObjectInspector targetOI;
 
-    // For input buffer
+    // For training input buffering
     private boolean denseInput;
     private DMatrixBuilder matrixBuilder;
     private FloatArrayList labels;
@@ -114,49 +114,123 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
     protected Options getOptions() {
         final Options opts = new Options();
 
+        opts.addOption("num_round", true, "Number of boosting iterations [default: 10]");
+
         /** General parameters */
         opts.addOption("booster", true,
-            "Set a booster to use, gbtree or gblinear. [default: gbree]");
-        opts.addOption("num_round", true, "Number of boosting iterations [default: 8]");
-        opts.addOption("silent", true,
-            "0 means printing running messages, 1 means silent mode [default: 1]");
+            "Set a booster to use, gbtree or gblinear or dart. [default: gbree]");
+        opts.addOption("silent", true, "Deprecated. Please use verbosity instead. "
+                + "0 means printing running messages, 1 means silent mode [default: 1]");
+        opts.addOption("verbosity", true, "Verbosity of printing messages. "
+                + "Choices: 0 (silent), 1 (warning), 2 (info), 3 (debug). [default: 0]");
         opts.addOption("nthread", true,
             "Number of parallel threads used to run xgboost [default: 1]");
+        opts.addOption("disable_default_eval_metric", true,
+            "NFlag to disable default metric. Set to >0 to disable. [default: 0]");
         opts.addOption("num_pbuffer", true,
-            "Size of prediction buffer [set automatically by xgboost]");
+            "Size of prediction buffer [default: set automatically by xgboost]");
         opts.addOption("num_feature", true,
             "Feature dimension used in boosting [default: set automatically by xgboost]");
 
-        /** Parameters for both boosters */
-        opts.addOption("alpha", true, "L1 regularization term on weights [default: 0.0]");
-        opts.addOption("lambda", true,
+        /** Parameters among Boosters */
+        opts.addOption("lambda", "reg_lambda", true,
             "L2 regularization term on weights [default: 1.0 for gbtree, 0.0 for gblinear]");
+        opts.addOption("alpha", "reg_alpha", true,
+            "L1 regularization term on weights [default: 0.0]");
+        opts.addOption("updater", true,
+            "A comma-separated string that defines the sequence of tree updaters to run. "
+                    + "For a full list of valid inputs, please refer to XGBoost Parameters."
+                    + " [default: 'grow_colmaker,prune' for gbtree, 'shotgun' for gblinear]");
 
         /** Parameters for Tree Booster */
-        opts.addOption("eta", true,
+        opts.addOption("eta", "learning_rate", true,
             "Step size shrinkage used in update to prevents overfitting [default: 0.3]");
-        opts.addOption("gamma", true,
-            "Minimum loss reduction required to make a further partition on a leaf node of the tree [default: 0.0]");
+        opts.addOption("gamma", "min_split_loss", true,
+            "Minimum loss reduction required to make a further partition on a leaf node of the tree."
+                    + " [default: 0.0]");
         opts.addOption("max_depth", true, "Max depth of decision tree [default: 6]");
         opts.addOption("min_child_weight", true,
-            "Minimum sum of instance weight(hessian) needed in a child [default: 1]");
+            "Minimum sum of instance weight (hessian) needed in a child [default: 1.0]");
         opts.addOption("max_delta_step", true,
             "Maximum delta step we allow each tree's weight estimation to be [default: 0]");
         opts.addOption("subsample", true,
-            "Subsample ratio of the training instance [default: 1.0]");
+            "Subsample ratio of the training instance in range (0.0,1.0] [default: 1.0]");
         opts.addOption("colsample_bytree", true,
             "Subsample ratio of columns when constructing each tree [default: 1.0]");
         opts.addOption("colsample_bylevel", true,
-            "Subsample ratio of columns for each split, in each level [default: 1.0]");
+            "Subsample ratio of columns for each level [default: 1.0]");
+        opts.addOption("colsample_bynode", true,
+            "Subsample ratio of columns for each node [default: 1.0]");
+        opts.addOption("tree_method", true,
+            "The tree construction algorithm used in XGBoost. Choices: auto, exact, approx, hist."
+                    + " [default: auto]");
+        opts.addOption("sketch_eps", true,
+            "Used only for approximate greedy algorithm. This translates into O(1 / sketch_eps) number of bins."
+                    + " [default: 0.03]");
+        opts.addOption("scale_pos_weight", true,
+            "ontrol the balance of positive and negative weights, useful for unbalanced classes. "
+                    + "A typical value to consider: sum(negative instances) / sum(positive instances)"
+                    + " [default: 1.0]");
+        opts.addOption("refresh_leaf", true,
+            "This is a parameter of the refresh updater plugin. "
+                    + "When this flag is 1, tree leafs as well as tree nodes’ stats are updated. "
+                    + "When it is 0, only node stats are updated. [default: 1]");
+        opts.addOption("process_type", true,
+            "A type of boosting process to run. [Choices: default, update]");
+        opts.addOption("grow_policy", true,
+            "Controls a way new nodes are added to the tree. "
+                    + "Currently supported only if tree_method is set to hist."
+                    + " [Choices: depthwise (default), lossguide]");
+        opts.addOption("max_leaves", true,
+            "Maximum number of nodes to be added. Only relevant when grow_policy=lossguide is set."
+                    + " [default: 0]");
+        opts.addOption("max_bin", true,
+            "Maximum number of discrete bins to bucket continuous features. "
+                    + "Only used if tree_method is set to hist. [default: 256]");
+        opts.addOption("num_parallel_tree", true,
+            "Number of parallel trees constructed during each iteration. "
+                    + "This option is used to support boosted random forest. [default: 1]");
 
-        /** Parameters for Linear Booster */
+        /** Parameters for Dart Booster (booster=dart) */
+        opts.addOption("sample_type", true,
+            "Type of sampling algorithm. [Choices: uniform (default), weighted]");
+        opts.addOption("normalize_type", true,
+            "Type of normalization algorithm. [Choices: tree (default), forest]");
+        opts.addOption("rate_drop", true, "Dropout rate in range [0.0, 1.0]. [default: 0.0]");
+        opts.addOption("one_drop", true,
+            "When this flag is enabled, at least one tree is always dropped during the dropout. "
+                    + "0 or 1. [default: 0]");
+        opts.addOption("skip_drop", true,
+            "Probability of skipping the dropout procedure during a boosting iteration "
+                    + "in range [0.0, 1.0]. [default: 0.0]");
+
+        /** Parameters for Linear Booster (booster=gblinear) */
         opts.addOption("lambda_bias", true, "L2 regularization term on bias [default: 0.0]");
+        opts.addOption("feature_selector", true, "Feature selection and ordering method. "
+                + "[Choices: cyclic (default), shuffle, random, greedy, thrifty]");
+        opts.addOption("top_k", true,
+            "The number of top features to select in greedy and thrifty feature selector. "
+                    + "The value of 0 means using all the features. [default: 0]");
+
+        /** Parameters for Tweedie Regression (objective=reg:tweedie) */
+        opts.addOption("tweedie_variance_power", true,
+            "Parameter that controls the variance of the Tweedie distribution in range [1.0, 2.0]."
+                    + " [default: 1.5]");
 
         /** Learning Task Parameters */
+        opts.addOption("objective", true,
+            "Specifies the learning task and the corresponding learning objective. "
+                    + "Examples: reg:linear, reg:logistic, multi:softmax. "
+                    + "For a full list of valid inputs, refer to XGBoost Parameters. "
+                    + "[default: reg:squarederror]");
         opts.addOption("base_score", true,
             "Initial prediction score of all instances, global bias [default: 0.5]");
         opts.addOption("eval_metric", true,
-            "Evaluation metrics for validation data [default according to objective]");
+            "Evaluation metrics for validation data. A default metric is assigned according to the objective:\n"
+                    + "- rmse: for regression\n" + "- error: for classification\n"
+                    + "- map: for ranking\n"
+                    + "For a list of valid inputs, see XGBoost Parameters.");
+        opts.addOption("seed", true, "Random number seed. [default: 0]");
 
         return opts;
     }
@@ -165,22 +239,20 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = null;
         if (argOIs.length >= 3) {
-            final String rawArgs = HiveUtils.getConstString(argOIs[2]);
+            String rawArgs = HiveUtils.getConstString(argOIs[2]);
             cl = this.parseOptions(rawArgs);
 
+            final String objective = cl.getOptionValue("objective", "reg:squarederror");
+            params.put("num_round", Primitives.parseInt(cl.getOptionValue("num_round"), 10));
+
             /** General parameters */
-            if (cl.hasOption("booster")) {
-                params.put("booster", cl.getOptionValue("booster"));
-            }
-            if (cl.hasOption("num_round")) {
-                params.put("num_round", Integer.valueOf(cl.getOptionValue("num_round")));
-            }
-            if (cl.hasOption("silent")) {
-                params.put("silent", Integer.valueOf(cl.getOptionValue("silent")));
-            }
-            if (cl.hasOption("nthread")) {
-                params.put("nthread", Integer.valueOf(cl.getOptionValue("nthread")));
-            }
+            final String booster = cl.getOptionValue("booster", "gbtree");
+            params.put("booster", booster);
+            params.put("silent", Primitives.parseInt(cl.getOptionValue("silent"), 1));
+            params.put("verbosity", Primitives.parseInt(cl.getOptionValue("verbosity"), 0));
+            params.put("nthread", Primitives.parseInt(cl.getOptionValue("nthread"), 1));
+            params.put("disable_default_eval_metric",
+                Primitives.parseInt(cl.getOptionValue("disable_default_eval_metric"), 0));
             if (cl.hasOption("num_pbuffer")) {
                 params.put("num_pbuffer", Integer.valueOf(cl.getOptionValue("num_pbuffer")));
             }
@@ -188,55 +260,75 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
                 params.put("num_feature", Integer.valueOf(cl.getOptionValue("num_feature")));
             }
 
-            /** Parameters for both boosters */
-            if (cl.hasOption("alpha")) {
-                params.put("alpha", Double.valueOf(cl.getOptionValue("alpha")));
-            }
-            if (cl.hasOption("lambda")) {
-                params.put("lambda", Double.valueOf(cl.getOptionValue("lambda")));
-            }
-
-            /** Parameters for Tree Booster */
-            if (cl.hasOption("eta")) {
-                params.put("eta", Double.valueOf(cl.getOptionValue("eta")));
-            }
-            if (cl.hasOption("gamma")) {
-                params.put("gamma", Double.valueOf(cl.getOptionValue("gamma")));
-            }
-            if (cl.hasOption("max_depth")) {
-                params.put("max_depth", Integer.valueOf(cl.getOptionValue("max_depth")));
-            }
-            if (cl.hasOption("min_child_weight")) {
+            /** Parameters for Tree Booster (booster=gbtree) */
+            if (booster.equals("gbtree")) {
+                params.put("eta", Primitives.parseDouble(cl.getOptionValue("eta"), 0.3d));
+                params.put("gamma", Primitives.parseDouble(cl.getOptionValue("gamma"), 0.d));
+                params.put("max_depth", Primitives.parseInt(cl.getOptionValue("max_depth"), 6));
                 params.put("min_child_weight",
-                    Integer.valueOf(cl.getOptionValue("min_child_weight")));
-            }
-            if (cl.hasOption("max_delta_step")) {
-                params.put("max_delta_step", Integer.valueOf(cl.getOptionValue("max_delta_step")));
-            }
-            if (cl.hasOption("subsample")) {
-                params.put("subsample", Double.valueOf(cl.getOptionValue("subsample")));
-            }
-            if (cl.hasOption("colsample_bytree")) {
+                    Primitives.parseDouble(cl.getOptionValue("min_child_weight"), 1.d));
+                params.put("max_delta_step",
+                    Primitives.parseInt(cl.getOptionValue("max_delta_step"), 0));
+                params.put("subsample",
+                    Primitives.parseDouble(cl.getOptionValue("subsample"), 1.d));
                 params.put("colsamle_bytree",
-                    Double.valueOf(cl.getOptionValue("colsample_bytree")));
-            }
-            if (cl.hasOption("colsample_bylevel")) {
+                    Primitives.parseDouble(cl.getOptionValue("colsample_bytree"), 1.d));
                 params.put("colsamle_bylevel",
-                    Double.valueOf(cl.getOptionValue("colsample_bylevel")));
+                    Primitives.parseDouble(cl.getOptionValue("colsamle_bylevel"), 1.d));
+                params.put("colsamle_bynode",
+                    Primitives.parseDouble(cl.getOptionValue("colsamle_bynode"), 1.d));
+                params.put("lambda", Primitives.parseDouble(cl.getOptionValue("lambda"), 1.d));
+                params.put("alpha", Primitives.parseDouble(cl.getOptionValue("alpha"), 0.d));
+                params.put("tree_method", cl.getOptionValue("tree_method", "auto"));
+                params.put("sketch_eps",
+                    Primitives.parseDouble(cl.getOptionValue("sketch_eps"), 0.03d));
+                params.put("scale_pos_weight",
+                    Primitives.parseDouble(cl.getOptionValue("scale_pos_weight"), 1.d));
+                params.put("updater", cl.getOptionValue("updater", "grow_colmaker,prune"));
+                params.put("refresh_leaf",
+                    Primitives.parseInt(cl.getOptionValue("refresh_leaf"), 1));
+                params.put("process_type", cl.getOptionValue("process_type", "default"));
+                params.put("grow_policy", cl.getOptionValue("grow_policy", "depthwise"));
+                params.put("max_leaves", Primitives.parseInt(cl.getOptionValue("max_leaves"), 0));
+                params.put("max_bin", Primitives.parseInt(cl.getOptionValue("max_bin"), 256));
+                params.put("num_parallel_tree",
+                    Primitives.parseInt(cl.getOptionValue("num_parallel_tree"), 1));
             }
 
-            /** Parameters for Linear Booster */
-            if (cl.hasOption("lambda_bias")) {
-                params.put("lambda_bias", Double.valueOf(cl.getOptionValue("lambda_bias")));
+            /** Parameters for Dart Booster (booster=dart) */
+            if (booster.equals("dart")) {
+                params.put("sample_type", cl.getOptionValue("sample_type", "uniform"));
+                params.put("normalize_type", cl.getOptionValue("normalize_type", "tree"));
+                params.put("rate_drop",
+                    Primitives.parseDouble(cl.getOptionValue("rate_drop"), 0.d));
+                params.put("one_drop", Primitives.parseInt(cl.getOptionValue("one_drop"), 0));
+                params.put("skip_drop",
+                    Primitives.parseDouble(cl.getOptionValue("skip_drop"), 0.d));
+            }
+
+            /** Parameters for Linear Booster (booster=gblinear) */
+            if (booster.equals("gblinear")) {
+                params.put("lambda", Primitives.parseDouble(cl.getOptionValue("lambda"), 0.d));
+                params.put("lambda_bias",
+                    Primitives.parseDouble(cl.getOptionValue("lambda_bias"), 0.d));
+                params.put("alpha", Primitives.parseDouble(cl.getOptionValue("alpha"), 0.d));
+                params.put("updater", cl.getOptionValue("updater", "shotgun"));
+                params.put("feature_selector", cl.getOptionValue("feature_selector", "cyclic"));
+                params.put("top_k", Primitives.parseInt(cl.getOptionValue("top_k"), 0));
+            }
+
+            /** Parameters for Tweedie Regression (objective=reg:tweedie) */
+            if (objective.equals("reg:tweedie")) {
+                params.put("tweedie_variance_power",
+                    Primitives.parseDouble(cl.getOptionValue("tweedie_variance_power"), 1.5d));
             }
 
             /** Learning Task Parameters */
-            if (cl.hasOption("base_score")) {
-                params.put("base_score", Double.valueOf(cl.getOptionValue("base_score")));
-            }
+            params.put("base_score", Primitives.parseDouble(cl.getOptionValue("base_score"), 0.5d));
             if (cl.hasOption("eval_metric")) {
                 params.put("eval_metric", cl.getOptionValue("eval_metric"));
             }
+            params.put("seed", Primitives.parseInt(cl.getOptionValue("seed"), 0));
         }
 
         return cl;
@@ -246,7 +338,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
     public StructObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
             throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentLengthException("Invalid argment length=" + argOIs.length);
+            showHelp("Invalid argment length=" + argOIs.length);
         }
         processOptions(argOIs);
 
@@ -272,7 +364,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         final List<ObjectInspector> fieldOIs = new ArrayList<>(2);
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
-        fieldNames.add("pred_model");
+        fieldNames.add("model");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaByteArrayObjectInspector);
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
@@ -321,13 +413,13 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
     @Override
     public void close() throws HiveException {
         try {
-            DMatrix dtrain = matrixBuilder.buildMatrix(labels.toArray());
+            final DMatrix dtrain = matrixBuilder.buildMatrix(labels.toArray());
             this.matrixBuilder = null;
             this.labels = null;
-            Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
+            final Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
 
             // Kick off training with XGBoost
-            final int round = (Integer) params.get("num_round");
+            final int round = ((Integer) params.get("num_round")).intValue();
             for (int i = 0; i < round; i++) {
                 booster.update(dtrain, i);
             }

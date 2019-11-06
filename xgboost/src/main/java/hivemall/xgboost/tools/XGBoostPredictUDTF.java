@@ -44,13 +44,12 @@ public final class XGBoostPredictUDTF extends hivemall.xgboost.XGBoostPredictUDT
     /** Return (string rowid, float predicted) as a result */
     @Override
     protected StructObjectInspector getReturnOI() {
-        final List<String> fieldNames = new ArrayList<>(2);
-        final List<ObjectInspector> fieldOIs = new ArrayList<>(2);
+        List<String> fieldNames = new ArrayList<>(2);
+        List<ObjectInspector> fieldOIs = new ArrayList<>(2);
         fieldNames.add("rowid");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("predicted");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
-
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
