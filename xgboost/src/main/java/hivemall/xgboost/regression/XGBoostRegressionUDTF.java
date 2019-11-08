@@ -24,8 +24,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import hivemall.xgboost.XGBoostBaseUDTF;
 
 /**
- * A XGBoost regression and the document is as follows; -
- * https://github.com/dmlc/xgboost/tree/master/demo/regression
+ * A XGBoost regressor.
  */
 @Description(name = "train_xgboost_regr",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")

@@ -28,8 +28,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 
 /**
- * A XGBoost multiclass classification and the document is as follows; -
- * https://github.com/dmlc/xgboost/tree/master/demo/multiclass_classification
+ * A XGBoost multiclass classifier.
  */
 @Description(name = "train_multiclass_xgboost_classifier",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")

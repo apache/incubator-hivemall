@@ -18,15 +18,20 @@
  */
 package hivemall.xgboost.utils;
 
+import hivemall.utils.io.FastByteArrayInputStream;
+import hivemall.xgboost.XGBoostPredictBaseUDTF.LabeledPointWithRowId;
 import ml.dmlc.xgboost4j.LabeledPoint;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoost;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -41,8 +46,8 @@ public final class XGBoostUtils {
 
     /** Transform List<String> inputs into a XGBoost input format */
     @Nullable
-    public static LabeledPoint parseFeatures(final double target,
-            @Nonnull final String[] features) {
+    public static LabeledPoint parseFeatures(@Nonnull final String rowId,
+            @Nonnull final String[] features, final float target) {
         final int size = features.length;
         if (size == 0) {
             return null;
@@ -62,8 +67,7 @@ public final class XGBoostUtils {
             }
         }
 
-
-        return new LabeledPoint((float) target, indices, values);
+        return new LabeledPoint(target, indices, values);
     }
 
     @Nonnull
@@ -81,13 +85,32 @@ public final class XGBoostUtils {
     }
 
     @Nonnull
-    public static Booster createXGBooster(@Nonnull DMatrix matrix,
+    public static Booster loadBooster(@Nonnull final byte[] input) throws HiveException {
+        try {
+            return XGBoost.loadModel(new FastByteArrayInputStream(input));
+        } catch (Exception e) {
+            throw new HiveException(e);
+        }
+    }
+
+    @Nonnull
+    public static Booster createBooster(@Nonnull DMatrix matrix,
             @Nonnull Map<String, Object> params) throws NoSuchMethodException, XGBoostError,
             IllegalAccessException, InvocationTargetException, InstantiationException {
         Class<?>[] args = {Map.class, DMatrix[].class};
         Constructor<Booster> ctor = Booster.class.getDeclaredConstructor(args);
         ctor.setAccessible(true);
         return ctor.newInstance(new Object[] {params, new DMatrix[] {matrix}});
+    }
+
+    @Nonnull
+    public static DMatrix createDMatrix(@Nonnull final List<LabeledPointWithRowId> data)
+            throws XGBoostError {
+        final List<LabeledPoint> points = new ArrayList<>(data.size());
+        for (LabeledPointWithRowId d : data) {
+            points.add(d);
+        }
+        return new DMatrix(points.iterator(), null);
     }
 
     public static void close(@Nullable final DMatrix matrix) {

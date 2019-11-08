@@ -429,7 +429,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
             @Nonnull final Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException, XGBoostError {
-        final Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
+        final Booster booster = XGBoostUtils.createBooster(dtrain, params);
         final int round = ((Integer) params.get("num_round")).intValue();
         for (int iter = 0; iter < round; iter++) {
             booster.update(dtrain, iter);
@@ -442,7 +442,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
             @Nonnull final Map<String, Object> params, @Nonnegative final int earlyStoppingRounds)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException, XGBoostError {
-        final Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
+        final Booster booster = XGBoostUtils.createBooster(dtrain, params);
 
         final boolean maximizeEvaluationMetrics =
                 ((Boolean) params.get("maximize_evaluation_metrics")).booleanValue();
