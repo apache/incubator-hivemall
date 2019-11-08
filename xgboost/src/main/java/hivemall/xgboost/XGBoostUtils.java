@@ -90,4 +90,26 @@ public final class XGBoostUtils {
         return ctor.newInstance(new Object[] {params, new DMatrix[] {matrix}});
     }
 
+    public static void close(@Nullable final DMatrix matrix) {
+        if (matrix == null) {
+            return;
+        }
+        try {
+            matrix.dispose();
+        } catch (Throwable e) {
+            ;
+        }
+    }
+
+    public static void close(@Nullable final Booster booster) {
+        if (booster == null) {
+            return;
+        }
+        try {
+            booster.dispose();
+        } catch (Throwable e) {
+            ;
+        }
+    }
+
 }

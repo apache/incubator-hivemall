@@ -22,18 +22,25 @@ import hivemall.UDTFWithOptions;
 import hivemall.utils.collections.lists.FloatArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.math.MathUtils;
 import hivemall.xgboost.utils.DMatrixBuilder;
 import hivemall.xgboost.utils.DenseDMatrixBuilder;
 import hivemall.xgboost.utils.SparseDMatrixBuilder;
+import matrix4j.utils.lang.ArrayUtils;
 import matrix4j.utils.lang.Primitives;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 import org.apache.commons.cli.CommandLine;
@@ -83,6 +90,12 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         final Options opts = new Options();
 
         opts.addOption("num_round", true, "Number of boosting iterations [default: 10]");
+        opts.addOption("maximize_evaluation_metrics", true,
+            "Maximize evaluation metrics [default: false]");
+        opts.addOption("num_early_stopping_rounds", true,
+            "Minimum rounds required for early stopping [default: same as num_round (so no early stopping)]");
+        opts.addOption("validation_ratio", true,
+            "Validation ratio in range [0.0,1.0] [default: 0.2]");
 
         /** General parameters */
         opts.addOption("booster", true,
@@ -178,7 +191,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
                     + "- rmse: for regression\n" + "- error: for classification\n"
                     + "- map: for ranking\n"
                     + "For a list of valid inputs, see XGBoost Parameters.");
-        opts.addOption("seed", true, "Random number seed. [default: 0]");
+        opts.addOption("seed", true, "Random number seed. [default: 43]");
 
         return opts;
     }
@@ -196,7 +209,17 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         final String objective = cl.getOptionValue("objective", "reg:squarederror");
         final String booster = cl.getOptionValue("booster", "gbtree");
 
-        params.put("num_round", Primitives.parseInt(cl.getOptionValue("num_round"), 10));
+        int numRound = Primitives.parseInt(cl.getOptionValue("num_round"), 10);
+        params.put("num_round", numRound);
+        params.put("maximize_evaluation_metrics",
+            Primitives.parseBoolean("maximize_evaluation_metrics", false));
+        params.put("num_early_stopping_rounds",
+            Primitives.parseInt("num_early_stopping_rounds", numRound));
+        double validationRatio = Primitives.parseDouble("validation_ratio", 0.2d);
+        if (validationRatio < 0.d || validationRatio >= 1.d) {
+            throw new UDFArgumentException("Invalid validation_ratio=" + validationRatio);
+        }
+        params.put("validation_ratio", validationRatio);
 
         /** General parameters */
         params.put("booster", booster);
@@ -271,7 +294,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         if (cl.hasOption("eval_metric")) {
             params.put("eval_metric", cl.getOptionValue("eval_metric"));
         }
-        params.put("seed", Primitives.parseInt(cl.getOptionValue("seed"), 0));
+        params.put("seed", Primitives.parseLong(cl.getOptionValue("seed"), 43L));
 
         return cl;
     }
@@ -354,27 +377,115 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
+        DMatrix dmatrix = null;
+        Booster booster = null;
         try {
-            final DMatrix dtrain = matrixBuilder.buildMatrix(labels.toArray());
+            dmatrix = matrixBuilder.buildMatrix(labels.toArray(true));
             this.matrixBuilder = null;
             this.labels = null;
-            final Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
 
-            // Kick off training with XGBoost
-            final int round = ((Integer) params.get("num_round")).intValue();
-            for (int i = 0; i < round; i++) {
-                booster.update(dtrain, i);
+            if (params.containsKey("num_early_stopping_rounds")) {
+                int earlyStoppingRounds =
+                        ((Integer) params.get("num_early_stopping_rounds")).intValue();
+                double validationRatio = ((Double) params.get("validation_ratio")).doubleValue();
+                long seed = ((Long) params.get("seed")).longValue();
+
+                int numRows = (int) dmatrix.rowNum();
+                int[] rows = MathUtils.permutation(numRows);
+                ArrayUtils.shuffle(rows, new Random(seed));
+
+                int numTest = (int) (numRows * validationRatio);
+                DMatrix dtrain = null, dtest = null;
+                try {
+                    dtest = dmatrix.slice(Arrays.copyOf(rows, numTest));
+                    dtrain = dmatrix.slice(Arrays.copyOfRange(rows, numTest, rows.length));
+                    booster = train(dtrain, dtest, params, earlyStoppingRounds);
+                } finally {
+                    XGBoostUtils.close(dtrain);
+                    XGBoostUtils.close(dtest);
+                }
+            } else {
+                booster = train(dmatrix, params);
             }
 
             // Output the built model
             String modelId = generateUniqueModelId();
             byte[] predModel = booster.toByteArray();
 
-            logger.info("model_id:" + modelId.toString() + " size:" + predModel.length);
+            logger.info("model_id:" + modelId.toString() + ", size:" + predModel.length);
             forward(new Object[] {modelId, predModel});
         } catch (Throwable e) {
             throw new HiveException(e);
+        } finally {
+            XGBoostUtils.close(dmatrix);
+            XGBoostUtils.close(booster);
         }
+    }
+
+    @Nonnull
+    private static Booster train(@Nonnull final DMatrix dtrain,
+            @Nonnull final Map<String, Object> params)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
+            InstantiationException, XGBoostError {
+        final Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
+        final int round = ((Integer) params.get("num_round")).intValue();
+        for (int iter = 0; iter < round; iter++) {
+            booster.update(dtrain, iter);
+        }
+        return booster;
+    }
+
+    @Nonnull
+    private static Booster train(@Nonnull final DMatrix dtrain, @Nonnull final DMatrix dtest,
+            @Nonnull final Map<String, Object> params, @Nonnegative final int earlyStoppingRounds)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
+            InstantiationException, XGBoostError {
+        final Booster booster = XGBoostUtils.createXGBooster(dtrain, params);
+
+        final boolean maximizeEvaluationMetrics =
+                ((Boolean) params.get("maximize_evaluation_metrics")).booleanValue();
+        float bestScore = maximizeEvaluationMetrics ? -Float.MAX_VALUE : Float.MAX_VALUE;
+        int bestIteration = 0;
+
+        final float[] metricsOut = new float[1];
+        final int round = ((Integer) params.get("num_round")).intValue();
+        for (int iter = 0; iter < round; iter++) {
+            booster.update(dtrain, iter);
+
+            String evalInfo =
+                    booster.evalSet(new DMatrix[] {dtest}, new String[] {"test"}, iter, metricsOut);
+            logger.info(evalInfo);
+
+            final float score = metricsOut[0];
+            if (maximizeEvaluationMetrics) {
+                // Update best score if the current score is better (no update when equal)
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestIteration = iter;
+                }
+            } else {
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestIteration = iter;
+                }
+            }
+
+            if (earlyStoppingRounds > 0) {
+                if (shouldEarlyStop(earlyStoppingRounds, iter, bestIteration)) {
+                    logger.info(
+                        String.format("early stopping after %d rounds away from the best iteration",
+                            earlyStoppingRounds));
+                    break;
+                }
+            }
+        }
+
+        return booster;
+    }
+
+    private static boolean shouldEarlyStop(final int earlyStoppingRounds, final int iter,
+            final int bestIteration) {
+        return iter - bestIteration >= earlyStoppingRounds;
     }
 
     @Nonnull
