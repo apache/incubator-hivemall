@@ -21,6 +21,8 @@ package hivemall.xgboost;
 import hivemall.UDTFWithOptions;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
+import hivemall.xgboost.utils.NativeLibLoader;
+import hivemall.xgboost.utils.XGBoostUtils;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -47,7 +49,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
-public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
+public abstract class XGBoostPredictBaseUDTF extends UDTFWithOptions {
 
     // For input parameters
     private PrimitiveObjectInspector rowIdOI;
@@ -67,7 +69,7 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         NativeLibLoader.initXGBoost();
     }
 
-    public XGBoostPredictUDTF() {
+    public XGBoostPredictBaseUDTF() {
         super();
     }
 
@@ -135,7 +137,7 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
-    private static Booster initXgBooster(@Nonnull final byte[] input) throws HiveException {
+    private static Booster initBooster(@Nonnull final byte[] input) throws HiveException {
         try {
             return XGBoost.loadModel(new ByteArrayInputStream(input));
         } catch (Exception e) {
@@ -173,7 +175,7 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         if (!mapToModel.containsKey(modelId)) {
             final byte[] predModel =
                     PrimitiveObjectInspectorUtils.getBinary(args[3], modelOI).getBytes();
-            mapToModel.put(modelId, initXgBooster(predModel));
+            mapToModel.put(modelId, initBooster(predModel));
         }
 
         final LabeledPoint point = XGBoostUtils.parseFeatures(0.f, fv);

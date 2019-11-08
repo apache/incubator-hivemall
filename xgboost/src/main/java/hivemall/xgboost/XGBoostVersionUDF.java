@@ -18,6 +18,8 @@
  */
 package hivemall.xgboost;
 
+import hivemall.xgboost.utils.XGBoostUtils;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 

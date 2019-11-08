@@ -18,6 +18,9 @@
  */
 package hivemall.xgboost.tools;
 
+import hivemall.utils.lang.Preconditions;
+import hivemall.xgboost.XGBoostPredictBaseUDTF;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,12 +33,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-import hivemall.utils.lang.Preconditions;
-
 @Description(name = "xgboost_multiclass_predict",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<byte> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, string label, float probability)")
-public final class XGBoostMulticlassPredictUDTF extends hivemall.xgboost.XGBoostPredictUDTF {
+public final class XGBoostMulticlassPredictUDTF extends XGBoostPredictBaseUDTF {
 
     public XGBoostMulticlassPredictUDTF() {
         super();
