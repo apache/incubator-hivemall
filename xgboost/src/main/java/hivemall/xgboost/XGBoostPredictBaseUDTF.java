@@ -82,7 +82,7 @@ public abstract class XGBoostPredictBaseUDTF extends UDTFWithOptions {
         CommandLine cl = null;
         if (argOIs.length >= 5) {
             String rawArgs = HiveUtils.getConstString(argOIs[4]);
-            cl = this.parseOptions(rawArgs);
+            cl = parseOptions(rawArgs);
             batchSize = Primitives.parseInt(cl.getOptionValue("batch_size"), batchSize);
             if (batchSize < 1) {
                 throw new IllegalArgumentException(

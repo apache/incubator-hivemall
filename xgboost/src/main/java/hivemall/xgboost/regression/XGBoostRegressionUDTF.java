@@ -18,33 +18,23 @@
  */
 package hivemall.xgboost.regression;
 
-import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
+import hivemall.xgboost.XGBoostTrainUDTF;
 
-import hivemall.xgboost.XGBoostBaseUDTF;
+import org.apache.hadoop.hive.ql.exec.Description;
 
 /**
  * A XGBoost regressor.
  */
 @Description(name = "train_xgboost_regr",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
-public final class XGBoostRegressionUDTF extends XGBoostBaseUDTF {
+public final class XGBoostRegressionUDTF extends XGBoostTrainUDTF {
 
     public XGBoostRegressionUDTF() {
         super();
     }
 
     {
-        // Settings for logistic regression
-        params.put("objective", "reg:logistic");
-        params.put("eval_metric", "rmse");
-    }
-
-    @Override
-    protected void checkTargetValue(final float target) throws HiveException {
-        if (target < 0.f || target > 1.f) {
-            throw new HiveException("target must be in range 0 to 1: " + target);
-        }
+        params.put("objective", "reg:squarederror");
     }
 
 }

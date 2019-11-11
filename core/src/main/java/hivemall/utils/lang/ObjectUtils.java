@@ -99,6 +99,40 @@ public final class ObjectUtils {
         }
     }
 
+    @Nonnull
+    public static byte[] toCompressedText(@Nonnull final byte[] in) throws IOException {
+        final FastByteArrayInputStream fis = new FastByteArrayInputStream(in);
+        final FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream();
+
+        FinishableOutputStream dos = null;
+        try {
+            dos = CompressionStreamFactory.createOutputStream(new Base91OutputStream(bos),
+                CompressionAlgorithm.deflate);
+            IOUtils.copy(fis, dos);
+            dos.finish();
+            return bos.toByteArray_clear();
+        } finally {
+            IOUtils.closeQuietly(dos);
+        }
+    }
+
+    @Nonnull
+    public static byte[] fromCompressedText(@Nonnull final byte[] src, final int len)
+            throws IOException, ClassNotFoundException {
+        final FastByteArrayInputStream bis = new FastByteArrayInputStream(src, len);
+        final FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream();
+
+        InputStream compressedStream = null;
+        try {
+            compressedStream = CompressionStreamFactory.createInputStream(
+                new Base91InputStream(bis), CompressionAlgorithm.deflate);
+            IOUtils.copy(compressedStream, bos);
+            return bos.toByteArray_clear();
+        } finally {
+            IOUtils.closeQuietly(compressedStream);
+        }
+    }
+
     public static void toStream(@Nonnull final Object obj, @Nonnull final OutputStream out)
             throws IOException {
         ObjectOutputStream oos = new ObjectOutputStream(out);

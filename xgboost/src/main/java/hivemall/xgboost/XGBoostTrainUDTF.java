@@ -22,6 +22,8 @@ import hivemall.UDTFWithOptions;
 import hivemall.utils.collections.lists.FloatArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.ObjectUtils;
+import hivemall.utils.lang.OptionUtils;
 import hivemall.utils.math.MathUtils;
 import hivemall.xgboost.utils.DMatrixBuilder;
 import hivemall.xgboost.utils.DenseDMatrixBuilder;
@@ -34,6 +36,7 @@ import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +52,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -58,13 +62,17 @@ import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.io.Text;
 
 /**
  * This is a base class to handle the options for XGBoost and provide common functions among various
  * tasks.
  */
-public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
-    private static final Log logger = LogFactory.getLog(XGBoostBaseUDTF.class);
+@Description(name = "train_xgboost",
+        value = "_FUNC_(array<string> features, double target [, string options])"
+                + " - Returns a relation consisting of <string model_id, array<byte> pred_model>")
+public class XGBoostTrainUDTF extends UDTFWithOptions {
+    private static final Log logger = LogFactory.getLog(XGBoostTrainUDTF.class);
 
     // Settings for the XGBoost native library
     static {
@@ -85,7 +93,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
     @Nonnull
     protected final Map<String, Object> params = new HashMap<String, Object>();
 
-    public XGBoostBaseUDTF() {}
+    public XGBoostTrainUDTF() {}
 
     @Override
     protected Options getOptions() {
@@ -198,6 +206,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         return opts;
     }
 
+    @Nonnull
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         final CommandLine cl;
@@ -214,10 +223,11 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         int numRound = Primitives.parseInt(cl.getOptionValue("num_round"), 10);
         params.put("num_round", numRound);
         params.put("maximize_evaluation_metrics",
-            Primitives.parseBoolean("maximize_evaluation_metrics", false));
+            Primitives.parseBoolean(cl.getOptionValue("maximize_evaluation_metrics"), false));
         params.put("num_early_stopping_rounds",
-            Primitives.parseInt("num_early_stopping_rounds", numRound));
-        double validationRatio = Primitives.parseDouble("validation_ratio", 0.2d);
+            Primitives.parseInt(cl.getOptionValue("num_early_stopping_rounds"), numRound));
+        double validationRatio =
+                Primitives.parseDouble(cl.getOptionValue("validation_ratio"), 0.2d);
         if (validationRatio < 0.d || validationRatio >= 1.d) {
             throw new UDFArgumentException("Invalid validation_ratio=" + validationRatio);
         }
@@ -332,12 +342,14 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         fieldNames.add("model_id");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("model");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaByteArrayObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.writableStringObjectInspector);
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
     /** To validate target range, overrides this method */
-    protected void checkTargetValue(float target) throws HiveException {}
+    protected float checkTargetValue(float target) throws HiveException {
+        return target;
+    }
 
     @Override
     public void process(@Nonnull Object[] args) throws HiveException {
@@ -347,8 +359,7 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         parseFeatures(args[0], matrixBuilder);
 
         float target = PrimitiveObjectInspectorUtils.getFloat(args[1], targetOI);
-        checkTargetValue(target);
-        labels.add(target);
+        labels.add(checkTargetValue(target));
     }
 
     private void parseFeatures(@Nonnull final Object argObj,
@@ -387,10 +398,9 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
             this.labels = null;
 
             if (params.containsKey("num_early_stopping_rounds")) {
-                int earlyStoppingRounds =
-                        ((Integer) params.get("num_early_stopping_rounds")).intValue();
-                double validationRatio = ((Double) params.get("validation_ratio")).doubleValue();
-                long seed = ((Long) params.get("seed")).longValue();
+                int earlyStoppingRounds = OptionUtils.getInt(params, "num_early_stopping_rounds");
+                double validationRatio = OptionUtils.getDouble(params, "validation_ratio");
+                long seed = OptionUtils.getLong(params, "seed");
 
                 int numRows = (int) dmatrix.rowNum();
                 int[] rows = MathUtils.permutation(numRows);
@@ -412,9 +422,9 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
 
             // Output the built model
             String modelId = generateUniqueModelId();
-            byte[] predModel = booster.toByteArray();
+            Text predModel = serializeModel(booster);
 
-            logger.info("model_id:" + modelId.toString() + ", size:" + predModel.length);
+            logger.info("model_id:" + modelId.toString() + ", size:" + predModel.getLength());
             forward(new Object[] {modelId, predModel});
         } catch (Throwable e) {
             throw new HiveException(e);
@@ -425,12 +435,19 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
+    private static Text serializeModel(@Nonnull final Booster booster)
+            throws IOException, XGBoostError {
+        byte[] b = ObjectUtils.toCompressedText(booster.toByteArray());
+        return new Text(b);
+    }
+
+    @Nonnull
     private static Booster train(@Nonnull final DMatrix dtrain,
             @Nonnull final Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException, XGBoostError {
         final Booster booster = XGBoostUtils.createBooster(dtrain, params);
-        final int round = ((Integer) params.get("num_round")).intValue();
+        final int round = OptionUtils.getInt(params, "num_round");
         for (int iter = 0; iter < round; iter++) {
             booster.update(dtrain, iter);
         }
@@ -445,12 +462,12 @@ public abstract class XGBoostBaseUDTF extends UDTFWithOptions {
         final Booster booster = XGBoostUtils.createBooster(dtrain, params);
 
         final boolean maximizeEvaluationMetrics =
-                ((Boolean) params.get("maximize_evaluation_metrics")).booleanValue();
+                OptionUtils.getBoolean(params, "maximize_evaluation_metrics");
         float bestScore = maximizeEvaluationMetrics ? -Float.MAX_VALUE : Float.MAX_VALUE;
         int bestIteration = 0;
 
         final float[] metricsOut = new float[1];
-        final int round = ((Integer) params.get("num_round")).intValue();
+        final int round = OptionUtils.getInt(params, "num_round");
         for (int iter = 0; iter < round; iter++) {
             booster.update(dtrain, iter);
 

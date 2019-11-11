@@ -18,7 +18,7 @@
  */
 package hivemall.xgboost.classification;
 
-import hivemall.xgboost.XGBoostBaseUDTF;
+import hivemall.xgboost.XGBoostTrainUDTF;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -32,17 +32,16 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
  */
 @Description(name = "train_multiclass_xgboost_classifier",
         value = "_FUNC_(string[] features, double target [, string options]) - Returns a relation consisting of <string model_id, array<byte> pred_model>")
-public final class XGBoostMulticlassClassifierUDTF extends XGBoostBaseUDTF {
+public final class XGBoostMulticlassClassifierUDTF extends XGBoostTrainUDTF {
+
+    private int numClass;
 
     public XGBoostMulticlassClassifierUDTF() {
         super();
     }
 
     {
-        // Settings for multiclass classification
         params.put("objective", "multi:softprob");
-        params.put("eval_metric", "error");
-        params.put("num_class", 2);
     }
 
     @Override
@@ -54,29 +53,29 @@ public final class XGBoostMulticlassClassifierUDTF extends XGBoostBaseUDTF {
 
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-        final CommandLine cli = super.processOptions(argOIs);
-        if (cli != null) {
-            if (cli.hasOption("num_class")) {
-                int _num_class = Integer.valueOf(cli.getOptionValue("num_class"));
-                if (_num_class < 2) {
-                    throw new UDFArgumentException(
-                        "num_class must be greater than 1: " + _num_class);
-                }
-                params.put("num_class", _num_class);
-            }
+        CommandLine cl = super.processOptions(argOIs);
+
+        if (!cl.hasOption("num_class")) {
+            throw new UDFArgumentException("-num_class is required for multiclass classification");
         }
-        return cli;
+
+        this.numClass = Integer.parseInt(cl.getOptionValue("num_class"));
+        params.put("num_class", numClass);
+
+        return cl;
     }
 
     @Override
-    protected void checkTargetValue(final float target) throws HiveException {
-        // TODO FIXME
-        double num_class = ((Integer) params.get("num_class")).doubleValue();
-        if (target < 0.0 || target > num_class
-                || Double.compare(target - Math.floor(target), 0.0) != 0) {
-            throw new HiveException("target must be {0.0, ..., "
-                    + String.format("%.1f", (num_class - 1.0)) + "}: " + target);
+    protected float checkTargetValue(final float target) throws HiveException {
+        final int clazz = (int) target;
+        if (clazz != target) {
+            throw new UDFArgumentException("Invalid target value for class label: " + target);
         }
+        if (clazz < 0 || clazz >= numClass) {
+            throw new UDFArgumentException("target must be {0.0, ..., "
+                    + String.format("%.1f", (numClass - 1.0)) + "}: " + target);
+        }
+        return target;
     }
 
 }

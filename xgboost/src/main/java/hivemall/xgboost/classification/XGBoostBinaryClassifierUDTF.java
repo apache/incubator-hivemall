@@ -18,9 +18,10 @@
  */
 package hivemall.xgboost.classification;
 
-import hivemall.xgboost.XGBoostBaseUDTF;
+import hivemall.xgboost.XGBoostTrainUDTF;
 
 import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 
 /**
@@ -29,23 +30,22 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 @Description(name = "train_xgboost_classifier",
         value = "_FUNC_(array<string> features, double target [, string options])"
                 + " - Returns a relation consisting of <string model_id, array<byte> pred_model>")
-public final class XGBoostBinaryClassifierUDTF extends XGBoostBaseUDTF {
+public final class XGBoostBinaryClassifierUDTF extends XGBoostTrainUDTF {
 
     public XGBoostBinaryClassifierUDTF() {
         super();
     }
 
     {
-        // Settings for binary classification
         params.put("objective", "binary:logistic");
-        params.put("eval_metric", "error");
     }
 
     @Override
-    protected void checkTargetValue(final float target) throws HiveException {
-        if (target != 0.f && target != 1.f) {
-            throw new HiveException("target must be 0.0 or 1.0: " + target);
+    protected float checkTargetValue(final float target) throws HiveException {
+        if (target != -1 && target != 0 && target != 1) {
+            throw new UDFArgumentException("Invalid label value for classification: " + target);
         }
+        return target > 0.f ? 1.f : 0.f;
     }
 
 }
