@@ -64,9 +64,6 @@ public final class SparseDMatrixBuilder extends DMatrixBuilder {
 
     @Nonnull
     public SparseDMatrixBuilder nextRow() {
-        int ptr = values.size();
-        rowPointers.add(ptr);
-
         if (sortRequired) {
             Collections.sort(colCache);
         }
@@ -75,6 +72,9 @@ public final class SparseDMatrixBuilder extends DMatrixBuilder {
             values.add(e.value);
         }
         colCache.clear();
+
+        int ptr = values.size();
+        rowPointers.add(ptr);
         return this;
     }
 
@@ -111,6 +111,11 @@ public final class SparseDMatrixBuilder extends DMatrixBuilder {
         @Override
         public int compareTo(ColValue o) {
             return Integer.compare(col, o.col);
+        }
+
+        @Override
+        public String toString() {
+            return "[column=" + col + ", value=" + value + ']';
         }
 
     }
