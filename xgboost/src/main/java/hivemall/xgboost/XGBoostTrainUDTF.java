@@ -22,7 +22,7 @@ import hivemall.UDTFWithOptions;
 import hivemall.utils.collections.lists.FloatArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.lang.ObjectUtils;
+import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.OptionUtils;
 import hivemall.utils.math.MathUtils;
 import hivemall.xgboost.utils.DMatrixBuilder;
@@ -437,7 +437,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     @Nonnull
     private static Text serializeModel(@Nonnull final Booster booster)
             throws IOException, XGBoostError {
-        byte[] b = ObjectUtils.toCompressedText(booster.toByteArray());
+        byte[] b = IOUtils.toCompressedText(booster.toByteArray());
         return new Text(b);
     }
 
