@@ -97,11 +97,11 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     protected Options getOptions() {
         final Options opts = new Options();
 
-        opts.addOption("num_round", true, "Number of boosting iterations [default: 10]");
+        opts.addOption("num_round", "iters", true, "Number of boosting iterations [default: 10]");
         opts.addOption("maximize_evaluation_metrics", true,
             "Maximize evaluation metrics [default: false]");
         opts.addOption("num_early_stopping_rounds", true,
-            "Minimum rounds required for early stopping [default: same as num_round (so no early stopping)]");
+            "Minimum rounds required for early stopping [default: 0]");
         opts.addOption("validation_ratio", true,
             "Validation ratio in range [0.0,1.0] [default: 0.2]");
 
@@ -223,7 +223,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
         params.put("maximize_evaluation_metrics",
             Primitives.parseBoolean(cl.getOptionValue("maximize_evaluation_metrics"), false));
         params.put("num_early_stopping_rounds",
-            Primitives.parseInt(cl.getOptionValue("num_early_stopping_rounds"), numRound));
+            Primitives.parseInt(cl.getOptionValue("num_early_stopping_rounds"), 0));
         double validationRatio =
                 Primitives.parseDouble(cl.getOptionValue("validation_ratio"), 0.2d);
         if (validationRatio < 0.d || validationRatio >= 1.d) {
@@ -300,6 +300,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
         }
 
         /** Learning Task Parameters */
+        params.put("objective", objective);
         params.put("base_score", Primitives.parseDouble(cl.getOptionValue("base_score"), 0.5d));
         if (cl.hasOption("eval_metric")) {
             params.put("eval_metric", cl.getOptionValue("eval_metric"));
@@ -334,6 +335,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                         + listOI.getTypeName());
         }
         this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
+        this.labels = new FloatArrayList(1024);
 
         final List<String> fieldNames = new ArrayList<>(2);
         final List<ObjectInspector> fieldOIs = new ArrayList<>(2);
@@ -395,8 +397,9 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             this.matrixBuilder = null;
             this.labels = null;
 
-            if (params.containsKey("num_early_stopping_rounds")) {
-                int earlyStoppingRounds = OptionUtils.getInt(params, "num_early_stopping_rounds");
+            final int round = OptionUtils.getInt(params, "num_round");
+            final int earlyStoppingRounds = OptionUtils.getInt(params, "num_early_stopping_rounds");
+            if (earlyStoppingRounds > 0) {
                 double validationRatio = OptionUtils.getDouble(params, "validation_ratio");
                 long seed = OptionUtils.getLong(params, "seed");
 
@@ -409,13 +412,13 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                 try {
                     dtest = dmatrix.slice(Arrays.copyOf(rows, numTest));
                     dtrain = dmatrix.slice(Arrays.copyOfRange(rows, numTest, rows.length));
-                    booster = train(dtrain, dtest, params, earlyStoppingRounds);
+                    booster = train(dtrain, dtest, round, earlyStoppingRounds, params);
                 } finally {
                     XGBoostUtils.close(dtrain);
                     XGBoostUtils.close(dtest);
                 }
             } else {
-                booster = train(dmatrix, params);
+                booster = train(dmatrix, round, params);
             }
 
             // Output the built model
@@ -433,12 +436,11 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
-    private static Booster train(@Nonnull final DMatrix dtrain,
+    private static Booster train(@Nonnull final DMatrix dtrain, @Nonnegative final int round,
             @Nonnull final Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException, XGBoostError {
         final Booster booster = XGBoostUtils.createBooster(dtrain, params);
-        final int round = OptionUtils.getInt(params, "num_round");
         for (int iter = 0; iter < round; iter++) {
             booster.update(dtrain, iter);
         }
@@ -447,7 +449,8 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
 
     @Nonnull
     private static Booster train(@Nonnull final DMatrix dtrain, @Nonnull final DMatrix dtest,
-            @Nonnull final Map<String, Object> params, @Nonnegative final int earlyStoppingRounds)
+            @Nonnegative final int round, @Nonnegative final int earlyStoppingRounds,
+            @Nonnull final Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException, XGBoostError {
         final Booster booster = XGBoostUtils.createBooster(dtrain, params);
@@ -458,7 +461,6 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
         int bestIteration = 0;
 
         final float[] metricsOut = new float[1];
-        final int round = OptionUtils.getInt(params, "num_round");
         for (int iter = 0; iter < round; iter++) {
             booster.update(dtrain, iter);
 
@@ -480,13 +482,11 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                 }
             }
 
-            if (earlyStoppingRounds > 0) {
-                if (shouldEarlyStop(earlyStoppingRounds, iter, bestIteration)) {
-                    logger.info(
-                        String.format("early stopping after %d rounds away from the best iteration",
-                            earlyStoppingRounds));
-                    break;
-                }
+            if (shouldEarlyStop(earlyStoppingRounds, iter, bestIteration)) {
+                logger.info(
+                    String.format("early stopping after %d rounds away from the best iteration",
+                        earlyStoppingRounds));
+                break;
             }
         }
 
