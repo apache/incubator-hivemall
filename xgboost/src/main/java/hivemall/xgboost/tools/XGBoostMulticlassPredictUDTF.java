@@ -18,7 +18,7 @@
  */
 package hivemall.xgboost.tools;
 
-import hivemall.xgboost.XGBoostPredictUDTF;
+import hivemall.xgboost.XGBoostOnlinePredictUDTF;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,10 +35,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(name = "xgboost_multiclass_predict",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, string label, float probability)")
-public final class XGBoostMulticlassPredictUDTF extends XGBoostPredictUDTF {
+public final class XGBoostMulticlassPredictUDTF extends XGBoostOnlinePredictUDTF {
 
     public XGBoostMulticlassPredictUDTF() {
-        super();
+        super(new Object[3]);
     }
 
     /** Return (string rowid, int label, double probability) as a result */
@@ -50,7 +50,7 @@ public final class XGBoostMulticlassPredictUDTF extends XGBoostPredictUDTF {
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("label");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaIntObjectInspector);
-        fieldNames.add("probability");
+        fieldNames.add("proba");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
@@ -59,14 +59,13 @@ public final class XGBoostMulticlassPredictUDTF extends XGBoostPredictUDTF {
     @Override
     protected void forwardPredicted(@Nonnull String rowId, @Nonnull double[] predicted)
             throws HiveException {
-        final Object[] forwardObj = new Object[3];
+        final Object[] forwardObj = _forwardObj;
         forwardObj[0] = rowId;
         for (int j = 0, ncols = predicted.length; j < ncols; j++) {
             forwardObj[1] = Integer.valueOf(j);
             forwardObj[2] = Double.valueOf(predicted[j]);
             forward(forwardObj);
         }
-
     }
 
 }

@@ -22,34 +22,36 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.util.FVec;
 import hivemall.UDTFWithOptions;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.FastByteArrayInputStream;
-import hivemall.utils.lang.Primitives;
-import hivemall.utils.struct.Pair;
-import hivemall.xgboost.utils.NativeLibLoader;
+import hivemall.utils.hadoop.WritableUtils;
+import hivemall.xgboost.utils.XGBoostUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
+import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.Text;
 
-public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
+@Description(name = "xgboost_predict",
+        value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
+                + "- Returns a prediction result as (string rowid, array<double> predicted)")
+public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
 
     // For input parameters
     private StringObjectInspector rowIdOI;
@@ -57,43 +59,38 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
     private StringObjectInspector modelIdOI;
     private StringObjectInspector modelOI;
 
-    private int batchSize;
-
     // For input buffer
     @Nullable
     private transient Map<String, Predictor> mapToModel;
-    @Nullable
-    private transient Map<String, List<Pair<String, FVec>>> rowBuffer;
 
-    // Settings for the XGBoost native library
-    static {
-        NativeLibLoader.initXGBoost();
+    @Nonnull
+    protected transient final Object[] _forwardObj;
+    @Nullable
+    protected transient List<DoubleWritable> _predictedCache;
+
+    public XGBoostOnlinePredictUDTF() {
+        this(new Object[2]);
     }
 
-    public XGBoostPredictUDTF() {
+    protected XGBoostOnlinePredictUDTF(@Nonnull Object[] forwardObj) {
         super();
+        this._forwardObj = forwardObj;
     }
 
     @Override
     protected Options getOptions() {
         Options opts = new Options();
-        opts.addOption("batch_size", true, "Number of rows to predict together [default: 128]");
+        // not yet supported
         return opts;
     }
 
     @Override
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
-        int batchSize = 128;
         CommandLine cl = null;
         if (argOIs.length >= 5) {
             String rawArgs = HiveUtils.getConstString(argOIs[4]);
             cl = parseOptions(rawArgs);
-            batchSize = Primitives.parseInt(cl.getOptionValue("batch_size"), batchSize);
-            if (batchSize < 1) {
-                throw new UDFArgumentException("batch_size must be greater than 0: " + batchSize);
-            }
         }
-        this.batchSize = batchSize;
         return cl;
     }
 
@@ -115,14 +112,24 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
     }
 
     /** Override this to output predicted results depending on a task type */
+    /** Return (string rowid, array<double> predicted) as a result */
     @Nonnull
-    protected abstract StructObjectInspector getReturnOI();
+    protected StructObjectInspector getReturnOI() {
+        List<String> fieldNames = new ArrayList<>(2);
+        List<ObjectInspector> fieldOIs = new ArrayList<>(2);
+        fieldNames.add("rowid");
+        fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        fieldNames.add("predicted");
+        fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
+        return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
+    }
+
 
     @Override
     public void process(Object[] args) throws HiveException {
         if (mapToModel == null) {
             this.mapToModel = new HashMap<String, Predictor>();
-            this.rowBuffer = new HashMap<String, List<Pair<String, FVec>>>();
         }
         if (args[1] == null) {// features is null
             return;
@@ -133,34 +140,19 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
         Predictor model = mapToModel.get(modelId);
         if (model == null) {
             Text arg3 = modelOI.getPrimitiveWritableObject(nonNullArgument(args, 3));
-            try {
-                model = new Predictor(
-                    new FastByteArrayInputStream(arg3.getBytes(), 0, arg3.getLength()));
-            } catch (IOException e) {
-                throw new HiveException("Failed to load a model: " + modelId, e);
-            }
+            model = XGBoostUtils.loadPredictor(arg3);
             mapToModel.put(modelId, model);
         }
 
-        List<Pair<String, FVec>> rowBatch = rowBuffer.get(modelId);
-        if (rowBatch == null) {
-            rowBatch = new ArrayList<>(batchSize);
-            rowBuffer.put(modelId, rowBatch);
-        }
-
         String rowId = PrimitiveObjectInspectorUtils.getString(nonNullArgument(args, 0), rowIdOI);
-        List<?> featureList = featureListOI.getList(args[1]);
-        Pair<String, FVec> row = parseRow(rowId, featureList);
-        rowBatch.add(row);
+        FVec features = parseFeatureVector(featureListOI.getList(args[1]));
 
-        if (rowBuffer.size() >= batchSize) {
-            predictAndFlush(model, rowBatch);
-        }
+        predictAndForward(model, rowId, features);
     }
 
     @Nonnull
-    protected static Pair<String, FVec> parseRow(@Nonnull final String rowId,
-            @Nonnull final List<?> featureList) throws UDFArgumentException {
+    private static FVec parseFeatureVector(@Nonnull final List<?> featureList)
+            throws UDFArgumentException {
         final Map<Integer, Float> map = new HashMap<>((int) (featureList.size() * 1.5));
         for (Object f : featureList) {
             if (f == null) {
@@ -182,35 +174,31 @@ public abstract class XGBoostPredictUDTF extends UDTFWithOptions {
             map.put(index, value);
         }
 
-        FVec fvec = FVec.Transformer.fromMap(map);
-        return new Pair<>(rowId, fvec);
+        return FVec.Transformer.fromMap(map);
+    }
+
+    private void predictAndForward(@Nonnull final Predictor model, @Nonnull final String rowId,
+            @Nonnull final FVec features) throws HiveException {
+        double[] predicted = model.predict(features);
+        // predicted[0] has
+        //    - probability ("binary:logistic")
+        //    - class label ("multi:softmax")
+        forwardPredicted(rowId, predicted);
+    }
+
+    protected void forwardPredicted(@Nonnull final String rowId, @Nonnull final double[] predicted)
+            throws HiveException {
+        List<DoubleWritable> list = WritableUtils.toWritableList(predicted, _predictedCache);
+        this._predictedCache = list;
+        Object[] forwardObj = this._forwardObj;
+        forwardObj[0] = rowId;
+        forwardObj[1] = list;
+        forward(forwardObj);
     }
 
     @Override
     public void close() throws HiveException {
-        for (Entry<String, List<Pair<String, FVec>>> r : rowBuffer.entrySet()) {
-            String modelId = r.getKey();
-            Predictor model = Objects.requireNonNull(mapToModel.get(modelId));
-            List<Pair<String, FVec>> rowBatch = r.getValue();
-            predictAndFlush(model, rowBatch);
-        }
+        this.mapToModel = null;
     }
-
-    private void predictAndFlush(final Predictor model, final List<Pair<String, FVec>> rowBatch)
-            throws HiveException {
-        for (Pair<String, FVec> r : rowBatch) {
-            String rowId = r.getKey();
-            FVec features = r.getValue();
-            double[] predicted = model.predict(features);
-            // prediction[0] has
-            //    - probability ("binary:logistic")
-            //    - class label ("multi:softmax")
-            forwardPredicted(rowId, predicted);
-        }
-        rowBatch.clear();
-    }
-
-    protected abstract void forwardPredicted(@Nonnull String rowId, @Nonnull double[] predicted)
-            throws HiveException;
 
 }

@@ -18,7 +18,10 @@
  */
 package hivemall.xgboost.utils;
 
+import biz.k11i.xgboost.Predictor;
 import hivemall.utils.io.FastByteArrayInputStream;
+import hivemall.utils.io.IOUtils;
+import hivemall.xgboost.XGBoostBatchPredictUDTF.LabeledPointWithRowId;
 import ml.dmlc.xgboost4j.LabeledPoint;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -29,6 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -36,36 +41,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.io.Text;
 
 public final class XGBoostUtils {
 
     private XGBoostUtils() {}
-
-    /** Transform List<String> inputs into a XGBoost input format */
-    @Nullable
-    public static LabeledPoint parseFeatures(@Nonnull final String rowId,
-            @Nonnull final String[] features, final float target) {
-        final int size = features.length;
-        if (size == 0) {
-            return null;
-        }
-
-        final int[] indices = new int[size];
-        final float[] values = new float[size];
-        for (int i = 0; i < size; i++) {
-            if (features[i] == null) {
-                continue;
-            }
-            final String str = features[i];
-            final int pos = str.indexOf(':');
-            if (pos >= 1) {
-                indices[i] = Integer.parseInt(str.substring(0, pos));
-                values[i] = Float.parseFloat(str.substring(pos + 1));
-            }
-        }
-
-        return new LabeledPoint(target, indices, values);
-    }
 
     @Nonnull
     public static String getVersion() throws HiveException {
@@ -82,12 +62,13 @@ public final class XGBoostUtils {
     }
 
     @Nonnull
-    public static Booster loadBooster(@Nonnull final byte[] input) throws HiveException {
-        try {
-            return XGBoost.loadModel(new FastByteArrayInputStream(input));
-        } catch (Exception e) {
-            throw new HiveException(e);
+    public static DMatrix createDMatrix(@Nonnull final List<LabeledPointWithRowId> data)
+            throws XGBoostError {
+        final List<LabeledPoint> points = new ArrayList<>(data.size());
+        for (LabeledPointWithRowId d : data) {
+            points.add(d);
         }
+        return new DMatrix(points.iterator(), "");
     }
 
     @Nonnull
@@ -119,6 +100,36 @@ public final class XGBoostUtils {
             booster.dispose();
         } catch (Throwable e) {
             ;
+        }
+    }
+
+    @Nonnull
+    public static Text serializeBooster(@Nonnull final Booster booster) throws HiveException {
+        try {
+            byte[] b = IOUtils.toCompressedText(booster.toByteArray());
+            return new Text(b);
+        } catch (Throwable e) {
+            throw new HiveException("Failed to serialize a booster", e);
+        }
+    }
+
+    @Nonnull
+    public static Booster deserializeBooster(@Nonnull final Text model) throws HiveException {
+        try {
+            byte[] b = IOUtils.fromCompressedText(model.getBytes(), model.getLength());
+            return XGBoost.loadModel(new FastByteArrayInputStream(b));
+        } catch (Throwable e) {
+            throw new HiveException("Failed to deserialize a booster", e);
+        }
+    }
+
+    @Nonnull
+    public static Predictor loadPredictor(@Nonnull final Text model) throws HiveException {
+        try {
+            byte[] b = IOUtils.fromCompressedText(model.getBytes(), model.getLength());
+            return new Predictor(new FastByteArrayInputStream(b));
+        } catch (Throwable e) {
+            throw new HiveException("Failed to create a predictor", e);
         }
     }
 

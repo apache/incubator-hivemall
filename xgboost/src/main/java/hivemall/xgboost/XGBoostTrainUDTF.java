@@ -22,7 +22,6 @@ import hivemall.UDTFWithOptions;
 import hivemall.utils.collections.lists.FloatArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.OptionUtils;
 import hivemall.utils.math.MathUtils;
 import hivemall.xgboost.utils.DMatrixBuilder;
@@ -36,7 +35,6 @@ import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -422,7 +420,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
 
             // Output the built model
             String modelId = generateUniqueModelId();
-            Text predModel = serializeModel(booster);
+            Text predModel = XGBoostUtils.serializeBooster(booster);
 
             logger.info("model_id:" + modelId.toString() + ", size:" + predModel.getLength());
             forward(new Object[] {modelId, predModel});
@@ -432,13 +430,6 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             XGBoostUtils.close(dmatrix);
             XGBoostUtils.close(booster);
         }
-    }
-
-    @Nonnull
-    private static Text serializeModel(@Nonnull final Booster booster)
-            throws IOException, XGBoostError {
-        byte[] b = IOUtils.toCompressedText(booster.toByteArray());
-        return new Text(b);
     }
 
     @Nonnull

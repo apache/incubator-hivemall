@@ -30,13 +30,13 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(name = "xgboost_predict",
+@Description(name = "xgboost_predict_proba",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, double predicted)")
-public final class XGBoostPredictUDTF extends hivemall.xgboost.XGBoostPredictUDTF {
+public final class XGBoostPredictProbaUDTF extends hivemall.xgboost.XGBoostOnlinePredictUDTF {
 
-    public XGBoostPredictUDTF() {
-        super();
+    public XGBoostPredictProbaUDTF() {
+        super(new Object[2]);
     }
 
     /** Return (string rowid, double predicted) as a result */
@@ -54,7 +54,7 @@ public final class XGBoostPredictUDTF extends hivemall.xgboost.XGBoostPredictUDT
     @Override
     protected void forwardPredicted(@Nonnull String rowId, @Nonnull double[] predicted)
             throws HiveException {
-        final Object[] forwardObj = new Object[2];
+        final Object[] forwardObj = _forwardObj;
         forwardObj[0] = rowId;
         forwardObj[1] = Double.valueOf(predicted[0]);
         forward(forwardObj);

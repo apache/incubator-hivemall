@@ -376,14 +376,13 @@ public final class IOUtils {
     }
 
     @Nonnull
-    public static byte[] fromCompressedText(@Nonnull final byte[] src)
-            throws ClassNotFoundException, IOException {
+    public static byte[] fromCompressedText(@Nonnull final byte[] src) throws IOException {
         return fromCompressedText(src, src.length);
     }
 
     @Nonnull
     public static byte[] fromCompressedText(@Nonnull final byte[] src, final int len)
-            throws IOException, ClassNotFoundException {
+            throws IOException {
         final FastByteArrayInputStream bis = new FastByteArrayInputStream(src, len);
         final FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream();
 
