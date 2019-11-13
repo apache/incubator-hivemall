@@ -66,7 +66,7 @@ public final class XGBoostMulticlassClassifierUDTF extends XGBoostTrainUDTF {
     }
 
     @Override
-    protected float checkTargetValue(final float target) throws HiveException {
+    protected float processTargetValue(final float target) throws HiveException {
         final int clazz = (int) target;
         if (clazz != target) {
             throw new UDFArgumentException("Invalid target value for class label: " + target);

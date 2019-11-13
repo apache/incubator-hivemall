@@ -347,7 +347,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     }
 
     /** To validate target range, overrides this method */
-    protected float checkTargetValue(float target) throws HiveException {
+    protected float processTargetValue(float target) throws HiveException {
         return target;
     }
 
@@ -359,7 +359,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
         parseFeatures(args[0], matrixBuilder);
 
         float target = PrimitiveObjectInspectorUtils.getFloat(args[1], targetOI);
-        labels.add(checkTargetValue(target));
+        labels.add(processTargetValue(target));
     }
 
     private void parseFeatures(@Nonnull final Object argObj,

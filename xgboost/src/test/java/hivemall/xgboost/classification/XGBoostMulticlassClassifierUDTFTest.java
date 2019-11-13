@@ -41,15 +41,15 @@ public class XGBoostMulticlassClassifierUDTFTest {
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                         "-num_class 4")});
 
-        udtf.checkTargetValue(1.0f);
-        udtf.checkTargetValue(3f);
+        udtf.processTargetValue(1.0f);
+        udtf.processTargetValue(3f);
     }
 
     @Test(expected = UDFArgumentException.class)
     public void testCheckInvalidTargetValue1() throws HiveException {
         XGBoostMulticlassClassifierUDTF udtf = new XGBoostMulticlassClassifierUDTF();
 
-        udtf.checkTargetValue(1.1f);
+        udtf.processTargetValue(1.1f);
         Assert.fail();
     }
 
@@ -60,7 +60,7 @@ public class XGBoostMulticlassClassifierUDTFTest {
             new ObjectInspector[] {null, null, ObjectInspectorUtils.getConstantObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-num_class 3")});
 
-        udtf.checkTargetValue(-2f);
+        udtf.processTargetValue(-2f);
         Assert.fail();
     }
 
@@ -71,7 +71,7 @@ public class XGBoostMulticlassClassifierUDTFTest {
             new ObjectInspector[] {null, null, ObjectInspectorUtils.getConstantObjectInspector(
                 PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-num_class 3")});
 
-        udtf.checkTargetValue(3f);
+        udtf.processTargetValue(3f);
         Assert.fail();
     }
 

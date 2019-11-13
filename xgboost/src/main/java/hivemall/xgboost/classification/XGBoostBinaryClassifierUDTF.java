@@ -41,7 +41,7 @@ public final class XGBoostBinaryClassifierUDTF extends XGBoostTrainUDTF {
     }
 
     @Override
-    protected float checkTargetValue(final float target) throws HiveException {
+    protected float processTargetValue(final float target) throws HiveException {
         if (target != -1 && target != 0 && target != 1) {
             throw new UDFArgumentException("Invalid label value for classification: " + target);
         }

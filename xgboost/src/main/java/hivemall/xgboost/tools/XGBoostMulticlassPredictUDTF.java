@@ -18,8 +18,7 @@
  */
 package hivemall.xgboost.tools;
 
-import hivemall.utils.lang.Preconditions;
-import hivemall.xgboost.XGBoostPredictBaseUDTF;
+import hivemall.xgboost.XGBoostPredictUDTF;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,15 +33,15 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 @Description(name = "xgboost_multiclass_predict",
-        value = "_FUNC_(string rowid, string[] features, string model_id, array<byte> pred_model [, string options]) "
+        value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, string label, float probability)")
-public final class XGBoostMulticlassPredictUDTF extends XGBoostPredictBaseUDTF {
+public final class XGBoostMulticlassPredictUDTF extends XGBoostPredictUDTF {
 
     public XGBoostMulticlassPredictUDTF() {
         super();
     }
 
-    /** Return (string rowid, int label, float probability) as a result */
+    /** Return (string rowid, int label, double probability) as a result */
     @Override
     protected StructObjectInspector getReturnOI() {
         final List<String> fieldNames = new ArrayList<>(3);
@@ -50,32 +49,24 @@ public final class XGBoostMulticlassPredictUDTF extends XGBoostPredictBaseUDTF {
         fieldNames.add("rowid");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("label");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.javaIntObjectInspector);
         fieldNames.add("probability");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
 
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
     @Override
-    protected void forwardPredicted(@Nonnull final List<LabeledPointWithRowId> testData,
-            @Nonnull final float[][] predicted) throws HiveException {
-        Preconditions.checkArgument(predicted.length == testData.size(), HiveException.class);
-
+    protected void forwardPredicted(@Nonnull String rowId, @Nonnull double[] predicted)
+            throws HiveException {
         final Object[] forwardObj = new Object[3];
-        for (int i = 0, size = testData.size(); i < size; i++) {
-            final float[] predicted_i = predicted[i];
-            String rowId = testData.get(i).getRowId();
-            forwardObj[0] = rowId;
-
-            assert (predicted_i.length > 1);
-            for (int j = 0; j < predicted_i.length; j++) {
-                forwardObj[1] = String.valueOf(j);
-                float prob = predicted_i[j];
-                forwardObj[2] = Float.valueOf(prob);
-                forward(forwardObj);
-            }
+        forwardObj[0] = rowId;
+        for (int j = 0, ncols = predicted.length; j < ncols; j++) {
+            forwardObj[1] = Integer.valueOf(j);
+            forwardObj[2] = Double.valueOf(predicted[j]);
+            forward(forwardObj);
         }
+
     }
 
 }

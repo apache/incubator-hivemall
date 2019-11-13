@@ -19,7 +19,6 @@
 package hivemall.xgboost.utils;
 
 import hivemall.utils.io.FastByteArrayInputStream;
-import hivemall.xgboost.XGBoostPredictBaseUDTF.LabeledPointWithRowId;
 import ml.dmlc.xgboost4j.LabeledPoint;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -30,8 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -101,16 +98,6 @@ public final class XGBoostUtils {
         Constructor<Booster> ctor = Booster.class.getDeclaredConstructor(args);
         ctor.setAccessible(true);
         return ctor.newInstance(new Object[] {params, new DMatrix[] {matrix}});
-    }
-
-    @Nonnull
-    public static DMatrix createDMatrix(@Nonnull final List<LabeledPointWithRowId> data)
-            throws XGBoostError {
-        final List<LabeledPoint> points = new ArrayList<>(data.size());
-        for (LabeledPointWithRowId d : data) {
-            points.add(d);
-        }
-        return new DMatrix(points.iterator(), null);
     }
 
     public static void close(@Nullable final DMatrix matrix) {

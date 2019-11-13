@@ -18,9 +18,6 @@
  */
 package hivemall.xgboost.tools;
 
-import hivemall.utils.lang.Preconditions;
-import hivemall.xgboost.XGBoostPredictBaseUDTF;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,15 +31,15 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 @Description(name = "xgboost_predict",
-        value = "_FUNC_(string rowid, string[] features, string model_id, array<byte> pred_model [, string options]) "
-                + "- Returns a prediction result as (string rowid, float predicted)")
-public final class XGBoostPredictUDTF extends XGBoostPredictBaseUDTF {
+        value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
+                + "- Returns a prediction result as (string rowid, double predicted)")
+public final class XGBoostPredictUDTF extends hivemall.xgboost.XGBoostPredictUDTF {
 
     public XGBoostPredictUDTF() {
         super();
     }
 
-    /** Return (string rowid, float predicted) as a result */
+    /** Return (string rowid, double predicted) as a result */
     @Override
     protected StructObjectInspector getReturnOI() {
         List<String> fieldNames = new ArrayList<>(2);
@@ -50,26 +47,17 @@ public final class XGBoostPredictUDTF extends XGBoostPredictBaseUDTF {
         fieldNames.add("rowid");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         fieldNames.add("predicted");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaFloatObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
     @Override
-    protected void forwardPredicted(@Nonnull final List<LabeledPointWithRowId> testData,
-            @Nonnull final float[][] predicted) throws HiveException {
-        Preconditions.checkArgument(predicted.length == testData.size(), HiveException.class);
-
+    protected void forwardPredicted(@Nonnull String rowId, @Nonnull double[] predicted)
+            throws HiveException {
         final Object[] forwardObj = new Object[2];
-        for (int i = 0, size = testData.size(); i < size; i++) {
-            assert (predicted[i].length == 1);
-
-            final String rowId = testData.get(i).getRowId();
-            float p = predicted[i][0];
-            forwardObj[0] = rowId;
-            forwardObj[1] = p;
-
-            forward(forwardObj);
-        }
+        forwardObj[0] = rowId;
+        forwardObj[1] = Double.valueOf(predicted[0]);
+        forward(forwardObj);
     }
 
 }
