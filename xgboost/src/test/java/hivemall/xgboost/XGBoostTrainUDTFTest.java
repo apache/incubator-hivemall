@@ -69,8 +69,7 @@ public class XGBoostTrainUDTFTest {
 
         String url =
                 "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train";
-        List<Object[]> dataset = loadDataset(url);
-        for (Object[] row : dataset) {
+        for (Object[] row : loadDataset(url)) {
             udtf.process(row);
         }
 
@@ -79,6 +78,7 @@ public class XGBoostTrainUDTFTest {
             public void collect(Object input) throws HiveException {
                 Object[] forwardedObj = (Object[]) input;
                 String modelId = (String) forwardedObj[0];
+                Assert.assertNotNull(modelId);
                 Text modelStr = (Text) forwardedObj[1];
                 Booster booster = XGBoostUtils.deserializeBooster(modelStr);
                 XGBoostUtils.close(booster);
@@ -92,7 +92,6 @@ public class XGBoostTrainUDTFTest {
                 }
                 Assert.assertEquals("gbtree", gbmName);
                 Assert.assertEquals("binary:logistic", objName);
-                System.out.println(modelId);
 
             }
         });
@@ -120,7 +119,21 @@ public class XGBoostTrainUDTFTest {
             @Override
             public void collect(Object input) throws HiveException {
                 Object[] forwardedObj = (Object[]) input;
-                System.out.println(forwardedObj[0]);
+                String modelId = (String) forwardedObj[0];
+                Assert.assertNotNull(modelId);
+                Text modelStr = (Text) forwardedObj[1];
+                Booster booster = XGBoostUtils.deserializeBooster(modelStr);
+                XGBoostUtils.close(booster);
+                Predictor predictor = XGBoostUtils.loadPredictor(modelStr);
+                final String gbmName, objName;
+                try {
+                    gbmName = (String) PrivilegedAccessor.getValue(predictor, "name_gbm");
+                    objName = (String) PrivilegedAccessor.getValue(predictor, "name_obj");
+                } catch (Exception e) {
+                    throw new HiveException(e);
+                }
+                Assert.assertEquals("gbtree", gbmName);
+                Assert.assertEquals("binary:logistic", objName);
             }
         });
         udtf.close();
