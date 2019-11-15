@@ -19,6 +19,7 @@
 package hivemall.xgboost;
 
 import hivemall.UDTFWithOptions;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.collections.lists.FloatArrayList;
 import hivemall.utils.hadoop.HadoopUtils;
 import hivemall.utils.hadoop.HiveUtils;
@@ -420,6 +421,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             } else {
                 booster = train(dmatrix, round, params);
             }
+            onFinishTraining(booster);
 
             // Output the built model
             String modelId = generateUniqueModelId();
@@ -434,6 +436,9 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             XGBoostUtils.close(booster);
         }
     }
+
+    @VisibleForTesting
+    protected void onFinishTraining(@Nonnull Booster booster) {}
 
     @Nonnull
     private static Booster train(@Nonnull final DMatrix dtrain, @Nonnegative final int round,

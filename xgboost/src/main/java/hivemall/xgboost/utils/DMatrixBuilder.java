@@ -51,6 +51,17 @@ public abstract class DMatrixBuilder {
         nextRow();
     }
 
+    public void nextRow(@Nonnull final String[] row, final int start, final int endEx) {
+        for (int i = start, last = Math.min(endEx, row.length); i < last; i++) {
+            String col = row[i];
+            if (col == null) {
+                continue;
+            }
+            nextColumn(col);
+        }
+        nextRow();
+    }
+
     @Nonnull
     public abstract DMatrixBuilder nextRow();
 

@@ -19,18 +19,27 @@
 package hivemall.xgboost;
 
 import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.util.FVec;
 import hivemall.TestUtils;
+import hivemall.utils.collections.lists.FloatArrayList;
 import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.PrivilegedAccessor;
+import hivemall.utils.lang.mutable.MutableObject;
+import hivemall.xgboost.utils.DMatrixBuilder;
+import hivemall.xgboost.utils.SparseDMatrixBuilder;
 import hivemall.xgboost.utils.XGBoostUtils;
 import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 
@@ -43,7 +52,13 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.Text;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.theories.DataPoints;
+import org.junit.experimental.theories.FromDataPoints;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 
+@RunWith(Theories.class)
 public class XGBoostTrainUDTFTest {
 
     @Test
@@ -56,32 +71,184 @@ public class XGBoostTrainUDTFTest {
             new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0.d}});
     }
 
-    @Test
-    public void testBinaryLogistic() throws HiveException, IOException {
-        XGBoostTrainUDTF udtf = new XGBoostTrainUDTF();
-        udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    "-objective binary:logistic")});
+    @DataPoints("trial")
+    public static final List<TestParameter> trial =
+            new TestParameter.Builder().trainDataset(
+                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train")
+                                       .testDataset(
+                                           "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test")
+                                       .metric(new ClassificationError(0.1f))
+                                       .hyperParams(new String[] {
+                                               "-objective binary:logistic -iters 10",
+                                               "-objective binary:logistic -iters 10 -num_early_stopping_rounds 3"})
+                                       .build();
 
-        String url =
-                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train";
-        for (Object[] row : loadDataset(url)) {
+
+    static class TestParameter {
+        @Nonnull
+        private final String trainDatasetUrl, testDatasetUrl;
+        @Nonnull
+        private final EvalMetric evalMetric;
+        @Nonnull
+        private final String hyperParams;
+
+        public TestParameter(String trainDatasetUrl, String testDatasetUrl, EvalMetric evalMetric,
+                String hyperParams) {
+            this.trainDatasetUrl = trainDatasetUrl;
+            this.testDatasetUrl = testDatasetUrl;
+            this.evalMetric = evalMetric;
+            this.hyperParams = hyperParams;
+        }
+
+        static class Builder {
+            private String trainDatasetUrl, testDatasetUrl;
+            private EvalMetric evalMetric;
+            private String[] hyperParams;
+
+            Builder trainDataset(String trainUrl) {
+                this.trainDatasetUrl = trainUrl;
+                return this;
+            }
+
+            Builder testDataset(String testUrl) {
+                this.testDatasetUrl = testUrl;
+                return this;
+            }
+
+            Builder metric(EvalMetric metric) {
+                this.evalMetric = metric;
+                return this;
+            }
+
+            Builder hyperParams(String[] hyperParams) {
+                this.hyperParams = hyperParams;
+                return this;
+            }
+
+            List<TestParameter> build() {
+                List<TestParameter> result = new ArrayList<>();
+                for (String p : hyperParams) {
+                    result.add(new TestParameter(trainDatasetUrl, testDatasetUrl, evalMetric, p));
+                }
+                return result;
+            }
+
+            static List<TestParameter> merge(Builder... builders) {
+                List<TestParameter> result = new ArrayList<>();
+                for (Builder builder : builders) {
+                    result.addAll(builder.build());
+                }
+                return result;
+            }
+
+        }
+    }
+
+    public interface EvalMetric {
+
+        void next(double[] predicted, float expected);
+
+        float result();
+
+        void assertExpected();
+    }
+
+    static class ClassificationError implements EvalMetric {
+
+        final float acceptedErrorRate;
+        int total = 0, errors = 0;
+
+        public ClassificationError(float acceptedErrorRate) {
+            this.acceptedErrorRate = acceptedErrorRate;
+        }
+
+        @Override
+        public void next(double[] predicted, float expected) {
+            Assert.assertEquals(1, predicted.length);
+            int expectedLabel = (expected > 0) ? 1 : 0;
+            double prob = predicted[0];
+            Assert.assertTrue(prob >= 0);
+            Assert.assertTrue(prob <= 1.0);
+            int actuallabel = (prob > 0.5f) ? 1 : 0;
+            if (expectedLabel != actuallabel) {
+                errors++;
+            }
+            total++;
+        }
+
+        @Override
+        public float result() {
+            return errors / (float) total;
+        }
+
+        @Override
+        public void assertExpected() {
+            float errorRate = result();
+            Assert.assertTrue(String.format(
+                "classification error rate expected to be less than or equals to %f but %f",
+                acceptedErrorRate, errorRate), errorRate <= acceptedErrorRate);
+        }
+
+    }
+
+
+    @Theory
+    public void testHyperParams(@FromDataPoints("trial") final TestParameter trial)
+            throws HiveException, IOException, XGBoostError {
+        final String trainDataUrl = trial.trainDatasetUrl;
+        final String testDataUrl = trial.testDatasetUrl;
+        final DMatrix testMatrix = loadDMatrix(testDataUrl);
+        final float[] testLabels = testMatrix.getLabel();
+        final EvalMetric metric = trial.evalMetric;
+
+        final MutableObject<float[][]> expectedPredictData = new MutableObject<>();
+        final XGBoostTrainUDTF udtf = new XGBoostTrainUDTF() {
+            @Override
+            protected void onFinishTraining(Booster booster) {
+                final float[][] result;
+                try {
+                    result = booster.predict(testMatrix);
+                } catch (XGBoostError e) {
+                    throw new RuntimeException(e);
+                }
+                expectedPredictData.set(result);
+            }
+        };
+        udtf.initialize(
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        trial.hyperParams)});
+
+        for (Object[] row : loadDataset(trainDataUrl)) {
             udtf.process(row);
         }
 
         udtf.setCollector(new Collector() {
             @Override
             public void collect(Object input) throws HiveException {
+                final float[][] expecteds = expectedPredictData.get();
+
                 Object[] forwardedObj = (Object[]) input;
                 String modelId = (String) forwardedObj[0];
                 Assert.assertNotNull(modelId);
                 Text modelStr = (Text) forwardedObj[1];
                 Booster booster = XGBoostUtils.deserializeBooster(modelStr);
-                XGBoostUtils.close(booster);
+                try {
+                    float[][] actuals = booster.predict(testMatrix);
+                    Assert.assertEquals(expecteds.length, actuals.length);
+                    for (int i = 0; i > expecteds.length; i++) {
+                        Assert.assertArrayEquals(expecteds[i], actuals[i], 1e-5f);
+                    }
+                } catch (XGBoostError e) {
+                    throw new HiveException(e);
+                } finally {
+                    XGBoostUtils.close(booster);
+                }
+
                 Predictor predictor = XGBoostUtils.loadPredictor(modelStr);
                 final String gbmName, objName;
                 try {
@@ -90,55 +257,33 @@ public class XGBoostTrainUDTFTest {
                 } catch (Exception e) {
                     throw new HiveException(e);
                 }
-                Assert.assertEquals("gbtree", gbmName);
-                Assert.assertEquals("binary:logistic", objName);
+                Assert.assertEquals(udtf.params.get("booster"), gbmName);
+                Assert.assertEquals(udtf.params.get("objective"), objName);
 
-            }
-        });
-        udtf.close();
-    }
-
-    @Test
-    public void testBinaryLogisticEarlyStopping() throws HiveException, IOException {
-        XGBoostTrainUDTF udtf = new XGBoostTrainUDTF();
-        udtf.initialize(new ObjectInspector[] {
-                ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                ObjectInspectorUtils.getConstantObjectInspector(
-                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
-                    "-objective binary:logistic -iters 10 -num_early_stopping_rounds 3")});
-
-        String url =
-                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train";
-        for (Object[] row : loadDataset(url)) {
-            udtf.process(row);
-        }
-
-        udtf.setCollector(new Collector() {
-            @Override
-            public void collect(Object input) throws HiveException {
-                Object[] forwardedObj = (Object[]) input;
-                String modelId = (String) forwardedObj[0];
-                Assert.assertNotNull(modelId);
-                Text modelStr = (Text) forwardedObj[1];
-                Booster booster = XGBoostUtils.deserializeBooster(modelStr);
-                XGBoostUtils.close(booster);
-                Predictor predictor = XGBoostUtils.loadPredictor(modelStr);
-                final String gbmName, objName;
+                final List<FVec> fvList;
                 try {
-                    gbmName = (String) PrivilegedAccessor.getValue(predictor, "name_gbm");
-                    objName = (String) PrivilegedAccessor.getValue(predictor, "name_obj");
-                } catch (Exception e) {
+                    fvList = loadDatasetFVec(testDataUrl);
+                } catch (IOException e) {
                     throw new HiveException(e);
                 }
-                Assert.assertEquals("gbtree", gbmName);
-                Assert.assertEquals("binary:logistic", objName);
+                Assert.assertEquals(expecteds.length, fvList.size());
+                for (int i = 0; i < expecteds.length; i++) {
+                    float[] expected = expecteds[i];
+                    FVec fv = fvList.get(i);
+                    double[] actual = predictor.predict(fv);
+                    Assert.assertEquals(expected.length, actual.length);
+                    for (int j = 0; j < expected.length; j++) {
+                        Assert.assertEquals(expected[j], actual[j], 1e-5d);
+                    }
+                    metric.next(actual, testLabels[i]);
+                }
             }
         });
         udtf.close();
-    }
+        testMatrix.dispose();
 
+        metric.assertExpected();
+    }
 
     @Nonnull
     private static List<Object[]> loadDataset(@Nonnull String urlString) throws IOException {
@@ -162,4 +307,72 @@ public class XGBoostTrainUDTFTest {
         return dataset;
     }
 
+    @Nonnull
+    private static DMatrix loadDMatrix(@Nonnull String urlString) throws IOException, XGBoostError {
+        final DMatrixBuilder builder = new SparseDMatrixBuilder(1024, false);
+        final FloatArrayList labels = new FloatArrayList(1024);
+
+        URL url = new URL(urlString);
+        BufferedReader reader = IOUtils.bufferedReader(url.openStream());
+
+        String line = reader.readLine();
+        while (line != null) {
+            String[] splitted = line.split(" ");
+
+            float label = Float.parseFloat(splitted[0]);
+            labels.add(label);
+            builder.nextRow(splitted, 1, splitted.length);
+
+            line = reader.readLine();
+        }
+
+        return builder.buildMatrix(labels.toArray());
+    }
+
+    @Nonnull
+    private static List<FVec> loadDatasetFVec(@Nonnull String urlString) throws IOException {
+        final List<FVec> dataset = new ArrayList<>();
+
+        URL url = new URL(urlString);
+        BufferedReader reader = IOUtils.bufferedReader(url.openStream());
+
+        String line = reader.readLine();
+        while (line != null) {
+            String[] splitted = line.split(" ");
+
+            FVec fv = parseFVec(splitted, 1, splitted.length);
+            dataset.add(fv);
+
+            line = reader.readLine();
+        }
+
+        return dataset;
+    }
+
+    @Nonnull
+    private static FVec parseFVec(@Nonnull final String[] row, final int start, final int end) {
+        final Map<Integer, Float> map = new HashMap<>((int) (row.length * 1.5));
+        for (int i = start; i < end; i++) {
+            String f = row[i];
+            if (f == null) {
+                continue;
+            }
+            String str = f.toString();
+            final int pos = str.indexOf(':');
+            if (pos < 1) {
+                throw new IllegalArgumentException("Invalid feature format: " + str);
+            }
+            final int index;
+            final float value;
+            try {
+                index = Integer.parseInt(str.substring(0, pos));
+                value = Float.parseFloat(str.substring(pos + 1));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Failed to parse a feature value: " + str);
+            }
+            map.put(index, value);
+        }
+
+        return FVec.Transformer.fromMap(map);
+    }
 }
