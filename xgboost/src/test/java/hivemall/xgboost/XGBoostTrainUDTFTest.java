@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
@@ -72,16 +73,15 @@ public class XGBoostTrainUDTFTest {
     }
 
     @DataPoints("trial")
-    public static final List<TestParameter> trial =
-            new TestParameter.Builder().trainDataset(
-                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train")
-                                       .testDataset(
-                                           "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test")
-                                       .metric(new ClassificationError(0.1f))
-                                       .hyperParams(new String[] {
-                                               "-objective binary:logistic -iters 10",
-                                               "-objective binary:logistic -iters 10 -num_early_stopping_rounds 3"})
-                                       .build();
+    public static final List<TestParameter> trial = TestParameter.merge(
+        new TestParameter.Builder().trainDataset(
+            "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train")
+                                   .testDataset(
+                                       "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test")
+                                   .metric(new ClassificationError(0.1f))
+                                   .hyperParams(new String[] {
+                                           "-objective binary:logistic -iters 10",
+                                           "-objective binary:logistic -iters 10 -num_early_stopping_rounds 3"}));
 
 
     static class TestParameter {
@@ -94,10 +94,10 @@ public class XGBoostTrainUDTFTest {
 
         public TestParameter(String trainDatasetUrl, String testDatasetUrl, EvalMetric evalMetric,
                 String hyperParams) {
-            this.trainDatasetUrl = trainDatasetUrl;
-            this.testDatasetUrl = testDatasetUrl;
-            this.evalMetric = evalMetric;
-            this.hyperParams = hyperParams;
+            this.trainDatasetUrl = Objects.requireNonNull(trainDatasetUrl);
+            this.testDatasetUrl = Objects.requireNonNull(testDatasetUrl);
+            this.evalMetric = Objects.requireNonNull(evalMetric);
+            this.hyperParams = Objects.requireNonNull(hyperParams);
         }
 
         static class Builder {
@@ -132,15 +132,14 @@ public class XGBoostTrainUDTFTest {
                 }
                 return result;
             }
+        }
 
-            static List<TestParameter> merge(Builder... builders) {
-                List<TestParameter> result = new ArrayList<>();
-                for (Builder builder : builders) {
-                    result.addAll(builder.build());
-                }
-                return result;
+        static List<TestParameter> merge(Builder... builders) {
+            List<TestParameter> result = new ArrayList<>();
+            for (Builder builder : builders) {
+                result.addAll(builder.build());
             }
-
+            return result;
         }
     }
 
