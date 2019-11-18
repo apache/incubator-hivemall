@@ -19,6 +19,7 @@
 package hivemall.xgboost.utils;
 
 import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.util.FVec;
 import hivemall.utils.io.FastByteArrayInputStream;
 import hivemall.utils.io.IOUtils;
 import hivemall.xgboost.XGBoostBatchPredictUDTF.LabeledPointWithRowId;
@@ -33,6 +34,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -131,6 +133,33 @@ public final class XGBoostUtils {
         } catch (Throwable e) {
             throw new HiveException("Failed to create a predictor", e);
         }
+    }
+
+    @Nonnull
+    public static FVec parseRowAsFVec(@Nonnull final String[] row, final int start, final int end) {
+        final Map<Integer, Float> map = new HashMap<>((int) (row.length * 1.5));
+        for (int i = start; i < end; i++) {
+            String f = row[i];
+            if (f == null) {
+                continue;
+            }
+            String str = f.toString();
+            final int pos = str.indexOf(':');
+            if (pos < 1) {
+                throw new IllegalArgumentException("Invalid feature format: " + str);
+            }
+            final int index;
+            final float value;
+            try {
+                index = Integer.parseInt(str.substring(0, pos));
+                value = Float.parseFloat(str.substring(pos + 1));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Failed to parse a feature value: " + str);
+            }
+            map.put(index, value);
+        }
+
+        return FVec.Transformer.fromMap(map);
     }
 
 }

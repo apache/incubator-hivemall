@@ -145,13 +145,13 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
         }
 
         String rowId = PrimitiveObjectInspectorUtils.getString(nonNullArgument(args, 0), rowIdOI);
-        FVec features = parseFeatureVector(featureListOI.getList(args[1]));
+        FVec features = parseFVec(featureListOI.getList(args[1]));
 
         predictAndForward(model, rowId, features);
     }
 
     @Nonnull
-    private static FVec parseFeatureVector(@Nonnull final List<?> featureList)
+    private static FVec parseFVec(@Nonnull final List<?> featureList)
             throws UDFArgumentException {
         final Map<Integer, Float> map = new HashMap<>((int) (featureList.size() * 1.5));
         for (Object f : featureList) {

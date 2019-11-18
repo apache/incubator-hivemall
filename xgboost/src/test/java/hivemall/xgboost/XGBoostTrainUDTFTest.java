@@ -20,29 +20,18 @@ package hivemall.xgboost;
 
 import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.util.FVec;
+import hivemall.TestBase;
 import hivemall.TestUtils;
-import hivemall.utils.collections.lists.FloatArrayList;
-import hivemall.utils.io.IOUtils;
 import hivemall.utils.lang.PrivilegedAccessor;
 import hivemall.utils.lang.mutable.MutableObject;
-import hivemall.xgboost.utils.DMatrixBuilder;
-import hivemall.xgboost.utils.SparseDMatrixBuilder;
 import hivemall.xgboost.utils.XGBoostUtils;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import javax.annotation.Nonnull;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
@@ -60,7 +49,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 @RunWith(Theories.class)
-public class XGBoostTrainUDTFTest {
+public class XGBoostTrainUDTFTest extends TestBase {
 
     @Test
     public void testSerialization() throws HiveException {
@@ -74,129 +63,22 @@ public class XGBoostTrainUDTFTest {
 
     @DataPoints("trial")
     public static final List<TestParameter> trial = TestParameter.merge(
-        new TestParameter.Builder().trainDataset(
-            "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train")
-                                   .testDataset(
-                                       "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test")
+        new TestParameter.Builder().dataset(
+            // 1. mashroom dataset
+            new LibsvmDataset(
+                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train",
+                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test"))
                                    .metric(new ClassificationError(0.1f))
                                    .hyperParams(new String[] {
                                            "-objective binary:logistic -iters 10",
                                            "-objective binary:logistic -iters 10 -num_early_stopping_rounds 3"}));
 
 
-    static class TestParameter {
-        @Nonnull
-        private final String trainDatasetUrl, testDatasetUrl;
-        @Nonnull
-        private final EvalMetric evalMetric;
-        @Nonnull
-        private final String hyperParams;
-
-        public TestParameter(String trainDatasetUrl, String testDatasetUrl, EvalMetric evalMetric,
-                String hyperParams) {
-            this.trainDatasetUrl = Objects.requireNonNull(trainDatasetUrl);
-            this.testDatasetUrl = Objects.requireNonNull(testDatasetUrl);
-            this.evalMetric = Objects.requireNonNull(evalMetric);
-            this.hyperParams = Objects.requireNonNull(hyperParams);
-        }
-
-        static class Builder {
-            private String trainDatasetUrl, testDatasetUrl;
-            private EvalMetric evalMetric;
-            private String[] hyperParams;
-
-            Builder trainDataset(String trainUrl) {
-                this.trainDatasetUrl = trainUrl;
-                return this;
-            }
-
-            Builder testDataset(String testUrl) {
-                this.testDatasetUrl = testUrl;
-                return this;
-            }
-
-            Builder metric(EvalMetric metric) {
-                this.evalMetric = metric;
-                return this;
-            }
-
-            Builder hyperParams(String[] hyperParams) {
-                this.hyperParams = hyperParams;
-                return this;
-            }
-
-            List<TestParameter> build() {
-                List<TestParameter> result = new ArrayList<>();
-                for (String p : hyperParams) {
-                    result.add(new TestParameter(trainDatasetUrl, testDatasetUrl, evalMetric, p));
-                }
-                return result;
-            }
-        }
-
-        static List<TestParameter> merge(Builder... builders) {
-            List<TestParameter> result = new ArrayList<>();
-            for (Builder builder : builders) {
-                result.addAll(builder.build());
-            }
-            return result;
-        }
-    }
-
-    public interface EvalMetric {
-
-        void next(double[] predicted, float expected);
-
-        float result();
-
-        void assertExpected();
-    }
-
-    static class ClassificationError implements EvalMetric {
-
-        final float acceptedErrorRate;
-        int total = 0, errors = 0;
-
-        public ClassificationError(float acceptedErrorRate) {
-            this.acceptedErrorRate = acceptedErrorRate;
-        }
-
-        @Override
-        public void next(double[] predicted, float expected) {
-            Assert.assertEquals(1, predicted.length);
-            int expectedLabel = (expected > 0) ? 1 : 0;
-            double prob = predicted[0];
-            Assert.assertTrue(prob >= 0);
-            Assert.assertTrue(prob <= 1.0);
-            int actuallabel = (prob > 0.5f) ? 1 : 0;
-            if (expectedLabel != actuallabel) {
-                errors++;
-            }
-            total++;
-        }
-
-        @Override
-        public float result() {
-            return errors / (float) total;
-        }
-
-        @Override
-        public void assertExpected() {
-            float errorRate = result();
-            Assert.assertTrue(String.format(
-                "classification error rate expected to be less than or equals to %f but %f",
-                acceptedErrorRate, errorRate), errorRate <= acceptedErrorRate);
-        }
-
-    }
-
-
     @Theory
     public void testHyperParams(@FromDataPoints("trial") final TestParameter trial)
             throws HiveException, IOException, XGBoostError {
-        final String trainDataUrl = trial.trainDatasetUrl;
-        final String testDataUrl = trial.testDatasetUrl;
-        final DMatrix testMatrix = loadDMatrix(testDataUrl);
+        final Dataset dataset = trial.dataset;
+        final DMatrix testMatrix = dataset.loadDatasetAsDMatrix(false);
         final float[] testLabels = testMatrix.getLabel();
         final EvalMetric metric = trial.evalMetric;
 
@@ -222,7 +104,7 @@ public class XGBoostTrainUDTFTest {
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                         trial.hyperParams)});
 
-        for (Object[] row : loadDataset(trainDataUrl)) {
+        for (Object[] row : dataset.loadDatasetAsListOfObjects(true)) {
             udtf.process(row);
         }
 
@@ -261,7 +143,7 @@ public class XGBoostTrainUDTFTest {
 
                 final List<FVec> fvList;
                 try {
-                    fvList = loadDatasetFVec(testDataUrl);
+                    fvList = dataset.loadDatasetAsListOfFVec(false);
                 } catch (IOException e) {
                     throw new HiveException(e);
                 }
@@ -284,94 +166,4 @@ public class XGBoostTrainUDTFTest {
         metric.assertExpected();
     }
 
-    @Nonnull
-    private static List<Object[]> loadDataset(@Nonnull String urlString) throws IOException {
-        final List<Object[]> dataset = new ArrayList<>();
-
-        URL url = new URL(urlString);
-        BufferedReader reader = IOUtils.bufferedReader(url.openStream());
-
-        String line = reader.readLine();
-        while (line != null) {
-            String[] splitted = line.split(" ");
-
-            Object[] row = new Object[2];
-            row[0] = Arrays.asList(Arrays.copyOfRange(splitted, 1, splitted.length));
-            row[1] = Double.parseDouble(splitted[0]);
-            dataset.add(row);
-
-            line = reader.readLine();
-        }
-
-        return dataset;
-    }
-
-    @Nonnull
-    private static DMatrix loadDMatrix(@Nonnull String urlString) throws IOException, XGBoostError {
-        final DMatrixBuilder builder = new SparseDMatrixBuilder(1024, false);
-        final FloatArrayList labels = new FloatArrayList(1024);
-
-        URL url = new URL(urlString);
-        BufferedReader reader = IOUtils.bufferedReader(url.openStream());
-
-        String line = reader.readLine();
-        while (line != null) {
-            String[] splitted = line.split(" ");
-
-            float label = Float.parseFloat(splitted[0]);
-            labels.add(label);
-            builder.nextRow(splitted, 1, splitted.length);
-
-            line = reader.readLine();
-        }
-
-        return builder.buildMatrix(labels.toArray());
-    }
-
-    @Nonnull
-    private static List<FVec> loadDatasetFVec(@Nonnull String urlString) throws IOException {
-        final List<FVec> dataset = new ArrayList<>();
-
-        URL url = new URL(urlString);
-        BufferedReader reader = IOUtils.bufferedReader(url.openStream());
-
-        String line = reader.readLine();
-        while (line != null) {
-            String[] splitted = line.split(" ");
-
-            FVec fv = parseFVec(splitted, 1, splitted.length);
-            dataset.add(fv);
-
-            line = reader.readLine();
-        }
-
-        return dataset;
-    }
-
-    @Nonnull
-    private static FVec parseFVec(@Nonnull final String[] row, final int start, final int end) {
-        final Map<Integer, Float> map = new HashMap<>((int) (row.length * 1.5));
-        for (int i = start; i < end; i++) {
-            String f = row[i];
-            if (f == null) {
-                continue;
-            }
-            String str = f.toString();
-            final int pos = str.indexOf(':');
-            if (pos < 1) {
-                throw new IllegalArgumentException("Invalid feature format: " + str);
-            }
-            final int index;
-            final float value;
-            try {
-                index = Integer.parseInt(str.substring(0, pos));
-                value = Float.parseFloat(str.substring(pos + 1));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Failed to parse a feature value: " + str);
-            }
-            map.put(index, value);
-        }
-
-        return FVec.Transformer.fromMap(map);
-    }
 }
