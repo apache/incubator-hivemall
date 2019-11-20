@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.xgboost.tools;
+package hivemall.xgboost;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +30,12 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(name = "xgboost_predict_proba",
+@Description(name = "xgboost_predict_one",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, double predicted)")
-public final class XGBoostPredictProbaUDTF extends hivemall.xgboost.XGBoostOnlinePredictUDTF {
+public final class XGBoostPredictOneUDTF extends hivemall.xgboost.XGBoostOnlinePredictUDTF {
 
-    public XGBoostPredictProbaUDTF() {
+    public XGBoostPredictOneUDTF() {
         super(new Object[2]);
     }
 

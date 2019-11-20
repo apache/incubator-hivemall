@@ -68,7 +68,7 @@ import org.apache.hadoop.io.Text;
  * tasks.
  */
 @Description(name = "train_xgboost",
-        value = "_FUNC_(array<string> features, double target [, string options])"
+        value = "_FUNC_(array<string|double> features, double target [, string options])"
                 + " - Returns a relation consisting of <string model_id, array<byte> pred_model>")
 public class XGBoostTrainUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(XGBoostTrainUDTF.class);
@@ -91,6 +91,29 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     // For XGBoost options
     @Nonnull
     protected final Map<String, Object> params = new HashMap<String, Object>();
+
+    protected int numClass;
+    protected ObjectiveType objectiveType = null;
+
+    public enum ObjectiveType {
+        regression, binary, multiclass, rank, other;
+
+        @Nonnull
+        public static ObjectiveType resolve(@Nonnull String objective) {
+            if (objective.startsWith("reg:")) {
+                return regression;
+            } else if (objective.startsWith("binary:")) {
+                return binary;
+            } else if (objective.startsWith("multi:")) {
+                return multiclass;
+            } else if (objective.startsWith("rank:")) {
+                return rank;
+            } else {
+                return other;
+            }
+        }
+    }
+
 
     public XGBoostTrainUDTF() {}
 
@@ -192,7 +215,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             "Specifies the learning task and the corresponding learning objective. "
                     + "Examples: reg:linear, reg:logistic, multi:softmax. "
                     + "For a full list of valid inputs, refer to XGBoost Parameters. "
-                    + "[default: reg:squarederror]");
+                    + "[default: reg:linear]");
         opts.addOption("base_score", true,
             "Initial prediction score of all instances, global bias [default: 0.5]");
         opts.addOption("eval_metric", true,
@@ -201,6 +224,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                     + "- map: for ranking\n"
                     + "For a list of valid inputs, see XGBoost Parameters.");
         opts.addOption("seed", true, "Random number seed. [default: 43]");
+        opts.addOption("num_class", true, "Number of classes to classify");
 
         return opts;
     }
@@ -216,7 +240,13 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             cl = parseOptions(""); // use default options
         }
 
-        final String objective = cl.getOptionValue("objective", "reg:squarederror");
+        String objective = cl.getOptionValue("objective", "reg:linear");
+        if (objective.equals("reg:squarederror")) {
+            // reg:linear is deprecated synonym of reg:squarederror
+            // however, reg:squarederror is not supported in xgboost-predictor yet
+            // https://github.com/dmlc/xgboost/pull/4267
+            objective = "reg:linear";
+        }
         final String booster = cl.getOptionValue("booster", "gbtree");
 
         int numRound = Primitives.parseInt(cl.getOptionValue("num_round"), 10);
@@ -254,7 +284,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             params.put("min_child_weight",
                 Primitives.parseDouble(cl.getOptionValue("min_child_weight"), 1.d));
             params.put("max_delta_step",
-                Primitives.parseInt(cl.getOptionValue("max_delta_step"), 0));
+                Primitives.parseDouble(cl.getOptionValue("max_delta_step"), 0.d));
             params.put("subsample", Primitives.parseDouble(cl.getOptionValue("subsample"), 1.d));
             params.put("colsamle_bytree",
                 Primitives.parseDouble(cl.getOptionValue("colsample_bytree"), 1.d));
@@ -300,6 +330,13 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                 Primitives.parseDouble(cl.getOptionValue("tweedie_variance_power"), 1.5d));
         }
 
+        /** Parameters for Poisson Regression (objective=count:poisson) */
+        if (objective.equals("count:poisson")) {
+            // max_delta_step is set to 0.7 by default in poisson regression (used to safeguard optimization)
+            params.put("max_delta_step",
+                Primitives.parseDouble(cl.getOptionValue("max_delta_step"), 0.7d));
+        }
+
         /** Learning Task Parameters */
         params.put("objective", objective);
         params.put("base_score", Primitives.parseDouble(cl.getOptionValue("base_score"), 0.5d));
@@ -307,6 +344,22 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             params.put("eval_metric", cl.getOptionValue("eval_metric"));
         }
         params.put("seed", Primitives.parseLong(cl.getOptionValue("seed"), 43L));
+
+        if (cl.hasOption("num_class")) {
+            this.numClass = Integer.parseInt(cl.getOptionValue("num_class"));
+            params.put("num_class", numClass);
+        } else {
+            if (objective.startsWith("multi:")) {
+                throw new UDFArgumentException(
+                    "-num_class is required for multiclass classification");
+            }
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info("XGboost training hyperparameters: " + params.toString());
+        }
+
+        this.objectiveType = ObjectiveType.resolve(objective);
 
         return cl;
     }
@@ -348,8 +401,30 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     }
 
     /** To validate target range, overrides this method */
-    protected float processTargetValue(float target) throws HiveException {
-        return target;
+    protected float processTargetValue(final float target) throws HiveException {
+        switch (objectiveType) {
+            case binary: {
+                if (target != -1 && target != 0 && target != 1) {
+                    throw new UDFArgumentException(
+                        "Invalid label value for classification: " + target);
+                }
+                return target > 0.f ? 1.f : 0.f;
+            }
+            case multiclass: {
+                final int clazz = (int) target;
+                if (clazz != target) {
+                    throw new UDFArgumentException(
+                        "Invalid target value for class label: " + target);
+                }
+                if (clazz < 0 || clazz >= numClass) {
+                    throw new UDFArgumentException("target must be {0.0, ..., "
+                            + String.format("%.1f", (numClass - 1.0)) + "}: " + target);
+                }
+                return target;
+            }
+            default:
+                return target;
+        }
     }
 
     @Override

@@ -24,12 +24,12 @@ import hivemall.TestBase;
 import hivemall.TestUtils;
 import hivemall.utils.lang.PrivilegedAccessor;
 import hivemall.utils.lang.mutable.MutableObject;
+import hivemall.utils.math.MathUtils;
 import hivemall.xgboost.utils.XGBoostUtils;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -63,22 +63,46 @@ public class XGBoostTrainUDTFTest extends TestBase {
 
     @DataPoints("trial")
     public static final List<TestParameter> trial = TestParameter.merge(
-        new TestParameter.Builder().dataset(
-            // 1. mashroom dataset
-            new LibsvmDataset(
-                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train",
-                "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test"))
+        // 1. binary classification
+        // mashroom dataset
+        new TestParameter.Builder().trainDataset(new LibsvmDataset(
+            "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train"))
+                                   .testDatase(new LibsvmDataset(
+                                       "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test"))
                                    .metric(new ClassificationError(0.1f))
                                    .hyperParams(new String[] {
                                            "-objective binary:logistic -iters 10",
-                                           "-objective binary:logistic -iters 10 -num_early_stopping_rounds 3"}));
+                                           "-objective binary:logistic -iters 10 -num_early_stopping_rounds 3"}),
+        // 2. multiclass classification
+        // https://archive.ics.uci.edu/ml/machine-learning-databases/dermatology/dermatology.data
+        new TestParameter.Builder().trainDataset(new DermatologyDataset(true, 0.7f))
+                                   .testDatase(new DermatologyDataset(false, 0.7f))
+                                   .metric(new MultiClassClassificationError(0.1f))
+                                   .hyperParams(new String[] {
+                                           "-objective multi:softmax -num_class 6 -max_depth 6 -eta 0.1 -num_round 5"}),
+        new TestParameter.Builder().trainDataset(new DermatologyDataset(true, 0.7f))
+                                   .testDatase(new DermatologyDataset(false, 0.7f))
+                                   .metric(new MultiClassClassificationError(0.1f))
+                                   .hyperParams(new String[] {
+                                           "-objective multi:softprob -num_class 6 -max_depth 6 -eta 0.1 -num_round 5"}),
+        // 3. regression
+        // https://archive.ics.uci.edu/ml/datasets/Computer+Hardware
+        // https://github.com/dmlc/xgboost/blob/master/demo/regression/machine.conf
+        new TestParameter.Builder().trainDataset(new LibsvmDataset(
+            "https://raw.githubusercontent.com/myui/ml_dataset/master/regr/computer_hardware/machine.txt.train"))
+                                   .testDatase(new LibsvmDataset(
+                                       "https://raw.githubusercontent.com/myui/ml_dataset/master/regr/computer_hardware/machine.txt.test"))
+                                   .metric(new MAE(40f))
+                                   .hyperParams(new String[] {
+                                           "-booster gbtree -objective reg:linear -eta 1.0 -gamma 1.0 -min_child_weight 1.0 -max_depth 3 -num_round 5"}));
 
 
     @Theory
     public void testHyperParams(@FromDataPoints("trial") final TestParameter trial)
-            throws HiveException, IOException, XGBoostError {
-        final Dataset dataset = trial.dataset;
-        final DMatrix testMatrix = dataset.loadDatasetAsDMatrix(false);
+            throws Exception {
+        final Dataset trainDataset = trial.trainDataset;
+        final Dataset testDataset = trial.testDataset;
+        final DMatrix testMatrix = testDataset.loadDatasetAsDMatrix();
         final float[] testLabels = testMatrix.getLabel();
         final EvalMetric metric = trial.evalMetric;
 
@@ -95,8 +119,8 @@ public class XGBoostTrainUDTFTest extends TestBase {
                 expectedPredictData.set(result);
             }
         };
-        udtf.initialize(
-            new ObjectInspector[] {
+        if (trainDataset.isSparseDataset()) {
+            udtf.initialize(new ObjectInspector[] {
                     ObjectInspectorFactory.getStandardListObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector),
                     PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
@@ -104,7 +128,17 @@ public class XGBoostTrainUDTFTest extends TestBase {
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector,
                         trial.hyperParams)});
 
-        for (Object[] row : dataset.loadDatasetAsListOfObjects(true)) {
+        } else {
+            udtf.initialize(new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaFloatObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        trial.hyperParams)});
+        }
+
+        for (Object[] row : trainDataset.loadDatasetAsListOfObjects()) {
             udtf.process(row);
         }
 
@@ -143,21 +177,31 @@ public class XGBoostTrainUDTFTest extends TestBase {
 
                 final List<FVec> fvList;
                 try {
-                    fvList = dataset.loadDatasetAsListOfFVec(false);
-                } catch (IOException e) {
+                    fvList = testDataset.loadDatasetAsListOfFVec();
+                } catch (Exception e) {
                     throw new HiveException(e);
                 }
                 Assert.assertEquals(expecteds.length, fvList.size());
+                int mismatches = 0;
                 for (int i = 0; i < expecteds.length; i++) {
                     float[] expected = expecteds[i];
                     FVec fv = fvList.get(i);
                     double[] actual = predictor.predict(fv);
                     Assert.assertEquals(expected.length, actual.length);
-                    for (int j = 0; j < expected.length; j++) {
-                        Assert.assertEquals(expected[j], actual[j], 1e-5d);
+                    if (!objName.startsWith("reg:")) {
+                        for (int j = 0; j < expected.length; j++) {
+                            if (!MathUtils.equals(expected[j], actual[j], 1e-5d)) {
+                                mismatches++;
+                                break;
+                            }
+                        }
                     }
                     metric.next(actual, testLabels[i]);
                 }
+                Assert.assertTrue(
+                    "Too many mismatches in prediction result between xgboost4j and xgboost-predictor: "
+                            + mismatches,
+                    mismatches <= 2);
             }
         });
         udtf.close();

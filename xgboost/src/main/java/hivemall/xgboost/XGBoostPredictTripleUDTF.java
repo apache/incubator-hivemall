@@ -16,9 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.xgboost.tools;
-
-import hivemall.xgboost.XGBoostOnlinePredictUDTF;
+package hivemall.xgboost;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,12 +30,12 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-@Description(name = "xgboost_multiclass_predict",
+@Description(name = "xgboost_predict_triple",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, string label, float probability)")
-public final class XGBoostMulticlassPredictUDTF extends XGBoostOnlinePredictUDTF {
+public final class XGBoostPredictTripleUDTF extends XGBoostOnlinePredictUDTF {
 
-    public XGBoostMulticlassPredictUDTF() {
+    public XGBoostPredictTripleUDTF() {
         super(new Object[3]);
     }
 

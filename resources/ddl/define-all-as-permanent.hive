@@ -900,20 +900,20 @@ CREATE FUNCTION majority_vote as 'hivemall.tools.aggr.MajorityVoteUDAF' USING JA
 -- XGBoost related features --
 ------------------------------
 
-DROP FUNCTION train_xgboost_regr;
-CREATE FUNCTION train_xgboost_regr AS 'hivemall.xgboost.regression.XGBoostRegressionUDTF' USING JAR '${hivemall_jar}';
-
-DROP FUNCTION train_xgboost_classifier;
-CREATE FUNCTION train_xgboost_classifier AS 'hivemall.xgboost.classification.XGBoostBinaryClassifierUDTF' USING JAR '${hivemall_jar}';
-
-DROP FUNCTION train_multiclass_xgboost_classifier;
-CREATE FUNCTION train_multiclass_xgboost_classifier AS 'hivemall.xgboost.classification.XGBoostMulticlassClassifierUDTF' USING JAR '${hivemall_jar}';
-
-DROP FUNCTION xgboost_predict;
-CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.tools.XGBoostPredictUDTF' USING JAR '${hivemall_jar}';
-
-DROP FUNCTION xgboost_multiclass_predict;
-CREATE FUNCTION xgboost_multiclass_predict AS 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF' USING JAR '${hivemall_jar}';
-
 DROP FUNCTION IF EXISTS xgboost_version;
 CREATE FUNCTION xgboost_version as 'hivemall.xgboost.XGBoostVersionUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION train_xgboost;
+CREATE FUNCTION train_xgboost AS 'hivemall.xgboost.XGBoostTrainUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION xgboost_predict;
+CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.XGBoostOnlinePredictUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION xgboost_batch_predict;
+CREATE FUNCTION xgboost_batch_predict AS 'hivemall.xgboost.XGBoostBatchPredictUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION xboost_predict_one;
+CREATE FUNCTION xboost_predict_one AS 'hivemall.xgboost.XGBoostPredictOneUDTF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION xboost_predict_triple;
+CREATE FUNCTION xboost_predict_triple AS 'hivemall.xgboost.XGBoostPredictTripleUDTF' USING JAR '${hivemall_jar}';
