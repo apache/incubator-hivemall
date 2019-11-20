@@ -912,8 +912,8 @@ CREATE FUNCTION xgboost_predict AS 'hivemall.xgboost.XGBoostOnlinePredictUDTF' U
 DROP FUNCTION xgboost_batch_predict;
 CREATE FUNCTION xgboost_batch_predict AS 'hivemall.xgboost.XGBoostBatchPredictUDTF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION xboost_predict_one;
-CREATE FUNCTION xboost_predict_one AS 'hivemall.xgboost.XGBoostPredictOneUDTF' USING JAR '${hivemall_jar}';
+DROP FUNCTION xgboost_predict_one;
+CREATE FUNCTION xgboost_predict_one AS 'hivemall.xgboost.XGBoostPredictOneUDTF' USING JAR '${hivemall_jar}';
 
-DROP FUNCTION xboost_predict_triple;
-CREATE FUNCTION xboost_predict_triple AS 'hivemall.xgboost.XGBoostPredictTripleUDTF' USING JAR '${hivemall_jar}';
+DROP FUNCTION xgboost_predict_triple;
+CREATE FUNCTION xgboost_predict_triple AS 'hivemall.xgboost.XGBoostPredictTripleUDTF' USING JAR '${hivemall_jar}';
