@@ -34,7 +34,7 @@
 
 	<properties>
 		<main.basedir>${project.parent.basedir}</main.basedir>
-		<xgboost.version>0.90-rc1</xgboost.version>
+		<xgboost.version>0.90-rc2</xgboost.version>
 	</properties>
 
 	<repositories>
