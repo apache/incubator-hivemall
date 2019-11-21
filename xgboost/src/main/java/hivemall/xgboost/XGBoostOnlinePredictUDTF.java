@@ -117,9 +117,7 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
     public StructObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
             throws UDFArgumentException {
         if (argOIs.length != 4 && argOIs.length != 5) {
-            throw new UDFArgumentException(this.getClass().getSimpleName()
-                    + " takes 4 or 5 arguments: string rowid, array<string> features, string model_id,"
-                    + " array<byte> pred_model [, string options]: " + argOIs.length);
+            showHelp("Invalid argment length=" + argOIs.length);
         }
         processOptions(argOIs);
 

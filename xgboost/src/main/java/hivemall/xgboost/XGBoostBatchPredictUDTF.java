@@ -132,9 +132,7 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
     public StructObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
             throws UDFArgumentException {
         if (argOIs.length != 4 && argOIs.length != 5) {
-            throw new UDFArgumentException(this.getClass().getSimpleName()
-                    + " takes 4 or 5 arguments: string rowid, string[] features, string model_id,"
-                    + " array<byte> pred_model [, string options]: " + argOIs.length);
+            showHelp("Invalid argment length=" + argOIs.length);
         }
         processOptions(argOIs);
 
@@ -206,8 +204,7 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
 
     @Nonnull
     private LabeledPointWithRowId parseRow(@Nonnull Object[] args) throws UDFArgumentException {
-        final Writable rowId =
-                HiveUtils.copyToWritable(nonNullArgument(args, 0), rowIdOI);
+        final Writable rowId = HiveUtils.copyToWritable(nonNullArgument(args, 0), rowIdOI);
 
         final Object arg1 = args[1];
         if (denseFeatures) {

@@ -58,8 +58,8 @@ public final class XGBoostPredictTripleUDTF extends XGBoostOnlinePredictUDTF {
     /** Return (string rowid, int label, double probability) as a result */
     @Override
     protected StructObjectInspector getReturnOI(@Nonnull PrimitiveObjectInspector rowIdOI) {
-        final List<String> fieldNames = new ArrayList<>(3);
-        final List<ObjectInspector> fieldOIs = new ArrayList<>(3);
+        List<String> fieldNames = new ArrayList<>(3);
+        List<ObjectInspector> fieldOIs = new ArrayList<>(3);
         fieldNames.add("rowid");
         fieldOIs.add(PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(
             rowIdOI.getPrimitiveCategory()));
