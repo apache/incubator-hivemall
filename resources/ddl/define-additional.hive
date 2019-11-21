@@ -27,12 +27,13 @@ create temporary function train_xgboost as 'hivemall.xgboost.XGBoostTrainUDTF';
 
 drop temporary function if exists xgboost_predict;
 create temporary function xgboost_predict as 'hivemall.xgboost.XGBoostOnlinePredictUDTF';
-\
+
 drop temporary function if exists xgboost_batch_predict;
 create temporary function xgboost_batch_predict as 'hivemall.xgboost.XGBoostBatchPredictUDTF';
 
 drop temporary function if exists xgboost_predict_one;
 create temporary function xgboost_predict_one as 'hivemall.xgboost.XGBoostPredictOneUDTF';
 
-rop temporary function if exists xgboost_predict_triple;
+drop temporary function if exists xgboost_predict_triple;
 create temporary function xgboost_predict_triple as 'hivemall.xgboost.XGBoostPredictTripleUDTF';
+
