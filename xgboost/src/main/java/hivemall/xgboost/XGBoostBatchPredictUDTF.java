@@ -56,10 +56,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 
 //@formatter:off
 @Description(name = "xgboost_batch_predict",
-        value = "_FUNC_(string rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
+        value = "_FUNC_(PRIMITIVE rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, array<double> predicted)",
         extended = "select\n" + 
                 "  rowid, \n" + 
@@ -77,7 +78,7 @@ import org.apache.hadoop.io.Text;
 public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
 
     // For input parameters
-    private StringObjectInspector rowIdOI;
+    private PrimitiveObjectInspector rowIdOI;
     private ListObjectInspector featureListOI;
     private boolean denseFeatures;
     @Nullable
@@ -116,7 +117,7 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
         int batchSize = 128;
         CommandLine cl = null;
         if (argOIs.length >= 5) {
-            String rawArgs = HiveUtils.getConstString(argOIs[4]);
+            String rawArgs = HiveUtils.getConstString(argOIs, 4);
             cl = parseOptions(rawArgs);
             batchSize = Primitives.parseInt(cl.getOptionValue("batch_size"), batchSize);
             if (batchSize < 1) {
@@ -137,9 +138,9 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
         }
         processOptions(argOIs);
 
-        this.rowIdOI = HiveUtils.asStringOI(argOIs[0]);
+        this.rowIdOI = HiveUtils.asPrimitiveObjectInspector(argOIs, 0);
 
-        this.featureListOI = HiveUtils.asListOI(argOIs[1]);
+        this.featureListOI = HiveUtils.asListOI(argOIs, 1);
         ObjectInspector elemOI = featureListOI.getListElementObjectInspector();
         if (HiveUtils.isNumberOI(elemOI)) {
             this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
@@ -151,20 +152,21 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
                 "Expected array<string|double> for the 2nd argment but got an unexpected features type: "
                         + featureListOI.getTypeName());
         }
-        this.modelIdOI = HiveUtils.asStringOI(argOIs[2]);
-        this.modelOI = HiveUtils.asStringOI(argOIs[3]);
+        this.modelIdOI = HiveUtils.asStringOI(argOIs, 2);
+        this.modelOI = HiveUtils.asStringOI(argOIs, 3);
 
-        return getReturnOI();
+        return getReturnOI(rowIdOI);
     }
 
     /** Override this to output predicted results depending on a task type */
     /** Return (string rowid, array<double> predicted) as a result */
     @Nonnull
-    protected StructObjectInspector getReturnOI() {
+    protected StructObjectInspector getReturnOI(@Nonnull PrimitiveObjectInspector rowIdOI) {
         List<String> fieldNames = new ArrayList<>(2);
         List<ObjectInspector> fieldOIs = new ArrayList<>(2);
         fieldNames.add("rowid");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(
+            rowIdOI.getPrimitiveCategory()));
         fieldNames.add("predicted");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
             PrimitiveObjectInspectorFactory.writableFloatObjectInspector));
@@ -204,8 +206,8 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
 
     @Nonnull
     private LabeledPointWithRowId parseRow(@Nonnull Object[] args) throws UDFArgumentException {
-        final String rowId =
-                PrimitiveObjectInspectorUtils.getString(nonNullArgument(args, 0), rowIdOI);
+        final Writable rowId =
+                HiveUtils.copyToWritable(nonNullArgument(args, 0), rowIdOI);
 
         final Object arg1 = args[1];
         if (denseFeatures) {
@@ -216,7 +218,7 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
-    private static LabeledPointWithRowId parseDenseFeatures(@Nonnull final String rowId,
+    private static LabeledPointWithRowId parseDenseFeatures(@Nonnull final Writable rowId,
             @Nonnull final Object argObj, @Nonnull final ListObjectInspector featureListOI,
             @Nonnull final PrimitiveObjectInspector featureElemOI) throws UDFArgumentException {
         final int size = featureListOI.getListLength(argObj);
@@ -237,7 +239,7 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
     }
 
     @Nonnull
-    private static LabeledPointWithRowId parseSparseFeatures(@Nonnull final String rowId,
+    private static LabeledPointWithRowId parseSparseFeatures(@Nonnull final Writable rowId,
             @Nonnull final Object argObj, @Nonnull final ListObjectInspector featureListOI)
             throws UDFArgumentException {
         final int size = featureListOI.getListLength(argObj);
@@ -320,7 +322,7 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
         forwardObj[1] = list;
 
         for (int i = 0; i < predicted.length; i++) {
-            String rowId = Objects.requireNonNull(rowBatch.get(i)).getRowId();
+            Writable rowId = Objects.requireNonNull(rowBatch.get(i)).getRowId();
             forwardObj[0] = rowId;
             WritableUtils.setValues(predicted[i], list);
             forward(forwardObj);
@@ -331,16 +333,16 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
         private static final long serialVersionUID = -7150841669515184648L;
 
         @Nonnull
-        final String rowId;
+        final Writable rowId;
 
-        LabeledPointWithRowId(@Nonnull String rowId, float label, @Nullable int[] indices,
+        LabeledPointWithRowId(@Nonnull Writable rowId, float label, @Nullable int[] indices,
                 @Nonnull float[] values) {
             super(label, indices, values);
             this.rowId = rowId;
         }
 
         @Nonnull
-        public String getRowId() {
+        public Writable getRowId() {
             return rowId;
         }
     }

@@ -27,12 +27,14 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.Writable;
 
 //@formatter:off
 @Description(name = "xgboost_predict_one",
-        value = "_FUNC_(string rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
+        value = "_FUNC_(PRIMITIVE rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, double predicted)",
         extended = "select\n" + 
                 "  rowid, \n" + 
@@ -54,18 +56,19 @@ public final class XGBoostPredictOneUDTF extends XGBoostOnlinePredictUDTF {
 
     /** Return (string rowid, double predicted) as a result */
     @Override
-    protected StructObjectInspector getReturnOI() {
+    protected StructObjectInspector getReturnOI(@Nonnull PrimitiveObjectInspector rowIdOI) {
         List<String> fieldNames = new ArrayList<>(2);
         List<ObjectInspector> fieldOIs = new ArrayList<>(2);
         fieldNames.add("rowid");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(
+            rowIdOI.getPrimitiveCategory()));
         fieldNames.add("predicted");
         fieldOIs.add(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
 
     @Override
-    protected void forwardPredicted(@Nonnull String rowId, @Nonnull double[] predicted)
+    protected void forwardPredicted(@Nonnull Writable rowId, @Nonnull double[] predicted)
             throws HiveException {
         final Object[] forwardObj = _forwardObj;
         forwardObj[0] = rowId;

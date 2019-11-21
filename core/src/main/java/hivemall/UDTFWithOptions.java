@@ -184,8 +184,7 @@ public abstract class UDTFWithOptions extends GenericUDTF {
     protected static <T> T checkNotNull(@CheckForNull final T arg, @Nonnegative final int index)
             throws UDFArgumentException {
         if (arg == null) {
-            throw new UDFArgumentException(
-                String.format("%d-th argument should not be null", index));
+            throw new UDFArgumentException(String.format("%d-th argument MUST not be null", index));
         }
         return arg;
     }
@@ -194,8 +193,7 @@ public abstract class UDTFWithOptions extends GenericUDTF {
             @Nonnegative final int index) throws UDFArgumentException {
         final Object arg = args[index];
         if (arg == null) {
-            throw new UDFArgumentException(
-                String.format("%d-th argument should not be null", index));
+            throw new UDFArgumentException(String.format("%d-th argument MUST not be null", index));
         }
         return arg;
     }

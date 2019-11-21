@@ -48,10 +48,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 
 //@formatter:off
 @Description(name = "xgboost_predict",
-        value = "_FUNC_(string rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
+        value = "_FUNC_(PRIMITIVE rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, array<double> predicted)",
         extended = "select\n" + 
                 "  rowid, \n" + 
@@ -69,7 +70,7 @@ import org.apache.hadoop.io.Text;
 public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
 
     // For input parameters
-    private StringObjectInspector rowIdOI;
+    private PrimitiveObjectInspector rowIdOI;
     private ListObjectInspector featureListOI;
     private boolean denseFeatures;
     @Nullable
@@ -106,7 +107,7 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         CommandLine cl = null;
         if (argOIs.length >= 5) {
-            String rawArgs = HiveUtils.getConstString(argOIs[4]);
+            String rawArgs = HiveUtils.getConstString(argOIs, 4);
             cl = parseOptions(rawArgs);
         }
         return cl;
@@ -122,8 +123,8 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
         }
         processOptions(argOIs);
 
-        this.rowIdOI = HiveUtils.asStringOI(argOIs[0]);
-        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[1]);
+        this.rowIdOI = HiveUtils.asPrimitiveObjectInspector(argOIs, 0);
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs, 1);
         this.featureListOI = listOI;
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         if (HiveUtils.isNumberOI(elemOI)) {
@@ -136,19 +137,20 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
                 "Expected array<string|double> for the 2nd argment but got an unexpected features type: "
                         + listOI.getTypeName());
         }
-        this.modelIdOI = HiveUtils.asStringOI(argOIs[2]);
-        this.modelOI = HiveUtils.asStringOI(argOIs[3]);
-        return getReturnOI();
+        this.modelIdOI = HiveUtils.asStringOI(argOIs, 2);
+        this.modelOI = HiveUtils.asStringOI(argOIs, 3);
+        return getReturnOI(rowIdOI);
     }
 
     /** Override this to output predicted results depending on a task type */
-    /** Return (string rowid, array<double> predicted) as a result */
+    /** Return (primitive rowid, array<double> predicted) as a result */
     @Nonnull
-    protected StructObjectInspector getReturnOI() {
+    protected StructObjectInspector getReturnOI(@Nonnull PrimitiveObjectInspector rowIdOI) {
         List<String> fieldNames = new ArrayList<>(2);
         List<ObjectInspector> fieldOIs = new ArrayList<>(2);
         fieldNames.add("rowid");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        fieldOIs.add(PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(
+            rowIdOI.getPrimitiveCategory()));
         fieldNames.add("predicted");
         fieldOIs.add(ObjectInspectorFactory.getStandardListObjectInspector(
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
@@ -173,7 +175,7 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
             mapToModel.put(modelId, model);
         }
 
-        String rowId = PrimitiveObjectInspectorUtils.getString(nonNullArgument(args, 0), rowIdOI);
+        Writable rowId = HiveUtils.copyToWritable(nonNullArgument(args, 0), rowIdOI);
         FVec features = denseFeatures ? parseDenseFeatures(args[1])
                 : parseSparseFeatures(featureListOI.getList(args[1]));
 
@@ -225,7 +227,7 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
         return FVec.Transformer.fromMap(map);
     }
 
-    private void predictAndForward(@Nonnull final Predictor model, @Nonnull final String rowId,
+    private void predictAndForward(@Nonnull final Predictor model, @Nonnull final Writable rowId,
             @Nonnull final FVec features) throws HiveException {
         double[] predicted = model.predict(features);
         // predicted[0] has
@@ -234,8 +236,8 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
         forwardPredicted(rowId, predicted);
     }
 
-    protected void forwardPredicted(@Nonnull final String rowId, @Nonnull final double[] predicted)
-            throws HiveException {
+    protected void forwardPredicted(@Nonnull final Writable rowId,
+            @Nonnull final double[] predicted) throws HiveException {
         List<DoubleWritable> list = WritableUtils.toWritableList(predicted, _predictedCache);
         this._predictedCache = list;
         Object[] forwardObj = this._forwardObj;

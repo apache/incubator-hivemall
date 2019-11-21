@@ -69,8 +69,8 @@ import org.apache.hadoop.io.Text;
  */
 //@formatter:off
 @Description(name = "train_xgboost",
-        value = "_FUNC_(array<string|double> features, double target [, string options])"
-                + " - Returns a relation consisting of <string model_id, array<byte> pred_model>",
+        value = "_FUNC_(array<string|double> features, int|double target [, string options])"
+                + " - Returns a relation consists of <string model_id, array<string> pred_model>",
         extended = "SELECT \n" + 
                 "  train_xgboost(features, label, '-objective binary:logistic -iters 10') \n" + 
                 "    as (model_id, model)\n" + 
@@ -244,7 +244,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     protected CommandLine processOptions(ObjectInspector[] argOIs) throws UDFArgumentException {
         final CommandLine cl;
         if (argOIs.length >= 3) {
-            String rawArgs = HiveUtils.getConstString(argOIs[2]);
+            String rawArgs = HiveUtils.getConstString(argOIs, 2);
             cl = parseOptions(rawArgs);
         } else {
             cl = parseOptions(""); // use default options
@@ -382,7 +382,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
         }
         processOptions(argOIs);
 
-        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs, 0);
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureListOI = listOI;
         if (HiveUtils.isNumberOI(elemOI)) {
@@ -398,7 +398,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                 "train_xgboost takes array<double> or array<string> for the first argument: "
                         + listOI.getTypeName());
         }
-        this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
+        this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs, 1);
         this.labels = new FloatArrayList(1024);
 
         final List<String> fieldNames = new ArrayList<>(2);
