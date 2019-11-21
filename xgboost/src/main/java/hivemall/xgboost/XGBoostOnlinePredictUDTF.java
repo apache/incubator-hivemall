@@ -50,7 +50,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspe
 import org.apache.hadoop.io.Text;
 
 @Description(name = "xgboost_predict",
-        value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
+        value = "_FUNC_(string rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, array<double> predicted)")
 public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
 
@@ -106,7 +106,8 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
                     + " takes 4 or 5 arguments: string rowid, array<string> features, string model_id,"
                     + " array<byte> pred_model [, string options]: " + argOIs.length);
         }
-        this.processOptions(argOIs);
+        processOptions(argOIs);
+
         this.rowIdOI = HiveUtils.asStringOI(argOIs[0]);
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[1]);
         this.featureListOI = listOI;
@@ -139,7 +140,6 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
             PrimitiveObjectInspectorFactory.writableDoubleObjectInspector));
         return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
     }
-
 
     @Override
     public void process(Object[] args) throws HiveException {

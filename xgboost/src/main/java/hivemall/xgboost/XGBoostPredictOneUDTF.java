@@ -33,7 +33,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @Description(name = "xgboost_predict_one",
         value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
                 + "- Returns a prediction result as (string rowid, double predicted)")
-public final class XGBoostPredictOneUDTF extends hivemall.xgboost.XGBoostOnlinePredictUDTF {
+public final class XGBoostPredictOneUDTF extends XGBoostOnlinePredictUDTF {
 
     public XGBoostPredictOneUDTF() {
         super(new Object[2]);
