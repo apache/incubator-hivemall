@@ -385,7 +385,7 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             this.matrixBuilder = new SparseDMatrixBuilder(8192);
         } else {
             throw new UDFArgumentException(
-                "_FUNC_ takes double[] or string[] for the first argument: "
+                "train_xgboost takes array<double> or array<string> for the first argument: "
                         + listOI.getTypeName());
         }
         this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);

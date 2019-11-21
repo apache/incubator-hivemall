@@ -33,6 +33,7 @@ import ml.dmlc.xgboost4j.java.XGBoostError;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.Collector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -208,6 +209,63 @@ public class XGBoostTrainUDTFTest extends TestBase {
         testMatrix.dispose();
 
         metric.assertExpected();
+    }
+
+    //---------------------------------------------------
+    // multiclass target value tests
+
+    @Test
+    public void testCheckTargetValueSucess() throws HiveException {
+        XGBoostTrainUDTF udtf = new XGBoostTrainUDTF();
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-objective multi:softmax -num_class 4")});
+
+        udtf.processTargetValue(1.0f);
+        udtf.processTargetValue(3f);
+    }
+
+    @Test(expected = UDFArgumentException.class)
+    public void testCheckInvalidTargetValue1() throws HiveException {
+        XGBoostTrainUDTF udtf = new XGBoostTrainUDTF();
+        udtf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-objective multi:softmax")});
+
+        udtf.processTargetValue(1.1f);
+        Assert.fail("-num_class option is missing");
+    }
+
+    @Test(expected = UDFArgumentException.class)
+    public void testCheckInvalidTargetValue2() throws HiveException {
+        XGBoostTrainUDTF udtf = new XGBoostTrainUDTF();
+        udtf.processOptions(new ObjectInspector[] {null, null,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-objective multi:softmax -num_class 3")});
+
+        udtf.processTargetValue(-2f);
+        Assert.fail();
+    }
+
+    @Test(expected = UDFArgumentException.class)
+    public void testCheckInvalidTargetValue3() throws HiveException {
+        XGBoostTrainUDTF udtf = new XGBoostTrainUDTF();
+        udtf.processOptions(new ObjectInspector[] {null, null,
+                ObjectInspectorUtils.getConstantObjectInspector(
+                    PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                    "-objective multi:softmax -num_class 3")});
+
+        udtf.processTargetValue(3f);
+        Assert.fail();
     }
 
 }

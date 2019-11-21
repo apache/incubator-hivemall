@@ -42,6 +42,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
@@ -56,6 +57,9 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
     // For input parameters
     private StringObjectInspector rowIdOI;
     private ListObjectInspector featureListOI;
+    private boolean denseFeatures;
+    @Nullable
+    private PrimitiveObjectInspector featureElemOI;
     private StringObjectInspector modelIdOI;
     private StringObjectInspector modelOI;
 
@@ -106,6 +110,17 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
         this.rowIdOI = HiveUtils.asStringOI(argOIs[0]);
         ListObjectInspector listOI = HiveUtils.asListOI(argOIs[1]);
         this.featureListOI = listOI;
+        ObjectInspector elemOI = listOI.getListElementObjectInspector();
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseFeatures = true;
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.denseFeatures = false;
+        } else {
+            throw new UDFArgumentException(
+                "Expected array<string|double> for the 2nd argment but got an unexpected features type: "
+                        + listOI.getTypeName());
+        }
         this.modelIdOI = HiveUtils.asStringOI(argOIs[2]);
         this.modelOI = HiveUtils.asStringOI(argOIs[3]);
         return getReturnOI();
@@ -145,15 +160,34 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
         }
 
         String rowId = PrimitiveObjectInspectorUtils.getString(nonNullArgument(args, 0), rowIdOI);
-        FVec features = parseFVec(featureListOI.getList(args[1]));
+        FVec features = denseFeatures ? parseDenseFeatures(args[1])
+                : parseSparseFeatures(featureListOI.getList(args[1]));
 
         predictAndForward(model, rowId, features);
     }
 
     @Nonnull
-    private static FVec parseFVec(@Nonnull final List<?> featureList)
+    private FVec parseDenseFeatures(@Nonnull Object argObj) throws UDFArgumentException {
+        final int length = featureListOI.getListLength(argObj);
+        final double[] values = new double[length];
+        for (int i = 0; i < length; i++) {
+            final Object o = featureListOI.getListElement(argObj, i);
+            final double v;
+            if (o == null) {
+                v = Double.NaN;
+            } else {
+                v = PrimitiveObjectInspectorUtils.getDouble(o, featureElemOI);
+            }
+            values[i] = v;
+
+        }
+        return FVec.Transformer.fromArray(values, false);
+    }
+
+    @Nonnull
+    private static FVec parseSparseFeatures(@Nonnull final List<?> featureList)
             throws UDFArgumentException {
-        final Map<Integer, Float> map = new HashMap<>((int) (featureList.size() * 1.5));
+        final Map<Integer, Double> map = new HashMap<>((int) (featureList.size() * 1.5));
         for (Object f : featureList) {
             if (f == null) {
                 continue;
@@ -164,10 +198,10 @@ public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
                 throw new UDFArgumentException("Invalid feature format: " + str);
             }
             final int index;
-            final float value;
+            final double value;
             try {
                 index = Integer.parseInt(str.substring(0, pos));
-                value = Float.parseFloat(str.substring(pos + 1));
+                value = Double.parseDouble(str.substring(pos + 1));
             } catch (NumberFormatException e) {
                 throw new UDFArgumentException("Failed to parse a feature value: " + str);
             }

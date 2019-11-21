@@ -39,6 +39,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -48,6 +49,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
@@ -63,6 +65,9 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
     // For input parameters
     private StringObjectInspector rowIdOI;
     private ListObjectInspector featureListOI;
+    private boolean denseFeatures;
+    @Nullable
+    private PrimitiveObjectInspector featureElemOI;
     private StringObjectInspector modelIdOI;
     private StringObjectInspector modelOI;
 
@@ -119,10 +124,18 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
         processOptions(argOIs);
 
         this.rowIdOI = HiveUtils.asStringOI(argOIs[0]);
-        this.featureListOI = HiveUtils.asListOI(argOIs[1]);;
-        if (HiveUtils.isStringOI(featureListOI.getListElementObjectInspector())) {
+
+        this.featureListOI = HiveUtils.asListOI(argOIs[1]);
+        ObjectInspector elemOI = featureListOI.getListElementObjectInspector();
+        if (HiveUtils.isNumberOI(elemOI)) {
+            this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
+            this.denseFeatures = true;
+        } else if (HiveUtils.isStringOI(elemOI)) {
+            this.denseFeatures = false;
+        } else {
             throw new UDFArgumentException(
-                "2nd argument expected to be array<string>: " + argOIs[1].getTypeName());
+                "Expected array<string|double> for the 2nd argment but got an unexpected features type: "
+                        + featureListOI.getTypeName());
         }
         this.modelIdOI = HiveUtils.asStringOI(argOIs[2]);
         this.modelOI = HiveUtils.asStringOI(argOIs[3]);
@@ -180,12 +193,45 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
         final String rowId =
                 PrimitiveObjectInspectorUtils.getString(nonNullArgument(args, 0), rowIdOI);
 
-        final List<?> features = featureListOI.getList(args[1]);
-        final int size = features.size();
+        final Object arg1 = args[1];
+        if (denseFeatures) {
+            return parseDenseFeatures(rowId, arg1, featureListOI, featureElemOI);
+        } else {
+            return parseSparseFeatures(rowId, arg1, featureListOI);
+        }
+    }
+
+    @Nonnull
+    private static LabeledPointWithRowId parseDenseFeatures(@Nonnull final String rowId,
+            @Nonnull final Object argObj, @Nonnull final ListObjectInspector featureListOI,
+            @Nonnull final PrimitiveObjectInspector featureElemOI) throws UDFArgumentException {
+        final int size = featureListOI.getListLength(argObj);
+
+        final float[] values = new float[size];
+        for (int i = 0; i < size; i++) {
+            final Object o = featureListOI.getListElement(argObj, i);
+            if (o == null) {
+                values[i] = Float.NaN;
+            } else {
+                float v = PrimitiveObjectInspectorUtils.getFloat(o, featureElemOI);
+                values[i] = v;
+            }
+        }
+
+        return new LabeledPointWithRowId(rowId, /* dummy label */ 0.f, null, values);
+
+    }
+
+    @Nonnull
+    private static LabeledPointWithRowId parseSparseFeatures(@Nonnull final String rowId,
+            @Nonnull final Object argObj, @Nonnull final ListObjectInspector featureListOI)
+            throws UDFArgumentException {
+        final int size = featureListOI.getListLength(argObj);
         final IntArrayList indices = new IntArrayList(size);
         final FloatArrayList values = new FloatArrayList(size);
+
         for (int i = 0; i < size; i++) {
-            Object f = features.get(i);
+            Object f = featureListOI.getListElement(argObj, i);
             if (f == null) {
                 continue;
             }
@@ -205,9 +251,11 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
             indices.add(index);
             values.add(value);
         }
+
         return new LabeledPointWithRowId(rowId, /* dummy label */ 0.f, indices.toArray(),
             values.toArray());
     }
+
 
     @Override
     public void close() throws HiveException {
@@ -269,9 +317,10 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
         private static final long serialVersionUID = -7150841669515184648L;
 
         @Nonnull
-        private final String rowId;
+        final String rowId;
 
-        LabeledPointWithRowId(@Nonnull String rowId, float label, int[] indices, float[] values) {
+        LabeledPointWithRowId(@Nonnull String rowId, float label, @Nullable int[] indices,
+                @Nonnull float[] values) {
             super(label, indices, values);
             this.rowId = rowId;
         }
