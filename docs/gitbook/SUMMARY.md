@@ -102,6 +102,7 @@
     * [General Binary Classifier](binaryclass/news20_generic.md)
     * [AdaGradRDA, AdaGrad, AdaDelta](binaryclass/news20_adagrad.md)
     * [Random Forest](binaryclass/news20_rf.md)
+    * [XGBoost](binaryclass/news20b_xgboost.md)
 
 * [KDD2010a Tutorial](binaryclass/kdd2010a.md)
     * [Data Preparation](binaryclass/kdd2010a_dataset.md)

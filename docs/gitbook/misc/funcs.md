@@ -636,15 +636,80 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 # XGBoost
 
-- `train_multiclass_xgboost_classifier(string[] features, double target [, string options])` - Returns a relation consisting of &lt;string model_id, array&lt;byte&gt; pred_model&gt;
+- `train_xgboost(array<string|double> features, int|double target [, string options])` - Returns a relation consists of &lt;string model_id, array&lt;string&gt; pred_model&gt;
+  ```sql
+  SELECT 
+    train_xgboost(features, label, '-objective binary:logistic -iters 10') 
+      as (model_id, model)
+  from (
+    select features, label
+    from xgb_input
+    cluster by rand(43) -- shuffle
+  ) shuffled;
+  ```
 
-- `train_xgboost_classifier(array<string> features, double target [, string options])` - Returns a relation consisting of &lt;string model_id, array&lt;byte&gt; pred_model&gt;
+- `xgboost_batch_predict(PRIMITIVE rowid, array<string|double> features, string model_id, array<string> pred_model [, string options])` - Returns a prediction result as (string rowid, array&lt;double&gt; predicted)
+  ```sql
+  select
+    rowid, 
+    array_avg(predicted) as predicted,
+    avg(predicted[0]) as predicted0
+  from (
+    select
+      xgboost_batch_predict(rowid, features, model_id, model) as (rowid, predicted)
+    from
+      xgb_model l
+      LEFT OUTER JOIN xgb_input r
+  ) t
+  group by rowid;
+  ```
 
-- `train_xgboost_regr(string[] features, double target [, string options])` - Returns a relation consisting of &lt;string model_id, array&lt;byte&gt; pred_model&gt;
+- `xgboost_predict(PRIMITIVE rowid, array<string|double> features, string model_id, array<string> pred_model [, string options])` - Returns a prediction result as (string rowid, array&lt;double&gt; predicted)
+  ```sql
+  select
+    rowid, 
+    array_avg(predicted) as predicted,
+    avg(predicted[0]) as predicted0
+  from (
+    select
+      xgboost_predict(rowid, features, model_id, model) as (rowid, predicted)
+    from
+      xgb_model l
+      LEFT OUTER JOIN xgb_input r
+  ) t
+  group by rowid;
+  ```
 
-- `xgboost_multiclass_predict(string rowid, string[] features, string model_id, array<byte> pred_model [, string options])` - Returns a prediction result as (string rowid, string label, float probability)
+- `xgboost_predict_one(PRIMITIVE rowid, array<string|double> features, string model_id, array<string> pred_model [, string options])` - Returns a prediction result as (string rowid, double predicted)
+  ```sql
+  select
+    rowid, 
+    avg(predicted) as predicted
+  from (
+    select
+      xgboost_predict_one(rowid, features, model_id, model) as (rowid, predicted)
+    from
+      xgb_model l
+      LEFT OUTER JOIN xgb_input r
+  ) t
+  group by rowid;
+  ```
 
-- `xgboost_predict(string rowid, string[] features, string model_id, array<byte> pred_model [, string options])` - Returns a prediction result as (string rowid, float predicted)
+- `xgboost_predict_triple(PRIMITIVE rowid, array<string|double> features, string model_id, array<string> pred_model [, string options])` - Returns a prediction result as (string rowid, string label, double probability)
+  ```sql
+  select
+    rowid,
+    label,
+    avg(prob) as prob
+  from (
+    select
+      xgboost_predict_triple(rowid, features, model_id, model) as (rowid, label, prob)
+    from
+      xgb_model l
+      LEFT OUTER JOIN xgb_input r
+  ) t
+  group by rowid, label;
+  ```
 
 - `xgboost_version()` - Returns the version of xgboost
   ```sql
