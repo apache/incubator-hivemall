@@ -155,9 +155,11 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
 
         /** Parameters among Boosters */
         opts.addOption("lambda", "reg_lambda", true,
-            "L2 regularization term on weights [default: 1.0 for gbtree, 0.0 for gblinear]");
+            "L2 regularization term on weights. Increasing this value will make model more conservative."
+                    + " [default: 1.0 for gbtree, 0.0 for gblinear]");
         opts.addOption("alpha", "reg_alpha", true,
-            "L1 regularization term on weights [default: 0.0]");
+            "L1 regularization term on weights. Increasing this value will make model more conservative."
+                    + " [default: 0.0]");
         opts.addOption("updater", true,
             "A comma-separated string that defines the sequence of tree updaters to run. "
                     + "For a full list of valid inputs, please refer to XGBoost Parameters."
@@ -182,7 +184,13 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             "Subsample ratio of columns for each level [default: 1.0]");
         opts.addOption("colsample_bynode", true,
             "Subsample ratio of columns for each node [default: 1.0]");
-        /* The memory-based version of XGBoost only supports `exact` */
+        // tree_method
+        opts.addOption("tree_method", true,
+            "The tree construction algorithm used in XGBoost. [default: auto, Choices: auto, exact, approx, hist]");
+        opts.addOption("sketch_eps", true,
+            "This roughly translates into O(1 / sketch_eps) number of bins. \n"
+                    + "Compared to directly select number of bins, this comes with theoretical guarantee with sketch accuracy.\n"
+                    + "Only used for tree_method=approx. Usually user does not have to tune this.  [default: 0.03]");
         opts.addOption("scale_pos_weight", true,
             "ontrol the balance of positive and negative weights, useful for unbalanced classes. "
                     + "A typical value to consider: sum(negative instances) / sum(positive instances)"
@@ -193,6 +201,17 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                     + "When it is 0, only node stats are updated. [default: 1]");
         opts.addOption("process_type", true,
             "A type of boosting process to run. [Choices: default, update]");
+        opts.addOption("grow_policy", true,
+            "Controls a way new nodes are added to the tree. Currently supported only if tree_method is set to hist."
+                    + " [default: depthwise, Choices: depthwise, lossguide]");
+        opts.addOption("max_leaves", true,
+            "Maximum number of nodes to be added. Only relevant when grow_policy=lossguide is set. [default: 0]");
+        opts.addOption("max_bin", true,
+            "Maximum number of discrete bins to bucket continuous features. Only used if tree_method is set to hist."
+                    + " [default: 256]");
+        opts.addOption("num_parallel_tree", true,
+            "Number of parallel trees constructed during each iteration. This option is used to support boosted random forest."
+                    + " [default: 1]");
 
         /** Parameters for Dart Booster (booster=dart) */
         opts.addOption("sample_type", true,
@@ -304,12 +323,17 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                 Primitives.parseDouble(cl.getOptionValue("colsamle_bynode"), 1.d));
             params.put("lambda", Primitives.parseDouble(cl.getOptionValue("lambda"), 1.d));
             params.put("alpha", Primitives.parseDouble(cl.getOptionValue("alpha"), 0.d));
+            params.put("tree_method", cl.getOptionValue("tree_method", "auto"));
+            params.put("sketch_eps",
+                Primitives.parseDouble(cl.getOptionValue("sketch_eps"), 0.03d));
             params.put("scale_pos_weight",
                 Primitives.parseDouble(cl.getOptionValue("scale_pos_weight"), 1.d));
             params.put("updater", cl.getOptionValue("updater", "grow_colmaker,prune"));
             params.put("refresh_leaf", Primitives.parseInt(cl.getOptionValue("refresh_leaf"), 1));
             params.put("process_type", cl.getOptionValue("process_type", "default"));
             params.put("grow_policy", cl.getOptionValue("grow_policy", "depthwise"));
+            params.put("max_leaves", Primitives.parseInt(cl.getOptionValue("max_leaves"), 0));
+            params.put("max_bin", Primitives.parseInt(cl.getOptionValue("max_bin"), 256));
             params.put("num_parallel_tree",
                 Primitives.parseInt(cl.getOptionValue("num_parallel_tree"), 1));
         }
