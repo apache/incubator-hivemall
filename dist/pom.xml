@@ -125,6 +125,7 @@
 									<!-- hivemall-xgboost -->
 									<include>org.apache.hivemall:hivemall-xgboost</include>
 									<include>io.github.myui:xgboost4j</include>
+									<include>biz.k11i:xgboost-predictor</include>
 									<include>com.esotericsoftware.kryo:kryo</include>
 									<!-- for Jason encoding/decoding -->
 									<include>org.codehaus.jackson:jackson-core-asl</include>

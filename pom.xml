@@ -303,6 +303,10 @@
 				<enabled>true</enabled>
 			</releases>
 		</repository>
+		<repository>
+			<id>jcenter</id>
+			<url>https://jcenter.bintray.com/</url>
+		</repository>
 	</repositories>
 
 	<issueManagement>
