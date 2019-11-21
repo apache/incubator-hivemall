@@ -67,9 +67,19 @@ import org.apache.hadoop.io.Text;
  * This is a base class to handle the options for XGBoost and provide common functions among various
  * tasks.
  */
+//@formatter:off
 @Description(name = "train_xgboost",
         value = "_FUNC_(array<string|double> features, double target [, string options])"
-                + " - Returns a relation consisting of <string model_id, array<byte> pred_model>")
+                + " - Returns a relation consisting of <string model_id, array<byte> pred_model>",
+        extended = "SELECT \n" + 
+                "  train_xgboost(features, label, '-objective binary:logistic -iters 10') \n" + 
+                "    as (model_id, model)\n" + 
+                "from (\n" + 
+                "  select features, label\n" + 
+                "  from xgb_input\n" + 
+                "  cluster by rand(43) -- shuffle\n" + 
+                ") shuffled;")
+//@formatter:on
 public class XGBoostTrainUDTF extends UDTFWithOptions {
     private static final Log logger = LogFactory.getLog(XGBoostTrainUDTF.class);
 

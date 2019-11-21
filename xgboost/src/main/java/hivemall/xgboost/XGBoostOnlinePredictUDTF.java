@@ -49,9 +49,23 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
 import org.apache.hadoop.io.Text;
 
+//@formatter:off
 @Description(name = "xgboost_predict",
         value = "_FUNC_(string rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
-                + "- Returns a prediction result as (string rowid, array<double> predicted)")
+                + "- Returns a prediction result as (string rowid, array<double> predicted)",
+        extended = "select\n" + 
+                "  rowid, \n" + 
+                "  array_avg(predicted) as predicted,\n" + 
+                "  avg(predicted[0]) as predicted0\n" + 
+                "from (\n" + 
+                "  select\n" + 
+                "    xgboost_predict(rowid, features, model_id, model) as (rowid, predicted)\n" + 
+                "  from\n" + 
+                "    xgb_model l\n" + 
+                "    LEFT OUTER JOIN xgb_input r\n" + 
+                ") t\n" + 
+                "group by rowid;")
+//@formatter:on
 public class XGBoostOnlinePredictUDTF extends UDTFWithOptions {
 
     // For input parameters

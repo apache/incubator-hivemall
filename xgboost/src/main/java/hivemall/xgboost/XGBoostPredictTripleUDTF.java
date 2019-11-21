@@ -30,9 +30,23 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+//@formatter:off
 @Description(name = "xgboost_predict_triple",
-        value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
-                + "- Returns a prediction result as (string rowid, string label, float probability)")
+        value = "_FUNC_(string rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
+                + "- Returns a prediction result as (string rowid, string label, double probability)",
+        extended = "select\n" + 
+                "  rowid,\n" + 
+                "  label,\n" + 
+                "  avg(prob) as prob\n" + 
+                "from (\n" + 
+                "  select\n" + 
+                "    xgboost_predict_triple(rowid, features, model_id, model) as (rowid, label, prob)\n" + 
+                "  from\n" + 
+                "    xgb_model l\n" + 
+                "    LEFT OUTER JOIN xgb_input r\n" + 
+                ") t\n" + 
+                "group by rowid, label;")
+//@formatter:on
 public final class XGBoostPredictTripleUDTF extends XGBoostOnlinePredictUDTF {
 
     public XGBoostPredictTripleUDTF() {

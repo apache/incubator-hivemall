@@ -30,9 +30,22 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+//@formatter:off
 @Description(name = "xgboost_predict_one",
-        value = "_FUNC_(string rowid, string[] features, string model_id, array<string> pred_model [, string options]) "
-                + "- Returns a prediction result as (string rowid, double predicted)")
+        value = "_FUNC_(string rowid, array<string|double> features, string model_id, array<string> pred_model [, string options]) "
+                + "- Returns a prediction result as (string rowid, double predicted)",
+        extended = "select\n" + 
+                "  rowid, \n" + 
+                "  avg(predicted) as predicted\n" + 
+                "from (\n" + 
+                "  select\n" + 
+                "    xgboost_predict_one(rowid, features, model_id, model) as (rowid, predicted)\n" + 
+                "  from\n" + 
+                "    xgb_model l\n" + 
+                "    LEFT OUTER JOIN xgb_input r\n" + 
+                ") t\n" + 
+                "group by rowid;")
+//@formatter:on
 public final class XGBoostPredictOneUDTF extends XGBoostOnlinePredictUDTF {
 
     public XGBoostPredictOneUDTF() {
