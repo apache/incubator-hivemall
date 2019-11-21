@@ -274,9 +274,12 @@ public final class XGBoostBatchPredictUDTF extends UDTFWithOptions {
     public void close() throws HiveException {
         for (Entry<String, List<LabeledPointWithRowId>> e : rowBuffer.entrySet()) {
             String modelId = e.getKey();
+            List<LabeledPointWithRowId> rowBatch = e.getValue();
+            if (rowBatch.isEmpty()) {
+                continue;
+            }
             final Booster model = Objects.requireNonNull(mapToModel.get(modelId));
             try {
-                List<LabeledPointWithRowId> rowBatch = e.getValue();
                 predictAndFlush(model, rowBatch);
             } finally {
                 XGBoostUtils.close(model);
