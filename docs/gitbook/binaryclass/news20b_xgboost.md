@@ -325,7 +325,8 @@ as
 select
   rowid,
   -- voting
-  if(sum(if(predicted[0]=1,1,0)) > sum(if(predicted[0]=0,1,0)),1,-1) as predicted
+  -- if(sum(if(predicted[0]=1,1,0)) > sum(if(predicted[0]=0,1,0)),1,-1) as predicted
+  majority_vote(if(predicted[0]=1, 1, -1)) as predicted
 from (
   select
     -- binary:hinge is not supported in xgboost_predict

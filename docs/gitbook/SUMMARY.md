@@ -147,6 +147,7 @@
     * [Data Preparation](regression/e2006_dataset.md)
     * [General Regessor](regression/e2006_generic.md)
     * [Passive Aggressive, AROW](regression/e2006_arow.md)
+    * [XGBoost](regression/e2006_xgboost.md)
 
 * [KDDCup 2012 Track 2 CTR Prediction Tutorial](regression/kddcup12tr2.md)
     * [Data Preparation](regression/kddcup12tr2_dataset.md)

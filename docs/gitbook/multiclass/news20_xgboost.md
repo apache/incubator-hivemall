@@ -43,6 +43,17 @@ from (
   from news20mc_train
   cluster by rand(43) -- shuffle data to reducers
 ) shuffled;
+
+drop table xgb_softprob_model;
+create table xgb_softprob_model as
+select 
+  train_xgboost(features, label, '-objective multi:softprob -num_class 20 -num_round 10 -num_early_stopping_rounds 3') 
+    as (model_id, model)
+from (
+  select features, (label - 1) as label
+  from news20mc_train
+  cluster by rand(43) -- shuffle data to reducers
+) shuffled;
 ```
 
 > #### Caution
@@ -52,11 +63,11 @@ from (
 ## prediction
 
 ```sql
-drop table xgb_predicted;
-create table xgb_predicted as
+drop table xgb_softmax_predicted;
+create table xgb_softmax_predicted as
 select
   rowid,
-  cast(predicted as int) as predicted
+  majority_vote(cast(predicted as int) + 1) as label
 from (
   select
     xgboost_predict_one(rowid, features, model_id, model) as (rowid, predicted)
@@ -65,23 +76,62 @@ from (
     LEFT OUTER JOIN news20mc_test r
 ) t
 group by rowid;
+
+
+drop table xgb_softprob_predicted;
+create table xgb_softprob_predicted as
+select
+  rowid,
+  array_avg(predicted) as prob,
+  argmax(array_avg(predicted)) + 1 as label -- convert 0 start index to 1 start index
+from (
+  select
+    xgboost_predict(rowid, features, model_id, model) as (rowid, predicted)
+  from
+    xgb_softprob_model l
+    LEFT OUTER JOIN news20mc_test r
+) t
+group by
+  rowid;
 ```
+
+> #### Caution
+> For `-objective softmax`, xgboost predictor returns class label in double.
+> For `-objective softprob`, probabilities for each label is returned in `array<double>`.
 
 ## evaluation
 
 ```sql
-create or replace view news20mc_cw_submit1 as
+WITH validate as (
+  select 
+    t.label as actual, 
+    p.label as predicted
+  from 
+    news20mc_test t
+    JOIN xgb_softmax_predicted p
+      on (t.rowid = p.rowid)
+)
 select 
-  t.label as actual, 
-  pd.label as predicted
-from 
-  news20mc_test t JOIN news20mc_cw_predict1 pd 
-    on (t.rowid = pd.rowid);
+  sum(if(actual=predicted,1.0,0.0))/count(1) 
+from
+  validate;
+
+WITH validate as (
+  select 
+    t.label as actual, 
+    p.label as predicted
+  from 
+    news20mc_test t
+    JOIN xgb_softprob_predicted p
+      on (t.rowid = p.rowid)
+)
+select 
+  sum(if(actual=predicted,1.0,0.0))/count(1) 
+from
+  validate;
 ```
 
-```
-select count(1)/3993 from news20mc_cw_submit1 
-where actual == predicted;
-```
-
-> 0.850488354620586
+|objective| accuracy|
+|:-:|:-:|
+| softmax | 0.6689206110693713999 |
+| softprob | 0.6944653143000250438 |
