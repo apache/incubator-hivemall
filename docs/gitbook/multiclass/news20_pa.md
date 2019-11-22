@@ -16,25 +16,13 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
-Preparation
-=========
 
-## UDF preparation
-```
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
+<!-- toc -->
 
-source /home/myui/tmp/define-all.hive;
-```
+# Passive Aggressive (PA2)
 
----
-#[Passive Aggressive (PA2)]
+## Training
 
-Training
-======
-
-## model building
 ```sql
 drop table news20mc_pa2_model1;
 create table news20mc_pa2_model1 as
@@ -51,7 +39,7 @@ from
 group by label, feature;
 ```
 
-## prediction
+## Prediction
 ```
 create or replace view news20mc_pa2_predict1 
 as
@@ -78,7 +66,7 @@ group by rowid
 ) t2;
 ```
 
-## evaluation
+## Evaluation
 ```sql
 create or replace view news20mc_pa2_submit1 as
 select 
@@ -99,11 +87,3 @@ where actual == predicted;
 > 0.8204357625845229 (x3)
 
 > 0.8204357625845229 (x3 + bagging)
-
-## Cleaning
-
-```sql
-drop table news20mc_pa2_model1;
-drop table news20mc_pa2_predict1;
-drop view news20mc_pa2_submit1;
-```

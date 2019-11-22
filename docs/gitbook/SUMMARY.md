@@ -129,6 +129,7 @@
     * [Data Preparation for one-vs-the-rest classifiers](multiclass/news20_one-vs-the-rest_dataset.md)
     * [PA](multiclass/news20_pa.md)
     * [CW, AROW, SCW](multiclass/news20_scw.md)
+    * [XGBoost](multiclass/news20_xgboost.md)
     * [Ensemble learning](multiclass/news20_ensemble.md)
     * [one-vs-the-rest Classifier](multiclass/news20_one-vs-the-rest.md)
 
@@ -136,6 +137,7 @@
     * [Data preparation](multiclass/iris_dataset.md)
     * [SCW](multiclass/iris_scw.md)
     * [Random Forest](multiclass/iris_randomforest.md)
+    * [XGBoost](multiclass/iris_xgboost.md)
 
 ## Part VIII - Regression
 
