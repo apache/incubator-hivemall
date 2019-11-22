@@ -64,12 +64,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.Text;
 
 /**
- * This is a base class to handle the options for XGBoost and provide common functions among various
- * tasks.
+ * UDTF for train_xgboost
  */
 //@formatter:off
 @Description(name = "train_xgboost",
-        value = "_FUNC_(array<string|double> features, int|double target [, string options])"
+        value = "_FUNC_(array<string|double> features, <int|double> target, const string options)"
                 + " - Returns a relation consists of <string model_id, array<string> pred_model>",
         extended = "SELECT \n" + 
                 "  train_xgboost(features, label, '-objective binary:logistic -iters 10') \n" + 
@@ -210,7 +209,8 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             "Maximum number of discrete bins to bucket continuous features. Only used if tree_method is set to hist."
                     + " [default: 256]");
         opts.addOption("num_parallel_tree", true,
-            "Number of parallel trees constructed during each iteration. This option is used to support boosted random forest."
+            "Number of parallel trees constructed during each iteration. This option is used to support boosted random forest. "
+                    + "Usually no need to tune (default 1 is enough) for gradient boosting trees."
                     + " [default: 1]");
 
         /** Parameters for Dart Booster (booster=dart) */
@@ -269,7 +269,16 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
             cl = parseOptions(""); // use default options
         }
 
-        String objective = cl.getOptionValue("objective", "reg:linear");
+        String objective = cl.getOptionValue("objective");
+        if (objective == null) {
+            showHelp("Please provide \"-objective XXX\" option in the 3rd argument.\n\n"
+                    + "Here is the list of supported objectives: \n"
+                    + " - Regression:\n {reg:squarederror, reg:logistic, reg:gamma, reg:tweedie}\n"
+                    + " - Binary classification: {binary:logistic, binary:logitraw, binary:hinge}\n"
+                    + " - Multiclass classification:\n {multi:softmax, multi:softprob}\n"
+                    + " - Ranking:\n {rank:pairwise, rank:ndcg, rank:map}\n"
+                    + " - Other:\n {count:poisson, survival:cox}");
+        }
         if (objective.equals("reg:squarederror")) {
             // reg:linear is deprecated synonym of reg:squarederror
             // however, reg:squarederror is not supported in xgboost-predictor yet

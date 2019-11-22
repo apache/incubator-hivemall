@@ -58,7 +58,10 @@ public class XGBoostTrainUDTFTest extends TestBase {
             new ObjectInspector[] {
                     ObjectInspectorFactory.getStandardListObjectInspector(
                         PrimitiveObjectInspectorFactory.javaStringObjectInspector),
-                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector},
+                    PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-objective reg:linear")},
             new Object[][] {{Arrays.asList("1:-2", "2:-1"), 0.d}});
     }
 
@@ -210,6 +213,20 @@ public class XGBoostTrainUDTFTest extends TestBase {
 
         metric.assertExpected();
     }
+
+    @Test(expected = UDFArgumentException.class)
+    public void testNoObjective() throws HiveException {
+        XGBoostTrainUDTF udtf = new XGBoostTrainUDTF();
+        udtf.initialize(
+            new ObjectInspector[] {
+                    ObjectInspectorFactory.getStandardListObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector),
+                    PrimitiveObjectInspectorFactory.javaFloatObjectInspector,
+                    ObjectInspectorUtils.getConstantObjectInspector(
+                        PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        "-num_class 4")});
+    }
+
 
     //---------------------------------------------------
     // multiclass target value tests
