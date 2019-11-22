@@ -21,6 +21,57 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 <!-- toc -->
 
+# Aggregation
+
+- `majority_vote(Primitive x)` - Returns the most frequent value of x
+  ```sql
+  -- see https://issues.apache.org/jira/browse/HIVE-17406 
+  WITH data as (
+    select
+      explode(array('1', '2', '2', '2', '5', '4', '1', '2')) as k
+  )
+  select
+    majority_vote(k) as k
+  from 
+    data;
+  > 2
+  ```
+
+- `max_by(x, y)` - Returns the value of x associated with the maximum value of y over all input values.
+  ```sql
+  -- see https://issues.apache.org/jira/browse/HIVE-17406 
+  WITH data as (
+    select 'jake' as name, 18 as age
+    union all
+    select 'tom' as name, 64 as age
+    union all
+    select 'lisa' as name, 32 as age
+  )
+  select
+    max_by(name, age) as name
+  from
+    data;
+  > tom
+  ```
+
+- `min_by(x, y)` - Returns the value of x associated with the minimum value of y over all input values.
+  ```sql
+  -- see https://issues.apache.org/jira/browse/HIVE-17406 
+  WITH data as (
+    select 'jake' as name, 18 as age
+    union all
+    select 'tom' as name, 64 as age
+    union all
+    select 'lisa' as name, 32 as age
+  )
+  select
+    min_by(name, age) as name
+  from
+    data;
+
+  > jake
+  ```
+
 # Array
 
 - `arange([int start=0, ] int stop, [int step=1])` - Return evenly spaced values within a given interval

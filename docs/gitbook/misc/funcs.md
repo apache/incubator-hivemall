@@ -638,7 +638,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `train_multiclass_xgboost_classifier(string[] features, double target [, string options])` - Returns a relation consisting of &lt;string model_id, array&lt;byte&gt; pred_model&gt;
 
-- `train_xgboost_classifier(string[] features, double target [, string options])` - Returns a relation consisting of &lt;string model_id, array&lt;byte&gt; pred_model&gt;
+- `train_xgboost_classifier(array<string> features, double target [, string options])` - Returns a relation consisting of &lt;string model_id, array&lt;byte&gt; pred_model&gt;
 
 - `train_xgboost_regr(string[] features, double target [, string options])` - Returns a relation consisting of &lt;string model_id, array&lt;byte&gt; pred_model&gt;
 
