@@ -839,7 +839,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION train_slim AS 'hivemall.recommend.Slim
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS approx_count_distinct")
 sqlContext.sql("CREATE TEMPORARY FUNCTION approx_count_distinct AS 'hivemall.sketch.hll.ApproxCountDistinctUDAF'")
 
-
 /**
  * Bloom Filter
  */
@@ -862,3 +861,15 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION bloom_or AS 'hivemall.sketch.bloom.Blo
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS bloom_contains_any")
 sqlContext.sql("CREATE TEMPORARY FUNCTION bloom_contains_any AS 'hivemall.sketch.bloom.BloomContainsAnyUDF'")
 
+/**
+ * Aggregation
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS max_by")
+sqlContext.sql("CREATE TEMPORARY FUNCTION max_by AS 'hivemall.tools.aggr.MaxByUDAF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS min_by")
+sqlContext.sql("CREATE TEMPORARY FUNCTION min_by AS 'hivemall.tools.aggr.MinByUDAF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS majority_vote")
+sqlContext.sql("CREATE TEMPORARY FUNCTION majority_vote AS 'hivemall.tools.aggr.MajorityVoteUDAF'")
