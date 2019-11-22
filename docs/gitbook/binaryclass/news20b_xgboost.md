@@ -237,12 +237,12 @@ The following objectives would widely be used for regression, binary classicatio
 - `reg:squarederror` regression with squared loss.
 - `binary:logistic` logistic regression for binary classification, output probability.
 - `binary:hinge` hinge loss for binary classification. This makes predictions of 0 or 1, rather than producing probabilities.
-- `multi:softmax` set XGBoost to do multiclass classification using the softmax objective, you also need to set `-num_class` (number of classes).
+- `multi:softmax` set XGBoost to do multiclass classification using the softmax objective, you also need to set `num_class` (number of classes).
 - `multi:softprob` same as softmax, but output a vector of `ndata * nclass`, which can be further reshaped to `ndata * nclass` matrix. The result contains predicted probability of each data point belonging to each class.
 
 Other hyperparameters better to be tuned are:
 
-- `-booster gbree` Which booster to use. The default gbtree (Gradient Boosting Trees) would be fine for most cases. Can be gbtree, gblinear or dart; gbtree and dart use tree based models while gblinear uses linear functions.
+- `-booster gbree` Which booster to use. The default gbtree (Gradient Boosting Trees) would be fine for most cases. Can be `gbtree`, `gblinear` or `dart`; gbtree and dart use tree based models while gblinear uses linear functions.
 - `-eta 0.1` The learning rate, 0.3 by the default. 0.05, 0.1, 0.3 are worth trying.
 - `-max_depth 6` The maximum depth of the tree. The default value 6 would be fine for most case. Recommended value range is 5-10.
 - `-num_class 3` The number of classes MUST be specified for multiclass classification (i.e., `-objective multi:softmax` or `-objective multi:softprob`)
