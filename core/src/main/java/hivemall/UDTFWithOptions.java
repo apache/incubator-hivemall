@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -169,6 +171,31 @@ public abstract class UDTFWithOptions extends GenericUDTF {
             list.add(fv);
         }
         return list;
+    }
+
+    protected static <T> T checkNotNull(@CheckForNull final T arg, @Nonnegative final String errMsg)
+            throws UDFArgumentException {
+        if (arg == null) {
+            throw new UDFArgumentException(errMsg);
+        }
+        return arg;
+    }
+
+    protected static <T> T checkNotNull(@CheckForNull final T arg, @Nonnegative final int index)
+            throws UDFArgumentException {
+        if (arg == null) {
+            throw new UDFArgumentException(String.format("%d-th argument MUST not be null", index));
+        }
+        return arg;
+    }
+
+    protected static Object nonNullArgument(@Nonnull final Object[] args,
+            @Nonnegative final int index) throws UDFArgumentException {
+        final Object arg = args[index];
+        if (arg == null) {
+            throw new UDFArgumentException(String.format("%d-th argument MUST not be null", index));
+        }
+        return arg;
     }
 
     /**

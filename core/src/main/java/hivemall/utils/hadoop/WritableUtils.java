@@ -91,6 +91,30 @@ public final class WritableUtils {
     }
 
     @Nonnull
+    public static List<FloatWritable> newFloatList(final int size) {
+        return newFloatList(size, 0.f);
+    }
+
+    @Nonnull
+    public static List<FloatWritable> newFloatList(final int size, final float defaultValue) {
+        // workaround to avoid a bug in Kryo
+        // https://issues.apache.org/jira/browse/HIVE-12551
+        /*
+        final DoubleWritable[] array = new DoubleWritable[size];
+        for (int i = 0; i < size; i++) {
+            array[i] = new DoubleWritable(defaultValue);
+        }
+        return Arrays.asList(array);
+        */
+        final List<FloatWritable> list = new ArrayList<FloatWritable>(size);
+        for (int i = 0; i < size; i++) {
+            list.add(new FloatWritable(defaultValue));
+        }
+        return list;
+    }
+
+
+    @Nonnull
     public static List<DoubleWritable> newDoubleList(final int size, final double defaultValue) {
         // workaround to avoid a bug in Kryo
         // https://issues.apache.org/jira/browse/HIVE-12551
@@ -172,6 +196,20 @@ public final class WritableUtils {
     }
 
     @Nonnull
+    public static List<FloatWritable> toWritableList(@Nonnull final float[] src,
+            @Nullable List<FloatWritable> list) throws UDFArgumentException {
+        if (list == null) {
+            return toWritableList(src);
+        }
+
+        Preconditions.checkArgument(src.length == list.size(), UDFArgumentException.class);
+        for (int i = 0; i < src.length; i++) {
+            list.set(i, new FloatWritable(src[i]));
+        }
+        return list;
+    }
+
+    @Nonnull
     public static List<DoubleWritable> toWritableList(@Nonnull final double[] src,
             @Nullable List<DoubleWritable> list) throws UDFArgumentException {
         if (list == null) {
@@ -183,6 +221,15 @@ public final class WritableUtils {
             list.set(i, new DoubleWritable(src[i]));
         }
         return list;
+    }
+
+    @Nonnull
+    public static void setValues(@Nonnull final float[] src,
+            @Nonnull final List<FloatWritable> list) throws UDFArgumentException {
+        Preconditions.checkArgument(src.length == list.size(), UDFArgumentException.class);
+        for (int i = 0; i < src.length; i++) {
+            list.set(i, new FloatWritable(src[i]));
+        }
     }
 
     public static Text val(final String v) {

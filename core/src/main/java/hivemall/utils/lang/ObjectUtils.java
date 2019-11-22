@@ -90,8 +90,7 @@ public final class ObjectUtils {
             out = bin2txt ? new Base91OutputStream(bos) : bos;
             dos = CompressionStreamFactory.createOutputStream(out, algo);
             toStream(obj, dos);
-            dos.finish();
-            //dos.flush();
+            dos.finish(); // flush is called
             return bos.toByteArray_clear();
         } finally {
             IOUtils.closeQuietly(dos);

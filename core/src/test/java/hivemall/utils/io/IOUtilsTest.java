@@ -16,32 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package hivemall.xgboost;
+package hivemall.utils.io;
 
-import hivemall.xgboost.utils.XGBoostUtils;
+import java.io.IOException;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.apache.hadoop.io.Text;
+import org.junit.Assert;
+import org.junit.Test;
 
-import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.UDF;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.ql.udf.UDFType;
+public class IOUtilsTest {
 
-@Description(name = "xgboost_version", value = "_FUNC_() - Returns the version of xgboost",
-        extended = "SELECT xgboost_version();")
-@UDFType(deterministic = true, stateful = false)
-public final class XGBoostVersionUDF extends UDF {
-
-    @Nullable
-    private String version;
-
-    @Nonnull
-    public String evaluate() throws HiveException {
-        if (version == null) {
-            this.version = XGBoostUtils.getVersion();
-        }
-        return version;
+    @Test
+    public void testCompressedText() throws IOException, ClassNotFoundException {
+        Text in = new Text("Licensed to the Apache Software Foundation (ASF)");
+        byte[] expected = in.copyBytes();
+        byte[] compressed = IOUtils.toCompressedText(expected);
+        Text encoded = new Text(compressed);
+        byte[] actual = IOUtils.fromCompressedText(encoded.getBytes(), encoded.getLength());
+        Assert.assertArrayEquals(expected, actual);
+        Text out = new Text(actual);
+        Assert.assertEquals(in, out);
     }
 
 }

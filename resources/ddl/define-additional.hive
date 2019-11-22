@@ -19,20 +19,21 @@ create temporary function stoptags_exclude as 'hivemall.nlp.tokenizer.StoptagsEx
 -- XGBoost related features --
 ------------------------------
 
-drop temporary function if exists train_xgboost_regr;
-create temporary function train_xgboost_regr as 'hivemall.xgboost.regression.XGBoostRegressionUDTF';
-
-drop temporary function if exists train_xgboost_classifier;
-create temporary function train_xgboost_classifier as 'hivemall.xgboost.classification.XGBoostBinaryClassifierUDTF';
-
-drop temporary function if exists train_multiclass_xgboost_classifier;
-create temporary function train_multiclass_xgboost_classifier as 'hivemall.xgboost.classification.XGBoostMulticlassClassifierUDTF';
-
-drop temporary function if exists xgboost_predict;
-create temporary function xgboost_predict as 'hivemall.xgboost.tools.XGBoostPredictUDTF';
-
-drop temporary function if exists xgboost_multiclass_predict;
-create temporary function xgboost_multiclass_predict as 'hivemall.xgboost.tools.XGBoostMulticlassPredictUDTF';
-
 drop temporary function if exists xgboost_version;
 create temporary function xgboost_version as 'hivemall.xgboost.XGBoostVersionUDF';
+
+drop temporary function if exists train_xgboost;
+create temporary function train_xgboost as 'hivemall.xgboost.XGBoostTrainUDTF';
+
+drop temporary function if exists xgboost_predict;
+create temporary function xgboost_predict as 'hivemall.xgboost.XGBoostOnlinePredictUDTF';
+
+drop temporary function if exists xgboost_batch_predict;
+create temporary function xgboost_batch_predict as 'hivemall.xgboost.XGBoostBatchPredictUDTF';
+
+drop temporary function if exists xgboost_predict_one;
+create temporary function xgboost_predict_one as 'hivemall.xgboost.XGBoostPredictOneUDTF';
+
+drop temporary function if exists xgboost_predict_triple;
+create temporary function xgboost_predict_triple as 'hivemall.xgboost.XGBoostPredictTripleUDTF';
+

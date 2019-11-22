@@ -16,29 +16,10 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
-| Algorithm | Accuracy |
-|:-----------|------------:|
-| PA2 | 0.8204357625845229 |
-| SCW1 | 0.8314550463310794 |
-| AROW | 0.8474830954169797 |
-| SCW2 |  0.8482344102178813 |
-| CW |  0.850488354620586 |
----
 
-Preparation
-=========
+<!-- toc -->
 
-## UDF preparation
-```sql
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-
-source /home/myui/tmp/define-all.hive;
-```
-
----
-#[CW]
+# CW
 
 ## training
 ```sql
@@ -104,16 +85,7 @@ where actual == predicted;
 
 > 0.850488354620586
 
-## Cleaning
-
-```sql
-drop table news20mc_cw_model1;
-drop table news20mc_cw_predict1;
-drop view news20mc_cw_submit1;
-```
-
----
-#[AROW]
+# AROW
 
 ## training
 ```sql
@@ -179,18 +151,10 @@ where actual == predicted;
 
 > 0.8474830954169797
 
-## Cleaning
-
-```sql
-drop table news20mc_arow_model1;
-drop table news20mc_arow_predict1;
-drop view news20mc_arow_submit1;
-```
-
----
-#[SCW1]
+# SCW1
 
 ## training
+
 ```sql
 drop table news20mc_scw_model1;
 create table news20mc_scw_model1 as
@@ -210,6 +174,7 @@ group by label, feature;
 ```
 
 ## prediction
+
 ```sql
 create or replace view news20mc_scw_predict1 
 as
@@ -237,6 +202,7 @@ group by rowid
 ```
 
 ## evaluation
+
 ```sql
 create or replace view news20mc_scw_submit1 as
 select 
@@ -254,18 +220,10 @@ where actual == predicted;
 
 > 0.8314550463310794
 
-## Cleaning
-
-```sql
-drop table news20mc_scw_model1;
-drop table news20mc_scw_predict1;
-drop view news20mc_scw_submit1;
-```
-
----
-#[SCW2]
+# SCW2
 
 ## training
+
 ```sql
 drop table news20mc_scw2_model1;
 create table news20mc_scw2_model1 as
@@ -285,6 +243,7 @@ group by label, feature;
 ```
 
 ## prediction
+
 ```sql
 create or replace view news20mc_scw2_predict1 
 as
@@ -312,6 +271,7 @@ group by rowid
 ```
 
 ## evaluation
+
 ```sql
 create or replace view news20mc_scw2_submit1 as
 select 
@@ -329,10 +289,12 @@ where actual == predicted;
 
 > 0.8482344102178813
 
-## Cleaning
+# Wrap up of evaluation results
 
-```sql
-drop table news20mc_scw2_model1;
-drop table news20mc_scw2_predict1;
-drop view news20mc_scw2_submit1;
-```
+| Algorithm | Accuracy |
+|:-----------|------------:|
+| PA2 | 0.8204357625845229 |
+| SCW1 | 0.8314550463310794 |
+| AROW | 0.8474830954169797 |
+| SCW2 |  0.8482344102178813 |
+| CW |  0.850488354620586 |

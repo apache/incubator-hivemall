@@ -19,6 +19,7 @@
 package hivemall.utils.io;
 
 import hivemall.utils.codec.ZigZagLEB128Codec;
+import hivemall.utils.io.CompressionStreamFactory.CompressionAlgorithm;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -349,6 +350,51 @@ public final class IOUtils {
 
     public static void readFully(final InputStream in, final byte[] b) throws IOException {
         readFully(in, b, 0, b.length);
+    }
+
+    @Nonnull
+    public static byte[] toCompressedText(@Nonnull final byte[] in) throws IOException {
+        return toCompressedText(in, in.length);
+    }
+
+    @Nonnull
+    public static byte[] toCompressedText(@Nonnull final byte[] in, final int len)
+            throws IOException {
+        final FastByteArrayInputStream fis = new FastByteArrayInputStream(in, len);
+        final FastMultiByteArrayOutputStream fos = new FastMultiByteArrayOutputStream();
+
+        FinishableOutputStream dos = null;
+        try {
+            Base91OutputStream bos = new Base91OutputStream(fos);
+            dos = CompressionStreamFactory.createOutputStream(bos, CompressionAlgorithm.deflate);
+            copy(fis, dos);
+            dos.finish(); // flush is called
+            return fos.toByteArray_clear();
+        } finally {
+            IOUtils.closeQuietly(dos);
+        }
+    }
+
+    @Nonnull
+    public static byte[] fromCompressedText(@Nonnull final byte[] src) throws IOException {
+        return fromCompressedText(src, src.length);
+    }
+
+    @Nonnull
+    public static byte[] fromCompressedText(@Nonnull final byte[] src, final int len)
+            throws IOException {
+        final FastByteArrayInputStream bis = new FastByteArrayInputStream(src, len);
+        final FastMultiByteArrayOutputStream bos = new FastMultiByteArrayOutputStream();
+
+        InputStream compressedStream = null;
+        try {
+            compressedStream = CompressionStreamFactory.createInputStream(
+                new Base91InputStream(bis), CompressionAlgorithm.deflate);
+            copy(compressedStream, bos);
+            return bos.toByteArray_clear();
+        } finally {
+            IOUtils.closeQuietly(compressedStream);
+        }
     }
 
 }

@@ -16,7 +16,7 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
+
 Get the news20 dataset.
 https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass.html#news20
 
@@ -51,11 +51,6 @@ hadoop fs -copyFromLocal news20_scale.test /dataset/news20-multiclass/test
 ## Training/test data prepareation
 ```sql
 use news20;
-
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-
-source /home/myui/tmp/define-all.hive;
 
 Create external table news20mc_train (
   rowid int,

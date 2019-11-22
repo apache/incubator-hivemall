@@ -102,6 +102,7 @@
     * [General Binary Classifier](binaryclass/news20_generic.md)
     * [AdaGradRDA, AdaGrad, AdaDelta](binaryclass/news20_adagrad.md)
     * [Random Forest](binaryclass/news20_rf.md)
+    * [XGBoost](binaryclass/news20b_xgboost.md)
 
 * [KDD2010a Tutorial](binaryclass/kdd2010a.md)
     * [Data Preparation](binaryclass/kdd2010a_dataset.md)
@@ -128,6 +129,7 @@
     * [Data Preparation for one-vs-the-rest classifiers](multiclass/news20_one-vs-the-rest_dataset.md)
     * [PA](multiclass/news20_pa.md)
     * [CW, AROW, SCW](multiclass/news20_scw.md)
+    * [XGBoost](multiclass/news20_xgboost.md)
     * [Ensemble learning](multiclass/news20_ensemble.md)
     * [one-vs-the-rest Classifier](multiclass/news20_one-vs-the-rest.md)
 
@@ -135,6 +137,7 @@
     * [Data preparation](multiclass/iris_dataset.md)
     * [SCW](multiclass/iris_scw.md)
     * [Random Forest](multiclass/iris_randomforest.md)
+    * [XGBoost](multiclass/iris_xgboost.md)
 
 ## Part VIII - Regression
 
@@ -144,6 +147,7 @@
     * [Data Preparation](regression/e2006_dataset.md)
     * [General Regessor](regression/e2006_generic.md)
     * [Passive Aggressive, AROW](regression/e2006_arow.md)
+    * [XGBoost](regression/e2006_xgboost.md)
 
 * [KDDCup 2012 Track 2 CTR Prediction Tutorial](regression/kddcup12tr2.md)
     * [Data Preparation](regression/kddcup12tr2_dataset.md)

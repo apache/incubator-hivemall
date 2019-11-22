@@ -1000,7 +1000,7 @@ public final class ArrayUtils {
     public static int argmin(@Nonnull final double[] a) {
         final int size = a.length;
         if (size == 0) {
-            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+            throw new IllegalArgumentException("attempt to get argmin of an empty array");
         }
 
         int minIdx = 0;
@@ -1018,7 +1018,7 @@ public final class ArrayUtils {
     public static <T extends Comparable<T>> int argmin(@Nonnull final T[] a) {
         final int size = a.length;
         if (size == 0) {
-            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+            throw new IllegalArgumentException("attempt to get argmin of an empty array");
         }
 
         int minIdx = 0;
@@ -1040,7 +1040,7 @@ public final class ArrayUtils {
     public static <T> int argmin(@Nonnull final T[] a, @Nonnull final Comparator<? super T> c) {
         final int size = a.length;
         if (size == 0) {
-            throw new IllegalArgumentException("attempt to get argmax of an empty array");
+            throw new IllegalArgumentException("attempt to get argmin of an empty array");
         }
         if (size == 1) {
             return 0;
@@ -1056,6 +1056,24 @@ public final class ArrayUtils {
             }
         }
         return minIdx;
+    }
+
+    public static int argmax(@Nonnull final double[] a) {
+        final int size = a.length;
+        if (size == 0) {
+            throw new IllegalArgumentException("attempt to get argmin of an empty array");
+        }
+
+        int maxIdx = 0;
+        double maxVaue = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < size; i++) {
+            final double v = a[i];
+            if (v > maxVaue) {
+                maxIdx = i;
+                maxVaue = v;
+            }
+        }
+        return maxIdx;
     }
 
     public static <T extends Comparable<T>> int argmax(@Nonnull final T[] a) {
