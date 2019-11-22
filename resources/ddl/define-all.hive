@@ -875,6 +875,20 @@ create temporary function bloom_or as 'hivemall.sketch.bloom.BloomOrUDF';
 drop temporary function if exists bloom_contains_any;
 create temporary function bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF';
 
+-----------------
+-- Aggregation --
+-----------------
+
+drop temporary function if exists max_by;
+create temporary function max_by as 'hivemall.tools.aggr.MaxByUDAF';
+
+drop temporary function if exists min_by;
+create temporary function min_by as 'hivemall.tools.aggr.MinByUDAF';
+
+drop temporary function if exists majority_vote;
+create temporary function majority_vote as 'hivemall.tools.aggr.MajorityVoteUDAF';
+
+
 --------------------------------------------------------------------------------------------------
 -- macros available from hive 0.12.0
 -- see https://issues.apache.org/jira/browse/HIVE-2655

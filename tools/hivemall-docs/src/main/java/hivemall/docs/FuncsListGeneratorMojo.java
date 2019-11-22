@@ -80,6 +80,7 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
 
     private static final Map<String, List<String>> genericFuncsHeaders = new LinkedHashMap<>();
     static {
+        genericFuncsHeaders.put("# Aggregation", Arrays.asList("hivemall.tools.aggr"));
         genericFuncsHeaders.put("# Array",
             Arrays.asList("hivemall.tools.array", "hivemall.tools.list"));
         genericFuncsHeaders.put("# Bitset", Collections.singletonList("hivemall.tools.bits"));

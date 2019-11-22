@@ -883,6 +883,19 @@ CREATE FUNCTION bloom_or as 'hivemall.sketch.bloom.BloomOrUDF' USING JAR '${hive
 DROP FUNCTION IF EXISTS bloom_contains_any;
 CREATE FUNCTION bloom_contains_any as 'hivemall.sketch.bloom.BloomContainsAnyUDF' USING JAR '${hivemall_jar}';
 
+-----------------
+-- Aggregation --
+-----------------
+
+DROP FUNCTION IF EXISTS max_by;
+CREATE FUNCTION max_by as 'hivemall.tools.aggr.MaxByUDAF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS min_by;
+CREATE FUNCTION min_by as 'hivemall.tools.aggr.MinByUDAF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS majority_vote;
+CREATE FUNCTION majority_vote as 'hivemall.tools.aggr.MajorityVoteUDAF' USING JAR '${hivemall_jar}';
+
 ------------------------------
 -- XGBoost related features --
 ------------------------------
