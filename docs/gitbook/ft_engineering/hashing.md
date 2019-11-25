@@ -52,6 +52,21 @@ select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'));
 > ["4063537:1.0","4063537","8459207:2.0"]
 
 ```sql
+select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-libsvm');
+```
+> ["4063537:1.0","4063537:1","8459207:2.0"]
+
+```sql
+select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10');
+```
+> ["7:1.0","7","1:2.0"]
+
+```sql
+select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10 -libsvm');
+```
+> ["1:2.0","7:1.0","7:1"]
+
+```sql
 select feature_hashing(array(1,2,3));
 ```
 > ["11293631","3322224","4331412"]
@@ -78,14 +93,16 @@ select feature_hashing(array("userid#4505:3.3","movieid#2331:4.999", "movieid#23
 > ["1828616:3.3","6238429:4.999","6238429"]
 
 ```sql
-select feature_hashing(null,'-help');
+select feature_hashing();
 
 usage: feature_hashing(array<string> features [, const string options]) -
        returns a hashed feature vector in array<string> [-features <arg>]
-       [-help]
+       [-libsvm]
  -features,--num_features <arg>   The number of features [default:
                                   16777217 (2^24)]
- -help                            Show function help
+ -libsvm                          Returns in libsvm format
+                                  (<index>:<value>)* sorted by index
+                                  ascending order
 ```
 
 > #### Note

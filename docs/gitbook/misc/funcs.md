@@ -325,6 +325,17 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 - `array_hash_values(array<string> values, [string prefix [, int numFeatures], boolean useIndexAsPrefix])` returns hash values in array&lt;int&gt;
 
 - `feature_hashing(array<string> features [, const string options])` - returns a hashed feature vector in array&lt;string&gt;
+  ```sql
+  select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-libsvm');
+  > ["4063537:1.0","4063537:1","8459207:2.0"]
+
+  select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10');
+  > ["7:1.0","7","1:2.0"]
+
+  select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10 -libsvm');
+  > ["1:2.0","7:1.0","7:1"]
+
+  ```
 
 - `mhash(string word)` returns a murmurhash3 INT value starting from 1
 
@@ -636,7 +647,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 # XGBoost
 
-- `train_xgboost(array<string|double> features, int|double target [, string options])` - Returns a relation consists of &lt;string model_id, array&lt;string&gt; pred_model&gt;
+- `train_xgboost(array<string|double> features, <int|double> target, const string options)` - Returns a relation consists of &lt;string model_id, array&lt;string&gt; pred_model&gt;
   ```sql
   SELECT 
     train_xgboost(features, label, '-objective binary:logistic -iters 10') 

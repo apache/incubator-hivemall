@@ -19,12 +19,18 @@
 package hivemall.ftvec.hashing;
 
 import hivemall.TestUtils;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.hadoop.WritableUtils;
 import hivemall.utils.hashing.MurmurHash3;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredObject;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
@@ -49,6 +55,65 @@ public class FeatureHashingUDFTest {
         actual = FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES);
         Assert.assertEquals(FeatureHashingUDF.mhash("0", MurmurHash3.DEFAULT_NUM_FEATURES) + ":1.1",
             actual);
+    }
+
+    @Test
+    public void testBiasLibsvm() {
+        String expected = "0:1.0";
+        String actual =
+                FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES, true);
+        Assert.assertEquals(expected, actual);
+
+        expected = "0:1";
+        actual = FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES, true);
+        Assert.assertEquals(expected, actual);
+
+        expected = "0:1.1";
+        actual = FeatureHashingUDF.featureHashing(expected, MurmurHash3.DEFAULT_NUM_FEATURES, true);
+        Assert.assertEquals(FeatureHashingUDF.mhash("0", MurmurHash3.DEFAULT_NUM_FEATURES) + ":1.1",
+            actual);
+    }
+
+    @Test
+    public void testEvaluateList() throws HiveException, IOException {
+        FeatureHashingUDF udf = new FeatureHashingUDF();
+
+        udf.initialize(new ObjectInspector[] {ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector)});
+
+        DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
+            WritableUtils.val("apple:3", "orange:2", "banana", "0:1"))};
+
+        List<String> expected = Arrays.asList(
+            FeatureHashingUDF.mhash("apple", MurmurHash3.DEFAULT_NUM_FEATURES) + ":3",
+            FeatureHashingUDF.mhash("orange", MurmurHash3.DEFAULT_NUM_FEATURES) + ":2",
+            Integer.toString(FeatureHashingUDF.mhash("banana", MurmurHash3.DEFAULT_NUM_FEATURES)),
+            "0:1");
+        Assert.assertEquals(expected, udf.evaluate(args));
+
+        udf.close();
+    }
+
+    @Test
+    public void testEvaluateListLibsvm() throws HiveException, IOException {
+        FeatureHashingUDF udf = new FeatureHashingUDF();
+
+        udf.initialize(new ObjectInspector[] {
+                ObjectInspectorFactory.getStandardListObjectInspector(
+                    PrimitiveObjectInspectorFactory.writableStringObjectInspector),
+                HiveUtils.getConstStringObjectInspector("-libsvm")});
+
+        DeferredObject[] args = new DeferredObject[] {new GenericUDF.DeferredJavaObject(
+            WritableUtils.val("apple:3", "orange:2", "banana", "0:1"))};
+
+        List<String> expected = Arrays.asList(
+            FeatureHashingUDF.mhash("apple", MurmurHash3.DEFAULT_NUM_FEATURES) + ":3",
+            FeatureHashingUDF.mhash("orange", MurmurHash3.DEFAULT_NUM_FEATURES) + ":2",
+            FeatureHashingUDF.mhash("banana", MurmurHash3.DEFAULT_NUM_FEATURES) + ":1", "0:1");
+        Collections.sort(expected);
+        Assert.assertEquals(expected, udf.evaluate(args));
+
+        udf.close();
     }
 
     @Test
