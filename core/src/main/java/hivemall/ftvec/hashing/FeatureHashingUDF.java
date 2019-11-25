@@ -20,12 +20,16 @@ package hivemall.ftvec.hashing;
 
 import hivemall.HivemallConstants;
 import hivemall.UDFWithOptions;
+import hivemall.annotations.VisibleForTesting;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hashing.MurmurHash3;
 import hivemall.utils.lang.Primitives;
+import hivemall.utils.lang.StringUtils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -35,14 +39,12 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
-import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.Text;
 
 @Description(name = "feature_hashing",
         value = "_FUNC_(array<string> features [, const string options])"
@@ -50,23 +52,23 @@ import org.apache.hadoop.io.Text;
 @UDFType(deterministic = true, stateful = false)
 public final class FeatureHashingUDF extends UDFWithOptions {
 
+    private static final IndexComparator indexCmp = new IndexComparator();
+
     @Nullable
     private ListObjectInspector _listOI;
+    private boolean _libsvmFormat = false;
     private int _numFeatures = MurmurHash3.DEFAULT_NUM_FEATURES;
 
     @Nullable
-    private List<Text> _returnObj;
+    private transient List<String> _returnObj;
 
     public FeatureHashingUDF() {}
 
     @Override
-    public String getDisplayString(String[] children) {
-        return "feature_hashing(" + Arrays.toString(children) + ')';
-    }
-
-    @Override
     protected Options getOptions() {
         Options opts = new Options();
+        opts.addOption("libsvm", false,
+            "Returns in libsvm format (<index>:<value>)* sorted by index ascending order");
         opts.addOption("features", "num_features", true,
             "The number of features [default: 16777217 (2^24)]");
         return opts;
@@ -76,6 +78,7 @@ public final class FeatureHashingUDF extends UDFWithOptions {
     protected CommandLine processOptions(@Nonnull String optionValue) throws UDFArgumentException {
         CommandLine cl = parseOptions(optionValue);
 
+        this._libsvmFormat = cl.hasOption("libsvm");
         this._numFeatures = Primitives.parseInt(cl.getOptionValue("num_features"), _numFeatures);
         return cl;
     }
@@ -84,8 +87,7 @@ public final class FeatureHashingUDF extends UDFWithOptions {
     public ObjectInspector initialize(@Nonnull ObjectInspector[] argOIs)
             throws UDFArgumentException {
         if (argOIs.length != 1 && argOIs.length != 2) {
-            throw new UDFArgumentLengthException(
-                "The feature_hashing function takes 1 or 2 arguments: " + argOIs.length);
+            showHelp("The feature_hashing function takes 1 or 2 arguments: " + argOIs.length);
         }
         ObjectInspector argOI0 = argOIs[0];
         this._listOI = HiveUtils.isListOI(argOI0) ? (ListObjectInspector) argOI0 : null;
@@ -96,10 +98,10 @@ public final class FeatureHashingUDF extends UDFWithOptions {
         }
 
         if (_listOI == null) {
-            return PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+            return PrimitiveObjectInspectorFactory.javaStringObjectInspector;
         } else {
             return ObjectInspectorFactory.getStandardListObjectInspector(
-                PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+                PrimitiveObjectInspectorFactory.javaStringObjectInspector);
         }
     }
 
@@ -118,17 +120,17 @@ public final class FeatureHashingUDF extends UDFWithOptions {
     }
 
     @Nonnull
-    private Text evaluateScalar(@Nonnull final Object arg0) {
+    private String evaluateScalar(@Nonnull final Object arg0) {
         String fv = arg0.toString();
-        return new Text(featureHashing(fv, _numFeatures));
+        return featureHashing(fv, _numFeatures, _libsvmFormat);
     }
 
     @Nonnull
-    private List<Text> evaluateList(@Nonnull final Object arg0) {
+    private List<String> evaluateList(@Nonnull final Object arg0) {
         final int len = _listOI.getListLength(arg0);
-        List<Text> list = _returnObj;
+        List<String> list = _returnObj;
         if (list == null) {
-            list = new ArrayList<Text>(len);
+            list = new ArrayList<String>(len);
             this._returnObj = list;
         } else {
             list.clear();
@@ -140,23 +142,36 @@ public final class FeatureHashingUDF extends UDFWithOptions {
             if (obj == null) {
                 continue;
             }
-            String fv = obj.toString();
-            Text t = new Text(featureHashing(fv, numFeatures));
-            list.add(t);
+            String fv = featureHashing(obj.toString(), numFeatures, _libsvmFormat);
+            list.add(fv);
         }
 
+        if (_libsvmFormat) {
+            Collections.sort(list, indexCmp);
+        }
         return list;
     }
 
+    @VisibleForTesting
     @Nonnull
     static String featureHashing(@Nonnull final String fv, final int numFeatures) {
+        return featureHashing(fv, numFeatures, false);
+    }
+
+    @Nonnull
+    static String featureHashing(@Nonnull final String fv, final int numFeatures,
+            final boolean libsvmFormat) {
         final int headPos = fv.indexOf(':');
         if (headPos == -1) {
             if (fv.equals(HivemallConstants.BIAS_CLAUSE)) {
                 return fv;
             }
-            int h = mhash(fv, numFeatures);
-            return String.valueOf(h);
+            final int h = mhash(fv, numFeatures);
+            if (libsvmFormat) {
+                return h + ":1";
+            } else {
+                return String.valueOf(h);
+            }
         } else {
             final int tailPos = fv.lastIndexOf(':');
             if (headPos == tailPos) {
@@ -187,6 +202,35 @@ public final class FeatureHashingUDF extends UDFWithOptions {
             r += numFeatures;
         }
         return r + 1;
+    }
+
+    @Override
+    public String getDisplayString(String[] children) {
+        return "feature_hashing(" + StringUtils.join(children, ',') + ')';
+    }
+
+    private static final class IndexComparator implements Comparator<String>, Serializable {
+        private static final long serialVersionUID = -260142385860586255L;
+
+        @Override
+        public int compare(@Nonnull final String lhs, @Nonnull final String rhs) {
+            int l = getIndex(lhs);
+            int r = getIndex(rhs);
+            return Integer.compare(l, r);
+        }
+
+        private static int getIndex(@Nonnull final String fv) {
+            final int headPos = fv.indexOf(':');
+            final int tailPos = fv.lastIndexOf(':');
+            final String f;
+            if (headPos == tailPos) {
+                f = fv.substring(0, headPos);
+            } else {
+                f = fv.substring(headPos + 1, tailPos);
+            }
+            return Integer.parseInt(f);
+        }
+
     }
 
 }
