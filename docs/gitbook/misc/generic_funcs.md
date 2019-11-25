@@ -155,13 +155,31 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
    [3]
   ```
 
-- `array_remove(array<int|text> original, int|text|array<int> target)` - Returns an array that the target is removed from the original array
+- `array_remove(array<PRIMITIVE> values, PRIMITIVE|array<PRIMITIVE> target)` - Returns an array that the target elements are removed from the original array
   ```sql
-  SELECT array_remove(array(1,null,3),array(null));
-   [3]
+  select array_remove(array(2.0,2.1,3.0,4.0,2.0),2), array_remove(array(2.0,3.0,4.0),array(3,2.0));
+  [2.1,3,4]       [4]
 
-  SELECT array_remove(array("aaa","bbb"),"bbb");
-   ["aaa"]
+  SELECT array_remove(array(1,null,3),null);
+  [1,3]
+
+  SELECT array_remove(array(1,null,3,null,5),null);
+  [1,3,5]
+
+  SELECT array_remove(array(1,null,3),array(null));
+  [1,3]
+
+  SELECT array_remove(array('aaa','bbb'),'bbb');
+  ["aaa"]
+
+  SELECT array_remove(array('aaa','bbb','ccc','bbb'), array('bbb','ccc'));
+  ["aaa"]
+
+  select array_remove(array(null),null);
+  []
+
+  select array_remove(array(null,'bbb'),'aaa');
+  [null,"bbb"]
   ```
 
 - `array_slice(array<ANY> values, int offset [, int length])` - Slices the given array by the given offset and length parameters.
