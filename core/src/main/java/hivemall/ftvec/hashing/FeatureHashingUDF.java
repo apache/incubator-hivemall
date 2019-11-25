@@ -137,7 +137,7 @@ public final class FeatureHashingUDF extends UDFWithOptions {
     }
 
     @Nonnull
-    private List<String> evaluateList(@Nonnull final Object arg0) {
+    private List<String> evaluateList(@Nonnull final Object arg0) throws HiveException {
         final int len = _listOI.getListLength(arg0);
         List<String> list = _returnObj;
         if (list == null) {
@@ -158,7 +158,11 @@ public final class FeatureHashingUDF extends UDFWithOptions {
         }
 
         if (_libsvmFormat) {
-            Collections.sort(list, indexCmp);
+            try {
+                Collections.sort(list, indexCmp);
+            } catch (NumberFormatException e) {
+                throw new HiveException(e);
+            }
         }
         return list;
     }
