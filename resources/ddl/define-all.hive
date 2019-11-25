@@ -726,35 +726,35 @@ create temporary function logloss as 'hivemall.evaluation.LogarithmicLossUDAF';
 --------------------------
 
 drop temporary function if exists mf_predict;
-create temporary function mf_predict as 'hivemall.mf.MFPredictionUDF';
+create temporary function mf_predict as 'hivemall.factorization.mf.MFPredictionUDF';
 
 drop temporary function if exists train_mf_sgd;
-create temporary function train_mf_sgd as 'hivemall.mf.MatrixFactorizationSGDUDTF';
+create temporary function train_mf_sgd as 'hivemall.factorization.mf.MatrixFactorizationSGDUDTF';
 
 drop temporary function if exists train_mf_adagrad;
-create temporary function train_mf_adagrad as 'hivemall.mf.MatrixFactorizationAdaGradUDTF';
+create temporary function train_mf_adagrad as 'hivemall.factorization.mf.MatrixFactorizationAdaGradUDTF';
 
 drop temporary function if exists train_bprmf;
-create temporary function train_bprmf as 'hivemall.mf.BPRMatrixFactorizationUDTF';
+create temporary function train_bprmf as 'hivemall.factorization.mf.BPRMatrixFactorizationUDTF';
 
 drop temporary function if exists bprmf_predict;
-create temporary function bprmf_predict as 'hivemall.mf.BPRMFPredictionUDF';
+create temporary function bprmf_predict as 'hivemall.factorization.mf.BPRMFPredictionUDF';
 
 ---------------------------
 -- Factorization Machine --
 ---------------------------
 
 drop temporary function if exists fm_predict;
-create temporary function fm_predict as 'hivemall.fm.FMPredictGenericUDAF';
+create temporary function fm_predict as 'hivemall.factorization.fm.FMPredictGenericUDAF';
 
 drop temporary function if exists train_fm;
-create temporary function train_fm as 'hivemall.fm.FactorizationMachineUDTF';
+create temporary function train_fm as 'hivemall.factorization.fm.FactorizationMachineUDTF';
 
 drop temporary function if exists train_ffm;
-create temporary function train_ffm as 'hivemall.fm.FieldAwareFactorizationMachineUDTF';
+create temporary function train_ffm as 'hivemall.factorization.fm.FieldAwareFactorizationMachineUDTF';
 
 drop temporary function if exists ffm_predict;
-create temporary function ffm_predict as 'hivemall.fm.FFMPredictGenericUDAF';
+create temporary function ffm_predict as 'hivemall.factorization.fm.FFMPredictGenericUDAF';
 
 ---------------------------
 -- Anomaly Detection ------

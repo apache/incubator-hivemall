@@ -19,7 +19,7 @@
 package hivemall.ftvec.pairing;
 
 import hivemall.UDTFWithOptions;
-import hivemall.fm.Feature;
+import hivemall.factorization.fm.Feature;
 import hivemall.model.FeatureValue;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hashing.HashFunction;

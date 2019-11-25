@@ -19,7 +19,7 @@
 package hivemall.ftvec.trans;
 
 import hivemall.UDFWithOptions;
-import hivemall.fm.Feature;
+import hivemall.factorization.fm.Feature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hashing.MurmurHash3;
 import hivemall.utils.lang.Primitives;

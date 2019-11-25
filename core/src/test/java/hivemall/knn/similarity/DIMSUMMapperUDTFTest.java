@@ -19,7 +19,7 @@
 package hivemall.knn.similarity;
 
 import hivemall.TestUtils;
-import hivemall.mf.BPRMatrixFactorizationUDTFTest;
+import hivemall.factorization.mf.BPRMatrixFactorizationUDTFTest;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.StringUtils;
 import hivemall.utils.lang.mutable.MutableInt;
