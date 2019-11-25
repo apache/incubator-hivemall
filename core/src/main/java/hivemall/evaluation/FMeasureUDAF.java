@@ -45,11 +45,12 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.IntObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.LongWritable;
 
@@ -239,17 +240,16 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
                         asIntLabel(parameters[0], (BooleanObjectInspector) actualOI));
                     predicted = Arrays.asList(
                         asIntLabel(parameters[1], (BooleanObjectInspector) predictedOI));
-                } else { // int case
+                } else { // integer case
                     final int actualLabel =
-                            asIntLabel(parameters[0], (IntObjectInspector) actualOI);
+                            asIntLabel(parameters[0], HiveUtils.asIntegerOI(actualOI));
                     if (actualLabel == 0 && "binary".equals(average)) {
                         actual = Collections.emptyList();
                     } else {
                         actual = Arrays.asList(actualLabel);
                     }
-
                     final int predictedLabel =
-                            asIntLabel(parameters[1], (IntObjectInspector) predictedOI);
+                            asIntLabel(parameters[1], HiveUtils.asIntegerOI(predictedOI));
                     if (predictedLabel == 0 && "binary".equals(average)) {
                         predicted = Collections.emptyList();
                     } else {
@@ -270,8 +270,8 @@ public final class FMeasureUDAF extends AbstractGenericUDAFResolver {
         }
 
         private static int asIntLabel(@Nonnull final Object o,
-                @Nonnull final IntObjectInspector intOI) throws UDFArgumentException {
-            final int value = intOI.get(o);
+                @Nonnull final PrimitiveObjectInspector intOI) throws UDFArgumentException {
+            final int value = PrimitiveObjectInspectorUtils.getInt(o, intOI);
             switch (value) {
                 case 1:
                     return 1;
