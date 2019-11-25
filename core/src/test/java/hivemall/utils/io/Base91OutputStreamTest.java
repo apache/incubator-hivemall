@@ -18,7 +18,7 @@
  */
 package hivemall.utils.io;
 
-import hivemall.fm.ArrayModelTest;
+import hivemall.factorization.fm.ArrayModelTest;
 import hivemall.utils.codec.Base91;
 
 import java.io.IOException;

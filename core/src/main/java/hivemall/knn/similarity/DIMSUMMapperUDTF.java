@@ -19,9 +19,9 @@
 package hivemall.knn.similarity;
 
 import hivemall.UDTFWithOptions;
-import hivemall.fm.Feature;
-import hivemall.fm.IntFeature;
-import hivemall.fm.StringFeature;
+import hivemall.factorization.fm.Feature;
+import hivemall.factorization.fm.IntFeature;
+import hivemall.factorization.fm.StringFeature;
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.random.PRNG;

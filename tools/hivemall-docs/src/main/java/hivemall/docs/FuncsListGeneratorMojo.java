@@ -110,8 +110,10 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
             Collections.singletonList("hivemall.classifier"));
         funcsHeaders.put("## Multiclass classification",
             Collections.singletonList("hivemall.classifier.multiclass"));
-        funcsHeaders.put("# Matrix factorization", Collections.singletonList("hivemall.mf"));
-        funcsHeaders.put("# Factorization machines", Collections.singletonList("hivemall.fm"));
+        funcsHeaders.put("# Matrix factorization",
+            Collections.singletonList("hivemall.factorization.mf"));
+        funcsHeaders.put("# Factorization machines",
+            Collections.singletonList("hivemall.factorization.fm"));
         funcsHeaders.put("# Recommendation", Collections.singletonList("hivemall.recommend"));
         funcsHeaders.put("# Anomaly detection", Collections.singletonList("hivemall.anomaly"));
         funcsHeaders.put("# Topic modeling", Collections.singletonList("hivemall.topicmodel"));

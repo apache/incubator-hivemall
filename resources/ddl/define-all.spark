@@ -710,35 +710,35 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION logloss AS 'hivemall.evaluation.Logari
  */
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS mf_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION mf_predict AS 'hivemall.mf.MFPredictionUDF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION mf_predict AS 'hivemall.factorization.mf.MFPredictionUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_mf_sgd")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_mf_sgd AS 'hivemall.mf.MatrixFactorizationSGDUDTF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_mf_sgd AS 'hivemall.factorization.mf.MatrixFactorizationSGDUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_mf_adagrad")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_mf_adagrad AS 'hivemall.mf.MatrixFactorizationAdaGradUDTF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_mf_adagrad AS 'hivemall.factorization.mf.MatrixFactorizationAdaGradUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_bprmf")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_bprmf AS 'hivemall.mf.BPRMatrixFactorizationUDTF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_bprmf AS 'hivemall.factorization.mf.BPRMatrixFactorizationUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS bprmf_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION bprmf_predict AS 'hivemall.mf.BPRMFPredictionUDF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION bprmf_predict AS 'hivemall.factorization.mf.BPRMFPredictionUDF'")
 
 /**
  * Factorization Machine
  */
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS fm_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION fm_predict AS 'hivemall.fm.FMPredictGenericUDAF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION fm_predict AS 'hivemall.factorization.fm.FMPredictGenericUDAF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_fm")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_fm AS 'hivemall.fm.FactorizationMachineUDTF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_fm AS 'hivemall.factorization.fm.FactorizationMachineUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_ffm")
-sqlContext.sql("CREATE TEMPORARY FUNCTION train_ffm AS 'hivemall.fm.FieldAwareFactorizationMachineUDTF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_ffm AS 'hivemall.factorization.fm.FieldAwareFactorizationMachineUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS ffm_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION ffm_predict AS 'hivemall.fm.FFMPredictGenericUDAF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION ffm_predict AS 'hivemall.factorization.fm.FFMPredictGenericUDAF'")
 
 /**
  * Anomaly Detection

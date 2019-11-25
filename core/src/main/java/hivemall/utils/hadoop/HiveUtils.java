@@ -1081,6 +1081,17 @@ public final class HiveUtils {
     }
 
     @Nonnull
+    public static DoubleObjectInspector asDoubleOI(@Nonnull final ObjectInspector[] argOIs,
+            final int argIndex) throws UDFArgumentException {
+        ObjectInspector argOI = getObjectInspector(argOIs, argIndex);
+        if (!DOUBLE_TYPE_NAME.equals(argOI.getTypeName())) {
+            throw new UDFArgumentTypeException(argIndex,
+                "Argument type must be DOUBLE: " + argOI.getTypeName());
+        }
+        return (DoubleObjectInspector) argOI;
+    }
+
+    @Nonnull
     public static PrimitiveObjectInspector asIntCompatibleOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
@@ -1101,6 +1112,35 @@ public final class HiveUtils {
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
+                    "Unexpected type '" + argOI.getTypeName() + "' is passed.");
+        }
+        return oi;
+    }
+
+    @Nonnull
+    public static PrimitiveObjectInspector asIntCompatibleOI(
+            @Nonnull final ObjectInspector[] argOIs, final int argIndex)
+            throws UDFArgumentException {
+        ObjectInspector argOI = getObjectInspector(argOIs, argIndex);
+        if (argOI.getCategory() != Category.PRIMITIVE) {
+            throw new UDFArgumentTypeException(argIndex,
+                "Only primitive type arguments are accepted but " + argOI.getTypeName()
+                        + " is passed.");
+        }
+        final PrimitiveObjectInspector oi = (PrimitiveObjectInspector) argOI;
+        switch (oi.getPrimitiveCategory()) {
+            case INT:
+            case SHORT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case DECIMAL:
+            case BOOLEAN:
+            case BYTE:
+            case STRING:
+                break;
+            default:
+                throw new UDFArgumentTypeException(argIndex,
                     "Unexpected type '" + argOI.getTypeName() + "' is passed.");
         }
         return oi;
