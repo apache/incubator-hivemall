@@ -53,9 +53,8 @@ public final class XGBoostUtils {
     public static String getVersion() throws HiveException {
         Properties props = new Properties();
         try (InputStream versionResourceFile =
-                Thread.currentThread()
-                      .getContextClassLoader()
-                      .getResourceAsStream("xgboost4j-version.properties")) {
+                Thread.currentThread().getContextClassLoader().getResourceAsStream(
+                    "xgboost4j-version.properties")) {
             props.load(versionResourceFile);
         } catch (IOException e) {
             throw new HiveException("Failed to load xgboost4j-version.properties", e);

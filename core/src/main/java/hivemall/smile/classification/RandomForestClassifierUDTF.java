@@ -19,15 +19,6 @@
 package hivemall.smile.classification;
 
 import hivemall.UDTFWithOptions;
-import matrix4j.matrix.Matrix;
-import matrix4j.matrix.MatrixUtils;
-import matrix4j.matrix.builders.CSRMatrixBuilder;
-import matrix4j.matrix.builders.MatrixBuilder;
-import matrix4j.matrix.builders.RowMajorDenseMatrixBuilder;
-import matrix4j.matrix.ints.DoKIntMatrix;
-import matrix4j.matrix.ints.IntMatrix;
-import matrix4j.vector.Vector;
-import matrix4j.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.smile.utils.SmileExtUtils;
 import hivemall.smile.utils.SmileTaskExecutor;
@@ -41,6 +32,15 @@ import hivemall.utils.lang.Primitives;
 import hivemall.utils.lang.RandomUtils;
 import hivemall.utils.random.PRNG;
 import hivemall.utils.random.RandomNumberGeneratorFactory;
+import matrix4j.matrix.Matrix;
+import matrix4j.matrix.MatrixUtils;
+import matrix4j.matrix.builders.CSRMatrixBuilder;
+import matrix4j.matrix.builders.MatrixBuilder;
+import matrix4j.matrix.builders.RowMajorDenseMatrixBuilder;
+import matrix4j.matrix.ints.DoKIntMatrix;
+import matrix4j.matrix.ints.IntMatrix;
+import matrix4j.vector.Vector;
+import matrix4j.vector.VectorProcedure;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -146,7 +146,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
         opts.addOption("attrs", "attribute_types", true, "Comma separated attribute types "
                 + "(Q for quantitative variable and C for categorical variable. e.g., [Q,C,Q,C])");
         opts.addOption("nominal_attr_indicies", "categorical_attr_indicies", true,
-            "Comma seperated indicies of categorical attributes, e.g., [3,5,6]");
+            "Comma seperated indicies of categorical attributes, e.g., [3,5,6]. Attribute index start with zero.");
         opts.addOption("rule", "split_rule", true,
             "Split algorithm [default: GINI, ENTROPY, CLASSIFICATION_ERROR]");
         opts.addOption("stratified", "stratified_sampling", false,

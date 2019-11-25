@@ -19,10 +19,6 @@
 package hivemall.smile.utils;
 
 import hivemall.annotations.VisibleForTesting;
-import matrix4j.matrix.ColumnMajorMatrix;
-import matrix4j.matrix.Matrix;
-import matrix4j.matrix.MatrixUtils;
-import matrix4j.vector.VectorProcedure;
 import hivemall.smile.classification.DecisionTree.SplitRule;
 import hivemall.utils.collections.arrays.SparseIntArray;
 import hivemall.utils.collections.lists.DoubleArrayList;
@@ -32,6 +28,10 @@ import hivemall.utils.lang.Preconditions;
 import hivemall.utils.math.MathUtils;
 import hivemall.utils.random.PRNG;
 import hivemall.utils.random.RandomNumberGeneratorFactory;
+import matrix4j.matrix.ColumnMajorMatrix;
+import matrix4j.matrix.Matrix;
+import matrix4j.matrix.MatrixUtils;
+import matrix4j.vector.VectorProcedure;
 import smile.data.NominalAttribute;
 import smile.data.NumericAttribute;
 import smile.sort.QuickSort;
@@ -53,7 +53,8 @@ public final class SmileExtUtils {
     private SmileExtUtils() {}
 
     /**
-     * Q for {@link NumericAttribute}, C for {@link NominalAttribute}.
+     * @param opt command separated list of Q and C. Q for {@link NumericAttribute}, C for
+     *        {@link NominalAttribute}.
      */
     @Nonnull
     public static RoaringBitmap resolveAttributes(@Nullable final String opt)
@@ -78,7 +79,7 @@ public final class SmileExtUtils {
     }
 
     /**
-     * Q for {@link NumericAttribute}, C for {@link NominalAttribute}.
+     * @param opt comma separated list of zero-start indexes
      */
     @Nonnull
     public static RoaringBitmap parseNominalAttributeIndicies(@Nullable final String opt)
