@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -182,12 +183,13 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3) {
-            throw new UDFArgumentException(
-                "_FUNC_ takes 3 arguments: INT user, INT item, FLOAT rating [, CONSTANT STRING options]");
+            showHelp(String.format(
+                "%s takes 3 or more arguments: INT user, INT item, FLOAT rating [, CONSTANT STRING options]: %s",
+                getClass().getSimpleName(), Arrays.toString(argOIs)));
         }
-        this.userOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
-        this.itemOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
-        this.ratingOI = HiveUtils.asDoubleCompatibleOI(argOIs[2]);
+        this.userOI = HiveUtils.asIntCompatibleOI(argOIs, 0);
+        this.itemOI = HiveUtils.asIntCompatibleOI(argOIs, 1);
+        this.ratingOI = HiveUtils.asDoubleCompatibleOI(argOIs, 2);
 
         processOptions(argOIs);
 

@@ -21,6 +21,7 @@ package hivemall.factorization.fm;
 import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_ARRAY_META;
 import static org.apache.hadoop.hive.ql.util.JavaDataModel.JAVA64_REF;
 import static org.apache.hadoop.hive.ql.util.JavaDataModel.PRIMITIVES2;
+
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
 
@@ -111,10 +112,10 @@ public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
-                this.wOI = HiveUtils.asDoubleCompatibleOI(parameters[0]);
-                this.vOI = HiveUtils.asListOI(parameters[1]);
+                this.wOI = HiveUtils.asDoubleCompatibleOI(parameters, 0);
+                this.vOI = HiveUtils.asListOI(parameters, 1);
                 this.vElemOI = HiveUtils.asDoubleCompatibleOI(vOI.getListElementObjectInspector());
-                this.xOI = HiveUtils.asDoubleCompatibleOI(parameters[2]);
+                this.xOI = HiveUtils.asDoubleCompatibleOI(parameters, 2);
             } else {// from partial aggregation
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 this.internalMergeOI = soi;

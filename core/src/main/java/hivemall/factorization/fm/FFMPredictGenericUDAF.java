@@ -112,15 +112,15 @@ public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
-                this.wiOI = HiveUtils.asDoubleCompatibleOI(parameters[0]);
-                this.vijOI = HiveUtils.asListOI(parameters[1]);
+                this.wiOI = HiveUtils.asDoubleCompatibleOI(parameters, 0);
+                this.vijOI = HiveUtils.asListOI(parameters, 1);
                 this.vijElemOI = HiveUtils.asFloatingPointOI(vijOI.getListElementObjectInspector());
-                this.vjiOI = HiveUtils.asListOI(parameters[2]);
+                this.vjiOI = HiveUtils.asListOI(parameters, 2);
                 this.vjiElemOI = HiveUtils.asFloatingPointOI(vjiOI.getListElementObjectInspector());
-                this.xiOI = HiveUtils.asDoubleCompatibleOI(parameters[3]);
-                this.xjOI = HiveUtils.asDoubleCompatibleOI(parameters[4]);
+                this.xiOI = HiveUtils.asDoubleCompatibleOI(parameters, 3);
+                this.xjOI = HiveUtils.asDoubleCompatibleOI(parameters, 4);
             } else {// from partial aggregation
-                this.mergeInputOI = HiveUtils.asDoubleOI(parameters[0]);
+                this.mergeInputOI = HiveUtils.asDoubleOI(parameters, 0);
             }
 
             return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;

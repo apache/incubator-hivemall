@@ -229,13 +229,13 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 2 && argOIs.length != 3) {
-            throw new UDFArgumentException(getClass().getSimpleName()
-                    + " takes 2 or 3 arguments: array<string> x, double y [, CONSTANT STRING options]: "
-                    + Arrays.toString(argOIs));
+            showHelp(String.format(
+                "%s takes 2 or 3 arguments: array<string> x, double y [, CONSTANT string options]: %s",
+                getClass().getSimpleName(), Arrays.toString(argOIs)));
         }
-        this._xOI = HiveUtils.asListOI(argOIs[0]);
+        this._xOI = HiveUtils.asListOI(argOIs, 0);
         HiveUtils.validateFeatureOI(_xOI.getListElementObjectInspector());
-        this._yOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
+        this._yOI = HiveUtils.asDoubleCompatibleOI(argOIs, 1);
 
         this._params = newHyperParameters();
         processOptions(argOIs);

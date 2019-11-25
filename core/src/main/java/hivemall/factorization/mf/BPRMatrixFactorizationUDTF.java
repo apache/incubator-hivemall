@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -241,12 +242,13 @@ public final class BPRMatrixFactorizationUDTF extends UDTFWithOptions implements
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 3 && argOIs.length != 4) {
-            throw new UDFArgumentException(getClass().getSimpleName()
-                    + " takes 3 or 4 arguments: INT user, INT posItem, INT negItem [, CONSTANT STRING options]");
+            showHelp(
+                "train_bprmf UDTF takes 3 or 4 arguments: INT user, INT posItem, INT negItem [, CONSTANT STRING options]: "
+                        + Arrays.toString(argOIs));
         }
-        this.userOI = HiveUtils.asIntCompatibleOI(argOIs[0]);
-        this.posItemOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
-        this.negItemOI = HiveUtils.asIntCompatibleOI(argOIs[2]);
+        this.userOI = HiveUtils.asIntCompatibleOI(argOIs, 0);
+        this.posItemOI = HiveUtils.asIntCompatibleOI(argOIs, 1);
+        this.negItemOI = HiveUtils.asIntCompatibleOI(argOIs, 2);
 
         processOptions(argOIs);
 
