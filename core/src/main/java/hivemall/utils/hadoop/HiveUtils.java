@@ -31,6 +31,7 @@ import static hivemall.HivemallConstants.TINYINT_TYPE_NAME;
 import static hivemall.HivemallConstants.VOID_TYPE_NAME;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
@@ -66,6 +67,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardConstantListObjectInspector;
@@ -470,6 +472,82 @@ public final class HiveUtils {
             throw new UDFArgumentException("Expected list type: " + typeInfo);
         }
         return (ListTypeInfo) typeInfo;
+    }
+
+    public static boolean isSameCategoryGroup(@Nonnull final PrimitiveCategory cat1,
+            @Nonnull final PrimitiveCategory cat2) {
+        if (cat1 == cat2) {
+            return true;
+        }
+
+        switch (cat1) {
+            // integers
+            case BYTE:
+            case SHORT:
+            case INT:
+            case LONG: {
+                switch (cat2) {
+                    case BYTE:
+                    case SHORT:
+                    case INT:
+                    case LONG:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            // floating point number
+            case FLOAT:
+            case DOUBLE: {
+                switch (cat2) {
+                    case FLOAT:
+                    case DOUBLE:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            // string
+            case STRING:
+            case CHAR:
+            case VARCHAR:
+                switch (cat2) {
+                    case STRING:
+                    case CHAR:
+                    case VARCHAR:
+                        return true;
+                    default:
+                        return false;
+                }
+            default:
+                break;
+        }
+        return false;
+    }
+
+    @Nullable
+    public static ArrayList<Object> copyListObject(@Nonnull final DeferredObject argument,
+            @Nonnull final ListObjectInspector loi) throws HiveException {
+        return copyListObject(argument, loi, ObjectInspectorCopyOption.DEFAULT);
+    }
+
+    @Nullable
+    public static ArrayList<Object> copyListObject(@Nonnull final DeferredObject argument,
+            @Nonnull final ListObjectInspector loi,
+            @Nonnull final ObjectInspectorCopyOption objectInspectorOption) throws HiveException {
+        final Object o = argument.get();
+        if (o == null) {
+            return null;
+        }
+
+        final int length = loi.getListLength(o);
+        final ArrayList<Object> list = new ArrayList<Object>(length);
+        for (int i = 0; i < length; i++) {
+            Object e = ObjectInspectorUtils.copyToStandardObject(loi.getListElement(o, i),
+                loi.getListElementObjectInspector(), objectInspectorOption);
+            list.add(e);
+        }
+        return list;
     }
 
     public static float getFloat(@Nullable Object o, @Nonnull PrimitiveObjectInspector oi) {
