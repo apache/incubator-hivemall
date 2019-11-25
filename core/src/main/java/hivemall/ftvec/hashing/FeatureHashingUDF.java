@@ -46,9 +46,20 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+//@formatter:off
 @Description(name = "feature_hashing",
         value = "_FUNC_(array<string> features [, const string options])"
-                + " - returns a hashed feature vector in array<string>")
+                + " - returns a hashed feature vector in array<string>",
+        extended = "select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-libsvm');\n" + 
+                "> [\"4063537:1.0\",\"4063537:1\",\"8459207:2.0\"]\n" + 
+                "\n" + 
+                "select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10');\n" + 
+                "> [\"7:1.0\",\"7\",\"1:2.0\"]\n" + 
+                "\n" + 
+                "select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10 -libsvm');\n" + 
+                "> [\"1:2.0\",\"7:1.0\",\"7:1\"]\n" + 
+                "")
+//@formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class FeatureHashingUDF extends UDFWithOptions {
 
