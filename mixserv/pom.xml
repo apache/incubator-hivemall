@@ -104,10 +104,10 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>io.netty</groupId>
 			<!-- required for mixing -->
+			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
-			<version>4.0.23.Final</version>
+			<version>${netty.version}</version>
 			<scope>compile</scope>
 		</dependency>
 
