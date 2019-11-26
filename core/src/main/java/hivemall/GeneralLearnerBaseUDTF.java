@@ -144,9 +144,9 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
             showHelp(
                 "_FUNC_ takes two or three arguments: List<Int|BigInt|Text> features, float target [, constant string options]");
         }
-        this.featureListOI = HiveUtils.asListOI(argOIs[0]);
+        this.featureListOI = HiveUtils.asListOI(argOIs, 0);
         this.featureType = getFeatureType(featureListOI);
-        this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs[1]);
+        this.targetOI = HiveUtils.asDoubleCompatibleOI(argOIs, 1);
 
         processOptions(argOIs);
 

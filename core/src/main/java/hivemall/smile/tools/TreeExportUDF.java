@@ -83,22 +83,22 @@ public final class TreeExportUDF extends UDFWithOptions {
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int argLen = argOIs.length;
         if (argLen < 2 || argLen > 4) {
-            throw new UDFArgumentException("_FUNC_ takes 2~4 arguments: " + argLen);
+            showHelp("tree_export UDF takes 2~4 arguments: " + argLen);
         }
 
-        this.modelOI = HiveUtils.asStringOI(argOIs[0]);
+        this.modelOI = HiveUtils.asStringOI(argOIs, 0);
 
-        String options = HiveUtils.getConstString(argOIs[1]);
+        String options = HiveUtils.getConstString(argOIs, 1);
         processOptions(options);
 
         if (argLen >= 3) {
-            this.featureNamesOI = HiveUtils.asListOI(argOIs[2]);
+            this.featureNamesOI = HiveUtils.asListOI(argOIs, 2);
             if (!HiveUtils.isStringOI(featureNamesOI.getListElementObjectInspector())) {
                 throw new UDFArgumentException("_FUNC_ expected array<string> for featureNames: "
                         + featureNamesOI.getTypeName());
             }
             if (argLen == 4) {
-                this.classNamesOI = HiveUtils.asListOI(argOIs[3]);
+                this.classNamesOI = HiveUtils.asListOI(argOIs, 3);
                 if (!HiveUtils.isStringOI(classNamesOI.getListElementObjectInspector())) {
                     throw new UDFArgumentException("_FUNC_ expected array<string> for classNames: "
                             + classNamesOI.getTypeName());

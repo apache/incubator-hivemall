@@ -141,7 +141,7 @@ public abstract class OnlineMatrixFactorizationUDTF extends UDTFWithOptions
         double convergenceRate = 0.005d;
 
         if (argOIs.length >= 4) {
-            String rawArgs = HiveUtils.getConstString(argOIs[3]);
+            String rawArgs = HiveUtils.getConstString(argOIs, 3);
             cl = parseOptions(rawArgs);
             if (cl.hasOption("factors")) {
                 this.factor = Primitives.parseInt(cl.getOptionValue("factors"), 10);

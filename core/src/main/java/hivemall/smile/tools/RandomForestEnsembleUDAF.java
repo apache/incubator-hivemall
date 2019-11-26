@@ -122,7 +122,7 @@ public final class RandomForestEnsembleUDAF extends AbstractGenericUDAFResolver 
 
             // initialize input
             if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {// from original data
-                this.yhatOI = HiveUtils.asIntegerOI(argOIs[0]);
+                this.yhatOI = HiveUtils.asIntegerOI(argOIs, 0);
             } else {// from partial aggregation
                 this.internalMergeOI = (StandardMapObjectInspector) argOIs[0];
                 this.keyOI = HiveUtils.asIntOI(internalMergeOI.getMapKeyObjectInspector());

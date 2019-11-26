@@ -202,7 +202,7 @@ public class FactorizationMachineUDTF extends UDTFWithOptions {
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
-            String rawArgs = HiveUtils.getConstString(argOIs[2]);
+            String rawArgs = HiveUtils.getConstString(argOIs, 2);
             cl = parseOptions(rawArgs);
             params.processOptions(cl);
         }

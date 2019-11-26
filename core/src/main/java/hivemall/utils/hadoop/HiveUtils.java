@@ -685,6 +685,18 @@ public final class HiveUtils {
         return v.get();
     }
 
+
+    public static boolean getConstBoolean(@Nonnull final ObjectInspector[] argOIs,
+            final int argIndex) throws UDFArgumentException {
+        final ObjectInspector oi = getObjectInspector(argOIs, argIndex);
+        if (!isBooleanOI(oi)) {
+            throw new UDFArgumentException("argument must be a Boolean value: "
+                    + TypeInfoUtils.getTypeInfoFromObjectInspector(oi));
+        }
+        BooleanWritable v = getConstValue(oi);
+        return v.get();
+    }
+
     public static int getConstInt(@Nonnull final ObjectInspector oi) throws UDFArgumentException {
         if (!isIntOI(oi)) {
             throw new UDFArgumentException("argument must be a Int value: "
@@ -1189,6 +1201,29 @@ public final class HiveUtils {
                 break;
             default:
                 throw new UDFArgumentTypeException(0,
+                    "Unexpected type '" + argOI.getTypeName() + "' is passed.");
+        }
+        return oi;
+    }
+
+    @Nonnull
+    public static PrimitiveObjectInspector asIntegerOI(@Nonnull final ObjectInspector[] argOIs,
+            final int argIndex) throws UDFArgumentException {
+        final ObjectInspector argOI = getObjectInspector(argOIs, argIndex);
+        if (argOI.getCategory() != Category.PRIMITIVE) {
+            throw new UDFArgumentTypeException(argIndex,
+                "Only primitive type arguments are accepted but " + argOI.getTypeName()
+                        + " is passed.");
+        }
+        final PrimitiveObjectInspector oi = (PrimitiveObjectInspector) argOI;
+        switch (oi.getPrimitiveCategory()) {
+            case INT:
+            case SHORT:
+            case LONG:
+            case BYTE:
+                break;
+            default:
+                throw new UDFArgumentTypeException(argIndex,
                     "Unexpected type '" + argOI.getTypeName() + "' is passed.");
         }
         return oi;

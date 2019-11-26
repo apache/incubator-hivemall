@@ -56,8 +56,8 @@ public final class ConfidenceWeightedUDTF extends BinaryOnlineClassifierUDTF {
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         final int numArgs = argOIs.length;
         if (numArgs != 2 && numArgs != 3) {
-            throw new UDFArgumentException(
-                "ConfidenceWeightedUDTF takes 2 or 3 arguments: List<String|Int|BitInt> features, Int label [, constant String options]");
+            showHelp(
+                "_FUNC_ takes 2 or 3 arguments: List<String|Int|BitInt> features, Int label [, constant String options]");
         }
 
         return super.initialize(argOIs);

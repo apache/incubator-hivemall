@@ -209,7 +209,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                     + argOIs.length);
         }
 
-        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs, 0);
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureListOI = listOI;
         if (HiveUtils.isNumberOI(elemOI)) {
@@ -225,7 +225,7 @@ public final class GradientTreeBoostingClassifierUDTF extends UDTFWithOptions {
                 "_FUNC_ takes double[] or string[] for the first argument: "
                         + listOI.getTypeName());
         }
-        this.labelOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
+        this.labelOI = HiveUtils.asIntCompatibleOI(argOIs, 1);
 
         processOptions(argOIs);
 

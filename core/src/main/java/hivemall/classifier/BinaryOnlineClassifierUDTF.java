@@ -76,11 +76,11 @@ public abstract class BinaryOnlineClassifierUDTF extends LearnerBaseUDTF {
     @Override
     public StructObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 2) {
-            throw new UDFArgumentException(getClass().getSimpleName()
-                    + " takes 2 arguments: List<Int|BigInt|Text> features, int label [, constant string options]");
+            showHelp(
+                "_FUNC_ takes 2 arguments: List<Int|BigInt|Text> features, int label [, constant string options]");
         }
         PrimitiveObjectInspector featureInputOI = processFeaturesOI(argOIs[0]);
-        this.labelOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
+        this.labelOI = HiveUtils.asIntCompatibleOI(argOIs, 1);
 
         processOptions(argOIs);
 

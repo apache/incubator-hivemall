@@ -92,11 +92,11 @@ public final class TreePredictUDF extends UDFWithOptions {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 3 && argOIs.length != 4) {
-            throw new UDFArgumentException("tree_predict takes 3 or 4 arguments");
+            showHelp("tree_predict takes 3 or 4 arguments");
         }
 
-        this.modelOI = HiveUtils.asStringOI(argOIs[1]);
-        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[2]);
+        this.modelOI = HiveUtils.asStringOI(argOIs, 1);
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs, 2);
         this.featureListOI = listOI;
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         if (HiveUtils.isNumberOI(elemOI)) {

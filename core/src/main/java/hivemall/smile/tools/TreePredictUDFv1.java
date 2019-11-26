@@ -98,19 +98,19 @@ public final class TreePredictUDFv1 extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length != 4 && argOIs.length != 5) {
-            throw new UDFArgumentException("_FUNC_ takes 4 or 5 arguments");
+            throw new UDFArgumentException("tree_predict_v1 takes 4 or 5 arguments");
         }
 
-        this.modelTypeOI = HiveUtils.asIntegerOI(argOIs[1]);
-        this.stringOI = HiveUtils.asStringOI(argOIs[2]);
-        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[3]);
+        this.modelTypeOI = HiveUtils.asIntegerOI(argOIs, 1);
+        this.stringOI = HiveUtils.asStringOI(argOIs, 2);
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs, 3);
         this.featureListOI = listOI;
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureElemOI = HiveUtils.asDoubleCompatibleOI(elemOI);
 
         boolean classification = false;
         if (argOIs.length == 5) {
-            classification = HiveUtils.getConstBoolean(argOIs[4]);
+            classification = HiveUtils.getConstBoolean(argOIs, 4);
         }
         this.classification = classification;
 

@@ -169,7 +169,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
 
         CommandLine cl = null;
         if (argOIs.length >= 3) {
-            String rawArgs = HiveUtils.getConstString(argOIs[2]);
+            String rawArgs = HiveUtils.getConstString(argOIs, 2);
             cl = parseOptions(rawArgs);
 
             trees = Primitives.parseInt(cl.getOptionValue("num_trees"), trees);
@@ -242,7 +242,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                         + argOIs.length);
         }
 
-        ListObjectInspector listOI = HiveUtils.asListOI(argOIs[0]);
+        ListObjectInspector listOI = HiveUtils.asListOI(argOIs, 0);
         ObjectInspector elemOI = listOI.getListElementObjectInspector();
         this.featureListOI = listOI;
         if (HiveUtils.isNumberOI(elemOI)) {
@@ -258,7 +258,7 @@ public final class RandomForestClassifierUDTF extends UDTFWithOptions {
                 "_FUNC_ takes double[] or string[] for the first argument: "
                         + listOI.getTypeName());
         }
-        this.labelOI = HiveUtils.asIntCompatibleOI(argOIs[1]);
+        this.labelOI = HiveUtils.asIntCompatibleOI(argOIs, 1);
 
         processOptions(argOIs);
 
