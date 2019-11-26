@@ -668,7 +668,7 @@ public final class HiveUtils {
             throws UDFArgumentException {
         final ObjectInspector oi = getObjectInspector(argOIs, argIndex);
         if (!isStringOI(oi)) {
-            throw new UDFArgumentException("argOIs[" + argIndex + "] must be a Text value: "
+            throw new UDFArgumentTypeException(argIndex, "argument must be a Text value: "
                     + TypeInfoUtils.getTypeInfoFromObjectInspector(oi));
         }
         Text v = getConstValue(oi);
@@ -690,7 +690,7 @@ public final class HiveUtils {
             final int argIndex) throws UDFArgumentException {
         final ObjectInspector oi = getObjectInspector(argOIs, argIndex);
         if (!isBooleanOI(oi)) {
-            throw new UDFArgumentException("argument must be a Boolean value: "
+            throw new UDFArgumentTypeException(argIndex, "argument must be a Boolean value: "
                     + TypeInfoUtils.getTypeInfoFromObjectInspector(oi));
         }
         BooleanWritable v = getConstValue(oi);
