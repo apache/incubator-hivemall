@@ -16,14 +16,10 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
-_Note adagrad/adadelta is supported from hivemall v0.3b2 or later (or in the master branch)._
 
-# Preparation 
+# Preparation
+
 ```sql
-add jar ./tmp/hivemall-with-dependencies.jar;
-source ./tmp/define-all.hive;
-
 use kdd12track2;
 
 -- SET mapreduce.framework.name=yarn;
@@ -34,6 +30,7 @@ SET mapred.reduce.tasks=32; -- [optional] set the explicit number of reducers to
 ```
 
 # AdaGrad
+
 ```sql
 drop table adagrad_model;
 create table adagrad_model 
@@ -60,13 +57,16 @@ select
   t.rowid, 
   sigmoid(sum(m.weight)) as prob
 from 
-  testing_exploded  t LEFT OUTER JOIN
+  testing_exploded t LEFT OUTER JOIN
   adagrad_model m ON (t.feature = m.feature)
 group by 
   t.rowid
 order by 
   rowid ASC;
 ```
+
+> #### Note
+> `sigmoid(sum(m.weight))` not `sigmoid(sum(m.weight * t.value)))` because t.value is always 1.0 for categorical variable.
 
 ```sh
 hadoop fs -getmerge /user/hive/warehouse/kdd12track2.db/adagrad_predict adagrad_predict.tbl
@@ -75,11 +75,14 @@ gawk -F "\t" '{print $2;}' adagrad_predict.tbl > adagrad_predict.submit
 
 pypy scoreKDD.py KDD_Track2_solution.csv adagrad_predict.submit
 ```
->AUC(SGD) : 0.739351
 
->AUC(ADAGRAD) : 0.743279
+|Algorithm|AUC|
+|:-:|:-:|
+| SGD | 0.739351 |
+| ADAGRAD | 0.743279 |
 
 # AdaDelta
+
 ```sql
 drop table adadelta_model;
 create table adadelta_model 
@@ -121,8 +124,9 @@ gawk -F "\t" '{print $2;}' adadelta_predict.tbl > adadelta_predict.submit
 
 pypy scoreKDD.py KDD_Track2_solution.csv adadelta_predict.submit
 ```
->AUC(SGD) : 0.739351
 
->AUC(ADAGRAD) : 0.743279
-
-> AUC(AdaDelta) : 0.746878
+|Algorithm|AUC|
+|:-:|:-:|
+| SGD | 0.739351 |
+| ADAGRAD | 0.743279 |
+| AdaDelta | 0.746878 |
