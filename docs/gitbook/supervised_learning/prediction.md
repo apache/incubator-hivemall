@@ -222,12 +222,114 @@ For details of available options, following queries might be helpful to list all
 
 ```sql
 select train_regressor('-help');
--- v0.5.0 or before
--- select train_regressor(array(), 0, '-help');
-
 select train_classifier('-help');
--- v0.5.0 or before
--- select train_classifier(array(), 0, '-help');
+```
+
+```
+SELECT train_regressor('-help');
+
+FAILED: UDFArgumentException
+train_regressor takes two or three arguments: List<Int|BigInt|Text> features, float target [, constant string options]
+
+usage: train_regressor(list<string|int|bigint> features, double label [,
+       const string options]) - Returns a relation consists of
+       <string|int|bigint feature, float weight> [-alpha <arg>] [-amsgrad]
+       [-beta <arg>] [-beta1 <arg>] [-beta2 <arg>] [-beta3 <arg>] [-c
+       <arg>] [-cv_rate <arg>] [-decay] [-dense] [-dims <arg>]
+       [-disable_cv] [-disable_halffloat] [-eps <arg>] [-eta <arg>] [-eta0
+       <arg>] [-inspect_opts] [-iter <arg>] [-iters <arg>] [-l1_ratio
+       <arg>] [-lambda <arg>] [-loss <arg>] [-mini_batch <arg>] [-mix
+       <arg>] [-mix_cancel] [-mix_session <arg>] [-mix_threshold <arg>]
+       [-opt <arg>] [-power_t <arg>] [-reg <arg>] [-rho <arg>] [-scale
+       <arg>] [-ssl] [-t <arg>]
+ -alpha <arg>                            Coefficient of learning rate
+                                         [default: 1.0
+                                         (adam/RMSPropGraves), 0.02
+                                         (AdamHD/Nesterov)]
+ -amsgrad                                Whether to use AMSGrad variant of
+                                         Adam
+ -beta <arg>                             Hyperparameter for tuning alpha
+                                         in Adam-HD [default: 1e-6f]
+ -beta1,--momentum <arg>                 Exponential decay rate of the
+                                         first order moment used in Adam
+                                         [default: 0.9]
+ -beta2 <arg>                            Exponential decay rate of the
+                                         second order moment used in Adam
+                                         [default: 0.999]
+ -beta3 <arg>                            Exponential decay rate of alpha
+                                         value  [default: 0.999]
+ -c <arg>                                Clipping constant of alpha used
+                                         in Eve optimizer so that clipped
+[default: 10]
+-cv_rate,--convergence_rate <arg>       Threshold to determine
+                                         convergence [default: 0.005]
+ -decay                                  Weight decay rate [default: 0.0]
+ -dense,--densemodel                     Use dense model or not
+ -dims,--feature_dimensions <arg>        The dimension of model [default:
+                                         16777216 (2^24)]
+ -disable_cv,--disable_cvtest            Whether to disable convergence
+                                         check [default: OFF]
+ -disable_halffloat                      Toggle this option to disable the
+                                         use of SpaceEfficientDenseModel
+ -eps <arg>                              Denominator value of
+                                         AdaDelta/AdaGrad/Adam [default:
+                                         1e-8 (AdaDelta/Adam), 1.0
+                                         (Adagrad)]
+ -eta <arg>                              Learning rate scheme [default:
+                                         inverse/inv, fixed, simple]
+ -eta0 <arg>                             The initial learning rate
+                                         [default: 0.1]
+ -inspect_opts                           Inspect Optimizer options
+ -iter,--iterations <arg>                The maximum number of iterations
+                                         [default: 10]
+ -iters,--iterations <arg>               The maximum number of iterations
+                                         [default: 10]
+ -l1_ratio <arg>                         Ratio of L1 regularizer as a part
+                                         of Elastic Net regularization
+                                         [default: 0.5]
+ -lambda <arg>                           Regularization term [default
+                                         0.0001]
+ -loss,--loss_function <arg>             Loss function [SquaredLoss
+                                         (default), QuantileLoss,
+                                         EpsilonInsensitiveLoss,
+                                         SquaredEpsilonInsensitiveLoss,
+                                         HuberLoss]
+ -mini_batch,--mini_batch_size <arg>     Mini batch size [default: 1].
+                                         Expecting the value in range
+                                         [1,100] or so.
+ -mix,--mix_servers <arg>                Comma separated list of MIX
+                                         servers
+ -mix_cancel,--enable_mix_canceling      Enable mix cancel requests
+ -mix_session,--mix_session_name <arg>   Mix session name [default:
+                                         ${mapred.job.id}]
+ -mix_threshold <arg>                    Threshold to mix local updates in
+                                         range (0,127] [default: 3]
+ -opt,--optimizer <arg>                  Optimizer to update weights
+                                         [default: adagrad, sgd, momentum,
+                                         nesterov, rmsprop, rmspropgraves,
+                                         adadelta, adam, eve, adam_hd]
+ -power_t <arg>                          The exponent for inverse scaling
+                                         learning rate [default: 0.1]
+ -reg,--regularization <arg>             Regularization type [default:
+                                         rda, l1, l2, elasticnet]
+ -rho,--decay <arg>                       Exponential decay rate of the
+                                         first and second order moments
+                                         [default 0.95 (AdaDelta,
+                                         rmsprop)]
+ -scale <arg>                            Scaling factor for cumulative
+                                         weights [100.0]
+ -ssl                                    Use SSL for the communication
+                                         with mix servers
+ -t,--total_steps <arg>                  a total of n_samples * epochs
+time steps
 ```
 
 In practice, you can try different combinations of the options in order to achieve higher prediction accuracy.
+
+You can also find the default optimizer hyperparameters by `-inspect_opts` option as follows:
+
+```sql
+select train_regressor(array(), 0, '-inspect_opts -optimizer adam -reg l1');
+
+FAILED: UDFArgumentException Inspected Optimizer options ...
+{disable_cvtest=false, regularization=L1, loss_function=SquaredLoss, eps=1.0E-8, decay=0.0, iterations=10, eta0=0.1, lambda=1.0E-4, eta=Invscaling, optimizer=adam, beta1=0.9, beta2=0.999, alpha=1.0, cv_rate=0.005, power_t=0.1}```
