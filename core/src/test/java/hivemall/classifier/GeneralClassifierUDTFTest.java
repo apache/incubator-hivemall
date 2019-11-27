@@ -73,6 +73,25 @@ public class GeneralClassifierUDTFTest {
         udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
     }
 
+    @Test
+    public void testInspectOptimizerOptions() throws Exception {
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+        ObjectInspector intOI = PrimitiveObjectInspectorFactory.javaIntObjectInspector;
+        ObjectInspector stringOI = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        ListObjectInspector stringListOI =
+                ObjectInspectorFactory.getStandardListObjectInspector(stringOI);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+            "-opt adam -reg l1 -inspect_opts");
+
+        try {
+            udtf.initialize(new ObjectInspector[] {stringListOI, intOI, params});
+            Assert.fail("should not come here");
+        } catch (UDFArgumentException e) {
+            Assert.assertTrue(e.getMessage().contains("adam"));
+        }
+    }
+
     @Test(expected = UDFArgumentException.class)
     public void testUnsupportedLossFunction() throws Exception {
         GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();

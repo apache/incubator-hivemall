@@ -167,6 +167,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     @Override
     protected Options getOptions() {
         Options opts = super.getOptions();
+        opts.addOption("inspect_opts", false, "Inspect Optimizer options");
         opts.addOption("loss", "loss_function", true, getLossOptionDescription());
         opts.addOption("iter", "iterations", true,
             "The maximum number of iterations [default: 10]");
@@ -216,6 +217,17 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         this.cvState = new ConversionState(conversionCheck, convergenceRate);
 
         OptimizerOptions.processOptions(cl, optimizerOptions);
+
+        if (cl != null && cl.hasOption("inspect_opts")) {
+            Optimizer optimizer = createOptimizer(optimizerOptions);
+            Map<String, Object> params = optimizer.getHyperParameters();
+            params.put("loss_function", lossFunction.getType().toString());
+            params.put("iterations", iterations);
+            params.put("disable_cvtest", conversionCheck ? false : true);
+            params.put("cv_rate", convergenceRate);
+            throw new UDFArgumentException(
+                String.format("Inspected Optimizer options ...\n%s", params.toString()));
+        }
 
         return cl;
     }

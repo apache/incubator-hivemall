@@ -43,6 +43,9 @@ public abstract class EtaEstimator {
         this.eta0 = eta0;
     }
 
+    @Nonnull
+    public abstract String typeName();
+
     public float eta0() {
         return eta0;
     }
@@ -51,10 +54,20 @@ public abstract class EtaEstimator {
 
     public void update(@Nonnegative float multiplier) {}
 
+    public void getHyperParameters(@Nonnull Map<String, Object> hyperParams) {
+        hyperParams.put("eta", typeName());
+        hyperParams.put("eta0", eta0());
+    }
+
     public static final class FixedEtaEstimator extends EtaEstimator {
 
         public FixedEtaEstimator(float eta) {
             super(eta);
+        }
+
+        @Nonnull
+        public String typeName() {
+            return "Fixed";
         }
 
         @Override
@@ -80,6 +93,11 @@ public abstract class EtaEstimator {
             this.total_steps = total_steps;
         }
 
+        @Nonnull
+        public String typeName() {
+            return "Simple";
+        }
+
         @Override
         public float eta(final long t) {
             if (t > total_steps) {
@@ -94,6 +112,11 @@ public abstract class EtaEstimator {
                     + ", finalEta = " + finalEta + " ]";
         }
 
+        public void getHyperParameters(@Nonnull Map<String, Object> hyperParams) {
+            super.getHyperParameters(hyperParams);
+            hyperParams.put("total_steps", total_steps);
+        }
+
     }
 
     public static final class InvscalingEtaEstimator extends EtaEstimator {
@@ -103,6 +126,11 @@ public abstract class EtaEstimator {
         public InvscalingEtaEstimator(float eta0, double power_t) {
             super(eta0);
             this.power_t = power_t;
+        }
+
+        @Nonnull
+        public String typeName() {
+            return "Invscaling";
         }
 
         @Override
@@ -115,6 +143,10 @@ public abstract class EtaEstimator {
             return "InvscalingEtaEstimator [ eta0 = " + eta0 + ", power_t = " + power_t + " ]";
         }
 
+        public void getHyperParameters(@Nonnull Map<String, Object> hyperParams) {
+            super.getHyperParameters(hyperParams);
+            hyperParams.put("power_t", power_t);
+        }
     }
 
     /**
@@ -128,6 +160,11 @@ public abstract class EtaEstimator {
         public AdjustingEtaEstimator(float eta) {
             super(eta);
             this.eta = eta;
+        }
+
+        @Nonnull
+        public String typeName() {
+            return "boldDriver";
         }
 
         @Override
@@ -207,7 +244,8 @@ public abstract class EtaEstimator {
                     "-total_steps MUST be provided when `-eta simple` is specified");
             }
             return new SimpleEtaEstimator(eta0, t);
-        } else if ("inv".equalsIgnoreCase(etaScheme) || "inverse".equalsIgnoreCase(etaScheme)) {
+        } else if ("inv".equalsIgnoreCase(etaScheme) || "inverse".equalsIgnoreCase(etaScheme)
+                || "invscaling".equalsIgnoreCase(etaScheme)) {
             return new InvscalingEtaEstimator(eta0, power_t);
         } else {
             if (StringUtils.isNumber(etaScheme)) {
