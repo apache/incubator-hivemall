@@ -33,6 +33,7 @@ import hivemall.model.WeightValue.WeightValueParamsF3;
 import hivemall.utils.lang.Primitives;
 import hivemall.utils.math.MathUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Nonnegative;
@@ -53,6 +54,9 @@ public interface Optimizer {
 
     @Nonnull
     String getOptimizerName();
+
+    @Nonnull
+    Map<String, Object> getHyperParameters();
 
     @NotThreadSafe
     static abstract class OptimizerBase implements Optimizer {
@@ -120,6 +124,15 @@ public interface Optimizer {
          */
         protected float computeDelta(@Nonnull final IWeightValue weight, final float gradient) {
             return gradient;
+        }
+
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = new HashMap<>();
+            params.put("optimizer", getOptimizerName());
+            _eta.getHyperParameters(params);
+            _reg.getHyperParameters(params);
+            return params;
         }
 
     }
@@ -198,6 +211,15 @@ public interface Optimizer {
             return nesterov ? "nesterov" : "momentum";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("nesterov", nesterov);
+            params.put("alpha", alpha);
+            params.put("momentum", momentum);
+            return params;
+        }
+
     }
 
     static abstract class AdaGrad extends OptimizerBase {
@@ -229,8 +251,14 @@ public interface Optimizer {
             return "adagrad";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("eps", eps);
+            params.put("scale", scale);
+            return params;
+        }
     }
-
 
     /**
      * RMSprop optimizer introducing weight decay to AdaGrad.
@@ -273,6 +301,15 @@ public interface Optimizer {
         @Override
         public String getOptimizerName() {
             return "rmsprop";
+        }
+
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("decay", decay);
+            params.put("eps", eps);
+            params.put("scale", scale);
+            return params;
         }
 
     }
@@ -329,6 +366,16 @@ public interface Optimizer {
             return "rmsprop_graves";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("decay", decay);
+            params.put("alpha", alpha);
+            params.put("momentum", momentum);
+            params.put("eps", eps);
+            return params;
+        }
+
     }
 
     static abstract class AdaDelta extends OptimizerBase {
@@ -380,6 +427,15 @@ public interface Optimizer {
         @Override
         public String getOptimizerName() {
             return "adadelta";
+        }
+
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("decay", decay);
+            params.put("eps", eps);
+            params.put("scale", scale);
+            return params;
         }
 
     }
@@ -476,6 +532,16 @@ public interface Optimizer {
             return amsgrad ? "adam-amsgrad" : "adam";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("alpha", alpha);
+            params.put("beta1", beta1);
+            params.put("beta2", beta2);
+            params.put("eps", eps);
+            params.put("decay", decay);
+            return params;
+        }
     }
 
     /**
@@ -579,6 +645,17 @@ public interface Optimizer {
             return "nadam";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("alpha", alpha);
+            params.put("beta1", beta1);
+            params.put("beta2", beta2);
+            params.put("eps", eps);
+            params.put("decay", decay);
+            params.put("scheduleDecay", scheduleDecay);
+            return params;
+        }
     }
 
     /**
@@ -634,6 +711,13 @@ public interface Optimizer {
             return "eve";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("beta3", beta3);
+            params.put("c", c);
+            return params;
+        }
     }
 
     /**
@@ -713,6 +797,12 @@ public interface Optimizer {
             return "adam_hd";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = super.getHyperParameters();
+            params.put("beta", beta);
+            return params;
+        }
     }
 
     static abstract class AdagradRDA extends OptimizerBase {
@@ -760,6 +850,13 @@ public interface Optimizer {
             return "adagrad_rda";
         }
 
+        @Override
+        public Map<String, Object> getHyperParameters() {
+            Map<String, Object> params = optimizerImpl.getHyperParameters();
+            params.put("optimizer", getOptimizerName()); // replace
+            params.put("lambda", lambda);
+            return params;
+        }
     }
 
 }

@@ -127,6 +127,9 @@ public abstract class UDFWithOptions extends GenericUDF {
         StringWriter sw = new StringWriter();
         sw.write('\n');
         if (errMsg != null) {
+            if (funcDesc != null && funcDesc.name() != null) {
+                errMsg = errMsg.replace("_FUNC_", funcDesc.name());
+            }
             sw.write(errMsg);
             sw.write("\n\n");
         }
