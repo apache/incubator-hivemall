@@ -45,10 +45,6 @@ _Tokens are actually not used in this example. Try using them on your own._
 create database kdd12track2;
 use kdd12track2;
 
-delete jar /tmp/hivemall.jar;
-add jar /tmp/hivemall.jar;
-source /tmp/define-all.hive;
-
 Create external table training (
   RowID BIGINT,
   Clicks INT, 
@@ -156,14 +152,14 @@ select
   mhash(concat("12:", COALESCE(age,"-1"))) as age, 
   -1 as bias
 from (
-select
-  t.*,
-  u.gender,
-  u.age
-from 
-  training t 
-  LEFT OUTER JOIN user u 
-    on t.userid = u.userid
+  select
+    t.*,
+    u.gender,
+    u.age
+  from 
+    training t 
+    LEFT OUTER JOIN user u 
+      on t.userid = u.userid
 ) t;
 
 create or replace view testing2 as
@@ -172,31 +168,31 @@ select
   array(displayurl, adid, advertiserid, depth, position, queryid, keywordid, titleid, descriptionid, userid, gender, age, bias) 
     as features
 from (
-select
-  rowid,
-  mhash(concat("1:", displayurl)) as displayurl, 
-  mhash(concat("2:", adid)) as adid, 
-  mhash(concat("3:", advertiserid)) as advertiserid, 
-  mhash(concat("4:", depth)) as depth, 
-  mhash(concat("5:", position)) as position, 
-  mhash(concat("6:", queryid)) as queryid, 
-  mhash(concat("7:", keywordid)) as keywordid, 
-  mhash(concat("8:", titleid)) as titleid, 
-  mhash(concat("9:", descriptionid)) as descriptionid, 
-  mhash(concat("10:", userid)) as userid, 
-  mhash(concat("11:", COALESCE(gender,"0"))) as gender, 
-  mhash(concat("12:", COALESCE(age,"-1"))) as age, 
-  -1 as bias
-from (
-select
-  t.*,
-  u.gender,
-  u.age
-from 
-  testing t 
-  LEFT OUTER JOIN user u 
-    on t.userid = u.userid
-) t1
+  select
+    rowid,
+    mhash(concat("1:", displayurl)) as displayurl, 
+    mhash(concat("2:", adid)) as adid, 
+    mhash(concat("3:", advertiserid)) as advertiserid, 
+    mhash(concat("4:", depth)) as depth, 
+    mhash(concat("5:", position)) as position, 
+    mhash(concat("6:", queryid)) as queryid, 
+    mhash(concat("7:", keywordid)) as keywordid, 
+    mhash(concat("8:", titleid)) as titleid, 
+    mhash(concat("9:", descriptionid)) as descriptionid, 
+    mhash(concat("10:", userid)) as userid, 
+    mhash(concat("11:", COALESCE(gender,"0"))) as gender, 
+    mhash(concat("12:", COALESCE(age,"-1"))) as age, 
+    -1 as bias
+  from (
+    select
+      t.*,
+      u.gender,
+      u.age
+    from 
+      testing t 
+      LEFT OUTER JOIN user u 
+        on t.userid = u.userid
+  ) t1
 ) t2;
 ```
 
@@ -204,33 +200,24 @@ from
 ```sql
 create table training_orcfile (
  rowid bigint,
- label float,
- features array<int>
+ features array<int>,
+ label int
 ) STORED AS orc tblproperties ("orc.compress"="SNAPPY");
 ```
-_Caution: Joining between training table and user table takes a long time. Consider not to use gender and age and avoid joins if your Hadoop cluster is small._
 
-[kddconv.awk](https://github.com/apache/incubator-hivemall/blob/master/resources/examples/kddtrack2/kddconv.awk)
+> _Caution: Joining between training table and user table takes a long time. Consider not to use gender and age and avoid joins if your Hadoop cluster is small._
 
 ```sql
-add file /tmp/kddconv.awk;
-
 -- SET mapred.reduce.tasks=64;
 -- SET hive.auto.convert.join=false;
 
 INSERT OVERWRITE TABLE training_orcfile 
-select transform(*) 
-  ROW FORMAT DELIMITED
-     FIELDS TERMINATED BY "\t"
-     LINES TERMINATED BY "\n"
-using 'gawk -f kddconv.awk' 
-  as (rowid BIGINT, label FLOAT, features ARRAY<INT>)
-  ROW FORMAT DELIMITED
-     FIELDS TERMINATED BY "\t"
-     COLLECTION ITEMS TERMINATED BY ","
-     LINES TERMINATED BY "\n"
-from training2
-CLUSTER BY rand();
+select 
+  binarize_label(clicks, noclick, rowid, features)
+    as (rowid, features, label)
+from
+  training2
+CLUSTER BY rand(); -- shuffle
 
 -- SET mapred.reduce.tasks=-1;
 -- SET hive.auto.convert.join=true;
@@ -243,4 +230,4 @@ from
   testing2 
   LATERAL VIEW explode(features) t AS feature;
 ```
-_Caution: We recommend you to set "mapred.reduce.tasks" in the above example to partition the training_orcfile table into pieces._
+

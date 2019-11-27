@@ -22,6 +22,7 @@
 # PA1a
 
 ## Training
+
 ```sql
 set mapred.reduce.tasks=64;
 
@@ -46,6 +47,7 @@ set mapred.reduce.tasks=-1;
 > Do not use `voted_avg()` for regression. `voted_avg()` is for classification.
 
 ## prediction
+
 ```sql
 create or replace view e2006tfidf_pa1a_predict
 as
@@ -60,6 +62,7 @@ group by
 ```
 
 ## evaluation
+
 ```sql
 WITH submit as (
   select 
@@ -86,6 +89,7 @@ from
 # PA2a
 
 ## Training
+
 ```sql
 set mapred.reduce.tasks=64;
 drop table e2006tfidf_pa2a_model;
@@ -104,6 +108,7 @@ set mapred.reduce.tasks=-1;
 ```
 
 ## prediction
+
 ```sql
 create or replace view e2006tfidf_pa2a_predict
 as
@@ -118,6 +123,7 @@ group by
 ```
 
 ## evaluation
+
 ```sql
 WITH submit as (
   select 
@@ -144,6 +150,7 @@ from
 # AROW
 
 ## Training
+
 ```sql
 set mapred.reduce.tasks=64;
 drop table e2006tfidf_arow_model ;
@@ -154,8 +161,7 @@ select
  argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
 from 
  (select 
-     -- train_arow_regr(add_bias(features),target) as (feature,weight)    -- [hivemall v0.1]
-     train_arow_regr(add_bias(features),target) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     train_arow_regr(add_bias(features),target) as (feature,weight,covar)
   from 
      e2006tfidf_train_x3
  ) t 
@@ -164,6 +170,7 @@ set mapred.reduce.tasks=-1;
 ```
 
 ## prediction
+
 ```sql
 create or replace view e2006tfidf_arow_predict
 as
@@ -178,6 +185,7 @@ group by
 ```
 
 ## evaluation
+
 ```sql
 WITH submit as (
   select 
@@ -202,21 +210,22 @@ from
 | 0.37862513029019407 | 0.14335698928726642 | 0.2368787001269389 | 0.5041085155590119 |
 
 # AROWe
+
 AROWe is a modified version of AROW that uses Hinge loss (epsilion = 0.1)
 
 ## Training
+
 ```sql
-set mapred.reduce.tasks=64;
+-- set mapred.reduce.tasks=64;
+
 drop table e2006tfidf_arowe_model ;
 create table e2006tfidf_arowe_model as
 select 
  feature,
- -- avg(weight) as weight -- [hivemall v0.1]
- argmin_kld(weight, covar) as weight -- [hivemall v0.2 or later]
+ argmin_kld(weight, covar) as weight 
 from 
  (select 
-     -- train_arowe_regr(add_bias(features),target) as (feature,weight)    -- [hivemall v0.1]
-     train_arowe_regr(add_bias(features),target) as (feature,weight,covar) -- [hivemall v0.2 or later]
+     train_arowe_regr(add_bias(features),target) as (feature,weight,covar)
   from 
      e2006tfidf_train_x3
  ) t 
@@ -225,6 +234,7 @@ set mapred.reduce.tasks=-1;
 ```
 
 ## prediction
+
 ```sql
 create or replace view e2006tfidf_arowe_predict
 as
@@ -239,6 +249,7 @@ group by
 ```
 
 ## evaluation
+
 ```sql
 WITH submit as (
   select 
