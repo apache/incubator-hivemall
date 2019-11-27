@@ -29,9 +29,18 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 
+//@formatter:off
 @Description(name = "hamming_distance",
-        value = "_FUNC_(A, B [,int k]) - Returns Hamming distance between A and B")
+        value = "_FUNC_(integer A, integer B) - Returns Hamming distance between A and B",
+        extended = "select \n" + 
+                "  hamming_distance(0,3) as c1, \n" + 
+                "  hamming_distance(\"0\",\"3\") as c2 -- 0=0x00, 3=0x11\n" + 
+                ";\n" + 
+                "\n" + 
+                "c1      c2\n" + 
+                "2       2")
 @UDFType(deterministic = true, stateful = false)
+//@formatter:on
 public class HammingDistanceUDF extends UDF {
 
     public IntWritable evaluate(long a, long b) {

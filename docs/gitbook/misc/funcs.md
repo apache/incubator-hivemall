@@ -424,22 +424,202 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 # Distance measures
 
 - `angular_distance(ftvec1, ftvec2)` - Returns an angular distance of the given two vectors
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    angular_distance(l.features, r.features) as distance,
+    distance2similarity(angular_distance(l.features, r.features)) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    distance asc;
+
+  doc1    doc2    distance        similarity
+  1       3       0.31678355      0.75942624
+  1       2       0.33333337      0.75
+  2       3       0.09841931      0.91039914
+  2       1       0.33333337      0.75
+  3       2       0.09841931      0.91039914
+  3       1       0.31678355      0.75942624
+  ```
 
 - `cosine_distance(ftvec1, ftvec2)` - Returns a cosine distance of the given two vectors
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    cosine_distance(l.features, r.features) as distance,
+    distance2similarity(cosine_distance(l.features, r.features)) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    distance asc;
+
+  doc1    doc2    distance        similarity
+  1       3       0.45566893      0.6869694
+  1       2       0.5     0.6666667
+  2       3       0.04742068      0.95472616
+  2       1       0.5     0.6666667
+  3       2       0.04742068      0.95472616
+  3       1       0.45566893      0.6869694
+  ```
 
 - `euclid_distance(ftvec1, ftvec2)` - Returns the square root of the sum of the squared differences: sqrt(sum((x - y)^2))
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    euclid_distance(l.features, r.features) as distance,
+    distance2similarity(euclid_distance(l.features, r.features)) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    distance asc;
 
-- `hamming_distance(A, B [,int k])` - Returns Hamming distance between A and B
+  doc1    doc2    distance        similarity
+  1       2       2.4494898       0.28989795
+  1       3       2.6457512       0.2742919
+  2       3       1.0     0.5
+  2       1       2.4494898       0.28989795
+  3       2       1.0     0.5
+  3       1       2.6457512       0.2742919
+  ```
 
-- `jaccard_distance(A, B [,int k])` - Returns Jaccard distance between A and B
+- `hamming_distance(integer A, integer B)` - Returns Hamming distance between A and B
+  ```sql
+  select 
+    hamming_distance(0,3) as c1, 
+    hamming_distance("0","3") as c2 -- 0=0x00, 3=0x11
+  ;
 
-- `kld(double m1, double sigma1, double mu2, double sigma 2)` - Returns KL divergence between two distributions
+  c1      c2
+  2       2
+  ```
+
+- `jaccard_distance(integer A, integer B [,int k=128])` - Returns Jaccard distance between A and B
+  ```sql
+  select 
+    jaccard_distance(0,3) as c1, 
+    jaccard_distance("0","3") as c2, -- 0=0x00, 0=0x11
+    jaccard_distance(0,4) as c3
+  ;
+
+  c1      c2      c3
+  0.03125 0.03125 0.015625
+  ```
+
+- `kld(double mu1, double sigma1, double mu2, double sigma2)` - Returns KL divergence between two distributions
 
 - `manhattan_distance(list x, list y)` - Returns sum(|x - y|)
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    manhattan_distance(l.features, r.features) as distance,
+    distance2similarity(angular_distance(l.features, r.features)) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    distance asc;
+
+  doc1    doc2    distance        similarity
+  1       2       4.0     0.75
+  1       3       5.0     0.75942624
+  2       3       1.0     0.91039914
+  2       1       4.0     0.75
+  3       2       1.0     0.91039914
+  3       1       5.0     0.75942624
+  ```
 
 - `minkowski_distance(list x, list y, double p)` - Returns sum(|x - y|^p)^(1/p)
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    minkowski_distance(l.features, r.features, 1) as distance1, -- p=1 (manhattan_distance)
+    minkowski_distance(l.features, r.features, 2) as distance2, -- p=2 (euclid_distance)
+    minkowski_distance(l.features, r.features, 3) as distance3, -- p=3
+    manhattan_distance(l.features, r.features) as manhattan_distance,
+    euclid_distance(l.features, r.features) as euclid_distance
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    distance1 asc;
+
+  doc1    doc2    distance1       distance2       distance3       manhattan_distance      euclid_distance
+  1       2       4.0     2.4494898       2.1544347       4.0     2.4494898
+  1       3       5.0     2.6457512       2.2239802       5.0     2.6457512
+  2       3       1.0     1.0     1.0     1.0     1.0
+  2       1       4.0     2.4494898       2.1544347       4.0     2.4494898
+  3       2       1.0     1.0     1.0     1.0     1.0
+  3       1       5.0     2.6457512       2.2239802       5.0     2.6457512
+  ```
 
 - `popcnt(a [, b])` - Returns a popcount value
+  ```sql
+  select 
+    popcnt(3),
+    popcnt("3"),  -- 3=0x11
+    popcnt(array(1,3));
+
+  2       2       3
+  ```
 
 # Locality-sensitive hashing
 
@@ -452,16 +632,132 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 # Similarity measures
 
 - `angular_similarity(ftvec1, ftvec2)` - Returns an angular similarity of the given two vectors
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    angular_similarity(l.features, r.features) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    similarity desc;
+
+  doc1    doc2    similarity
+  1       3       0.68321645
+  1       2       0.6666666
+  2       3       0.9015807
+  2       1       0.6666666
+  3       2       0.9015807
+  3       1       0.68321645
+  ```
 
 - `cosine_similarity(ftvec1, ftvec2)` - Returns a cosine similarity of the given two vectors
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    cosine_similarity(l.features, r.features) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    similarity desc;
+
+  doc1    doc2    similarity
+  1       3       0.5443311
+  1       2       0.5
+  2       3       0.9525793
+  2       1       0.5
+  3       2       0.9525793
+  3       1       0.5443311
+  ```
 
 - `dimsum_mapper(array<string> row, map<int col_id, double norm> colNorms [, const string options])` - Returns column-wise partial similarities
 
 - `distance2similarity(float d)` - Returns 1.0 / (1.0 + d)
 
 - `euclid_similarity(ftvec1, ftvec2)` - Returns a euclid distance based similarity, which is `1.0 / (1.0 + distance)`, of the given two vectors
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    euclid_similarity(l.features, r.features) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    similarity desc;
+
+  doc1    doc2    similarity
+  1       2       0.28989795
+  1       3       0.2742919
+  2       3       0.5
+  2       1       0.28989795
+  3       2       0.5
+  3       1       0.2742919
+  ```
 
 - `jaccard_similarity(A, B [,int k])` - Returns Jaccard similarity coefficient of A and B
+  ```sql
+  WITH docs as (
+    select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features
+    union all
+    select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+    union all
+    select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features
+  ) 
+  select
+    l.docid as doc1,
+    r.docid as doc2,
+    jaccard_similarity(l.features, r.features) as similarity
+  from 
+    docs l
+    CROSS JOIN docs r
+  where
+    l.docid != r.docid
+  order by 
+    doc1 asc,
+    similarity desc;
+
+  doc1    doc2    similarity
+  1       2       0.14285715
+  1       3       0.0
+  2       3       0.6
+  2       1       0.14285715
+  3       2       0.6
+  3       1       0.0
+  ```
 
 # Evaluation
 

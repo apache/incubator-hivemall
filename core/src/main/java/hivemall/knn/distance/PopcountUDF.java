@@ -28,8 +28,16 @@ import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 
-@Description(name = "popcnt", value = "_FUNC_(a [, b]) - Returns a popcount value")
+//@formatter:off
+@Description(name = "popcnt", value = "_FUNC_(a [, b]) - Returns a popcount value", 
+             extended = "select \n" + 
+                     "  popcnt(3),\n" + 
+                     "  popcnt(\"3\"),  -- 3=0x11\n" + 
+                     "  popcnt(array(1,3));\n" + 
+                     "\n" + 
+                     "2       2       3")
 @UDFType(deterministic = true, stateful = false)
+//@formatter:on
 public final class PopcountUDF extends UDF {
 
     public IntWritable evaluate(long a) {

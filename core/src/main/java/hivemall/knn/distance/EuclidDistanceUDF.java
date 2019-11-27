@@ -36,10 +36,40 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 
+//@formatter:off
 @Description(name = "euclid_distance",
         value = "_FUNC_(ftvec1, ftvec2) - Returns the square root of the sum of the squared differences"
-                + ": sqrt(sum((x - y)^2))")
+                + ": sqrt(sum((x - y)^2))",
+        extended = "WITH docs as (\n" + 
+                "  select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features\n" + 
+                "  union all\n" + 
+                "  select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features\n" + 
+                "  union all\n" + 
+                "  select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features\n" + 
+                ") \n" + 
+                "select\n" + 
+                "  l.docid as doc1,\n" + 
+                "  r.docid as doc2,\n" + 
+                "  euclid_distance(l.features, r.features) as distance,\n" + 
+                "  distance2similarity(euclid_distance(l.features, r.features)) as similarity\n" + 
+                "from \n" + 
+                "  docs l\n" + 
+                "  CROSS JOIN docs r\n" + 
+                "where\n" + 
+                "  l.docid != r.docid\n" + 
+                "order by \n" + 
+                "  doc1 asc,\n" + 
+                "  distance asc;\n" + 
+                "\n" + 
+                "doc1    doc2    distance        similarity\n" + 
+                "1       2       2.4494898       0.28989795\n" + 
+                "1       3       2.6457512       0.2742919\n" + 
+                "2       3       1.0     0.5\n" + 
+                "2       1       2.4494898       0.28989795\n" + 
+                "3       2       1.0     0.5\n" + 
+                "3       1       2.6457512       0.2742919")
 @UDFType(deterministic = true, stateful = false)
+//@formatter:on
 public final class EuclidDistanceUDF extends GenericUDF {
 
     private ListObjectInspector arg0ListOI, arg1ListOI;

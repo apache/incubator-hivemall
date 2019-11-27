@@ -24,9 +24,10 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 
-@Description(name = "kld", value = "_FUNC_(double m1, double sigma1, double mu2, double sigma 2)"
+@Description(name = "kld", value = "_FUNC_(double mu1, double sigma1, double mu2, double sigma2)"
         + " - Returns KL divergence between two distributions")
 @UDFType(deterministic = true, stateful = false)
+//@formatter:on
 public final class KLDivergenceUDF extends UDF {
 
     public DoubleWritable evaluate(double mu1, double sigma1, double mu2, double sigma2) {
