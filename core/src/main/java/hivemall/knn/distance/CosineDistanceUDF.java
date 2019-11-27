@@ -37,9 +37,39 @@ import org.apache.hadoop.io.FloatWritable;
 /**
  * @link http://en.wikipedia.org/wiki/Cosine_similarity
  */
+//@formatter:off
 @Description(name = "cosine_distance",
-        value = "_FUNC_(ftvec1, ftvec2) - Returns a cosine distance of the given two vectors")
+        value = "_FUNC_(ftvec1, ftvec2) - Returns a cosine distance of the given two vectors",
+        extended = "WITH docs as (\n" + 
+                "  select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features\n" + 
+                "  union all\n" + 
+                "  select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features\n" + 
+                "  union all\n" + 
+                "  select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features\n" + 
+                ") \n" + 
+                "select\n" + 
+                "  l.docid as doc1,\n" + 
+                "  r.docid as doc2,\n" + 
+                "  cosine_distance(l.features, r.features) as distance,\n" + 
+                "  distance2similarity(cosine_distance(l.features, r.features)) as similarity\n" + 
+                "from \n" + 
+                "  docs l\n" + 
+                "  CROSS JOIN docs r\n" + 
+                "where\n" + 
+                "  l.docid != r.docid\n" + 
+                "order by \n" + 
+                "  doc1 asc,\n" + 
+                "  distance asc;\n" + 
+                "\n" + 
+                "doc1    doc2    distance        similarity\n" + 
+                "1       3       0.45566893      0.6869694\n" + 
+                "1       2       0.5     0.6666667\n" + 
+                "2       3       0.04742068      0.95472616\n" + 
+                "2       1       0.5     0.6666667\n" + 
+                "3       2       0.04742068      0.95472616\n" + 
+                "3       1       0.45566893      0.6869694")
 @UDFType(deterministic = true, stateful = false)
+//@formatter:on
 public final class CosineDistanceUDF extends GenericUDF {
 
     private ListObjectInspector arg0ListOI, arg1ListOI;

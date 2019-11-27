@@ -28,9 +28,19 @@ import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.FloatWritable;
 
+//@formatter:off
 @Description(name = "jaccard_distance",
-        value = "_FUNC_(A, B [,int k]) - Returns Jaccard distance between A and B")
+        value = "_FUNC_(integer A, integer B [,int k=128]) - Returns Jaccard distance between A and B",
+        extended = "select \n" + 
+                "  jaccard_distance(0,3) as c1, \n" + 
+                "  jaccard_distance(\"0\",\"3\") as c2, -- 0=0x00, 0=0x11\n" + 
+                "  jaccard_distance(0,4) as c3\n" + 
+                ";\n" + 
+                "\n" + 
+                "c1      c2      c3\n" + 
+                "0.03125 0.03125 0.015625")
 @UDFType(deterministic = true, stateful = false)
+//@formatter:on
 public final class JaccardDistanceUDF extends UDF {
 
     private final Set<Object> union = new HashSet<Object>();

@@ -36,9 +36,42 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.FloatWritable;
 
+//@formatter:off
 @Description(name = "minkowski_distance",
-        value = "_FUNC_(list x, list y, double p) - Returns sum(|x - y|^p)^(1/p)")
+        value = "_FUNC_(list x, list y, double p) - Returns sum(|x - y|^p)^(1/p)", 
+        extended = "WITH docs as (\n" + 
+                "  select 1 as docid, array('apple:1.0', 'orange:2.0', 'banana:1.0', 'kuwi:0') as features\n" + 
+                "  union all\n" + 
+                "  select 2 as docid, array('apple:1.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features\n" + 
+                "  union all\n" + 
+                "  select 3 as docid, array('apple:2.0', 'orange:0', 'banana:2.0', 'kuwi:1.0') as features\n" + 
+                ") \n" + 
+                "select\n" + 
+                "  l.docid as doc1,\n" + 
+                "  r.docid as doc2,\n" + 
+                "  minkowski_distance(l.features, r.features, 1) as distance1, -- p=1 (manhattan_distance)\n" + 
+                "  minkowski_distance(l.features, r.features, 2) as distance2, -- p=2 (euclid_distance)\n" + 
+                "  minkowski_distance(l.features, r.features, 3) as distance3, -- p=3\n" + 
+                "  manhattan_distance(l.features, r.features) as manhattan_distance,\n" + 
+                "  euclid_distance(l.features, r.features) as euclid_distance\n" + 
+                "from \n" + 
+                "  docs l\n" + 
+                "  CROSS JOIN docs r\n" + 
+                "where\n" + 
+                "  l.docid != r.docid\n" + 
+                "order by \n" + 
+                "  doc1 asc,\n" + 
+                "  distance1 asc;\n" + 
+                "\n" + 
+                "doc1    doc2    distance1       distance2       distance3       manhattan_distance      euclid_distance\n" + 
+                "1       2       4.0     2.4494898       2.1544347       4.0     2.4494898\n" + 
+                "1       3       5.0     2.6457512       2.2239802       5.0     2.6457512\n" + 
+                "2       3       1.0     1.0     1.0     1.0     1.0\n" + 
+                "2       1       4.0     2.4494898       2.1544347       4.0     2.4494898\n" + 
+                "3       2       1.0     1.0     1.0     1.0     1.0\n" + 
+                "3       1       5.0     2.6457512       2.2239802       5.0     2.6457512")
 @UDFType(deterministic = true, stateful = false)
+//@formatter:on
 public final class MinkowskiDistanceUDF extends GenericUDF {
 
     private ListObjectInspector arg0ListOI, arg1ListOI;
@@ -49,8 +82,8 @@ public final class MinkowskiDistanceUDF extends GenericUDF {
         if (argOIs.length != 3) {
             throw new UDFArgumentException("minkowski_distance takes 3 arguments");
         }
-        this.arg0ListOI = HiveUtils.asListOI(argOIs[0]);
-        this.arg1ListOI = HiveUtils.asListOI(argOIs[1]);
+        this.arg0ListOI = HiveUtils.asListOI(argOIs, 0);
+        this.arg1ListOI = HiveUtils.asListOI(argOIs, 1);
         this.order_p = HiveUtils.getAsConstDouble(argOIs[2]);
 
         return PrimitiveObjectInspectorFactory.writableFloatObjectInspector;
