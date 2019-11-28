@@ -92,7 +92,7 @@ export GPG_TTY=$(tty)
 # JDK 8 is required for packaging
 export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
 
-# Try to create artifacts
+# (Optional) TO avoid JVM errors in unit tests
 export MAVEN_OPTS=-XX:MaxMetaspaceSize=256m
 
 # (Optional) Workaround for SSL error `Received fatal alert: protocol_version`
