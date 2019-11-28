@@ -57,7 +57,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
                 "  max_by(name, age) as name\n" + 
                 "from\n" + 
                 "  data;\n" + 
-                "> tom")
+                "tom")
 //@formatter:on
 public final class MaxByUDAF extends AbstractGenericUDAFResolver {
 

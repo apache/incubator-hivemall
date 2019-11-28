@@ -45,7 +45,7 @@ import org.apache.hadoop.io.IntWritable;
 @Description(name = "argrank",
         value = "_FUNC_(array<ANY> a) - Returns the indices that would sort an array.",
         extended = "SELECT argrank(array(5,2,0,1)), argsort(argsort(array(5,2,0,1)));\n" + 
-                "> [3, 2, 0, 1]     [3, 2, 0, 1]")
+                "[3, 2, 0, 1]     [3, 2, 0, 1]")
 // @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ArgrankUDF extends GenericUDF {

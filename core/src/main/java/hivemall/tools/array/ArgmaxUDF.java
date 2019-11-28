@@ -35,7 +35,7 @@ import org.apache.hadoop.io.IntWritable;
 
 @Description(name = "argmax",
         value = "_FUNC_(array<T> a) - Returns the first index of the maximum value",
-        extended = "SELECT argmax(array(5,2,0,1));\n" + "> 0")
+        extended = "SELECT argmax(array(5,2,0,1));\n" + "0")
 @UDFType(deterministic = true, stateful = false)
 public final class ArgmaxUDF extends GenericUDF {
 

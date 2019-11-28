@@ -58,7 +58,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
                 "  transpose_and_dot(y, x) as yx\n" + 
                 "from \n" + 
                 "  input;\n\n" + 
-                "> [[\"3.0\",\"6.0\"],[\"5.0\",\"10.0\"],[\"7.0\",\"14.0\"],[\"9.0\",\"18.0\"]]" + 
+                "[[\"3.0\",\"6.0\"],[\"5.0\",\"10.0\"],[\"7.0\",\"14.0\"],[\"9.0\",\"18.0\"]]" + 
                 "   [[\"3.0\",\"5.0\",\"7.0\",\"9.0\"],[\"6.0\",\"10.0\",\"14.0\",\"18.0\"]]\n")
 // @formatter:on
 public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {

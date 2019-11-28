@@ -33,7 +33,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
                 ")\n" + 
                 "select l2_norm(v) as l2norm\n" + 
                 "from input;\n" + 
-                "> 3.7416573867739413 = sqrt(1^2+2^2+3^2))")
+                "3.7416573867739413 = sqrt(1^2+2^2+3^2))")
 // @formatter:on
 public final class L2NormUDAF extends UDAF {
 

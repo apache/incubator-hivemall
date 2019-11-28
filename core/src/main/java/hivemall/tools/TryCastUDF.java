@@ -51,7 +51,7 @@ public final class TryCastUDF extends GenericUDF {
         }
 
         this.inputOI = argOIs[0];
-        String typeString = HiveUtils.getConstString(argOIs[1]);
+        String typeString = HiveUtils.getConstString(argOIs, 1);
 
         ObjectInspector outputOI = HiveUtils.getObjectInspector(typeString, true);
         this.converter = ObjectInspectorConverters.getConverter(inputOI, outputOI);

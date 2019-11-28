@@ -34,7 +34,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
     majority_vote(k) as k
   from 
     data;
-  > 2
+  2
   ```
 
 - `max_by(x, y)` - Returns the value of x associated with the maximum value of y over all input values.
@@ -51,7 +51,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
     max_by(name, age) as name
   from
     data;
-  > tom
+  tom
   ```
 
 - `min_by(x, y)` - Returns the value of x associated with the minimum value of y over all input values.
@@ -69,7 +69,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   from
     data;
 
-  > jake
+  jake
   ```
 
 # Array
@@ -83,34 +83,34 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   > 1, 3, 5
 
   SELECT arange(-1, -6, 2);
-  > -1, -3, -5
+  -1, -3, -5
   ```
 
 - `argmax(array<T> a)` - Returns the first index of the maximum value
   ```sql
   SELECT argmax(array(5,2,0,1));
-  > 0
+  0
   ```
 
 - `argmin(array<T> a)` - Returns the first index of the minimum value
   ```sql
   SELECT argmin(array(5,2,0,1));
-  > 2
+  2
   ```
 
 - `argrank(array<ANY> a)` - Returns the indices that would sort an array.
   ```sql
   SELECT argrank(array(5,2,0,1)), argsort(argsort(array(5,2,0,1)));
-  > [3, 2, 0, 1]     [3, 2, 0, 1]
+  [3, 2, 0, 1]     [3, 2, 0, 1]
   ```
 
 - `argsort(array<ANY> a)` - Returns the indices that would sort an array.
   ```sql
   SELECT argsort(array(5,2,0,1));
-  > 2, 3, 1, 0
+  2, 3, 1, 0
 
   SELECT array_slice(array(5,2,0,1), argsort(array(5,2,0,1)));
-  > 0, 1, 2, 5
+  0, 1, 2, 5
   ```
 
 - `array_append(array<T> arr, T elem)` - Append an element to the end of an array
@@ -712,7 +712,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 - `is_finite(x)` - Determine if x is finite.
   ```sql
   SELECT is_finite(333), is_finite(infinity());
-  > true false
+  true false
   ```
 
 - `is_infinite(x)` - Determine if x is infinite.
@@ -726,13 +726,13 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   )
   select l2_norm(v) as l2norm
   from input;
-  > 3.7416573867739413 = sqrt(1^2+2^2+3^2))
+  3.7416573867739413 = sqrt(1^2+2^2+3^2))
   ```
 
 - `nan()` - Returns the constant representing not-a-number.
   ```sql
   SELECT nan(), is_nan(nan());
-  > NaN true
+  NaN true
   ```
 
 - `sigmoid(x)` - Returns 1.0 / (1.0 + exp(-x))
@@ -747,8 +747,8 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
     sigmoid(x)
   from
     input;
-  > 0.04742587317756678   0.04742587357759476
-  > 0.9525741268224334    0.9525741338729858
+  0.04742587317756678   0.04742587357759476
+  0.9525741268224334    0.9525741338729858
   ```
 
 # Vector/Matrix
@@ -766,7 +766,7 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   from 
     input;
 
-  > [["3.0","6.0"],["5.0","10.0"],["7.0","14.0"],["9.0","18.0"]]   [["3.0","5.0","7.0","9.0"],["6.0","10.0","14.0","18.0"]]
+  [["3.0","6.0"],["5.0","10.0"],["7.0","14.0"],["9.0","18.0"]]   [["3.0","5.0","7.0","9.0"],["6.0","10.0","14.0","18.0"]]
 
   ```
 

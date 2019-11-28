@@ -45,10 +45,10 @@ import org.apache.hadoop.io.IntWritable;
 @Description(name = "argsort",
         value = "_FUNC_(array<ANY> a) - Returns the indices that would sort an array.",
         extended = "SELECT argsort(array(5,2,0,1));\n" + 
-                "> 2, 3, 1, 0\n" + 
+                "2, 3, 1, 0\n" + 
                 "\n" + 
                 "SELECT array_slice(array(5,2,0,1), argsort(array(5,2,0,1)));\n" + 
-                "> 0, 1, 2, 5")
+                "0, 1, 2, 5")
 // @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ArgsortUDF extends GenericUDF {

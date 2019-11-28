@@ -99,23 +99,11 @@ public final class GenerateSeriesUDTF extends GenericUDTF {
             throw new UDFArgumentException(
                 "Expected number of arguments is 2 or 3: " + argOIs.length);
         }
-        if (!HiveUtils.isIntegerOI(argOIs[0])) {
-            throw new UDFArgumentException(
-                "Expected Integer type for the first argument: " + argOIs[0].getTypeName());
-        }
-        if (!HiveUtils.isIntegerOI(argOIs[1])) {
-            throw new UDFArgumentException(
-                "Expected Integer type for the second argument: " + argOIs[1].getTypeName());
-        }
-        this.startOI = HiveUtils.asIntegerOI(argOIs[0]);
-        this.endOI = HiveUtils.asIntegerOI(argOIs[1]);
+        this.startOI = HiveUtils.asIntegerOI(argOIs, 0);
+        this.endOI = HiveUtils.asIntegerOI(argOIs, 1);
 
         if (argOIs.length == 3) {
-            if (!HiveUtils.isIntegerOI(argOIs[2])) {
-                throw new UDFArgumentException(
-                    "Expected Integer type for the third argument: " + argOIs[2].getTypeName());
-            }
-            this.stepOI = HiveUtils.asIntegerOI(argOIs[2]);
+            this.stepOI = HiveUtils.asIntegerOI(argOIs, 2);
         }
 
         this.returnLong = HiveUtils.isBigIntOI(startOI) || HiveUtils.isBigIntOI(endOI);

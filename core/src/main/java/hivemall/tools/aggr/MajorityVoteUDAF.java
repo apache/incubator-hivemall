@@ -60,7 +60,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
                    "  majority_vote(k) as k\n" + 
                    "from \n" + 
                    "  data;\n" + 
-                   "> 2")
+                   "2")
 //@formatter:on
 public final class MajorityVoteUDAF extends AbstractGenericUDAFResolver {
 

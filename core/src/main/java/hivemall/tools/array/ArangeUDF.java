@@ -51,7 +51,7 @@ extended = "SELECT arange(5), arange(1, 5), arange(1, 5, 1), arange(0, 5, 1);\n"
         "> 1, 3, 5\n" + 
         "\n" + 
         "SELECT arange(-1, -6, 2);\n" + 
-        "> -1, -3, -5")
+        "-1, -3, -5")
 // @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class ArangeUDF extends GenericUDF {

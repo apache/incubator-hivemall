@@ -49,8 +49,8 @@ import org.apache.hadoop.io.FloatWritable;
                     "  sigmoid(x)\n" + 
                     "from\n" + 
                     "  input;\n" + 
-                    "> 0.04742587317756678   0.04742587357759476\n" + 
-                    "> 0.9525741268224334    0.9525741338729858")
+                    "0.04742587317756678   0.04742587357759476\n" + 
+                    "0.9525741268224334    0.9525741338729858")
 // @formatter:on
 @UDFType(deterministic = true, stateful = false)
 public final class SigmoidGenericUDF extends GenericUDF {

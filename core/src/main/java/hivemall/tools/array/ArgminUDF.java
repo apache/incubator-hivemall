@@ -35,7 +35,7 @@ import org.apache.hadoop.io.IntWritable;
 
 @Description(name = "argmin",
         value = "_FUNC_(array<T> a) - Returns the first index of the minimum value",
-        extended = "SELECT argmin(array(5,2,0,1));\n" + "> 2")
+        extended = "SELECT argmin(array(5,2,0,1));\n" + "2")
 @UDFType(deterministic = true, stateful = false)
 public final class ArgminUDF extends GenericUDF {
 

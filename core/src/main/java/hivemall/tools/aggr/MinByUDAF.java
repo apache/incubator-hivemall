@@ -58,7 +58,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
                 "from\n" + 
                 "  data;\n" + 
                 "\n" + 
-                "> jake")
+                "jake")
 //@formatter:on
 public final class MinByUDAF extends AbstractGenericUDAFResolver {
 
