@@ -21,7 +21,7 @@
 
 	<groupId>org.apache.hivemall</groupId>
 	<artifactId>hivemall</artifactId>
-	<version>0.6.0-incubating</version>
+	<version>0.6.2-incubating-SNAPSHOT</version>
 
 	<parent>
 		<groupId>org.apache</groupId>
@@ -50,7 +50,7 @@
 		<url>https://gitbox.apache.org/repos/asf/incubator-hivemall.git</url>
 		<connection>scm:git:https://gitbox.apache.org/repos/asf/incubator-hivemall.git</connection>
 		<developerConnection>scm:git:https://gitbox.apache.org/repos/asf/incubator-hivemall.git</developerConnection>
-		<tag>v0.6.0-rc1</tag>
+		<tag>v0.5.2</tag>
 	</scm>
 
 	<mailingLists>
