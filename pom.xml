@@ -16,14 +16,12 @@
   specific language governing permissions and limitations
   under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.apache.hivemall</groupId>
 	<artifactId>hivemall</artifactId>
-	<version>0.6.0-incubating-SNAPSHOT</version>
+	<version>0.6.0-incubating</version>
 
 	<parent>
 		<groupId>org.apache</groupId>
@@ -52,7 +50,7 @@
 		<url>https://gitbox.apache.org/repos/asf/incubator-hivemall.git</url>
 		<connection>scm:git:https://gitbox.apache.org/repos/asf/incubator-hivemall.git</connection>
 		<developerConnection>scm:git:https://gitbox.apache.org/repos/asf/incubator-hivemall.git</developerConnection>
-		<tag>v0.5.2</tag>
+		<tag>v0.6.0-rc1</tag>
 	</scm>
 
 	<mailingLists>
