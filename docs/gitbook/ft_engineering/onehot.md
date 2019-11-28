@@ -34,7 +34,7 @@ Suppose the following table:
 
 A one-hot encoding output is expected as follows:
 
-Company_VW | Company_Toyota | Company_Honda | Price |
+| Company_VW | Company_Toyota | Company_Honda | Price |
 |:-:|:-:|:-:|:-:|
 | 1 | 0 | 0 | 290 |
 | 0 | 1 | 0 | 300 |
@@ -108,7 +108,7 @@ select m.f1 from t;
 ```
 
 | f1 |
-|:-:|
+|:-|
 | {"seahawk":1,"cat":2,"human":3,"wasp":4,"dog":5} |
 
 ```sql
@@ -120,7 +120,6 @@ select m.f1, m.f2 from t;
 ```
 
 | f1 | f2 |
-|:-:|:-:|
 | {"seahawk":1,"cat":2,"human":3,"wasp":4,"dog":5} | {"bird":6,"insect":7,"mammal":8} |
 
 You can create a mapping table as follows:
@@ -183,6 +182,24 @@ sparse_feature
 ["2","8","count:101"]
 ["5","8","count:1"]
 ["3","8","count:9"]
+```
+
+It also can be achieved by a single query as follows:
+
+```sql
+WITH mapping as (
+  select 
+    m.f1, m.f2 
+  from (
+    select onehot_encoding(species, category) m
+    from test
+  ) tmp
+)
+select
+  array(m.f1[t.species],m.f2[t.category],feature('count',count)) as sparse_features
+from
+  test t
+  CROSS JOIN mapping m;
 ```
 
 Note that one-hot encoding is required only for categorical variables. Feature hasing is another scalable way to encode categorical variables to numerical index.

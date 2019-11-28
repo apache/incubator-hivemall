@@ -54,9 +54,28 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.Writable;
 
+//@formatter:off
 @Description(name = "onehot_encoding",
-        value = "_FUNC_(PRIMITIVE feature, ...) - Compute onehot encoded label for each feature")
+        value = "_FUNC_(PRIMITIVE feature, ...) - Compute onehot encoded label for each feature",
+        extended = "WITH mapping as (\n" + 
+                "  select \n" + 
+                "    m.f1, m.f2 \n" + 
+                "  from (\n" + 
+                "    select onehot_encoding(species, category) m\n" + 
+                "    from test\n" + 
+                "  ) tmp\n" + 
+                ")\n" + 
+                "select\n" + 
+                "  array(m.f1[t.species],m.f2[t.category],feature('count',count)) as sparse_features\n" + 
+                "from\n" + 
+                "  test t\n" + 
+                "  CROSS JOIN mapping m;\n" + 
+                "\n" + 
+                "[\"2\",\"8\",\"count:9\"]\n" + 
+                "[\"5\",\"8\",\"count:10\"]\n" + 
+                "[\"1\",\"6\",\"count:101\"]")
 @UDFType(deterministic = true, stateful = true)
+//@formatter:on
 public final class OnehotEncodingUDAF extends AbstractGenericUDAFResolver {
 
     public OnehotEncodingUDAF() {

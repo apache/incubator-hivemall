@@ -327,13 +327,13 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 - `feature_hashing(array<string> features [, const string options])` - returns a hashed feature vector in array&lt;string&gt;
   ```sql
   select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-libsvm');
-  > ["4063537:1.0","4063537:1","8459207:2.0"]
+   ["4063537:1.0","4063537:1","8459207:2.0"]
 
   select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10');
-  > ["7:1.0","7","1:2.0"]
+   ["7:1.0","7","1:2.0"]
 
   select feature_hashing(array('aaa:1.0','aaa','bbb:2.0'), '-features 10 -libsvm');
-  > ["1:2.0","7:1.0","7:1"]
+   ["1:2.0","7:1.0","7:1"]
 
   ```
 
@@ -388,6 +388,25 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 - `indexed_features(double v1, double v2, ...)` - Returns a list of features as array&lt;string&gt;: [1:v1, 2:v2, ..]
 
 - `onehot_encoding(PRIMITIVE feature, ...)` - Compute onehot encoded label for each feature
+  ```sql
+  WITH mapping as (
+    select 
+      m.f1, m.f2 
+    from (
+      select onehot_encoding(species, category) m
+      from test
+    ) tmp
+  )
+  select
+    array(m.f1[t.species],m.f2[t.category],feature('count',count)) as sparse_features
+  from
+    test t
+    CROSS JOIN mapping m;
+
+  ["2","8","count:9"]
+  ["5","8","count:10"]
+  ["1","6","count:101"]
+  ```
 
 - `quantified_features(boolean output, col1, col2, ...)` - Returns an identified features in a dense array&lt;double&gt;
 
@@ -905,7 +924,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
     model_rf m
     LEFT OUTER JOIN
     test_rf t;
-  > | 892 | ["2 [0.0] = 0.0","0 [3.0] = 3.0","1 [696.0] != 107.0","7 [7.8292] <= 7.9104","1 [696.0] != 828.0","1 [696.0] != 391.0","0 [0.961038961038961, 0.03896103896103896]"] |
+   | 892 | ["2 [0.0] = 0.0","0 [3.0] = 3.0","1 [696.0] != 107.0","7 [7.8292] <= 7.9104","1 [696.0] != 828.0","1 [696.0] != 391.0","0 [0.961038961038961, 0.03896103896103896]"] |
 
   -- Show 100 frequent branches
   WITH tmp as (
@@ -932,7 +951,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 - `guess_attribute_types(ANY, ...)` - Returns attribute types
   ```sql
   select guess_attribute_types(*) from train limit 1;
-  > Q,Q,C,C,C,C,Q,C,C,C,Q,C,Q,Q,Q,Q,C,Q
+   Q,Q,C,C,C,C,Q,C,C,C,Q,C,Q,Q,Q,Q,C,Q
   ```
 
 - `rf_ensemble(int yhat [, array<double> proba [, double model_weight=1.0]])` - Returns ensembled prediction results in &lt;int label, double probability, array&lt;double&gt; probabilities&gt;
