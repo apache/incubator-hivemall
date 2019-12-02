@@ -139,8 +139,6 @@ from
 ;
 ```
 
----
-
 # Training
 
 `select guess_attribute_types(pclass, name, sex, age, sibsp, parch, ticket, fare, cabin, embarked) from train limit 1;`
@@ -191,24 +189,16 @@ SELECT
 FROM (
   SELECT
     passengerid,
-    -- rf_ensemble(predicted) as predicted
-    -- v0.5.0 or later
     rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
     -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
   FROM (
     SELECT
       t.passengerid, 
-      -- from v0.4.1-alpha.3 to v0.4.2-rc4
-      -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
-      -- v0.5.0 or later
       p.model_weight,
       tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
       -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5.0 or later
     FROM (
       SELECT 
-        -- from v0.4.1-alpha.3 or v0.4.2-rc4
-        -- model_id, model_type, pred_model
-        -- v0.5.0 or later
         model_id, model_weight, model
       FROM 
         model_rf 
@@ -285,8 +275,6 @@ from
 
 [Here is an example](https://gist.github.com/myui/a83ba3795bad9b278cf8bcc59f946e2c#file-titanic-dot) plotting a decision tree using Graphviz or [Vis.js](https://viz-js.com/).
 
----
-
 # Test by dividing training dataset
 
 ```sql
@@ -334,25 +322,17 @@ SELECT
 FROM (
   SELECT
     passengerid,
-    -- rf_ensemble(predicted) as predicted
-    -- v0.5.0 or later
     rf_ensemble(predicted.value, predicted.posteriori, model_weight) as predicted
     -- rf_ensemble(predicted.value, predicted.posteriori) as predicted -- avoid OOB accuracy (i.e., model_weight)
   FROM (
     SELECT
-      t.passengerid, 
-      -- from v0.4.1-alpha.3 or v0.4.2-rc4
-      -- tree_predict(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted
-      -- v0.5.0 or later
+      t.passengerid,
       p.model_weight,
       tree_predict(p.model_id, p.model, t.features, "-classification") as predicted
       -- tree_predict(p.model_id, p.model, t.features, ${classification}) as predicted
       -- tree_predict_v1(p.model_id, p.model_type, p.pred_model, t.features, ${classification}) as predicted -- to use the old model in v0.5.0 or later
     FROM (
       SELECT 
-        -- from v0.4.1-alpha.3 to v0.4.2-rc4
-        -- model_id, model_type, pred_model
-        -- v0.5.0 or later
         model_id, model_weight, model
       FROM 
         model_rf_07
@@ -363,28 +343,58 @@ FROM (
   group by
     passengerid
 ) t2;
-
-create or replace view rf_submit_03 as
-select 
-  t.survived as actual, 
-  p.label as predicted,
-  p.probabilities
-from 
-  test_rf_03 t 
-  JOIN predicted_rf_03 p on (t.passengerid = p.passengerid)
-;
-
-select count(1) from test_rf_03;
 ```
-> 260
-
 
 ```sql
-set hivevar:testcnt=260;
-
-select count(1)/${testcnt} as accuracy 
-from rf_submit_03 
-where actual = predicted;
+WITH rf_submit_03 as (
+  select 
+    t.survived as actual, 
+    p.label as predicted
+  from 
+    test_rf_03 t 
+    JOIN predicted_rf_03 p on (t.passengerid = p.passengerid)
+)
+select sum(if(actual=predicted,1,0))/count(1) as accuracy 
+from rf_submit_03;
 ```
 > 0.8153846153846154
 
+## Tracing predictions
+
+Find important attributes and conditions predicted to survive.
+
+```sql
+WITH tmp as (
+  SELECT
+    t.survived as actual,
+    decision_path(m.model_id, m.model, t.features, '-classification -no_verbose', array('pclass','name','sex','age','sibsp','parch','ticket','fare','cabin','embarked')) as path
+  FROM
+    model_rf_07 m
+    LEFT OUTER JOIN -- CROSS JOIN
+    test_rf_03 t
+)
+select
+  r.branch,
+  count(1) as cnt
+from
+  tmp l
+  LATERAL VIEW explode(array_slice(path, 0, -1)) r as branch
+where
+  -- actual = 1 and      -- actual is survived
+  last_element(path) = 1 -- predicted is survived
+group by
+  r.branch
+order by
+  cnt desc
+limit 100;
+```
+
+| r.branch        | cnt |
+|:-|:-|
+| sex != 0.0      | 29786 |
+| pclass != 3.0   | 18520 |
+| pclass = 3.0    | 7444 |
+| sex = 0.0       | 6494 |
+| embarked != 1.0 | 6175 |
+| ticket != 22.0  | 5560 |
+| ... | ... |
