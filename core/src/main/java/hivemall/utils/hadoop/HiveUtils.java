@@ -1302,6 +1302,26 @@ public final class HiveUtils {
     }
 
     @Nonnull
+    public static PrimitiveObjectInspector asNumberOI(@Nonnull final ObjectInspector[] argOIs,
+            final int argIndex) throws UDFArgumentException {
+        final PrimitiveObjectInspector oi = asPrimitiveObjectInspector(argOIs, argIndex);
+        switch (oi.getPrimitiveCategory()) {
+            case BYTE:
+            case SHORT:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case DECIMAL:
+                break;
+            default:
+                throw new UDFArgumentTypeException(argIndex,
+                    "Only numeric argument is accepted but " + oi.getTypeName() + " is passed.");
+        }
+        return oi;
+    }
+
+    @Nonnull
     public static PrimitiveObjectInspector asNumberOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {

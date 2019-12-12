@@ -18,121 +18,161 @@
  */
 package hivemall.factorization.mf;
 
-import java.util.List;
+import hivemall.utils.hadoop.HiveUtils;
+import hivemall.utils.lang.Preconditions;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 @Description(name = "mf_predict",
-        value = "_FUNC_(List<Float> Pu, List<Float> Qi[, double Bu, double Bi[, double mu]]) - Returns the prediction value")
+        value = "_FUNC_(array<double> Pu, array<double> Qi[, double Bu, double Bi[, double mu]]) - Returns the prediction value")
 @UDFType(deterministic = true, stateful = false)
-public final class MFPredictionUDF extends UDF {
+public final class MFPredictionUDF extends GenericUDF {
 
-    @Nonnull
-    public DoubleWritable evaluate(@Nullable List<FloatWritable> Pu,
-            @Nullable List<FloatWritable> Qi) throws HiveException {
-        return evaluate(Pu, Qi, null);
+    private ListObjectInspector puOI, qiOI;
+    private PrimitiveObjectInspector puElemOI, qiElemOI;
+
+    @Nullable
+    private PrimitiveObjectInspector buOI, biOI, muOI;
+
+    private DoubleWritable result;
+
+    @Override
+    public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
+        if (argOIs.length < 2 || argOIs.length > 5) {
+            throw new UDFArgumentException("mf_predict takes 2~5 arguments: " + argOIs.length);
+        }
+
+        this.puOI = HiveUtils.asListOI(argOIs, 0);
+        this.puElemOI = HiveUtils.asFloatingPointOI(puOI.getListElementObjectInspector());
+        this.qiOI = HiveUtils.asListOI(argOIs, 1);
+        this.qiElemOI = HiveUtils.asFloatingPointOI(qiOI.getListElementObjectInspector());
+
+        switch (argOIs.length) {
+            case 3:
+                this.muOI = HiveUtils.asNumberOI(argOIs, 2);
+                break;
+            case 4:
+                this.buOI = HiveUtils.asNumberOI(argOIs, 2);
+                this.biOI = HiveUtils.asNumberOI(argOIs, 3);
+                break;
+            case 5:
+                this.buOI = HiveUtils.asNumberOI(argOIs, 2);
+                this.biOI = HiveUtils.asNumberOI(argOIs, 3);
+                this.muOI = HiveUtils.asNumberOI(argOIs, 4);
+                break;
+            default:
+                break;
+        }
+
+        this.result = new DoubleWritable();
+        return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
     }
 
-    @Nonnull
-    public DoubleWritable evaluate(@Nullable List<FloatWritable> Pu,
-            @Nullable List<FloatWritable> Qi, @Nullable DoubleWritable mu) throws HiveException {
-        final double muValue = (mu == null) ? 0.d : mu.get();
-        if (Pu == null || Qi == null) {
-            return new DoubleWritable(muValue);
-        }
+    @Override
+    public Object evaluate(DeferredObject[] args) throws HiveException {
+        Preconditions.checkArgument(args.length >= 2 && args.length <= 5, args.length);
 
-        final int PuSize = Pu.size();
-        final int QiSize = Qi.size();
-        // workaround for TD
-        if (PuSize == 0) {
-            return new DoubleWritable(muValue);
-        } else if (QiSize == 0) {
-            return new DoubleWritable(muValue);
-        }
+        @Nullable
+        double[] pu = HiveUtils.asDoubleArray(args[0].get(), puOI, puElemOI);
+        @Nullable
+        double[] qi = HiveUtils.asDoubleArray(args[1].get(), qiOI, qiElemOI);
 
-        if (QiSize != PuSize) {
-            throw new HiveException("|Pu| " + PuSize + " was not equal to |Qi| " + QiSize);
-        }
-
-        double ret = muValue;
-        for (int k = 0; k < PuSize; k++) {
-            FloatWritable Pu_k = Pu.get(k);
-            if (Pu_k == null) {
-                continue;
+        double mu = 0.d, bu = 0.d, bi = 0.d;
+        switch (args.length) {
+            case 3: {
+                Object arg2 = args[2].get();
+                if (arg2 != null) {
+                    mu = PrimitiveObjectInspectorUtils.getDouble(arg2, muOI);
+                }
+                break;
             }
-            FloatWritable Qi_k = Qi.get(k);
-            if (Qi_k == null) {
-                continue;
+            case 4: {
+                Object arg2 = args[2].get();
+                if (arg2 != null) {
+                    bu = PrimitiveObjectInspectorUtils.getDouble(arg2, buOI);
+                }
+                Object arg3 = args[3].get();
+                if (arg3 != null) {
+                    bi = PrimitiveObjectInspectorUtils.getDouble(arg3, biOI);
+                }
+                break;
             }
-            ret += Pu_k.get() * Qi_k.get();
+            case 5: {
+                Object arg2 = args[2].get();
+                if (arg2 != null) {
+                    bu = PrimitiveObjectInspectorUtils.getDouble(arg2, buOI);
+                }
+                Object arg3 = args[3].get();
+                if (arg3 != null) {
+                    bi = PrimitiveObjectInspectorUtils.getDouble(arg3, biOI);
+                }
+                Object arg4 = args[4].get();
+                if (arg4 != null) {
+                    mu = PrimitiveObjectInspectorUtils.getDouble(arg4, muOI);
+                }
+                break;
+            }
+            default:
+                break;
         }
-        return new DoubleWritable(ret);
+
+        double predicted = mfPredict(pu, qi, bu, bi, mu);
+        result.set(predicted);
+        return result;
     }
 
-    @Nonnull
-    public DoubleWritable evaluate(@Nullable List<FloatWritable> Pu,
-            @Nullable List<FloatWritable> Qi, @Nullable DoubleWritable Bu,
-            @Nullable DoubleWritable Bi) throws HiveException {
-        return evaluate(Pu, Qi, Bu, Bi, null);
-    }
-
-    @Nonnull
-    public DoubleWritable evaluate(@Nullable List<FloatWritable> Pu,
-            @Nullable List<FloatWritable> Qi, @Nullable DoubleWritable Bu,
-            @Nullable DoubleWritable Bi, @Nullable DoubleWritable mu) throws HiveException {
-        final double muValue = (mu == null) ? 0.d : mu.get();
-        if (Pu == null && Qi == null) {
-            return new DoubleWritable(muValue);
-        }
-        final double BiValue = (Bi == null) ? 0.d : Bi.get();
-        final double BuValue = (Bu == null) ? 0.d : Bu.get();
+    private static double mfPredict(@Nullable final double[] Pu, @Nullable final double[] Qi,
+            final double Bu, final double Bi, final double mu) throws UDFArgumentException {
         if (Pu == null) {
-            double ret = muValue + BiValue;
-            return new DoubleWritable(ret);
-        } else if (Qi == null) {
-            return new DoubleWritable(muValue);
-        }
-
-        final int PuSize = Pu.size();
-        final int QiSize = Qi.size();
-        // workaround for TD        
-        if (PuSize == 0) {
-            if (QiSize == 0) {
-                return new DoubleWritable(muValue);
+            if (Qi == null) {
+                return mu;
             } else {
-                double ret = muValue + BiValue;
-                return new DoubleWritable(ret);
+                return mu + Bi;
             }
-        } else if (QiSize == 0) {
-            double ret = muValue + BuValue;
-            return new DoubleWritable(ret);
+        } else if (Qi == null) {
+            return mu + Bu;
+        }
+        // workaround for TD
+        if (Pu.length == 0) {
+            if (Qi.length == 0) {
+                return mu;
+            } else {
+                return mu + Bi;
+            }
+        } else if (Qi.length == 0) {
+            return mu + Bu;
         }
 
-        if (QiSize != PuSize) {
-            throw new HiveException("|Pu| " + PuSize + " was not equal to |Qi| " + QiSize);
+        if (Pu.length != Qi.length) {
+            throw new UDFArgumentException(
+                "|Pu| " + Pu.length + " was not equal to |Qi| " + Qi.length);
         }
 
-        double ret = muValue + BuValue + BiValue;
-        for (int k = 0; k < PuSize; k++) {
-            FloatWritable Pu_k = Pu.get(k);
-            if (Pu_k == null) {
-                continue;
-            }
-            FloatWritable Qi_k = Qi.get(k);
-            if (Qi_k == null) {
-                continue;
-            }
-            ret += Pu_k.get() * Qi_k.get();
+        double ret = mu + Bu + Bi;
+        for (int k = 0, size = Pu.length; k < size; k++) {
+            double pu_k = Pu[k];
+            double qi_k = Qi[k];
+            ret += pu_k * qi_k;
         }
-        return new DoubleWritable(ret);
+        return ret;
+    }
+
+    @Override
+    public String getDisplayString(String[] args) {
+        return "mf_predict(" + StringUtils.join(args, ',') + ')';
     }
 
 }
