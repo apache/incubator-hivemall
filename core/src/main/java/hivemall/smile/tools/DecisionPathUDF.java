@@ -142,7 +142,7 @@ public final class DecisionPathUDF extends UDFWithOptions {
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
         if (argOIs.length < 3 || argOIs.length > 6) {
-            showHelp("tree_predict takes 3 ~ 6 arguments");
+            showHelp("decision_path takes 3 ~ 6 arguments");
         }
 
         this.modelOI = HiveUtils.asStringOI(argOIs[1]);
