@@ -19,18 +19,10 @@
         
 List related (similar) articles for each article.
 
-# Preparation
+# Extract clusters
 ```sql
 use news20;
 
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-
-source /home/myui/tmp/define-all.hive;
-```
-
-# Extract clusters
-```sql
 set hivevar:hashes=100; -- Generate N sets of minhash values for each row (DEFAULT: 5)
 set hivevar:keygroups=2; -- Use K minhash value for generating a resulting value (DEFAULT: 2)
 

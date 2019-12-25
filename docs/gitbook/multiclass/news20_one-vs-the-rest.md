@@ -16,16 +16,8 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
+
 A one-vs-the-rest classifier use the binary classifier for each class.
-
-## UDF preparation
-```sql
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-
-source /home/myui/tmp/define-all.hive;
-```
 
 ## training
 ```sql
@@ -333,14 +325,6 @@ where actual == predicted;
 ```
 
 > 0.8567493112947658
-
-## Cleaning
-
-```sql
-drop table news20_onevsrest_arow_model1;
-drop view news20_onevsrest_arow_predict1;
-drop view news20_onevsrest_arow_submit1;
-```
 
 | Algorithm | Accuracy |
 |:-----------|------------:|

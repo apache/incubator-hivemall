@@ -16,20 +16,12 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
-# Preparation
-
-```
-use webspam;
-
-delete jar ./tmp/hivemall.jar;
-add jar ./tmp/hivemall.jar;
-source ./tmp/define-all.hive;
-```
 
 # PA1
 
 ```sql
+use webspam;
+
 drop table webspam_pa1_model1;
 create table webspam_pa1_model1 as
 select 

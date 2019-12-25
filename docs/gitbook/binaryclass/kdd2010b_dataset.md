@@ -26,9 +26,6 @@
 ---
 # Define training/testing tables
 ```sql
-add jar ./tmp/hivemall.jar;
-source ./tmp/define-all.hive;
-
 create database kdd2010;
 use kdd2010;
 

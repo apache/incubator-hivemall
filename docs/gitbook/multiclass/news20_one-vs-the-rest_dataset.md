@@ -20,14 +20,6 @@
 *One-vs-the-rest* is a multiclass classification method that uses binary classifiers independently for each class.
 http://en.wikipedia.org/wiki/Multiclass_classification#one_vs_all
 
-## UDF preparation
-```sql
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-
-source /home/myui/tmp/define-all.hive;
-```
-
 ## Dataset preparation for one-vs-the-rest classifiers
 
 ```sql

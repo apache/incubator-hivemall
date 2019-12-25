@@ -16,22 +16,11 @@
   specific language governing permissions and limitations
   under the License.
 -->
-        
+
 This example explains how to run ensemble learning in Hivemall.   
 Two heads are better than one? Let's verify it by ensemble learning.
 
----
-
-## UDF preparation
-```sql
-delete jar /home/myui/tmp/hivemall.jar;
-add jar /home/myui/tmp/hivemall.jar;
-
-source /home/myui/tmp/define-all.hive;
-```
-
-[Case1] Model ensemble/mixing
-=======================
+# [Case1] Model ensemble/mixing
 
 ## training
 ```sql
@@ -117,15 +106,6 @@ where actual == predicted;
 
 > 0.8494866015527173
 
-## Cleaning
-
-```sql
-drop table news20mc_ensemble_model1;
-drop view news20mc_ensemble_predict1;
-drop view news20mc_ensemble_submit1;
-```
----
-
 Unfortunately, too many cooks spoil the broth in this case :-(
 
 | Algorithm | Accuracy |
@@ -135,11 +115,7 @@ Unfortunately, too many cooks spoil the broth in this case :-(
 | Ensemble(model) | 0.8494866015527173 |
 | CW |  0.850488354620586 |
 
-
----
-
-[Case2] Prediction ensemble
-=================
+# [Case2] Prediction ensemble
 
 ## prediction
 ```sql
