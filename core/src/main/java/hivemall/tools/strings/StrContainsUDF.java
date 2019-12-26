@@ -60,10 +60,10 @@ public final class StrContainsUDF extends GenericUDF {
         }
 
         this.queryOI = HiveUtils.asStringOI(argOIs, 0);
-        if (HiveUtils.isStringListOI(argOIs[1])) {
+        if (!HiveUtils.isStringListOI(argOIs[1])) {
             throw new UDFArgumentTypeException(1,
                 "Expected array<string> for the second argument but got "
-                        + argOIs[0].getTypeName());
+                        + argOIs[1].getTypeName());
         }
         this.searchTermsOI = HiveUtils.asListOI(argOIs, 1);
 
