@@ -676,6 +676,9 @@ CREATE FUNCTION unbase91 as 'hivemall.tools.text.Unbase91UDF' USING JAR '${hivem
 DROP FUNCTION IF EXISTS word_ngrams;
 CREATE FUNCTION word_ngrams as 'hivemall.tools.text.WordNgramsUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS str_contains;
+CREATE FUNCTION str_contains as 'hivemall.tools.strings.StrContainsUDF' USING JAR '${hivemall_jar}';
+
 ---------------------------------
 -- Dataset generator functions --
 ---------------------------------

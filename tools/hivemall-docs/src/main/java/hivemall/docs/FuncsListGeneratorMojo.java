@@ -96,7 +96,7 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
         genericFuncsHeaders.put("# Sanity Checks",
             Collections.singletonList("hivemall.tools.sanity"));
         genericFuncsHeaders.put("# Text processing",
-            Collections.singletonList("hivemall.tools.text"));
+            Collections.singletonList("hivemall.tools.text", "hivemall.tools.strings"));
         genericFuncsHeaders.put("# Timeseries",
             Collections.singletonList("hivemall.tools.timeseries"));
         genericFuncsHeaders.put("# Others", Collections.singletonList("hivemall.tools"));

@@ -668,6 +668,9 @@ create temporary function unbase91 as 'hivemall.tools.text.Unbase91UDF';
 drop temporary function if exists word_ngrams;
 create temporary function word_ngrams as 'hivemall.tools.text.WordNgramsUDF';
 
+drop temporary function if exists str_contains;
+create temporary function str_contains as 'hivemall.tools.strings.StrContainsUDF';
+
 ---------------------------------
 -- Dataset generator functions --
 ---------------------------------
