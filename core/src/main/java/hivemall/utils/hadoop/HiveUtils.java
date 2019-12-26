@@ -1066,6 +1066,17 @@ public final class HiveUtils {
     }
 
     @Nonnull
+    public static BooleanObjectInspector asBooleanOI(@Nonnull final ObjectInspector[] argOIs,
+            final int argIndex) throws UDFArgumentException {
+        ObjectInspector argOI = getObjectInspector(argOIs, argIndex);
+        if (!BOOLEAN_TYPE_NAME.equals(argOI.getTypeName())) {
+            throw new UDFArgumentTypeException(argIndex,
+                "Argument type must be Boolean: " + argOI.getTypeName());
+        }
+        return (BooleanObjectInspector) argOI;
+    }
+
+    @Nonnull
     public static IntObjectInspector asIntOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentException {
         if (!INT_TYPE_NAME.equals(argOI.getTypeName())) {
