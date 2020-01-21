@@ -575,7 +575,7 @@ from
 > #### Note
 > There might be no similar item for certain items.
 
-### Compute approximated cosine similarity by using the MinHash-based Jaccard similarity
+### Compute cosine similarity by using the MinHash-based Jaccard similarity
 
 Once the MinHash-based approach found rough `top-N` similar items, you can efficiently find `top-k` similar items in terms of cosine similarity, where `k << N` (e.g., k=10 and N=100).
 
