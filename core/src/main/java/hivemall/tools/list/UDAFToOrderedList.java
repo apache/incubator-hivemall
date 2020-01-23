@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -567,15 +567,21 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 }
 
                 final int n = queueHandler.size();
-                final Map<Object, Object> map = new HashMap<>(n * 2);
+                final Object[] keys = new Object[n];
+                final Object[] values = new Object[n];
                 for (int i = n - 1; i >= 0; i--) { // head element in queue should be stored to tail of array
                     TupleWithKey tuple = queueHandler.poll();
-                    Object k = tuple.getKey();
+                    keys[i] = tuple.getKey();
+                    values[i] = tuple.getValue();
+                }
+
+                final Map<Object, Object> map = new LinkedHashMap<>(n * 2);
+                for (int i = 0; i < n; i++) {
+                    final Object k = keys[i];
                     if (map.containsKey(k)) {
-                        continue; // avoid duplicate
+                        continue;
                     }
-                    Object v = tuple.getValue();
-                    map.put(k, v);
+                    map.put(k, values[i]);
                 }
                 queueHandler.clear();
 
@@ -589,15 +595,21 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 }
 
                 final int n = queueHandler.size();
-                final Map<Object, Object> map = new HashMap<>(n * 2);
+                final Object[] keys = new Object[n];
+                final Object[] values = new Object[n];
                 for (int i = n - 1; i >= 0; i--) { // head element in queue should be stored to tail of array
                     TupleWithKey tuple = queueHandler.poll();
-                    Object k = tuple.getValue();
+                    keys[i] = tuple.getValue();
+                    values[i] = tuple.getKey();
+                }
+
+                final Map<Object, Object> map = new LinkedHashMap<>(n * 2);
+                for (int i = 0; i < n; i++) {
+                    final Object k = keys[i];
                     if (map.containsKey(k)) {
                         continue; // avoid duplicate
                     }
-                    Object v = tuple.getKey();
-                    map.put(k, v);
+                    map.put(k, values[i]);
                 }
                 queueHandler.clear();
 
