@@ -91,6 +91,7 @@ import org.apache.hadoop.io.IntWritable;
                 + "    to_ordered_list(key),                          -- [2, 3, 3, 4, 5] (natural ordered keys)\n"
                 + "    to_ordered_list(value, key, '-k 2 -kv_map'),   -- {4:\"candy\",5:\"apple\"}\n"
                 + "    to_ordered_list(value, key, '-k 2 -vk_map')    -- {\"candy\":4,\"apple\":5}\n"
+                + "    to_ordered_list(value, key, '-dedup -vk_map')  -- "
                 + "FROM\n" + "    t")
 //@formatter:on
 public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
@@ -144,6 +145,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         @Nonnegative
         private int size;
         private boolean reverseOrder;
+        private boolean dedup;
         private boolean sortByKey;
         private boolean outKV, outVK;
 
@@ -156,6 +158,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 "Return Map<K, V> for the result of to_ordered_list(V, K)");
             opts.addOption("vk", "vk_map", false,
                 "Return Map<V, K> for the result of to_ordered_list(V, K)");
+            opts.addOption("dedup", false, "Eliminate/ignore duplications");
             return opts;
         }
 
@@ -199,13 +202,14 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             }
 
             int k = 0;
-            boolean reverseOrder = false;
+            boolean reverseOrder = false, dedup = false;
             boolean outKV = false, outVK = false;
             if (argOIs.length >= optionIndex + 1) {
                 String rawArgs = HiveUtils.getConstString(argOIs[optionIndex]);
                 cl = parseOptions(rawArgs);
 
                 reverseOrder = cl.hasOption("reverse_order");
+                dedup = cl.hasOption("dedup");
 
                 if (cl.hasOption("k")) {
                     k = Integer.parseInt(cl.getOptionValue("k"));
@@ -230,6 +234,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
             this.size = Math.abs(k);
             this.outKV = outKV;
             this.outVK = outVK;
+            this.dedup = dedup;
 
             if ((k > 0 && reverseOrder) || (k < 0 && reverseOrder == false)
                     || (k == 0 && reverseOrder == false)) {
@@ -359,7 +364,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
         public void reset(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
-            myagg.reset(size, reverseOrder, outKV, outVK);
+            myagg.reset(size, reverseOrder, dedup, outKV, outVK);
         }
 
         @Override
@@ -444,7 +449,7 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                         reverseOrderObj);
 
             QueueAggregationBuffer myagg = (QueueAggregationBuffer) agg;
-            myagg.setOptions(size, reverseOrder, outKV, outVK);
+            myagg.setOptions(size, reverseOrder, dedup, outKV, outVK);
             myagg.merge(keyList, valueList);
         }
 
@@ -467,22 +472,24 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
             @Nonnegative
             private int size;
-            private boolean reverseOrder;
+            private boolean reverseOrder, dedup;
             private boolean outKV, outVK;
 
             QueueAggregationBuffer() {
                 super();
             }
 
-            void reset(@Nonnegative int size, boolean reverseOrder, boolean outKV, boolean outVK) {
-                setOptions(size, reverseOrder, outKV, outVK);
+            void reset(@Nonnegative int size, boolean reverseOrder, boolean dedup, boolean outKV,
+                    boolean outVK) {
+                setOptions(size, reverseOrder, dedup, outKV, outVK);
                 this.queueHandler = null;
             }
 
-            void setOptions(@Nonnegative int size, boolean reverseOrder, boolean outKV,
-                    boolean outVK) {
+            void setOptions(@Nonnegative int size, boolean reverseOrder, boolean dedup,
+                    boolean outKV, boolean outVK) {
                 this.size = size;
                 this.reverseOrder = reverseOrder;
+                this.dedup = dedup;
                 this.outKV = outKV;
                 this.outVK = outVK;
             }
@@ -491,6 +498,9 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 if (queueHandler == null) {
                     initQueueHandler();
                 }
+                if (dedup && queueHandler.contains(tuple)) {
+                    return;
+                }
                 queueHandler.offer(tuple);
             }
 
@@ -498,9 +508,19 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 if (queueHandler == null) {
                     initQueueHandler();
                 }
-                for (int i = 0, n = keys.size(); i < n; i++) {
-                    queueHandler.offer(new TupleWithKey(keys.get(i), values.get(i)));
+                if (dedup) {
+                    for (int i = 0, n = keys.size(); i < n; i++) {
+                        TupleWithKey tuple = new TupleWithKey(keys.get(i), values.get(i));
+                        if (!queueHandler.contains(tuple)) {
+                            queueHandler.offer(tuple);
+                        }
+                    }
+                } else {
+                    for (int i = 0, n = keys.size(); i < n; i++) {
+                        queueHandler.offer(new TupleWithKey(keys.get(i), values.get(i)));
+                    }
                 }
+
             }
 
             @Deprecated
@@ -607,6 +627,8 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
          */
         private static abstract class AbstractQueueHandler {
 
+            abstract boolean contains(@Nonnull TupleWithKey tuple);
+
             abstract void offer(@Nonnull TupleWithKey tuple);
 
             abstract int size();
@@ -627,6 +649,11 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
             QueueHandler(@Nonnull Comparator<TupleWithKey> comparator) {
                 this.queue = new PriorityQueue<TupleWithKey>(DEFAULT_INITIAL_CAPACITY, comparator);
+            }
+
+            @Override
+            boolean contains(@Nonnull TupleWithKey tuple) {
+                return queue.contains(tuple);
             }
 
             @Override
@@ -658,6 +685,11 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
 
             BoundedQueueHandler(int size, @Nonnull Comparator<TupleWithKey> comparator) {
                 this.queue = new BoundedPriorityQueue<TupleWithKey>(size, comparator);
+            }
+
+            @Override
+            boolean contains(@Nonnull TupleWithKey tuple) {
+                return queue.contains(tuple);
             }
 
             @Override
@@ -708,6 +740,37 @@ public final class UDAFToOrderedList extends AbstractGenericUDAFResolver {
                 @SuppressWarnings("unchecked")
                 Comparable<? super Object> k = (Comparable<? super Object>) key;
                 return k.compareTo(o.getKey());
+            }
+
+            @Override
+            public int hashCode() {
+                final int prime = 31;
+                int result = 1;
+                result = prime * result + ((key == null) ? 0 : key.hashCode());
+                result = prime * result + ((value == null) ? 0 : value.hashCode());
+                return result;
+            }
+
+            @Override
+            public boolean equals(@Nullable Object obj) {
+                if (this == obj)
+                    return true;
+                if (obj == null)
+                    return false;
+                if (getClass() != obj.getClass())
+                    return false;
+                TupleWithKey other = (TupleWithKey) obj;
+                if (key == null) {
+                    if (other.key != null)
+                        return false;
+                } else if (!key.equals(other.key))
+                    return false;
+                if (value == null) {
+                    if (other.value != null)
+                        return false;
+                } else if (!value.equals(other.value))
+                    return false;
+                return true;
             }
         }
     }
