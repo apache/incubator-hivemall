@@ -22,6 +22,7 @@ import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator;
 import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator.QueueAggregationBuffer;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -499,7 +500,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -528,7 +529,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -557,7 +558,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -586,7 +587,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(1, map.size());
 
@@ -614,7 +615,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -643,7 +644,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -672,7 +673,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -701,7 +702,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -730,7 +731,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
