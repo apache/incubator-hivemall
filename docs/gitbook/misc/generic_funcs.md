@@ -358,33 +358,41 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
 
 - `to_ordered_list(PRIMITIVE value [, PRIMITIVE key, const string options])` - Return list of values sorted by value itself or specific key
   ```sql
-  WITH t as (
+  WITH data as (
       SELECT 5 as key, 'apple' as value
       UNION ALL
       SELECT 3 as key, 'banana' as value
       UNION ALL
       SELECT 4 as key, 'candy' as value
       UNION ALL
-      SELECT 2 as key, 'donut' as value
+      SELECT 1 as key, 'donut' as value
       UNION ALL
-      SELECT 3 as key, 'egg' as value
+      SELECT 2 as key, 'egg' as value 
+      UNION ALL
+      SELECT 4 as key, 'candy' as value -- both key and value duplicates
   )
-  SELECT                                             -- expected output
-      to_ordered_list(value, key, '-reverse'),       -- [apple, candy, (banana, egg | egg, banana), donut] (reverse order)
-      to_ordered_list(value, key, '-k 2'),           -- [apple, candy] (top-k)
-      to_ordered_list(value, key, '-k 100'),         -- [apple, candy, (banana, egg | egg, banana), dunut]
-      to_ordered_list(value, key, '-k 2 -reverse'),  -- [donut, (banana | egg)] (reverse top-k = tail-k)
-      to_ordered_list(value, key),                   -- [donut, (banana, egg | egg, banana), candy, apple] (natural order)
-      to_ordered_list(value, key, '-k -2'),          -- [donut, (banana | egg)] (tail-k)
-      to_ordered_list(value, key, '-k -100'),        -- [donut, (banana, egg | egg, banana), candy, apple]
-      to_ordered_list(value, key, '-k -2 -reverse'), -- [apple, candy] (reverse tail-k = top-k)
-      to_ordered_list(value, '-k 2'),                -- [egg, donut] (alphabetically)
-      to_ordered_list(key, '-k -2 -reverse'),        -- [5, 4] (top-2 keys)
-      to_ordered_list(key),                          -- [2, 3, 3, 4, 5] (natural ordered keys)
-      to_ordered_list(value, key, '-k 2 -kv_map'),   -- {4:"candy",5:"apple"}
-      to_ordered_list(value, key, '-k 2 -vk_map')    -- {"candy":4,"apple":5}
+  SELECT                                                  -- expected output
+      to_ordered_list(value, key, '-reverse'),            -- [apple, candy, candy, (banana, egg | egg, banana), donut] (reverse order)
+      to_ordered_list(value, key, '-k 2'),                -- [apple, candy] (top-k)
+      to_ordered_list(value, key, '-k 100'),              -- [apple, candy, candy, (banana, egg | egg, banana), dunut]
+      to_ordered_list(value, key, '-k 2 -reverse'),       -- [donut, (banana | egg)] (reverse top-k = tail-k)
+      to_ordered_list(value, key),                        -- [donut, (banana, egg | egg, banana), candy, candy, apple] (natural order)
+      to_ordered_list(value, key, '-k -2'),               -- [donut, (banana | egg)] (tail-k)
+      to_ordered_list(value, key, '-k -100'),             -- [donut, (banana, egg | egg, banana), candy, candy, apple]
+      to_ordered_list(value, key, '-k -2 -reverse'),      -- [apple, candy] (reverse tail-k = top-k)
+      to_ordered_list(value, '-k 2'),                     -- [egg, donut] (alphabetically)
+      to_ordered_list(key, '-k -2 -reverse'),             -- [5, 4] (top-2 keys)
+      to_ordered_list(key),                               -- [1, 2, 3, 4, 4, 5] (natural ordered keys)
+      to_ordered_list(value, key, '-k 2 -kv_map'),        -- {5:"apple",4:"candy"}
+      to_ordered_list(value, key, '-k 2 -vk_map'),        -- {"apple":5,"candy":4}
+      to_ordered_list(value, key, '-k -2 -kv_map'),       -- {1:"donut",2:"egg"}
+      to_ordered_list(value, key, '-k -2 -vk_map'),       -- {"donut":1,"egg":2}
+      to_ordered_list(value, key, '-k 4 -dedup -vk_map'), -- {"apple":5,"candy":4,"banana":3,"egg":2}
+      to_ordered_list(value, key, '-k 4 -vk_map'),        -- {"apple":5,"candy":4,"banana":3}
+      to_ordered_list(value, key, '-k 4 -dedup'),         -- ["apple","candy","banana","egg"]
+      to_ordered_list(value, key, '-k 4')                 -- ["apple","candy","candy","banana"]
   FROM
-      t
+      data
   ```
 
 # Bitset
@@ -839,6 +847,15 @@ This page describes a list of useful Hivemall generic functions. See also a [lis
   SELECT word_ngrams(tokenize('Machine learning is fun!', true), 1, 2);
 
    ["machine","machine learning","learning","learning is","is","is fun","fun"]
+  ```
+
+- `str_contains(string query, array<string> searchTerms [, boolean orQuery=false])` - Returns true if the given query contains search terms
+  ```sql
+  select
+    str_contains('There are apple and orange', array('apple')), -- or=false
+    str_contains('There are apple and orange', array('apple', 'banana'), true), -- or=true
+    str_contains('There are apple and orange', array('apple', 'banana'), false); -- or=false
+  > true, true, false
   ```
 
 # Timeseries

@@ -21,7 +21,7 @@ package hivemall.tools.list;
 import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator;
 import hivemall.tools.list.UDAFToOrderedList.UDAFToOrderedListEvaluator.QueueAggregationBuffer;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -499,7 +499,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -528,7 +528,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -557,7 +557,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -586,7 +586,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(1, map.size());
 
@@ -614,7 +614,35 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
+        Map<?, ?> map = (Map<?, ?>) result;
+        Assert.assertEquals(2, map.size());
+
+        Assert.assertEquals(0.6d, map.get("apple"));
+        Assert.assertEquals(0.7d, map.get("banana"));
+    }
+
+    @Test
+    public void testVKMapOptionNaturalOrder() throws Exception {
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector, "-vk_map")};
+
+        final String[] values = new String[] {"banana", "apple", "banana"};
+        final double[] keys = new double[] {0.7, 0.6, 0.8};
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
+        }
+
+        Object result = evaluator.terminate(agg);
+
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -643,12 +671,12 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
         Assert.assertEquals(0.6d, map.get("apple"));
-        Assert.assertEquals(0.7d, map.get("banana"));
+        Assert.assertEquals(0.8d, map.get("banana"));
     }
 
     @Test
@@ -672,7 +700,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -701,7 +729,7 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
@@ -730,12 +758,77 @@ public class UDAFToOrderedListTest {
 
         Object result = evaluator.terminate(agg);
 
-        Assert.assertEquals(HashMap.class, result.getClass());
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
         Map<?, ?> map = (Map<?, ?>) result;
         Assert.assertEquals(2, map.size());
 
         Assert.assertEquals("apple", map.get(5));
         Assert.assertEquals("candy", map.get(4));
+    }
+
+    @Test
+    public void testTop4Dedup() throws Exception {
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k 4 -dedup -kv_map")};
+
+        final int[] keys = new int[] {5, 3, 4, 1, 2, 4};
+        final String[] values = new String[] {"apple", "banana", "candy", "donut", "egg", "candy"}; // 4:candy is duplicating
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
+        }
+
+        Object result = evaluator.terminate(agg);
+
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
+        Map<?, ?> map = (Map<?, ?>) result;
+        Assert.assertEquals(4, map.size());
+
+        Assert.assertEquals("apple", map.get(5));
+        Assert.assertEquals("candy", map.get(4));
+        Assert.assertEquals("banana", map.get(3));
+        Assert.assertEquals("egg", map.get(2));
+        Assert.assertNull(map.get(1));
+    }
+
+
+    @Test
+    public void testTop4NoDedup() throws Exception {
+        ObjectInspector[] inputOIs =
+                new ObjectInspector[] {PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                        PrimitiveObjectInspectorFactory.javaIntObjectInspector,
+                        ObjectInspectorUtils.getConstantObjectInspector(
+                            PrimitiveObjectInspectorFactory.javaStringObjectInspector,
+                            "-k 4 -kv_map")};
+
+        final int[] keys = new int[] {5, 3, 4, 1, 2, 4};
+        final String[] values = new String[] {"apple", "banana", "candy", "donut", "egg", "candy"}; // 4:candy is duplicating
+
+        evaluator.init(GenericUDAFEvaluator.Mode.PARTIAL1, inputOIs);
+        evaluator.reset(agg);
+
+        for (int i = 0; i < values.length; i++) {
+            evaluator.iterate(agg, new Object[] {values[i], keys[i]});
+        }
+
+        Object result = evaluator.terminate(agg);
+
+        Assert.assertEquals(LinkedHashMap.class, result.getClass());
+        Map<?, ?> map = (Map<?, ?>) result;
+        Assert.assertEquals(3, map.size());
+
+        Assert.assertEquals("apple", map.get(5));
+        Assert.assertEquals("candy", map.get(4));
+        Assert.assertEquals("banana", map.get(3));
+        Assert.assertNull(map.get(2));
+        Assert.assertNull(map.get(1));
     }
 
     @Test(expected = UDFArgumentException.class)
