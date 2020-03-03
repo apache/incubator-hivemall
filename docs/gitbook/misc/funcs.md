@@ -199,7 +199,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `bprmf_predict(List<Float> Pu, List<Float> Qi[, double Bi])` - Returns the prediction value
 
-- `mf_predict(List<Float> Pu, List<Float> Qi[, double Bu, double Bi[, double mu]])` - Returns the prediction value
+- `mf_predict(array<double> Pu, array<double> Qi[, double Bu, double Bi[, double mu]])` - Returns the prediction value
 
 - `train_bprmf(INT user, INT posItem, INT negItem [, String options])` - Returns a relation &lt;INT i, FLOAT Pi, FLOAT Qi [, FLOAT Bi]&gt;
 

@@ -86,17 +86,17 @@ import org.apache.hadoop.io.IntWritable;
                 "    SELECT 4 as key, 'candy' as value -- both key and value duplicates\n" + 
                 ")\n" + 
                 "SELECT                                                  -- expected output\n" + 
-                "    to_ordered_list(value, key, '-reverse'),            -- [apple, candy, (banana, egg | egg, banana), donut] (reverse order)\n" + 
+                "    to_ordered_list(value, key, '-reverse'),            -- [apple, candy, candy, (banana, egg | egg, banana), donut] (reverse order)\n" + 
                 "    to_ordered_list(value, key, '-k 2'),                -- [apple, candy] (top-k)\n" + 
-                "    to_ordered_list(value, key, '-k 100'),              -- [apple, candy, (banana, egg | egg, banana), dunut]\n" + 
+                "    to_ordered_list(value, key, '-k 100'),              -- [apple, candy, candy, (banana, egg | egg, banana), dunut]\n" + 
                 "    to_ordered_list(value, key, '-k 2 -reverse'),       -- [donut, (banana | egg)] (reverse top-k = tail-k)\n" + 
-                "    to_ordered_list(value, key),                        -- [donut, (banana, egg | egg, banana), candy, apple] (natural order)\n" + 
+                "    to_ordered_list(value, key),                        -- [donut, (banana, egg | egg, banana), candy, candy, apple] (natural order)\n" + 
                 "    to_ordered_list(value, key, '-k -2'),               -- [donut, (banana | egg)] (tail-k)\n" + 
-                "    to_ordered_list(value, key, '-k -100'),             -- [donut, (banana, egg | egg, banana), candy, apple]\n" + 
+                "    to_ordered_list(value, key, '-k -100'),             -- [donut, (banana, egg | egg, banana), candy, candy, apple]\n" + 
                 "    to_ordered_list(value, key, '-k -2 -reverse'),      -- [apple, candy] (reverse tail-k = top-k)\n" + 
                 "    to_ordered_list(value, '-k 2'),                     -- [egg, donut] (alphabetically)\n" + 
                 "    to_ordered_list(key, '-k -2 -reverse'),             -- [5, 4] (top-2 keys)\n" + 
-                "    to_ordered_list(key),                               -- [2, 3, 3, 4, 5] (natural ordered keys)\n" + 
+                "    to_ordered_list(key),                               -- [1, 2, 3, 4, 4, 5] (natural ordered keys)\n" + 
                 "    to_ordered_list(value, key, '-k 2 -kv_map'),        -- {5:\"apple\",4:\"candy\"}\n" + 
                 "    to_ordered_list(value, key, '-k 2 -vk_map'),        -- {\"apple\":5,\"candy\":4}\n" + 
                 "    to_ordered_list(value, key, '-k -2 -kv_map'),       -- {1:\"donut\",2:\"egg\"}\n" + 
