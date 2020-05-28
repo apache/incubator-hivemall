@@ -46,6 +46,7 @@ import java.util.Random;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -62,6 +63,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.Counters;
+import org.apache.hadoop.mapred.Reporter;
 
 /**
  * UDTF for train_xgboost
@@ -509,6 +512,8 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
 
     @Override
     public void close() throws HiveException {
+        final Reporter reporter = getReporter();
+
         DMatrix dmatrix = null;
         Booster booster = null;
         try {
@@ -531,13 +536,13 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
                 try {
                     dtest = dmatrix.slice(Arrays.copyOf(rows, numTest));
                     dtrain = dmatrix.slice(Arrays.copyOfRange(rows, numTest, rows.length));
-                    booster = train(dtrain, dtest, round, earlyStoppingRounds, params);
+                    booster = train(dtrain, dtest, round, earlyStoppingRounds, params, reporter);
                 } finally {
                     XGBoostUtils.close(dtrain);
                     XGBoostUtils.close(dtest);
                 }
             } else {
-                booster = train(dmatrix, round, params);
+                booster = train(dmatrix, round, params, reporter);
             }
             onFinishTraining(booster);
 
@@ -560,11 +565,17 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
 
     @Nonnull
     private static Booster train(@Nonnull final DMatrix dtrain, @Nonnegative final int round,
-            @Nonnull final Map<String, Object> params)
+            @Nonnull final Map<String, Object> params, @Nullable final Reporter reporter)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException, XGBoostError {
+        final Counters.Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.XGBoostTrainUDTF$Counter", "iteration");
+
         final Booster booster = XGBoostUtils.createBooster(dtrain, params);
         for (int iter = 0; iter < round; iter++) {
+            reportProgress(reporter);
+            setCounterValue(iterCounter, iter + 1);
+
             booster.update(dtrain, iter);
         }
         return booster;
@@ -573,9 +584,12 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
     @Nonnull
     private static Booster train(@Nonnull final DMatrix dtrain, @Nonnull final DMatrix dtest,
             @Nonnegative final int round, @Nonnegative final int earlyStoppingRounds,
-            @Nonnull final Map<String, Object> params)
+            @Nonnull final Map<String, Object> params, @Nullable final Reporter reporter)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException, XGBoostError {
+        final Counters.Counter iterCounter = (reporter == null) ? null
+                : reporter.getCounter("hivemall.XGBoostTrainUDTF$Counter", "iteration");
+
         final Booster booster = XGBoostUtils.createBooster(dtrain, params);
 
         final boolean maximizeEvaluationMetrics =
@@ -585,6 +599,9 @@ public class XGBoostTrainUDTF extends UDTFWithOptions {
 
         final float[] metricsOut = new float[1];
         for (int iter = 0; iter < round; iter++) {
+            reportProgress(reporter);
+            setCounterValue(iterCounter, iter + 1);
+
             booster.update(dtrain, iter);
 
             String evalInfo =
