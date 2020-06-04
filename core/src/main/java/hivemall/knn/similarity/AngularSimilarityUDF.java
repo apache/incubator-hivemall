@@ -74,7 +74,7 @@ public final class AngularSimilarityUDF extends GenericUDF {
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] argOIs) throws UDFArgumentException {
-        if (argOIs.length != 2) {            
+        if (argOIs.length != 2) {
             throw new UDFArgumentException("angular_similarity takes 2 arguments");
         }
         this.arg0ListOI = HiveUtils.asListOI(argOIs, 0);

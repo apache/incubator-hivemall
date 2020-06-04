@@ -45,7 +45,7 @@ public final class BoundedPriorityQueue<E> {
         this.comparator = comparator;
         this.queue = new PriorityQueue<E>(size + 10, comparator);
     }
-    
+
     public boolean contains(@Nonnull E e) {
         return queue.contains(e);
     }
