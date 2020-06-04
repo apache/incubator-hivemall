@@ -231,6 +231,10 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
                 throws HiveException {
             final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
 
+            if (myAgg.aggMatrix == null) {
+                return null;
+            }
+
             final List<List<DoubleWritable>> result = new ArrayList<List<DoubleWritable>>();
             for (double[] row : myAgg.aggMatrix) {
                 result.add(WritableUtils.toWritableList(row));
