@@ -20,7 +20,6 @@ package hivemall.tools.matrix;
 
 import hivemall.utils.hadoop.HiveUtils;
 import hivemall.utils.hadoop.WritableUtils;
-import hivemall.utils.lang.Preconditions;
 import hivemall.utils.lang.SizeOf;
 
 import java.util.ArrayList;
@@ -28,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.Description;
-import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -169,8 +167,10 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
             final Object matrix0RowObj = parameters[0];
             final Object matrix1RowObj = parameters[1];
 
-            Preconditions.checkNotNull(matrix0RowObj, UDFArgumentException.class);
-            Preconditions.checkNotNull(matrix1RowObj, UDFArgumentException.class);
+            // need to care about NULL since NULL is passed when aggregating with zero row.
+            if (matrix0RowObj == null || matrix1RowObj == null) {
+                return;
+            }
 
             final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
 
@@ -230,6 +230,10 @@ public final class TransposeAndDotUDAF extends AbstractGenericUDAFResolver {
         public Object terminate(@SuppressWarnings("deprecation") AggregationBuffer agg)
                 throws HiveException {
             final TransposeAndDotAggregationBuffer myAgg = (TransposeAndDotAggregationBuffer) agg;
+
+            if (myAgg.aggMatrix == null) {
+                return null;
+            }
 
             final List<List<DoubleWritable>> result = new ArrayList<List<DoubleWritable>>();
             for (double[] row : myAgg.aggMatrix) {
