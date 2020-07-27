@@ -950,6 +950,26 @@ public class GeneralClassifierUDTFTest {
             udtf.getCumulativeLoss() < 900);
     }
 
+    @Test
+    public void testNPE_HIVEMALL296() throws IOException, HiveException {
+        String options =
+                "-loss logloss -opt sgd -reg l1 -lambda 0.0001 -iter 10 -mini_batch 1 -cv_rate 0.00005";
+
+        GeneralClassifierUDTF udtf = new GeneralClassifierUDTF();
+
+        ListObjectInspector stringListOI = ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector);
+        ObjectInspector params = ObjectInspectorUtils.getConstantObjectInspector(
+            PrimitiveObjectInspectorFactory.javaStringObjectInspector, options);
+
+        udtf.initialize(new ObjectInspector[] {stringListOI,
+                PrimitiveObjectInspectorFactory.javaIntObjectInspector, params});
+
+        udtf.close();
+
+        Assert.assertTrue("NPE should not occour", true);
+    }
+
     private static void println(String msg) {
         if (DEBUG) {
             System.out.println(msg);
