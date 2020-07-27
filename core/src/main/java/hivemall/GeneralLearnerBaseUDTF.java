@@ -565,7 +565,6 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
     @VisibleForTesting
     public void finalizeTraining() throws HiveException {
         if (count == 0L) {
-            this.model = null;
             return;
         }
         if (is_mini_batch) { // Update model with accumulated delta
