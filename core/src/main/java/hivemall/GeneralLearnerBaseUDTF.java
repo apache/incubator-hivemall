@@ -18,6 +18,8 @@
  */
 package hivemall;
 
+import static hivemall.utils.collections.CollectionUtils.countNonNulls;
+
 import hivemall.annotations.VisibleForTesting;
 import hivemall.common.ConversionState;
 import hivemall.model.FeatureValue;
@@ -418,8 +420,8 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
         }
 
         final ObjectInspector featureInspector = featureListOI.getListElementObjectInspector();
-        final FeatureValue[] featureVector = new FeatureValue[size];
-        for (int i = 0; i < size; i++) {
+        final FeatureValue[] featureVector = new FeatureValue[countNonNulls(features)];
+        for (int i = 0, j = 0; i < size; i++) {
             Object f = features.get(i);
             if (f == null) {
                 continue;
@@ -433,7 +435,7 @@ public abstract class GeneralLearnerBaseUDTF extends LearnerBaseUDTF {
                     ObjectInspectorCopyOption.JAVA); // should be Integer or Long
                 fv = new FeatureValue(k, 1.f);
             }
-            featureVector[i] = fv;
+            featureVector[j++] = fv;
         }
         return featureVector;
     }
