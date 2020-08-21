@@ -37,23 +37,13 @@ WITH train as (
      ) as (feature,weight)
   from
      news20b_train_x3
-),
-models as (
-  select
-    taskid() as modelid,
-    feature,
-    weight
-  from 
-    train
 )
 select
-  modelid,
+  taskid() as modelid,
   feature,
-  voted_avg(weight) as weight -- or simply avg(weight)
-from
-  models
-group by
-  modelid, feature;
+  weight
+from 
+  train;
 ```
 
 ## prediction
@@ -73,10 +63,10 @@ WITH weights as (
   group by
     rowid, modelid
 ),
-voted as (
+bagging as (
   select
     rowid,
-    voted_avg(total_weight) as total_weight
+    avg(total_weight) as total_weight
   from 
     weights
   group by
@@ -85,9 +75,11 @@ voted as (
 select
   rowid,
   max(total_weight) as total_weight, -- max is dummy 
+  -- Note: sum(total_weight) > 0.0 equals to sigmoid((total_weight)) > 0.5
+  -- https://en.wikipedia.org/wiki/Sigmoid_function
   case when sum(total_weight) > 0.0 then 1 else -1 end as label
 from
-  voted
+  bagging
 group by
   rowid;
 ```
