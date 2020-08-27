@@ -66,7 +66,7 @@ WITH weights as (
 bagging as (
   select
     rowid,
-    avg(total_weight) as total_weight
+    voted_avg(total_weight) as total_weight
   from 
     weights
   group by
@@ -74,10 +74,10 @@ bagging as (
 )
 select
   rowid,
-  max(total_weight) as total_weight, -- max is dummy 
-  -- Note: sum(total_weight) > 0.0 equals to sigmoid((total_weight)) > 0.5
+  total_weight,
+  -- Note: sum(total_weight) > 0.0 equals to sigmoid(total_weight) > 0.5
   -- https://en.wikipedia.org/wiki/Sigmoid_function
-  case when sum(total_weight) > 0.0 then 1 else -1 end as label
+  case when total_weight > 0.0 then 1 else -1 end as label
 from
   bagging
 group by
