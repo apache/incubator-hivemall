@@ -345,6 +345,9 @@ create temporary function tf as 'hivemall.ftvec.text.TermFrequencyUDAF';
 drop temporary function if exists bm25;
 create temporary function bm25 as 'hivemall.ftvec.text.OkapiBM25UDF';
 
+drop temporary function if exists tfidf;
+create temporary function tfidf as 'hivemall.ftvec.text.TfIdfUDF';
+
 --------------------------
 -- Regression functions --
 --------------------------
@@ -909,12 +912,3 @@ if(x>y,x,y);
 create temporary macro min2(x DOUBLE, y DOUBLE)
 if(x<y,x,y);
 
---------------------------
--- Statistics functions --
---------------------------
-
-create temporary macro idf(df_t DOUBLE, n_docs DOUBLE)
-log(10, n_docs / max2(1,df_t)) + 1.0;
-
-create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
-tf * (log(10, n_docs / max2(1,df_t)) + 1.0);

@@ -19,16 +19,6 @@ create temporary macro min2(x DOUBLE, y DOUBLE)
 if(x<y,x,y);
 
 --------------------------
--- Statistics functions --
---------------------------
-
-create temporary macro idf(df_t DOUBLE, n_docs DOUBLE)
-log(10, n_docs / max2(1,df_t)) + 1.0;
-
-create temporary macro tfidf(tf FLOAT, df_t DOUBLE, n_docs DOUBLE)
-tf * (log(10, n_docs / max2(1,df_t)) + 1.0);
-
---------------------------
 -- Evaluation functions --
 --------------------------
 
