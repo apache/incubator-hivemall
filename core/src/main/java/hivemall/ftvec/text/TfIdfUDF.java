@@ -32,8 +32,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.LongObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
@@ -43,9 +42,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 @UDFType(deterministic = true, stateful = false)
 public final class TfIdfUDF extends GenericUDF {
 
-    private DoubleObjectInspector tfOI;
-    private LongObjectInspector numDocsOI;
-    private LongObjectInspector totalNumDocsOI;
+    private PrimitiveObjectInspector tfOI;
+    private PrimitiveObjectInspector numDocsOI;
+    private PrimitiveObjectInspector totalNumDocsOI;
 
     @Nonnull
     private final DoubleWritable result = new DoubleWritable();
@@ -57,9 +56,9 @@ public final class TfIdfUDF extends GenericUDF {
                 "tfidf takes exactly three arguments but got " + argOIs.length);
         }
 
-        this.tfOI = HiveUtils.asDoubleOI(argOIs[0]);
-        this.numDocsOI = HiveUtils.asLongOI(argOIs[1]);
-        this.totalNumDocsOI = HiveUtils.asLongOI(argOIs[2]);
+        this.tfOI = HiveUtils.asDoubleCompatibleOI(argOIs, 0);
+        this.numDocsOI = HiveUtils.asIntegerOI(argOIs, 1);
+        this.totalNumDocsOI = HiveUtils.asIntegerOI(argOIs, 2);
 
         return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
     }
