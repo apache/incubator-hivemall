@@ -349,6 +349,9 @@ CREATE FUNCTION tf as 'hivemall.ftvec.text.TermFrequencyUDAF' USING JAR '${hivem
 DROP FUNCTION IF EXISTS bm25;
 CREATE FUNCTION bm25 as 'hivemall.ftvec.text.OkapiBM25UDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS tfidf;
+CREATE FUNCTION tfidf as 'hivemall.ftvec.text.TfIdfUDF' USING JAR '${hivemall_jar}';
+
 --------------------------
 -- Regression functions --
 --------------------------
@@ -920,3 +923,4 @@ CREATE FUNCTION xgboost_predict_one AS 'hivemall.xgboost.XGBoostPredictOneUDTF' 
 
 DROP FUNCTION xgboost_predict_triple;
 CREATE FUNCTION xgboost_predict_triple AS 'hivemall.xgboost.XGBoostPredictTripleUDTF' USING JAR '${hivemall_jar}';
+

@@ -348,6 +348,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tf AS 'hivemall.ftvec.text.TermFrequen
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS bm25")
 sqlContext.sql("CREATE TEMPORARY FUNCTION bm25 AS 'hivemall.ftvec.text.OkapiBM25UDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tfidf")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tfidf AS 'hivemall.ftvec.text.TfIdfUDF'")
+
 /**
  * Regression functions
  */

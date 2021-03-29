@@ -1197,6 +1197,37 @@ public final class HiveUtils {
     }
 
     @Nonnull
+    public static PrimitiveObjectInspector asLongCompatibleOI(
+            @Nonnull final ObjectInspector[] argOIs, final int argIndex)
+            throws UDFArgumentException {
+        ObjectInspector argOI = getObjectInspector(argOIs, argIndex);
+        if (argOI.getCategory() != Category.PRIMITIVE) {
+            throw new UDFArgumentTypeException(argIndex,
+                "Only primitive type arguments are accepted but " + argOI.getTypeName()
+                        + " is passed.");
+        }
+        final PrimitiveObjectInspector oi = (PrimitiveObjectInspector) argOI;
+        switch (oi.getPrimitiveCategory()) {
+            case LONG:
+            case INT:
+            case SHORT:
+            case BYTE:
+            case BOOLEAN:
+            case FLOAT:
+            case DOUBLE:
+            case DECIMAL:
+            case STRING:
+            case TIMESTAMP:
+                break;
+            default:
+                throw new UDFArgumentTypeException(argIndex,
+                    "Unexpected type '" + argOI.getTypeName() + "' is passed.");
+        }
+        return oi;
+    }
+
+
+    @Nonnull
     public static PrimitiveObjectInspector asIntegerOI(@Nonnull final ObjectInspector argOI)
             throws UDFArgumentTypeException {
         if (argOI.getCategory() != Category.PRIMITIVE) {
