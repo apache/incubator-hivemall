@@ -38,7 +38,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 
 @Description(name = "tfidf",
         value = "_FUNC_(double termFrequency, long numDocs, const long totalNumDocs) "
-                + "- Return an TFIDF score in double.")
+                + "- Return a smoothed TFIDF score in double.")
 @UDFType(deterministic = true, stateful = false)
 public final class TfIdfUDF extends GenericUDF {
 
@@ -71,22 +71,23 @@ public final class TfIdfUDF extends GenericUDF {
         Object arg2 = getObject(arguments, 2);
 
         double tf = PrimitiveObjectInspectorUtils.getDouble(arg0, tfOI);
-        long numDocs = PrimitiveObjectInspectorUtils.getLong(arg1, numDocsOI);
-        long totalNumDocs = PrimitiveObjectInspectorUtils.getLong(arg2, totalNumDocsOI);
+        // Note: not long but double to avoid long by long division
+        double numDocs = PrimitiveObjectInspectorUtils.getLong(arg1, numDocsOI);
+        double totalNumDocs = PrimitiveObjectInspectorUtils.getLong(arg2, totalNumDocsOI);
 
         // basic IDF
         //    idf = log(N/n_t)
         // IDF with smoothing
         //    idf = log(N/(1+n_t))+1
-        //    idf = log(N/max(1,n_t))+1 -- about zero division        
-        double idf = (Math.log10(totalNumDocs / Math.max(1L, numDocs)) + 1.0d);
+        //    idf = log(N/max(1,n_t))+1 -- avoid zero division by max(1,n_t) and +1 for smoothing
+        double idf = Math.log10(totalNumDocs / Math.max(1.d, numDocs)) + 1.0d;
         double tfidf = tf * idf;
         result.set(tfidf);
         return result;
     }
 
     @Nonnull
-    protected static Object getObject(@Nonnull final DeferredObject[] arguments,
+    private static Object getObject(@Nonnull final DeferredObject[] arguments,
             @Nonnegative final int index) throws HiveException {
         Object obj = arguments[index].get();
         if (obj == null) {
