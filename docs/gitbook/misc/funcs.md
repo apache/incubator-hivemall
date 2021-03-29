@@ -1048,6 +1048,8 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `tf(string text)` - Return a term frequency in &lt;string, float&gt;
 
+- `tfidf(double termFrequency, long numDocs, const long totalNumDocs)` - Return a smoothed TFIDF score in double.
+
 # Others
 
 - `hivemall_version()` - Returns the version of Hivemall
@@ -1063,4 +1065,6 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 - `bm25(double termFrequency, int docLength, double avgDocLength, int numDocs, int numDocsWithTerm [, const string options])` - Return an Okapi BM25 score in double. Refer http://hivemall.incubator.apache.org/userguide/ft_engineering/bm25.html for usage
 
 - `tf(string text)` - Return a term frequency in &lt;string, float&gt;
+
+- `tfidf(double termFrequency, long numDocs, const long totalNumDocs)` - Return a smoothed TFIDF score in double.
 
