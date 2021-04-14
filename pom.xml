@@ -256,8 +256,8 @@
 
 	<properties>
 		<main.basedir>${project.basedir}</main.basedir>
-		<maven.compiler.source>1.7</maven.compiler.source>
-		<maven.compiler.target>1.7</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.build.timestamp.format>yyyy</maven.build.timestamp.format>
 		<build.year>${maven.build.timestamp}</build.year>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -575,7 +575,7 @@
 						<docencoding>UTF-8</docencoding>
 						<show>protected</show>
 						<linksource>true</linksource>
-						<source>7</source>
+						<source>8</source>
 					</configuration>
 					<executions>
 						<execution>
@@ -694,7 +694,7 @@
 							</rules>
 						</configuration>
 					</execution>
-					<!-- Check Java class file compatibility to Java 7/8 -->
+					<!-- Check Java class file compatibility to Java 8 -->
 					<execution>
 						<id>enforce-bytecode-version</id>
 						<goals>
@@ -722,7 +722,7 @@
 					</dependency>
 				</dependencies>
 			</plugin>
-			<!-- check Java API compatibility to Java 7 -->
+			<!-- check Java API compatibility to Java 8 -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>animal-sniffer-maven-plugin</artifactId>
@@ -730,7 +730,7 @@
 				<configuration>
 					<signature>
 						<groupId>org.codehaus.mojo.signature</groupId>
-						<artifactId>java17</artifactId>
+						<artifactId>java18</artifactId>
 						<version>1.0</version>
 					</signature>
 					<ignores>
@@ -739,7 +739,7 @@
 				</configuration>
 				<executions>
 					<execution>
-						<id>ensure-java-1.7-class-library</id>
+						<id>ensure-java-1.8-class-library</id>
 						<phase>verify</phase>
 						<goals>
 							<goal>check</goal>
