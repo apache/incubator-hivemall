@@ -41,7 +41,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.CharArraySet;
 
 @Description(name = "tokenize_cn", value = "_FUNC_(String line [, const list<string> stopWords])"
         + " - returns tokenized strings in array<string>")
