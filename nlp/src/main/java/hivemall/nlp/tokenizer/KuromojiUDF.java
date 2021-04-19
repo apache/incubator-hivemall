@@ -55,6 +55,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Text;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer;
@@ -62,7 +63,6 @@ import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 @Description(name = "tokenize_ja",
         value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
