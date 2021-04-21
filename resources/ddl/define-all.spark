@@ -879,3 +879,41 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION min_by AS 'hivemall.tools.aggr.MinByUD
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS majority_vote")
 sqlContext.sql("CREATE TEMPORARY FUNCTION majority_vote AS 'hivemall.tools.aggr.MajorityVoteUDAF'")
+
+/**
+ * NLP features
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tokenize_ja")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tokenize_ja AS 'hivemall.nlp.tokenizer.KuromojiUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tokenize_ja_neologd")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tokenize_ja_neologd AS 'hivemall.nlp.tokenizer.KuromojiNEologdUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tokenize_cn")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tokenize_cn AS 'hivemall.nlp.tokenizer.SmartcnUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS stoptags_exclude")
+sqlContext.sql("CREATE TEMPORARY FUNCTION stoptags_exclude AS 'hivemall.nlp.tokenizer.StoptagsExcludeUDF'")
+
+/**
+ * XGBoost related features
+ */
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS xgboost_version")
+sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_version AS 'hivemall.xgboost.XGBoostVersionUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_xgboost")
+sqlContext.sql("CREATE TEMPORARY FUNCTION train_xgboost AS 'hivemall.xgboost.XGBoostTrainUDTF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS xgboost_predict")
+sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_predict AS 'hivemall.xgboost.XGBoostOnlinePredictUDTFF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS xgboost_batch_predict")
+sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_batch_predict AS 'hivemall.xgboost.XGBoostBatchPredictUDTF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS xgboost_predict_one")
+sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_predict_one AS 'hivemall.xgboost.XGBoostPredictOneUDTF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS xgboost_predict_triple")
+sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_predict_triple AS 'hivemall.xgboost.XGBoostPredictTripleUDTF'")
