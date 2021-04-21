@@ -33,6 +33,7 @@
 	<properties>
 		<main.basedir>${project.parent.basedir}</main.basedir>
 		<lucene.version>8.8.2</lucene.version>
+		<lucene-analyzers-kuromoji-neologd.version>8.8.2-20200910.2</lucene-analyzers-kuromoji-neologd.version>
 	</properties>
 
 	<dependencies>
@@ -107,6 +108,12 @@
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-analyzers-smartcn</artifactId>
 			<version>${lucene.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.github.myui</groupId>
+			<artifactId>lucene-analyzers-kuromoji-neologd</artifactId>
+			<version>${lucene-analyzers-kuromoji-neologd.version}</version>
 			<scope>compile</scope>
 		</dependency>
 
