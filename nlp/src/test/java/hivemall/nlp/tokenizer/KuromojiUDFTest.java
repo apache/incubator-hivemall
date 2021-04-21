@@ -44,6 +44,16 @@ import org.junit.Test;
 public class KuromojiUDFTest {
 
     @Test
+    public void testNoArgument() throws IOException, HiveException {
+        GenericUDF udf = new KuromojiUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[0];
+        udf.initialize(argOIs);
+        Object result = udf.evaluate(new DeferredObject[0]);
+        Assert.assertNotNull(result);
+        udf.close();
+    }
+
+    @Test
     public void testOneArgument() throws UDFArgumentException, IOException {
         GenericUDF udf = new KuromojiUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];

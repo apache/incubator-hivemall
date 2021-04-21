@@ -111,7 +111,7 @@ public final class KuromojiUDF extends UDFWithOptions {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         final int arglen = arguments.length;
-        if (arglen < 1 || arglen > 5) {
+        if (arglen > 5) {
             showHelp("Invalid number of arguments for `tokenize_ja`: " + arglen);
         }
 
@@ -166,6 +166,11 @@ public final class KuromojiUDF extends UDFWithOptions {
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
+        if (arguments.length == 0) {
+            String version = JapaneseAnalyzer.class.getPackage().getImplementationVersion();
+            return Collections.singletonList(new Text(version));
+        }
+
         if (_analyzer == null) {
             CharArraySet stopWords = stopWords(_stopWordsArray);
 
