@@ -147,6 +147,7 @@ public class FuncsListGeneratorMojo extends AbstractMojo {
             "hivemall.smile.classification", "hivemall.smile.regression", "hivemall.smile.tools"));
         funcsHeaders.put("# XGBoost", Arrays.asList("hivemall.xgboost"));
         funcsHeaders.put("# Term Vector Model", Collections.singletonList("hivemall.ftvec.text"));
+        funcsHeaders.put("# NLP", Collections.singletonList("hivemall.nlp.tokenizer"));
         funcsHeaders.put("# Others",
             Arrays.asList("hivemall", "hivemall.dataset", "hivemall.ftvec.text"));
     }
