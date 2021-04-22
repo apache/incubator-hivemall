@@ -42,13 +42,14 @@ mvn clean site
 # building gitbook userguide
 ##
 
+cd ${HIVEMALL_HOME}/docs/gitbook
+
 if ! [ -x "$(command -v gitbook)" ]; then
   echo "gitbook is not installed .." >&2
   echo "Run 'npm install gitbook-cli -g' to install gitbook" >&2
   exit 1
 fi
 
-cd ${HIVEMALL_HOME}/docs/gitbook
 gitbook install && gitbook build
 cd $HIVEMALL_HOME
 

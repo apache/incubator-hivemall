@@ -7,7 +7,6 @@
         "edit-link",
         "github",
         "splitter",
-        "sitemap",
         "etoc",
         "callouts",
         "toggle-chapters",
@@ -34,9 +33,6 @@
         },
         "github": {
             "url": "https://github.com/apache/incubator-hivemall/"
-        },
-        "sitemap": {
-            "hostname": "https://hivemall.incubator.apache.org/"
         },
         "etoc": {
           "mindepth": 1,

@@ -1,0 +1,18 @@
+# Build image
+
+```sh
+docker build . -t hivemall/gitbook:3.2.2
+```
+
+# Serve gitbook
+Thew assumption that the source is in local build directory.
+
+```sh
+docker run -v $(pwd)/gitbook:/srv/gitbook -p 4000:4000 --rm -it hivemall/gitbook:3.2.2
+```
+
+# Build gitbook
+
+```sh
+docker run -v $(pwd)/gitbook:/srv/gitbook -p 4000:4000 --rm -it hivemall/gitbook:3.2.2 bash -c "gitbook install && gitbook build"
+```
