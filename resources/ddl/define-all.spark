@@ -893,6 +893,9 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION tokenize_ja_neologd AS 'hivemall.nlp.t
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tokenize_cn")
 sqlContext.sql("CREATE TEMPORARY FUNCTION tokenize_cn AS 'hivemall.nlp.tokenizer.SmartcnUDF'")
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS tokenize_ko")
+sqlContext.sql("CREATE TEMPORARY FUNCTION tokenize_ko AS 'hivemall.nlp.tokenizer.TokenizeKoUDF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS stoptags_exclude")
 sqlContext.sql("CREATE TEMPORARY FUNCTION stoptags_exclude AS 'hivemall.nlp.tokenizer.StoptagsExcludeUDF'")
 
