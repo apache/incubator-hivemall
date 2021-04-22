@@ -1050,6 +1050,31 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `tfidf(double termFrequency, long numDocs, const long totalNumDocs)` - Return a smoothed TFIDF score in double.
 
+# NLP
+
+- `stoptags_exclude(array<string> excludeTags, [, const string lang='ja'])` - Returns stoptags excluding given tags
+  ```sql
+  SELECT stoptags_exclude(array('名詞-固有名詞', '形容詞'))
+  ```
+
+- `tokenize_cn(String line [, const list<string> stopWords])` - returns tokenized strings in array&lt;string&gt;
+
+- `tokenize_ja(String line [, const string mode = "normal", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)`]) - returns tokenized strings in array&lt;string&gt;
+  ```sql
+  select tokenize_ja("kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。");
+
+  > ["kuromoji","使う","分かち書き","テスト","第","二","引数","normal","search","extended","指定","デフォルト","normal"," モード"]
+
+  ```
+
+- `tokenize_ja_neologd(String line [, const string mode = "normal", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)`]) - returns tokenized strings in array&lt;string&gt;
+  ```sql
+  select tokenize_ja_neologd("kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。");
+
+  > ["kuromoji","使う","分かち書き","テスト","第","二","引数","normal","search","extended","指定","デフォルト","normal"," モード"]
+
+  ```
+
 # Others
 
 - `hivemall_version()` - Returns the version of Hivemall

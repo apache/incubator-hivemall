@@ -122,6 +122,7 @@
 									<include>org.apache.lucene:lucene-analyzers-smartcn</include>
 									<include>org.apache.lucene:lucene-analyzers-common</include>
 									<include>org.apache.lucene:lucene-core</include>
+									<include>io.github.myui:lucene-analyzers-kuromoji-neologd</include>
 									<!-- hivemall-xgboost -->
 									<include>org.apache.hivemall:hivemall-xgboost</include>
 									<include>io.github.myui:xgboost4j</include>

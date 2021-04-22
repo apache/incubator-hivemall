@@ -31,3 +31,4 @@ docs/gitbook/node_modules/**
 **/derby.log
 **/LICENSE-*.txt
 **/Base91.java
+**/*.properties

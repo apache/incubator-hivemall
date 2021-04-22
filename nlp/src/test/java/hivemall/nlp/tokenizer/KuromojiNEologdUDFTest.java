@@ -18,13 +18,8 @@
  */
 package hivemall.nlp.tokenizer;
 
-import hivemall.TestUtils;
-import hivemall.utils.hadoop.HiveUtils;
-import hivemall.utils.lang.PrivilegedAccessor;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -36,16 +31,14 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.io.Text;
-import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class KuromojiUDFTest {
+public class KuromojiNEologdUDFTest {
 
     @Test
     public void testNoArgument() throws IOException, HiveException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[0];
         udf.initialize(argOIs);
         Object result = udf.evaluate(new DeferredObject[0]);
@@ -55,7 +48,7 @@ public class KuromojiUDFTest {
 
     @Test
     public void testOneArgument() throws UDFArgumentException, IOException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -65,7 +58,7 @@ public class KuromojiUDFTest {
 
     @Test
     public void testTwoArgument() throws UDFArgumentException, IOException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[2];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -79,7 +72,7 @@ public class KuromojiUDFTest {
     }
 
     public void testExpectedMode() throws UDFArgumentException, IOException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[2];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -94,7 +87,7 @@ public class KuromojiUDFTest {
 
     @Test(expected = UDFArgumentException.class)
     public void testInvalidMode() throws IOException, HiveException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[2];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -108,7 +101,7 @@ public class KuromojiUDFTest {
         DeferredObject[] args = new DeferredObject[1];
         args[0] = new DeferredObject() {
             public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
+                return new Text("こんにちは。");
             }
 
             @Override
@@ -121,7 +114,7 @@ public class KuromojiUDFTest {
 
     @Test
     public void testThreeArgument() throws UDFArgumentException, IOException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[3];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -139,7 +132,7 @@ public class KuromojiUDFTest {
 
     @Test
     public void testFourArgument() throws UDFArgumentException, IOException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[4];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -160,7 +153,7 @@ public class KuromojiUDFTest {
 
     @Test
     public void testFiveArgumentArray() throws UDFArgumentException, IOException {
-        GenericUDF udf = new KuromojiUDF();
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[5];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -183,8 +176,8 @@ public class KuromojiUDFTest {
     }
 
     @Test
-    public void testFiveArgumenString() throws UDFArgumentException, IOException {
-        GenericUDF udf = new KuromojiUDF();
+    public void testFiveArgumentString() throws UDFArgumentException, IOException {
+        GenericUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[5];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
@@ -206,9 +199,21 @@ public class KuromojiUDFTest {
         udf.close();
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testEvaluateReturnsVersion() throws IOException, HiveException {
+        KuromojiNEologdUDF udf = new KuromojiNEologdUDF();
+        DeferredObject[] args = new DeferredObject[0];
+        List<Text> tokens = (List<Text>) udf.evaluate(args);
+        Assert.assertNotNull(tokens);
+        Assert.assertEquals(1, tokens.size());
+        udf.close();
+    }
+
+    @SuppressWarnings("unchecked")
     @Test
     public void testEvaluateOneRow() throws IOException, HiveException {
-        KuromojiUDF udf = new KuromojiUDF();
+        KuromojiNEologdUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
@@ -217,23 +222,22 @@ public class KuromojiUDFTest {
         DeferredObject[] args = new DeferredObject[1];
         args[0] = new DeferredObject() {
             public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
+                return new Text("10日放送の「中居正広のミになる図書館」（テレビ朝日系）で、SMAPの中居正広が、篠原信一の過去の勘違いを明かす一幕があった。");
             }
 
             @Override
             public void prepare(int arg) throws HiveException {}
         };
-        @SuppressWarnings("unchecked")
         List<Text> tokens = (List<Text>) udf.evaluate(args);
         Assert.assertNotNull(tokens);
-        Assert.assertEquals(5, tokens.size());
+        Assert.assertEquals(12, tokens.size());
         udf.close();
     }
 
     @SuppressWarnings("unchecked")
     @Test
     public void testEvaluateTwoRows() throws IOException, HiveException {
-        KuromojiUDF udf = new KuromojiUDF();
+        KuromojiNEologdUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[1];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
@@ -242,7 +246,7 @@ public class KuromojiUDFTest {
         DeferredObject[] args = new DeferredObject[1];
         args[0] = new DeferredObject() {
             public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
+                return new Text("10日放送の「中居正広のミになる図書館」（テレビ朝日系）で、SMAPの中居正広が、篠原信一の過去の勘違いを明かす一幕があった。");
             }
 
             @Override
@@ -250,11 +254,11 @@ public class KuromojiUDFTest {
         };
         List<Text> tokens = (List<Text>) udf.evaluate(args);
         Assert.assertNotNull(tokens);
-        Assert.assertEquals(5, tokens.size());
+        Assert.assertEquals(12, tokens.size());
 
         args[0] = new DeferredObject() {
             public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。");
+                return new Text("きゃりーぱみゅぱみゅ。");
             }
 
             @Override
@@ -262,39 +266,15 @@ public class KuromojiUDFTest {
         };
         tokens = (List<Text>) udf.evaluate(args);
         Assert.assertNotNull(tokens);
-        Assert.assertEquals(4, tokens.size());
+        Assert.assertEquals(1, tokens.size());
 
         udf.close();
     }
 
-    @Test
-    public void testEvaluateLongRow() throws IOException, HiveException {
-        KuromojiUDF udf = new KuromojiUDF();
-        ObjectInspector[] argOIs = new ObjectInspector[1];
-        // line
-        argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
-        udf.initialize(argOIs);
-
-        DeferredObject[] args = new DeferredObject[1];
-        args[0] = new DeferredObject() {
-            public Text get() throws HiveException {
-                return new Text(
-                    "商品の購入・詳細(サイズ、画像)は商品名をクリックしてください！[L.B　CANDY　STOCK]フラワービジューベアドレス[L.B　DAILY　STOCK]ボーダーニットトップス［L.B　DAILY　STOCK］ボーダーロングニットOP［L.B　DAILY　STOCK］ロゴトートBAG［L.B　DAILY　STOCK］裏毛ロゴプリントプルオーバー【TVドラマ着用】アンゴラワッフルカーディガン【TVドラマ着用】グラフィティーバックリボンワンピース【TVドラマ着用】ボーダーハイネックトップス【TVドラマ着用】レオパードミッドカーフスカート【セットアップ対応商品】起毛ニットスカート【セットアップ対応商品】起毛ニットプルオーバー2wayサングラス33ナンバーリングニット3Dショルダーフレアードレス3周年スリッパ3周年ラグマット3周年ロックグラスキャンドルLily　Brown　2015年　福袋MIXニットプルオーバーPeckhamロゴニットアンゴラジャガードプルオーバーアンゴラタートルアンゴラチュニックアンゴラニットカーディガンアンゴラニットプルオーバーアンゴラフレアワンピースアンゴラロングカーディガンアンゴラワッフルカーディガンヴィンテージファー付コートヴィンテージボーダーニットヴィンテージレースハイネックトップスヴィンテージレースブラウスウエストシースルーボーダーワンピースオーガンジーラインフレアスカートオープンショルダーニットトップスオフショルシャーリングワンピースオフショルニットオフショルニットプルオーバーオフショルボーダーロンパースオフショルワイドコンビネゾンオルテガ柄ニットプルオーバーカシュクールオフショルワンピースカットアシンメトリードレスカットサテンプリーツフレアースカートカラースーパーハイウェストスキニーカラーブロックドレスカラーブロックニットチュニックギャザーフレアスカートキラキラストライプタイトスカートキラキラストライプドレスキルティングファーコートグラデーションベアドレスグラデーションラウンドサングラスグラフティーオフショルトップスグラフティーキュロットグリッターリボンヘアゴムクロップドブラウスケーブルハイウエストスカートコーデュロイ×スエードパネルスカートコーデュロイタイトスカートゴールドバックルベルト付スカートゴシックヒールショートブーツゴシック柄ニットワンピコンビスタジャンサイドステッチボーイズデニムパンツサスペつきショートパンツサスペンダー付プリーツロングスカートシャーリングタイトスカートジャガードタックワンピーススエードフリルフラワーパンツスエード裏毛肩空きトップススクエアショルダーBAGスクエアバックルショルダースクエアミニバッグストーンビーチサンダルストライプサスペ付きスキニーストライプバックスリットシャツスライバーシャギーコートタートル×レースタイトスカートタートルニットプルオーバータイトジャンパースカートダブルクロスチュールフレアスカートダブルストラップパンプスダブルハートリングダブルフェイスチェックストールチェーンコンビビジューネックレスチェーンコンビビジューピアスチェーンコンビビジューブレスチェーンツバ広HATチェーンビジューピアスチェックニットプルオーバーチェックネルミディアムスカートチェック柄スキニーパンツチュールコンビアシメトップスデニムフレアースカートドットオフショルフリルブラウスドットジャガードドレスドットニットプルオーバードットレーストップスニット×オーガンジースカートセットニットキャミソールワンピースニットスヌードパールコンビフープピアスハイウエストショートデニムハイウエストタイトスカートハイウエストデニムショートパンツハイウエストプリーツスカートハイウエストミッドカーフスカートハイゲージタートルニットハイゲージラインニットハイネック切り替えスウェットバタフライネックレスバタフライミニピアスバタフライリングバックタンクリブワンピースバックリボンスキニーデニムパンツバックリボン深Vワンピースビジューストラップサンダルビスチェコンビオフショルブラウスブークレジャガードニットフェイクムートンショートコートフェレットカーディガンフェレットビックタートルニットブラウジングクルーブラウスプリーツブラウスフリルニットプルオーバーフリンジニットプルオーバーフレアニットスカートブロウ型サングラスベーシックフェレットプルオーバーベルト付ガウチョパンツベルト付ショートパンツベルト付タックスカートベルト付タックパンツベルベットインヒールパンプスベロアウェッジパンプスベロアミッドカーフワンピースベロアワンピースベロア風ニットカーディガンボア付コートボーダーVネックTシャツボーダーオフショルカットソーボーダーカットソーワンピースボーダータイトカットソーボーダートップスボーダートップス×スカートセットボストンメガネマオカラーシャツニットセットミックスニットプルオーバーミッドカーフ丈ポンチスカートミリタリーギャザーショートパンツメッシュハイネックトップスメルトンPコートメルトンダッフルコートメルトンダブルコートモヘアニットカーディガンモヘアニットタートルユリ柄プリーツフレアースカートライダースデニムジャケットライナー付チェスターコートラッフルプリーツブラウスラメジャガードハイゲージニットリブニットワンピリボン×パールバレッタリボンバレッタリボンベルトハイウエストパンツリリー刺繍開襟ブラウスレースビスチェローファーサボロゴニットキャップロゴ刺繍ニットワッチロングニットガウンワッフルアンゴラプルオーバーワンショルダワーワンピース光沢ラメニットカーディガン刺繍シフォンブラウス台形ミニスカート配色ニットプルオーバー裏毛プルオーバー×オーガンジースカートセット");
-            }
-
-            @Override
-            public void prepare(int arg) throws HiveException {}
-        };
-        @SuppressWarnings("unchecked")
-        List<Text> tokens = (List<Text>) udf.evaluate(args);
-        Assert.assertNotNull(tokens);
-        Assert.assertEquals(182, tokens.size());
-        udf.close();
-    }
-
+    @SuppressWarnings("unchecked")
     @Test
     public void testEvaluateUserDictArray() throws IOException, HiveException {
-        KuromojiUDF udf = new KuromojiUDF();
+        KuromojiNEologdUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[5];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
@@ -327,7 +307,6 @@ public class KuromojiUDFTest {
             public void prepare(int arg) throws HiveException {}
         };
 
-        @SuppressWarnings("unchecked")
         List<Text> tokens = (List<Text>) udf.evaluate(args);
 
         Assert.assertNotNull(tokens);
@@ -336,9 +315,10 @@ public class KuromojiUDFTest {
         udf.close();
     }
 
+    @SuppressWarnings("unchecked")
     @Test(expected = UDFArgumentException.class)
     public void testEvaluateInvalidUserDictURL() throws IOException, HiveException {
-        KuromojiUDF udf = new KuromojiUDF();
+        KuromojiNEologdUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[5];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
@@ -361,23 +341,23 @@ public class KuromojiUDFTest {
         DeferredObject[] args = new DeferredObject[1];
         args[0] = new DeferredObject() {
             public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
+                return new Text("こんにちは。");
             }
 
             @Override
             public void prepare(int arg) throws HiveException {}
         };
 
-        @SuppressWarnings("unchecked")
         List<Text> tokens = (List<Text>) udf.evaluate(args);
         Assert.assertNotNull(tokens);
 
         udf.close();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testEvaluateUserDictURL() throws IOException, HiveException {
-        KuromojiUDF udf = new KuromojiUDF();
+        KuromojiNEologdUDF udf = new KuromojiNEologdUDF();
         ObjectInspector[] argOIs = new ObjectInspector[5];
         // line
         argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
@@ -409,118 +389,9 @@ public class KuromojiUDFTest {
             public void prepare(int arg) throws HiveException {}
         };
 
-        @SuppressWarnings("unchecked")
-        List<Text> tokens = (List<Text>) udf.evaluate(args);
-
-        Assert.assertNotNull(tokens);
-        Assert.assertEquals(7, tokens.size());
-
-        udf.close();
-    }
-
-    @Test
-    public void testSerialization() throws IOException, HiveException {
-        final KuromojiUDF udf = new KuromojiUDF();
-        ObjectInspector[] argOIs = new ObjectInspector[1];
-        argOIs[0] = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
-        udf.initialize(argOIs);
-
-        // serialization after initialization
-        byte[] serialized = TestUtils.serializeObjectByKryo(udf);
-        TestUtils.deserializeObjectByKryo(serialized, KuromojiUDF.class);
-
-        DeferredObject[] args = new DeferredObject[1];
-        args[0] = new DeferredObject() {
-            public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
-            }
-
-            @Override
-            public void prepare(int arg) throws HiveException {}
-        };
-        @SuppressWarnings("unchecked")
         List<Text> tokens = (List<Text>) udf.evaluate(args);
         Assert.assertNotNull(tokens);
-
-        // serialization after evaluation
-        serialized = TestUtils.serializeObjectByKryo(udf);
-        TestUtils.deserializeObjectByKryo(serialized, KuromojiUDF.class);
-
-        udf.close();
-    }
-
-    @Test
-    public void testNormalModeWithOption()
-            throws IOException, HiveException, IllegalAccessException, NoSuchFieldException {
-        GenericUDF udf = new KuromojiUDF();
-        ObjectInspector[] argOIs = new ObjectInspector[2];
-
-        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector; // line
-        argOIs[1] = HiveUtils.getConstStringObjectInspector("-mode normal"); // mode
-        udf.initialize(argOIs);
-
-        Object mode = PrivilegedAccessor.getValue(udf, "_mode");
-        Assert.assertEquals(Mode.NORMAL, mode);
-
-        DeferredObject[] args = new DeferredObject[1];
-        args[0] = new DeferredObject() {
-            public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
-            }
-
-            @Override
-            public void prepare(int arg) throws HiveException {}
-        };
-        Object result = udf.evaluate(args);
-        Assert.assertThat(Arrays.asList(new Text("クロモジ"), new Text("japaneseanalyzer"),
-            new Text("使う"), new Text("みる"), new Text("テスト")), CoreMatchers.is(result));
-
-        udf.close();
-    }
-
-    @Test
-    public void testNormalModeWithPosOptions()
-            throws IOException, HiveException, IllegalAccessException, NoSuchFieldException {
-        GenericUDF udf = new KuromojiUDF();
-        ObjectInspector[] argOIs = new ObjectInspector[2];
-
-        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector; // line
-        argOIs[1] = HiveUtils.getConstStringObjectInspector("-mode normal -pos"); // mode
-        udf.initialize(argOIs);
-
-        Object mode = PrivilegedAccessor.getValue(udf, "_mode");
-        Assert.assertEquals(Mode.NORMAL, mode);
-
-        DeferredObject[] args = new DeferredObject[1];
-        args[0] = new DeferredObject() {
-            public Text get() throws HiveException {
-                return new Text("クロモジのJapaneseAnalyzerを使ってみる。テスト。");
-            }
-
-            @Override
-            public void prepare(int arg) throws HiveException {}
-        };
-
-        Object[] result = (Object[]) udf.evaluate(args);
-        Assert.assertEquals(2, result.length);
-
-        Assert.assertEquals(Arrays.asList(new Text("クロモジ"), new Text("japaneseanalyzer"),
-            new Text("使う"), new Text("みる"), new Text("テスト")), result[0]);
-        Assert.assertEquals(Arrays.asList(new Text("名詞-一般"), new Text("名詞-一般"), new Text("動詞-自立"),
-            new Text("動詞-非自立"), new Text("名詞-サ変接続")), result[1]);
-
-        udf.close();
-    }
-
-    @Test(expected = UDFArgumentException.class)
-    public void testUnsupportedOptionArgs()
-            throws IOException, HiveException, IllegalAccessException, NoSuchFieldException {
-        GenericUDF udf = new KuromojiUDF();
-        ObjectInspector[] argOIs = new ObjectInspector[2];
-
-        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector; // line
-        argOIs[1] = HiveUtils.getConstStringObjectInspector("-mode normal -unsupported_option"); // mode
-        udf.initialize(argOIs);
+        Assert.assertEquals(8, tokens.size());
 
         udf.close();
     }

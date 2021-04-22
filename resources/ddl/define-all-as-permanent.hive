@@ -902,6 +902,22 @@ CREATE FUNCTION min_by as 'hivemall.tools.aggr.MinByUDAF' USING JAR '${hivemall_
 DROP FUNCTION IF EXISTS majority_vote;
 CREATE FUNCTION majority_vote as 'hivemall.tools.aggr.MajorityVoteUDAF' USING JAR '${hivemall_jar}';
 
+------------------
+-- NLP features --
+------------------
+
+DROP FUNCTION IF EXISTS tokenize_ja;
+CREATE FUNCTION tokenize_ja as 'hivemall.nlp.tokenizer.KuromojiUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS tokenize_ja_neologd;
+CREATE FUNCTION tokenize_ja_neologd as 'hivemall.nlp.tokenizer.KuromojiNEologdUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS tokenize_cn;
+CREATE FUNCTION tokenize_cn as 'hivemall.nlp.tokenizer.SmartcnUDF' USING JAR '${hivemall_jar}';
+
+DROP FUNCTION IF EXISTS stoptags_exclude;
+CREATE FUNCTION stoptags_exclude as 'hivemall.nlp.tokenizer.StoptagsExcludeUDF' USING JAR '${hivemall_jar}';
+
 ------------------------------
 -- XGBoost related features --
 ------------------------------

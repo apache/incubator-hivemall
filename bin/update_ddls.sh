@@ -52,13 +52,5 @@ define_additional() {
 read -p "Function name (e.g., 'hivemall_version'): " function_name
 read -p "Class path (e.g., 'hivemall.HivemallVersionUDF'): " class_path
 
-prefix="$(echo "$class_path" | cut -d'.' -f1,2)"
-if [[ $prefix == 'hivemall.xgboost' ]]; then
-  define_all_as_permanent
-  define_additional
-elif [[ $prefix == 'hivemall.nlp' ]]; then
-  define_additional
-else
-  define_all
-  define_all_as_permanent
-fi
+define_all
+define_all_as_permanent

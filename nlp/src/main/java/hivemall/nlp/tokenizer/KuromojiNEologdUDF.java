@@ -58,21 +58,21 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.io.Text;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
-import org.apache.lucene.analysis.ja.JapaneseTokenizer;
-import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
-import org.apache.lucene.analysis.ja.dict.UserDictionary;
-import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
+import org.apache.lucene.analysis.ja.neologd.JapaneseAnalyzer;
+import org.apache.lucene.analysis.ja.neologd.JapaneseTokenizer;
+import org.apache.lucene.analysis.ja.neologd.JapaneseTokenizer.Mode;
+import org.apache.lucene.analysis.ja.neologd.dict.UserDictionary;
+import org.apache.lucene.analysis.ja.neologd.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-@Description(name = "tokenize_ja",
+@Description(name = "tokenize_ja_neologd",
         value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
                 + " - returns tokenized strings in array<string>",
-        extended = "select tokenize_ja(\"kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。\");\n"
+        extended = "select tokenize_ja_neologd(\"kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。\");\n"
                 + "\n"
                 + "> [\"kuromoji\",\"使う\",\"分かち書き\",\"テスト\",\"第\",\"二\",\"引数\",\"normal\",\"search\",\"extended\",\"指定\",\"デフォルト\",\"normal\",\" モード\"]\n")
 @UDFType(deterministic = true, stateful = false)
-public final class KuromojiUDF extends UDFWithOptions {
+public final class KuromojiNEologdUDF extends UDFWithOptions {
     private static final int CONNECT_TIMEOUT_MS = 10000; // 10 sec
     private static final int READ_TIMEOUT_MS = 60000; // 60 sec
     private static final long MAX_INPUT_STREAM_SIZE = 32L * 1024L * 1024L; // ~32MB
@@ -175,7 +175,7 @@ public final class KuromojiUDF extends UDFWithOptions {
                 throw new HiveException("Failed to read tokenizer.properties");
             }
             return Collections.singletonList(
-                new Text(properties.getProperty("tokenizer_ja.version")));
+                new Text(properties.getProperty("tokenizer_ja_neologd.version")));
         }
 
         if (_analyzer == null) {
@@ -413,7 +413,7 @@ public final class KuromojiUDF extends UDFWithOptions {
 
     @Override
     public String getDisplayString(String[] children) {
-        return "tokenize_ja(" + Arrays.toString(children) + ')';
+        return "tokenize_ja_neologd(" + Arrays.toString(children) + ')';
     }
 
 }

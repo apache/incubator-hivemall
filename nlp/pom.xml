@@ -16,7 +16,9 @@
   specific language governing permissions and limitations
   under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -33,6 +35,7 @@
 	<properties>
 		<main.basedir>${project.parent.basedir}</main.basedir>
 		<lucene.version>8.8.2</lucene.version>
+		<lucene-analyzers-kuromoji-neologd.version>8.8.2-20200910.2</lucene-analyzers-kuromoji-neologd.version>
 	</properties>
 
 	<dependencies>
@@ -109,6 +112,12 @@
 			<version>${lucene.version}</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>io.github.myui</groupId>
+			<artifactId>lucene-analyzers-kuromoji-neologd</artifactId>
+			<version>${lucene-analyzers-kuromoji-neologd.version}</version>
+			<scope>compile</scope>
+		</dependency>
 
 		<!-- test scope -->
 		<dependency>
@@ -124,5 +133,14 @@
 		</dependency>
 
 	</dependencies>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+	</build>
 
 </project>
