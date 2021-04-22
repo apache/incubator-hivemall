@@ -28,14 +28,6 @@ tokenize(text input, optional boolean toLowerCase = false)
 
 # Tokenizer for Non-English Texts
 
-Hivemall-NLP module provides some Non-English Text tokenizer UDFs as follows.
-
-First of all, you need to issue the following DDLs to use the NLP module. Note NLP module is not included in `hivemall-with-dependencies.jar`.
-
-> add jar /path/to/hivemall-nlp-xxx-with-dependencies.jar;
-
-> source /path/to/define-additional.hive;
-
 ## Japanese Tokenizer
 
 Japanese text tokenizer UDF uses [Kuromoji](https://github.com/atilika/kuromoji). 
@@ -43,16 +35,42 @@ Japanese text tokenizer UDF uses [Kuromoji](https://github.com/atilika/kuromoji)
 The signature of the UDF is as follows:
 
 ```sql
+-- uses Kuromoji default dictionary by the default
 tokenize_ja(text input, optional const text mode = "normal", optional const array<string> stopWords, const array<string> stopTags, const array<string> userDict)
+
+-- tokenize_ja_neologd uses mecab-ipa-neologd for it's dictionary.
+tokenize_ja_neologd(text input, optional const text mode = "normal", optional const array<string> stopWords, const array<string> stopTags, const array<string> userDict)
 ```
 
 > #### Note
-> `tokenize_ja` is supported since Hivemall v0.4.1, and the fifth argument is supported since v0.5-rc.1 and later.
+> `tokenize_ja_neologd` returns tokenized strings in an array by using the NEologd dictionary. [mecab-ipadic-NEologd](https://github.com/neologd/mecab-ipadic-neologd) is a customized system dictionary for MeCab inclucing new vocablaries extracted from many resources on the Web. 
+
+See differences between with and without Neologd as follows:
+
+```sql
+select tokenize_ja("彼女はペンパイナッポーアッポーペンと恋ダンスを踊った。");
+>["彼女","ペンパイナッポーアッポーペン","恋","ダンス","踊る"]
+
+select tokenize_ja_neologd("彼女はペンパイナッポーアッポーペンと恋ダンスを踊った。");
+> ["彼女","ペンパイナッポーアッポーペン","恋ダンス","踊る"]
+```
+
+You can print versions for Kuromoji UDFs as follows:
+
+```sql
+select tokenize_ja();
+> ["8.8.2"]
+
+select tokenize_ja_neologd();
+> ["8.8.2-20200910.2"]
+```
 
 Its basic usage is as follows:
+
 ```sql
 select tokenize_ja("kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。");
 ```
+
 > ["kuromoji","使う","分かち書き","テスト","第","二","引数","normal","search","extended","指定","デフォルト","normal","モード"]
 
 In addition, the third and fourth argument respectively allow you to use your own list of stop words and stop tags. For example, the following query simply ignores "kuromoji" (as a stop word) and noun word "分かち書き" (as a stop tag):
@@ -70,10 +88,10 @@ select tokenize_ja("kuromojiを使った分かち書きのテストです。", "
 
 `stoptags_exclude(array<string> tags, [, const string lang='ja'])` is a useful UDF for getting [stoptags](https://github.com/apache/lucene-solr/blob/master/lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis/ja/stoptags.txt) excluding given part-of-speech tags as seen below:
 
-
 ```sql
 select stoptags_exclude(array("名詞-固有名詞"));
 ```
+
 > ["その他","その他-間投","フィラー","副詞","副詞-一般","副詞-助詞類接続","助動詞","助詞","助詞-並立助詞"
 ,"助詞-係助詞","助詞-副助詞","助詞-副助詞／並立助詞／終助詞","助詞-副詞化","助詞-接続助詞","助詞-格助詞
 ","助詞-格助詞-一般","助詞-格助詞-引用","助詞-格助詞-連語","助詞-特殊","助詞-終助詞","助詞-連体化","助
@@ -106,15 +124,18 @@ If you have a large custom dictionary as an external file, `userDict` can also b
 ```sql
 select tokenize_ja("日本経済新聞＆関西国際空港", "normal", null, null,
                    "https://raw.githubusercontent.com/atilika/kuromoji/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt");
-```
 
 > ["日本","経済","新聞","関西","国際","空港"]
+```
 
-Dictionary SHOULD be accessible through http/https protocol. And, it SHOULD be compressed using gzip with `.gz` suffix because the maximum dictionary size is limited to 32MB and read timeout is set to 60 sec. Also, connection must be established in 10 sec.
-
-If you want to use HTTP Basic Authentication, please use the following form: `https://user:password@www.sitreurl.com/my_dict.txt.gz` (see Sec 3.1 of [rfc1738](https://www.ietf.org/rfc/rfc1738.txt))
+> #### Note
+> Dictionary SHOULD be accessible through http/https protocol. And, it SHOULD be compressed using gzip with `.gz` suffix because the maximum dictionary size is limited to 32MB and read timeout is set to 60 sec. Also, connection must be established in 10 sec.
+>
+> If you want to use HTTP Basic Authentication, please use the following form: `https://user:password@www.sitreurl.com/my_dict.txt.gz` (see Sec 3.1 of [rfc1738](https://www.ietf.org/rfc/rfc1738.txt))
 
 For detailed APIs, please refer Javadoc of [JapaneseAnalyzer](https://lucene.apache.org/core/5_3_1/analyzers-kuromoji/org/apache/lucene/analysis/ja/JapaneseAnalyzer.html) as well.
+
+
 
 ## Part-of-speech
 
