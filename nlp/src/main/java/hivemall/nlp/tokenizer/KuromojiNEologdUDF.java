@@ -175,7 +175,7 @@ public final class KuromojiNEologdUDF extends UDFWithOptions {
                 throw new HiveException("Failed to read tokenizer.properties");
             }
             return Collections.singletonList(
-                new Text(properties.getProperty("tokenizer_ja_neologd.version")));
+                new Text(properties.getProperty("tokenize_ja_neologd.version")));
         }
 
         if (_analyzer == null) {
