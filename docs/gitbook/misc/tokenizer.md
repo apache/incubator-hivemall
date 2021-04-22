@@ -174,14 +174,64 @@ Note that when `-pos` option is specified, `tokenize_ja` returns a struct record
 Chinese text tokenizer UDF uses [SmartChineseAnalyzer](https://lucene.apache.org/core/5_3_1/analyzers-smartcn/org/apache/lucene/analysis/cn/smart/SmartChineseAnalyzer.html). 
 
 The signature of the UDF is as follows:
+
 ```sql
 tokenize_cn(string line, optional const array<string> stopWords)
 ```
 
 Its basic usage is as follows:
+
 ```sql
 select tokenize_cn("Smartcn为Apache2.0协议的开源中文分词系统，Java语言编写，修改的中科院计算所ICTCLAS分词系统。");
-```
+
 > [smartcn, 为, apach, 2, 0, 协议, 的, 开源, 中文, 分词, 系统, java, 语言, 编写, 修改, 的, 中科院, 计算, 所, ictcla, 分词, 系统]
+```
 
 For detailed APIs, please refer Javadoc of [SmartChineseAnalyzer](https://lucene.apache.org/core/5_3_1/analyzers-smartcn/org/apache/lucene/analysis/cn/smart/SmartChineseAnalyzer.html) as well.
+
+## Korean Tokenizer
+
+Korean toknizer internally uses [lucene-analyzers-nori](analyzers-nori: Korean Morphological Analyzer) for tokenization.
+
+The signature of the UDF is as follows:
+
+```sql
+tokenize_ko(String line [,
+            const array<string> userDict,
+            const string mode = "discard",
+            const array<string> stopTags,
+            boolean outputUnknownUnigrams
+           ]) - returns tokenized strings in array<string>
+```
+
+> #### Note
+> For details options, please refer [Lucene API document](https://lucene.apache.org/core/8_8_2/analyzers-nori/org/apache/lucene/analysis/ko/KoreanAnalyzer.html). `none`, `discord` (default), or `mixed` are supported for the mode argument.
+
+See the following examples for the usage.
+
+```sql
+-- show version of lucene-analyzers-nori
+select tokenize_ko();
+> 8.8.2
+
+select tokenize_ko("소설 무궁화꽃이 피었습니다.");
+> ["소설","무궁","화","꽃","피"]
+
+select tokenize_ko("소설 무궁화꽃이 피었습니다.", null, "mixed");
+> ["소설","무궁화","무궁","화","꽃","피"]
+
+select tokenize_ko("소설 무궁화꽃이 피었습니다.", null, "discard", array("E", "VV"));
+> ["소설","무궁","화","꽃","이"]
+
+select tokenize_ko("Hello, world.", null, "none", array(), true);
+> ["h","e","l","l","o","w","o","r","l","d"]
+
+select tokenize_ko("Hello, world.", null, "none", array(), false);
+> ["hello","world"]
+
+select tokenize_ko("나는 C++ 언어를 프로그래밍 언어로 사랑한다.", null, "discard", array());
+> ["나","는","c","언어","를","프로그래밍","언어","로","사랑","하","ᆫ다"]
+
+select tokenize_ko("나는 C++ 언어를 프로그래밍 언어로 사랑한다.", array("C++"), "discard", array());
+> ["나","는","c++","언어","를","프로그래밍","언어","로","사랑","하","ᆫ다"]
+```

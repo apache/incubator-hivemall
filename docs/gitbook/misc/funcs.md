@@ -1075,6 +1075,14 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
   ```
 
+- `tokenize_ko(String line [, const array<string> userDict, const string mode = "discard", const array<string> stopTags, boolean outputUnknownUnigrams])` - returns tokenized strings in array&lt;string&gt;
+  ```sql
+  select tokenize_ko("소설 무궁화꽃이 피었습니다.");
+
+  > ["소설","무궁","화","꽃","피"]
+
+  ```
+
 # Others
 
 - `hivemall_version()` - Returns the version of Hivemall
