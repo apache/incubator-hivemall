@@ -915,6 +915,9 @@ CREATE FUNCTION tokenize_ja_neologd as 'hivemall.nlp.tokenizer.KuromojiNEologdUD
 DROP FUNCTION IF EXISTS tokenize_cn;
 CREATE FUNCTION tokenize_cn as 'hivemall.nlp.tokenizer.SmartcnUDF' USING JAR '${hivemall_jar}';
 
+DROP FUNCTION IF EXISTS tokenize_ko;
+CREATE FUNCTION tokenize_ko as 'hivemall.nlp.tokenizer.TokenizeKoUDF' USING JAR '${hivemall_jar}';
+
 DROP FUNCTION IF EXISTS stoptags_exclude;
 CREATE FUNCTION stoptags_exclude as 'hivemall.nlp.tokenizer.StoptagsExcludeUDF' USING JAR '${hivemall_jar}';
 

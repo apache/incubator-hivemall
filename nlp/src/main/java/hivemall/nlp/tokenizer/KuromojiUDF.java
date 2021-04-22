@@ -175,7 +175,7 @@ public final class KuromojiUDF extends UDFWithOptions {
                 throw new HiveException("Failed to read tokenizer.properties");
             }
             return Collections.singletonList(
-                new Text(properties.getProperty("tokenizer_ja.version")));
+                new Text(properties.getProperty("tokenize_ja.version")));
         }
 
         if (_analyzer == null) {

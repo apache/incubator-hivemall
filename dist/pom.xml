@@ -118,11 +118,12 @@
 									<include>com.clearspring.analytics:stream</include>
 									<!-- hivemall-nlp -->
 									<include>org.apache.hivemall:hivemall-nlp</include>
-									<include>org.apache.lucene:lucene-analyzers-kuromoji</include>
-									<include>org.apache.lucene:lucene-analyzers-smartcn</include>
-									<include>org.apache.lucene:lucene-analyzers-common</include>
 									<include>org.apache.lucene:lucene-core</include>
+									<include>org.apache.lucene:lucene-analyzers-common</include>
+									<include>org.apache.lucene:lucene-analyzers-kuromoji</include>
 									<include>io.github.myui:lucene-analyzers-kuromoji-neologd</include>
+									<include>org.apache.lucene:lucene-analyzers-smartcn</include>
+									<include>org.apache.lucene:lucene-analyzers-nori</include>
 									<!-- hivemall-xgboost -->
 									<include>org.apache.hivemall:hivemall-xgboost</include>
 									<include>io.github.myui:xgboost4j</include>
