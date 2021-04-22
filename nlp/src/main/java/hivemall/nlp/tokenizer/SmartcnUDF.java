@@ -24,7 +24,9 @@ import hivemall.utils.io.IOUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -38,10 +40,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Text;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.CharArraySet;
 
 @Description(name = "tokenize_cn", value = "_FUNC_(String line [, const list<string> stopWords])"
         + " - returns tokenized strings in array<string>")
@@ -55,7 +57,7 @@ public final class SmartcnUDF extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         final int arglen = arguments.length;
-        if (arglen < 1 || arglen > 2) {
+        if (arglen > 2) {
             throw new UDFArgumentException(
                 "Invalid number of arguments for `tokenize_cn`: " + arglen);
         }
@@ -69,6 +71,17 @@ public final class SmartcnUDF extends GenericUDF {
 
     @Override
     public List<Text> evaluate(DeferredObject[] arguments) throws HiveException {
+        if (arguments.length == 0) {
+            final Properties properties = new Properties();
+            try {
+                properties.load(this.getClass().getResourceAsStream("tokenizer.properties"));
+            } catch (IOException e) {
+                throw new HiveException("Failed to read tokenizer.properties");
+            }
+            return Collections.singletonList(
+                new Text(properties.getProperty("tokenize_cn.version")));
+        }
+
         SmartChineseAnalyzer analyzer = _analyzer;
         if (analyzer == null) {
             CharArraySet stopwords = stopWords(_stopWordsArray);

@@ -18,10 +18,10 @@
  */
 package hivemall.nlp.tokenizer;
 
+import hivemall.TestUtils;
+
 import java.io.IOException;
 import java.util.List;
-
-import hivemall.TestUtils;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -35,6 +35,16 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SmartcnUDFTest {
+
+    @Test
+    public void testNoArgument() throws IOException, HiveException {
+        GenericUDF udf = new SmartcnUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[0];
+        udf.initialize(argOIs);
+        Object result = udf.evaluate(new DeferredObject[0]);
+        Assert.assertNotNull(result);
+        udf.close();
+    }
 
     @Test
     public void testOneArgument() throws UDFArgumentException, IOException {
@@ -74,10 +84,11 @@ public class SmartcnUDFTest {
             }
 
             @Override
-            public void prepare(int arg) throws HiveException {}
+            public void prepare(int arg) throws HiveException {
+            }
         };
         List<Text> tokens = udf.evaluate(args);
-        Assert.assertNotNull(tokens);
+        Assert.assertTrue(tokens.size() >= 2);
         udf.close();
     }
 
@@ -99,9 +110,11 @@ public class SmartcnUDFTest {
             }
 
             @Override
-            public void prepare(int arg) throws HiveException {}
+            public void prepare(int arg) throws HiveException {
+            }
         };
         List<Text> tokens = udf.evaluate(args);
+        Assert.assertTrue(tokens.size() >= 2);
 
         // serialization after evaluation
         serialized = TestUtils.serializeObjectByKryo(udf);
