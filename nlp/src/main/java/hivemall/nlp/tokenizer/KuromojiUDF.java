@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -167,8 +168,14 @@ public final class KuromojiUDF extends UDFWithOptions {
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         if (arguments.length == 0) {
-            String version = JapaneseAnalyzer.class.getPackage().getImplementationVersion();
-            return Collections.singletonList(new Text(version));
+            final Properties properties = new Properties();
+            try {
+                properties.load(this.getClass().getResourceAsStream("tokenizer.properties"));
+            } catch (IOException e) {
+                throw new HiveException("Failed to read tokenizer.properties");
+            }
+            return Collections.singletonList(
+                new Text(properties.getProperty("tokenizer_ja.version")));
         }
 
         if (_analyzer == null) {
