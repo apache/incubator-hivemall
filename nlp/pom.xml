@@ -107,17 +107,23 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-analyzers-smartcn</artifactId>
-			<version>${lucene.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
 			<groupId>io.github.myui</groupId>
 			<artifactId>lucene-analyzers-kuromoji-neologd</artifactId>
 			<version>${lucene-analyzers-kuromoji-neologd.version}</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analyzers-smartcn</artifactId>
+			<version>${lucene.version}</version>
+			<scope>compile</scope>
+		</dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-nori</artifactId>
+            <version>${lucene.version}</version>
+            <scope>compile</scope>
+        </dependency>
 
 		<!-- test scope -->
 		<dependency>
@@ -135,6 +141,7 @@
 	</dependencies>
 
 	<build>
+		<!-- mvn resources:resources to process properties -->
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>
