@@ -1059,7 +1059,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
 - `tokenize_cn(String line [, const list<string> stopWords])` - returns tokenized strings in array&lt;string&gt;
 
-- `tokenize_ja(String line [, const string mode = "normal", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)`]) - returns tokenized strings in array&lt;string&gt;
+- `tokenize_ja(String line [, const string mode = "normal", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or const string userDictURL)`]) - returns tokenized strings in array&lt;string&gt;
   ```sql
   select tokenize_ja("kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。");
 
@@ -1067,7 +1067,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
   ```
 
-- `tokenize_ja_neologd(String line [, const string mode = "normal", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)`]) - returns tokenized strings in array&lt;string&gt;
+- `tokenize_ja_neologd(String line [, const string mode = "normal", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or const string userDictURL)`]) - returns tokenized strings in array&lt;string&gt;
   ```sql
   select tokenize_ja_neologd("kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。");
 
@@ -1075,7 +1075,7 @@ Reference: <a href="https://papers.nips.cc/paper/3848-adaptive-regularization-of
 
   ```
 
-- `tokenize_ko(String line [, const array<string> userDict, const string mode = "discard", const array<string> stopTags, boolean outputUnknownUnigrams])` - returns tokenized strings in array&lt;string&gt;
+- `tokenize_ko(String line [, const string mode = "discard" (or const string opts)`, const array&lt;string&gt; stopWords, const array&lt;string&gt; stopTags, const array&lt;string&gt; userDict (or const string userDictURL)]) - returns tokenized strings in array&lt;string&gt;
   ```sql
   select tokenize_ko("소설 무궁화꽃이 피었습니다.");
 
