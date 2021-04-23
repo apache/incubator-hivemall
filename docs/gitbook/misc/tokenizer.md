@@ -105,6 +105,8 @@ select stoptags_exclude(array("名詞-固有名詞"));
 詞-形容詞接続","接頭詞-数接","未知語","記号","記号-アルファベット","記号-一般","記号-句点","記号-括弧閉
 ","記号-括弧開","記号-空白","記号-読点","語断片","連体詞","非言語音"]
 
+### Custom dictionary
+
 Moreover, the fifth argument `userDict` enables you to register a user-defined custom dictionary in [Kuromoji official format](https://github.com/atilika/kuromoji/blob/909fd6b32bf4e9dc86b7599de5c9b50ca8f004a1/kuromoji-core/src/test/resources/userdict.txt):
 
 ```sql
@@ -136,8 +138,7 @@ select tokenize_ja("日本経済新聞＆関西国際空港", "normal", null, nu
 For detailed APIs, please refer Javadoc of [JapaneseAnalyzer](https://lucene.apache.org/core/5_3_1/analyzers-kuromoji/org/apache/lucene/analysis/ja/JapaneseAnalyzer.html) as well.
 
 
-
-## Part-of-speech
+### Part-of-speech
 
 From Hivemall v0.6.0, the second argument can also accept the following option format:
 
@@ -196,12 +197,32 @@ Korean toknizer internally uses [lucene-analyzers-nori](analyzers-nori: Korean M
 The signature of the UDF is as follows:
 
 ```sql
-tokenize_ko(String line [,
-            const array<string> userDict,
-            const string mode = "discard",
-            const array<string> stopTags,
-            boolean outputUnknownUnigrams
-           ]) - returns tokenized strings in array<string>
+tokenize_ko(
+       String line [, const string mode = "discard" (or const string opts),
+       const array<string> stopWords,
+       const array<string>
+       stopTags,
+       const array<string> userDict (or const string userDictURL)]
+) - returns tokenized strings in array<string> 
+```
+
+> #### Note
+> Instead of mode, the 2nd argument can take options starting with `-`.
+
+You can get usage as follows:
+
+```sql
+select tokenize_ko("", "-help");
+
+usage: tokenize_ko(String line [, const string mode = "discard" (or const
+       string opts), const array<string> stopWords, const array<string>
+       stopTags, const array<string> userDict (or const string
+       userDictURL)]) - returns tokenized strings in array<string> [-help]
+       [-mode <arg>] [-outputUnknownUnigrams]
+ -help                    Show function help
+ -mode <arg>              The tokenization mode. One of ['node', 'discard'
+                          (default), 'mixed']
+ -outputUnknownUnigrams   outputs unigrams for unknown words.
 ```
 
 > #### Note
@@ -214,24 +235,69 @@ See the following examples for the usage.
 select tokenize_ko();
 > 8.8.2
 
-select tokenize_ko("소설 무궁화꽃이 피었습니다.");
+select tokenize_ko('소설 무궁화꽃이 피었습니다.');
 > ["소설","무궁","화","꽃","피"]
 
-select tokenize_ko("소설 무궁화꽃이 피었습니다.", null, "mixed");
+select tokenize_ko('소설 무궁화꽃이 피었습니다.', '-mode discard');
+> ["소설","무궁","화","꽃","피"]
+
+select tokenize_ko('소설 무궁화꽃이 피었습니다.', 'mixed');
 > ["소설","무궁화","무궁","화","꽃","피"]
 
-select tokenize_ko("소설 무궁화꽃이 피었습니다.", null, "discard", array("E", "VV"));
-> ["소설","무궁","화","꽃","이"]
+select tokenize_ko('소설 무궁화꽃이 피었습니다.', '-mode mixed');
+> ["소설","무궁화","무궁","화","꽃","피"]
 
-select tokenize_ko("Hello, world.", null, "none", array(), true);
-> ["h","e","l","l","o","w","o","r","l","d"]
+select tokenize_ko('소설 무궁화꽃이 피었습니다.', '-mode none');
+> ["소설","무궁화","꽃","피"]
 
-select tokenize_ko("Hello, world.", null, "none", array(), false);
+select tokenize_ko('Hello, world.', '-mode none');
 > ["hello","world"]
 
-select tokenize_ko("나는 C++ 언어를 프로그래밍 언어로 사랑한다.", null, "discard", array());
+select tokenize_ko('Hello, world.', '-mode none -outputUnknownUnigrams');
+> ["h","e","l","l","o","w","o","r","l","d"]
+
+-- default stopward (null), with stoptags
+select tokenize_ko('소설 무궁화꽃이 피었습니다.', 'discard', null, array('E'));
+> ["소설","무궁","화","꽃","이","피"]
+
+select tokenize_ko('소설 무궁화꽃이 피었습니다.', 'discard', null, array('E', 'VV'));
+> ["소설","무궁","화","꽃","이"]
+
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard');
+> ["나","c","언어","프로그래밍","언어","사랑"]
+
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard', array(), null);
 > ["나","는","c","언어","를","프로그래밍","언어","로","사랑","하","ᆫ다"]
 
-select tokenize_ko("나는 C++ 언어를 프로그래밍 언어로 사랑한다.", array("C++"), "discard", array());
+-- default stopward (null), default stoptags (null)
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard');
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard', null, null);
+> ["나","c","언어","프로그래밍","언어","사랑"]
+
+-- no stopward (empty array), default stoptags (null)
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard', array());
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard', array(), null);
+> ["나","c","언어","프로그래밍","언어","사랑"]
+
+-- no stopward (empty array), no stoptags (emptry array), custom dict
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard', array(), array(), array('C++'));
 > ["나","는","c++","언어","를","프로그래밍","언어","로","사랑","하","ᆫ다"]
+
+> -- default stopward (null), default stoptags (null), custom dict
+select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard', null, null, array('C++'));
+> ["나","c++","언어","프로그래밍","언어","사랑"]
 ```
+
+### Custom dictionary
+
+Moreover, the fifth argument `userDictURL` enables you to register a user-defined custom dictionary placed in http/https accessible external site. Find the dictionary format [here from Lucene's one](https://raw.githubusercontent.com/apache/lucene/main/lucene/analysis/nori/src/test/org/apache/lucene/analysis/ko/userdict.txt).
+
+
+```sql
+select tokenize_ko('나는 c++ 프로그래밍을 즐긴다.', '-mode discard', null, null, 'https://raw.githubusercontent.com/apache/lucene/main/lucene/analysis/nori/src/test/org/apache/lucene/analysis/ko/userdict.txt');
+
+> ["나","c++","프로그래밍","즐기"]
+```
+
+> #### Note
+> Dictionary SHOULD be accessible through http/https protocol. And, it SHOULD be compressed using gzip with `.gz` suffix because the maximum dictionary size is limited to 32MB and read timeout is set to 60 sec. Also, connection must be established in 10 sec.
