@@ -66,7 +66,7 @@ import org.apache.lucene.analysis.ja.neologd.tokenattributes.PartOfSpeechAttribu
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 @Description(name = "tokenize_ja_neologd",
-        value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or string userDictURL)])"
+        value = "_FUNC_(String line [, const string mode = \"normal\", const array<string> stopWords, const array<string> stopTags, const array<string> userDict (or const string userDictURL)])"
                 + " - returns tokenized strings in array<string>",
         extended = "select tokenize_ja_neologd(\"kuromojiを使った分かち書きのテストです。第二引数にはnormal/search/extendedを指定できます。デフォルトではnormalモードです。\");\n"
                 + "\n"
@@ -274,13 +274,15 @@ public final class KuromojiNEologdUDF extends UDFWithOptions {
     @Nonnull
     private static CharArraySet stopWords(@Nullable final String[] array)
             throws UDFArgumentException {
+        CharArraySet stopWords = JapaneseAnalyzer.getDefaultStopSet();
         if (array == null) {
-            return JapaneseAnalyzer.getDefaultStopSet();
+            return stopWords;
         }
         if (array.length == 0) {
             return CharArraySet.EMPTY_SET;
         }
-        return new CharArraySet(Arrays.asList(array), /* ignoreCase */true);
+        stopWords.addAll(Arrays.asList(array));
+        return stopWords;
     }
 
     @Nonnull
@@ -311,6 +313,9 @@ public final class KuromojiNEologdUDF extends UDFWithOptions {
     private static UserDictionary userDictionary(@Nullable final String[] userDictArray)
             throws UDFArgumentException {
         if (userDictArray == null) {
+            return null;
+        }
+        if (userDictArray.length == 0) {
             return null;
         }
 

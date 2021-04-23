@@ -296,6 +296,14 @@ For details, see http://fontawesome.io/
 
        src/site/resources/LICENSE-font_awesome-css.txt
 
+This product bundles collection of stopwords for Korean language
+which is licensed under the MIT license, specifically for tokenize_ko UDF.
+For details, see https://github.com/stopwords-iso/stopwords-ko
+
+   You can find a copy of the License at
+
+        nlp/src/main/resources/META-INF/LICENSE-stopwords-ko.txt
+
 ---------------------------------------------------------------------------
  The SIL Open Font License (https://opensource.org/licenses/OFL-1.1)
 ---------------------------------------------------------------------------
