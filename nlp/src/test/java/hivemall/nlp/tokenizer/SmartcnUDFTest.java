@@ -84,8 +84,7 @@ public class SmartcnUDFTest {
             }
 
             @Override
-            public void prepare(int arg) throws HiveException {
-            }
+            public void prepare(int arg) throws HiveException {}
         };
         List<Text> tokens = udf.evaluate(args);
         Assert.assertTrue(tokens.size() >= 2);
@@ -110,8 +109,7 @@ public class SmartcnUDFTest {
             }
 
             @Override
-            public void prepare(int arg) throws HiveException {
-            }
+            public void prepare(int arg) throws HiveException {}
         };
         List<Text> tokens = udf.evaluate(args);
         Assert.assertTrue(tokens.size() >= 2);
