@@ -274,13 +274,15 @@ public final class KuromojiUDF extends UDFWithOptions {
     @Nonnull
     private static CharArraySet stopWords(@Nullable final String[] array)
             throws UDFArgumentException {
+        CharArraySet stopWords = JapaneseAnalyzer.getDefaultStopSet();
         if (array == null) {
-            return JapaneseAnalyzer.getDefaultStopSet();
+            return stopWords;
         }
         if (array.length == 0) {
-            return CharArraySet.EMPTY_SET;
+            return stopWords;
         }
-        return new CharArraySet(Arrays.asList(array), /* ignoreCase */true);
+        stopWords.addAll(Arrays.asList(array));
+        return stopWords;
     }
 
     @Nonnull

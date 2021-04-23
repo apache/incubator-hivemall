@@ -119,14 +119,15 @@ public final class SmartcnUDF extends GenericUDF {
     @Nonnull
     private static CharArraySet stopWords(@Nullable final String[] array)
             throws UDFArgumentException {
+        CharArraySet stopWords = SmartChineseAnalyzer.getDefaultStopSet();
         if (array == null) {
-            return SmartChineseAnalyzer.getDefaultStopSet();
+            return stopWords;
         }
         if (array.length == 0) {
-            return CharArraySet.EMPTY_SET;
+            return stopWords;
         }
-        CharArraySet results = new CharArraySet(Arrays.asList(array), true /* ignoreCase */);
-        return results;
+        stopWords.addAll(Arrays.asList(array));
+        return stopWords;
     }
 
     private static void analyzeTokens(@Nonnull TokenStream stream, @Nonnull List<Text> results)
