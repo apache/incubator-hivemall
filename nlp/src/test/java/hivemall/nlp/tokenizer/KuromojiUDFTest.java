@@ -63,6 +63,24 @@ public class KuromojiUDFTest {
         udf.close();
     }
 
+
+    @Test
+    public void testShowHelp() throws IOException {
+        GenericUDF udf = new KuromojiUDF();
+        ObjectInspector[] argOIs = new ObjectInspector[2];
+        argOIs[0] = PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+        argOIs[1] = HiveUtils.getConstStringObjectInspector("-help");
+        try {
+            udf.initialize(argOIs);
+            Assert.fail("should not reach here");
+        } catch (UDFArgumentException e) {
+            String errmsg = e.getMessage();
+            Assert.assertTrue(errmsg.contains("usage:"));
+        } finally {
+            udf.close();
+        }
+    }
+
     @Test
     public void testTwoArgument() throws UDFArgumentException, IOException {
         GenericUDF udf = new KuromojiUDF();
