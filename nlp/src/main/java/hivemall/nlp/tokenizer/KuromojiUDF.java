@@ -315,6 +315,9 @@ public final class KuromojiUDF extends UDFWithOptions {
         if (userDictArray == null) {
             return null;
         }
+        if (userDictArray.length == 0) {
+            return null;
+        }
 
         final StringBuilder builder = new StringBuilder();
         for (String row : userDictArray) {
