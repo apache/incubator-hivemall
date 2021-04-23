@@ -279,7 +279,7 @@ public final class KuromojiUDF extends UDFWithOptions {
             return stopWords;
         }
         if (array.length == 0) {
-            return stopWords;
+            return CharArraySet.EMPTY_SET;
         }
         stopWords.addAll(Arrays.asList(array));
         return stopWords;

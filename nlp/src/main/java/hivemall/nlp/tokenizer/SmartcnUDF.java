@@ -124,7 +124,7 @@ public final class SmartcnUDF extends GenericUDF {
             return stopWords;
         }
         if (array.length == 0) {
-            return stopWords;
+            return CharArraySet.EMPTY_SET;
         }
         stopWords.addAll(Arrays.asList(array));
         return stopWords;
