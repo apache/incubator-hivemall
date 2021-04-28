@@ -477,6 +477,8 @@ svn add 0.5.0-incubating/
 svn commit -m "Put hivemall version 0.5.0-incubating release artifacts"
 ```
 
+*Note:* old releases are [automatically archived](https://archive.apache.org/dist/incubator/) and to needed to be removed from [dist](https://archive.apache.org/dist/incubator/hivemall/).
+
 Check release artifacts in the SVN repository:
  [https://dist.apache.org/repos/dist/release/incubator/hivemall/0.5.0-incubating/](https://dist.apache.org/repos/dist/release/incubator/hivemall/0.5.0-incubating/) 
  ([Mirror](https://www.apache.org/dyn/closer.cgi/incubator/hivemall))
