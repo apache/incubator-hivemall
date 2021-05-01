@@ -32,6 +32,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hive.com.esotericsoftware.kryo.Kryo;
 import org.apache.hive.com.esotericsoftware.kryo.io.Input;
 import org.apache.hive.com.esotericsoftware.kryo.io.Output;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 public final class TestUtils {
 
@@ -50,6 +51,9 @@ public final class TestUtils {
         // serialization after initialization
         byte[] serialized = serializeObjectByKryo(udf);
         deserializeObjectByKryo(serialized, clazz);
+
+        byte[] serialized2 = serializeObjectByOriginalKryo(udf);
+        deserializeObjectByOriginalKryo(serialized2, clazz);
 
         int size = row.length;
         GenericUDF.DeferredObject[] rowDeferred = new GenericUDF.DeferredObject[size];
@@ -82,6 +86,9 @@ public final class TestUtils {
         byte[] serialized = serializeObjectByKryo(udtf);
         deserializeObjectByKryo(serialized, clazz);
 
+        byte[] serialized2 = serializeObjectByOriginalKryo(udtf);
+        deserializeObjectByOriginalKryo(serialized2, clazz);
+
         udtf.setCollector(new Collector() {
             public void collect(Object input) throws HiveException {
                 // noop
@@ -99,9 +106,12 @@ public final class TestUtils {
         udtf.close();
     }
 
+    // -------------------------------
+    // Hive version of Kryo
+
     @Nonnull
     public static byte[] serializeObjectByKryo(@Nonnull Object obj) {
-        Kryo kryo = getKryo();
+        Kryo kryo = getHiveKryo();
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         Output output = new Output(bos);
         kryo.writeObject(output, obj);
@@ -111,7 +121,7 @@ public final class TestUtils {
 
     @Nonnull
     public static <T> T deserializeObjectByKryo(@Nonnull byte[] in, @Nonnull Class<T> clazz) {
-        Kryo kryo = getKryo();
+        Kryo kryo = getHiveKryo();
         Input inp = new Input(in);
         T t = kryo.readObject(inp, clazz);
         inp.close();
@@ -119,8 +129,40 @@ public final class TestUtils {
     }
 
     @Nonnull
-    private static Kryo getKryo() {
+    private static Kryo getHiveKryo() {
         return Utilities.runtimeSerializationKryo.get();
+    }
+
+    // -------------------------------
+    // esotericsoftware's original version of Kryo
+
+    @Nonnull
+    public static byte[] serializeObjectByOriginalKryo(@Nonnull Object obj) {
+        com.esotericsoftware.kryo.Kryo kryo = getOriginalKryo();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        com.esotericsoftware.kryo.io.Output output = new com.esotericsoftware.kryo.io.Output(bos);
+        kryo.writeObject(output, obj);
+        output.close();
+        return bos.toByteArray();
+    }
+
+    @Nonnull
+    public static <T> T deserializeObjectByOriginalKryo(@Nonnull byte[] in,
+            @Nonnull Class<T> clazz) {
+        com.esotericsoftware.kryo.Kryo kryo = getOriginalKryo();
+        com.esotericsoftware.kryo.io.Input inp = new com.esotericsoftware.kryo.io.Input(in);
+        T t = kryo.readObject(inp, clazz);
+        inp.close();
+        return t;
+    }
+
+    @Nonnull
+    private static com.esotericsoftware.kryo.Kryo getOriginalKryo() {
+        com.esotericsoftware.kryo.Kryo kryo = new com.esotericsoftware.kryo.Kryo();
+        // kryo.setReferences(true);
+        // kryo.setRegistrationRequired(false);
+        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+        return kryo;
     }
 
 }
