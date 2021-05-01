@@ -49,8 +49,8 @@ public final class TestUtils {
         udf.initialize(ois);
 
         // serialization after initialization
-        byte[] serialized = serializeObjectByKryo(udf);
-        deserializeObjectByKryo(serialized, clazz);
+        byte[] serialized1 = serializeObjectByKryo(udf);
+        deserializeObjectByKryo(serialized1, clazz);
 
         byte[] serialized2 = serializeObjectByOriginalKryo(udf);
         deserializeObjectByOriginalKryo(serialized2, clazz);
@@ -64,8 +64,11 @@ public final class TestUtils {
         udf.evaluate(rowDeferred);
 
         // serialization after evaluating row
-        serialized = serializeObjectByKryo(udf);
-        TestUtils.deserializeObjectByKryo(serialized, clazz);
+        serialized1 = serializeObjectByKryo(udf);
+        TestUtils.deserializeObjectByKryo(serialized1, clazz);
+
+        serialized2 = serializeObjectByOriginalKryo(udf);
+        TestUtils.deserializeObjectByOriginalKryo(serialized2, clazz);
 
         udf.close();
     }
