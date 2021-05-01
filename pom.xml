@@ -272,7 +272,7 @@
 		<maven-enforcer.requireMavenVersion>[3.3.1,)</maven-enforcer.requireMavenVersion>
 		<surefire.version>2.19.1</surefire.version>
 		<netty.version>4.1.42.Final</netty.version>
-		<kryo.version>2.21</kryo.version>
+		<kryo.version>2.24.0</kryo.version>
 	</properties>
 
 	<distributionManagement>
