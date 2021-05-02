@@ -162,9 +162,14 @@ public final class TestUtils {
     @Nonnull
     private static com.esotericsoftware.kryo.Kryo getOriginalKryo() {
         com.esotericsoftware.kryo.Kryo kryo = new com.esotericsoftware.kryo.Kryo();
+
         // kryo.setReferences(true);
         // kryo.setRegistrationRequired(false);
-        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+
+        // see https://stackoverflow.com/a/23962797/5332768
+        ((com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy) kryo.getInstantiatorStrategy()).setFallbackInstantiatorStrategy(
+            new StdInstantiatorStrategy());
+
         return kryo;
     }
 
