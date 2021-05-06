@@ -60,7 +60,9 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
         value = "_FUNC_(Float Wj, array<float> Vjf, float Xj) - Returns a prediction value in Double")
 public final class FMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
-    private FMPredictGenericUDAF() {}
+    public FMPredictGenericUDAF() {
+        super();
+    }
 
     @Override
     public Evaluator getEvaluator(TypeInfo[] typeInfo) throws SemanticException {
