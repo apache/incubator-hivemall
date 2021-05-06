@@ -49,7 +49,9 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
                 + " - Returns a prediction value in Double")
 public final class FFMPredictGenericUDAF extends AbstractGenericUDAFResolver {
 
-    private FFMPredictGenericUDAF() {}
+    public FFMPredictGenericUDAF() {
+        super();
+    }
 
     @Override
     public Evaluator getEvaluator(@Nonnull TypeInfo[] typeInfo) throws SemanticException {
