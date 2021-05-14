@@ -398,9 +398,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION train_adadelta_regr AS 'hivemall.regre
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS float_array")
 sqlContext.sql("CREATE TEMPORARY FUNCTION float_array AS 'hivemall.tools.array.AllocFloatArrayUDF'")
 
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_remove")
-sqlContext.sql("CREATE TEMPORARY FUNCTION array_remove AS 'hivemall.tools.array.ArrayRemoveUDF'")
-
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sort_and_uniq_array")
 sqlContext.sql("CREATE TEMPORARY FUNCTION sort_and_uniq_array AS 'hivemall.tools.array.SortAndUniqArrayUDF'")
 
@@ -428,20 +425,11 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION array_sum AS 'hivemall.tools.array.Arr
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_string_array")
 sqlContext.sql("CREATE TEMPORARY FUNCTION to_string_array AS 'hivemall.tools.array.ToStringArrayUDF'")
 
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_intersect")
-sqlContext.sql("CREATE TEMPORARY FUNCTION array_intersect AS 'hivemall.tools.array.ArrayIntersectUDF'")
-
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS select_k_best")
 sqlContext.sql("CREATE TEMPORARY FUNCTION select_k_best AS 'hivemall.tools.array.SelectKBestUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_append")
 sqlContext.sql("CREATE TEMPORARY FUNCTION array_append AS 'hivemall.tools.array.ArrayAppendUDF'")
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS element_at")
-sqlContext.sql("CREATE TEMPORARY FUNCTION element_at AS 'hivemall.tools.array.ArrayElementAtUDF'")
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS array_union")
-sqlContext.sql("CREATE TEMPORARY FUNCTION array_union AS 'hivemall.tools.array.ArrayUnionUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS first_element")
 sqlContext.sql("CREATE TEMPORARY FUNCTION first_element AS 'hivemall.tools.array.FirstElementUDF'")
@@ -583,24 +571,11 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS rowid")
 sqlContext.sql("CREATE TEMPORARY FUNCTION rowid AS 'hivemall.tools.mapred.RowIdUDFWrapper'")
 
 /**
- * JSON functions
- */
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS to_json")
-sqlContext.sql("CREATE TEMPORARY FUNCTION to_json AS 'hivemall.tools.json.ToJsonUDF'")
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS from_json")
-sqlContext.sql("CREATE TEMPORARY FUNCTION from_json AS 'hivemall.tools.json.FromJsonUDF'")
-
-/**
  * Sanity Check functions
  */
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS assert")
 sqlContext.sql("CREATE TEMPORARY FUNCTION assert AS 'hivemall.tools.sanity.AssertUDF'")
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS raise_error")
-sqlContext.sql("CREATE TEMPORARY FUNCTION raise_error AS 'hivemall.tools.sanity.RaiseErrorUDF'")
 
 /**
  * MISC functions
@@ -839,13 +814,6 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_slim")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_slim AS 'hivemall.recommend.SlimUDTF'")
 
 /**
- * Data Sketch
- */
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS approx_count_distinct")
-sqlContext.sql("CREATE TEMPORARY FUNCTION approx_count_distinct AS 'hivemall.sketch.hll.ApproxCountDistinctUDAF'")
-
-/**
  * Bloom Filter
  */
 
@@ -870,12 +838,6 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION bloom_contains_any AS 'hivemall.sketch
 /**
  * Aggregation
  */
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS max_by")
-sqlContext.sql("CREATE TEMPORARY FUNCTION max_by AS 'hivemall.tools.aggr.MaxByUDAF'")
-
-sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS min_by")
-sqlContext.sql("CREATE TEMPORARY FUNCTION min_by AS 'hivemall.tools.aggr.MinByUDAF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS majority_vote")
 sqlContext.sql("CREATE TEMPORARY FUNCTION majority_vote AS 'hivemall.tools.aggr.MajorityVoteUDAF'")
@@ -910,7 +872,7 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS train_xgboost")
 sqlContext.sql("CREATE TEMPORARY FUNCTION train_xgboost AS 'hivemall.xgboost.XGBoostTrainUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS xgboost_predict")
-sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_predict AS 'hivemall.xgboost.XGBoostOnlinePredictUDTFF'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_predict AS 'hivemall.xgboost.XGBoostOnlinePredictUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS xgboost_batch_predict")
 sqlContext.sql("CREATE TEMPORARY FUNCTION xgboost_batch_predict AS 'hivemall.xgboost.XGBoostBatchPredictUDTF'")
