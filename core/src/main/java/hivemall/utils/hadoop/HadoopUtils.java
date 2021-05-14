@@ -27,6 +27,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -138,7 +140,12 @@ public final class HadoopUtils {
     public static int getTaskId() {
         MapredContext ctx = MapredContextAccessor.get();
         if (ctx == null) {
-            throw new IllegalStateException("MapredContext is not set");
+            final int sparkTaskId = getSparkTaskId(-1);
+            if (sparkTaskId != -1) {
+                return sparkTaskId;
+            }
+            throw new IllegalStateException(
+                "Both hive.ql.exec.MapredContext and spark.TaskContext is not set");
         }
         JobConf jobconf = ctx.getJobConf();
         if (jobconf == null) {
@@ -173,6 +180,46 @@ public final class HadoopUtils {
             }
         }
         return taskid;
+    }
+
+    /**
+     * @return org.apache.spark.TaskContext.get().partitionId()
+     */
+    public static int getSparkTaskId(final int defaultValue) {
+        final Class<?> clazz;
+        try {
+            clazz = Class.forName("org.apache.spark.TaskContext");
+        } catch (ClassNotFoundException e) {
+            return defaultValue;
+        }
+        final Method getMethod;
+        try {
+            getMethod = clazz.getDeclaredMethod("get");
+        } catch (NoSuchMethodException | SecurityException e) {
+            return defaultValue;
+        }
+        final Object taskContextInstance;
+        try {
+            taskContextInstance = getMethod.invoke(null);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            return defaultValue;
+        }
+        final Method partitionIdMethod;
+        try {
+            partitionIdMethod = clazz.getDeclaredMethod("partitionId");
+        } catch (NoSuchMethodException | SecurityException e) {
+            return defaultValue;
+        }
+        final Object result;
+        try {
+            result = partitionIdMethod.invoke(taskContextInstance);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            return defaultValue;
+        }
+        if (result != null && result instanceof Integer) {
+            return ((Integer) result).intValue();
+        }
+        return defaultValue;
     }
 
     public static String getUniqueTaskIdString() {
