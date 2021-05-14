@@ -139,7 +139,7 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION minkowski_distance AS 'hivemall.knn.di
  */
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS minhashes")
-sqlContext.sql("CREATE TEMPORARY FUNCTION minhashes AS 'hivemall.knn.lsh.MinHashesUDFWrapper'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION minhashes AS 'hivemall.knn.lsh.MinHashesUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS minhash")
 sqlContext.sql("CREATE TEMPORARY FUNCTION minhash AS 'hivemall.knn.lsh.MinHashUDTF'")
@@ -239,16 +239,16 @@ sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS rand_amplify")
 sqlContext.sql("CREATE TEMPORARY FUNCTION rand_amplify AS 'hivemall.ftvec.amplify.RandomAmplifierUDTF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS add_bias")
-sqlContext.sql("CREATE TEMPORARY FUNCTION add_bias AS 'hivemall.ftvec.AddBiasUDFWrapper'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION add_bias AS 'hivemall.ftvec.AddBiasUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS sort_by_feature")
 sqlContext.sql("CREATE TEMPORARY FUNCTION sort_by_feature AS 'hivemall.ftvec.SortByFeatureUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS extract_feature")
-sqlContext.sql("CREATE TEMPORARY FUNCTION extract_feature AS 'hivemall.ftvec.ExtractFeatureUDFWrapper'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION extract_feature AS 'hivemall.ftvec.ExtractFeatureUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS extract_weight")
-sqlContext.sql("CREATE TEMPORARY FUNCTION extract_weight AS 'hivemall.ftvec.ExtractWeightUDFWrapper'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION extract_weight AS 'hivemall.ftvec.ExtractWeightUDF'")
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS add_feature_index")
 sqlContext.sql("CREATE TEMPORARY FUNCTION add_feature_index AS 'hivemall.ftvec.AddFeatureIndexUDF'")
