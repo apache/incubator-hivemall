@@ -49,5 +49,5 @@ You find available Hivemall versions on [Maven repository](https://mvnrepository
 Then, you load scripts for Hivemall functions.
 
 ```
-scala> :load resources/ddl/define-all.spark
+scala> :load ~/workspace/incubator-hivemall/resources/ddl/define-all.spark
 ```
