@@ -192,7 +192,7 @@ For detailed APIs, please refer Javadoc of [SmartChineseAnalyzer](https://lucene
 
 ## Korean Tokenizer
 
-Korean toknizer internally uses [lucene-analyzers-nori](analyzers-nori: Korean Morphological Analyzer) for tokenization.
+Korean toknizer internally uses [lucene-analyzers-nori](https://www.slideshare.net/elasticsearch/nori-the-official-elasticsearch-plugin-for-korean-language-analysis) for tokenization.
 
 The signature of the UDF is as follows:
 
