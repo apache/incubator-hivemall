@@ -22,7 +22,7 @@ Prerequisites
 
 * Spark v2.2 or later
 * Java 8 or later
-* `hivemall-all-<version>.jar` that can be found in [Maven central](https://search.maven.org/search?q=a:hivemall-all).
+* `hivemall-all-<version>.jar` that can be found in [Maven central](https://search.maven.org/search?q=a:hivemall-all) (or use packages built by `bin/build.sh`).
 * [define-all.spark](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/define-all.spark)
 
 Installation
