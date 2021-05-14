@@ -567,8 +567,14 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION vector_dot AS 'hivemall.tools.vector.V
  * MAPRED functions
  */
 
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS taskid")
+sqlContext.sql("CREATE TEMPORARY FUNCTION taskid AS 'hivemall.tools.mapred.TaskIdUDF'")
+
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS rowid")
-sqlContext.sql("CREATE TEMPORARY FUNCTION rowid AS 'hivemall.tools.mapred.RowIdUDFWrapper'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION rowid AS 'hivemall.tools.mapred.RowIdUDF'")
+
+sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS rownum")
+sqlContext.sql("CREATE TEMPORARY FUNCTION rownum AS 'hivemall.tools.mapred.RowNumberUDF'")
 
 /**
  * Sanity Check functions
@@ -638,7 +644,7 @@ sqlContext.sql("CREATE TEMPORARY FUNCTION str_contains AS 'hivemall.tools.string
  */
 
 sqlContext.sql("DROP TEMPORARY FUNCTION IF EXISTS lr_datagen")
-sqlContext.sql("CREATE TEMPORARY FUNCTION lr_datagen AS 'hivemall.dataset.LogisticRegressionDataGeneratorUDTFWrapper'")
+sqlContext.sql("CREATE TEMPORARY FUNCTION lr_datagen AS 'hivemall.dataset.LogisticRegressionDataGeneratorUDTF'")
 
 /**
  * Evaluating functions
