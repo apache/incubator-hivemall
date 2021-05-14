@@ -235,33 +235,93 @@ See the following examples for the usage.
 select tokenize_ko();
 > 8.8.2
 
-select tokenize_ko('소설 무궁화꽃이 피었습니다.');
-> ["소설","무궁","화","꽃","피"]
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!');
+> ["중요","기능","개발","주","고맙"]
 
-select tokenize_ko('소설 무궁화꽃이 피었습니다.', '-mode discard');
-> ["소설","무궁","화","꽃","피"]
+-- explicitly using default options
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!', '-mode discard', 
+  -- stopwords (null to use default)
+  -- see https://github.com/apache/incubator-hivemall/blob/master/nlp/src/main/resources/hivemall/nlp/tokenizer/ext/stopwords-ko.txt 
+  null, 
+  -- stoptags
+  -- see https://lucene.apache.org/core/8_8_2/analyzers-nori/org/apache/lucene/analysis/ko/POS.Tag.html
+  array(
+   'E',   -- Verbal endings
+   'IC',  -- Interjection
+   'J',   -- Ending Particle
+   'MAG', -- General Adverb
+   'MAJ', -- Conjunctive adverb
+   'MM',  -- Determiner
+   'SP',  -- Space 
+   'SSC', -- Closing brackets
+   'SSO', -- Opening brackets
+   'SC',  -- Separator
+   'SE',  -- Ellipsis
+   'XPN', -- Prefix
+   'XSA', -- Adjective Suffix
+   'XSN', -- Noun Suffix
+   'XSV', -- Verb Suffix
+   'UNA', -- Unknown
+   'NA',  -- Unknown
+   'VSV'  -- Unknown
+  )
+);
+> ["중요","기능","개발","주","고맙"]
 
-select tokenize_ko('소설 무궁화꽃이 피었습니다.', 'mixed');
-> ["소설","무궁화","무궁","화","꽃","피"]
+-- None mode, without General Adverb (MAG)
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!', 
+  -- No decomposition for compound.
+  '-mode none', 
+  -- stopwords (null to use default)
+  null, 
+  array(
+   'E',   -- Verbal endings
+   'IC',  -- Interjection
+   'J',   -- Ending Particle
+   -- 'MAG', -- General Adverb
+   'MAJ', -- Conjunctive adverb
+   'MM',  -- Determiner
+   'SP',  -- Space 
+   'SSC', -- Closing brackets
+   'SSO', -- Opening brackets
+   'SC',  -- Separator
+   'SE',  -- Ellipsis
+   'XPN', -- Prefix
+   'XSA', -- Adjective Suffix
+   'XSN', -- Noun Suffix
+   'XSV', -- Verb Suffix
+   'UNA', -- Unknown
+   'NA',  -- Unknown
+   'VSV'  -- Unknown
+  )
+);
+> ["중요","기능","개발","줘서","정말","고마워요"]
 
-select tokenize_ko('소설 무궁화꽃이 피었습니다.', '-mode mixed');
-> ["소설","무궁화","무궁","화","꽃","피"]
+-- discard mode: Decompose compounds and discards the original form (default).
+-- https://lucene.apache.org/core/8_8_2/analyzers-nori/org/apache/lucene/analysis/ko/KoreanTokenizer.DecompoundMode.html
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!', '-mode discard');
+> ["중요","기능","개발","주","고맙"]
 
-select tokenize_ko('소설 무궁화꽃이 피었습니다.', '-mode none');
-> ["소설","무궁화","꽃","피"]
+-- default stopward (null), with stoptags
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!', '-mode discard', null, array('E', 'VV'));
+> ["중요","하","새","기능","을","개발","하","주","정말","고맙"]
+
+-- mixed mode: Decompose compounds and keeps the original form.
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!', 'mixed');
+> ["중요","기능","개발","줘서","주","고마워요","고맙"]
+
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!', '-mode mixed');
+> ["중요","기능","개발","줘서","주","고마워요","고맙"]
+
+-- node mode: No decomposition for compound.
+select tokenize_ko('중요한 새 기능을 개발해줘서 정말 고마워요!', '-mode none');
+> ["중요","기능","개발","줘서","고마워요"]
 
 select tokenize_ko('Hello, world.', '-mode none');
 > ["hello","world"]
 
 select tokenize_ko('Hello, world.', '-mode none -outputUnknownUnigrams');
 > ["h","e","l","l","o","w","o","r","l","d"]
-
--- default stopward (null), with stoptags
-select tokenize_ko('소설 무궁화꽃이 피었습니다.', 'discard', null, array('E'));
-> ["소설","무궁","화","꽃","이","피"]
-
-select tokenize_ko('소설 무궁화꽃이 피었습니다.', 'discard', null, array('E', 'VV'));
-> ["소설","무궁","화","꽃","이"]
 
 select tokenize_ko('나는 C++ 언어를 프로그래밍 언어로 사랑한다.', '-mode discard');
 > ["나","c","언어","프로그래밍","언어","사랑"]
