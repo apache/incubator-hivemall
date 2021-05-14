@@ -20,9 +20,9 @@
 Prerequisites
 ============
 
-* Spark v2.1 or later
-* Java 7 or later
-* `hivemall-spark-xxx-with-dependencies.jar` that can be found in [the ASF distribution mirror](https://www.apache.org/dyn/closer.cgi/incubator/hivemall/).
+* Spark v2.2 or later
+* Java 8 or later
+* `hivemall-all-<version>.jar` that can be found in [Maven central](https://search.maven.org/search?q=a:hivemall-all) (or use packages built by `bin/build.sh`).
 * [define-all.spark](https://github.com/apache/incubator-hivemall/blob/master/resources/ddl/define-all.spark)
 
 Installation
@@ -43,15 +43,11 @@ In another way to install Hivemall, you can use a `--packages` option.
 $ spark-shell --packages org.apache.hivemall:hivemall-all:<version>
 ```
 
-You find available Hivemall versions on [Maven repository](https://mvnrepository.com/artifact/org.apache.hivemall/hivemall-all/0.5.2-incubating).
+You find available Hivemall versions on [Maven repository](https://mvnrepository.com/artifact/org.apache.hivemall/hivemall-all/).
 
-
-> #### Notice
-> If you would like to try Hivemall functions on the latest release of Spark, you just say `bin/spark-shell` in a Hivemall package.
-> This command automatically downloads the latest Spark version, compiles Hivemall for the version, and invokes spark-shell with the compiled Hivemall binary.
 
 Then, you load scripts for Hivemall functions.
 
 ```
-scala> :load resources/ddl/define-all.spark
+scala> :load ~/workspace/incubator-hivemall/resources/ddl/define-all.spark
 ```

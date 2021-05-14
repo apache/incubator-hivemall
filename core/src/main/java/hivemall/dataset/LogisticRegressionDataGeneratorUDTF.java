@@ -155,13 +155,9 @@ public final class LogisticRegressionDataGeneratorUDTF extends UDTFWithOptions {
     public void process(Object[] argOIs) throws HiveException {
         if (rnd1 == null) {
             assert (rnd2 == null);
-            final int taskid = HadoopUtils.getTaskId(-1);
-            final long seed;
-            if (taskid == -1) {
-                seed = r_seed; // Non-MR local task
-            } else {
-                seed = r_seed + taskid;
-            }
+            int threadId = (int) Thread.currentThread().getId();
+            int taskid = HadoopUtils.getTaskId(threadId);
+            long seed = r_seed + taskid;
             this.rnd1 = new Random(seed);
             this.rnd2 = new Random(seed + 1);
         }
