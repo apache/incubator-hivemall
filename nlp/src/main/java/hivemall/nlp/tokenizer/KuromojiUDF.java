@@ -387,7 +387,7 @@ public final class KuromojiUDF extends UDFWithOptions {
                 + "Please ensure that \n"
                 + "  1) file encoding is UTF-8, \n"
                 + "  2) no duplicate entry.\"\n"
-                + "  3) the maximum dictionary size is limited to 32MB\n"
+                + "  3) the maximum dictionary size is limited to 32MB (SHOULD be compressed using gzip with .gz suffix)\n"
                 + "  4) read timeout is set to 60 sec and connection must be established in 10 sec.\n"
                         +  ExceptionUtils.prettyPrintStackTrace(e));
         }
