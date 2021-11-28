@@ -20,4 +20,4 @@
 
 mkdir -p /home/hadoop/tmp
 wget --no-check-certificate -P /home/hadoop/tmp \
- https://github.com/myui/hivemall/raw/master/target/hivemall-with-dependencies.jar https://github.com/myui/hivemall/raw/master/scripts/ddl/define-all.hive
+ https://repo1.maven.org/maven2/org/apache/hivemall/hivemall-all/0.6.0-incubating/hivemall-all-0.6.0-incubating.jar https://raw.githubusercontent.com/apache/incubator-hivemall/master/resources/ddl/define-all.hive
