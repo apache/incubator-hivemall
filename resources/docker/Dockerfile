@@ -43,9 +43,8 @@ RUN set -eux && \
     apt-get install -y --no-install-recommends openssh-server maven g++ make ruby && \
     curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y nodejs && \
-    npm install -g gitbook-cli 
-    
-RUN  wget ${BASE_URL}hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz -O - \
+    npm install -g gitbook-cli && \
+    wget ${BASE_URL}hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz -O - \
       | tar xz && \
     mv hadoop-${HADOOP_VERSION} ${HADOOP_HOME} && \
     sed -i -e 's!${JAVA_HOME}!'"${JAVA_HOME}!" ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh && \
