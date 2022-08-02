@@ -34,18 +34,18 @@ ENV HADOOP_OPTS=' \
       -Dsystem:user.name=root \
       -Dderby.stream.error.file=/root/derby.log'
 ENV PATH="${HADOOP_HOME}/bin:${HIVE_HOME}/bin:${PATH}"
-ENV JAVA_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+ENV JAVA_HOME='/usr/local/openjdk-8/jre'
 
 COPY . ${HIVEMALL_PATH}/
 
 RUN set -eux && \
     apt-get update && \
     apt-get install -y --no-install-recommends openssh-server maven g++ make ruby && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+    curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y nodejs && \
-    npm install -g gitbook-cli && \
-    \
-    wget ${BASE_URL}hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz -O - \
+    npm install -g gitbook-cli 
+    
+RUN  wget ${BASE_URL}hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz -O - \
       | tar xz && \
     mv hadoop-${HADOOP_VERSION} ${HADOOP_HOME} && \
     sed -i -e 's!${JAVA_HOME}!'"${JAVA_HOME}!" ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh && \
