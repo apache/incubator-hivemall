@@ -264,7 +264,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<protobuf.version>2.5.0</protobuf.version>
 		<protoc.path>${env.PROTOC_PATH}</protoc.path>
-		<hadoop.version>2.4.0</hadoop.version>
+		<hadoop.version>3.2.3</hadoop.version>
 		<hive.version>0.13.0</hive.version>
 		<guava.version>11.0.2</guava.version>
 		<junit.version>4.12</junit.version>
